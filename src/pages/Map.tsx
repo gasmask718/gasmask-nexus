@@ -52,6 +52,8 @@ const Map = () => {
 
     // Initialize map
     const mapboxToken = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
+    console.log('MAPBOX TOKEN:', mapboxToken ? 'Loaded' : 'Missing');
+    
     if (!mapboxToken) {
       console.error('Mapbox token not found');
       return;
@@ -61,7 +63,7 @@ const Map = () => {
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
+      style: 'mapbox://styles/mapbox/navigation-night-v1',
       center: [-73.935242, 40.730610], // NYC center
       zoom: 11,
     });
@@ -137,6 +139,9 @@ const Map = () => {
       });
       map.current.fitBounds(bounds, { padding: 50 });
     }
+
+    // Ensure map resizes properly
+    map.current?.resize();
   }, [stores, loading]);
 
   const getStatusColor = (status: string) => {
@@ -184,7 +189,11 @@ const Map = () => {
             <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         )}
-        <div ref={mapContainer} className="absolute inset-0" />
+        <div 
+          ref={mapContainer} 
+          className="absolute inset-0" 
+          style={{ minHeight: '600px' }}
+        />
 
         {/* Store Detail Card */}
         {selectedStore && (
