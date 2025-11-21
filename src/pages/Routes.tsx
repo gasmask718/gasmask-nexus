@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +17,7 @@ interface Route {
 }
 
 const Routes = () => {
+  const navigate = useNavigate();
   const [routes, setRoutes] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'driver' | 'biker'>('all');
@@ -84,6 +86,7 @@ const Routes = () => {
     <Card
       className="glass-card border-border/50 hover-lift hover-glow cursor-pointer"
       style={{ animationDelay: `${index * 50}ms` }}
+      onClick={() => navigate(`/routes/${route.id}`)}
     >
       <CardHeader>
         <div className="flex items-start justify-between">
