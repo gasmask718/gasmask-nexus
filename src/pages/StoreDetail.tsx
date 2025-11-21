@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import VisitLogModal from '@/components/VisitLogModal';
 import { 
   MapPin, 
   Phone, 
@@ -76,6 +77,7 @@ const StoreDetail = () => {
   const [inventory, setInventory] = useState<ProductInventory[]>([]);
   const [visits, setVisits] = useState<VisitLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [visitModalOpen, setVisitModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchStoreData = async () => {
@@ -92,40 +94,7 @@ const StoreDetail = () => {
         if (storeError) throw storeError;
         setStore(storeData);
 
-        // Fetch inventory state
-        const { data: inventoryData } = await supabase
-          .from('store_product_state')
-          .select(`
-            id,
-            last_inventory_level,
-            last_inventory_check_at,
-            next_estimated_reorder_date,
-            product:products(
-              name,
-              brand:brands(name, color)
-            )
-          `)
-          .eq('store_id', id);
-
-        setInventory(inventoryData as any || []);
-
-        // Fetch visit logs
-        const { data: visitsData } = await supabase
-          .from('visit_logs')
-          .select(`
-            id,
-            visit_type,
-            visit_datetime,
-            cash_collected,
-            payment_method,
-            customer_response,
-            user:profiles(name)
-          `)
-          .eq('store_id', id)
-          .order('visit_datetime', { ascending: false })
-          .limit(10);
-
-        setVisits(visitsData as any || []);
+        await fetchInventoryAndVisits();
       } catch (error) {
         console.error('Error fetching store data:', error);
         toast.error('Failed to load store details');
@@ -136,6 +105,49 @@ const StoreDetail = () => {
 
     fetchStoreData();
   }, [id]);
+
+  const fetchInventoryAndVisits = async () => {
+    if (!id) return;
+
+    try {
+      // Fetch inventory state
+      const { data: inventoryData } = await supabase
+        .from('store_product_state')
+        .select(`
+          id,
+          last_inventory_level,
+          last_inventory_check_at,
+          next_estimated_reorder_date,
+          product:products(
+            name,
+            brand:brands(name, color)
+          )
+        `)
+        .eq('store_id', id);
+
+      setInventory(inventoryData as any || []);
+
+      // Fetch visit logs
+      const { data: visitsData } = await supabase
+        .from('visit_logs')
+        .select(`
+          id,
+          visit_type,
+          visit_datetime,
+          cash_collected,
+          payment_method,
+          customer_response,
+          user:profiles(name)
+        `)
+        .eq('store_id', id)
+        .order('visit_datetime', { ascending: false })
+        .limit(10);
+
+      setVisits(visitsData as any || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -212,13 +224,24 @@ const StoreDetail = () => {
                 <FileText className="h-4 w-4 mr-2" />
                 Add Note
               </Button>
-              <Button className="bg-primary hover:bg-primary-hover">
+              <Button 
+                className="bg-primary hover:bg-primary-hover"
+                onClick={() => setVisitModalOpen(true)}
+              >
                 Log Visit
               </Button>
             </div>
           </div>
         </div>
       </div>
+
+      <VisitLogModal
+        open={visitModalOpen}
+        onOpenChange={setVisitModalOpen}
+        storeId={id || ''}
+        storeName={store.name}
+        onSuccess={fetchInventoryAndVisits}
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left Column - Main Info */}
