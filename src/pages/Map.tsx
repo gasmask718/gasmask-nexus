@@ -7,8 +7,13 @@ import { SearchBar } from '@/components/map/SearchBar';
 import { StoreCard } from '@/components/map/StoreCard';
 import { CommandPanel } from '@/components/map/CommandPanel';
 import { DriverCard } from '@/components/map/DriverCard';
-import { Package, Users, Layers } from 'lucide-react';
+import { CommandMetrics } from '@/components/map/CommandMetrics';
+import { CommandSidebar } from '@/components/map/CommandSidebar';
+import { Alert } from '@/components/map/AlertsPanel';
+import { Package, Users, Layers, Star, Building2, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { territories } from '@/components/map/territories';
+import { demoRoutes, DemoRoute } from '@/components/map/demoRoutes';
 
 interface Store {
   id: string;
@@ -46,7 +51,14 @@ const Map = () => {
   const [selectedDriver, setSelectedDriver] = useState<DemoDriver | null>(null);
   const [showDrivers, setShowDrivers] = useState(true);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showAmbassadors, setShowAmbassadors] = useState(false);
+  const [showWholesale, setShowWholesale] = useState(false);
+  const [selectedTerritory, setSelectedTerritory] = useState<string | null>(null);
+  const [selectedRoute, setSelectedRoute] = useState<DemoRoute | null>(null);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [showSidebar, setShowSidebar] = useState(true);
   const driverMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const routeLayersRef = useRef<string[]>([]);
 
   // Fetch stores from Supabase
   const fetchStores = async () => {
@@ -86,12 +98,77 @@ const Map = () => {
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
+    // Add territory polygons
+    map.current.on('load', () => {
+      if (!map.current) return;
+
+      // Add territory source
+      map.current.addSource('territories', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: territories.map(territory => ({
+            type: 'Feature',
+            properties: {
+              id: territory.id,
+              name: territory.name,
+              color: territory.color
+            },
+            geometry: {
+              type: 'Polygon',
+              coordinates: territory.coordinates
+            }
+          }))
+        }
+      });
+
+      // Add territory fill layer
+      map.current.addLayer({
+        id: 'territories-fill',
+        type: 'fill',
+        source: 'territories',
+        paint: {
+          'fill-color': ['get', 'color'],
+          'fill-opacity': 0.1
+        }
+      });
+
+      // Add territory border layer
+      map.current.addLayer({
+        id: 'territories-border',
+        type: 'line',
+        source: 'territories',
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': 2,
+          'line-opacity': 0.5
+        }
+      });
+
+      // Territory hover effect
+      map.current.on('mouseenter', 'territories-fill', () => {
+        if (map.current) map.current.getCanvas().style.cursor = 'pointer';
+      });
+
+      map.current.on('mouseleave', 'territories-fill', () => {
+        if (map.current) map.current.getCanvas().style.cursor = '';
+      });
+
+      // Territory click handler
+      map.current.on('click', 'territories-fill', (e) => {
+        if (e.features && e.features[0]) {
+          const territoryId = e.features[0].properties?.id;
+          setSelectedTerritory(territoryId === selectedTerritory ? null : territoryId);
+        }
+      });
+    });
+
     return () => {
       map.current?.remove();
     };
   }, []);
 
-  // Initialize demo drivers
+  // Initialize demo drivers and alerts
   useEffect(() => {
     const drivers: DemoDriver[] = [
       { id: '1', name: 'Malik Driver', role: 'driver', lat: 40.8176, lng: -73.9182, territory: 'Bronx', updated_at: new Date() },
@@ -104,6 +181,44 @@ const Map = () => {
       { id: '8', name: 'Pierre Biker', role: 'biker', lat: 40.7916, lng: -73.9736, territory: 'Manhattan', updated_at: new Date() },
     ];
     setDemoDrivers(drivers);
+
+    // Generate demo alerts
+    const demoAlerts: Alert[] = [
+      {
+        id: 'alert-1',
+        type: 'inventory',
+        title: 'Inventory Overdue',
+        message: 'Store has not been restocked in 7 days',
+        territory: 'Brooklyn',
+        lat: 40.7145,
+        lng: -73.9565,
+        severity: 'high',
+        timestamp: new Date()
+      },
+      {
+        id: 'alert-2',
+        type: 'driver-idle',
+        title: 'Driver Idle',
+        message: 'No movement detected for 20 minutes',
+        territory: 'Queens',
+        lat: 40.7632,
+        lng: -73.9202,
+        severity: 'medium',
+        timestamp: new Date()
+      },
+      {
+        id: 'alert-3',
+        type: 'prospect-cluster',
+        title: 'Prospect Cluster',
+        message: '5 prospects detected within 0.5 mile radius',
+        territory: 'Manhattan',
+        lat: 40.7500,
+        lng: -73.9900,
+        severity: 'low',
+        timestamp: new Date()
+      }
+    ];
+    setAlerts(demoAlerts);
 
     // Simulate driver movement every 8 seconds
     const interval = setInterval(() => {
@@ -145,13 +260,36 @@ const Map = () => {
     };
   }, []);
 
-  // Filter stores based on active filter
+  // Filter stores based on active filter and territory
   useEffect(() => {
-    if (activeFilter === 'all') {
-      setFilteredStores(stores);
-    } else {
-      setFilteredStores(stores.filter((store) => store.status === activeFilter));
+    let filtered = stores;
+
+    // Filter by status
+    if (activeFilter !== 'all') {
+      filtered = filtered.filter((store) => store.status === activeFilter);
     }
+
+    // Filter by territory
+    if (selectedTerritory) {
+      const territory = territories.find(t => t.id === selectedTerritory);
+      if (territory) {
+        filtered = filtered.filter((store) => {
+          // Simple point-in-polygon check (for demo purposes)
+          const coords = territory.coordinates[0];
+          const lngs = coords.map(c => c[0]);
+          const lats = coords.map(c => c[1]);
+          const minLng = Math.min(...lngs);
+          const maxLng = Math.max(...lngs);
+          const minLat = Math.min(...lats);
+          const maxLat = Math.max(...lats);
+          
+          return store.lng >= minLng && store.lng <= maxLng && 
+                 store.lat >= minLat && store.lat <= maxLat;
+        });
+      }
+    }
+
+    setFilteredStores(filtered);
 
     // Calculate counts
     const counts: Record<string, number> = {
@@ -168,7 +306,7 @@ const Map = () => {
     });
 
     setStoreCounts(counts);
-  }, [stores, activeFilter]);
+  }, [stores, activeFilter, selectedTerritory]);
 
   // Render store markers and heatmap
   useEffect(() => {
@@ -362,6 +500,58 @@ const Map = () => {
     });
   }, [demoDrivers, showDrivers]);
 
+  // Render route lines
+  useEffect(() => {
+    if (!map.current || loading) return;
+
+    // Clear existing route layers
+    routeLayersRef.current.forEach(layerId => {
+      if (map.current?.getLayer(layerId)) {
+        map.current.removeLayer(layerId);
+      }
+      if (map.current?.getSource(layerId)) {
+        map.current.removeSource(layerId);
+      }
+    });
+    routeLayersRef.current = [];
+
+    // Add route lines
+    demoRoutes.forEach((route) => {
+      if (!map.current) return;
+
+      const sourceId = `route-${route.id}`;
+      const layerId = `route-line-${route.id}`;
+      
+      map.current.addSource(sourceId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: route.polyline
+          }
+        }
+      });
+
+      const color = route.type === 'driver' ? '#ef4444' : '#a855f7';
+      const opacity = selectedRoute?.id === route.id ? 1 : 0.6;
+
+      map.current.addLayer({
+        id: layerId,
+        type: 'line',
+        source: sourceId,
+        paint: {
+          'line-color': color,
+          'line-width': 4,
+          'line-opacity': opacity
+        }
+      });
+
+      routeLayersRef.current.push(layerId);
+    });
+  }, [demoRoutes, selectedRoute, loading]);
+
   const handleSearch = (store: Store) => {
     setSelectedStore(store);
     map.current?.flyTo({
@@ -372,13 +562,47 @@ const Map = () => {
     });
   };
 
+  const handleMetricClick = (filter: string) => {
+    if (filter === 'drivers' || filter === 'bikers') {
+      setShowDrivers(true);
+    } else if (filter === 'ambassadors') {
+      setShowAmbassadors(!showAmbassadors);
+    } else if (filter === 'wholesale') {
+      setShowWholesale(!showWholesale);
+    } else {
+      setActiveFilter(filter);
+    }
+  };
+
+  const handleRouteClick = (route: DemoRoute) => {
+    setSelectedRoute(route);
+    if (map.current && route.polyline.length > 0) {
+      const bounds = new mapboxgl.LngLatBounds();
+      route.polyline.forEach(coord => bounds.extend(coord as [number, number]));
+      map.current.fitBounds(bounds, { padding: 100 });
+    }
+  };
+
+  const handleAlertClick = (alert: Alert) => {
+    if (map.current) {
+      map.current.flyTo({
+        center: [alert.lng, alert.lat],
+        zoom: 15,
+        duration: 1500
+      });
+    }
+  };
+
+  const driversCount = demoDrivers.filter(d => d.role === 'driver').length;
+  const bikersCount = demoDrivers.filter(d => d.role === 'biker').length;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight">Store Intelligence Map</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Operations Command Center</h2>
           <p className="text-muted-foreground">
-            Live operational command center with real-time store tracking
+            Real-time tactical intelligence and field operations management
           </p>
         </div>
         <div className="flex gap-2">
@@ -388,7 +612,7 @@ const Map = () => {
             onClick={() => setShowDrivers(!showDrivers)}
           >
             <Users className="h-4 w-4 mr-2" />
-            Drivers ({demoDrivers.length})
+            Team
           </Button>
           <Button
             variant={showHeatmap ? 'default' : 'outline'}
@@ -398,8 +622,42 @@ const Map = () => {
             <Layers className="h-4 w-4 mr-2" />
             Heatmap
           </Button>
+          <Button
+            variant={showAmbassadors ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowAmbassadors(!showAmbassadors)}
+          >
+            <Star className="h-4 w-4 mr-2" />
+            Ambassadors
+          </Button>
+          <Button
+            variant={showWholesale ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowWholesale(!showWholesale)}
+          >
+            <Building2 className="h-4 w-4 mr-2" />
+            Wholesale
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSidebar(!showSidebar)}
+          >
+            {showSidebar ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
+
+      <CommandMetrics
+        activeStores={storeCounts.active || 0}
+        needsFollowUp={storeCounts.needsFollowUp || 0}
+        prospects={storeCounts.prospect || 0}
+        driversLive={driversCount}
+        bikersLive={bikersCount}
+        ambassadorZones={3}
+        wholesaleHubs={5}
+        onMetricClick={handleMetricClick}
+      />
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
@@ -413,7 +671,8 @@ const Map = () => {
         storeCounts={storeCounts}
       />
 
-      <div className="relative h-[calc(100vh-280px)] rounded-xl overflow-hidden border border-border/50 shadow-2xl">
+      <div className="flex gap-4">
+        <div className={`relative rounded-xl overflow-hidden border border-border/50 shadow-2xl transition-all duration-300 ${showSidebar ? 'w-2/3' : 'w-full'}`} style={{ height: 'calc(100vh - 280px)' }}>
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10 backdrop-blur-sm">
             <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -449,7 +708,7 @@ const Map = () => {
             <Package className="h-4 w-4 text-primary" />
             <span className="font-semibold">{filteredStores.length}</span>
             <span className="text-muted-foreground">
-              {activeFilter === 'all' ? 'stores on map' : `${activeFilter} stores`}
+              {selectedTerritory ? `${selectedTerritory} stores` : activeFilter === 'all' ? 'stores on map' : `${activeFilter} stores`}
             </span>
           </div>
         </div>
@@ -475,6 +734,30 @@ const Map = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {showSidebar && (
+        <div className="w-1/3 h-full">
+          <CommandSidebar
+            stores={filteredStores}
+            drivers={demoDrivers}
+            routes={demoRoutes}
+            alerts={alerts}
+            onStoreClick={handleSearch}
+            onDriverClick={(driver) => {
+              setSelectedDriver(driver);
+              map.current?.flyTo({
+                center: [driver.lng, driver.lat],
+                zoom: 15,
+                duration: 1000
+              });
+            }}
+            onRouteClick={handleRouteClick}
+            onAlertClick={handleAlertClick}
+            onClose={() => setShowSidebar(false)}
+          />
+        </div>
+      )}
       </div>
 
       <style>{`
