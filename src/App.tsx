@@ -8,6 +8,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Stores from "./pages/Stores";
+import StoreDetail from "./pages/StoreDetail";
 import RoutesPage from "./pages/Routes";
 import Team from "./pages/Team";
 import Products from "./pages/Products";
@@ -42,6 +43,16 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <Stores />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stores/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <StoreDetail />
                   </Layout>
                 </ProtectedRoute>
               }

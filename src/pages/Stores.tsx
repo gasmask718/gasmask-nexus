@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Search, MapPin, Phone } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, MapPin, Phone, Plus } from 'lucide-react';
 
 interface Store {
   id: string;
@@ -13,18 +16,21 @@ interface Store {
   address_state: string;
   phone: string;
   status: string;
+  tags: string[];
 }
 
 const Stores = () => {
+  const navigate = useNavigate();
   const [stores, setStores] = useState<Store[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStores = async () => {
       const { data, error } = await supabase
         .from('stores')
-        .select('id, name, type, address_city, address_state, phone, status')
+        .select('id, name, type, address_city, address_state, phone, status, tags')
         .order('name');
 
       if (error) {
@@ -38,10 +44,16 @@ const Stores = () => {
     fetchStores();
   }, []);
 
-  const filteredStores = stores.filter(store =>
-    store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    store.address_city?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredStores = stores.filter(store => {
+    const matchesSearch = 
+      store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      store.address_city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      store.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    const matchesStatus = statusFilter === 'all' || store.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -53,24 +65,50 @@ const Stores = () => {
     }
   };
 
+  const statusCounts = {
+    all: stores.length,
+    active: stores.filter(s => s.status === 'active').length,
+    prospect: stores.filter(s => s.status === 'prospect').length,
+    needsFollowUp: stores.filter(s => s.status === 'needsFollowUp').length,
+  };
+
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Stores</h2>
-        <p className="text-muted-foreground">
-          Manage your distribution network
-        </p>
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight">Stores</h2>
+          <p className="text-muted-foreground">
+            Manage your distribution network • {filteredStores.length} stores
+          </p>
+        </div>
+        <Button className="bg-primary hover:bg-primary-hover">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Store
+        </Button>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search stores by name or location..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 bg-secondary/50 border-border/50"
-        />
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search stores by name, location, or tags..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-secondary/50 border-border/50"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-48 bg-secondary/50 border-border/50">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Stores ({statusCounts.all})</SelectItem>
+            <SelectItem value="active">Active ({statusCounts.active})</SelectItem>
+            <SelectItem value="prospect">Prospects ({statusCounts.prospect})</SelectItem>
+            <SelectItem value="needsFollowUp">Needs Follow-up ({statusCounts.needsFollowUp})</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Stores Grid */}
@@ -85,6 +123,7 @@ const Stores = () => {
               key={store.id}
               className="glass-card border-border/50 hover-lift hover-glow cursor-pointer"
               style={{ animationDelay: `${index * 50}ms` }}
+              onClick={() => navigate(`/stores/${store.id}`)}
             >
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -95,7 +134,7 @@ const Stores = () => {
                     </Badge>
                   </div>
                   <Badge className={getStatusColor(store.status)}>
-                    {store.status}
+                    {store.status === 'needsFollowUp' ? 'Follow-up' : store.status}
                   </Badge>
                 </div>
               </CardHeader>
@@ -112,6 +151,20 @@ const Stores = () => {
                     <span>{store.phone}</span>
                   </div>
                 )}
+                {store.tags && store.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-2">
+                    {store.tags.slice(0, 3).map(tag => (
+                      <Badge key={tag} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {store.tags.length > 3 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{store.tags.length - 3}
+                      </Badge>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -120,7 +173,7 @@ const Stores = () => {
 
       {!loading && filteredStores.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">No stores found</p>
+          <p className="text-muted-foreground">No stores found matching your filters</p>
         </div>
       )}
     </div>
