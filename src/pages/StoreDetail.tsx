@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { GeocodingService } from '@/services/geocoding';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,8 @@ import {
   TrendingUp,
   AlertCircle,
   DollarSign,
-  Calendar
+  Calendar,
+  Navigation
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -42,6 +44,8 @@ interface Store {
   tags: string[];
   primary_contact_name: string;
   created_at: string;
+  lat: number | null;
+  lng: number | null;
 }
 
 interface ProductInventory {
@@ -78,6 +82,7 @@ const StoreDetail = () => {
   const [visits, setVisits] = useState<VisitLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [visitModalOpen, setVisitModalOpen] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
 
   useEffect(() => {
     const fetchStoreData = async () => {
@@ -105,6 +110,41 @@ const StoreDetail = () => {
 
     fetchStoreData();
   }, [id]);
+
+  const handleGeocodeAddress = async () => {
+    if (!store) return;
+    
+    setGeocoding(true);
+    try {
+      const result = await GeocodingService.geocodeAddress(
+        store.address_street,
+        store.address_city,
+        store.address_state,
+        store.address_zip
+      );
+
+      if ('error' in result) {
+        toast.error(`Geocoding failed: ${result.error}`);
+        return;
+      }
+
+      // Update store with new coordinates
+      const { error } = await supabase
+        .from('stores')
+        .update({ lat: result.lat, lng: result.lng })
+        .eq('id', store.id);
+
+      if (error) throw error;
+
+      setStore({ ...store, lat: result.lat as any, lng: result.lng as any });
+      toast.success('Address geocoded successfully! Location updated on map.');
+    } catch (error) {
+      console.error('Error geocoding:', error);
+      toast.error('Failed to geocode address');
+    } finally {
+      setGeocoding(false);
+    }
+  };
 
   const fetchInventoryAndVisits = async () => {
     if (!id) return;
@@ -220,6 +260,15 @@ const StoreDetail = () => {
               </p>
             </div>
             <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                className="border-border/50"
+                onClick={handleGeocodeAddress}
+                disabled={geocoding || !store.address_street}
+              >
+                <Navigation className="h-4 w-4 mr-2" />
+                {geocoding ? 'Geocoding...' : 'Geocode Address'}
+              </Button>
               <Button variant="outline" className="border-border/50">
                 <FileText className="h-4 w-4 mr-2" />
                 Add Note
