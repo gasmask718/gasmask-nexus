@@ -6,6 +6,7 @@ import {
   Store, 
   Map, 
   MapPin,
+  Upload,
   Users, 
   Package, 
   TrendingUp, 
@@ -25,6 +26,7 @@ const Layout = ({ children }: LayoutProps) => {
   const navigationItems = [
     { to: '/', icon: LayoutDashboard, label: 'Command Center', roles: ['admin', 'csr'] },
     { to: '/stores', icon: Store, label: 'Stores', roles: ['admin', 'csr', 'driver', 'biker'] },
+    { to: '/batch-import', icon: Upload, label: 'Batch Import', roles: ['admin', 'csr'] },
     { to: '/routes', icon: Map, label: 'Routes', roles: ['admin', 'driver', 'biker'] },
     { to: '/map', icon: MapPin, label: 'Map View', roles: ['admin', 'csr', 'driver', 'biker'] },
     { to: '/team', icon: Users, label: 'Team', roles: ['admin'] },

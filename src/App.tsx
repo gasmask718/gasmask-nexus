@@ -12,6 +12,7 @@ import StoreDetail from "./pages/StoreDetail";
 import RoutesPage from "./pages/Routes";
 import RouteDetail from "./pages/RouteDetail";
 import MapPage from "./pages/Map";
+import BatchImport from "./pages/BatchImport";
 import Team from "./pages/Team";
 import Products from "./pages/Products";
 import Analytics from "./pages/Analytics";
@@ -85,6 +86,16 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <MapPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/batch-import"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <BatchImport />
                   </Layout>
                 </ProtectedRoute>
               }
