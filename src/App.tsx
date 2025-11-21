@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Stores from "./pages/Stores";
 import StoreDetail from "./pages/StoreDetail";
 import RoutesPage from "./pages/Routes";
+import RouteDetail from "./pages/RouteDetail";
 import Team from "./pages/Team";
 import Products from "./pages/Products";
 import Analytics from "./pages/Analytics";
@@ -63,6 +64,26 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <RoutesPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/routes/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RouteDetail />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/routes/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RouteDetail />
                   </Layout>
                 </ProtectedRoute>
               }
