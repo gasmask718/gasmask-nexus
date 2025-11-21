@@ -5,7 +5,10 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { FilterBar } from '@/components/map/FilterBar';
 import { SearchBar } from '@/components/map/SearchBar';
 import { StoreCard } from '@/components/map/StoreCard';
-import { Package } from 'lucide-react';
+import { CommandPanel } from '@/components/map/CommandPanel';
+import { DriverCard } from '@/components/map/DriverCard';
+import { Package, Users, Layers } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface Store {
   id: string;
@@ -19,6 +22,16 @@ interface Store {
   address_city: string | null;
 }
 
+interface DemoDriver {
+  id: string;
+  name: string;
+  role: 'driver' | 'biker';
+  lat: number;
+  lng: number;
+  territory: string;
+  updated_at: Date;
+}
+
 const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -29,6 +42,11 @@ const Map = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [storeCounts, setStoreCounts] = useState<Record<string, number>>({});
+  const [demoDrivers, setDemoDrivers] = useState<DemoDriver[]>([]);
+  const [selectedDriver, setSelectedDriver] = useState<DemoDriver | null>(null);
+  const [showDrivers, setShowDrivers] = useState(true);
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const driverMarkersRef = useRef<mapboxgl.Marker[]>([]);
 
   // Fetch stores from Supabase
   const fetchStores = async () => {
@@ -71,6 +89,33 @@ const Map = () => {
     return () => {
       map.current?.remove();
     };
+  }, []);
+
+  // Initialize demo drivers
+  useEffect(() => {
+    const drivers: DemoDriver[] = [
+      { id: '1', name: 'Malik Driver', role: 'driver', lat: 40.8176, lng: -73.9182, territory: 'Bronx', updated_at: new Date() },
+      { id: '2', name: 'Jayden Driver', role: 'driver', lat: 40.7145, lng: -73.9565, territory: 'Brooklyn', updated_at: new Date() },
+      { id: '3', name: 'Carlos Driver', role: 'driver', lat: 40.7632, lng: -73.9202, territory: 'Queens', updated_at: new Date() },
+      { id: '4', name: 'Marcus Driver', role: 'driver', lat: 40.7265, lng: -73.9815, territory: 'Manhattan', updated_at: new Date() },
+      { id: '5', name: 'Luis Biker', role: 'biker', lat: 40.8405, lng: -73.9157, territory: 'Bronx', updated_at: new Date() },
+      { id: '6', name: 'Andre Biker', role: 'biker', lat: 40.6973, lng: -73.9197, territory: 'Brooklyn', updated_at: new Date() },
+      { id: '7', name: 'Hector Biker', role: 'biker', lat: 40.7489, lng: -73.8902, territory: 'Queens', updated_at: new Date() },
+      { id: '8', name: 'Pierre Biker', role: 'biker', lat: 40.7916, lng: -73.9736, territory: 'Manhattan', updated_at: new Date() },
+    ];
+    setDemoDrivers(drivers);
+
+    // Simulate driver movement every 8 seconds
+    const interval = setInterval(() => {
+      setDemoDrivers(prev => prev.map(driver => ({
+        ...driver,
+        lat: driver.lat + (Math.random() - 0.5) * 0.003,
+        lng: driver.lng + (Math.random() - 0.5) * 0.003,
+        updated_at: new Date(),
+      })));
+    }, 8000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Load stores initially
@@ -125,16 +170,87 @@ const Map = () => {
     setStoreCounts(counts);
   }, [stores, activeFilter]);
 
-  // Render markers
+  // Render store markers and heatmap
   useEffect(() => {
-    if (!map.current || loading || filteredStores.length === 0) return;
+    if (!map.current || loading) return;
 
-    // Clear existing markers
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = [];
+    // Handle heatmap layer
+    if (showHeatmap) {
+      // Hide store markers
+      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current = [];
 
-    // Add new markers
-    filteredStores.forEach((store) => {
+      // Add heatmap source and layer
+      if (map.current.getSource('stores-heat')) {
+        (map.current.getSource('stores-heat') as mapboxgl.GeoJSONSource).setData({
+          type: 'FeatureCollection',
+          features: filteredStores.map(store => ({
+            type: 'Feature',
+            properties: {
+              weight: store.status === 'active' ? 3 : store.status === 'prospect' ? 2 : store.status === 'needsFollowUp' ? 1 : 0.5
+            },
+            geometry: {
+              type: 'Point',
+              coordinates: [store.lng, store.lat]
+            }
+          }))
+        });
+      } else {
+        map.current.addSource('stores-heat', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: filteredStores.map(store => ({
+              type: 'Feature',
+              properties: {
+                weight: store.status === 'active' ? 3 : store.status === 'prospect' ? 2 : store.status === 'needsFollowUp' ? 1 : 0.5
+              },
+              geometry: {
+                type: 'Point',
+                coordinates: [store.lng, store.lat]
+              }
+            }))
+          }
+        });
+
+        map.current.addLayer({
+          id: 'stores-heat',
+          type: 'heatmap',
+          source: 'stores-heat',
+          paint: {
+            'heatmap-weight': ['get', 'weight'],
+            'heatmap-intensity': 1,
+            'heatmap-color': [
+              'interpolate',
+              ['linear'],
+              ['heatmap-density'],
+              0, 'rgba(33,102,172,0)',
+              0.2, 'rgb(103,169,207)',
+              0.4, 'rgb(209,229,240)',
+              0.6, 'rgb(253,219,199)',
+              0.8, 'rgb(239,138,98)',
+              1, 'rgb(178,24,43)'
+            ],
+            'heatmap-radius': 30,
+            'heatmap-opacity': 0.8
+          }
+        });
+      }
+    } else {
+      // Remove heatmap layer
+      if (map.current.getLayer('stores-heat')) {
+        map.current.removeLayer('stores-heat');
+      }
+      if (map.current.getSource('stores-heat')) {
+        map.current.removeSource('stores-heat');
+      }
+
+      // Clear existing markers
+      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current = [];
+
+      // Add new markers
+      filteredStores.forEach((store) => {
       if (!map.current) return;
 
       const color =
@@ -186,19 +302,65 @@ const Map = () => {
       });
 
       markersRef.current.push(marker);
-    });
-
-    // Fit map to markers
-    if (filteredStores.length > 0) {
-      const bounds = new mapboxgl.LngLatBounds();
-      filteredStores.forEach((store) => {
-        bounds.extend([store.lng, store.lat]);
       });
-      map.current.fitBounds(bounds, { padding: 80, maxZoom: 14 });
+
+      // Fit map to markers
+      if (filteredStores.length > 0) {
+        const bounds = new mapboxgl.LngLatBounds();
+        filteredStores.forEach((store) => {
+          bounds.extend([store.lng, store.lat]);
+        });
+        map.current.fitBounds(bounds, { padding: 80, maxZoom: 14 });
+      }
     }
 
     map.current?.resize();
-  }, [filteredStores, loading]);
+  }, [filteredStores, loading, showHeatmap]);
+
+  // Render driver markers
+  useEffect(() => {
+    if (!map.current || !showDrivers) {
+      driverMarkersRef.current.forEach(marker => marker.remove());
+      driverMarkersRef.current = [];
+      return;
+    }
+
+    // Clear existing driver markers
+    driverMarkersRef.current.forEach(marker => marker.remove());
+    driverMarkersRef.current = [];
+
+    // Add driver markers
+    demoDrivers.forEach(driver => {
+      if (!map.current) return;
+
+      const el = document.createElement('div');
+      el.className = 'driver-marker';
+      el.style.width = '20px';
+      el.style.height = '20px';
+      el.style.borderRadius = '50%';
+      el.style.backgroundColor = '#ef4444';
+      el.style.border = '3px solid white';
+      el.style.cursor = 'pointer';
+      el.style.boxShadow = '0 0 20px rgba(239, 68, 68, 0.6), 0 4px 10px rgba(0,0,0,0.3)';
+      el.style.animation = 'pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite';
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([driver.lng, driver.lat])
+        .addTo(map.current);
+
+      el.addEventListener('click', () => {
+        setSelectedDriver(driver);
+        setSelectedStore(null);
+        map.current?.flyTo({
+          center: [driver.lng, driver.lat],
+          zoom: 15,
+          duration: 1000,
+        });
+      });
+
+      driverMarkersRef.current.push(marker);
+    });
+  }, [demoDrivers, showDrivers]);
 
   const handleSearch = (store: Store) => {
     setSelectedStore(store);
@@ -212,11 +374,31 @@ const Map = () => {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Store Intelligence Map</h2>
-        <p className="text-muted-foreground">
-          Live operational command center with real-time store tracking
-        </p>
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight">Store Intelligence Map</h2>
+          <p className="text-muted-foreground">
+            Live operational command center with real-time store tracking
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant={showDrivers ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowDrivers(!showDrivers)}
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Drivers ({demoDrivers.length})
+          </Button>
+          <Button
+            variant={showHeatmap ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowHeatmap(!showHeatmap)}
+          >
+            <Layers className="h-4 w-4 mr-2" />
+            Heatmap
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -240,10 +422,24 @@ const Map = () => {
         
         <div ref={mapContainer} className="absolute inset-0" style={{ minHeight: '600px' }} />
 
+        {/* Command Center Panel */}
+        <CommandPanel 
+          storeCount={filteredStores.length}
+          driverCount={demoDrivers.length}
+          activeRoutes={0}
+        />
+
         {/* Store Detail Card */}
         {selectedStore && (
           <div className="absolute top-4 left-4 w-full max-w-sm z-10 sm:left-4 sm:w-96 px-4 sm:px-0">
             <StoreCard store={selectedStore} onClose={() => setSelectedStore(null)} />
+          </div>
+        )}
+
+        {/* Driver Detail Card */}
+        {selectedDriver && (
+          <div className="absolute top-4 left-4 w-full max-w-sm z-10 sm:left-4 sm:w-96 px-4 sm:px-0">
+            <DriverCard driver={selectedDriver} onClose={() => setSelectedDriver(null)} />
           </div>
         )}
 
@@ -283,8 +479,17 @@ const Map = () => {
 
       <style>{`
         @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.4); }
+          0%, 100% { 
+            transform: scale(1); 
+            opacity: 1;
+          }
+          50% { 
+            transform: scale(1.3); 
+            opacity: 0.8;
+          }
+        }
+        .driver-marker {
+          animation: pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
       `}</style>
     </div>
