@@ -11,6 +11,7 @@ import Stores from "./pages/Stores";
 import StoreDetail from "./pages/StoreDetail";
 import RoutesPage from "./pages/Routes";
 import RouteDetail from "./pages/RouteDetail";
+import MapPage from "./pages/Map";
 import Team from "./pages/Team";
 import Products from "./pages/Products";
 import Analytics from "./pages/Analytics";
@@ -79,11 +80,11 @@ const App = () => (
               }
             />
             <Route
-              path="/routes/:id"
+              path="/map"
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <RouteDetail />
+                    <MapPage />
                   </Layout>
                 </ProtectedRoute>
               }
