@@ -38,6 +38,27 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_missions: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       driver_sessions: {
         Row: {
           ended_at: string | null
@@ -117,6 +138,115 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fraud_flags: {
+        Row: {
+          created_at: string | null
+          driver_id: string | null
+          id: string
+          message: string
+          route_stop_id: string | null
+          severity: string
+          store_id: string | null
+          timestamp: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          driver_id?: string | null
+          id?: string
+          message: string
+          route_stop_id?: string | null
+          severity: string
+          store_id?: string | null
+          timestamp?: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          driver_id?: string | null
+          id?: string
+          message?: string
+          route_stop_id?: string | null
+          severity?: string
+          store_id?: string | null
+          timestamp?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fraud_flags_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fraud_flags_route_stop_id_fkey"
+            columns: ["route_stop_id"]
+            isOneToOne: false
+            referencedRelation: "route_stops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fraud_flags_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      influencers: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          email: string | null
+          engagement_rate: number
+          followers: number
+          id: string
+          name: string
+          niche: string | null
+          phone: string | null
+          platform: string
+          score: number | null
+          status: string
+          updated_at: string | null
+          username: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          engagement_rate?: number
+          followers?: number
+          id?: string
+          name: string
+          niche?: string | null
+          phone?: string | null
+          platform: string
+          score?: number | null
+          status?: string
+          updated_at?: string | null
+          username: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          engagement_rate?: number
+          followers?: number
+          id?: string
+          name?: string
+          niche?: string | null
+          phone?: string | null
+          platform?: string
+          score?: number | null
+          status?: string
+          updated_at?: string | null
+          username?: string
+        }
+        Relationships: []
       }
       inventory_alerts: {
         Row: {
@@ -216,6 +346,74 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mission_items: {
+        Row: {
+          category: string
+          completed: boolean | null
+          created_at: string | null
+          hub_id: string | null
+          id: string
+          influencer_id: string | null
+          mission_id: string
+          priority: number
+          reason: string | null
+          store_id: string | null
+        }
+        Insert: {
+          category: string
+          completed?: boolean | null
+          created_at?: string | null
+          hub_id?: string | null
+          id?: string
+          influencer_id?: string | null
+          mission_id: string
+          priority?: number
+          reason?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          category?: string
+          completed?: boolean | null
+          created_at?: string | null
+          hub_id?: string | null
+          id?: string
+          influencer_id?: string | null
+          mission_id?: string
+          priority?: number
+          reason?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_items_hub_id_fkey"
+            columns: ["hub_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_items_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_items_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "daily_missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]

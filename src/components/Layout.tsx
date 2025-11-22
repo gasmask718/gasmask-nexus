@@ -12,7 +12,9 @@ import {
   TrendingUp, 
   LogOut,
   Menu,
-  Building2
+  Building2,
+  MessageCircle,
+  Target
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -32,6 +34,9 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/routes', icon: Map, label: 'Routes', roles: ['admin', 'driver', 'biker'] },
     { to: '/map', icon: MapPin, label: 'Map View', roles: ['admin', 'csr', 'driver', 'biker'] },
     { to: '/wholesale', icon: Building2, label: 'Wholesale', roles: ['admin', 'csr'] },
+    { to: '/influencers', icon: MessageCircle, label: 'Influencers', roles: ['admin', 'csr'] },
+    { to: '/missions/today', icon: Target, label: 'Missions', roles: ['admin', 'csr', 'driver', 'biker'] },
+    { to: '/territories', icon: Map, label: 'Territories', roles: ['admin', 'csr'] },
     { to: '/team', icon: Users, label: 'Team', roles: ['admin'] },
     { to: '/products', icon: Package, label: 'Products', roles: ['admin'] },
     { to: '/analytics', icon: TrendingUp, label: 'Analytics', roles: ['admin', 'accountant'] },

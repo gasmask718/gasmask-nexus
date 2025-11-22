@@ -20,6 +20,9 @@ import Products from "./pages/Products";
 import Analytics from "./pages/Analytics";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Influencers from "./pages/Influencers";
+import Missions from "./pages/Missions";
+import Territories from "./pages/Territories";
 
 const queryClient = new QueryClient();
 
@@ -146,6 +149,36 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <Analytics />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/influencers"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Influencers />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/missions/today"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Missions />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/territories"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Territories />
                   </Layout>
                 </ProtectedRoute>
               }
