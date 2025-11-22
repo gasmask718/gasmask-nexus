@@ -26,20 +26,28 @@ export function useUserRole() {
 
         if (error) throw error;
 
-        if (userRoles && userRoles.length > 0) {
+        // Force admin for the owner account - bypass DB entirely
+        if (user?.email?.toLowerCase() === 'gasmaskapprovedllc@gmail.com') {
+          console.log('🔐 OWNER DETECTED - Forcing admin role');
+          setRole('admin');
+          setRoles(['admin']);
+        } else if (userRoles && userRoles.length > 0) {
+          // Normalize all roles to lowercase
           const rolesList = userRoles.map(r => (r.role as string).trim().toLowerCase() as AppRole);
-          setRoles(rolesList);
-          // Set primary role (first role, or admin if available)
-          const primaryRole = rolesList.includes('admin') 
-            ? 'admin' 
-            : rolesList[0];
           
-          // Force admin for the owner account
-          if (user?.email?.toLowerCase() === 'gasmaskapprovedllc@gmail.com') {
-            setRole('admin');
-          } else {
-            setRole(primaryRole);
-          }
+          // Remove duplicates
+          const uniqueRoles = Array.from(new Set(rolesList));
+          
+          setRoles(uniqueRoles);
+          
+          // Set primary role (admin takes precedence)
+          const primaryRole = uniqueRoles.includes('admin') 
+            ? 'admin' 
+            : uniqueRoles[0];
+          
+          setRole(primaryRole);
+          
+          console.log('👤 User roles loaded:', uniqueRoles, 'Primary:', primaryRole);
         }
       } catch (error) {
         console.error('Error fetching user role:', error);
