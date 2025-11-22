@@ -78,6 +78,10 @@ import CRMCustomerImport from "./pages/CRMCustomerImport";
 import CallCenter from "./pages/CallCenter";
 import TextCenter from "./pages/TextCenter";
 import EmailCenter from "./pages/EmailCenter";
+import CallCenterDashboard from "./pages/callcenter/CallCenterDashboard";
+import PhoneNumbers from "./pages/callcenter/PhoneNumbers";
+import CallLogs from "./pages/callcenter/CallLogs";
+import AIAgents from "./pages/callcenter/AIAgents";
 import CRMFollowUps from "./pages/CRMFollowUps";
 import BillingCenter from "./pages/BillingCenter";
 import BillingInvoices from "./pages/BillingInvoices";
@@ -866,6 +870,129 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            
+            {/* Call Center Cloud Routes */}
+            <Route
+              path="/callcenter"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CallCenterDashboard />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/callcenter/numbers"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <PhoneNumbers />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/callcenter/logs"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CallLogs />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/callcenter/recordings"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CallLogs />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/callcenter/transcripts"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CallLogs />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/callcenter/messages"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CallLogs />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/callcenter/emails"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CallLogs />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/callcenter/routing"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AIAgents />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/callcenter/agents"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AIAgents />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/callcenter/dialer"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CallLogs />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/callcenter/tasks"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CallLogs />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/callcenter/settings"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AIAgents />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            
             <Route
               path="/billing"
               element={
