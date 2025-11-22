@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_communication_queue: {
+        Row: {
+          actioned_at: string | null
+          actioned_by: string | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          reason: string
+          status: string
+          suggested_action: string
+          urgency: number
+        }
+        Insert: {
+          actioned_at?: string | null
+          actioned_by?: string | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          reason: string
+          status?: string
+          suggested_action: string
+          urgency?: number
+        }
+        Update: {
+          actioned_at?: string | null
+          actioned_by?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          reason?: string
+          status?: string
+          suggested_action?: string
+          urgency?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_communication_queue_actioned_by_fkey"
+            columns: ["actioned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_recommendations: {
         Row: {
           actioned_at: string | null
@@ -657,6 +704,11 @@ export type Database = {
       }
       crm_contacts: {
         Row: {
+          ai_keywords: string[] | null
+          ai_last_summary: string | null
+          ai_next_action: string | null
+          ai_priority: number | null
+          ai_sentiment: string | null
           created_at: string
           created_by: string | null
           email: string | null
@@ -666,12 +718,18 @@ export type Database = {
           notes: string | null
           organization: string | null
           phone: string | null
+          relationship_score: number | null
           relationship_status: string
           tags: string[] | null
           type: string
           updated_at: string
         }
         Insert: {
+          ai_keywords?: string[] | null
+          ai_last_summary?: string | null
+          ai_next_action?: string | null
+          ai_priority?: number | null
+          ai_sentiment?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
@@ -681,12 +739,18 @@ export type Database = {
           notes?: string | null
           organization?: string | null
           phone?: string | null
+          relationship_score?: number | null
           relationship_status?: string
           tags?: string[] | null
           type: string
           updated_at?: string
         }
         Update: {
+          ai_keywords?: string[] | null
+          ai_last_summary?: string | null
+          ai_next_action?: string | null
+          ai_priority?: number | null
+          ai_sentiment?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
@@ -696,6 +760,7 @@ export type Database = {
           notes?: string | null
           organization?: string | null
           phone?: string | null
+          relationship_score?: number | null
           relationship_status?: string
           tags?: string[] | null
           type?: string

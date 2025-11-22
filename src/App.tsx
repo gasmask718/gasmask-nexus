@@ -476,6 +476,16 @@ const App = () => (
               }
             />
             <Route
+              path="/communication/ai-center"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CommunicationsAI />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/communications/insights"
               element={
                 <ProtectedRoute>
