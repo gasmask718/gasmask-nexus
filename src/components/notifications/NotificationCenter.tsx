@@ -1,152 +1,165 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell } from "lucide-react";
+import { Bell, AlertTriangle, MessageCircle, Target, BookOpen, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { format, isToday, isPast, isFuture } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
 export const NotificationCenter = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const { data: reminders } = useQuery({
-    queryKey: ['user-reminders'],
+  // Fetch all notifications
+  const { data: notifications } = useQuery({
+    queryKey: ['notifications'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      if (!user) return [];
 
       const { data, error } = await supabase
-        .from('reminders')
-        .select('*, stores(name), wholesale_hubs(name), influencers(name)')
-        .eq('assigned_to', user.id)
-        .in('status', ['pending', 'overdue'])
-        .order('follow_up_date', { ascending: true });
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (error) throw error;
       return data;
     },
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  const overdueReminders = reminders?.filter(r => 
-    r.status === 'overdue' || 
-    (r.status === 'pending' && isPast(new Date(r.follow_up_date)) && !isToday(new Date(r.follow_up_date)))
-  ) || [];
+  // Mark as read mutation
+  const markAsRead = useMutation({
+    mutationFn: async (notificationId: string) => {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('id', notificationId);
 
-  const todayReminders = reminders?.filter(r => 
-    r.status === 'pending' && isToday(new Date(r.follow_up_date))
-  ) || [];
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
 
-  const upcomingReminders = reminders?.filter(r => 
-    r.status === 'pending' && isFuture(new Date(r.follow_up_date)) && !isToday(new Date(r.follow_up_date))
-  ) || [];
+  const unreadCount = notifications?.filter(n => !n.is_read).length || 0;
 
-  const totalPending = (reminders?.length || 0);
-
-  const getEntityName = (reminder: any) => {
-    if (reminder.stores) return reminder.stores.name;
-    if (reminder.wholesale_hubs) return reminder.wholesale_hubs.name;
-    if (reminder.influencers) return reminder.influencers.name;
-    return 'Unknown';
-  };
-
-  const handleReminderClick = (reminder: any) => {
-    if (reminder.store_id) {
-      navigate(`/stores/${reminder.store_id}`);
-    } else if (reminder.wholesaler_id) {
-      navigate(`/wholesale#${reminder.wholesaler_id}`);
-    } else if (reminder.influencer_id) {
-      navigate(`/influencers#${reminder.influencer_id}`);
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'alert':
+      case 'risk':
+        return <AlertTriangle className="h-4 w-4 text-destructive" />;
+      case 'communication':
+        return <MessageCircle className="h-4 w-4 text-primary" />;
+      case 'mission':
+        return <Target className="h-4 w-4 text-primary" />;
+      case 'training':
+        return <BookOpen className="h-4 w-4 text-primary" />;
+      case 'report':
+        return <TrendingUp className="h-4 w-4 text-primary" />;
+      default:
+        return <Bell className="h-4 w-4" />;
     }
   };
 
-  const ReminderSection = ({ title, items, variant }: { 
-    title: string; 
-    items: any[]; 
-    variant: 'destructive' | 'default' | 'secondary' 
-  }) => {
-    if (items.length === 0) return null;
+  const handleNotificationClick = (notification: any) => {
+    markAsRead.mutate(notification.id);
+    if (notification.action_url) {
+      navigate(notification.action_url);
+    } else if (notification.entity_type === 'store' && notification.entity_id) {
+      navigate(`/stores/${notification.entity_id}`);
+    } else if (notification.entity_type === 'wholesale_hub' && notification.entity_id) {
+      navigate(`/wholesale#${notification.entity_id}`);
+    } else if (notification.entity_type === 'influencer' && notification.entity_id) {
+      navigate(`/influencers#${notification.entity_id}`);
+    }
+  };
 
-    return (
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <h4 className="text-sm font-semibold">{title}</h4>
-          <Badge variant={variant}>{items.length}</Badge>
-        </div>
-        <div className="space-y-2">
-          {items.map(reminder => (
-            <button
-              key={reminder.id}
-              onClick={() => handleReminderClick(reminder)}
-              className="w-full text-left p-2 rounded-lg hover:bg-accent transition-colors"
-            >
-              <div className="font-medium text-sm">{getEntityName(reminder)}</div>
-              <div className="text-xs text-muted-foreground">
-                {format(new Date(reminder.follow_up_date), 'MMM d, yyyy')}
-              </div>
-              {reminder.notes && (
-                <div className="text-xs text-muted-foreground line-clamp-1 mt-1">
-                  {reminder.notes}
-                </div>
-              )}
-            </button>
-          ))}
+  const filterNotifications = (type?: string) => {
+    if (!notifications) return [];
+    if (!type || type === 'all') return notifications;
+    return notifications.filter(n => n.type === type);
+  };
+
+  const NotificationItem = ({ notification }: { notification: any }) => (
+    <button
+      onClick={() => handleNotificationClick(notification)}
+      className={`w-full text-left p-3 rounded-lg transition-colors ${
+        notification.is_read ? 'bg-muted/50' : 'bg-accent hover:bg-accent/80'
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5">{getNotificationIcon(notification.type)}</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span className={`text-sm font-medium ${notification.is_read ? 'text-muted-foreground' : ''}`}>
+              {notification.title}
+            </span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {format(new Date(notification.created_at), 'MMM d, h:mm a')}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground line-clamp-2">
+            {notification.message}
+          </p>
         </div>
       </div>
-    );
-  };
+    </button>
+  );
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
-          {totalPending > 0 && (
+          {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
-              {totalPending}
+              {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent className="w-96 p-0" align="end">
         <div className="p-4 border-b">
-          <h3 className="font-semibold">Follow-Up Reminders</h3>
+          <h3 className="font-semibold">Notifications</h3>
         </div>
-        <ScrollArea className="h-[400px]">
-          <div className="p-4 space-y-4">
-            {totalPending === 0 ? (
-              <div className="text-center text-sm text-muted-foreground py-8">
-                No pending reminders
-              </div>
-            ) : (
-              <>
-                <ReminderSection 
-                  title="Overdue" 
-                  items={overdueReminders} 
-                  variant="destructive" 
-                />
-                {overdueReminders.length > 0 && todayReminders.length > 0 && <Separator />}
-                <ReminderSection 
-                  title="Due Today" 
-                  items={todayReminders} 
-                  variant="default" 
-                />
-                {(overdueReminders.length > 0 || todayReminders.length > 0) && upcomingReminders.length > 0 && <Separator />}
-                <ReminderSection 
-                  title="Upcoming" 
-                  items={upcomingReminders} 
-                  variant="secondary" 
-                />
-              </>
-            )}
+        <Tabs defaultValue="all" className="w-full">
+          <div className="border-b px-4">
+            <TabsList className="w-full justify-start h-auto p-0 bg-transparent">
+              <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+              <TabsTrigger value="alert" className="text-xs">Alerts</TabsTrigger>
+              <TabsTrigger value="communication" className="text-xs">Comms</TabsTrigger>
+              <TabsTrigger value="mission" className="text-xs">Missions</TabsTrigger>
+              <TabsTrigger value="training" className="text-xs">Training</TabsTrigger>
+            </TabsList>
           </div>
-        </ScrollArea>
+          
+          <ScrollArea className="h-[500px]">
+            {['all', 'alert', 'communication', 'mission', 'training'].map(tab => (
+              <TabsContent key={tab} value={tab} className="m-0 p-4 space-y-2">
+                {filterNotifications(tab).length === 0 ? (
+                  <div className="text-center text-sm text-muted-foreground py-12">
+                    No {tab !== 'all' ? tab : ''} notifications
+                  </div>
+                ) : (
+                  filterNotifications(tab).map((notification) => (
+                    <NotificationItem key={notification.id} notification={notification} />
+                  ))
+                )}
+              </TabsContent>
+            ))}
+          </ScrollArea>
+        </Tabs>
       </PopoverContent>
     </Popover>
   );

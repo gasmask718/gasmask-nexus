@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      automation_action_queue: {
+        Row: {
+          action_type: string
+          ai_reasoning: string | null
+          assigned_to: string | null
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          executed_at: string | null
+          id: string
+          priority: number | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          suggested_action: Json | null
+        }
+        Insert: {
+          action_type: string
+          ai_reasoning?: string | null
+          assigned_to?: string | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          executed_at?: string | null
+          id?: string
+          priority?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          suggested_action?: Json | null
+        }
+        Update: {
+          action_type?: string
+          ai_reasoning?: string | null
+          assigned_to?: string | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          executed_at?: string | null
+          id?: string
+          priority?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          suggested_action?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_action_queue_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_action_queue_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_settings: {
         Row: {
           created_at: string
@@ -357,6 +420,53 @@ export type Database = {
           report_date?: string
         }
         Relationships: []
+      }
+      followup_recommendations: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          priority_score: number
+          reasoning: string | null
+          recommended_action: string
+          risk_level: string
+          store_id: string
+          suggested_date: string | null
+          suggested_message: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          priority_score: number
+          reasoning?: string | null
+          recommended_action: string
+          risk_level: string
+          store_id: string
+          suggested_date?: string | null
+          suggested_message?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          priority_score?: number
+          reasoning?: string | null
+          recommended_action?: string
+          risk_level?: string
+          store_id?: string
+          suggested_date?: string | null
+          suggested_message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followup_recommendations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       forecast_snapshots: {
         Row: {
@@ -1028,6 +1138,56 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           brand_id: string | null
@@ -1226,6 +1386,56 @@ export type Database = {
           weekly_time?: string | null
         }
         Relationships: []
+      }
+      risk_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          details: Json | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          is_resolved: boolean | null
+          message: string
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          message: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          message?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_alerts_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       route_insights: {
         Row: {
@@ -1515,6 +1725,197 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      training_badges: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          requirement_type: string | null
+          requirement_value: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          requirement_type?: string | null
+          requirement_value?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          requirement_type?: string | null
+          requirement_value?: number | null
+        }
+        Relationships: []
+      }
+      training_completions: {
+        Row: {
+          completed_at: string | null
+          id: string
+          module_id: string
+          score: number | null
+          time_spent_minutes: number | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          id?: string
+          module_id: string
+          score?: number | null
+          time_spent_minutes?: number | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          id?: string
+          module_id?: string
+          score?: number | null
+          time_spent_minutes?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_completions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "training_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_modules: {
+        Row: {
+          category: string
+          content: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_required: boolean | null
+          order_index: number | null
+          required_for_role: Database["public"]["Enums"]["app_role"] | null
+          title: string
+          updated_at: string | null
+          video_url: string | null
+          xp_reward: number | null
+        }
+        Insert: {
+          category: string
+          content?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_required?: boolean | null
+          order_index?: number | null
+          required_for_role?: Database["public"]["Enums"]["app_role"] | null
+          title: string
+          updated_at?: string | null
+          video_url?: string | null
+          xp_reward?: number | null
+        }
+        Update: {
+          category?: string
+          content?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_required?: boolean | null
+          order_index?: number | null
+          required_for_role?: Database["public"]["Enums"]["app_role"] | null
+          title?: string
+          updated_at?: string | null
+          video_url?: string | null
+          xp_reward?: number | null
+        }
+        Relationships: []
+      }
+      training_quizzes: {
+        Row: {
+          correct_answer: string
+          created_at: string | null
+          explanation: string | null
+          id: string
+          module_id: string
+          options: Json
+          question: string
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string | null
+          explanation?: string | null
+          id?: string
+          module_id: string
+          options: Json
+          question: string
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string | null
+          explanation?: string | null
+          id?: string
+          module_id?: string
+          options?: Json
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_quizzes_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "training_badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_badges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       visit_logs: {
         Row: {
