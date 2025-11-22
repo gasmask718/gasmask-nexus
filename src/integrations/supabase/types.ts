@@ -1331,6 +1331,234 @@ export type Database = {
           },
         ]
       }
+      inventory_hubs: {
+        Row: {
+          created_at: string
+          hub_id: string
+          id: string
+          last_restock_date: string | null
+          max_stock: number | null
+          product_id: string
+          quantity_available: number
+          quantity_reserved: number
+          reorder_point: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          hub_id: string
+          id?: string
+          last_restock_date?: string | null
+          max_stock?: number | null
+          product_id: string
+          quantity_available?: number
+          quantity_reserved?: number
+          reorder_point?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          hub_id?: string
+          id?: string
+          last_restock_date?: string | null
+          max_stock?: number | null
+          product_id?: string
+          quantity_available?: number
+          quantity_reserved?: number
+          reorder_point?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_hubs_hub_id_fkey"
+            columns: ["hub_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_hubs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_movements: {
+        Row: {
+          created_at: string
+          from_id: string | null
+          from_type: string | null
+          id: string
+          movement_type: string
+          notes: string | null
+          order_id: string | null
+          product_id: string
+          quantity: number
+          to_id: string | null
+          to_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          from_id?: string | null
+          from_type?: string | null
+          id?: string
+          movement_type: string
+          notes?: string | null
+          order_id?: string | null
+          product_id: string
+          quantity: number
+          to_id?: string | null
+          to_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          from_id?: string | null
+          from_type?: string | null
+          id?: string
+          movement_type?: string
+          notes?: string | null
+          order_id?: string | null
+          product_id?: string
+          quantity?: number
+          to_id?: string | null
+          to_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "store_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_stores: {
+        Row: {
+          consumption_rate_per_day: number | null
+          created_at: string
+          id: string
+          last_order_date: string | null
+          predicted_stockout_date: string | null
+          product_id: string
+          quantity_current: number
+          quantity_sold_last_30_days: number | null
+          reorder_point: number | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          consumption_rate_per_day?: number | null
+          created_at?: string
+          id?: string
+          last_order_date?: string | null
+          predicted_stockout_date?: string | null
+          product_id: string
+          quantity_current?: number
+          quantity_sold_last_30_days?: number | null
+          reorder_point?: number | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          consumption_rate_per_day?: number | null
+          created_at?: string
+          id?: string
+          last_order_date?: string | null
+          predicted_stockout_date?: string | null
+          product_id?: string
+          quantity_current?: number
+          quantity_sold_last_30_days?: number | null
+          reorder_point?: number | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_stores_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_stores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount_paid: number
+          created_at: string
+          due_date: string
+          id: string
+          invoice_number: string
+          notes: string | null
+          order_id: string | null
+          paid_at: string | null
+          payment_method: string | null
+          payment_status: string
+          store_id: string
+          total_amount: number
+        }
+        Insert: {
+          amount_paid?: number
+          created_at?: string
+          due_date: string
+          id?: string
+          invoice_number: string
+          notes?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          store_id: string
+          total_amount: number
+        }
+        Update: {
+          amount_paid?: number
+          created_at?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          notes?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          store_id?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "store_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       location_events: {
         Row: {
           created_at: string | null
@@ -2231,6 +2459,139 @@ export type Database = {
           },
         ]
       }
+      store_order_items: {
+        Row: {
+          created_at: string
+          discount_percent: number | null
+          id: string
+          order_id: string
+          product_id: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          discount_percent?: number | null
+          id?: string
+          order_id: string
+          product_id: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          discount_percent?: number | null
+          id?: string
+          order_id?: string
+          product_id?: string
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "store_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_orders: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          delivery_fee: number
+          driver_id: string | null
+          estimated_delivery: string | null
+          generated_by_ai: boolean | null
+          hub_id: string | null
+          id: string
+          notes: string | null
+          order_number: string
+          payment_method: string | null
+          payment_status: string
+          status: string
+          store_id: string
+          subtotal: number
+          tax: number
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          delivery_fee?: number
+          driver_id?: string | null
+          estimated_delivery?: string | null
+          generated_by_ai?: boolean | null
+          hub_id?: string | null
+          id?: string
+          notes?: string | null
+          order_number: string
+          payment_method?: string | null
+          payment_status?: string
+          status?: string
+          store_id: string
+          subtotal?: number
+          tax?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          delivery_fee?: number
+          driver_id?: string | null
+          estimated_delivery?: string | null
+          generated_by_ai?: boolean | null
+          hub_id?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: string
+          payment_method?: string | null
+          payment_status?: string
+          status?: string
+          store_id?: string
+          subtotal?: number
+          tax?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_orders_hub_id_fkey"
+            columns: ["hub_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_product_state: {
         Row: {
           average_sellthrough_days: number | null
@@ -2387,6 +2748,118 @@ export type Database = {
             foreignKeyName: "store_subscriptions_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          id: string
+          invoice_id: string | null
+          notes: string | null
+          order_id: string | null
+          store_id: string
+          transaction_type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          order_id?: string | null
+          store_id: string
+          transaction_type: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          order_id?: string | null
+          store_id?: string
+          transaction_type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "store_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_transactions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "store_wallet"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_wallet: {
+        Row: {
+          balance: number
+          created_at: string
+          credit_limit: number | null
+          id: string
+          payment_risk_score: number | null
+          store_id: string
+          total_paid: number
+          total_spent: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          credit_limit?: number | null
+          id?: string
+          payment_risk_score?: number | null
+          store_id: string
+          total_paid?: number
+          total_spent?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          credit_limit?: number | null
+          id?: string
+          payment_risk_score?: number | null
+          store_id?: string
+          total_paid?: number
+          total_spent?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_wallet_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },

@@ -52,6 +52,12 @@ import MyRoute from "./pages/MyRoute";
 import Leaderboard from "./pages/Leaderboard";
 import Payroll from "./pages/Payroll";
 import MetaAI from "./pages/MetaAI";
+import StoreOrder from "./pages/StoreOrder";
+import WholesaleFulfillment from "./pages/WholesaleFulfillment";
+import Billing from "./pages/Billing";
+import EconomicAnalytics from "./pages/EconomicAnalytics";
+import AmbassadorPayouts from "./pages/AmbassadorPayouts";
+import BikerPayouts from "./pages/BikerPayouts";
 
 const queryClient = new QueryClient();
 
@@ -482,6 +488,66 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <MetaAI />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stores/order"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <StoreOrder />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/wholesale/fulfillment"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <WholesaleFulfillment />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/billing"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Billing />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics/economics"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <EconomicAnalytics />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payouts/ambassadors"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AmbassadorPayouts />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payouts/bikers"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <BikerPayouts />
                   </Layout>
                 </ProtectedRoute>
               }
