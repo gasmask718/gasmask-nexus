@@ -51,6 +51,7 @@ import RouteOptimizer from "./pages/RouteOptimizer";
 import MyRoute from "./pages/MyRoute";
 import Leaderboard from "./pages/Leaderboard";
 import Payroll from "./pages/Payroll";
+import MetaAI from "./pages/MetaAI";
 
 const queryClient = new QueryClient();
 
@@ -472,6 +473,16 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <WorkerHome />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ai/meta"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <MetaAI />
+                  </Layout>
                 </ProtectedRoute>
               }
             />
