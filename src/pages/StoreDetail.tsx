@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import VisitLogModal from '@/components/VisitLogModal';
 import { InventoryPredictionCard } from '@/components/map/InventoryPredictionCard';
 import { CommunicationTimeline } from '@/components/CommunicationTimeline';
+import { CommunicationLogModal } from '@/components/CommunicationLogModal';
 import {
   MapPin, 
   Phone, 
@@ -87,6 +88,8 @@ const StoreDetail = () => {
   const [visits, setVisits] = useState<VisitLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [visitModalOpen, setVisitModalOpen] = useState(false);
+  const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
+  const [timelineRefresh, setTimelineRefresh] = useState(0);
   const [geocoding, setGeocoding] = useState(false);
 
   useEffect(() => {
@@ -300,6 +303,15 @@ const StoreDetail = () => {
         onSuccess={fetchInventoryAndVisits}
       />
 
+      <CommunicationLogModal
+        open={communicationModalOpen}
+        onOpenChange={setCommunicationModalOpen}
+        entityType="store"
+        entityId={id || ''}
+        entityName={store.name}
+        onSuccess={() => setTimelineRefresh(prev => prev + 1)}
+      />
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left Column - Main Info */}
         <div className="lg:col-span-2 space-y-6">
@@ -370,14 +382,23 @@ const StoreDetail = () => {
 
           {/* Communication Timeline */}
           <Card className="glass-card border-border/50">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
                 Communication Timeline
               </CardTitle>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setCommunicationModalOpen(true)}
+                className="border-border/50"
+              >
+                Log Communication
+              </Button>
             </CardHeader>
             <CardContent>
               <CommunicationTimeline 
+                key={timelineRefresh}
                 entityType="store" 
                 entityId={id || ''} 
               />
