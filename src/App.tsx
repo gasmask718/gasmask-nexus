@@ -28,6 +28,8 @@ import Territories from "./pages/Territories";
 import RevenueBrain from "./pages/RevenueBrain";
 import OpportunityRadar from "./pages/OpportunityRadar";
 import MissionsHQ from "./pages/MissionsHQ";
+import Communications from "./pages/Communications";
+import Templates from "./pages/Templates";
 import WorkerHome from "./pages/WorkerHome";
 import AutomationSettings from "./pages/AutomationSettings";
 
@@ -254,6 +256,26 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <AutomationSettings />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/communications"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Communications />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/templates"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Templates />
                   </Layout>
                 </ProtectedRoute>
               }
