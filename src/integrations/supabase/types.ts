@@ -139,6 +139,47 @@ export type Database = {
           },
         ]
       }
+      communication_templates: {
+        Row: {
+          category: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          message_template: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          message_template: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          message_template?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_missions: {
         Row: {
           created_at: string | null
@@ -1025,6 +1066,74 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      reminders: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string | null
+          follow_up_date: string
+          id: string
+          influencer_id: string | null
+          notes: string | null
+          status: string
+          store_id: string | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          follow_up_date: string
+          id?: string
+          influencer_id?: string | null
+          notes?: string | null
+          status?: string
+          store_id?: string | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          follow_up_date?: string
+          id?: string
+          influencer_id?: string | null
+          notes?: string | null
+          status?: string
+          store_id?: string | null
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminders_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminders_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminders_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       route_insights: {
         Row: {
