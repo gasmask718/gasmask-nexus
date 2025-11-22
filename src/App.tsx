@@ -48,6 +48,8 @@ import CommunicationAutomation from './pages/CommunicationAutomation';
 import CommunicationsAI from './pages/CommunicationsAI';
 
 import CommunicationInsights from "./pages/CommunicationInsights";
+import RouteOptimizer from "./pages/RouteOptimizer";
+import MyRoute from "./pages/MyRoute";
 
 const queryClient = new QueryClient();
 
@@ -97,6 +99,24 @@ const App = () => (
                   <Layout>
                     <RoutesPage />
                   </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/routes/optimizer"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RouteOptimizer />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/routes/my-route"
+              element={
+                <ProtectedRoute>
+                  <MyRoute />
                 </ProtectedRoute>
               }
             />

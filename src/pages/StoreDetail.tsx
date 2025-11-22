@@ -16,6 +16,7 @@ import { CommunicationStats } from "@/components/communication/CommunicationStat
 import { FollowUpAIRecommendation } from "@/components/store/FollowUpAIRecommendation";
 import { ReplenishmentAI } from "@/components/store/ReplenishmentAI";
 import { AIRelationshipHealth } from "@/components/communication/AIRelationshipHealth";
+import { RouteIntelligence } from "@/components/store/RouteIntelligence";
 import { Activity } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -425,6 +426,9 @@ const StoreDetail = () => {
 
           {/* AI Relationship Health */}
           <AIRelationshipHealth entityType="store" entityId={id || ''} />
+
+          {/* Route Intelligence */}
+          <RouteIntelligence storeId={id || ''} />
 
           {/* Replenishment AI */}
           <ReplenishmentAI storeId={id || ''} />

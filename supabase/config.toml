@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.communication-insights]
 verify_jwt = false
+
+[functions.route-ai]
+verify_jwt = false
