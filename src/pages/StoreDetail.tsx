@@ -14,6 +14,7 @@ import { CommunicationTimeline } from '@/components/CommunicationTimeline';
 import { CommunicationLogModal } from '@/components/CommunicationLogModal';
 import { CommunicationStats } from "@/components/communication/CommunicationStats";
 import { FollowUpAIRecommendation } from "@/components/store/FollowUpAIRecommendation";
+import { ReplenishmentAI } from "@/components/store/ReplenishmentAI";
 import { Activity } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -417,6 +418,13 @@ const StoreDetail = () => {
             </Card>
             
             <FollowUpAIRecommendation 
+              storeId={id || ''} 
+              storeName={store.name} 
+            />
+          </div>
+
+          {/* Replenishment AI */}
+          <ReplenishmentAI storeId={id || ''} />
               storeId={id || ''} 
               onSendMessage={(message) => {
                 setCommunicationModalOpen(true);
