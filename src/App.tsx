@@ -31,6 +31,9 @@ import OpportunityRadar from "./pages/OpportunityRadar";
 import MissionsHQ from "./pages/MissionsHQ";
 import Communications from './pages/Communications';
 import Templates from './pages/Templates';
+import Reminders from './pages/Reminders';
+import InfluencerDetail from './pages/InfluencerDetail';
+import WholesalerDetail from './pages/WholesalerDetail';
 import WorkerHome from './pages/WorkerHome';
 import AutomationSettings from './pages/AutomationSettings';
 import Training from './pages/Training';
@@ -293,6 +296,30 @@ const App = () => (
                   <Layout>
                     <Templates />
                   </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/communications/reminders"
+              element={
+                <ProtectedRoute>
+                  <Reminders />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/influencers/:id"
+              element={
+                <ProtectedRoute>
+                  <InfluencerDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/wholesale/:id"
+              element={
+                <ProtectedRoute>
+                  <WholesalerDetail />
                 </ProtectedRoute>
               }
             />
