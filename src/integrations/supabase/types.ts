@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      acquisitions_pipeline: {
+        Row: {
+          actual_assignment_fee: number | null
+          assigned_to: string | null
+          buyer_contact: string | null
+          buyer_name: string | null
+          closing_date: string | null
+          contract_signed_date: string | null
+          created_at: string | null
+          deal_notes: string | null
+          expected_assignment_fee: number | null
+          id: string
+          lead_id: string | null
+          offer_amount: number | null
+          offer_sent_date: string | null
+          status: Database["public"]["Enums"]["acquisition_status"] | null
+          timeline: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_assignment_fee?: number | null
+          assigned_to?: string | null
+          buyer_contact?: string | null
+          buyer_name?: string | null
+          closing_date?: string | null
+          contract_signed_date?: string | null
+          created_at?: string | null
+          deal_notes?: string | null
+          expected_assignment_fee?: number | null
+          id?: string
+          lead_id?: string | null
+          offer_amount?: number | null
+          offer_sent_date?: string | null
+          status?: Database["public"]["Enums"]["acquisition_status"] | null
+          timeline?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_assignment_fee?: number | null
+          assigned_to?: string | null
+          buyer_contact?: string | null
+          buyer_name?: string | null
+          closing_date?: string | null
+          contract_signed_date?: string | null
+          created_at?: string | null
+          deal_notes?: string | null
+          expected_assignment_fee?: number | null
+          id?: string
+          lead_id?: string | null
+          offer_amount?: number | null
+          offer_sent_date?: string | null
+          status?: Database["public"]["Enums"]["acquisition_status"] | null
+          timeline?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acquisitions_pipeline_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acquisitions_pipeline_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_communication_queue: {
         Row: {
           actioned_at: string | null
@@ -57,6 +129,62 @@ export type Database = {
             columns: ["actioned_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_comps: {
+        Row: {
+          arv: number | null
+          as_is_value: number | null
+          assignment_fee: number | null
+          calculated_at: string | null
+          comparable_properties: Json | null
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          market_trends: Json | null
+          offer_price: number | null
+          profit_margin: number | null
+          repair_cost: number | null
+          resale_price: number | null
+        }
+        Insert: {
+          arv?: number | null
+          as_is_value?: number | null
+          assignment_fee?: number | null
+          calculated_at?: string | null
+          comparable_properties?: Json | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          market_trends?: Json | null
+          offer_price?: number | null
+          profit_margin?: number | null
+          repair_cost?: number | null
+          resale_price?: number | null
+        }
+        Update: {
+          arv?: number | null
+          as_is_value?: number | null
+          assignment_fee?: number | null
+          calculated_at?: string | null
+          comparable_properties?: Json | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          market_trends?: Json | null
+          offer_price?: number | null
+          profit_margin?: number | null
+          repair_cost?: number | null
+          resale_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_comps_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_raw"
             referencedColumns: ["id"]
           },
         ]
@@ -159,6 +287,60 @@ export type Database = {
           snapshot_time?: string
           stores_health_avg?: number | null
           wholesalers_health_avg?: number | null
+        }
+        Relationships: []
+      }
+      airbnb_candidates: {
+        Row: {
+          address: string
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string
+          comparable_airbnbs: Json | null
+          created_at: string | null
+          daily_rate: number | null
+          id: string
+          investment_score: number | null
+          monthly_revenue: number | null
+          occupancy_rate: number | null
+          seasonality_data: Json | null
+          state: string
+          yearly_revenue: number | null
+          zip_code: string
+        }
+        Insert: {
+          address: string
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city: string
+          comparable_airbnbs?: Json | null
+          created_at?: string | null
+          daily_rate?: number | null
+          id?: string
+          investment_score?: number | null
+          monthly_revenue?: number | null
+          occupancy_rate?: number | null
+          seasonality_data?: Json | null
+          state: string
+          yearly_revenue?: number | null
+          zip_code: string
+        }
+        Update: {
+          address?: string
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string
+          comparable_airbnbs?: Json | null
+          created_at?: string | null
+          daily_rate?: number | null
+          id?: string
+          investment_score?: number | null
+          monthly_revenue?: number | null
+          occupancy_rate?: number | null
+          seasonality_data?: Json | null
+          state?: string
+          yearly_revenue?: number | null
+          zip_code?: string
         }
         Relationships: []
       }
@@ -575,6 +757,72 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      call_logs: {
+        Row: {
+          ai_notes: string | null
+          call_duration: number | null
+          call_transcript: string | null
+          called_at: string | null
+          caller_id: string | null
+          created_at: string | null
+          follow_up_date: string | null
+          follow_up_required: boolean | null
+          id: string
+          lead_id: string | null
+          outcome: string | null
+          phone_number: string
+          recording_url: string | null
+          sentiment_analysis: Json | null
+        }
+        Insert: {
+          ai_notes?: string | null
+          call_duration?: number | null
+          call_transcript?: string | null
+          called_at?: string | null
+          caller_id?: string | null
+          created_at?: string | null
+          follow_up_date?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          lead_id?: string | null
+          outcome?: string | null
+          phone_number: string
+          recording_url?: string | null
+          sentiment_analysis?: Json | null
+        }
+        Update: {
+          ai_notes?: string | null
+          call_duration?: number | null
+          call_transcript?: string | null
+          called_at?: string | null
+          caller_id?: string | null
+          created_at?: string | null
+          follow_up_date?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          lead_id?: string | null
+          outcome?: string | null
+          phone_number?: string
+          recording_url?: string | null
+          sentiment_analysis?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_logs_caller_id_fkey"
+            columns: ["caller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       communication_events: {
         Row: {
@@ -1323,6 +1571,74 @@ export type Database = {
           },
         ]
       }
+      deal_closings: {
+        Row: {
+          acquisition_id: string | null
+          assignment_fee: number
+          buyer_entity: string | null
+          buyer_name: string
+          closing_costs: number | null
+          closing_date: string
+          closing_documents: Json | null
+          commission_paid: number | null
+          created_at: string | null
+          id: string
+          net_profit: number | null
+          purchase_price: number
+          title_company: string | null
+          title_company_contact: string | null
+          updated_at: string | null
+          wire_received: boolean | null
+          wire_sent: boolean | null
+        }
+        Insert: {
+          acquisition_id?: string | null
+          assignment_fee: number
+          buyer_entity?: string | null
+          buyer_name: string
+          closing_costs?: number | null
+          closing_date: string
+          closing_documents?: Json | null
+          commission_paid?: number | null
+          created_at?: string | null
+          id?: string
+          net_profit?: number | null
+          purchase_price: number
+          title_company?: string | null
+          title_company_contact?: string | null
+          updated_at?: string | null
+          wire_received?: boolean | null
+          wire_sent?: boolean | null
+        }
+        Update: {
+          acquisition_id?: string | null
+          assignment_fee?: number
+          buyer_entity?: string | null
+          buyer_name?: string
+          closing_costs?: number | null
+          closing_date?: string
+          closing_documents?: Json | null
+          commission_paid?: number | null
+          created_at?: string | null
+          id?: string
+          net_profit?: number | null
+          purchase_price?: number
+          title_company?: string | null
+          title_company_contact?: string | null
+          updated_at?: string | null
+          wire_received?: boolean | null
+          wire_sent?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_closings_acquisition_id_fkey"
+            columns: ["acquisition_id"]
+            isOneToOne: false
+            referencedRelation: "acquisitions_pipeline"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dedupe_suggestions: {
         Row: {
           created_at: string
@@ -1716,6 +2032,63 @@ export type Database = {
           is_read?: boolean
           period?: string
           report_date?: string
+        }
+        Relationships: []
+      }
+      expansion_cities: {
+        Row: {
+          affordability_score: number | null
+          ai_analysis: Json | null
+          city: string
+          created_at: string | null
+          deployment_status: string | null
+          expansion_priority: number | null
+          id: string
+          job_growth: number | null
+          market_score: number | null
+          median_home_price: number | null
+          median_rent: number | null
+          migration_trend: string | null
+          population: number | null
+          rent_strength: number | null
+          state: string
+          updated_at: string | null
+        }
+        Insert: {
+          affordability_score?: number | null
+          ai_analysis?: Json | null
+          city: string
+          created_at?: string | null
+          deployment_status?: string | null
+          expansion_priority?: number | null
+          id?: string
+          job_growth?: number | null
+          market_score?: number | null
+          median_home_price?: number | null
+          median_rent?: number | null
+          migration_trend?: string | null
+          population?: number | null
+          rent_strength?: number | null
+          state: string
+          updated_at?: string | null
+        }
+        Update: {
+          affordability_score?: number | null
+          ai_analysis?: Json | null
+          city?: string
+          created_at?: string | null
+          deployment_status?: string | null
+          expansion_priority?: number | null
+          id?: string
+          job_growth?: number | null
+          market_score?: number | null
+          median_home_price?: number | null
+          median_rent?: number | null
+          migration_trend?: string | null
+          population?: number | null
+          rent_strength?: number | null
+          state?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -3129,6 +3502,129 @@ export type Database = {
           },
         ]
       }
+      investor_buy_boxes: {
+        Row: {
+          arv_criteria: Json | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string | null
+          deal_criteria: Json | null
+          id: string
+          investor_name: string
+          is_active: boolean | null
+          max_price: number | null
+          min_bathrooms: number | null
+          min_bedrooms: number | null
+          min_price: number | null
+          preferred_property_types: string[] | null
+          priority_level: number | null
+          subscription_tier: string | null
+          target_cities: string[] | null
+          target_states: string[] | null
+          target_zip_codes: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          arv_criteria?: Json | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          deal_criteria?: Json | null
+          id?: string
+          investor_name: string
+          is_active?: boolean | null
+          max_price?: number | null
+          min_bathrooms?: number | null
+          min_bedrooms?: number | null
+          min_price?: number | null
+          preferred_property_types?: string[] | null
+          priority_level?: number | null
+          subscription_tier?: string | null
+          target_cities?: string[] | null
+          target_states?: string[] | null
+          target_zip_codes?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          arv_criteria?: Json | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          deal_criteria?: Json | null
+          id?: string
+          investor_name?: string
+          is_active?: boolean | null
+          max_price?: number | null
+          min_bathrooms?: number | null
+          min_bedrooms?: number | null
+          min_price?: number | null
+          preferred_property_types?: string[] | null
+          priority_level?: number | null
+          subscription_tier?: string | null
+          target_cities?: string[] | null
+          target_states?: string[] | null
+          target_zip_codes?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      investor_orders: {
+        Row: {
+          created_at: string | null
+          id: string
+          interested: boolean | null
+          investor_id: string | null
+          lead_id: string | null
+          offer_amount: number | null
+          response_notes: string | null
+          sent_date: string | null
+          status: string | null
+          viewed: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          interested?: boolean | null
+          investor_id?: string | null
+          lead_id?: string | null
+          offer_amount?: number | null
+          response_notes?: string | null
+          sent_date?: string | null
+          status?: string | null
+          viewed?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          interested?: boolean | null
+          investor_id?: string | null
+          lead_id?: string | null
+          offer_amount?: number | null
+          response_notes?: string | null
+          sent_date?: string | null
+          status?: string | null
+          viewed?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_orders_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "investor_buy_boxes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investor_orders_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount_paid: number
@@ -3188,6 +3684,191 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      land_bank: {
+        Row: {
+          acres: number | null
+          address: string
+          appreciation_model: Json | null
+          city: string
+          county: string | null
+          created_at: string | null
+          development_potential: string | null
+          id: string
+          is_opportunity: boolean | null
+          long_term_value: number | null
+          price: number | null
+          price_per_acre: number | null
+          state: string
+          utilities_available: string[] | null
+          zip_code: string
+          zoning: string | null
+        }
+        Insert: {
+          acres?: number | null
+          address: string
+          appreciation_model?: Json | null
+          city: string
+          county?: string | null
+          created_at?: string | null
+          development_potential?: string | null
+          id?: string
+          is_opportunity?: boolean | null
+          long_term_value?: number | null
+          price?: number | null
+          price_per_acre?: number | null
+          state: string
+          utilities_available?: string[] | null
+          zip_code: string
+          zoning?: string | null
+        }
+        Update: {
+          acres?: number | null
+          address?: string
+          appreciation_model?: Json | null
+          city?: string
+          county?: string | null
+          created_at?: string | null
+          development_potential?: string | null
+          id?: string
+          is_opportunity?: boolean | null
+          long_term_value?: number | null
+          price?: number | null
+          price_per_acre?: number | null
+          state?: string
+          utilities_available?: string[] | null
+          zip_code?: string
+          zoning?: string | null
+        }
+        Relationships: []
+      }
+      lead_scores: {
+        Row: {
+          ai_reasoning: string | null
+          assignment_potential: number | null
+          created_at: string | null
+          hedge_fund_appeal: number | null
+          id: string
+          lead_id: string | null
+          motivation_score: number | null
+          offer_likelihood: number | null
+          overall_score: number | null
+          scored_at: string | null
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          assignment_potential?: number | null
+          created_at?: string | null
+          hedge_fund_appeal?: number | null
+          id?: string
+          lead_id?: string | null
+          motivation_score?: number | null
+          offer_likelihood?: number | null
+          overall_score?: number | null
+          scored_at?: string | null
+        }
+        Update: {
+          ai_reasoning?: string | null
+          assignment_potential?: number | null
+          created_at?: string | null
+          hedge_fund_appeal?: number | null
+          id?: string
+          lead_id?: string | null
+          motivation_score?: number | null
+          offer_likelihood?: number | null
+          overall_score?: number | null
+          scored_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_scores_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads_raw: {
+        Row: {
+          address: string
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string
+          county: string | null
+          created_at: string | null
+          distress_signals: Json | null
+          equity: number | null
+          estimated_value: number | null
+          id: string
+          last_sale_date: string | null
+          last_sale_price: number | null
+          lead_source: Database["public"]["Enums"]["lead_source"]
+          lot_size: number | null
+          mortgage_balance: number | null
+          owner_email: string | null
+          owner_name: string | null
+          owner_phone: string | null
+          property_type: Database["public"]["Enums"]["property_type"] | null
+          scraped_at: string | null
+          square_feet: number | null
+          state: string
+          year_built: number | null
+          zip_code: string
+        }
+        Insert: {
+          address: string
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city: string
+          county?: string | null
+          created_at?: string | null
+          distress_signals?: Json | null
+          equity?: number | null
+          estimated_value?: number | null
+          id?: string
+          last_sale_date?: string | null
+          last_sale_price?: number | null
+          lead_source: Database["public"]["Enums"]["lead_source"]
+          lot_size?: number | null
+          mortgage_balance?: number | null
+          owner_email?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          property_type?: Database["public"]["Enums"]["property_type"] | null
+          scraped_at?: string | null
+          square_feet?: number | null
+          state: string
+          year_built?: number | null
+          zip_code: string
+        }
+        Update: {
+          address?: string
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string
+          county?: string | null
+          created_at?: string | null
+          distress_signals?: Json | null
+          equity?: number | null
+          estimated_value?: number | null
+          id?: string
+          last_sale_date?: string | null
+          last_sale_price?: number | null
+          lead_source?: Database["public"]["Enums"]["lead_source"]
+          lot_size?: number | null
+          mortgage_balance?: number | null
+          owner_email?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          property_type?: Database["public"]["Enums"]["property_type"] | null
+          scraped_at?: string | null
+          square_feet?: number | null
+          state?: string
+          year_built?: number | null
+          zip_code?: string
+        }
+        Relationships: []
       }
       location_events: {
         Row: {
@@ -3502,6 +4183,136 @@ export type Database = {
           },
         ]
       }
+      offer_documents: {
+        Row: {
+          created_at: string | null
+          document_type: string
+          document_url: string | null
+          e_signature_data: Json | null
+          generated_by: string | null
+          id: string
+          lead_id: string | null
+          sent_date: string | null
+          signed: boolean | null
+          signed_date: string | null
+          terms: Json | null
+          viewed: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_type: string
+          document_url?: string | null
+          e_signature_data?: Json | null
+          generated_by?: string | null
+          id?: string
+          lead_id?: string | null
+          sent_date?: string | null
+          signed?: boolean | null
+          signed_date?: string | null
+          terms?: Json | null
+          viewed?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          document_type?: string
+          document_url?: string | null
+          e_signature_data?: Json | null
+          generated_by?: string | null
+          id?: string
+          lead_id?: string | null
+          sent_date?: string | null
+          signed?: boolean | null
+          signed_date?: string | null
+          terms?: Json | null
+          viewed?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_documents_generated_by_fkey"
+            columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_documents_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payouts: {
+        Row: {
+          assignment_fee: number
+          bonuses: number | null
+          closing_id: string | null
+          commission: number | null
+          created_at: string | null
+          deal_id: string | null
+          expenses: number | null
+          id: string
+          net_revenue: number | null
+          paid_to: string | null
+          payment_method: string | null
+          payment_status: string | null
+          payout_date: string | null
+        }
+        Insert: {
+          assignment_fee: number
+          bonuses?: number | null
+          closing_id?: string | null
+          commission?: number | null
+          created_at?: string | null
+          deal_id?: string | null
+          expenses?: number | null
+          id?: string
+          net_revenue?: number | null
+          paid_to?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          payout_date?: string | null
+        }
+        Update: {
+          assignment_fee?: number
+          bonuses?: number | null
+          closing_id?: string | null
+          commission?: number | null
+          created_at?: string | null
+          deal_id?: string | null
+          expenses?: number | null
+          id?: string
+          net_revenue?: number | null
+          paid_to?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          payout_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payouts_closing_id_fkey"
+            columns: ["closing_id"]
+            isOneToOne: false
+            referencedRelation: "deal_closings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "acquisitions_pipeline"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_paid_to_fkey"
+            columns: ["paid_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           brand_id: string | null
@@ -3599,6 +4410,44 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      real_estate_team: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          performance_metrics: Json | null
+          role: string
+          specialization: string | null
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          performance_metrics?: Json | null
+          role: string
+          specialization?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          performance_metrics?: Json | null
+          role?: string
+          specialization?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "real_estate_team_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       region_scorecards: {
         Row: {
@@ -4340,6 +5189,65 @@ export type Database = {
             columns: ["sales_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_profiles: {
+        Row: {
+          best_time_to_contact: string | null
+          created_at: string | null
+          demographics: Json | null
+          distress_level: number | null
+          email: string | null
+          id: string
+          lead_id: string | null
+          motivation_score: number | null
+          notes: string | null
+          owner_name: string
+          phone: string | null
+          preferred_contact_method: string | null
+          updated_at: string | null
+          willingness_to_sell: number | null
+        }
+        Insert: {
+          best_time_to_contact?: string | null
+          created_at?: string | null
+          demographics?: Json | null
+          distress_level?: number | null
+          email?: string | null
+          id?: string
+          lead_id?: string | null
+          motivation_score?: number | null
+          notes?: string | null
+          owner_name: string
+          phone?: string | null
+          preferred_contact_method?: string | null
+          updated_at?: string | null
+          willingness_to_sell?: number | null
+        }
+        Update: {
+          best_time_to_contact?: string | null
+          created_at?: string | null
+          demographics?: Json | null
+          distress_level?: number | null
+          email?: string | null
+          id?: string
+          lead_id?: string | null
+          motivation_score?: number | null
+          notes?: string | null
+          owner_name?: string
+          phone?: string | null
+          preferred_contact_method?: string | null
+          updated_at?: string | null
+          willingness_to_sell?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_profiles_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_raw"
             referencedColumns: ["id"]
           },
         ]
@@ -5586,6 +6494,60 @@ export type Database = {
           },
         ]
       }
+      warehouses_listings: {
+        Row: {
+          address: string
+          annual_rent: number | null
+          cap_rate: number | null
+          city: string
+          created_at: string | null
+          features: Json | null
+          id: string
+          investment_analysis: Json | null
+          is_opportunity: boolean | null
+          occupancy_rate: number | null
+          price: number | null
+          square_feet: number | null
+          state: string
+          zip_code: string
+          zoning: string | null
+        }
+        Insert: {
+          address: string
+          annual_rent?: number | null
+          cap_rate?: number | null
+          city: string
+          created_at?: string | null
+          features?: Json | null
+          id?: string
+          investment_analysis?: Json | null
+          is_opportunity?: boolean | null
+          occupancy_rate?: number | null
+          price?: number | null
+          square_feet?: number | null
+          state: string
+          zip_code: string
+          zoning?: string | null
+        }
+        Update: {
+          address?: string
+          annual_rent?: number | null
+          cap_rate?: number | null
+          city?: string
+          created_at?: string | null
+          features?: Json | null
+          id?: string
+          investment_analysis?: Json | null
+          is_opportunity?: boolean | null
+          occupancy_rate?: number | null
+          price?: number | null
+          square_feet?: number | null
+          state?: string
+          zip_code?: string
+          zoning?: string | null
+        }
+        Relationships: []
+      }
       wholesale_bids: {
         Row: {
           accepted_at: string | null
@@ -6035,6 +6997,15 @@ export type Database = {
       update_relationship_status: { Args: never; Returns: undefined }
     }
     Enums: {
+      acquisition_status:
+        | "new"
+        | "contacted"
+        | "negotiating"
+        | "offer_sent"
+        | "signed"
+        | "assigned"
+        | "closed"
+        | "dead"
       app_role:
         | "admin"
         | "csr"
@@ -6050,7 +7021,29 @@ export type Database = {
         | "influencer"
         | "customer"
       inventory_level: "empty" | "quarter" | "half" | "threeQuarters" | "full"
+      lead_source:
+        | "probate"
+        | "pre_foreclosure"
+        | "tax_delinquent"
+        | "code_violation"
+        | "mls"
+        | "expired_listing"
+        | "fsbo"
+        | "wholesale_network"
+        | "zillow"
+        | "redfin"
+        | "direct_mail"
+        | "cold_call"
       payment_method: "cash" | "zelle" | "cashapp" | "venmo" | "other"
+      property_type:
+        | "single_family"
+        | "multi_family"
+        | "condo"
+        | "townhouse"
+        | "land"
+        | "commercial"
+        | "warehouse"
+        | "mixed_use"
       responsiveness: "call" | "text" | "both" | "none"
       sticker_status: "none" | "doorOnly" | "inStoreOnly" | "doorAndInStore"
       store_status: "active" | "inactive" | "prospect" | "needsFollowUp"
@@ -6188,6 +7181,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      acquisition_status: [
+        "new",
+        "contacted",
+        "negotiating",
+        "offer_sent",
+        "signed",
+        "assigned",
+        "closed",
+        "dead",
+      ],
       app_role: [
         "admin",
         "csr",
@@ -6204,7 +7207,31 @@ export const Constants = {
         "customer",
       ],
       inventory_level: ["empty", "quarter", "half", "threeQuarters", "full"],
+      lead_source: [
+        "probate",
+        "pre_foreclosure",
+        "tax_delinquent",
+        "code_violation",
+        "mls",
+        "expired_listing",
+        "fsbo",
+        "wholesale_network",
+        "zillow",
+        "redfin",
+        "direct_mail",
+        "cold_call",
+      ],
       payment_method: ["cash", "zelle", "cashapp", "venmo", "other"],
+      property_type: [
+        "single_family",
+        "multi_family",
+        "condo",
+        "townhouse",
+        "land",
+        "commercial",
+        "warehouse",
+        "mixed_use",
+      ],
       responsiveness: ["call", "text", "both", "none"],
       sticker_status: ["none", "doorOnly", "inStoreOnly", "doorAndInStore"],
       store_status: ["active", "inactive", "prospect", "needsFollowUp"],
