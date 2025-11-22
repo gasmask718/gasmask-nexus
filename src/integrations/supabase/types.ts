@@ -2859,6 +2859,426 @@ export type Database = {
           },
         ]
       }
+      holdings_airbnb_units: {
+        Row: {
+          asset_id: string
+          cleaning_fee: number | null
+          created_at: string | null
+          estimated_monthly_revenue_aggressive: number | null
+          estimated_monthly_revenue_base: number | null
+          estimated_monthly_revenue_conservative: number | null
+          id: string
+          listing_name: string
+          management_fee_percent: number | null
+          nightly_rate_target_high: number
+          nightly_rate_target_low: number
+          nightly_rate_target_mid: number
+          occupancy_target_percent: number | null
+          platform: string
+          updated_at: string | null
+        }
+        Insert: {
+          asset_id: string
+          cleaning_fee?: number | null
+          created_at?: string | null
+          estimated_monthly_revenue_aggressive?: number | null
+          estimated_monthly_revenue_base?: number | null
+          estimated_monthly_revenue_conservative?: number | null
+          id?: string
+          listing_name: string
+          management_fee_percent?: number | null
+          nightly_rate_target_high: number
+          nightly_rate_target_low: number
+          nightly_rate_target_mid: number
+          occupancy_target_percent?: number | null
+          platform: string
+          updated_at?: string | null
+        }
+        Update: {
+          asset_id?: string
+          cleaning_fee?: number | null
+          created_at?: string | null
+          estimated_monthly_revenue_aggressive?: number | null
+          estimated_monthly_revenue_base?: number | null
+          estimated_monthly_revenue_conservative?: number | null
+          id?: string
+          listing_name?: string
+          management_fee_percent?: number | null
+          nightly_rate_target_high?: number
+          nightly_rate_target_low?: number
+          nightly_rate_target_mid?: number
+          occupancy_target_percent?: number | null
+          platform?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holdings_airbnb_units_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "holdings_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      holdings_assets: {
+        Row: {
+          acquisition_pipeline_id: string | null
+          address: string
+          asset_type: string
+          city: string
+          closing_costs: number
+          created_at: string | null
+          current_value: number
+          equity: number | null
+          hold_strategy: string
+          id: string
+          market: string | null
+          name: string
+          purchase_price: number
+          rehab_costs: number
+          state: string
+          status: string
+          total_basis: number | null
+          updated_at: string | null
+          zip_code: string
+        }
+        Insert: {
+          acquisition_pipeline_id?: string | null
+          address: string
+          asset_type: string
+          city: string
+          closing_costs?: number
+          created_at?: string | null
+          current_value?: number
+          equity?: number | null
+          hold_strategy?: string
+          id?: string
+          market?: string | null
+          name: string
+          purchase_price?: number
+          rehab_costs?: number
+          state: string
+          status?: string
+          total_basis?: number | null
+          updated_at?: string | null
+          zip_code: string
+        }
+        Update: {
+          acquisition_pipeline_id?: string | null
+          address?: string
+          asset_type?: string
+          city?: string
+          closing_costs?: number
+          created_at?: string | null
+          current_value?: number
+          equity?: number | null
+          hold_strategy?: string
+          id?: string
+          market?: string | null
+          name?: string
+          purchase_price?: number
+          rehab_costs?: number
+          state?: string
+          status?: string
+          total_basis?: number | null
+          updated_at?: string | null
+          zip_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holdings_assets_acquisition_pipeline_id_fkey"
+            columns: ["acquisition_pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "acquisitions_pipeline"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      holdings_expenses: {
+        Row: {
+          amount: number
+          asset_id: string
+          created_at: string | null
+          description: string | null
+          expense_date: string
+          expense_type: string
+          id: string
+          recurrence_rule: string | null
+          recurring: boolean | null
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          created_at?: string | null
+          description?: string | null
+          expense_date?: string
+          expense_type: string
+          id?: string
+          recurrence_rule?: string | null
+          recurring?: boolean | null
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          created_at?: string | null
+          description?: string | null
+          expense_date?: string
+          expense_type?: string
+          id?: string
+          recurrence_rule?: string | null
+          recurring?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holdings_expenses_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "holdings_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      holdings_kpis: {
+        Row: {
+          avg_cap_rate: number | null
+          avg_dscr: number | null
+          created_at: string | null
+          id: string
+          monthly_expenses: number | null
+          monthly_income: number | null
+          net_cashflow: number | null
+          period: string
+          portfolio_value: number | null
+          total_debt: number | null
+          total_equity: number | null
+          total_units_owned: number | null
+        }
+        Insert: {
+          avg_cap_rate?: number | null
+          avg_dscr?: number | null
+          created_at?: string | null
+          id?: string
+          monthly_expenses?: number | null
+          monthly_income?: number | null
+          net_cashflow?: number | null
+          period: string
+          portfolio_value?: number | null
+          total_debt?: number | null
+          total_equity?: number | null
+          total_units_owned?: number | null
+        }
+        Update: {
+          avg_cap_rate?: number | null
+          avg_dscr?: number | null
+          created_at?: string | null
+          id?: string
+          monthly_expenses?: number | null
+          monthly_income?: number | null
+          net_cashflow?: number | null
+          period?: string
+          portfolio_value?: number | null
+          total_debt?: number | null
+          total_equity?: number | null
+          total_units_owned?: number | null
+        }
+        Relationships: []
+      }
+      holdings_loans: {
+        Row: {
+          amortization_years: number | null
+          asset_id: string
+          created_at: string | null
+          current_balance: number
+          dscr_covenant: number | null
+          escrow_taxes_insurance: number | null
+          id: string
+          interest_rate: number
+          lender_name: string
+          loan_type: string
+          maturity_date: string
+          monthly_payment_principal_interest: number
+          next_rate_change_date: string | null
+          original_balance: number
+          status: string
+          total_monthly_payment: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          amortization_years?: number | null
+          asset_id: string
+          created_at?: string | null
+          current_balance: number
+          dscr_covenant?: number | null
+          escrow_taxes_insurance?: number | null
+          id?: string
+          interest_rate: number
+          lender_name: string
+          loan_type: string
+          maturity_date: string
+          monthly_payment_principal_interest: number
+          next_rate_change_date?: string | null
+          original_balance: number
+          status?: string
+          total_monthly_payment?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          amortization_years?: number | null
+          asset_id?: string
+          created_at?: string | null
+          current_balance?: number
+          dscr_covenant?: number | null
+          escrow_taxes_insurance?: number | null
+          id?: string
+          interest_rate?: number
+          lender_name?: string
+          loan_type?: string
+          maturity_date?: string
+          monthly_payment_principal_interest?: number
+          next_rate_change_date?: string | null
+          original_balance?: number
+          status?: string
+          total_monthly_payment?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holdings_loans_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "holdings_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      holdings_payments: {
+        Row: {
+          amount: number
+          asset_id: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          received_date: string
+          reference: string | null
+          source_type: string
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          received_date?: string
+          reference?: string | null
+          source_type: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          received_date?: string
+          reference?: string | null
+          source_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holdings_payments_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "holdings_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      holdings_rent_roll: {
+        Row: {
+          asset_id: string
+          created_at: string | null
+          deposits_held: number | null
+          id: string
+          lease_end_date: string | null
+          lease_start_date: string | null
+          monthly_rent: number
+          payment_day: number | null
+          status: string
+          tenant_name: string | null
+          tenant_type: string
+          unit_identifier: string
+          updated_at: string | null
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string | null
+          deposits_held?: number | null
+          id?: string
+          lease_end_date?: string | null
+          lease_start_date?: string | null
+          monthly_rent?: number
+          payment_day?: number | null
+          status?: string
+          tenant_name?: string | null
+          tenant_type: string
+          unit_identifier: string
+          updated_at?: string | null
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string | null
+          deposits_held?: number | null
+          id?: string
+          lease_end_date?: string | null
+          lease_start_date?: string | null
+          monthly_rent?: number
+          payment_day?: number | null
+          status?: string
+          tenant_name?: string | null
+          tenant_type?: string
+          unit_identifier?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holdings_rent_roll_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "holdings_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      holdings_targets: {
+        Row: {
+          created_at: string | null
+          equity_target: number
+          id: string
+          monthly_cashflow_target: number
+          portfolio_value_target: number
+          timeline_months: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          equity_target: number
+          id?: string
+          monthly_cashflow_target: number
+          portfolio_value_target: number
+          timeline_months: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          equity_target?: number
+          id?: string
+          monthly_cashflow_target?: number
+          portfolio_value_target?: number
+          timeline_months?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       hr_applicants: {
         Row: {
           ai_screening_score: number | null
