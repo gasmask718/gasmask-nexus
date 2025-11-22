@@ -164,20 +164,28 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/pod/settings', icon: Settings, label: 'Settings', roles: ['admin', 'pod_worker'] },
   ];
 
+  // Trim and normalize role
+  const normalizedRole = userRole?.trim().toLowerCase();
+  
+  console.log('User Role:', normalizedRole);
+  
   const filteredNavItems = navigationItems.filter(
-    item => !item.roles || !userRole || item.roles.includes(userRole)
+    item => !item.roles || item.roles.includes(normalizedRole as string)
   );
 
   const filteredRealEstateNavItems = realEstateNavItems.filter(
-    item => !item.roles || !userRole || item.roles.includes(userRole)
+    item => !item.roles || item.roles.includes(normalizedRole as string)
   );
 
   const filteredPodNavItems = podNavigationItems.filter(
-    item => !item.roles || !userRole || item.roles.includes(userRole)
+    item => !item.roles || item.roles.includes(normalizedRole as string)
   );
 
   const showRealEstateSection = filteredRealEstateNavItems.length > 0;
   const showPodSection = filteredPodNavItems.length > 0;
+  
+  console.log('Filtered Real Estate Items:', filteredRealEstateNavItems);
+  console.log('Filtered POD Items:', filteredPodNavItems);
 
   const NavItems = () => (
     <>
