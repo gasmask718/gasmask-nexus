@@ -3,13 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Instagram, MessageSquare, Mail, TrendingUp, MapPin } from "lucide-react";
+import { Instagram, MessageSquare, Mail, TrendingUp, MapPin, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Influencers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [selectedInfluencer, setSelectedInfluencer] = useState<any>(null);
 
   const { data: influencers, isLoading } = useQuery({
@@ -128,6 +130,18 @@ The Team`;
                 <Badge variant={influencer.status === 'active' ? 'default' : 'secondary'}>
                   {influencer.status}
                 </Badge>
+              </div>
+
+              <div className="flex gap-2 mb-2">
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="flex-1"
+                  onClick={() => navigate(`/influencers/${influencer.id}`)}
+                >
+                  <Eye className="w-4 h-4 mr-1" />
+                  View Details
+                </Button>
               </div>
 
               <div className="flex gap-2">

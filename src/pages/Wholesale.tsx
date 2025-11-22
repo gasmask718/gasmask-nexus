@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, MapPin, Phone, Mail, Star, Building2 } from "lucide-react";
+import { Plus, MapPin, Phone, Mail, Star, Building2, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface WholesaleHub {
   id: string;
@@ -26,6 +27,7 @@ interface WholesaleHub {
 }
 
 export default function Wholesale() {
+  const navigate = useNavigate();
   const [hubs, setHubs] = useState<WholesaleHub[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -287,12 +289,22 @@ export default function Wholesale() {
                 </p>
               )}
 
-              <Badge 
-                variant={hub.status === 'active' ? 'default' : 'outline'} 
-                className="mt-3"
-              >
-                {hub.status}
-              </Badge>
+              <div className="flex items-center gap-2 mt-3">
+                <Badge 
+                  variant={hub.status === 'active' ? 'default' : 'outline'}
+                >
+                  {hub.status}
+                </Badge>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="ml-auto"
+                  onClick={() => navigate(`/wholesale/${hub.id}`)}
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  View Details
+                </Button>
+              </div>
             </Card>
           ))}
         </div>
