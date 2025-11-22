@@ -71,6 +71,10 @@ import BikerPayouts from "./pages/BikerPayouts";
 import CRM from "./pages/CRM";
 import CRMContacts from "./pages/CRMContacts";
 import CRMContactDetail from "./pages/CRMContactDetail";
+import CRMCustomers from "./pages/CRMCustomers";
+import CRMCustomerNew from "./pages/CRMCustomerNew";
+import CRMCustomerDetail from "./pages/CRMCustomerDetail";
+import CRMCustomerImport from "./pages/CRMCustomerImport";
 import CallCenter from "./pages/CallCenter";
 import TextCenter from "./pages/TextCenter";
 import EmailCenter from "./pages/EmailCenter";
@@ -675,6 +679,46 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <CRM />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/crm/customers"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CRMCustomers />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/crm/customers/new"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CRMCustomerNew />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/crm/customers/import"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CRMCustomerImport />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/crm/customers/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CRMCustomerDetail />
                   </Layout>
                 </ProtectedRoute>
               }

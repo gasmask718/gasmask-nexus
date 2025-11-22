@@ -95,6 +95,7 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/missions', icon: Trophy, label: 'Missions HQ', roles: ['admin', 'csr'] },
     { to: '/communications', icon: MessageCircle, label: 'Communications', roles: ['admin', 'csr'] },
     { to: '/crm', icon: Users, label: 'CRM', roles: ['admin', 'csr'] },
+    { to: '/crm/customers', icon: Users, label: 'Customer CRM', roles: ['admin', 'csr'] },
     { to: '/communication/calls', icon: Phone, label: 'Call Center', roles: ['admin', 'csr'] },
     { to: '/communication/texts', icon: MessageCircle, label: 'Text Center', roles: ['admin', 'csr'] },
     { to: '/communication/email', icon: Mail, label: 'Email Center', roles: ['admin', 'csr'] },
