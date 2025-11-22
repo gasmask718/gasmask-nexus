@@ -1684,6 +1684,70 @@ export type Database = {
           },
         ]
       }
+      route_checkins: {
+        Row: {
+          checkin_time: string
+          completed: boolean | null
+          created_at: string
+          driver_id: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          notes: string | null
+          photos: string[] | null
+          route_id: string | null
+          store_id: string | null
+        }
+        Insert: {
+          checkin_time?: string
+          completed?: boolean | null
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          photos?: string[] | null
+          route_id?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          checkin_time?: string
+          completed?: boolean | null
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          photos?: string[] | null
+          route_id?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_checkins_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_checkins_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes_generated"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_checkins_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       route_insights: {
         Row: {
           average_arrival_delay_minutes: number | null
@@ -1823,6 +1887,53 @@ export type Database = {
           {
             foreignKeyName: "routes_assigned_to_fkey"
             columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routes_generated: {
+        Row: {
+          ai_confidence_score: number | null
+          created_at: string
+          date: string
+          distance_km: number | null
+          driver_id: string | null
+          estimated_minutes: number | null
+          id: string
+          status: string | null
+          stops: Json
+          updated_at: string
+        }
+        Insert: {
+          ai_confidence_score?: number | null
+          created_at?: string
+          date: string
+          distance_km?: number | null
+          driver_id?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          status?: string | null
+          stops?: Json
+          updated_at?: string
+        }
+        Update: {
+          ai_confidence_score?: number | null
+          created_at?: string
+          date?: string
+          distance_km?: number | null
+          driver_id?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          status?: string | null
+          stops?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routes_generated_driver_id_fkey"
+            columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

@@ -21,7 +21,8 @@ import {
   Trophy,
   Settings,
   FileText,
-  BarChart3
+  BarChart3,
+  Navigation
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -76,6 +77,8 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/stores', icon: Store, label: 'Stores', roles: ['admin', 'csr', 'driver', 'biker'] },
     { to: '/batch-import', icon: Upload, label: 'Batch Import', roles: ['admin', 'csr'] },
     { to: '/routes', icon: Map, label: 'Routes', roles: ['admin', 'driver', 'biker'] },
+    { to: '/routes/optimizer', icon: Navigation, label: 'Route Optimizer', roles: ['admin', 'csr'] },
+    { to: '/routes/my-route', icon: MapPin, label: 'My Active Route', roles: ['driver', 'biker'] },
     { to: '/map', icon: MapPin, label: 'Map View', roles: ['admin', 'csr', 'driver', 'biker'] },
     { to: '/wholesale', icon: Building2, label: 'Wholesale', roles: ['admin', 'csr'] },
     { to: '/influencers', icon: MessageCircle, label: 'Influencers', roles: ['admin', 'csr'] },
