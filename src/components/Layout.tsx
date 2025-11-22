@@ -25,7 +25,9 @@ import {
   Navigation,
   Gift,
   DollarSign,
-  Home
+  Home,
+  Phone,
+  Mail
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -91,6 +93,10 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/missions/today', icon: Target, label: 'Missions', roles: ['admin', 'csr', 'driver', 'biker'] },
     { to: '/missions', icon: Trophy, label: 'Missions HQ', roles: ['admin', 'csr'] },
     { to: '/communications', icon: MessageCircle, label: 'Communications', roles: ['admin', 'csr'] },
+    { to: '/crm', icon: Users, label: 'CRM', roles: ['admin', 'csr'] },
+    { to: '/communication/calls', icon: Phone, label: 'Call Center', roles: ['admin', 'csr'] },
+    { to: '/communication/texts', icon: MessageCircle, label: 'Text Center', roles: ['admin', 'csr'] },
+    { to: '/communication/email', icon: Mail, label: 'Email Center', roles: ['admin', 'csr'] },
     { to: '/communications/insights', icon: BarChart3, label: 'Insights Dashboard', roles: ['admin', 'csr'] },
     { to: '/communications/ai-insights', icon: Brain, label: 'AI Insights', roles: ['admin', 'csr'] },
     { to: '/communications/reminders', icon: MessageCircle, label: 'Reminders', roles: ['admin', 'csr'] },

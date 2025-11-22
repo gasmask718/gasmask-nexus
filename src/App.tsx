@@ -67,6 +67,13 @@ import Billing from "./pages/Billing";
 import EconomicAnalytics from "./pages/EconomicAnalytics";
 import AmbassadorPayouts from "./pages/AmbassadorPayouts";
 import BikerPayouts from "./pages/BikerPayouts";
+import CRM from "./pages/CRM";
+import CRMContacts from "./pages/CRMContacts";
+import CRMContactDetail from "./pages/CRMContactDetail";
+import CallCenter from "./pages/CallCenter";
+import TextCenter from "./pages/TextCenter";
+import EmailCenter from "./pages/EmailCenter";
+import CRMFollowUps from "./pages/CRMFollowUps";
 
 const queryClient = new QueryClient();
 
@@ -647,6 +654,76 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <StorePerformance />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/crm"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CRM />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/crm/contacts"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CRMContacts />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/crm/contacts/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CRMContactDetail />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/crm/follow-ups"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CRMFollowUps />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/communication/calls"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CallCenter />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/communication/texts"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <TextCenter />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/communication/email"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <EmailCenter />
                   </Layout>
                 </ProtectedRoute>
               }
