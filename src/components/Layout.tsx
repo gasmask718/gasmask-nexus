@@ -78,6 +78,7 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/', icon: LayoutDashboard, label: 'Command Center', roles: ['admin', 'csr'] },
     { to: '/driver', icon: MapPin, label: 'My Route', roles: ['driver', 'biker'] },
     { to: '/stores', icon: Store, label: 'Stores', roles: ['admin', 'csr', 'driver', 'biker'] },
+    { to: '/stores/performance', icon: TrendingUp, label: 'Store Performance', roles: ['admin'] },
     { to: '/batch-import', icon: Upload, label: 'Batch Import', roles: ['admin', 'csr'] },
     { to: '/routes', icon: Map, label: 'Routes', roles: ['admin', 'driver', 'biker'] },
     { to: '/routes/optimizer', icon: Navigation, label: 'Route Optimizer', roles: ['admin', 'csr'] },

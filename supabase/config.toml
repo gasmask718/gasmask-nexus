@@ -59,3 +59,6 @@ verify_jwt = false
 
 [functions.ai-sales-scorer]
 verify_jwt = false
+
+[functions.store-performance-engine]
+verify_jwt = false

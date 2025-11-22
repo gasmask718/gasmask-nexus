@@ -60,6 +60,7 @@ import SalesProspects from "./pages/SalesProspects";
 import SalesProspectNew from "./pages/SalesProspectNew";
 import SalesProspectDetail from "./pages/SalesProspectDetail";
 import SalesReport from "./pages/SalesReport";
+import StorePerformance from "./pages/StorePerformance";
 import StoreOrder from "./pages/StoreOrder";
 import WholesaleFulfillment from "./pages/WholesaleFulfillment";
 import Billing from "./pages/Billing";
@@ -636,6 +637,16 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <SalesReport />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stores/performance"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <StorePerformance />
                   </Layout>
                 </ProtectedRoute>
               }
