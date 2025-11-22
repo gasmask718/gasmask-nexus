@@ -101,6 +101,12 @@ import HRDocuments from "./pages/HRDocuments";
 import HROnboarding from "./pages/HROnboarding";
 import HRPayroll from "./pages/HRPayroll";
 import MyHR from "./pages/MyHR";
+import RealEstate from "./pages/RealEstate";
+import RealEstateLeads from "./pages/RealEstateLeads";
+import RealEstatePipeline from "./pages/RealEstatePipeline";
+import RealEstateInvestors from "./pages/RealEstateInvestors";
+import RealEstateClosings from "./pages/RealEstateClosings";
+import RealEstateExpansion from "./pages/RealEstateExpansion";
 
 const queryClient = new QueryClient();
 
@@ -961,6 +967,66 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <MyHR />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/real-estate"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RealEstate />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/real-estate/leads"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RealEstateLeads />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/real-estate/pipeline"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RealEstatePipeline />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/real-estate/investors"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RealEstateInvestors />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/real-estate/closings"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RealEstateClosings />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/real-estate/expansion"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RealEstateExpansion />
+                  </Layout>
                 </ProtectedRoute>
               }
             />
