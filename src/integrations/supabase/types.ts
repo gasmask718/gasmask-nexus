@@ -1911,6 +1911,479 @@ export type Database = {
           },
         ]
       }
+      hr_applicants: {
+        Row: {
+          ai_screening_score: number | null
+          ai_screening_summary: string | null
+          approved_at: string | null
+          approved_by: string | null
+          city: string | null
+          created_at: string | null
+          documents: Json | null
+          email: string | null
+          id: string
+          interviewed_at: string | null
+          interviewed_by: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          position: string
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          screened_at: string | null
+          state: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_screening_score?: number | null
+          ai_screening_summary?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          city?: string | null
+          created_at?: string | null
+          documents?: Json | null
+          email?: string | null
+          id?: string
+          interviewed_at?: string | null
+          interviewed_by?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          position: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          screened_at?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_screening_score?: number | null
+          ai_screening_summary?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          city?: string | null
+          created_at?: string | null
+          documents?: Json | null
+          email?: string | null
+          id?: string
+          interviewed_at?: string | null
+          interviewed_by?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          position?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          screened_at?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_applicants_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_applicants_interviewed_by_fkey"
+            columns: ["interviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_applicants_rejected_by_fkey"
+            columns: ["rejected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_contract_instances: {
+        Row: {
+          contract_id: string | null
+          created_at: string | null
+          generated_content: string
+          id: string
+          pdf_url: string | null
+          signature_data: Json | null
+          signed: boolean | null
+          signed_at: string | null
+          staff_id: string | null
+        }
+        Insert: {
+          contract_id?: string | null
+          created_at?: string | null
+          generated_content: string
+          id?: string
+          pdf_url?: string | null
+          signature_data?: Json | null
+          signed?: boolean | null
+          signed_at?: string | null
+          staff_id?: string | null
+        }
+        Update: {
+          contract_id?: string | null
+          created_at?: string | null
+          generated_content?: string
+          id?: string
+          pdf_url?: string | null
+          signature_data?: Json | null
+          signed?: boolean | null
+          signed_at?: string | null
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_contract_instances_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "hr_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_contract_instances_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "hr_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_contracts: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          template_content: string
+          template_name: string
+          updated_at: string | null
+          variables: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          template_content: string
+          template_name: string
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          template_content?: string
+          template_name?: string
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Relationships: []
+      }
+      hr_documents: {
+        Row: {
+          applicant_id: string | null
+          created_at: string | null
+          document_name: string
+          document_type: string
+          document_url: string
+          id: string
+          notes: string | null
+          staff_id: string | null
+          updated_at: string | null
+          uploaded_by: string | null
+          verified: boolean | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          applicant_id?: string | null
+          created_at?: string | null
+          document_name: string
+          document_type: string
+          document_url: string
+          id?: string
+          notes?: string | null
+          staff_id?: string | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          applicant_id?: string | null
+          created_at?: string | null
+          document_name?: string
+          document_type?: string
+          document_url?: string
+          id?: string
+          notes?: string | null
+          staff_id?: string | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_documents_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "hr_applicants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_documents_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "hr_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_documents_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_notifications: {
+        Row: {
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          message: string
+          notification_type: string
+          read: boolean | null
+          read_at: string | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          message: string
+          notification_type: string
+          read?: boolean | null
+          read_at?: string | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          message?: string
+          notification_type?: string
+          read?: boolean | null
+          read_at?: string | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_staff: {
+        Row: {
+          applicant_id: string | null
+          city: string | null
+          created_at: string | null
+          hire_date: string | null
+          id: string
+          last_active_date: string | null
+          notes: string | null
+          performance_score: number | null
+          position: string
+          state: string | null
+          status: string | null
+          termination_date: string | null
+          updated_at: string | null
+          user_id: string | null
+          xp_total: number | null
+        }
+        Insert: {
+          applicant_id?: string | null
+          city?: string | null
+          created_at?: string | null
+          hire_date?: string | null
+          id?: string
+          last_active_date?: string | null
+          notes?: string | null
+          performance_score?: number | null
+          position: string
+          state?: string | null
+          status?: string | null
+          termination_date?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          xp_total?: number | null
+        }
+        Update: {
+          applicant_id?: string | null
+          city?: string | null
+          created_at?: string | null
+          hire_date?: string | null
+          id?: string
+          last_active_date?: string | null
+          notes?: string | null
+          performance_score?: number | null
+          position?: string
+          state?: string | null
+          status?: string | null
+          termination_date?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          xp_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_staff_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "hr_applicants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_staff_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_training_modules: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          order_index: number | null
+          passing_score: number | null
+          quiz_questions: Json | null
+          required_for_positions: string[] | null
+          title: string
+          updated_at: string | null
+          video_url: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          order_index?: number | null
+          passing_score?: number | null
+          quiz_questions?: Json | null
+          required_for_positions?: string[] | null
+          title: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          order_index?: number | null
+          passing_score?: number | null
+          quiz_questions?: Json | null
+          required_for_positions?: string[] | null
+          title?: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      hr_training_progress: {
+        Row: {
+          attempts: number | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          module_id: string | null
+          quiz_answers: Json | null
+          quiz_score: number | null
+          staff_id: string | null
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          module_id?: string | null
+          quiz_answers?: Json | null
+          quiz_score?: number | null
+          staff_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          module_id?: string | null
+          quiz_answers?: Json | null
+          quiz_score?: number | null
+          staff_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_training_progress_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "hr_training_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_training_progress_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "hr_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       influencer_campaign_participants: {
         Row: {
           agreed_rate: number | null
