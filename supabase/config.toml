@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.missions-engine]
 verify_jwt = false
+
+[functions.executive-reports]
+verify_jwt = false
