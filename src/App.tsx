@@ -45,6 +45,7 @@ import WalletPage from './pages/Wallet';
 import Subscriptions from './pages/Subscriptions';
 import DeliveryCapacity from './pages/DeliveryCapacity';
 import CommunicationAutomation from './pages/CommunicationAutomation';
+import CommunicationsAI from './pages/CommunicationsAI';
 
 const queryClient = new QueryClient();
 
@@ -400,6 +401,16 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <CommunicationAutomation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/communications/ai-insights"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CommunicationsAI />
+                  </Layout>
                 </ProtectedRoute>
               }
             />

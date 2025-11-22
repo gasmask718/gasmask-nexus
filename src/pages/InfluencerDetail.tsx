@@ -11,6 +11,7 @@ import { CommunicationTimeline } from "@/components/CommunicationTimeline";
 import { CommunicationStats } from "@/components/communication/CommunicationStats";
 import { CommunicationLogModal } from "@/components/CommunicationLogModal";
 import { FollowUpInsights } from "@/components/communication/FollowUpInsights";
+import { AIRelationshipHealth } from "@/components/communication/AIRelationshipHealth";
 import { useState } from "react";
 
 export default function InfluencerDetail() {
@@ -135,8 +136,9 @@ export default function InfluencerDetail() {
           </TabsList>
 
           <TabsContent value="communication" className="space-y-6">
-            <CommunicationStats entityType="influencer" entityId={id!} />
-            <FollowUpInsights entityType="influencer" entityId={id!} />
+              <CommunicationStats entityType="influencer" entityId={id!} />
+              <AIRelationshipHealth entityType="influencer" entityId={id!} />
+              <FollowUpInsights entityType="influencer" entityId={id!} />
             <CommunicationTimeline entityType="influencer" entityId={id!} />
           </TabsContent>
 
