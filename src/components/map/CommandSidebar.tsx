@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { AlertsPanel, Alert } from './AlertsPanel';
 import { DemoRoute } from './demoRoutes';
+import { RouteOptimizerPanel } from './RouteOptimizerPanel';
 
 interface Store {
   id: string;
@@ -38,6 +39,7 @@ interface CommandSidebarProps {
   onRouteClick: (route: DemoRoute) => void;
   onAlertClick: (alert: Alert) => void;
   onClose: () => void;
+  onRoutesGenerated?: () => void;
 }
 
 export const CommandSidebar = ({
@@ -49,7 +51,8 @@ export const CommandSidebar = ({
   onDriverClick,
   onRouteClick,
   onAlertClick,
-  onClose
+  onClose,
+  onRoutesGenerated
 }: CommandSidebarProps) => {
   const [activeTab, setActiveTab] = useState('stores');
 
@@ -178,30 +181,37 @@ export const CommandSidebar = ({
 
         <TabsContent value="routes" className="flex-1 m-0">
           <ScrollArea className="h-full">
-            <div className="p-4 space-y-2">
-              {routes.map((route) => (
-                <Card
-                  key={route.id}
-                  className="p-3 cursor-pointer transition-all hover:bg-secondary/50"
-                  onClick={() => onRouteClick(route)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={cn("w-3 h-3 rounded-full mt-1.5", getRouteStatusColor(route.status))} />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-sm">{route.driverName}</h4>
-                      <p className="text-xs text-muted-foreground">{route.territory}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {route.stops.length} stops
-                        </Badge>
-                        <Badge variant="outline" className="text-xs capitalize">
-                          {route.status.replace('-', ' ')}
-                        </Badge>
+            <div className="p-4 space-y-3">
+              {/* Route Optimizer Panel */}
+              <RouteOptimizerPanel onRoutesGenerated={onRoutesGenerated || (() => {})} />
+              
+              {/* Existing Routes List */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-muted-foreground px-1">Active Routes</h3>
+                {routes.map((route) => (
+                  <Card
+                    key={route.id}
+                    className="p-3 cursor-pointer transition-all hover:bg-secondary/50"
+                    onClick={() => onRouteClick(route)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={cn("w-3 h-3 rounded-full mt-1.5", getRouteStatusColor(route.status))} />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-sm">{route.driverName}</h4>
+                        <p className="text-xs text-muted-foreground">{route.territory}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {route.stops.length} stops
+                          </Badge>
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {route.status.replace('-', ' ')}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                ))}
+              </div>
             </div>
           </ScrollArea>
         </TabsContent>

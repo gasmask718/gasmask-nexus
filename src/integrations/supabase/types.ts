@@ -38,6 +38,54 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_sessions: {
+        Row: {
+          ended_at: string | null
+          id: string
+          is_active: boolean | null
+          route_id: string | null
+          started_at: string | null
+          total_distance_km: number | null
+          total_stops_completed: number | null
+          user_id: string | null
+        }
+        Insert: {
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          route_id?: string | null
+          started_at?: string | null
+          total_distance_km?: number | null
+          total_stops_completed?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          route_id?: string | null
+          started_at?: string | null
+          total_distance_km?: number | null
+          total_stops_completed?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_sessions_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers_live_location: {
         Row: {
           driver_id: string
@@ -65,6 +113,108 @@ export type Database = {
             foreignKeyName: "drivers_live_location_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          id: string
+          is_resolved: boolean | null
+          message: string | null
+          predicted_date: string | null
+          product_id: string | null
+          resolved_at: string | null
+          store_id: string | null
+          urgency_score: number
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          message?: string | null
+          predicted_date?: string | null
+          product_id?: string | null
+          resolved_at?: string | null
+          store_id?: string | null
+          urgency_score: number
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          message?: string | null
+          predicted_date?: string | null
+          product_id?: string | null
+          resolved_at?: string | null
+          store_id?: string | null
+          urgency_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_alerts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      location_events: {
+        Row: {
+          created_at: string | null
+          distance_from_store_meters: number | null
+          event_type: string
+          id: string
+          lat: number
+          lng: number
+          store_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          distance_from_store_meters?: number | null
+          event_type: string
+          id?: string
+          lat: number
+          lng: number
+          store_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          distance_from_store_meters?: number | null
+          event_type?: string
+          id?: string
+          lat?: number
+          lng?: number
+          store_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "location_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -209,7 +359,12 @@ export type Database = {
           assigned_to: string | null
           created_at: string | null
           date: string
+          estimated_distance_km: number | null
+          estimated_duration_minutes: number | null
+          estimated_profit: number | null
           id: string
+          is_optimized: boolean | null
+          optimization_score: number | null
           status: string | null
           territory: string | null
           type: string
@@ -218,7 +373,12 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string | null
           date: string
+          estimated_distance_km?: number | null
+          estimated_duration_minutes?: number | null
+          estimated_profit?: number | null
           id?: string
+          is_optimized?: boolean | null
+          optimization_score?: number | null
           status?: string | null
           territory?: string | null
           type: string
@@ -227,7 +387,12 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string | null
           date?: string
+          estimated_distance_km?: number | null
+          estimated_duration_minutes?: number | null
+          estimated_profit?: number | null
           id?: string
+          is_optimized?: boolean | null
+          optimization_score?: number | null
           status?: string | null
           territory?: string | null
           type?: string
@@ -251,11 +416,15 @@ export type Database = {
           last_inventory_level:
             | Database["public"]["Enums"]["inventory_level"]
             | null
+          last_velocity_calculation: string | null
           next_estimated_reorder_date: string | null
           notes: string | null
+          predicted_stockout_date: string | null
           product_id: string | null
           store_id: string | null
           updated_at: string | null
+          urgency_score: number | null
+          velocity_boxes_per_day: number | null
         }
         Insert: {
           average_sellthrough_days?: number | null
@@ -265,11 +434,15 @@ export type Database = {
           last_inventory_level?:
             | Database["public"]["Enums"]["inventory_level"]
             | null
+          last_velocity_calculation?: string | null
           next_estimated_reorder_date?: string | null
           notes?: string | null
+          predicted_stockout_date?: string | null
           product_id?: string | null
           store_id?: string | null
           updated_at?: string | null
+          urgency_score?: number | null
+          velocity_boxes_per_day?: number | null
         }
         Update: {
           average_sellthrough_days?: number | null
@@ -279,11 +452,15 @@ export type Database = {
           last_inventory_level?:
             | Database["public"]["Enums"]["inventory_level"]
             | null
+          last_velocity_calculation?: string | null
           next_estimated_reorder_date?: string | null
           notes?: string | null
+          predicted_stockout_date?: string | null
           product_id?: string | null
           store_id?: string | null
           updated_at?: string | null
+          urgency_score?: number | null
+          velocity_boxes_per_day?: number | null
         }
         Relationships: [
           {
