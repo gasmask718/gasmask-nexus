@@ -879,6 +879,231 @@ export type Database = {
           },
         ]
       }
+      ceo_actions: {
+        Row: {
+          action_description: string
+          action_type: string
+          assigned_to: string | null
+          automated: boolean | null
+          created_at: string | null
+          due_date: string | null
+          executed_at: string | null
+          id: string
+          priority: string | null
+          result: Json | null
+          status: string | null
+          target_entity_id: string | null
+          target_entity_type: string | null
+        }
+        Insert: {
+          action_description: string
+          action_type: string
+          assigned_to?: string | null
+          automated?: boolean | null
+          created_at?: string | null
+          due_date?: string | null
+          executed_at?: string | null
+          id?: string
+          priority?: string | null
+          result?: Json | null
+          status?: string | null
+          target_entity_id?: string | null
+          target_entity_type?: string | null
+        }
+        Update: {
+          action_description?: string
+          action_type?: string
+          assigned_to?: string | null
+          automated?: boolean | null
+          created_at?: string | null
+          due_date?: string | null
+          executed_at?: string | null
+          id?: string
+          priority?: string | null
+          result?: Json | null
+          status?: string | null
+          target_entity_id?: string | null
+          target_entity_type?: string | null
+        }
+        Relationships: []
+      }
+      ceo_decisions: {
+        Row: {
+          actual_impact: Json | null
+          confidence_score: number | null
+          created_at: string | null
+          decision: string
+          decision_type: string
+          entity_id: string | null
+          entity_type: string
+          expected_impact: Json | null
+          id: string
+          implemented_at: string | null
+          reasoning: string | null
+          status: string | null
+        }
+        Insert: {
+          actual_impact?: Json | null
+          confidence_score?: number | null
+          created_at?: string | null
+          decision: string
+          decision_type: string
+          entity_id?: string | null
+          entity_type: string
+          expected_impact?: Json | null
+          id?: string
+          implemented_at?: string | null
+          reasoning?: string | null
+          status?: string | null
+        }
+        Update: {
+          actual_impact?: Json | null
+          confidence_score?: number | null
+          created_at?: string | null
+          decision?: string
+          decision_type?: string
+          entity_id?: string | null
+          entity_type?: string
+          expected_impact?: Json | null
+          id?: string
+          implemented_at?: string | null
+          reasoning?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      ceo_forecasts: {
+        Row: {
+          accuracy_score: number | null
+          actual_results: Json | null
+          created_at: string | null
+          forecast_date: string
+          forecast_period: string
+          forecast_type: string
+          id: string
+          market_conditions: Json | null
+          metrics: Json
+          opportunities: Json | null
+          predicted_assignment_fees: number | null
+          predicted_deals_closed: number | null
+          predicted_revenue: number | null
+          risk_factors: Json | null
+        }
+        Insert: {
+          accuracy_score?: number | null
+          actual_results?: Json | null
+          created_at?: string | null
+          forecast_date: string
+          forecast_period: string
+          forecast_type: string
+          id?: string
+          market_conditions?: Json | null
+          metrics?: Json
+          opportunities?: Json | null
+          predicted_assignment_fees?: number | null
+          predicted_deals_closed?: number | null
+          predicted_revenue?: number | null
+          risk_factors?: Json | null
+        }
+        Update: {
+          accuracy_score?: number | null
+          actual_results?: Json | null
+          created_at?: string | null
+          forecast_date?: string
+          forecast_period?: string
+          forecast_type?: string
+          id?: string
+          market_conditions?: Json | null
+          metrics?: Json
+          opportunities?: Json | null
+          predicted_assignment_fees?: number | null
+          predicted_deals_closed?: number | null
+          predicted_revenue?: number | null
+          risk_factors?: Json | null
+        }
+        Relationships: []
+      }
+      ceo_learning_logs: {
+        Row: {
+          applied_at: string | null
+          created_at: string | null
+          data_source: string
+          id: string
+          insights: Json | null
+          learning_type: string
+          performance_improvement: number | null
+          strategy_adjustments: Json | null
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string | null
+          data_source: string
+          id?: string
+          insights?: Json | null
+          learning_type: string
+          performance_improvement?: number | null
+          strategy_adjustments?: Json | null
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string | null
+          data_source?: string
+          id?: string
+          insights?: Json | null
+          learning_type?: string
+          performance_improvement?: number | null
+          strategy_adjustments?: Json | null
+        }
+        Relationships: []
+      }
+      ceo_reports: {
+        Row: {
+          ai_confidence_score: number | null
+          bottlenecks: Json | null
+          cashflow_forecast: Json | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          kpi_summary: Json | null
+          pipeline_status: Json | null
+          priority_plan: Json | null
+          recommendations: string | null
+          report_date: string
+          report_type: string
+          team_performance: Json | null
+        }
+        Insert: {
+          ai_confidence_score?: number | null
+          bottlenecks?: Json | null
+          cashflow_forecast?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          kpi_summary?: Json | null
+          pipeline_status?: Json | null
+          priority_plan?: Json | null
+          recommendations?: string | null
+          report_date?: string
+          report_type?: string
+          team_performance?: Json | null
+        }
+        Update: {
+          ai_confidence_score?: number | null
+          bottlenecks?: Json | null
+          cashflow_forecast?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          kpi_summary?: Json | null
+          pipeline_status?: Json | null
+          priority_plan?: Json | null
+          recommendations?: string | null
+          report_date?: string
+          report_type?: string
+          team_performance?: Json | null
+        }
+        Relationships: []
+      }
       closing_partners: {
         Row: {
           address: string | null

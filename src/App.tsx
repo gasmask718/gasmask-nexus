@@ -121,6 +121,7 @@ import DealSheetsGenerator from "./pages/DealSheetsGenerator";
 import InvestorBlastSystem from "./pages/InvestorBlastSystem";
 import OfferAnalyzer from "./pages/OfferAnalyzer";
 import AssignmentFeeOptimizer from "./pages/AssignmentFeeOptimizer";
+import AICEOControlRoom from "./pages/AICEOControlRoom";
 
 const queryClient = new QueryClient();
 
@@ -1194,6 +1195,18 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <AssignmentFeeOptimizer />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* AI CEO Control Room */}
+            <Route
+              path="/ai-ceo/control-room"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AICEOControlRoom />
                   </Layout>
                 </ProtectedRoute>
               }
