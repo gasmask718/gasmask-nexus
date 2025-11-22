@@ -7346,6 +7346,341 @@ export type Database = {
           },
         ]
       }
+      va_attempts: {
+        Row: {
+          answers: Json | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          lesson_id: string | null
+          passed: boolean | null
+          score: number | null
+          time_spent_minutes: number | null
+          va_id: string | null
+        }
+        Insert: {
+          answers?: Json | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          lesson_id?: string | null
+          passed?: boolean | null
+          score?: number | null
+          time_spent_minutes?: number | null
+          va_id?: string | null
+        }
+        Update: {
+          answers?: Json | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          lesson_id?: string | null
+          passed?: boolean | null
+          score?: number | null
+          time_spent_minutes?: number | null
+          va_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_attempts_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "va_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "va_attempts_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "vas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_lessons: {
+        Row: {
+          category: string
+          content: string | null
+          created_at: string | null
+          difficulty: number | null
+          estimated_minutes: number | null
+          id: string
+          is_required: boolean | null
+          order_index: number | null
+          quiz_questions: Json | null
+          title: string
+          updated_at: string | null
+          video_url: string | null
+          xp_reward: number | null
+        }
+        Insert: {
+          category: string
+          content?: string | null
+          created_at?: string | null
+          difficulty?: number | null
+          estimated_minutes?: number | null
+          id?: string
+          is_required?: boolean | null
+          order_index?: number | null
+          quiz_questions?: Json | null
+          title: string
+          updated_at?: string | null
+          video_url?: string | null
+          xp_reward?: number | null
+        }
+        Update: {
+          category?: string
+          content?: string | null
+          created_at?: string | null
+          difficulty?: number | null
+          estimated_minutes?: number | null
+          id?: string
+          is_required?: boolean | null
+          order_index?: number | null
+          quiz_questions?: Json | null
+          title?: string
+          updated_at?: string | null
+          video_url?: string | null
+          xp_reward?: number | null
+        }
+        Relationships: []
+      }
+      va_performance_metrics: {
+        Row: {
+          ai_evaluation_score: number | null
+          appointments_set: number | null
+          call_attempts: number | null
+          contacts_made: number | null
+          contracts_signed: number | null
+          conversations: number | null
+          created_at: string | null
+          data_entries: number | null
+          date: string | null
+          id: string
+          va_id: string | null
+        }
+        Insert: {
+          ai_evaluation_score?: number | null
+          appointments_set?: number | null
+          call_attempts?: number | null
+          contacts_made?: number | null
+          contracts_signed?: number | null
+          conversations?: number | null
+          created_at?: string | null
+          data_entries?: number | null
+          date?: string | null
+          id?: string
+          va_id?: string | null
+        }
+        Update: {
+          ai_evaluation_score?: number | null
+          appointments_set?: number | null
+          call_attempts?: number | null
+          contacts_made?: number | null
+          contracts_signed?: number | null
+          conversations?: number | null
+          created_at?: string | null
+          data_entries?: number | null
+          date?: string | null
+          id?: string
+          va_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_performance_metrics_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "vas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_scores: {
+        Row: {
+          created_at: string | null
+          id: string
+          metric_type: string
+          metric_value: number | null
+          notes: string | null
+          period_end: string | null
+          period_start: string | null
+          va_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metric_type: string
+          metric_value?: number | null
+          notes?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          va_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metric_type?: string
+          metric_value?: number | null
+          notes?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          va_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_scores_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "vas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_skills: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_evaluated: string | null
+          proficiency_level: number | null
+          skill_type: string
+          va_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_evaluated?: string | null
+          proficiency_level?: number | null
+          skill_type: string
+          va_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_evaluated?: string | null
+          proficiency_level?: number | null
+          skill_type?: string
+          va_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_skills_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "vas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_tasks: {
+        Row: {
+          ai_instructions: Json | null
+          assigned_at: string | null
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          priority: number | null
+          result: Json | null
+          status: string | null
+          task_type: string
+          updated_at: string | null
+          va_id: string | null
+        }
+        Insert: {
+          ai_instructions?: Json | null
+          assigned_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          priority?: number | null
+          result?: Json | null
+          status?: string | null
+          task_type: string
+          updated_at?: string | null
+          va_id?: string | null
+        }
+        Update: {
+          ai_instructions?: Json | null
+          assigned_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          priority?: number | null
+          result?: Json | null
+          status?: string | null
+          task_type?: string
+          updated_at?: string | null
+          va_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_tasks_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "vas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vas: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          hired_date: string | null
+          id: string
+          name: string
+          phone: string | null
+          skill_score: number | null
+          status: string | null
+          success_rate: number | null
+          tier: number | null
+          total_tasks_completed: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          hired_date?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          skill_score?: number | null
+          status?: string | null
+          success_rate?: number | null
+          tier?: number | null
+          total_tasks_completed?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          hired_date?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          skill_score?: number | null
+          status?: string | null
+          success_rate?: number | null
+          tier?: number | null
+          total_tasks_completed?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       visit_logs: {
         Row: {
           cash_collected: number | null

@@ -111,6 +111,15 @@ verify_jwt = false
 [functions.scale-engine]
 verify_jwt = false
 
+[functions.va-trainer-ai]
+verify_jwt = false
+
+[functions.va-evaluator-ai]
+verify_jwt = false
+
+[functions.va-task-router-ai]
+verify_jwt = false
+
 [functions.loan-prequal-ai]
 verify_jwt = false
 
