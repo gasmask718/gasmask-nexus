@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import VisitLogModal from '@/components/VisitLogModal';
 import { InventoryPredictionCard } from '@/components/map/InventoryPredictionCard';
 import { CommunicationTimeline } from '@/components/CommunicationTimeline';
+import { CommunicationTimelineCRM } from '@/components/crm/CommunicationTimelineCRM';
 import { CommunicationLogModal } from '@/components/CommunicationLogModal';
 import { CommunicationStats } from "@/components/communication/CommunicationStats";
 import { FollowUpAIRecommendation } from "@/components/store/FollowUpAIRecommendation";
@@ -523,11 +524,7 @@ const StoreDetail = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <CommunicationTimeline 
-                key={timelineRefresh}
-                entityType="store" 
-                entityId={id || ''} 
-              />
+              <CommunicationTimelineCRM storeId={id || ''} />
             </CardContent>
           </Card>
 

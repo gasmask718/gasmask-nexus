@@ -511,6 +511,103 @@ export type Database = {
           },
         ]
       }
+      communication_logs: {
+        Row: {
+          channel: string
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          direction: string
+          driver_id: string | null
+          follow_up_date: string | null
+          follow_up_required: boolean | null
+          full_message: string | null
+          id: string
+          influencer_id: string | null
+          outcome: string | null
+          store_id: string | null
+          summary: string
+          wholesaler_id: string | null
+        }
+        Insert: {
+          channel: string
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction: string
+          driver_id?: string | null
+          follow_up_date?: string | null
+          follow_up_required?: boolean | null
+          full_message?: string | null
+          id?: string
+          influencer_id?: string | null
+          outcome?: string | null
+          store_id?: string | null
+          summary: string
+          wholesaler_id?: string | null
+        }
+        Update: {
+          channel?: string
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          driver_id?: string | null
+          follow_up_date?: string | null
+          follow_up_required?: boolean | null
+          full_message?: string | null
+          id?: string
+          influencer_id?: string | null
+          outcome?: string | null
+          store_id?: string | null
+          summary?: string
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_logs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_templates: {
         Row: {
           category: string
@@ -551,6 +648,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "communication_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contacts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          last_contact_date: string | null
+          name: string
+          notes: string | null
+          organization: string | null
+          phone: string | null
+          relationship_status: string
+          tags: string[] | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          last_contact_date?: string | null
+          name: string
+          notes?: string | null
+          organization?: string | null
+          phone?: string | null
+          relationship_status?: string
+          tags?: string[] | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          last_contact_date?: string | null
+          name?: string
+          notes?: string | null
+          organization?: string | null
+          phone?: string | null
+          relationship_status?: string
+          tags?: string[] | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contacts_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -4350,7 +4503,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_relationship_status: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role:

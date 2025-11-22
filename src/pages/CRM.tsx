@@ -1,0 +1,278 @@
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Users, Phone, Mail, MessageSquare, AlertTriangle, 
+  TrendingUp, Calendar, Plus, Search 
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Input } from '@/components/ui/input';
+
+const CRM = () => {
+  const navigate = useNavigate();
+
+  const { data: contacts } = useQuery({
+    queryKey: ['crm-contacts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_contacts')
+        .select('*')
+        .order('last_contact_date', { ascending: false, nullsFirst: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: recentLogs } = useQuery({
+    queryKey: ['recent-communication-logs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('communication_logs')
+        .select(`
+          *,
+          contact:crm_contacts(name),
+          store:stores(name),
+          created_by_profile:profiles!communication_logs_created_by_fkey(name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: followUps } = useQuery({
+    queryKey: ['follow-ups-pending'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('communication_logs')
+        .select('*, contact:crm_contacts(name), store:stores(name)')
+        .eq('follow_up_required', true)
+        .gte('follow_up_date', new Date().toISOString())
+        .order('follow_up_date', { ascending: true })
+        .limit(5);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const totalContacts = contacts?.length || 0;
+  const activeContacts = contacts?.filter(c => c.relationship_status === 'active').length || 0;
+  const atRiskContacts = contacts?.filter(c => ['cold', 'lost'].includes(c.relationship_status)).length || 0;
+  const contactsByType = contacts?.reduce((acc, c) => {
+    acc[c.type] = (acc[c.type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>) || {};
+
+  const getChannelIcon = (channel: string) => {
+    switch (channel) {
+      case 'call': return <Phone className="h-4 w-4" />;
+      case 'sms': return <MessageSquare className="h-4 w-4" />;
+      case 'email': return <Mail className="h-4 w-4" />;
+      default: return <MessageSquare className="h-4 w-4" />;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, any> = {
+      active: 'default',
+      warm: 'secondary',
+      cold: 'outline',
+      lost: 'destructive',
+    };
+    return <Badge variant={variants[status] || 'outline'}>{status}</Badge>;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">CRM Command Center</h1>
+          <p className="text-muted-foreground mt-1">
+            Unified communication and relationship management
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/crm/contacts')}>
+            <Users className="mr-2 h-4 w-4" />
+            All Contacts
+          </Button>
+          <Button onClick={() => navigate('/crm/contacts/new')}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Contact
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Contacts</p>
+              <p className="text-2xl font-bold">{totalContacts}</p>
+            </div>
+            <Users className="h-8 w-8 text-primary" />
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Active</p>
+              <p className="text-2xl font-bold text-green-500">{activeContacts}</p>
+            </div>
+            <TrendingUp className="h-8 w-8 text-green-500" />
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">At Risk</p>
+              <p className="text-2xl font-bold text-destructive">{atRiskContacts}</p>
+            </div>
+            <AlertTriangle className="h-8 w-8 text-destructive" />
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Follow-ups Due</p>
+              <p className="text-2xl font-bold">{followUps?.length || 0}</p>
+            </div>
+            <Calendar className="h-8 w-8 text-primary" />
+          </div>
+        </Card>
+      </div>
+
+      {/* Contacts by Type */}
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold mb-4">Contacts by Type</h2>
+        <div className="grid gap-3 md:grid-cols-6">
+          {Object.entries(contactsByType).map(([type, count]) => (
+            <div key={type} className="p-3 rounded-lg border bg-secondary/20">
+              <p className="text-sm text-muted-foreground capitalize">{type}</p>
+              <p className="text-xl font-bold">{count}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Recent Activity */}
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Recent Activity</h2>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/communication/calls')}>
+              View All
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {recentLogs?.map((log) => (
+              <div
+                key={log.id}
+                className="flex items-start gap-3 p-3 rounded-lg border hover:bg-secondary/50 transition-colors"
+              >
+                <div className="p-2 rounded-lg bg-primary/10">
+                  {getChannelIcon(log.channel)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">
+                    {log.contact?.name || log.store?.name || 'Unknown'}
+                  </p>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {log.summary}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {new Date(log.created_at).toLocaleString()} · {log.created_by_profile?.name}
+                  </p>
+                </div>
+                <Badge variant="outline" className="capitalize">
+                  {log.channel}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Upcoming Follow-ups */}
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Upcoming Follow-ups</h2>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/crm/follow-ups')}>
+              View All
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {followUps?.map((log) => (
+              <div
+                key={log.id}
+                className="flex items-start gap-3 p-3 rounded-lg border hover:bg-secondary/50 transition-colors"
+              >
+                <Calendar className="h-5 w-5 text-primary mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">
+                    {log.contact?.name || log.store?.name || 'Unknown'}
+                  </p>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {log.summary}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Due: {new Date(log.follow_up_date!).toLocaleDateString()}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline">
+                  Complete
+                </Button>
+              </div>
+            ))}
+            {(!followUps || followUps.length === 0) && (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No upcoming follow-ups
+              </p>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* At-Risk Relationships */}
+      {atRiskContacts > 0 && (
+        <Card className="p-6 border-destructive/20">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <h2 className="text-lg font-semibold">At-Risk Relationships</h2>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {contacts
+              ?.filter(c => ['cold', 'lost'].includes(c.relationship_status))
+              .slice(0, 6)
+              .map((contact) => (
+                <div
+                  key={contact.id}
+                  className="flex items-center justify-between p-3 rounded-lg border border-destructive/20 hover:bg-destructive/5 cursor-pointer transition-colors"
+                  onClick={() => navigate(`/crm/contacts/${contact.id}`)}
+                >
+                  <div>
+                    <p className="font-medium">{contact.name}</p>
+                    <p className="text-sm text-muted-foreground capitalize">
+                      {contact.type} · Last contact:{' '}
+                      {contact.last_contact_date
+                        ? new Date(contact.last_contact_date).toLocaleDateString()
+                        : 'Never'}
+                    </p>
+                  </div>
+                  {getStatusBadge(contact.relationship_status)}
+                </div>
+              ))}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default CRM;
