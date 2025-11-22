@@ -1,5 +1,17 @@
 project_id = "qalaaroashbggynpvqct"
 
+[functions.ai-clean-data]
+verify_jwt = false
+
+[functions.ai-map-columns]
+verify_jwt = false
+
+[functions.ai-dedupe-review]
+verify_jwt = false
+
+[functions.import-cleaned-data]
+verify_jwt = false
+
 [functions.predict-inventory]
 verify_jwt = false
 

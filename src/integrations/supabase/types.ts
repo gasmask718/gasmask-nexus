@@ -1160,6 +1160,138 @@ export type Database = {
         }
         Relationships: []
       }
+      data_import_jobs: {
+        Row: {
+          ai_cleaning_summary: Json | null
+          completed_at: string | null
+          conflict_rules_applied: Json | null
+          created_at: string
+          file_id: string | null
+          id: string
+          rows_failed: number | null
+          rows_inserted: number | null
+          rows_total: number | null
+          status: string
+        }
+        Insert: {
+          ai_cleaning_summary?: Json | null
+          completed_at?: string | null
+          conflict_rules_applied?: Json | null
+          created_at?: string
+          file_id?: string | null
+          id?: string
+          rows_failed?: number | null
+          rows_inserted?: number | null
+          rows_total?: number | null
+          status?: string
+        }
+        Update: {
+          ai_cleaning_summary?: Json | null
+          completed_at?: string | null
+          conflict_rules_applied?: Json | null
+          created_at?: string
+          file_id?: string | null
+          id?: string
+          rows_failed?: number | null
+          rows_inserted?: number | null
+          rows_total?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_import_jobs_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "uploaded_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      data_import_mapping: {
+        Row: {
+          destination_field: string
+          file_id: string | null
+          id: string
+          required: boolean | null
+          source_column: string
+          type: string
+          validation_rules: Json | null
+        }
+        Insert: {
+          destination_field: string
+          file_id?: string | null
+          id?: string
+          required?: boolean | null
+          source_column: string
+          type: string
+          validation_rules?: Json | null
+        }
+        Update: {
+          destination_field?: string
+          file_id?: string | null
+          id?: string
+          required?: boolean | null
+          source_column?: string
+          type?: string
+          validation_rules?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_import_mapping_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "uploaded_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dedupe_suggestions: {
+        Row: {
+          created_at: string
+          duplicate_id: string
+          entity_id: string
+          entity_type: string
+          id: string
+          merge_recommendation: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          similarity_score: number
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          duplicate_id: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          merge_recommendation?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          similarity_score: number
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          duplicate_id?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          merge_recommendation?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          similarity_score?: number
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dedupe_suggestions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_capacity_metrics: {
         Row: {
           biker_count: number
@@ -4385,6 +4517,59 @@ export type Database = {
             columns: ["module_id"]
             isOneToOne: false
             referencedRelation: "training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      uploaded_files: {
+        Row: {
+          created_at: string
+          error_count: number | null
+          errors: Json | null
+          file_name: string
+          file_type: string
+          id: string
+          preview_data: Json | null
+          processed_count: number | null
+          row_count: number | null
+          status: string
+          target_table: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_count?: number | null
+          errors?: Json | null
+          file_name: string
+          file_type: string
+          id?: string
+          preview_data?: Json | null
+          processed_count?: number | null
+          row_count?: number | null
+          status?: string
+          target_table: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_count?: number | null
+          errors?: Json | null
+          file_name?: string
+          file_type?: string
+          id?: string
+          preview_data?: Json | null
+          processed_count?: number | null
+          row_count?: number | null
+          status?: string
+          target_table?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uploaded_files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

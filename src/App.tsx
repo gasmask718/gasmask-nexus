@@ -197,6 +197,16 @@ const App = () => (
               }
             />
             <Route
+              path="/data/import"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <BatchImport />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/driver"
               element={
                 <ProtectedRoute>
