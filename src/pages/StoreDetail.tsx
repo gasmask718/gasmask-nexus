@@ -12,6 +12,8 @@ import VisitLogModal from '@/components/VisitLogModal';
 import { InventoryPredictionCard } from '@/components/map/InventoryPredictionCard';
 import { CommunicationTimeline } from '@/components/CommunicationTimeline';
 import { CommunicationLogModal } from '@/components/CommunicationLogModal';
+import { CommunicationStats } from '@/components/communication/CommunicationStats';
+import { BulkCommunicationLogModal } from '@/components/communication/BulkCommunicationLogModal';
 import {
   MapPin, 
   Phone, 
@@ -25,7 +27,8 @@ import {
   AlertCircle,
   DollarSign,
   Calendar,
-  Navigation
+  Navigation,
+  Users
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -89,6 +92,7 @@ const StoreDetail = () => {
   const [loading, setLoading] = useState(true);
   const [visitModalOpen, setVisitModalOpen] = useState(false);
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
+  const [bulkCommModalOpen, setBulkCommModalOpen] = useState(false);
   const [timelineRefresh, setTimelineRefresh] = useState(0);
   const [geocoding, setGeocoding] = useState(false);
 
@@ -312,6 +316,12 @@ const StoreDetail = () => {
         onSuccess={() => setTimelineRefresh(prev => prev + 1)}
       />
 
+      <BulkCommunicationLogModal
+        open={bulkCommModalOpen}
+        onOpenChange={setBulkCommModalOpen}
+        onSuccess={() => setTimelineRefresh(prev => prev + 1)}
+      />
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left Column - Main Info */}
         <div className="lg:col-span-2 space-y-6">
@@ -380,6 +390,13 @@ const StoreDetail = () => {
             </CardContent>
           </Card>
 
+          {/* Communication Stats */}
+          <Card className="glass-card border-border/50">
+            <CardContent className="pt-6">
+              <CommunicationStats entityType="store" entityId={id || ''} />
+            </CardContent>
+          </Card>
+
           {/* Communication Timeline */}
           <Card className="glass-card border-border/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -387,14 +404,25 @@ const StoreDetail = () => {
                 <Clock className="h-5 w-5 text-primary" />
                 Communication Timeline
               </CardTitle>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setCommunicationModalOpen(true)}
-                className="border-border/50"
-              >
-                Log Communication
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setBulkCommModalOpen(true)}
+                  className="border-border/50 gap-2"
+                >
+                  <Users className="h-4 w-4" />
+                  Bulk Log
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setCommunicationModalOpen(true)}
+                  className="border-border/50"
+                >
+                  Log Communication
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <CommunicationTimeline 

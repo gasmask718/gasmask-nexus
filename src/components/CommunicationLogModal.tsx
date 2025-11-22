@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { TemplateSelector } from '@/components/communication/TemplateSelector';
 
 interface CommunicationLogModalProps {
   open: boolean;
@@ -101,6 +102,25 @@ export function CommunicationLogModal({
 
       if (error) throw error;
 
+      // Create reminder if follow-up date is provided
+      if (followUpDate) {
+        const reminderData: any = {
+          assigned_to: user.id,
+          follow_up_date: format(followUpDate, 'yyyy-MM-dd'),
+          notes: `Follow-up for: ${notes.trim().substring(0, 100)}`,
+        };
+
+        if (entityType === 'store') reminderData.store_id = entityId;
+        else if (entityType === 'wholesaler') reminderData.wholesaler_id = entityId;
+        else if (entityType === 'influencer') reminderData.influencer_id = entityId;
+
+        const { error: reminderError } = await supabase
+          .from('reminders')
+          .insert(reminderData);
+
+        if (reminderError) console.error('Error creating reminder:', reminderError);
+      }
+
       toast.success('Communication logged');
       resetForm();
       onOpenChange(false);
@@ -137,7 +157,10 @@ export function CommunicationLogModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="notes">Notes *</Label>
+              <TemplateSelector onSelect={(template) => setNotes(template)} />
+            </div>
             <Textarea
               id="notes"
               value={notes}
