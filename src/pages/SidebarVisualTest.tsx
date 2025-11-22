@@ -1,5 +1,9 @@
 import React, { useState } from "react";
 import { useUserRole } from "@/hooks/useUserRole";
+import { navigationItems } from "@/components/layout/navigationItems";
+import { realEstateNavItems } from "@/components/layout/realEstateNavigation";
+import { podNavigationItems } from "@/components/layout/podNavigation";
+import { callCenterNavItems } from "@/components/layout/callCenterNavigation";
 
 export default function SidebarVisualTest() {
   const { role, roles } = useUserRole();
@@ -8,32 +12,6 @@ export default function SidebarVisualTest() {
 
   const activeRole = simRole || role || "none";
   const normalizedRole = activeRole?.toLowerCase().trim();
-
-  // Import navigation items directly to avoid module resolution issues
-  const navigationItems = [
-    { to: '/', label: 'Dashboard', roles: ['admin', 'driver', 'biker', 'clerk'] },
-    { to: '/stores', label: 'Stores', roles: ['admin', 'driver'] },
-    { to: '/routes', label: 'Routes', roles: ['admin', 'driver'] },
-    // Add more as needed
-  ];
-
-  const realEstateNavItems = [
-    { to: '/realestate', label: 'Overview', roles: ['admin', 'realestate_worker'] },
-    { to: '/realestate/leads', label: 'Leads', roles: ['admin', 'realestate_worker'] },
-    { to: '/realestate/pipeline', label: 'Pipeline', roles: ['admin', 'realestate_worker'] },
-  ];
-
-  const podNavigationItems = [
-    { to: '/pod', label: 'POD Dashboard', roles: ['admin', 'pod_worker'] },
-    { to: '/pod/designs', label: 'Designs', roles: ['admin', 'pod_worker'] },
-    { to: '/pod/generator', label: 'Generator', roles: ['admin', 'pod_worker'] },
-  ];
-
-  const callCenterNavItems = [
-    { to: '/callcenter', label: 'Dashboard', roles: ['admin'] },
-    { to: '/callcenter/numbers', label: 'Phone Numbers', roles: ['admin'] },
-    { to: '/callcenter/logs', label: 'Call Logs', roles: ['admin'] },
-  ];
 
   const filter = (items: any[]) =>
     items.filter((item) => !item.roles || item.roles.includes(normalizedRole));
@@ -44,20 +22,20 @@ export default function SidebarVisualTest() {
   const filteredCallCenter = filter(callCenterNavItems);
 
   return (
-    <div className="p-6 bg-background min-h-screen">
+    <div className="p-6 text-white">
       <h1 className="text-3xl font-bold mb-4">🧭 Sidebar Visual Test</h1>
 
-      <div className="bg-card p-4 rounded-md border border-border mb-6">
+      <div className="bg-gray-900 p-4 rounded-md border border-gray-700 mb-6">
         <h2 className="text-xl font-semibold mb-2">Role Debug</h2>
-        <p>Detected Role: <strong className="text-primary">{role}</strong></p>
+        <p>Detected Role: <strong>{role}</strong></p>
         <p>Available Roles: {JSON.stringify(roles)}</p>
-        <p>Simulated Role: <strong className="text-primary">{simRole || "none"}</strong></p>
-        <p>Normalized Role: <strong className="text-primary">{normalizedRole}</strong></p>
+        <p>Simulated Role: <strong>{simRole || "none"}</strong></p>
+        <p>Normalized Role: <strong>{normalizedRole}</strong></p>
 
         <div className="mt-4">
           <label className="text-sm">Simulate Role:</label>
           <select
-            className="bg-background border border-border rounded p-1 ml-2"
+            className="bg-black border border-gray-500 rounded p-1 ml-2"
             value={simRole || ""}
             onChange={(e) => setSimRole(e.target.value || null)}
           >
@@ -91,7 +69,7 @@ export default function SidebarVisualTest() {
       </div>
 
       {/** EXPECTED SUMMARY */}
-      <div className="bg-card p-4 rounded-md border border-border mt-10">
+      <div className="bg-gray-900 p-4 rounded-md border border-gray-700 mt-10">
         <h2 className="text-xl font-semibold mb-2">Summary</h2>
         <p>• If your role = <b>admin</b>, ALL sections should be non-empty.</p>
         <p>• If a section is empty, the issue is in the roles field of the nav array.</p>
@@ -103,9 +81,9 @@ export default function SidebarVisualTest() {
 
 function ArrayBlock({ title, data }: any) {
   return (
-    <div className="bg-card p-4 rounded-md border border-border">
+    <div className="bg-gray-800 p-4 rounded-md border border-gray-700">
       <h3 className="text-lg font-semibold mb-2">{title}</h3>
-      <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-96">
+      <pre className="text-xs whitespace-pre-wrap">
         {JSON.stringify(data, null, 2)}
       </pre>
     </div>

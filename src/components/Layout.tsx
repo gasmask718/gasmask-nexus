@@ -1,5 +1,9 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { navigationItems } from '@/components/layout/navigationItems';
+import { realEstateNavItems } from '@/components/layout/realEstateNavigation';
+import { podNavigationItems } from '@/components/layout/podNavigation';
+import { callCenterNavItems } from '@/components/layout/callCenterNavigation';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { SendMessageModal } from '@/components/communication/SendMessageModal';
@@ -89,98 +93,6 @@ const Layout = ({ children }: LayoutProps) => {
     }
   }, [userRole]);
 
-  const navigationItems = [
-    { to: '/', icon: LayoutDashboard, label: 'Command Center', roles: ['admin', 'csr'] },
-    { to: '/driver', icon: MapPin, label: 'My Route', roles: ['driver', 'biker'] },
-    { to: '/stores', icon: Store, label: 'Stores', roles: ['admin', 'csr', 'driver', 'biker'] },
-    { to: '/stores/performance', icon: TrendingUp, label: 'Store Performance', roles: ['admin'] },
-    { to: '/batch-import', icon: Upload, label: 'Batch Import', roles: ['admin', 'csr'] },
-    { to: '/routes', icon: Map, label: 'Routes', roles: ['admin', 'driver', 'biker'] },
-    { to: '/routes/optimizer', icon: Navigation, label: 'Route Optimizer', roles: ['admin', 'csr'] },
-    { to: '/routes/ops-center', icon: BarChart3, label: 'Route Ops', roles: ['admin'] },
-    { to: '/routes/my-route', icon: MapPin, label: 'My Active Route', roles: ['driver', 'biker'] },
-    { to: '/map', icon: MapPin, label: 'Map View', roles: ['admin', 'csr', 'driver', 'biker'] },
-    { to: '/wholesale', icon: Building2, label: 'Wholesale', roles: ['admin', 'csr'] },
-    { to: '/influencers', icon: MessageCircle, label: 'Influencers', roles: ['admin', 'csr'] },
-    { to: '/influencers/campaigns', icon: TrendingUp, label: 'Campaigns', roles: ['admin', 'csr'] },
-    { to: '/reports/executive', icon: LayoutDashboard, label: 'Executive Reports', roles: ['admin'] },
-    { to: '/missions/today', icon: Target, label: 'Missions', roles: ['admin', 'csr', 'driver', 'biker'] },
-    { to: '/missions', icon: Trophy, label: 'Missions HQ', roles: ['admin', 'csr'] },
-    { to: '/communications', icon: MessageCircle, label: 'Communications', roles: ['admin', 'csr'] },
-    { to: '/crm', icon: Users, label: 'CRM', roles: ['admin', 'csr'] },
-    { to: '/crm/customers', icon: Users, label: 'Customer CRM', roles: ['admin', 'csr'] },
-    { to: '/communication/ai-center', icon: Brain, label: 'AI Command Center', roles: ['admin', 'csr'] },
-    { to: '/communication/calls', icon: Phone, label: 'Call Center', roles: ['admin', 'csr'] },
-    { to: '/communication/texts', icon: MessageCircle, label: 'Text Center', roles: ['admin', 'csr'] },
-    { to: '/communication/email', icon: Mail, label: 'Email Center', roles: ['admin', 'csr'] },
-    { to: '/communications/insights', icon: BarChart3, label: 'Insights Dashboard', roles: ['admin', 'csr'] },
-    { to: '/communications/reminders', icon: MessageCircle, label: 'Reminders', roles: ['admin', 'csr'] },
-    { to: '/templates', icon: FileText, label: 'Templates', roles: ['admin'] },
-    { to: '/territories', icon: Map, label: 'Territories', roles: ['admin', 'csr'] },
-    { to: '/analytics/revenue-brain', icon: Brain, label: 'Revenue Brain', roles: ['admin'] },
-    { to: '/ops/opportunity-radar', icon: Radar, label: 'Opportunity Radar', roles: ['admin', 'csr'] },
-    { to: '/ai/meta', icon: Brain, label: 'Meta-AI Supervisor', roles: ['admin'] },
-    { to: '/expansion/regions', icon: MapPin, label: 'Territory Regions', roles: ['admin'] },
-    { to: '/expansion/heatmap', icon: Map, label: 'Expansion Heatmap', roles: ['admin'] },
-    { to: '/ambassadors/regions', icon: Users, label: 'Regional Ambassadors', roles: ['admin'] },
-    { to: '/stores/order', icon: Package, label: 'Place Order', roles: ['admin', 'csr'] },
-    { to: '/wholesale/fulfillment', icon: Package, label: 'Fulfillment', roles: ['admin', 'csr'] },
-    { to: '/billing', icon: DollarSign, label: 'Billing', roles: ['admin'] },
-    { to: '/analytics/economics', icon: TrendingUp, label: 'Economic Analytics', roles: ['admin'] },
-    { to: '/payouts/ambassadors', icon: Users, label: 'Ambassador Payouts', roles: ['admin'] },
-    { to: '/payouts/bikers', icon: Package, label: 'Biker Payouts', roles: ['admin'] },
-    { to: '/sales', icon: Target, label: 'Sales Dashboard', roles: ['admin', 'csr'] },
-    { to: '/sales/prospects', icon: Users, label: 'Prospects', roles: ['admin', 'csr'] },
-    { to: '/sales/report', icon: BarChart3, label: 'Sales Report', roles: ['admin', 'csr'] },
-    { to: '/me/home', icon: MapPin, label: 'Worker Home', roles: ['driver', 'biker', 'ambassador'] },
-    { to: '/me/driver', icon: Home, label: 'Driver Dashboard', roles: ['driver', 'biker'] },
-    { to: '/drivers/leaderboard', icon: Trophy, label: 'Leaderboard', roles: ['driver', 'biker', 'admin'] },
-    { to: '/rewards', icon: Gift, label: 'Rewards', roles: ['driver', 'biker'] },
-    { to: '/drivers/payroll', icon: DollarSign, label: 'Payroll', roles: ['admin'] },
-    { to: '/team', icon: Users, label: 'Team', roles: ['admin'] },
-    { to: '/products', icon: Package, label: 'Products', roles: ['admin'] },
-    { to: '/analytics', icon: TrendingUp, label: 'Analytics', roles: ['admin', 'accountant'] },
-    { to: '/training', icon: Package, label: 'Training', roles: ['admin', 'csr', 'driver', 'biker', 'ambassador'] },
-    { to: '/settings/automation', icon: Settings, label: 'Automation', roles: ['admin'] },
-  ];
-
-  const realEstateNavItems = [
-    { to: '/realestate', icon: Building, label: 'Real Estate HQ', roles: ['admin', 'realestate_worker'] },
-    { to: '/realestate/leads', icon: FileSearch, label: 'Lead Intelligence', roles: ['admin', 'realestate_worker'] },
-    { to: '/realestate/pipeline', icon: Target, label: 'Acquisition Pipeline', roles: ['admin', 'realestate_worker'] },
-    { to: '/realestate/investors', icon: Users, label: 'Investor Marketplace', roles: ['admin', 'realestate_worker'] },
-    { to: '/realestate/closings', icon: FileSignature, label: 'Deal Closings & Payments', roles: ['admin', 'realestate_worker'] },
-    { to: '/realestate/expansion', icon: MapPin, label: 'Expansion Engine', roles: ['admin', 'realestate_worker'] },
-  ];
-
-  const podNavigationItems = [
-    { to: '/pod', icon: Shirt, label: 'POD Overview', roles: ['admin', 'pod_worker'] },
-    { to: '/pod/designs', icon: Package, label: 'Design Library', roles: ['admin', 'pod_worker'] },
-    { to: '/pod/generator', icon: Brain, label: 'AI Design Generator', roles: ['admin', 'pod_worker'] },
-    { to: '/pod/mockups', icon: Package, label: 'Mockup Generator', roles: ['admin', 'pod_worker'] },
-    { to: '/pod/uploads', icon: Upload, label: 'Marketplace Uploads', roles: ['admin', 'pod_worker'] },
-    { to: '/pod/videos', icon: Package, label: 'Promo Video Studio', roles: ['admin', 'pod_worker'] },
-    { to: '/pod/scheduler', icon: Target, label: 'Content Scheduler', roles: ['admin', 'pod_worker'] },
-    { to: '/pod/analytics', icon: BarChart3, label: 'Sales Analytics', roles: ['admin', 'pod_worker'] },
-    { to: '/pod/winners', icon: Trophy, label: 'Scaling Engine', roles: ['admin', 'pod_worker'] },
-    { to: '/pod/va', icon: Users, label: 'VA Control Panel', roles: ['admin', 'pod_worker'] },
-    { to: '/pod/settings', icon: Settings, label: 'POD Settings', roles: ['admin', 'pod_worker'] },
-  ];
-
-  const callCenterNavItems = [
-    { to: '/callcenter', icon: Phone, label: 'Dashboard', roles: ['admin'] },
-    { to: '/callcenter/numbers', icon: Phone, label: 'Phone Numbers', roles: ['admin'] },
-    { to: '/callcenter/logs', icon: Phone, label: 'Call Logs', roles: ['admin'] },
-    { to: '/callcenter/recordings', icon: Mic, label: 'Recordings', roles: ['admin'] },
-    { to: '/callcenter/transcripts', icon: FileText, label: 'Transcripts', roles: ['admin'] },
-    { to: '/callcenter/messages', icon: MessageSquare, label: 'Text Messages', roles: ['admin'] },
-    { to: '/callcenter/emails', icon: Mail, label: 'Email Center', roles: ['admin'] },
-    { to: '/callcenter/routing', icon: Settings, label: 'Smart Routing', roles: ['admin'] },
-    { to: '/callcenter/agents', icon: Brain, label: 'AI Agents', roles: ['admin'] },
-    { to: '/callcenter/dialer', icon: PhoneCall, label: 'Outbound Dialer', roles: ['admin'] },
-    { to: '/callcenter/tasks', icon: CheckSquare, label: 'Call Tasks', roles: ['admin'] },
-    { to: '/callcenter/settings', icon: Settings, label: 'Department Settings', roles: ['admin'] },
-  ];
 
   // Normalize role to lowercase
   const normalizedRole = userRole?.trim().toLowerCase() || null;
