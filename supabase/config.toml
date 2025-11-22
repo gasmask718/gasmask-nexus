@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.route-ai]
 verify_jwt = false
+
+[functions.meta-ai-supervisor]
+verify_jwt = false

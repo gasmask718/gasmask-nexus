@@ -14,6 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_recommendations: {
+        Row: {
+          actioned_at: string | null
+          actioned_by: string | null
+          category: string
+          confidence_score: number | null
+          created_at: string
+          description: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          reasoning: string | null
+          recommended_action: Json | null
+          severity: string
+          status: string
+          title: string
+        }
+        Insert: {
+          actioned_at?: string | null
+          actioned_by?: string | null
+          category: string
+          confidence_score?: number | null
+          created_at?: string
+          description: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          reasoning?: string | null
+          recommended_action?: Json | null
+          severity?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          actioned_at?: string | null
+          actioned_by?: string | null
+          category?: string
+          confidence_score?: number | null
+          created_at?: string
+          description?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          reasoning?: string | null
+          recommended_action?: Json | null
+          severity?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_recommendations_actioned_by_fkey"
+            columns: ["actioned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_system_health: {
+        Row: {
+          communication_health_score: number | null
+          drivers_health_avg: number | null
+          id: string
+          influencers_health_avg: number | null
+          insights: Json | null
+          inventory_health_score: number | null
+          overall_health_score: number
+          routes_efficiency_score: number | null
+          snapshot_time: string
+          stores_health_avg: number | null
+          wholesalers_health_avg: number | null
+        }
+        Insert: {
+          communication_health_score?: number | null
+          drivers_health_avg?: number | null
+          id?: string
+          influencers_health_avg?: number | null
+          insights?: Json | null
+          inventory_health_score?: number | null
+          overall_health_score: number
+          routes_efficiency_score?: number | null
+          snapshot_time?: string
+          stores_health_avg?: number | null
+          wholesalers_health_avg?: number | null
+        }
+        Update: {
+          communication_health_score?: number | null
+          drivers_health_avg?: number | null
+          id?: string
+          influencers_health_avg?: number | null
+          insights?: Json | null
+          inventory_health_score?: number | null
+          overall_health_score?: number
+          routes_efficiency_score?: number | null
+          snapshot_time?: string
+          stores_health_avg?: number | null
+          wholesalers_health_avg?: number | null
+        }
+        Relationships: []
+      }
       ambassador_commissions: {
         Row: {
           ambassador_id: string
@@ -1130,6 +1231,7 @@ export type Database = {
           engagement_rate: number
           followers: number
           id: string
+          influencer_health_score: number | null
           name: string
           niche: string | null
           phone: string | null
@@ -1146,6 +1248,7 @@ export type Database = {
           engagement_rate?: number
           followers?: number
           id?: string
+          influencer_health_score?: number | null
           name: string
           niche?: string | null
           phone?: string | null
@@ -1162,6 +1265,7 @@ export type Database = {
           engagement_rate?: number
           followers?: number
           id?: string
+          influencer_health_score?: number | null
           name?: string
           niche?: string | null
           phone?: string | null
@@ -1591,6 +1695,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string | null
+          driver_health_score: number | null
           email: string | null
           id: string
           name: string
@@ -1603,6 +1708,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
+          driver_health_score?: number | null
           email?: string | null
           id: string
           name: string
@@ -1615,6 +1721,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string | null
+          driver_health_score?: number | null
           email?: string | null
           id?: string
           name?: string
@@ -2295,6 +2402,7 @@ export type Database = {
           alt_phone: string | null
           created_at: string | null
           email: string | null
+          health_score: number | null
           id: string
           lat: number | null
           lng: number | null
@@ -2318,6 +2426,7 @@ export type Database = {
           alt_phone?: string | null
           created_at?: string | null
           email?: string | null
+          health_score?: number | null
           id?: string
           lat?: number | null
           lng?: number | null
@@ -2341,6 +2450,7 @@ export type Database = {
           alt_phone?: string | null
           created_at?: string | null
           email?: string | null
+          health_score?: number | null
           id?: string
           lat?: number | null
           lng?: number | null
@@ -2873,6 +2983,7 @@ export type Database = {
           rating: number | null
           status: string | null
           updated_at: string | null
+          wholesaler_health_score: number | null
         }
         Insert: {
           address_city?: string | null
@@ -2892,6 +3003,7 @@ export type Database = {
           rating?: number | null
           status?: string | null
           updated_at?: string | null
+          wholesaler_health_score?: number | null
         }
         Update: {
           address_city?: string | null
@@ -2911,6 +3023,7 @@ export type Database = {
           rating?: number | null
           status?: string | null
           updated_at?: string | null
+          wholesaler_health_score?: number | null
         }
         Relationships: []
       }

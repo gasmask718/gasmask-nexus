@@ -97,6 +97,7 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/territories', icon: Map, label: 'Territories', roles: ['admin', 'csr'] },
     { to: '/analytics/revenue-brain', icon: Brain, label: 'Revenue Brain', roles: ['admin'] },
     { to: '/ops/opportunity-radar', icon: Radar, label: 'Opportunity Radar', roles: ['admin', 'csr'] },
+    { to: '/ai/meta', icon: Brain, label: 'Meta-AI Supervisor', roles: ['admin'] },
     { to: '/me/home', icon: MapPin, label: 'Worker Home', roles: ['driver', 'biker', 'ambassador'] },
     { to: '/me/driver', icon: Home, label: 'Driver Dashboard', roles: ['driver', 'biker'] },
     { to: '/drivers/leaderboard', icon: Trophy, label: 'Leaderboard', roles: ['driver', 'biker', 'admin'] },
