@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.ai-communication-analyzer]
 verify_jwt = false
+
+[functions.ai-financial-analysis]
+verify_jwt = false

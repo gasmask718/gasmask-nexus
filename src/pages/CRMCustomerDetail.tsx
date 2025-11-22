@@ -394,6 +394,44 @@ const CRMCustomerDetail = () => {
         </Card>
       </div>
 
+      {/* Billing Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-primary" />
+            Billing & Payments
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3 mb-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Outstanding Balance</p>
+              <p className="text-2xl font-bold text-red-600">
+                ${invoices?.filter(i => i.status !== 'paid').reduce((sum, i) => sum + Number(i.total_amount || 0), 0).toFixed(2) || '0.00'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Total Invoices</p>
+              <p className="text-2xl font-bold">{invoices?.length || 0}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Total Receipts</p>
+              <p className="text-2xl font-bold">{receipts?.length || 0}</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate('/billing/invoices/new')}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Invoice
+            </Button>
+            <Button variant="outline" onClick={() => window.open(`/portal/login`, '_blank')}>
+              <Mail className="mr-2 h-4 w-4" />
+              Send Portal Link
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Financial Timeline */}
       <Card>
         <CardHeader>

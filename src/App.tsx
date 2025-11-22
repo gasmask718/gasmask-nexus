@@ -79,6 +79,13 @@ import CallCenter from "./pages/CallCenter";
 import TextCenter from "./pages/TextCenter";
 import EmailCenter from "./pages/EmailCenter";
 import CRMFollowUps from "./pages/CRMFollowUps";
+import BillingCenter from "./pages/BillingCenter";
+import BillingInvoices from "./pages/BillingInvoices";
+import BillingInvoiceNew from "./pages/BillingInvoiceNew";
+import PortalLogin from "./pages/portal/PortalLogin";
+import PortalDashboard from "./pages/portal/PortalDashboard";
+import PortalInvoices from "./pages/portal/PortalInvoices";
+import PortalInvoiceDetail from "./pages/portal/PortalInvoiceDetail";
 
 const queryClient = new QueryClient();
 
@@ -793,6 +800,40 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/billing"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <BillingCenter />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/billing/invoices"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <BillingInvoices />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/billing/invoices/new"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <BillingInvoiceNew />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/portal/login" element={<PortalLogin />} />
+            <Route path="/portal/dashboard" element={<PortalDashboard />} />
+            <Route path="/portal/invoices" element={<PortalInvoices />} />
+            <Route path="/portal/invoices/:id" element={<PortalInvoiceDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
