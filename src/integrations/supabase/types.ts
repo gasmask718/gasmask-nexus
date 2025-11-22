@@ -1757,6 +1757,79 @@ export type Database = {
           },
         ]
       }
+      deal_sheets: {
+        Row: {
+          acquisition_id: string | null
+          created_at: string | null
+          created_by: string | null
+          downloads_count: number | null
+          email_template: string | null
+          id: string
+          investor_pitch_deck_url: string | null
+          lead_id: string | null
+          pdf_url: string | null
+          sms_template: string | null
+          social_media_copy: string | null
+          summary: string | null
+          title: string
+          views_count: number | null
+        }
+        Insert: {
+          acquisition_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          downloads_count?: number | null
+          email_template?: string | null
+          id?: string
+          investor_pitch_deck_url?: string | null
+          lead_id?: string | null
+          pdf_url?: string | null
+          sms_template?: string | null
+          social_media_copy?: string | null
+          summary?: string | null
+          title: string
+          views_count?: number | null
+        }
+        Update: {
+          acquisition_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          downloads_count?: number | null
+          email_template?: string | null
+          id?: string
+          investor_pitch_deck_url?: string | null
+          lead_id?: string | null
+          pdf_url?: string | null
+          sms_template?: string | null
+          social_media_copy?: string | null
+          summary?: string | null
+          title?: string
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_sheets_acquisition_id_fkey"
+            columns: ["acquisition_id"]
+            isOneToOne: false
+            referencedRelation: "acquisitions_pipeline"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_sheets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_sheets_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dedupe_suggestions: {
         Row: {
           created_at: string
@@ -3848,6 +3921,109 @@ export type Database = {
         }
         Relationships: []
       }
+      investor_email_logs: {
+        Row: {
+          clicked_at: string | null
+          deal_sheet_id: string | null
+          id: string
+          interest_level: string | null
+          investor_email: string
+          investor_id: string | null
+          notes: string | null
+          opened_at: string | null
+          responded_at: string | null
+          response_type: string | null
+          sent_at: string | null
+        }
+        Insert: {
+          clicked_at?: string | null
+          deal_sheet_id?: string | null
+          id?: string
+          interest_level?: string | null
+          investor_email: string
+          investor_id?: string | null
+          notes?: string | null
+          opened_at?: string | null
+          responded_at?: string | null
+          response_type?: string | null
+          sent_at?: string | null
+        }
+        Update: {
+          clicked_at?: string | null
+          deal_sheet_id?: string | null
+          id?: string
+          interest_level?: string | null
+          investor_email?: string
+          investor_id?: string | null
+          notes?: string | null
+          opened_at?: string | null
+          responded_at?: string | null
+          response_type?: string | null
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_email_logs_deal_sheet_id_fkey"
+            columns: ["deal_sheet_id"]
+            isOneToOne: false
+            referencedRelation: "deal_sheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      investor_engagement: {
+        Row: {
+          created_at: string | null
+          deal_sheet_id: string | null
+          declined: boolean | null
+          engagement_score: number | null
+          engagement_type: string
+          id: string
+          interested: boolean | null
+          investor_id: string
+          last_interaction_at: string | null
+          notes: string | null
+          offer_amount: number | null
+          total_interactions: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          deal_sheet_id?: string | null
+          declined?: boolean | null
+          engagement_score?: number | null
+          engagement_type: string
+          id?: string
+          interested?: boolean | null
+          investor_id: string
+          last_interaction_at?: string | null
+          notes?: string | null
+          offer_amount?: number | null
+          total_interactions?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          deal_sheet_id?: string | null
+          declined?: boolean | null
+          engagement_score?: number | null
+          engagement_type?: string
+          id?: string
+          interested?: boolean | null
+          investor_id?: string
+          last_interaction_at?: string | null
+          notes?: string | null
+          offer_amount?: number | null
+          total_interactions?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_engagement_deal_sheet_id_fkey"
+            columns: ["deal_sheet_id"]
+            isOneToOne: false
+            referencedRelation: "deal_sheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investor_orders: {
         Row: {
           created_at: string | null
@@ -4762,6 +4938,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      marketing_engines: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          performance_metrics: Json | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          performance_metrics?: Json | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          performance_metrics?: Json | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       mass_offer_campaigns: {
         Row: {

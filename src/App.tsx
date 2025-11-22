@@ -117,6 +117,10 @@ import FundingRequests from "./pages/FundingRequests";
 import VAPerformance from "./pages/VAPerformance";
 import VARanking from "./pages/VARanking";
 import VATaskCenter from "./pages/VATaskCenter";
+import DealSheetsGenerator from "./pages/DealSheetsGenerator";
+import InvestorBlastSystem from "./pages/InvestorBlastSystem";
+import OfferAnalyzer from "./pages/OfferAnalyzer";
+import AssignmentFeeOptimizer from "./pages/AssignmentFeeOptimizer";
 
 const queryClient = new QueryClient();
 
@@ -1148,6 +1152,48 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <VATaskCenter />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Deal Marketing Hub Routes */}
+            <Route
+              path="/marketing/deal-sheets"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <DealSheetsGenerator />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/marketing/investor-blast"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <InvestorBlastSystem />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/marketing/offer-analyzer"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <OfferAnalyzer />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/marketing/assignment-fee-optimizer"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AssignmentFeeOptimizer />
                   </Layout>
                 </ProtectedRoute>
               }
