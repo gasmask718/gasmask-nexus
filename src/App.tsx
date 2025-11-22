@@ -47,6 +47,8 @@ import DeliveryCapacity from './pages/DeliveryCapacity';
 import CommunicationAutomation from './pages/CommunicationAutomation';
 import CommunicationsAI from './pages/CommunicationsAI';
 
+import CommunicationInsights from "./pages/CommunicationInsights";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -410,6 +412,16 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <CommunicationsAI />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/communications/insights"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CommunicationInsights />
                   </Layout>
                 </ProtectedRoute>
               }
