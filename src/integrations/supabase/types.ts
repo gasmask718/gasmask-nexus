@@ -2552,6 +2552,150 @@ export type Database = {
           },
         ]
       }
+      sales_prospects: {
+        Row: {
+          address: string | null
+          ai_score: number | null
+          assigned_to: string | null
+          city: string | null
+          contact_name: string | null
+          converted_store_id: string | null
+          created_at: string
+          email: string | null
+          id: string
+          last_contacted: string | null
+          likelihood_to_activate: number | null
+          next_follow_up: string | null
+          notes: string | null
+          phone: string | null
+          pipeline_stage: string
+          priority: number | null
+          source: string | null
+          state: string | null
+          store_name: string
+          total_communications: number | null
+          updated_at: string
+          zipcode: string | null
+        }
+        Insert: {
+          address?: string | null
+          ai_score?: number | null
+          assigned_to?: string | null
+          city?: string | null
+          contact_name?: string | null
+          converted_store_id?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_contacted?: string | null
+          likelihood_to_activate?: number | null
+          next_follow_up?: string | null
+          notes?: string | null
+          phone?: string | null
+          pipeline_stage?: string
+          priority?: number | null
+          source?: string | null
+          state?: string | null
+          store_name: string
+          total_communications?: number | null
+          updated_at?: string
+          zipcode?: string | null
+        }
+        Update: {
+          address?: string | null
+          ai_score?: number | null
+          assigned_to?: string | null
+          city?: string | null
+          contact_name?: string | null
+          converted_store_id?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_contacted?: string | null
+          likelihood_to_activate?: number | null
+          next_follow_up?: string | null
+          notes?: string | null
+          phone?: string | null
+          pipeline_stage?: string
+          priority?: number | null
+          source?: string | null
+          state?: string | null
+          store_name?: string
+          total_communications?: number | null
+          updated_at?: string
+          zipcode?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_prospects_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_prospects_converted_store_id_fkey"
+            columns: ["converted_store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          due_date: string
+          id: string
+          notes: string | null
+          prospect_id: string
+          sales_user_id: string
+          status: string
+          task_type: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          due_date: string
+          id?: string
+          notes?: string | null
+          prospect_id: string
+          sales_user_id: string
+          status?: string
+          task_type: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string
+          id?: string
+          notes?: string | null
+          prospect_id?: string
+          sales_user_id?: string
+          status?: string
+          task_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_tasks_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "sales_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_tasks_sales_user_id_fkey"
+            columns: ["sales_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_credit_transactions: {
         Row: {
           amount: number

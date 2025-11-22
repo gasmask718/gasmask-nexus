@@ -55,6 +55,11 @@ import MetaAI from "./pages/MetaAI";
 import ExpansionRegions from "./pages/ExpansionRegions";
 import ExpansionHeatmap from "./pages/ExpansionHeatmap";
 import AmbassadorRegions from "./pages/AmbassadorRegions";
+import Sales from "./pages/Sales";
+import SalesProspects from "./pages/SalesProspects";
+import SalesProspectNew from "./pages/SalesProspectNew";
+import SalesProspectDetail from "./pages/SalesProspectDetail";
+import SalesReport from "./pages/SalesReport";
 import StoreOrder from "./pages/StoreOrder";
 import WholesaleFulfillment from "./pages/WholesaleFulfillment";
 import Billing from "./pages/Billing";
@@ -581,6 +586,56 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <BikerPayouts />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sales"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Sales />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sales/prospects"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <SalesProspects />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sales/prospects/new"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <SalesProspectNew />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sales/prospects/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <SalesProspectDetail />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sales/report"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <SalesReport />
                   </Layout>
                 </ProtectedRoute>
               }

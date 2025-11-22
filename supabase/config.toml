@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.territory-ai]
 verify_jwt = false
+
+[functions.ai-sales-scorer]
+verify_jwt = false
