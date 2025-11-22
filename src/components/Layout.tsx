@@ -185,21 +185,31 @@ const Layout = ({ children }: LayoutProps) => {
   // Trim and normalize role
   const normalizedRole = userRole?.trim().toLowerCase() || null;
   
-  console.log('Sidebar normalizedRole:', normalizedRole);
+  // BYPASS MODE FOR DEBUGGING
+  const bypass = true; // TEMPORARY - Set to false after debugging
+  
+  console.log("========== SIDEBAR ROLE ==========");
+  console.log("Normalized Role:", normalizedRole);
+  console.log("Raw userRole:", userRole);
+  
+  console.log("========== SIDEBAR ARRAYS ==========");
+  console.log("RealEstate Nav Items:", realEstateNavItems);
+  console.log("POD Nav Items:", podNavigationItems);
+  console.log("CallCenter Nav Items:", callCenterNavItems);
   
   const filteredNavItems = navigationItems.filter(
     item => !item.roles || (normalizedRole && item.roles.includes(normalizedRole))
   );
 
-  const filteredRealEstateNavItems = realEstateNavItems.filter(
+  const filteredRealEstateNavItems = bypass ? realEstateNavItems : realEstateNavItems.filter(
     item => !item.roles || (normalizedRole && item.roles.includes(normalizedRole))
   );
 
-  const filteredPodNavItems = podNavigationItems.filter(
+  const filteredPodNavItems = bypass ? podNavigationItems : podNavigationItems.filter(
     item => !item.roles || (normalizedRole && item.roles.includes(normalizedRole))
   );
 
-  const filteredCallCenterNavItems = callCenterNavItems.filter(
+  const filteredCallCenterNavItems = bypass ? callCenterNavItems : callCenterNavItems.filter(
     item => !item.roles || (normalizedRole && item.roles.includes(normalizedRole))
   );
 
@@ -207,12 +217,39 @@ const Layout = ({ children }: LayoutProps) => {
   const showPodSection = filteredPodNavItems.length > 0;
   const showCallCenterSection = filteredCallCenterNavItems.length > 0;
   
-  console.log('Sidebar RealEstate items:', filteredRealEstateNavItems);
-  console.log('Sidebar POD items:', filteredPodNavItems);
-  console.log('Sidebar CallCenter items:', filteredCallCenterNavItems);
+  console.log("========== FILTERED ITEMS ==========");
+  console.log('Filtered RealEstateNavItems:', filteredRealEstateNavItems);
+  console.log('Filtered PodNavItems:', filteredPodNavItems);
+  console.log('Filtered CallCenterNavItems:', filteredCallCenterNavItems);
+  
+  if (bypass) {
+    console.log("🔴 BYPASS MODE ACTIVE – showing ALL sidebar sections");
+  }
 
   const NavItems = () => (
     <>
+      {/* DEBUG BOX */}
+      <div style={{
+        background: '#111',
+        color: 'white',
+        padding: '12px',
+        fontSize: '11px',
+        border: '2px solid red',
+        marginBottom: '12px',
+        borderRadius: '4px'
+      }}>
+        <strong>🔍 SIDEBAR DEBUG</strong><br/>
+        <strong>Role:</strong> {normalizedRole ? normalizedRole : 'NULL'}<br/>
+        <strong>Raw Role:</strong> {userRole ? userRole : 'NULL'}<br/>
+        <strong>RealEstate Array:</strong> {realEstateNavItems?.length || 0} items<br/>
+        <strong>POD Array:</strong> {podNavigationItems?.length || 0} items<br/>
+        <strong>CallCenter Array:</strong> {callCenterNavItems?.length || 0} items<br/>
+        <strong>Filtered RealEstate:</strong> {filteredRealEstateNavItems?.length || 0}<br/>
+        <strong>Filtered POD:</strong> {filteredPodNavItems?.length || 0}<br/>
+        <strong>Filtered CallCenter:</strong> {filteredCallCenterNavItems?.length || 0}<br/>
+        <strong style={{color: bypass ? 'lime' : 'red'}}>BYPASS MODE: {bypass ? 'ON' : 'OFF'}</strong>
+      </div>
+
       {filteredNavItems.map((item) => (
         <NavLink
           key={item.to}
