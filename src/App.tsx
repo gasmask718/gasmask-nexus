@@ -52,6 +52,9 @@ import MyRoute from "./pages/MyRoute";
 import Leaderboard from "./pages/Leaderboard";
 import Payroll from "./pages/Payroll";
 import MetaAI from "./pages/MetaAI";
+import ExpansionRegions from "./pages/ExpansionRegions";
+import ExpansionHeatmap from "./pages/ExpansionHeatmap";
+import AmbassadorRegions from "./pages/AmbassadorRegions";
 import StoreOrder from "./pages/StoreOrder";
 import WholesaleFulfillment from "./pages/WholesaleFulfillment";
 import Billing from "./pages/Billing";
@@ -488,6 +491,36 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <MetaAI />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expansion/regions"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <ExpansionRegions />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expansion/heatmap"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <ExpansionHeatmap />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ambassadors/regions"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AmbassadorRegions />
                   </Layout>
                 </ProtectedRoute>
               }
