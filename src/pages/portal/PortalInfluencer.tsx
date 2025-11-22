@@ -22,22 +22,21 @@ export default function PortalInfluencer() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Simplified query to avoid type issues
-      const influencerResponse: any = await supabase
+      const { data: influencerData } = await supabase
         .from('influencers')
-        .select('*')
+        .select('id, name, username, platform, followers, status, user_id, created_at')
         .eq('user_id', user.id)
         .maybeSingle();
       
-      if (influencerResponse.data) {
-        setInfluencerData(influencerResponse.data);
+      if (influencerData) {
+        setInfluencerData(influencerData);
 
-        const campaignsResponse: any = await supabase
+        const { data: campaignsData } = await supabase
           .from('influencer_campaign_participants')
-          .select('*')
-          .eq('influencer_id', influencerResponse.data.id);
+          .select('id, campaign_id, influencer_id, role, status, agreed_rate, deliverables, performance_stats, tracking_link, created_at')
+          .eq('influencer_id', influencerData.id);
 
-        setCampaigns(campaignsResponse.data || []);
+        setCampaigns(campaignsData || []);
       }
     } catch (error) {
       console.error('Error fetching influencer data:', error);
@@ -160,7 +159,7 @@ export default function PortalInfluencer() {
                   {campaigns.map((campaign) => (
                     <div key={campaign.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <p className="font-medium">{campaign.influencer_campaigns?.name}</p>
+                        <p className="font-medium">Campaign {campaign.campaign_id}</p>
                         <p className="text-sm text-muted-foreground">{campaign.role}</p>
                       </div>
                       <Badge>{campaign.status}</Badge>
@@ -192,11 +191,11 @@ export default function PortalInfluencer() {
                   {campaigns.map((campaign) => (
                     <Card key={campaign.id} className="p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-semibold">{campaign.influencer_campaigns?.name}</h4>
+                        <h4 className="font-semibold">Campaign {campaign.campaign_id}</h4>
                         <Badge>{campaign.status}</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {campaign.influencer_campaigns?.objective}
+                        {campaign.role}
                       </p>
                     </Card>
                   ))}

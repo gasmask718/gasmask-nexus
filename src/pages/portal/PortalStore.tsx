@@ -22,24 +22,23 @@ export default function PortalStore() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Simplified query to avoid type issues
-      const storeResponse: any = await supabase
+      const { data: storeData } = await supabase
         .from('stores')
-        .select('*')
+        .select('id, name, address_street, address_city, address_state, address_zip, status, type, created_at, owner_user_id')
         .eq('owner_user_id', user.id)
         .maybeSingle();
 
-      if (storeResponse.data) {
-        setStoreData(storeResponse.data);
+      if (storeData) {
+        setStoreData(storeData);
 
-        const ordersResponse: any = await supabase
+        const { data: ordersData } = await supabase
           .from('wholesale_orders')
-          .select('*')
-          .eq('store_id', storeResponse.data.id)
+          .select('id, created_at, status, store_id')
+          .eq('store_id', storeData.id)
           .order('created_at', { ascending: false })
           .limit(10);
 
-        setOrders(ordersResponse.data || []);
+        setOrders(ordersData || []);
       }
     } catch (error) {
       console.error('Error fetching store data:', error);
