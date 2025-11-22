@@ -626,6 +626,66 @@ export type Database = {
           },
         ]
       }
+      wholesale_hubs: {
+        Row: {
+          address_city: string | null
+          address_state: string | null
+          address_street: string | null
+          address_zip: string | null
+          contact_name: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          name: string
+          notes: string | null
+          phone: string | null
+          products_available: string[] | null
+          rating: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address_city?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          products_available?: string[] | null
+          rating?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address_city?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          products_available?: string[] | null
+          rating?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

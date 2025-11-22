@@ -14,6 +14,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
+import { useGeofencing } from "@/hooks/useGeofencing";
 
 interface RouteStop {
   id: string;
@@ -120,19 +121,73 @@ export default function Driver() {
 
   const handleCheckIn = async (stop: RouteStop) => {
     try {
-      const { error } = await supabase
-        .from('route_stops')
-        .update({ status: 'in_progress' })
-        .eq('id', stop.id);
+      // Get current position
+      if (!navigator.geolocation) {
+        toast.error('Geolocation not supported');
+        return;
+      }
 
-      if (error) throw error;
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
 
-      toast.success(`Checked in at ${stop.stores.name}`);
-      loadTodayRoute();
+          // Calculate distance to store
+          const distance = calculateDistance(
+            latitude,
+            longitude,
+            stop.stores.lat,
+            stop.stores.lng
+          );
+
+          // Update route stop status
+          const { error: stopError } = await supabase
+            .from('route_stops')
+            .update({ status: 'in_progress' })
+            .eq('id', stop.id);
+
+          if (stopError) throw stopError;
+
+          // Log location event
+          const { error: eventError } = await supabase
+            .from('location_events')
+            .insert({
+              user_id: user.id,
+              store_id: stop.store_id,
+              event_type: 'check_in',
+              lat: latitude,
+              lng: longitude,
+              distance_from_store_meters: distance,
+            });
+
+          if (eventError) throw eventError;
+
+          toast.success(`Checked in at ${stop.stores.name}`);
+          loadTodayRoute();
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          toast.error('Failed to get location');
+        }
+      );
     } catch (error) {
       console.error('Check-in error:', error);
       toast.error('Failed to check in');
     }
+  };
+
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371e3; // Earth radius in meters
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
   };
 
   const handleComplete = async (stop: RouteStop) => {
@@ -174,6 +229,25 @@ export default function Driver() {
   const completedStops = todayRoute.route_stops.filter(s => s.status === 'completed').length;
   const totalStops = todayRoute.route_stops.length;
   const nextStop = todayRoute.route_stops.find(s => s.status === 'pending');
+
+  // Enable geofencing for auto check-in
+  const storesForGeofencing = todayRoute.route_stops
+    .filter(s => s.status === 'pending')
+    .map(s => ({
+      id: s.store_id,
+      name: s.stores.name,
+      lat: s.stores.lat,
+      lng: s.stores.lng,
+    }));
+
+  useGeofencing({
+    stores: storesForGeofencing,
+    userId: user?.id || '',
+    onCheckIn: (storeId, storeName) => {
+      loadTodayRoute(); // Refresh route after auto check-in
+    },
+    radius: 50, // 50 meter radius
+  });
 
   return (
     <div className="min-h-screen bg-background pb-20">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Package, Users, Route, AlertTriangle, X } from 'lucide-react';
+import { Package, Users, Route, AlertTriangle, X, Languages } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { AlertsPanel, Alert } from './AlertsPanel';
 import { DemoRoute } from './demoRoutes';
 import { RouteOptimizerPanel } from './RouteOptimizerPanel';
+import { UniversalTranslator } from '../UniversalTranslator';
 
 interface Store {
   id: string;
@@ -85,7 +86,7 @@ export const CommandSidebar = ({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <TabsList className="w-full grid grid-cols-4 p-2 mx-2 mt-2">
+        <TabsList className="w-full grid grid-cols-5 p-2 mx-2 mt-2">
           <TabsTrigger value="stores" className="text-xs">
             <Package className="h-4 w-4 mr-1" />
             Stores
@@ -106,6 +107,10 @@ export const CommandSidebar = ({
                 {alerts.length}
               </Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="translate" className="text-xs">
+            <Languages className="h-4 w-4 mr-1" />
+            Translate
           </TabsTrigger>
         </TabsList>
 
@@ -218,6 +223,14 @@ export const CommandSidebar = ({
 
         <TabsContent value="alerts" className="flex-1 m-0 p-4">
           <AlertsPanel alerts={alerts} onAlertClick={onAlertClick} />
+        </TabsContent>
+
+        <TabsContent value="translate" className="flex-1 m-0">
+          <ScrollArea className="h-full">
+            <div className="p-4">
+              <UniversalTranslator />
+            </div>
+          </ScrollArea>
         </TabsContent>
       </Tabs>
     </Card>
