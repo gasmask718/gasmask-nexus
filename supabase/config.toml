@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.risk-monitor]
 verify_jwt = false
+
+[functions.replenishment-ai]
+verify_jwt = false
+
+[functions.expansion-ai]
+verify_jwt = false

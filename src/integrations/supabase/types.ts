@@ -14,6 +14,133 @@ export type Database = {
   }
   public: {
     Tables: {
+      ambassador_commissions: {
+        Row: {
+          ambassador_id: string
+          amount: number
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          notes: string | null
+          order_id: string | null
+          paid_at: string | null
+          status: string
+        }
+        Insert: {
+          ambassador_id: string
+          amount: number
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          status?: string
+        }
+        Update: {
+          ambassador_id?: string
+          amount?: number
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_commissions_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_commissions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ambassador_links: {
+        Row: {
+          ambassador_id: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          ambassador_id: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          ambassador_id?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_links_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ambassadors: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          tier: string
+          total_earnings: number
+          tracking_code: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          tier?: string
+          total_earnings?: number
+          tracking_code: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          tier?: string
+          total_earnings?: number
+          tracking_code?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassadors_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_action_queue: {
         Row: {
           action_type: string
@@ -418,6 +545,51 @@ export type Database = {
           is_read?: boolean
           period?: string
           report_date?: string
+        }
+        Relationships: []
+      }
+      expansion_scores: {
+        Row: {
+          created_at: string
+          driver_capacity_needed: number | null
+          expected_roi: number | null
+          id: string
+          location_name: string
+          location_type: string
+          priority: number | null
+          reasoning: string | null
+          recommendations: Json | null
+          score: number
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          driver_capacity_needed?: number | null
+          expected_roi?: number | null
+          id?: string
+          location_name: string
+          location_type: string
+          priority?: number | null
+          reasoning?: string | null
+          recommendations?: Json | null
+          score: number
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          driver_capacity_needed?: number | null
+          expected_roi?: number | null
+          id?: string
+          location_name?: string
+          location_type?: string
+          priority?: number | null
+          reasoning?: string | null
+          recommendations?: Json | null
+          score?: number
+          state?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1654,6 +1826,41 @@ export type Database = {
           },
         ]
       }
+      store_rewards: {
+        Row: {
+          created_at: string
+          id: string
+          store_id: string
+          tier: string
+          total_points: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          store_id: string
+          tier?: string
+          total_points?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          store_id?: string
+          tier?: string
+          total_points?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_rewards_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           address_city: string | null
@@ -2051,6 +2258,200 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      wholesale_order_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          product_id: string
+          quantity: number
+          total: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          product_id: string
+          quantity?: number
+          total: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          product_id?: string
+          quantity?: number
+          total?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesale_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesale_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesale_orders: {
+        Row: {
+          commission_amount: number
+          commission_percentage: number
+          created_at: string
+          delivered_at: string | null
+          delivery_method: string
+          driver_id: string | null
+          id: string
+          notes: string | null
+          route_id: string | null
+          status: string
+          store_id: string
+          subtotal: number
+          total: number
+          updated_at: string
+          wholesaler_id: string
+        }
+        Insert: {
+          commission_amount?: number
+          commission_percentage?: number
+          created_at?: string
+          delivered_at?: string | null
+          delivery_method?: string
+          driver_id?: string | null
+          id?: string
+          notes?: string | null
+          route_id?: string | null
+          status?: string
+          store_id: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          wholesaler_id: string
+        }
+        Update: {
+          commission_amount?: number
+          commission_percentage?: number
+          created_at?: string
+          delivered_at?: string | null
+          delivery_method?: string
+          driver_id?: string | null
+          id?: string
+          notes?: string | null
+          route_id?: string | null
+          status?: string
+          store_id?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesale_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesale_orders_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesale_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesale_orders_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesale_products: {
+        Row: {
+          brand_id: string | null
+          case_size: number
+          category: string
+          created_at: string
+          description: string | null
+          eta_delivery_days: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          price: number
+          stock: number
+          updated_at: string
+          wholesaler_id: string
+        }
+        Insert: {
+          brand_id?: string | null
+          case_size?: number
+          category: string
+          created_at?: string
+          description?: string | null
+          eta_delivery_days?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          price: number
+          stock?: number
+          updated_at?: string
+          wholesaler_id: string
+        }
+        Update: {
+          brand_id?: string | null
+          case_size?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          eta_delivery_days?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          price?: number
+          stock?: number
+          updated_at?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesale_products_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesale_products_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       worker_scores: {
         Row: {

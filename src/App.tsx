@@ -33,6 +33,9 @@ import Templates from './pages/Templates';
 import WorkerHome from './pages/WorkerHome';
 import AutomationSettings from './pages/AutomationSettings';
 import Training from './pages/Training';
+import Ambassadors from './pages/Ambassadors';
+import Expansion from './pages/Expansion';
+import Rewards from './pages/Rewards';
 
 const queryClient = new QueryClient();
 
@@ -287,6 +290,36 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <Training />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ambassadors"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Ambassadors />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expansion"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Expansion />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/rewards"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Rewards />
                   </Layout>
                 </ProtectedRoute>
               }
