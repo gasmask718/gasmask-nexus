@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 
 interface LayoutProps {
   children: ReactNode;
@@ -156,6 +157,7 @@ const Layout = ({ children }: LayoutProps) => {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
+            <NotificationCenter />
             <Button
               variant="ghost"
               size="sm"
