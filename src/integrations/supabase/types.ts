@@ -204,6 +204,39 @@ export type Database = {
           },
         ]
       }
+      automation_communication_settings: {
+        Row: {
+          automation_type: string
+          created_at: string
+          frequency_limit: string | null
+          id: string
+          is_enabled: boolean
+          message_template: string
+          trigger_days: number | null
+          updated_at: string
+        }
+        Insert: {
+          automation_type: string
+          created_at?: string
+          frequency_limit?: string | null
+          id?: string
+          is_enabled?: boolean
+          message_template: string
+          trigger_days?: number | null
+          updated_at?: string
+        }
+        Update: {
+          automation_type?: string
+          created_at?: string
+          frequency_limit?: string | null
+          id?: string
+          is_enabled?: boolean
+          message_template?: string
+          trigger_days?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       automation_settings: {
         Row: {
           created_at: string
@@ -394,6 +427,48 @@ export type Database = {
           date?: string
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      delivery_capacity_metrics: {
+        Row: {
+          biker_count: number
+          city: string
+          created_at: string
+          current_load: number
+          daily_capacity: number
+          driver_count: number
+          hiring_recommendation: string | null
+          id: string
+          state: string
+          updated_at: string
+          utilization_rate: number | null
+        }
+        Insert: {
+          biker_count?: number
+          city: string
+          created_at?: string
+          current_load?: number
+          daily_capacity?: number
+          driver_count?: number
+          hiring_recommendation?: string | null
+          id?: string
+          state: string
+          updated_at?: string
+          utilization_rate?: number | null
+        }
+        Update: {
+          biker_count?: number
+          city?: string
+          created_at?: string
+          current_load?: number
+          daily_capacity?: number
+          driver_count?: number
+          hiring_recommendation?: string | null
+          id?: string
+          state?: string
+          updated_at?: string
+          utilization_rate?: number | null
         }
         Relationships: []
       }
@@ -1754,6 +1829,85 @@ export type Database = {
           },
         ]
       }
+      store_credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          credit_account_id: string
+          description: string | null
+          id: string
+          reference_id: string | null
+          reference_type: string | null
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          credit_account_id: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          credit_account_id?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_credit_transactions_credit_account_id_fkey"
+            columns: ["credit_account_id"]
+            isOneToOne: false
+            referencedRelation: "store_credits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_credits: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          store_id: string
+          total_earned: number
+          total_spent: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          store_id: string
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          store_id?: string
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_credits_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_product_state: {
         Row: {
           average_sellthrough_days: number | null
@@ -1861,6 +2015,60 @@ export type Database = {
           },
         ]
       }
+      store_subscriptions: {
+        Row: {
+          auto_renew: boolean
+          created_at: string
+          ends_at: string | null
+          id: string
+          payment_method: string | null
+          plan_id: string
+          started_at: string
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_renew?: boolean
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          payment_method?: string | null
+          plan_id: string
+          started_at?: string
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          auto_renew?: boolean
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          payment_method?: string | null
+          plan_id?: string
+          started_at?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_subscriptions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           address_city: string | null
@@ -1932,6 +2140,92 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          benefits: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          benefits: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price?: number
+          tier: string
+          updated_at?: string
+        }
+        Update: {
+          benefits?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      supplier_compliance_scores: {
+        Row: {
+          complaint_count: number | null
+          created_at: string
+          defect_count: number | null
+          id: string
+          last_calculated: string
+          on_time_delivery_rate: number | null
+          order_accuracy_rate: number | null
+          rating: string
+          refund_count: number | null
+          total_orders: number | null
+          updated_at: string
+          wholesaler_id: string
+        }
+        Insert: {
+          complaint_count?: number | null
+          created_at?: string
+          defect_count?: number | null
+          id?: string
+          last_calculated?: string
+          on_time_delivery_rate?: number | null
+          order_accuracy_rate?: number | null
+          rating?: string
+          refund_count?: number | null
+          total_orders?: number | null
+          updated_at?: string
+          wholesaler_id: string
+        }
+        Update: {
+          complaint_count?: number | null
+          created_at?: string
+          defect_count?: number | null
+          id?: string
+          last_calculated?: string
+          on_time_delivery_rate?: number | null
+          order_accuracy_rate?: number | null
+          rating?: string
+          refund_count?: number | null
+          total_orders?: number | null
+          updated_at?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_compliance_scores_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: true
+            referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       training_badges: {
         Row: {
@@ -2195,6 +2489,151 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          reference_id: string | null
+          reference_type: string | null
+          status: string
+          transaction_type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string
+          transaction_type: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string
+          transaction_type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          payout_details: Json | null
+          payout_method: string | null
+          pending_balance: number
+          total_earned: number
+          total_withdrawn: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          payout_details?: Json | null
+          payout_method?: string | null
+          pending_balance?: number
+          total_earned?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          payout_details?: Json | null
+          payout_method?: string | null
+          pending_balance?: number
+          total_earned?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesale_bids: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          delivery_method: string
+          estimated_delivery_hours: number
+          id: string
+          notes: string | null
+          order_id: string
+          price: number
+          status: string
+          wholesaler_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          delivery_method: string
+          estimated_delivery_hours: number
+          id?: string
+          notes?: string | null
+          order_id: string
+          price: number
+          status?: string
+          wholesaler_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          delivery_method?: string
+          estimated_delivery_hours?: number
+          id?: string
+          notes?: string | null
+          order_id?: string
+          price?: number
+          status?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesale_bids_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesale_bids_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_hubs"
             referencedColumns: ["id"]
           },
         ]

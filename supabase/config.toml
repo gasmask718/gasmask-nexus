@@ -36,5 +36,5 @@ verify_jwt = false
 [functions.replenishment-ai]
 verify_jwt = false
 
-[functions.expansion-ai]
+[functions.auto-text-ai]
 verify_jwt = false
