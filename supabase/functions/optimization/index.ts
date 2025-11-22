@@ -104,6 +104,63 @@ serve(async (req) => {
       });
     }
 
+    if (action === 'calculateRouteInsights') {
+      // Calculate insights for all stores with visit history
+      const { data: stores } = await supabaseClient
+        .from('stores')
+        .select('id');
+
+      const insights = [];
+
+      for (const store of stores || []) {
+        const { data: visits } = await supabaseClient
+          .from('visit_logs')
+          .select('visit_datetime, visit_type')
+          .eq('store_id', store.id)
+          .order('visit_datetime', { ascending: false })
+          .limit(20);
+
+        if (!visits || visits.length === 0) continue;
+
+        // Calculate success rate
+        const totalScheduled = visits.length;
+        const successful = visits.filter(v => v.visit_type === 'delivery').length;
+        const successRate = (successful / totalScheduled) * 100;
+
+        // Calculate avg time patterns
+        const hourCounts: Record<number, number> = {};
+        visits.forEach(v => {
+          const hour = new Date(v.visit_datetime).getHours();
+          hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+        });
+
+        const bestHour = Object.entries(hourCounts)
+          .sort(([, a], [, b]) => b - a)[0]?.[0];
+        
+        const bestTimeWindow = bestHour 
+          ? `${bestHour}:00-${parseInt(bestHour) + 2}:00`
+          : null;
+
+        // Upsert insight
+        await supabaseClient
+          .from('route_insights')
+          .upsert({
+            store_id: store.id,
+            average_service_time_minutes: 15, // Default estimate
+            average_arrival_delay_minutes: 5,
+            visit_success_rate: successRate,
+            best_time_window: bestTimeWindow,
+            notes: `Based on ${visits.length} recent visits`,
+          }, { onConflict: 'store_id' });
+
+        insights.push({ store_id: store.id, success_rate: successRate });
+      }
+
+      return new Response(JSON.stringify({ insights, calculated: insights.length }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     return new Response(JSON.stringify({ error: 'Invalid action' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

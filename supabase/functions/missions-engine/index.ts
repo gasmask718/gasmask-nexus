@@ -112,6 +112,12 @@ serve(async (req) => {
         const xpGain = assignment.mission_templates.xp_reward;
         const newXp = (score?.xp_total || 0) + xpGain;
         const newLevel = Math.floor(Math.sqrt(newXp / 100));
+        const oldLevel = score?.level || 1;
+        
+        let badgeAwarded = null;
+        if (newLevel > oldLevel) {
+          badgeAwarded = `Level ${newLevel} Achieved`;
+        }
 
         if (score) {
           await supabaseClient
@@ -135,6 +141,18 @@ serve(async (req) => {
               last_activity_at: new Date().toISOString(),
             });
         }
+        
+        // Create notification
+        await supabaseClient
+          .from('mission_notifications')
+          .insert({
+            user_id: userId,
+            mission_id: missionId,
+            title: `Mission Complete: ${assignment.mission_templates.name}`,
+            message: `You earned ${xpGain} XP${badgeAwarded ? ` and unlocked: ${badgeAwarded}` : ''}!`,
+            xp_awarded: xpGain,
+            badge_awarded: badgeAwarded,
+          });
       }
 
       return new Response(JSON.stringify({ success: true, completed }), {
