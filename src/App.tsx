@@ -122,6 +122,13 @@ import InvestorBlastSystem from "./pages/InvestorBlastSystem";
 import OfferAnalyzer from "./pages/OfferAnalyzer";
 import AssignmentFeeOptimizer from "./pages/AssignmentFeeOptimizer";
 import AICEOControlRoom from "./pages/AICEOControlRoom";
+import HoldingsOverview from "./pages/HoldingsOverview";
+import HoldingsAssets from "./pages/HoldingsAssets";
+import HoldingsAirbnb from "./pages/HoldingsAirbnb";
+import HoldingsTenants from "./pages/HoldingsTenants";
+import HoldingsLoans from "./pages/HoldingsLoans";
+import HoldingsExpenses from "./pages/HoldingsExpenses";
+import HoldingsStrategy from "./pages/HoldingsStrategy";
 
 const queryClient = new QueryClient();
 
