@@ -128,3 +128,12 @@ verify_jwt = false
 
 [functions.auto-send-loan-package]
 verify_jwt = false
+
+[functions.generate-deal-sheet-ai]
+verify_jwt = false
+
+[functions.blast-investors-ai]
+verify_jwt = false
+
+[functions.optimize-assignment-fee-ai]
+verify_jwt = false
