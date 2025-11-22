@@ -110,3 +110,12 @@ verify_jwt = false
 
 [functions.scale-engine]
 verify_jwt = false
+
+[functions.loan-prequal-ai]
+verify_jwt = false
+
+[functions.generate-term-sheet-ai]
+verify_jwt = false
+
+[functions.auto-send-loan-package]
+verify_jwt = false
