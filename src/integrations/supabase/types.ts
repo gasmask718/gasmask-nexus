@@ -337,6 +337,84 @@ export type Database = {
           },
         ]
       }
+      api_clients: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          rate_limit: number | null
+          role: Database["public"]["Enums"]["app_role"]
+          scope: string[] | null
+          secret_key: string
+          user_id: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          rate_limit?: number | null
+          role: Database["public"]["Enums"]["app_role"]
+          scope?: string[] | null
+          secret_key: string
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          rate_limit?: number | null
+          role?: Database["public"]["Enums"]["app_role"]
+          scope?: string[] | null
+          secret_key?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          role_type: Database["public"]["Enums"]["app_role"] | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          role_type?: Database["public"]["Enums"]["app_role"] | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          role_type?: Database["public"]["Enums"]["app_role"] | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       automation_action_queue: {
         Row: {
           action_type: string
@@ -4610,6 +4688,85 @@ export type Database = {
           },
         ]
       }
+      user_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invite_token: string
+          invited_by: string
+          metadata: Json | null
+          phone: string | null
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invite_token: string
+          invited_by: string
+          metadata?: Json | null
+          phone?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          invited_by?: string
+          metadata?: Json | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visit_logs: {
         Row: {
           cash_collected: number | null
@@ -5206,6 +5363,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      log_audit_event: {
+        Args: {
+          p_action: string
+          p_entity_id?: string
+          p_entity_type?: string
+          p_metadata?: Json
+        }
+        Returns: string
+      }
       update_relationship_status: { Args: never; Returns: undefined }
     }
     Enums: {
@@ -5218,6 +5391,11 @@ export type Database = {
         | "wholesaler"
         | "warehouse"
         | "accountant"
+        | "employee"
+        | "store"
+        | "wholesale"
+        | "influencer"
+        | "customer"
       inventory_level: "empty" | "quarter" | "half" | "threeQuarters" | "full"
       payment_method: "cash" | "zelle" | "cashapp" | "venmo" | "other"
       responsiveness: "call" | "text" | "both" | "none"
@@ -5366,6 +5544,11 @@ export const Constants = {
         "wholesaler",
         "warehouse",
         "accountant",
+        "employee",
+        "store",
+        "wholesale",
+        "influencer",
+        "customer",
       ],
       inventory_level: ["empty", "quarter", "half", "threeQuarters", "full"],
       payment_method: ["cash", "zelle", "cashapp", "venmo", "other"],
