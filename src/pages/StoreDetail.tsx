@@ -419,18 +419,11 @@ const StoreDetail = () => {
             
             <FollowUpAIRecommendation 
               storeId={id || ''} 
-              storeName={store.name} 
             />
           </div>
 
           {/* Replenishment AI */}
           <ReplenishmentAI storeId={id || ''} />
-              storeId={id || ''} 
-              onSendMessage={(message) => {
-                setCommunicationModalOpen(true);
-              }}
-            />
-          </div>
 
           {/* Route Intelligence Insights */}
           {routeInsight && (
