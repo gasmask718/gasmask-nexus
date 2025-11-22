@@ -472,6 +472,79 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_payouts: {
+        Row: {
+          amount: number
+          calculated_breakdown: Json | null
+          created_at: string
+          date: string
+          driver_id: string
+          id: string
+          status: string
+        }
+        Insert: {
+          amount: number
+          calculated_breakdown?: Json | null
+          created_at?: string
+          date: string
+          driver_id: string
+          id?: string
+          status?: string
+        }
+        Update: {
+          amount?: number
+          calculated_breakdown?: Json | null
+          created_at?: string
+          date?: string
+          driver_id?: string
+          id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_payouts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_rewards: {
+        Row: {
+          calculated_tier: string
+          created_at: string
+          driver_id: string
+          id: string
+          last_updated: string
+          total_xp: number
+        }
+        Insert: {
+          calculated_tier?: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          last_updated?: string
+          total_xp?: number
+        }
+        Update: {
+          calculated_tier?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          last_updated?: string
+          total_xp?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_rewards_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_sessions: {
         Row: {
           ended_at: string | null
@@ -514,6 +587,38 @@ export type Database = {
           {
             foreignKeyName: "driver_sessions_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_xp: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          source: string
+          xp_amount: number
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          source: string
+          xp_amount: number
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          source?: string
+          xp_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_xp_driver_id_fkey"
+            columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

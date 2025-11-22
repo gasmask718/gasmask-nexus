@@ -22,7 +22,10 @@ import {
   Settings,
   FileText,
   BarChart3,
-  Navigation
+  Navigation,
+  Gift,
+  DollarSign,
+  Home
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -95,6 +98,10 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/analytics/revenue-brain', icon: Brain, label: 'Revenue Brain', roles: ['admin'] },
     { to: '/ops/opportunity-radar', icon: Radar, label: 'Opportunity Radar', roles: ['admin', 'csr'] },
     { to: '/me/home', icon: MapPin, label: 'Worker Home', roles: ['driver', 'biker', 'ambassador'] },
+    { to: '/me/driver', icon: Home, label: 'Driver Dashboard', roles: ['driver', 'biker'] },
+    { to: '/drivers/leaderboard', icon: Trophy, label: 'Leaderboard', roles: ['driver', 'biker', 'admin'] },
+    { to: '/rewards', icon: Gift, label: 'Rewards', roles: ['driver', 'biker'] },
+    { to: '/drivers/payroll', icon: DollarSign, label: 'Payroll', roles: ['admin'] },
     { to: '/team', icon: Users, label: 'Team', roles: ['admin'] },
     { to: '/products', icon: Package, label: 'Products', roles: ['admin'] },
     { to: '/analytics', icon: TrendingUp, label: 'Analytics', roles: ['admin', 'accountant'] },

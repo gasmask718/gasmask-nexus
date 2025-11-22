@@ -46,10 +46,11 @@ import Subscriptions from './pages/Subscriptions';
 import DeliveryCapacity from './pages/DeliveryCapacity';
 import CommunicationAutomation from './pages/CommunicationAutomation';
 import CommunicationsAI from './pages/CommunicationsAI';
-
 import CommunicationInsights from "./pages/CommunicationInsights";
 import RouteOptimizer from "./pages/RouteOptimizer";
 import MyRoute from "./pages/MyRoute";
+import Leaderboard from "./pages/Leaderboard";
+import Payroll from "./pages/Payroll";
 
 const queryClient = new QueryClient();
 
@@ -443,6 +444,34 @@ const App = () => (
                   <Layout>
                     <CommunicationInsights />
                   </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/drivers/leaderboard"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Leaderboard />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/drivers/payroll"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Payroll />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/me/driver"
+              element={
+                <ProtectedRoute>
+                  <WorkerHome />
                 </ProtectedRoute>
               }
             />
