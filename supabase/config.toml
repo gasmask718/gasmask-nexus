@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.store-performance-engine]
 verify_jwt = false
+
+[functions.route-optimizer-engine]
+verify_jwt = false

@@ -60,6 +60,12 @@ interface Store {
   created_at: string;
   lat: number | null;
   lng: number | null;
+  last_visit_date: string | null;
+  last_visit_driver_id: string | null;
+  visit_frequency_target: number | null;
+  visit_risk_level: string | null;
+  pipeline_stage?: string;
+  ai_recommendation?: string;
 }
 
 interface ProductInventory {
@@ -530,7 +536,7 @@ const StoreDetail = () => {
 
           {/* Tabs for Inventory & History */}
           <Tabs defaultValue="inventory" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="inventory">
                 <Package className="h-4 w-4 mr-2" />
                 Inventory
@@ -538,6 +544,10 @@ const StoreDetail = () => {
               <TabsTrigger value="performance">
                 <TrendingUp className="h-4 w-4 mr-2" />
                 Performance
+              </TabsTrigger>
+              <TabsTrigger value="route-coverage">
+                <MapPin className="h-4 w-4 mr-2" />
+                Coverage
               </TabsTrigger>
               <TabsTrigger value="history">
                 <Clock className="h-4 w-4 mr-2" />
@@ -607,6 +617,77 @@ const StoreDetail = () => {
 
             <TabsContent value="performance">
               <StorePerformanceTab storeId={id!} storeName={store.name} />
+            </TabsContent>
+
+            <TabsContent value="route-coverage">
+              <Card className="glass-card border-border/50">
+                <CardHeader>
+                  <CardTitle>Route & Coverage</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {store.last_visit_date ? (
+                    <>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Last Visit</p>
+                        <p className="font-semibold">
+                          {new Date(store.last_visit_date).toLocaleDateString()}
+                          {' '}({Math.floor((Date.now() - new Date(store.last_visit_date).getTime()) / (1000 * 60 * 60 * 24))} days ago)
+                        </p>
+                      </div>
+                      {store.last_visit_driver_id && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">Last Visit Driver</p>
+                          <p className="font-semibold">Driver #{store.last_visit_driver_id.slice(0, 8)}</p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Last Visit</p>
+                      <p className="font-semibold text-orange-600">Never visited</p>
+                    </div>
+                  )}
+
+                  <Separator />
+
+                  <div>
+                    <p className="text-sm text-muted-foreground">Coverage Status</p>
+                    <div className="mt-2">
+                      {store.visit_risk_level === 'critical' && (
+                        <Badge variant="destructive" className="text-base">Critical - Needs Immediate Visit</Badge>
+                      )}
+                      {store.visit_risk_level === 'at_risk' && (
+                        <Badge className="bg-orange-500 text-base">At Risk - Schedule Visit Soon</Badge>
+                      )}
+                      {(!store.visit_risk_level || store.visit_risk_level === 'normal') && (
+                        <Badge variant="secondary" className="text-base">Normal - On Schedule</Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <p className="text-sm text-muted-foreground">Visit Frequency Target</p>
+                    <p className="font-semibold">Every {store.visit_frequency_target || 7} days</p>
+                  </div>
+
+                  {(store.visit_risk_level === 'critical' || store.visit_risk_level === 'at_risk') && (
+                    <>
+                      <Separator />
+                      <div className="p-4 bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-lg">
+                        <p className="font-semibold text-orange-900 dark:text-orange-100 flex items-center gap-2">
+                          <AlertCircle className="h-5 w-5" />
+                          Action Required
+                        </p>
+                        <p className="text-sm text-orange-800 dark:text-orange-200 mt-1">
+                          This store has not been visited recently and should be prioritized for the next route.
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="history" className="space-y-4">

@@ -48,6 +48,7 @@ import CommunicationAutomation from './pages/CommunicationAutomation';
 import CommunicationsAI from './pages/CommunicationsAI';
 import CommunicationInsights from "./pages/CommunicationInsights";
 import RouteOptimizer from "./pages/RouteOptimizer";
+import RouteOpsCenter from "./pages/RouteOpsCenter";
 import MyRoute from "./pages/MyRoute";
 import Leaderboard from "./pages/Leaderboard";
 import Payroll from "./pages/Payroll";
@@ -132,6 +133,16 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <RouteOptimizer />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/routes/ops-center"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RouteOpsCenter />
                   </Layout>
                 </ProtectedRoute>
               }
