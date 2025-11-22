@@ -8,7 +8,7 @@ interface RealEstateLayoutProps {
 }
 
 export default function RealEstateLayout({ children, title }: RealEstateLayoutProps) {
-  const { hasRole, isAdmin, loading } = useUserRole();
+  const { hasRole, isAdmin, loading, role } = useUserRole();
 
   if (loading) {
     return (
@@ -18,8 +18,11 @@ export default function RealEstateLayout({ children, title }: RealEstateLayoutPr
     );
   }
 
+  // Normalize role for comparison
+  const normalizedRole = role?.trim().toLowerCase();
+
   // Only admin and realestate_worker can access Real Estate Department
-  if (!isAdmin() && !hasRole('realestate_worker' as any)) {
+  if (normalizedRole !== 'admin' && normalizedRole !== 'realestate_worker') {
     return <Navigate to="/" replace />;
   }
 
