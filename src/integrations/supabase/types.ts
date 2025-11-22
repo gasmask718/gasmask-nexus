@@ -711,6 +711,224 @@ export type Database = {
           },
         ]
       }
+      crm_customers: {
+        Row: {
+          address: string | null
+          business_type: string | null
+          city: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          last_order_date: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          relationship_status: string | null
+          state: string | null
+          total_lifetime_value: number | null
+          updated_at: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_type?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          last_order_date?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          relationship_status?: string | null
+          state?: string | null
+          total_lifetime_value?: number | null
+          updated_at?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_type?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          last_order_date?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          relationship_status?: string | null
+          state?: string | null
+          total_lifetime_value?: number | null
+          updated_at?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
+      customer_files: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          file_name: string | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_files_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "crm_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_invoices: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          invoice_date: string | null
+          invoice_number: string | null
+          pdf_url: string | null
+          status: string | null
+          total_amount: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          pdf_url?: string | null
+          status?: string | null
+          total_amount?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          pdf_url?: string | null
+          status?: string | null
+          total_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "crm_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_orders: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          items: Json | null
+          notes: string | null
+          order_date: string
+          payment_method: string | null
+          subtotal: number | null
+          tax: number | null
+          total: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          items?: Json | null
+          notes?: string | null
+          order_date?: string
+          payment_method?: string | null
+          subtotal?: number | null
+          tax?: number | null
+          total?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          items?: Json | null
+          notes?: string | null
+          order_date?: string
+          payment_method?: string | null
+          subtotal?: number | null
+          tax?: number | null
+          total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "crm_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_receipts: {
+        Row: {
+          amount_paid: number | null
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          payment_method: string | null
+          pdf_url: string | null
+          receipt_date: string | null
+          receipt_number: string | null
+        }
+        Insert: {
+          amount_paid?: number | null
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          payment_method?: string | null
+          pdf_url?: string | null
+          receipt_date?: string | null
+          receipt_number?: string | null
+        }
+        Update: {
+          amount_paid?: number | null
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          payment_method?: string | null
+          pdf_url?: string | null
+          receipt_date?: string | null
+          receipt_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_receipts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "crm_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_missions: {
         Row: {
           created_at: string | null
