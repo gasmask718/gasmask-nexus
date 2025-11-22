@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Package, Users, Route, AlertTriangle, X, Languages } from 'lucide-react';
+import { Package, Users, Route, AlertTriangle, X, Languages, Shield } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +10,7 @@ import { AlertsPanel, Alert } from './AlertsPanel';
 import { DemoRoute } from './demoRoutes';
 import { RouteOptimizerPanel } from './RouteOptimizerPanel';
 import { UniversalTranslator } from '../UniversalTranslator';
+import { FraudPanel } from './FraudPanel';
 
 interface Store {
   id: string;
@@ -41,6 +42,7 @@ interface CommandSidebarProps {
   onAlertClick: (alert: Alert) => void;
   onClose: () => void;
   onRoutesGenerated?: () => void;
+  onStoreSelect?: (storeId: string, lat: number, lng: number) => void;
 }
 
 export const CommandSidebar = ({
@@ -53,7 +55,8 @@ export const CommandSidebar = ({
   onRouteClick,
   onAlertClick,
   onClose,
-  onRoutesGenerated
+  onRoutesGenerated,
+  onStoreSelect
 }: CommandSidebarProps) => {
   const [activeTab, setActiveTab] = useState('stores');
 
@@ -86,7 +89,7 @@ export const CommandSidebar = ({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <TabsList className="w-full grid grid-cols-5 p-2 mx-2 mt-2">
+        <TabsList className="w-full grid grid-cols-6 p-2 mx-2 mt-2">
           <TabsTrigger value="stores" className="text-xs">
             <Package className="h-4 w-4 mr-1" />
             Stores
@@ -111,6 +114,10 @@ export const CommandSidebar = ({
           <TabsTrigger value="translate" className="text-xs">
             <Languages className="h-4 w-4 mr-1" />
             Translate
+          </TabsTrigger>
+          <TabsTrigger value="fraud" className="text-xs">
+            <Shield className="h-4 w-4 mr-1" />
+            Fraud
           </TabsTrigger>
         </TabsList>
 
@@ -231,6 +238,10 @@ export const CommandSidebar = ({
               <UniversalTranslator />
             </div>
           </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="fraud" className="flex-1 m-0">
+          <FraudPanel onFlagClick={onStoreSelect} />
         </TabsContent>
       </Tabs>
     </Card>
