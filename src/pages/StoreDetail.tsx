@@ -12,8 +12,9 @@ import VisitLogModal from '@/components/VisitLogModal';
 import { InventoryPredictionCard } from '@/components/map/InventoryPredictionCard';
 import { CommunicationTimeline } from '@/components/CommunicationTimeline';
 import { CommunicationLogModal } from '@/components/CommunicationLogModal';
-import { CommunicationStats } from '@/components/communication/CommunicationStats';
-import { BulkCommunicationLogModal } from '@/components/communication/BulkCommunicationLogModal';
+import { CommunicationStats } from "@/components/communication/CommunicationStats";
+import { Activity } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import {
   MapPin, 
   Phone, 
@@ -31,6 +32,7 @@ import {
   Users
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { BulkCommunicationLogModal } from '@/components/communication/BulkCommunicationLogModal';
 
 interface Store {
   id: string;
@@ -95,6 +97,21 @@ const StoreDetail = () => {
   const [bulkCommModalOpen, setBulkCommModalOpen] = useState(false);
   const [timelineRefresh, setTimelineRefresh] = useState(0);
   const [geocoding, setGeocoding] = useState(false);
+
+  const { data: routeInsight } = useQuery({
+    queryKey: ['route-insight', id],
+    queryFn: async () => {
+      if (!id) return null;
+      const { data, error } = await supabase
+        .from('route_insights')
+        .select('*')
+        .eq('store_id', id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+  });
 
   useEffect(() => {
     const fetchStoreData = async () => {
@@ -396,6 +413,67 @@ const StoreDetail = () => {
               <CommunicationStats entityType="store" entityId={id || ''} />
             </CardContent>
           </Card>
+
+          {/* Route Intelligence Insights */}
+          {routeInsight && (
+            <Card className="glass-card border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                  Route Intelligence Insights
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Avg Service Time</p>
+                    <p className="text-2xl font-bold">
+                      {routeInsight.average_service_time_minutes} min
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Success Rate</p>
+                    <p className="text-2xl font-bold">
+                      {routeInsight.visit_success_rate?.toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Difficulty Score</span>
+                    <Badge variant={
+                      (routeInsight as any).difficulty_score === 1 ? 'default' :
+                      (routeInsight as any).difficulty_score === 5 ? 'destructive' :
+                      'secondary'
+                    }>
+                      {(routeInsight as any).difficulty_score}/5
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Best Time</span>
+                    <Badge variant="outline" className="capitalize">
+                      {routeInsight.best_time_window}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Route Group</span>
+                    <Badge variant="outline" className="capitalize">
+                      {(routeInsight as any).recommended_route_group}
+                    </Badge>
+                  </div>
+                </div>
+
+                {routeInsight.notes && (
+                  <div className="pt-3 border-t">
+                    <p className="text-sm text-muted-foreground">{routeInsight.notes}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Communication Timeline */}
           <Card className="glass-card border-border/50">

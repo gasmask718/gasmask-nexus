@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.executive-reports]
 verify_jwt = false
+
+[functions.route-learning]
+verify_jwt = false

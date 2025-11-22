@@ -19,7 +19,8 @@ import {
   Brain,
   Radar,
   Trophy,
-  Settings
+  Settings,
+  FileText
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -81,6 +82,8 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/reports/executive', icon: LayoutDashboard, label: 'Executive Reports', roles: ['admin'] },
     { to: '/missions/today', icon: Target, label: 'Missions', roles: ['admin', 'csr', 'driver', 'biker'] },
     { to: '/missions', icon: Trophy, label: 'Missions HQ', roles: ['admin', 'csr'] },
+    { to: '/communications', icon: MessageCircle, label: 'Communications', roles: ['admin', 'csr'] },
+    { to: '/templates', icon: FileText, label: 'Templates', roles: ['admin'] },
     { to: '/territories', icon: Map, label: 'Territories', roles: ['admin', 'csr'] },
     { to: '/analytics/revenue-brain', icon: Brain, label: 'Revenue Brain', roles: ['admin'] },
     { to: '/ops/opportunity-radar', icon: Radar, label: 'Opportunity Radar', roles: ['admin', 'csr'] },

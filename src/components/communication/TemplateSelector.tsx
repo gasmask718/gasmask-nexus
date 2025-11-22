@@ -48,7 +48,17 @@ export const TemplateSelector = ({ category, onSelect }: TemplateSelectorProps) 
             {templates.map((template) => (
               <CommandItem
                 key={template.id}
-                onSelect={() => onSelect(template.message_template)}
+                onSelect={async () => {
+                  onSelect(template.message_template);
+                  // Track usage
+                  await supabase
+                    .from('communication_templates')
+                    .update({
+                      usage_count: (template.usage_count || 0) + 1,
+                      last_used_at: new Date().toISOString(),
+                    })
+                    .eq('id', template.id);
+                }}
                 className="flex flex-col items-start gap-1 p-3"
               >
                 <div className="font-medium">{template.name}</div>

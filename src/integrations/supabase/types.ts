@@ -146,9 +146,11 @@ export type Database = {
           created_by: string | null
           id: string
           is_active: boolean | null
+          last_used_at: string | null
           message_template: string
           name: string
           updated_at: string | null
+          usage_count: number | null
         }
         Insert: {
           category: string
@@ -156,9 +158,11 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_active?: boolean | null
+          last_used_at?: string | null
           message_template: string
           name: string
           updated_at?: string | null
+          usage_count?: number | null
         }
         Update: {
           category?: string
@@ -166,9 +170,11 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_active?: boolean | null
+          last_used_at?: string | null
           message_template?: string
           name?: string
           updated_at?: string | null
+          usage_count?: number | null
         }
         Relationships: [
           {
@@ -277,6 +283,47 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executive_report_logs: {
+        Row: {
+          created_at: string | null
+          delivered_at: string | null
+          delivery_method: string
+          id: string
+          period: string
+          recipient: string | null
+          report_id: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delivered_at?: string | null
+          delivery_method: string
+          id?: string
+          period: string
+          recipient?: string | null
+          report_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delivered_at?: string | null
+          delivery_method?: string
+          id?: string
+          period?: string
+          recipient?: string | null
+          report_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_report_logs_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "executive_reports"
             referencedColumns: ["id"]
           },
         ]
@@ -1134,6 +1181,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      report_schedule_settings: {
+        Row: {
+          created_at: string | null
+          daily_enabled: boolean | null
+          daily_time: string | null
+          id: string
+          monthly_day: number | null
+          monthly_enabled: boolean | null
+          monthly_time: string | null
+          recipient_emails: string[] | null
+          updated_at: string | null
+          weekly_day: string | null
+          weekly_enabled: boolean | null
+          weekly_time: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          daily_enabled?: boolean | null
+          daily_time?: string | null
+          id?: string
+          monthly_day?: number | null
+          monthly_enabled?: boolean | null
+          monthly_time?: string | null
+          recipient_emails?: string[] | null
+          updated_at?: string | null
+          weekly_day?: string | null
+          weekly_enabled?: boolean | null
+          weekly_time?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          daily_enabled?: boolean | null
+          daily_time?: string | null
+          id?: string
+          monthly_day?: number | null
+          monthly_enabled?: boolean | null
+          monthly_time?: string | null
+          recipient_emails?: string[] | null
+          updated_at?: string | null
+          weekly_day?: string | null
+          weekly_enabled?: boolean | null
+          weekly_time?: string | null
+        }
+        Relationships: []
       }
       route_insights: {
         Row: {
