@@ -94,28 +94,32 @@ const Layout = ({ children }: LayoutProps) => {
   }, [userRole]);
 
 
-  // Normalize role to lowercase
+  // DEBUG MODE: Temporarily disable role filtering to verify rendering
+  // TODO: Re-enable role filtering after confirming visibility
   const normalizedRole = userRole?.trim().toLowerCase() || null;
   
-  console.log('🎯 FINAL ROLE:', normalizedRole);
+  console.log('🎯 DEBUG MODE - Role filtering DISABLED');
+  console.log('🎯 User Role:', normalizedRole);
   
-  // Filter function: show if no roles defined OR role matches
-  const filterByRole = (items: typeof navigationItems) => 
-    items.filter(item => item.roles.length === 0 || (normalizedRole && item.roles.includes(normalizedRole)));
-  
-  const filteredNavItems = filterByRole(navigationItems);
-  const filteredRealEstateNavItems = filterByRole(realEstateNavItems);
-  const filteredPodNavItems = filterByRole(podNavigationItems);
-  const filteredCallCenterNavItems = filterByRole(callCenterNavItems);
+  // FORCE SHOW ALL - No filtering applied
+  const filteredNavItems = navigationItems;
+  const filteredRealEstateNavItems = realEstateNavItems;
+  const filteredPodNavItems = podNavigationItems;
+  const filteredCallCenterNavItems = callCenterNavItems;
 
-  const showRealEstateSection = filteredRealEstateNavItems.length > 0;
-  const showPodSection = filteredPodNavItems.length > 0;
-  const showCallCenterSection = filteredCallCenterNavItems.length > 0;
+  // Force all sections to show
+  const showRealEstateSection = true;
+  const showPodSection = true;
+  const showCallCenterSection = true;
   
-  console.log('👁️ Visible Sections:', { 
+  console.log('👁️ Force Visible - ALL Sections:', { 
     realestate: showRealEstateSection, 
     pod: showPodSection, 
-    callcenter: showCallCenterSection 
+    callcenter: showCallCenterSection,
+    mainItems: filteredNavItems.length,
+    realEstateItems: filteredRealEstateNavItems.length,
+    podItems: filteredPodNavItems.length,
+    callCenterItems: filteredCallCenterNavItems.length
   });
 
   const NavItems = () => (
@@ -218,11 +222,11 @@ const Layout = ({ children }: LayoutProps) => {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
-              <div className="flex flex-col h-full py-6">
-                <div className="px-4 mb-6">
+              <div className="flex flex-col h-full overflow-hidden py-6">
+                <div className="px-4 mb-6 flex-shrink-0">
                   <h2 className="text-xl font-bold text-primary">GasMask OS</h2>
                 </div>
-                <nav className="flex-1 space-y-1 px-3">
+                <nav className="flex-1 overflow-y-auto space-y-1 px-3 scrollbar-thin scrollbar-thumb-accent/40 scrollbar-track-transparent">
                   <NavItems />
                 </nav>
                 <div className="px-3 pt-4 border-t border-border/50">
@@ -272,8 +276,8 @@ const Layout = ({ children }: LayoutProps) => {
 
       <div className="flex">
         {/* Sidebar - Desktop */}
-        <aside className="hidden md:flex w-64 flex-col border-r border-border/50 bg-card/50 min-h-[calc(100vh-4rem)]">
-          <nav className="flex-1 space-y-1 p-4">
+        <aside className="hidden md:flex w-64 flex-col border-r border-border/50 bg-card/50 h-[calc(100vh-4rem)] overflow-hidden">
+          <nav className="flex-1 overflow-y-auto space-y-1 p-4 scrollbar-thin scrollbar-thumb-accent/40 scrollbar-track-transparent">
             <NavItems />
           </nav>
         </aside>

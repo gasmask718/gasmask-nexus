@@ -51,6 +51,7 @@ import RouteOptimizer from "./pages/RouteOptimizer";
 import RouteOpsCenter from "./pages/RouteOpsCenter";
 import MyRoute from "./pages/MyRoute";
 import SidebarVisualTest from "./pages/SidebarVisualTest";
+import SidebarDebug from "./pages/debug/SidebarDebug";
 import Leaderboard from "./pages/Leaderboard";
 import Payroll from "./pages/Payroll";
 import MetaAI from "./pages/MetaAI";
@@ -163,6 +164,13 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <SidebarVisualTest />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/sidebar-debug" element={
+              <ProtectedRoute>
+                <Layout>
+                  <SidebarDebug />
                 </Layout>
               </ProtectedRoute>
             } />
