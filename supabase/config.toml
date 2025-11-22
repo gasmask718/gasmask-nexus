@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.meta-ai-supervisor]
 verify_jwt = false
+
+[functions.economic-scan]
+verify_jwt = false

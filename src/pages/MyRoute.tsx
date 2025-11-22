@@ -90,6 +90,12 @@ export default function MyRoute() {
       });
 
       if (error) throw error;
+
+      // Award XP for check-in
+      if (completed) {
+        const { awardXP, XP_RULES } = await import("@/utils/xpCalculator");
+        await awardXP(user!.id, XP_RULES.STORE_VISIT, "visit");
+      }
     },
     onSuccess: () => {
       toast.success("Check-in recorded!");
