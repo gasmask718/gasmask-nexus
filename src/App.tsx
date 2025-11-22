@@ -141,6 +141,7 @@ import PODScaling from "./pages/pod/winners";
 import PODVAControl from "./pages/pod/va";
 import PODSettings from "./pages/pod/settings";
 import PodLayout from "./pages/pod/PodLayout";
+import RealEstateLayout from "./pages/realestate/RealEstateLayout";
 
 const queryClient = new QueryClient();
 
@@ -1004,92 +1005,51 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            {/* Real Estate Department Routes */}
             <Route
-              path="/real-estate"
+              path="/realestate"
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <RealEstate />
+                    <RealEstateLayout title="Real Estate Dashboard">
+                      <RealEstate />
+                    </RealEstateLayout>
                   </Layout>
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/real-estate/leads"
+              path="/realestate/leads"
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <RealEstateLeads />
+                    <RealEstateLayout title="Lead Manager">
+                      <RealEstateLeads />
+                    </RealEstateLayout>
                   </Layout>
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/real-estate/pipeline"
+              path="/realestate/pipeline"
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <RealEstatePipeline />
+                    <RealEstateLayout title="Acquisitions Pipeline">
+                      <RealEstatePipeline />
+                    </RealEstateLayout>
                   </Layout>
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/real-estate/investors"
+              path="/realestate/closings"
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <RealEstateInvestors />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/real-estate/closings"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <RealEstateClosings />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/real-estate/expansion"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <RealEstateExpansion />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/real-estate/subscriptions"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <RealEstateSubscriptions />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/real-estate/partners"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <RealEstatePartners />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/real-estate/pl"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <RealEstatePL />
+                    <RealEstateLayout title="Closings">
+                      <RealEstateClosings />
+                    </RealEstateLayout>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -1237,7 +1197,9 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <HoldingsOverview />
+                    <RealEstateLayout title="Holdings Overview">
+                      <HoldingsOverview />
+                    </RealEstateLayout>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -1247,27 +1209,9 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <HoldingsAssets />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/holdings/airbnb"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <HoldingsAirbnb />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/holdings/tenants"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <HoldingsTenants />
+                    <RealEstateLayout title="Properties & Assets">
+                      <HoldingsAssets />
+                    </RealEstateLayout>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -1277,7 +1221,33 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <HoldingsLoans />
+                    <RealEstateLayout title="Loans & Financing">
+                      <HoldingsLoans />
+                    </RealEstateLayout>
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/holdings/airbnb"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RealEstateLayout title="Airbnb Properties">
+                      <HoldingsAirbnb />
+                    </RealEstateLayout>
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/holdings/tenants"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RealEstateLayout title="Tenant Management">
+                      <HoldingsTenants />
+                    </RealEstateLayout>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -1287,7 +1257,9 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <HoldingsExpenses />
+                    <RealEstateLayout title="Expenses">
+                      <HoldingsExpenses />
+                    </RealEstateLayout>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -1297,7 +1269,9 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <HoldingsStrategy />
+                    <RealEstateLayout title="Investment Strategy">
+                      <HoldingsStrategy />
+                    </RealEstateLayout>
                   </Layout>
                 </ProtectedRoute>
               }

@@ -9415,6 +9415,7 @@ export type Database = {
         | "influencer"
         | "customer"
         | "pod_worker"
+        | "realestate_worker"
       inventory_level: "empty" | "quarter" | "half" | "threeQuarters" | "full"
       lead_source:
         | "probate"
@@ -9601,6 +9602,7 @@ export const Constants = {
         "influencer",
         "customer",
         "pod_worker",
+        "realestate_worker",
       ],
       inventory_level: ["empty", "quarter", "half", "threeQuarters", "full"],
       lead_source: [
