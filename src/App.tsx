@@ -114,6 +114,9 @@ import LoanProducts from "./pages/LoanProducts";
 import LenderDirectory from "./pages/LenderDirectory";
 import LoanCalculators from "./pages/LoanCalculators";
 import FundingRequests from "./pages/FundingRequests";
+import VAPerformance from "./pages/VAPerformance";
+import VARanking from "./pages/VARanking";
+import VATaskCenter from "./pages/VATaskCenter";
 
 const queryClient = new QueryClient();
 
@@ -1103,6 +1106,48 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <FundingRequests />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* VA Academy Routes */}
+            <Route
+              path="/training"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Training />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/va/performance"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <VAPerformance />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/va/ranking"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <VARanking />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/va/tasks"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <VATaskCenter />
                   </Layout>
                 </ProtectedRoute>
               }
