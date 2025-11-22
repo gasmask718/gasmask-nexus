@@ -39,6 +39,8 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/map', icon: MapPin, label: 'Map View', roles: ['admin', 'csr', 'driver', 'biker'] },
     { to: '/wholesale', icon: Building2, label: 'Wholesale', roles: ['admin', 'csr'] },
     { to: '/influencers', icon: MessageCircle, label: 'Influencers', roles: ['admin', 'csr'] },
+    { to: '/influencers/campaigns', icon: TrendingUp, label: 'Campaigns', roles: ['admin', 'csr'] },
+    { to: '/reports/executive', icon: LayoutDashboard, label: 'Executive Reports', roles: ['admin'] },
     { to: '/missions/today', icon: Target, label: 'Missions', roles: ['admin', 'csr', 'driver', 'biker'] },
     { to: '/missions', icon: Trophy, label: 'Missions HQ', roles: ['admin', 'csr'] },
     { to: '/territories', icon: Map, label: 'Territories', roles: ['admin', 'csr'] },
