@@ -1218,6 +1218,78 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            
+            {/* GMA Holdings OS Routes */}
+            <Route
+              path="/holdings/overview"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HoldingsOverview />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/holdings/assets"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HoldingsAssets />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/holdings/airbnb"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HoldingsAirbnb />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/holdings/tenants"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HoldingsTenants />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/holdings/loans"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HoldingsLoans />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/holdings/expenses"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HoldingsExpenses />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/holdings/strategy"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HoldingsStrategy />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
