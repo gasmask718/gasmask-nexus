@@ -18,8 +18,11 @@ export default function PodLayout({ children, title }: PodLayoutProps) {
     );
   }
 
+  // Normalize role for comparison
+  const normalizedRole = role?.trim().toLowerCase();
+
   // Only admin and pod_worker can access POD Department
-  if (role !== 'admin' && role !== 'pod_worker') {
+  if (normalizedRole !== 'admin' && normalizedRole !== 'pod_worker') {
     return <Navigate to="/" replace />;
   }
 

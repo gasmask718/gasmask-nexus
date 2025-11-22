@@ -1055,6 +1055,30 @@ const App = () => (
               }
             />
             <Route
+              path="/realestate/investors"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RealEstateLayout title="Investor Marketplace">
+                      <RealEstateInvestors />
+                    </RealEstateLayout>
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/realestate/expansion"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RealEstateLayout title="Expansion Engine">
+                      <RealEstateExpansion />
+                    </RealEstateLayout>
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/funding/products"
               element={
                 <ProtectedRoute>

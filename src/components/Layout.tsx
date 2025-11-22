@@ -141,13 +141,12 @@ const Layout = ({ children }: LayoutProps) => {
   ];
 
   const realEstateNavItems = [
-    { to: '/realestate', icon: Building, label: 'Dashboard', roles: ['admin', 'realestate_worker'] },
-    { to: '/realestate/leads', icon: FileSearch, label: 'Lead Manager', roles: ['admin', 'realestate_worker'] },
-    { to: '/realestate/pipeline', icon: Target, label: 'Acquisitions Pipeline', roles: ['admin', 'realestate_worker'] },
-    { to: '/realestate/closings', icon: FileSignature, label: 'Closings', roles: ['admin', 'realestate_worker'] },
-    { to: '/holdings/overview', icon: Warehouse, label: 'Holdings Overview', roles: ['admin', 'realestate_worker'] },
-    { to: '/holdings/assets', icon: Building2, label: 'Properties & Assets', roles: ['admin', 'realestate_worker'] },
-    { to: '/holdings/loans', icon: CreditCard, label: 'Loans & Financing', roles: ['admin', 'realestate_worker'] },
+    { to: '/realestate', icon: Building, label: 'Real Estate HQ', roles: ['admin', 'realestate_worker'] },
+    { to: '/realestate/leads', icon: FileSearch, label: 'Lead Intelligence', roles: ['admin', 'realestate_worker'] },
+    { to: '/realestate/pipeline', icon: Target, label: 'Acquisition Pipeline', roles: ['admin', 'realestate_worker'] },
+    { to: '/realestate/investors', icon: Users, label: 'Investor Marketplace', roles: ['admin', 'realestate_worker'] },
+    { to: '/realestate/closings', icon: FileSignature, label: 'Deal Closings & Payments', roles: ['admin', 'realestate_worker'] },
+    { to: '/realestate/expansion', icon: MapPin, label: 'Expansion Engine', roles: ['admin', 'realestate_worker'] },
   ];
 
   const podNavigationItems = [
@@ -165,27 +164,27 @@ const Layout = ({ children }: LayoutProps) => {
   ];
 
   // Trim and normalize role
-  const normalizedRole = userRole?.trim().toLowerCase();
+  const normalizedRole = userRole?.trim().toLowerCase() || null;
   
-  console.log('User Role:', normalizedRole);
+  console.log('Sidebar normalizedRole:', normalizedRole);
   
   const filteredNavItems = navigationItems.filter(
-    item => !item.roles || item.roles.includes(normalizedRole as string)
+    item => !item.roles || (normalizedRole && item.roles.includes(normalizedRole))
   );
 
   const filteredRealEstateNavItems = realEstateNavItems.filter(
-    item => !item.roles || item.roles.includes(normalizedRole as string)
+    item => !item.roles || (normalizedRole && item.roles.includes(normalizedRole))
   );
 
   const filteredPodNavItems = podNavigationItems.filter(
-    item => !item.roles || item.roles.includes(normalizedRole as string)
+    item => !item.roles || (normalizedRole && item.roles.includes(normalizedRole))
   );
 
   const showRealEstateSection = filteredRealEstateNavItems.length > 0;
   const showPodSection = filteredPodNavItems.length > 0;
   
-  console.log('Filtered Real Estate Items:', filteredRealEstateNavItems);
-  console.log('Filtered POD Items:', filteredPodNavItems);
+  console.log('Sidebar RealEstate items:', filteredRealEstateNavItems);
+  console.log('Sidebar POD items:', filteredPodNavItems);
 
   const NavItems = () => (
     <>
