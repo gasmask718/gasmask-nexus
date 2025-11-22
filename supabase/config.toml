@@ -137,3 +137,18 @@ verify_jwt = false
 
 [functions.optimize-assignment-fee-ai]
 verify_jwt = false
+
+[functions.ai-ceo-report]
+verify_jwt = false
+
+[functions.ai-decision-engine]
+verify_jwt = false
+
+[functions.ai-kpi-enforcer]
+verify_jwt = false
+
+[functions.ai-scaling-strategy]
+verify_jwt = false
+
+[functions.ai-market-optimizer]
+verify_jwt = false
