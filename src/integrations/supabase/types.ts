@@ -246,6 +246,7 @@ export type Database = {
           delivered_channels: Json | null
           generated_at: string
           id: string
+          is_read: boolean
           period: string
           report_date: string
         }
@@ -254,6 +255,7 @@ export type Database = {
           delivered_channels?: Json | null
           generated_at?: string
           id?: string
+          is_read?: boolean
           period: string
           report_date: string
         }
@@ -262,6 +264,7 @@ export type Database = {
           delivered_channels?: Json | null
           generated_at?: string
           id?: string
+          is_read?: boolean
           period?: string
           report_date?: string
         }

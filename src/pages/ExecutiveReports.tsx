@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, TrendingUp, Store, Package, Users, DollarSign } from "lucide-react";
 import { toast } from "sonner";
+import { useEffect } from "react";
 
 export default function ExecutiveReports() {
   const queryClient = useQueryClient();
@@ -22,6 +23,25 @@ export default function ExecutiveReports() {
       return data;
     },
   });
+
+  // Mark all reports as read when the page loads
+  useEffect(() => {
+    const markAllAsRead = async () => {
+      if (reports && reports.length > 0) {
+        const unreadReports = reports.filter((r: any) => !r.is_read);
+        if (unreadReports.length > 0) {
+          await supabase
+            .from('executive_reports')
+            .update({ is_read: true })
+            .eq('is_read', false);
+          
+          queryClient.invalidateQueries({ queryKey: ['executive-reports'] });
+        }
+      }
+    };
+
+    markAllAsRead();
+  }, [reports, queryClient]);
 
   const generateReport = useMutation({
     mutationFn: async (period: 'daily' | 'weekly' | 'monthly') => {

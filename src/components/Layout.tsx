@@ -1,6 +1,7 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   LayoutDashboard, 
   Store, 
@@ -29,6 +30,42 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const { signOut, userRole } = useAuth();
+  const [unreadReportsCount, setUnreadReportsCount] = useState(0);
+
+  useEffect(() => {
+    if (userRole === 'admin') {
+      const fetchUnreadCount = async () => {
+        const { count } = await supabase
+          .from('executive_reports')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_read', false);
+        
+        setUnreadReportsCount(count || 0);
+      };
+
+      fetchUnreadCount();
+
+      // Subscribe to real-time updates
+      const channel = supabase
+        .channel('executive-reports-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'executive_reports'
+          },
+          () => {
+            fetchUnreadCount();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [userRole]);
 
   const navigationItems = [
     { to: '/', icon: LayoutDashboard, label: 'Command Center', roles: ['admin', 'csr'] },
@@ -63,11 +100,16 @@ const Layout = ({ children }: LayoutProps) => {
         <NavLink
           key={item.to}
           to={item.to}
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors relative"
           activeClassName="bg-primary/10 text-primary hover:bg-primary/20"
         >
           <item.icon className="h-5 w-5" />
           <span className="font-medium">{item.label}</span>
+          {item.to === '/reports/executive' && unreadReportsCount > 0 && (
+            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
+              {unreadReportsCount}
+            </span>
+          )}
         </NavLink>
       ))}
     </>
