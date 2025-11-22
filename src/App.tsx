@@ -50,6 +50,7 @@ import CommunicationInsights from "./pages/CommunicationInsights";
 import RouteOptimizer from "./pages/RouteOptimizer";
 import RouteOpsCenter from "./pages/RouteOpsCenter";
 import MyRoute from "./pages/MyRoute";
+import SidebarVisualTest from "./pages/SidebarVisualTest";
 import Leaderboard from "./pages/Leaderboard";
 import Payroll from "./pages/Payroll";
 import MetaAI from "./pages/MetaAI";
@@ -158,6 +159,13 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/sidebar-test" element={
+              <ProtectedRoute>
+                <Layout>
+                  <SidebarVisualTest />
+                </Layout>
+              </ProtectedRoute>
+            } />
             <Route
               path="/"
               element={
