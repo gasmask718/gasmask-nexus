@@ -83,6 +83,7 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/missions/today', icon: Target, label: 'Missions', roles: ['admin', 'csr', 'driver', 'biker'] },
     { to: '/missions', icon: Trophy, label: 'Missions HQ', roles: ['admin', 'csr'] },
     { to: '/communications', icon: MessageCircle, label: 'Communications', roles: ['admin', 'csr'] },
+    { to: '/communications/reminders', icon: MessageCircle, label: 'Reminders', roles: ['admin', 'csr'] },
     { to: '/templates', icon: FileText, label: 'Templates', roles: ['admin'] },
     { to: '/territories', icon: Map, label: 'Territories', roles: ['admin', 'csr'] },
     { to: '/analytics/revenue-brain', icon: Brain, label: 'Revenue Brain', roles: ['admin'] },
