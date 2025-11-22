@@ -11,6 +11,7 @@ import { CommunicationTimeline } from "@/components/CommunicationTimeline";
 import { CommunicationStats } from "@/components/communication/CommunicationStats";
 import { CommunicationLogModal } from "@/components/CommunicationLogModal";
 import { FollowUpInsights } from "@/components/communication/FollowUpInsights";
+import { AIRelationshipHealth } from "@/components/communication/AIRelationshipHealth";
 import { useState } from "react";
 
 export default function WholesalerDetail() {
@@ -156,8 +157,9 @@ export default function WholesalerDetail() {
           </TabsList>
 
           <TabsContent value="communication" className="space-y-6">
-            <CommunicationStats entityType="wholesaler" entityId={id!} />
-            <FollowUpInsights entityType="wholesaler" entityId={id!} />
+              <CommunicationStats entityType="wholesaler" entityId={id!} />
+              <AIRelationshipHealth entityType="wholesaler" entityId={id!} />
+              <FollowUpInsights entityType="wholesaler" entityId={id!} />
             <CommunicationTimeline entityType="wholesaler" entityId={id!} />
           </TabsContent>
 

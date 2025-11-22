@@ -15,6 +15,7 @@ import { CommunicationLogModal } from '@/components/CommunicationLogModal';
 import { CommunicationStats } from "@/components/communication/CommunicationStats";
 import { FollowUpAIRecommendation } from "@/components/store/FollowUpAIRecommendation";
 import { ReplenishmentAI } from "@/components/store/ReplenishmentAI";
+import { AIRelationshipHealth } from "@/components/communication/AIRelationshipHealth";
 import { Activity } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -409,7 +410,7 @@ const StoreDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Communication Stats & AI Follow-Up */}
+          {/* Communication Stats & AI */}
           <div className="grid gap-6 md:grid-cols-2">
             <Card className="glass-card border-border/50">
               <CardContent className="pt-6">
@@ -421,6 +422,9 @@ const StoreDetail = () => {
               storeId={id || ''} 
             />
           </div>
+
+          {/* AI Relationship Health */}
+          <AIRelationshipHealth entityType="store" entityId={id || ''} />
 
           {/* Replenishment AI */}
           <ReplenishmentAI storeId={id || ''} />

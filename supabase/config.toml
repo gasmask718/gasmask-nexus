@@ -39,5 +39,8 @@ verify_jwt = false
 [functions.auto-text-ai]
 verify_jwt = false
 
+[functions.communication-brain]
+verify_jwt = false
+
 [functions.communication-insights]
 verify_jwt = false
