@@ -182,49 +182,29 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/callcenter/settings', icon: Settings, label: 'Department Settings', roles: ['admin'] },
   ];
 
-  // Trim and normalize role
+  // Normalize role to lowercase
   const normalizedRole = userRole?.trim().toLowerCase() || null;
   
-  // BYPASS MODE FOR DEBUGGING
-  const bypass = true; // TEMPORARY - Set to false after debugging
+  console.log('🎯 FINAL ROLE:', normalizedRole);
   
-  console.log("========== SIDEBAR ROLE ==========");
-  console.log("Normalized Role:", normalizedRole);
-  console.log("Raw userRole:", userRole);
+  // Filter function: show if no roles defined OR role matches
+  const filterByRole = (items: typeof navigationItems) => 
+    items.filter(item => item.roles.length === 0 || (normalizedRole && item.roles.includes(normalizedRole)));
   
-  console.log("========== SIDEBAR ARRAYS ==========");
-  console.log("RealEstate Nav Items:", realEstateNavItems);
-  console.log("POD Nav Items:", podNavigationItems);
-  console.log("CallCenter Nav Items:", callCenterNavItems);
-  
-  const filteredNavItems = navigationItems.filter(
-    item => !item.roles || (normalizedRole && item.roles.includes(normalizedRole))
-  );
-
-  const filteredRealEstateNavItems = bypass ? realEstateNavItems : realEstateNavItems.filter(
-    item => !item.roles || (normalizedRole && item.roles.includes(normalizedRole))
-  );
-
-  const filteredPodNavItems = bypass ? podNavigationItems : podNavigationItems.filter(
-    item => !item.roles || (normalizedRole && item.roles.includes(normalizedRole))
-  );
-
-  const filteredCallCenterNavItems = bypass ? callCenterNavItems : callCenterNavItems.filter(
-    item => !item.roles || (normalizedRole && item.roles.includes(normalizedRole))
-  );
+  const filteredNavItems = filterByRole(navigationItems);
+  const filteredRealEstateNavItems = filterByRole(realEstateNavItems);
+  const filteredPodNavItems = filterByRole(podNavigationItems);
+  const filteredCallCenterNavItems = filterByRole(callCenterNavItems);
 
   const showRealEstateSection = filteredRealEstateNavItems.length > 0;
   const showPodSection = filteredPodNavItems.length > 0;
   const showCallCenterSection = filteredCallCenterNavItems.length > 0;
   
-  console.log("========== FILTERED ITEMS ==========");
-  console.log('Filtered RealEstateNavItems:', filteredRealEstateNavItems);
-  console.log('Filtered PodNavItems:', filteredPodNavItems);
-  console.log('Filtered CallCenterNavItems:', filteredCallCenterNavItems);
-  
-  if (bypass) {
-    console.log("🔴 BYPASS MODE ACTIVE – showing ALL sidebar sections");
-  }
+  console.log('👁️ Visible Sections:', { 
+    realestate: showRealEstateSection, 
+    pod: showPodSection, 
+    callcenter: showCallCenterSection 
+  });
 
   const NavItems = () => (
     <>
@@ -241,13 +221,12 @@ const Layout = ({ children }: LayoutProps) => {
         <strong>🔍 SIDEBAR DEBUG</strong><br/>
         <strong>Role:</strong> {normalizedRole ? normalizedRole : 'NULL'}<br/>
         <strong>Raw Role:</strong> {userRole ? userRole : 'NULL'}<br/>
-        <strong>RealEstate Array:</strong> {realEstateNavItems?.length || 0} items<br/>
-        <strong>POD Array:</strong> {podNavigationItems?.length || 0} items<br/>
-        <strong>CallCenter Array:</strong> {callCenterNavItems?.length || 0} items<br/>
-        <strong>Filtered RealEstate:</strong> {filteredRealEstateNavItems?.length || 0}<br/>
-        <strong>Filtered POD:</strong> {filteredPodNavItems?.length || 0}<br/>
-        <strong>Filtered CallCenter:</strong> {filteredCallCenterNavItems?.length || 0}<br/>
-        <strong style={{color: bypass ? 'lime' : 'red'}}>BYPASS MODE: {bypass ? 'ON' : 'OFF'}</strong>
+        <strong>RealEstate:</strong> {filteredRealEstateNavItems?.length || 0}/{realEstateNavItems?.length || 0}<br/>
+        <strong>POD:</strong> {filteredPodNavItems?.length || 0}/{podNavigationItems?.length || 0}<br/>
+        <strong>CallCenter:</strong> {filteredCallCenterNavItems?.length || 0}/{callCenterNavItems?.length || 0}<br/>
+        <strong style={{color: showRealEstateSection ? 'lime' : 'red'}}>RE Visible: {showRealEstateSection ? 'YES' : 'NO'}</strong><br/>
+        <strong style={{color: showPodSection ? 'lime' : 'red'}}>POD Visible: {showPodSection ? 'YES' : 'NO'}</strong><br/>
+        <strong style={{color: showCallCenterSection ? 'lime' : 'red'}}>CC Visible: {showCallCenterSection ? 'YES' : 'NO'}</strong>
       </div>
 
       {filteredNavItems.map((item) => (
