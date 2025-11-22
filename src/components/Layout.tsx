@@ -35,7 +35,11 @@ import {
   FileSearch,
   FileSignature,
   CreditCard,
-  Warehouse
+  Warehouse,
+  Mic,
+  MessageSquare,
+  PhoneCall,
+  CheckSquare
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -163,6 +167,21 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/pod/settings', icon: Settings, label: 'POD Settings', roles: ['admin', 'pod_worker'] },
   ];
 
+  const callCenterNavItems = [
+    { to: '/callcenter', icon: Phone, label: 'Dashboard', roles: ['admin'] },
+    { to: '/callcenter/numbers', icon: Phone, label: 'Phone Numbers', roles: ['admin'] },
+    { to: '/callcenter/logs', icon: Phone, label: 'Call Logs', roles: ['admin'] },
+    { to: '/callcenter/recordings', icon: Mic, label: 'Recordings', roles: ['admin'] },
+    { to: '/callcenter/transcripts', icon: FileText, label: 'Transcripts', roles: ['admin'] },
+    { to: '/callcenter/messages', icon: MessageSquare, label: 'Text Messages', roles: ['admin'] },
+    { to: '/callcenter/emails', icon: Mail, label: 'Email Center', roles: ['admin'] },
+    { to: '/callcenter/routing', icon: Settings, label: 'Smart Routing', roles: ['admin'] },
+    { to: '/callcenter/agents', icon: Brain, label: 'AI Agents', roles: ['admin'] },
+    { to: '/callcenter/dialer', icon: PhoneCall, label: 'Outbound Dialer', roles: ['admin'] },
+    { to: '/callcenter/tasks', icon: CheckSquare, label: 'Call Tasks', roles: ['admin'] },
+    { to: '/callcenter/settings', icon: Settings, label: 'Department Settings', roles: ['admin'] },
+  ];
+
   // Trim and normalize role
   const normalizedRole = userRole?.trim().toLowerCase() || null;
   
@@ -180,11 +199,17 @@ const Layout = ({ children }: LayoutProps) => {
     item => !item.roles || (normalizedRole && item.roles.includes(normalizedRole))
   );
 
+  const filteredCallCenterNavItems = callCenterNavItems.filter(
+    item => !item.roles || (normalizedRole && item.roles.includes(normalizedRole))
+  );
+
   const showRealEstateSection = filteredRealEstateNavItems.length > 0;
   const showPodSection = filteredPodNavItems.length > 0;
+  const showCallCenterSection = filteredCallCenterNavItems.length > 0;
   
   console.log('Sidebar RealEstate items:', filteredRealEstateNavItems);
   console.log('Sidebar POD items:', filteredPodNavItems);
+  console.log('Sidebar CallCenter items:', filteredCallCenterNavItems);
 
   const NavItems = () => (
     <>
@@ -236,6 +261,28 @@ const Layout = ({ children }: LayoutProps) => {
             </div>
           </div>
           {filteredPodNavItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
+              activeClassName="bg-primary/10 text-primary hover:bg-primary/20"
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="font-medium">{item.label}</span>
+            </NavLink>
+          ))}
+        </>
+      )}
+
+      {showCallCenterSection && (
+        <>
+          <div className="pt-4 pb-2 mt-2 border-t border-border/50">
+            <div className="px-4 flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <Phone className="h-4 w-4" />
+              <span>📞 Call Center Cloud</span>
+            </div>
+          </div>
+          {filteredCallCenterNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

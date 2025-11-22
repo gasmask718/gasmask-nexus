@@ -813,6 +813,580 @@ export type Database = {
         }
         Relationships: []
       }
+      call_center_ai_agents: {
+        Row: {
+          allowed_actions: Json | null
+          business_name: string
+          compliance_version: string | null
+          created_at: string | null
+          escalation_rules: Json | null
+          greeting_message: string | null
+          id: string
+          is_active: boolean | null
+          knowledge_base: Json | null
+          name: string
+          personality: string | null
+          response_scripts: Json | null
+          updated_at: string | null
+          voice_selection: string | null
+        }
+        Insert: {
+          allowed_actions?: Json | null
+          business_name: string
+          compliance_version?: string | null
+          created_at?: string | null
+          escalation_rules?: Json | null
+          greeting_message?: string | null
+          id?: string
+          is_active?: boolean | null
+          knowledge_base?: Json | null
+          name: string
+          personality?: string | null
+          response_scripts?: Json | null
+          updated_at?: string | null
+          voice_selection?: string | null
+        }
+        Update: {
+          allowed_actions?: Json | null
+          business_name?: string
+          compliance_version?: string | null
+          created_at?: string | null
+          escalation_rules?: Json | null
+          greeting_message?: string | null
+          id?: string
+          is_active?: boolean | null
+          knowledge_base?: Json | null
+          name?: string
+          personality?: string | null
+          response_scripts?: Json | null
+          updated_at?: string | null
+          voice_selection?: string | null
+        }
+        Relationships: []
+      }
+      call_center_alerts: {
+        Row: {
+          acknowledged: boolean | null
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          call_log_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          keywords_detected: string[] | null
+          severity: string
+        }
+        Insert: {
+          acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          call_log_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          keywords_detected?: string[] | null
+          severity: string
+        }
+        Update: {
+          acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          call_log_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          keywords_detected?: string[] | null
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_center_alerts_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_center_alerts_call_log_id_fkey"
+            columns: ["call_log_id"]
+            isOneToOne: false
+            referencedRelation: "call_center_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_center_analytics: {
+        Row: {
+          answered_calls: number | null
+          avg_duration: number | null
+          business_name: string
+          conversion_rate: number | null
+          created_at: string | null
+          date: string
+          id: string
+          lead_quality_score: number | null
+          metrics: Json | null
+          missed_calls: number | null
+          revenue_generated: number | null
+          total_calls: number | null
+        }
+        Insert: {
+          answered_calls?: number | null
+          avg_duration?: number | null
+          business_name: string
+          conversion_rate?: number | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          lead_quality_score?: number | null
+          metrics?: Json | null
+          missed_calls?: number | null
+          revenue_generated?: number | null
+          total_calls?: number | null
+        }
+        Update: {
+          answered_calls?: number | null
+          avg_duration?: number | null
+          business_name?: string
+          conversion_rate?: number | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          lead_quality_score?: number | null
+          metrics?: Json | null
+          missed_calls?: number | null
+          revenue_generated?: number | null
+          total_calls?: number | null
+        }
+        Relationships: []
+      }
+      call_center_dialer_campaigns: {
+        Row: {
+          ai_agent_id: string | null
+          appointments_set: number | null
+          business_name: string
+          call_script: string | null
+          calls_connected: number | null
+          calls_made: number | null
+          created_at: string | null
+          id: string
+          name: string
+          phone_number_id: string | null
+          retry_logic: Json | null
+          status: string | null
+          target_list: Json | null
+          updated_at: string | null
+          voicemail_drop_url: string | null
+        }
+        Insert: {
+          ai_agent_id?: string | null
+          appointments_set?: number | null
+          business_name: string
+          call_script?: string | null
+          calls_connected?: number | null
+          calls_made?: number | null
+          created_at?: string | null
+          id?: string
+          name: string
+          phone_number_id?: string | null
+          retry_logic?: Json | null
+          status?: string | null
+          target_list?: Json | null
+          updated_at?: string | null
+          voicemail_drop_url?: string | null
+        }
+        Update: {
+          ai_agent_id?: string | null
+          appointments_set?: number | null
+          business_name?: string
+          call_script?: string | null
+          calls_connected?: number | null
+          calls_made?: number | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          phone_number_id?: string | null
+          retry_logic?: Json | null
+          status?: string | null
+          target_list?: Json | null
+          updated_at?: string | null
+          voicemail_drop_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_center_dialer_campaigns_ai_agent_id_fkey"
+            columns: ["ai_agent_id"]
+            isOneToOne: false
+            referencedRelation: "call_center_ai_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_center_dialer_campaigns_phone_number_id_fkey"
+            columns: ["phone_number_id"]
+            isOneToOne: false
+            referencedRelation: "call_center_phone_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_center_emails: {
+        Row: {
+          ai_handled: boolean | null
+          body: string | null
+          business_name: string
+          category: string | null
+          contact_id: string | null
+          created_at: string | null
+          direction: string
+          from_address: string
+          id: string
+          priority: string | null
+          subject: string | null
+          to_address: string
+        }
+        Insert: {
+          ai_handled?: boolean | null
+          body?: string | null
+          business_name: string
+          category?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          direction: string
+          from_address: string
+          id?: string
+          priority?: string | null
+          subject?: string | null
+          to_address: string
+        }
+        Update: {
+          ai_handled?: boolean | null
+          body?: string | null
+          business_name?: string
+          category?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          direction?: string
+          from_address?: string
+          id?: string
+          priority?: string | null
+          subject?: string | null
+          to_address?: string
+        }
+        Relationships: []
+      }
+      call_center_logs: {
+        Row: {
+          ai_agent_id: string | null
+          answered_by: string | null
+          assigned_department: string | null
+          business_name: string | null
+          caller_id: string
+          created_at: string | null
+          direction: string
+          duration: number | null
+          emotion_detected: string | null
+          id: string
+          outcome: string | null
+          phone_number_id: string | null
+          recording_url: string | null
+          sentiment_score: number | null
+          summary: string | null
+          tags: string[] | null
+          transcript: string | null
+        }
+        Insert: {
+          ai_agent_id?: string | null
+          answered_by?: string | null
+          assigned_department?: string | null
+          business_name?: string | null
+          caller_id: string
+          created_at?: string | null
+          direction: string
+          duration?: number | null
+          emotion_detected?: string | null
+          id?: string
+          outcome?: string | null
+          phone_number_id?: string | null
+          recording_url?: string | null
+          sentiment_score?: number | null
+          summary?: string | null
+          tags?: string[] | null
+          transcript?: string | null
+        }
+        Update: {
+          ai_agent_id?: string | null
+          answered_by?: string | null
+          assigned_department?: string | null
+          business_name?: string | null
+          caller_id?: string
+          created_at?: string | null
+          direction?: string
+          duration?: number | null
+          emotion_detected?: string | null
+          id?: string
+          outcome?: string | null
+          phone_number_id?: string | null
+          recording_url?: string | null
+          sentiment_score?: number | null
+          summary?: string | null
+          tags?: string[] | null
+          transcript?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_center_logs_ai_agent_id_fkey"
+            columns: ["ai_agent_id"]
+            isOneToOne: false
+            referencedRelation: "call_center_ai_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_center_logs_phone_number_id_fkey"
+            columns: ["phone_number_id"]
+            isOneToOne: false
+            referencedRelation: "call_center_phone_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_center_messages: {
+        Row: {
+          ai_reply: boolean | null
+          business_name: string | null
+          contact_id: string | null
+          created_at: string | null
+          direction: string
+          from_number: string
+          id: string
+          media_urls: string[] | null
+          message_body: string | null
+          phone_number_id: string | null
+          status: string | null
+          to_number: string
+        }
+        Insert: {
+          ai_reply?: boolean | null
+          business_name?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          direction: string
+          from_number: string
+          id?: string
+          media_urls?: string[] | null
+          message_body?: string | null
+          phone_number_id?: string | null
+          status?: string | null
+          to_number: string
+        }
+        Update: {
+          ai_reply?: boolean | null
+          business_name?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          direction?: string
+          from_number?: string
+          id?: string
+          media_urls?: string[] | null
+          message_body?: string | null
+          phone_number_id?: string | null
+          status?: string | null
+          to_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_center_messages_phone_number_id_fkey"
+            columns: ["phone_number_id"]
+            isOneToOne: false
+            referencedRelation: "call_center_phone_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_center_phone_numbers: {
+        Row: {
+          after_hours_forwarding: string | null
+          business_name: string
+          created_at: string | null
+          default_ai_agent_id: string | null
+          default_routing_rules: Json | null
+          id: string
+          is_active: boolean | null
+          label: string
+          phone_number: string
+          type: string
+          updated_at: string | null
+          voicemail_greeting_url: string | null
+        }
+        Insert: {
+          after_hours_forwarding?: string | null
+          business_name: string
+          created_at?: string | null
+          default_ai_agent_id?: string | null
+          default_routing_rules?: Json | null
+          id?: string
+          is_active?: boolean | null
+          label: string
+          phone_number: string
+          type: string
+          updated_at?: string | null
+          voicemail_greeting_url?: string | null
+        }
+        Update: {
+          after_hours_forwarding?: string | null
+          business_name?: string
+          created_at?: string | null
+          default_ai_agent_id?: string | null
+          default_routing_rules?: Json | null
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          phone_number?: string
+          type?: string
+          updated_at?: string | null
+          voicemail_greeting_url?: string | null
+        }
+        Relationships: []
+      }
+      call_center_recordings: {
+        Row: {
+          call_log_id: string | null
+          created_at: string | null
+          duration: number | null
+          file_size: number | null
+          id: string
+          recording_url: string
+          transcription_status: string | null
+        }
+        Insert: {
+          call_log_id?: string | null
+          created_at?: string | null
+          duration?: number | null
+          file_size?: number | null
+          id?: string
+          recording_url: string
+          transcription_status?: string | null
+        }
+        Update: {
+          call_log_id?: string | null
+          created_at?: string | null
+          duration?: number | null
+          file_size?: number | null
+          id?: string
+          recording_url?: string
+          transcription_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_center_recordings_call_log_id_fkey"
+            columns: ["call_log_id"]
+            isOneToOne: false
+            referencedRelation: "call_center_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_center_routing_rules: {
+        Row: {
+          actions: Json
+          business_name: string | null
+          conditions: Json
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          priority: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          actions?: Json
+          business_name?: string | null
+          conditions?: Json
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          priority?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          actions?: Json
+          business_name?: string | null
+          conditions?: Json
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          priority?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      call_center_tasks: {
+        Row: {
+          assigned_to: string | null
+          business_name: string | null
+          call_log_id: string | null
+          created_at: string | null
+          created_by_ai: boolean | null
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string | null
+          status: string | null
+          task_type: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          business_name?: string | null
+          call_log_id?: string | null
+          created_at?: string | null
+          created_by_ai?: boolean | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          task_type: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          business_name?: string | null
+          call_log_id?: string | null
+          created_at?: string | null
+          created_by_ai?: boolean | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          task_type?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_center_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_center_tasks_call_log_id_fkey"
+            columns: ["call_log_id"]
+            isOneToOne: false
+            referencedRelation: "call_center_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_logs: {
         Row: {
           ai_notes: string | null
