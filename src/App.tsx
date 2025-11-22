@@ -107,6 +107,9 @@ import RealEstatePipeline from "./pages/RealEstatePipeline";
 import RealEstateInvestors from "./pages/RealEstateInvestors";
 import RealEstateClosings from "./pages/RealEstateClosings";
 import RealEstateExpansion from "./pages/RealEstateExpansion";
+import RealEstateSubscriptions from "./pages/RealEstateSubscriptions";
+import RealEstatePartners from "./pages/RealEstatePartners";
+import RealEstatePL from "./pages/RealEstatePL";
 
 const queryClient = new QueryClient();
 
@@ -1026,6 +1029,36 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <RealEstateExpansion />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/real-estate/subscriptions"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RealEstateSubscriptions />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/real-estate/partners"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RealEstatePartners />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/real-estate/pl"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RealEstatePL />
                   </Layout>
                 </ProtectedRoute>
               }
