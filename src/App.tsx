@@ -91,6 +91,16 @@ import PortalWholesale from "./pages/portal/PortalWholesale";
 import PortalInfluencer from "./pages/portal/PortalInfluencer";
 import PortalBiker from "./pages/portal/PortalBiker";
 import PortalAmbassador from "./pages/portal/PortalAmbassador";
+import HR from "./pages/HR";
+import HRApplicants from "./pages/HRApplicants";
+import HRApplicantDetail from "./pages/HRApplicantDetail";
+import HREmployees from "./pages/HREmployees";
+import HREmployeeDetail from "./pages/HREmployeeDetail";
+import HRInterviews from "./pages/HRInterviews";
+import HRDocuments from "./pages/HRDocuments";
+import HROnboarding from "./pages/HROnboarding";
+import HRPayroll from "./pages/HRPayroll";
+import MyHR from "./pages/MyHR";
 
 const queryClient = new QueryClient();
 
@@ -854,6 +864,106 @@ const App = () => (
           <Route path="/portal/influencer" element={<PortalInfluencer />} />
           <Route path="/portal/biker" element={<PortalBiker />} />
           <Route path="/portal/ambassador" element={<PortalAmbassador />} />
+            
+            {/* HR OS Routes */}
+            <Route
+              path="/hr"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HR />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/hr/applicants"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HRApplicants />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/hr/applicants/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HRApplicantDetail />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/hr/employees"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HREmployees />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/hr/employees/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HREmployeeDetail />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/hr/interviews"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HRInterviews />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/hr/documents"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HRDocuments />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/hr/onboarding"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HROnboarding />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/hr/payroll"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HRPayroll />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my/hr"
+              element={
+                <ProtectedRoute>
+                  <MyHR />
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

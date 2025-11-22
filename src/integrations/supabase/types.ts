@@ -2166,6 +2166,107 @@ export type Database = {
           },
         ]
       }
+      hr_employees: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          department: string | null
+          email: string | null
+          employment_type: string | null
+          full_name: string
+          id: string
+          job_title: string
+          phone: string | null
+          start_date: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          department?: string | null
+          email?: string | null
+          employment_type?: string | null
+          full_name: string
+          id?: string
+          job_title: string
+          phone?: string | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          department?: string | null
+          email?: string | null
+          employment_type?: string | null
+          full_name?: string
+          id?: string
+          job_title?: string
+          phone?: string | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_employees_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_interviews: {
+        Row: {
+          applicant_id: string | null
+          created_at: string | null
+          id: string
+          interviewer_id: string | null
+          notes: string | null
+          result: string | null
+          scheduled_for: string | null
+        }
+        Insert: {
+          applicant_id?: string | null
+          created_at?: string | null
+          id?: string
+          interviewer_id?: string | null
+          notes?: string | null
+          result?: string | null
+          scheduled_for?: string | null
+        }
+        Update: {
+          applicant_id?: string | null
+          created_at?: string | null
+          id?: string
+          interviewer_id?: string | null
+          notes?: string | null
+          result?: string | null
+          scheduled_for?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_interviews_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "hr_applicants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_interviews_interviewer_id_fkey"
+            columns: ["interviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hr_notifications: {
         Row: {
           created_at: string | null
@@ -2209,6 +2310,85 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_onboarding_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          due_date: string | null
+          employee_id: string | null
+          id: string
+          status: string | null
+          task: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          employee_id?: string | null
+          id?: string
+          status?: string | null
+          task: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          employee_id?: string | null
+          id?: string
+          status?: string | null
+          task?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_onboarding_tasks_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_payroll: {
+        Row: {
+          created_at: string | null
+          employee_id: string | null
+          id: string
+          last_pay_date: string | null
+          next_pay_date: string | null
+          pay_rate: number | null
+          pay_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          employee_id?: string | null
+          id?: string
+          last_pay_date?: string | null
+          next_pay_date?: string | null
+          pay_rate?: number | null
+          pay_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          employee_id?: string | null
+          id?: string
+          last_pay_date?: string | null
+          next_pay_date?: string | null
+          pay_rate?: number | null
+          pay_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_payroll_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
             referencedColumns: ["id"]
           },
         ]
