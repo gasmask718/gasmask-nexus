@@ -91,6 +91,7 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/team', icon: Users, label: 'Team', roles: ['admin'] },
     { to: '/products', icon: Package, label: 'Products', roles: ['admin'] },
     { to: '/analytics', icon: TrendingUp, label: 'Analytics', roles: ['admin', 'accountant'] },
+    { to: '/training', icon: Package, label: 'Training', roles: ['admin', 'csr', 'driver', 'biker', 'ambassador'] },
     { to: '/settings/automation', icon: Settings, label: 'Automation', roles: ['admin'] },
   ];
 

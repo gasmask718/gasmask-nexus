@@ -13,6 +13,7 @@ import { InventoryPredictionCard } from '@/components/map/InventoryPredictionCar
 import { CommunicationTimeline } from '@/components/CommunicationTimeline';
 import { CommunicationLogModal } from '@/components/CommunicationLogModal';
 import { CommunicationStats } from "@/components/communication/CommunicationStats";
+import { FollowUpAIRecommendation } from "@/components/store/FollowUpAIRecommendation";
 import { Activity } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -407,12 +408,21 @@ const StoreDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Communication Stats */}
-          <Card className="glass-card border-border/50">
-            <CardContent className="pt-6">
-              <CommunicationStats entityType="store" entityId={id || ''} />
-            </CardContent>
-          </Card>
+          {/* Communication Stats & AI Follow-Up */}
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="glass-card border-border/50">
+              <CardContent className="pt-6">
+                <CommunicationStats entityType="store" entityId={id || ''} />
+              </CardContent>
+            </Card>
+            
+            <FollowUpAIRecommendation 
+              storeId={id || ''} 
+              onSendMessage={(message) => {
+                setCommunicationModalOpen(true);
+              }}
+            />
+          </div>
 
           {/* Route Intelligence Insights */}
           {routeInsight && (

@@ -28,10 +28,11 @@ import Territories from "./pages/Territories";
 import RevenueBrain from "./pages/RevenueBrain";
 import OpportunityRadar from "./pages/OpportunityRadar";
 import MissionsHQ from "./pages/MissionsHQ";
-import Communications from "./pages/Communications";
-import Templates from "./pages/Templates";
-import WorkerHome from "./pages/WorkerHome";
-import AutomationSettings from "./pages/AutomationSettings";
+import Communications from './pages/Communications';
+import Templates from './pages/Templates';
+import WorkerHome from './pages/WorkerHome';
+import AutomationSettings from './pages/AutomationSettings';
+import Training from './pages/Training';
 
 const queryClient = new QueryClient();
 
@@ -276,6 +277,16 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <Templates />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/training"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Training />
                   </Layout>
                 </ProtectedRoute>
               }

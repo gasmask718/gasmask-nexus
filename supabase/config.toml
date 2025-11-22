@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.route-learning]
 verify_jwt = false
+
+[functions.followup-ai]
+verify_jwt = false
+
+[functions.risk-monitor]
+verify_jwt = false
