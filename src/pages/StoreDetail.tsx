@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import VisitLogModal from '@/components/VisitLogModal';
+import { InventoryPredictionCard } from '@/components/map/InventoryPredictionCard';
 import { 
   MapPin, 
   Phone, 
@@ -60,6 +61,9 @@ interface ProductInventory {
   last_inventory_level: string;
   last_inventory_check_at: string;
   next_estimated_reorder_date: string;
+  urgency_score: number;
+  velocity_boxes_per_day: number;
+  predicted_stockout_date: string;
 }
 
 interface VisitLog {
@@ -158,6 +162,9 @@ const StoreDetail = () => {
           last_inventory_level,
           last_inventory_check_at,
           next_estimated_reorder_date,
+          urgency_score,
+          velocity_boxes_per_day,
+          predicted_stockout_date,
           product:products(
             name,
             brand:brands(name, color)
@@ -374,6 +381,16 @@ const StoreDetail = () => {
             </TabsList>
 
             <TabsContent value="inventory" className="space-y-4">
+              {/* AI Prediction Card */}
+              {inventory.length > 0 && inventory.some(i => i.urgency_score > 0) && (
+                <InventoryPredictionCard
+                  storeName={store.name}
+                  urgencyScore={Math.max(...inventory.map(i => i.urgency_score || 0))}
+                  predictedStockoutDate={inventory.find(i => i.predicted_stockout_date)?.predicted_stockout_date || null}
+                  velocity={inventory.reduce((sum, i) => sum + (i.velocity_boxes_per_day || 0), 0) / inventory.length}
+                />
+              )}
+              
               <Card className="glass-card border-border/50">
                 <CardHeader>
                   <CardTitle>Product Inventory Levels</CardTitle>

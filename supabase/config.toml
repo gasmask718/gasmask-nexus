@@ -1,1 +1,7 @@
 project_id = "qalaaroashbggynpvqct"
+
+[functions.predict-inventory]
+verify_jwt = false
+
+[functions.optimize-routes]
+verify_jwt = false

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { FilterBar } from '@/components/map/FilterBar';
@@ -10,6 +11,7 @@ import { DriverCard } from '@/components/map/DriverCard';
 import { CommandMetrics } from '@/components/map/CommandMetrics';
 import { CommandSidebar } from '@/components/map/CommandSidebar';
 import { Alert } from '@/components/map/AlertsPanel';
+import { RouteOptimizerPanel } from '@/components/map/RouteOptimizerPanel';
 import { Package, Users, Layers, Star, Building2, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { territories } from '@/components/map/territories';
@@ -755,6 +757,11 @@ const Map = () => {
             onRouteClick={handleRouteClick}
             onAlertClick={handleAlertClick}
             onClose={() => setShowSidebar(false)}
+            onRoutesGenerated={() => {
+              // Refresh stores and routes after optimization
+              fetchStores();
+              toast.success('Routes optimized! Refreshing map...');
+            }}
           />
         </div>
       )}

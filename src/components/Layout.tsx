@@ -25,6 +25,7 @@ const Layout = ({ children }: LayoutProps) => {
 
   const navigationItems = [
     { to: '/', icon: LayoutDashboard, label: 'Command Center', roles: ['admin', 'csr'] },
+    { to: '/driver', icon: MapPin, label: 'My Route', roles: ['driver', 'biker'] },
     { to: '/stores', icon: Store, label: 'Stores', roles: ['admin', 'csr', 'driver', 'biker'] },
     { to: '/batch-import', icon: Upload, label: 'Batch Import', roles: ['admin', 'csr'] },
     { to: '/routes', icon: Map, label: 'Routes', roles: ['admin', 'driver', 'biker'] },
