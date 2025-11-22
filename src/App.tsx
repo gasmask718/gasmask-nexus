@@ -86,6 +86,11 @@ import PortalLogin from "./pages/portal/PortalLogin";
 import PortalDashboard from "./pages/portal/PortalDashboard";
 import PortalInvoices from "./pages/portal/PortalInvoices";
 import PortalInvoiceDetail from "./pages/portal/PortalInvoiceDetail";
+import PortalStore from "./pages/portal/PortalStore";
+import PortalWholesale from "./pages/portal/PortalWholesale";
+import PortalInfluencer from "./pages/portal/PortalInfluencer";
+import PortalBiker from "./pages/portal/PortalBiker";
+import PortalAmbassador from "./pages/portal/PortalAmbassador";
 
 const queryClient = new QueryClient();
 
@@ -840,10 +845,15 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route path="/portal/login" element={<PortalLogin />} />
-            <Route path="/portal/dashboard" element={<PortalDashboard />} />
-            <Route path="/portal/invoices" element={<PortalInvoices />} />
-            <Route path="/portal/invoices/:id" element={<PortalInvoiceDetail />} />
+          <Route path="/portal/login" element={<PortalLogin />} />
+          <Route path="/portal/dashboard" element={<PortalDashboard />} />
+          <Route path="/portal/invoices" element={<PortalInvoices />} />
+          <Route path="/portal/invoices/:id" element={<PortalInvoiceDetail />} />
+          <Route path="/portal/store" element={<PortalStore />} />
+          <Route path="/portal/wholesale" element={<PortalWholesale />} />
+          <Route path="/portal/influencer" element={<PortalInfluencer />} />
+          <Route path="/portal/biker" element={<PortalBiker />} />
+          <Route path="/portal/ambassador" element={<PortalAmbassador />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

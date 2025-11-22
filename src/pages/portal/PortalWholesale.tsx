@@ -23,31 +23,30 @@ export default function PortalWholesale() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Simplified queries to avoid type issues
-      const hubResponse: any = await supabase
+      const { data: hubData } = await supabase
         .from('wholesale_hubs')
-        .select('*')
+        .select('id, name, status, city, state, created_at, owner_user_id')
         .eq('owner_user_id', user.id)
         .maybeSingle();
       
-      if (hubResponse.data) {
-        setHubData(hubResponse.data);
+      if (hubData) {
+        setHubData(hubData);
 
-        const ordersResponse: any = await supabase
+        const { data: ordersData } = await supabase
           .from('wholesale_orders')
-          .select('*')
-          .eq('hub_id', hubResponse.data.id)
+          .select('id, created_at, status, wholesale_hub_id')
+          .eq('wholesale_hub_id', hubData.id)
           .order('created_at', { ascending: false })
           .limit(20);
 
-        setOrders(ordersResponse.data || []);
+        setOrders(ordersData || []);
 
-        const storesResponse: any = await supabase
+        const { data: storesData } = await supabase
           .from('stores')
-          .select('*')
-          .eq('primary_supplier_id', hubResponse.data.id);
+          .select('id, name, address_city, address_state, type, status, primary_supplier_id')
+          .eq('primary_supplier_id', hubData.id);
 
-        setStores(storesResponse.data || []);
+        setStores(storesData || []);
       }
     } catch (error) {
       console.error('Error fetching wholesale data:', error);
@@ -168,7 +167,7 @@ export default function PortalWholesale() {
                     {orders.slice(0, 5).map((order) => (
                       <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
-                          <p className="font-medium">{order.stores?.name}</p>
+                          <p className="font-medium">Order #{order.id.slice(0, 8)}</p>
                           <p className="text-sm text-muted-foreground">
                             {new Date(order.created_at).toLocaleDateString()}
                           </p>
@@ -220,7 +219,7 @@ export default function PortalWholesale() {
                       <div>
                         <p className="font-medium">Order #{order.id.slice(0, 8)}</p>
                         <p className="text-sm text-muted-foreground">
-                          {order.stores?.name} • {new Date(order.created_at).toLocaleDateString()}
+                          {new Date(order.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       <Badge>{order.status}</Badge>
@@ -245,7 +244,7 @@ export default function PortalWholesale() {
                         <Badge variant="outline">{store.status}</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {store.address_street}, {store.address_city}
+                        {store.address_city}, {store.address_state}
                       </p>
                     </Card>
                   ))}
