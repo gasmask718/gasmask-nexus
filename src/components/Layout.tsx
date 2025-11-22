@@ -29,7 +29,8 @@ import {
   DollarSign,
   Home,
   Phone,
-  Mail
+  Mail,
+  Shirt
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -134,9 +135,29 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/settings/automation', icon: Settings, label: 'Automation', roles: ['admin'] },
   ];
 
+  const podNavigationItems = [
+    { to: '/pod', icon: Shirt, label: 'Overview', roles: ['admin', 'pod_worker'] },
+    { to: '/pod/designs', icon: Package, label: 'Design Library', roles: ['admin', 'pod_worker'] },
+    { to: '/pod/generator', icon: Brain, label: 'AI Generator', roles: ['admin', 'pod_worker'] },
+    { to: '/pod/mockups', icon: Package, label: 'Mockups', roles: ['admin', 'pod_worker'] },
+    { to: '/pod/uploads', icon: Upload, label: 'Upload Manager', roles: ['admin', 'pod_worker'] },
+    { to: '/pod/videos', icon: Package, label: 'Promo Videos', roles: ['admin', 'pod_worker'] },
+    { to: '/pod/scheduler', icon: Target, label: 'Content Scheduler', roles: ['admin', 'pod_worker'] },
+    { to: '/pod/analytics', icon: BarChart3, label: 'Sales Analytics', roles: ['admin', 'pod_worker'] },
+    { to: '/pod/winners', icon: Trophy, label: 'Winners Engine', roles: ['admin', 'pod_worker'] },
+    { to: '/pod/va', icon: Users, label: 'VA Control Panel', roles: ['admin', 'pod_worker'] },
+    { to: '/pod/settings', icon: Settings, label: 'Settings', roles: ['admin', 'pod_worker'] },
+  ];
+
   const filteredNavItems = navigationItems.filter(
     item => !item.roles || !userRole || item.roles.includes(userRole)
   );
+
+  const filteredPodNavItems = podNavigationItems.filter(
+    item => !item.roles || !userRole || item.roles.includes(userRole)
+  );
+
+  const showPodSection = filteredPodNavItems.length > 0;
 
   const NavItems = () => (
     <>
@@ -156,6 +177,28 @@ const Layout = ({ children }: LayoutProps) => {
           )}
         </NavLink>
       ))}
+      
+      {showPodSection && (
+        <>
+          <div className="pt-4 pb-2">
+            <div className="px-4 flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <Shirt className="h-4 w-4" />
+              <span>POD Department</span>
+            </div>
+          </div>
+          {filteredPodNavItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
+              activeClassName="bg-primary/10 text-primary hover:bg-primary/20"
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="font-medium">{item.label}</span>
+            </NavLink>
+          ))}
+        </>
+      )}
     </>
   );
 

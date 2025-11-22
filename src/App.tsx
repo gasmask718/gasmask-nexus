@@ -129,17 +129,18 @@ import HoldingsTenants from "./pages/HoldingsTenants";
 import HoldingsLoans from "./pages/HoldingsLoans";
 import HoldingsExpenses from "./pages/HoldingsExpenses";
 import HoldingsStrategy from "./pages/HoldingsStrategy";
-import PODOverview from "./pages/PODOverview";
-import PODDesigns from "./pages/PODDesigns";
-import PODGenerate from "./pages/PODGenerate";
-import PODMockups from "./pages/PODMockups";
-import PODUpload from "./pages/PODUpload";
-import PODVideos from "./pages/PODVideos";
-import PODScheduler from "./pages/PODScheduler";
-import PODAnalytics from "./pages/PODAnalytics";
-import PODScaling from "./pages/PODScaling";
-import PODVAControl from "./pages/PODVAControl";
-import PODSettings from "./pages/PODSettings";
+import PODOverview from "./pages/pod/index";
+import PODDesigns from "./pages/pod/designs";
+import PODGenerate from "./pages/pod/generator";
+import PODMockups from "./pages/pod/mockups";
+import PODUpload from "./pages/pod/uploads";
+import PODVideos from "./pages/pod/videos";
+import PODScheduler from "./pages/pod/scheduler";
+import PODAnalytics from "./pages/pod/analytics";
+import PODScaling from "./pages/pod/winners";
+import PODVAControl from "./pages/pod/va";
+import PODSettings from "./pages/pod/settings";
+import PodLayout from "./pages/pod/PodLayout";
 
 const queryClient = new QueryClient();
 
@@ -1304,11 +1305,13 @@ const App = () => (
             
             {/* POD Department Routes */}
             <Route
-              path="/pod/overview"
+              path="/pod"
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <PODOverview />
+                    <PodLayout title="POD Overview">
+                      <PODOverview />
+                    </PodLayout>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -1318,17 +1321,21 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <PODDesigns />
+                    <PodLayout title="Design Library">
+                      <PODDesigns />
+                    </PodLayout>
                   </Layout>
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/pod/designs/generate"
+              path="/pod/generator"
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <PODGenerate />
+                    <PodLayout title="AI Design Generator">
+                      <PODGenerate />
+                    </PodLayout>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -1338,17 +1345,21 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <PODMockups />
+                    <PodLayout title="Mockup Generator">
+                      <PODMockups />
+                    </PodLayout>
                   </Layout>
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/pod/upload"
+              path="/pod/uploads"
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <PODUpload />
+                    <PodLayout title="Upload Manager">
+                      <PODUpload />
+                    </PodLayout>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -1358,7 +1369,9 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <PODVideos />
+                    <PodLayout title="Promo Videos">
+                      <PODVideos />
+                    </PodLayout>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -1368,7 +1381,9 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <PODScheduler />
+                    <PodLayout title="Content Scheduler">
+                      <PODScheduler />
+                    </PodLayout>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -1378,27 +1393,33 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <PODAnalytics />
+                    <PodLayout title="Sales Analytics">
+                      <PODAnalytics />
+                    </PodLayout>
                   </Layout>
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/pod/scaling"
+              path="/pod/winners"
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <PODScaling />
+                    <PodLayout title="Winner Scaling Engine">
+                      <PODScaling />
+                    </PodLayout>
                   </Layout>
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/pod/va-control"
+              path="/pod/va"
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <PODVAControl />
+                    <PodLayout title="VA Control Panel">
+                      <PODVAControl />
+                    </PodLayout>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -1408,7 +1429,9 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <PODSettings />
+                    <PodLayout title="POD Settings">
+                      <PODSettings />
+                    </PodLayout>
                   </Layout>
                 </ProtectedRoute>
               }
