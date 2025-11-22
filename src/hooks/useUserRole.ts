@@ -33,7 +33,13 @@ export function useUserRole() {
           const primaryRole = rolesList.includes('admin') 
             ? 'admin' 
             : rolesList[0];
-          setRole(primaryRole);
+          
+          // Force admin for the owner account
+          if (user?.email?.toLowerCase() === 'gasmaskapprovedllc@gmail.com') {
+            setRole('admin');
+          } else {
+            setRole(primaryRole);
+          }
         }
       } catch (error) {
         console.error('Error fetching user role:', error);
