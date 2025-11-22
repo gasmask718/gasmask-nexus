@@ -44,6 +44,23 @@ export default function WorkerHome() {
     enabled: !!user?.id,
   });
 
+  const { data: notifications } = useQuery({
+    queryKey: ['mission-notifications', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('mission_notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
   const { data: nextStop } = useQuery({
     queryKey: ['next-stop', user?.id],
     queryFn: async () => {
@@ -71,6 +88,19 @@ export default function WorkerHome() {
     },
     enabled: !!user?.id,
   });
+
+  const todayXP = notifications
+    ?.filter(n => {
+      const today = new Date().toDateString();
+      return new Date(n.created_at).toDateString() === today;
+    })
+    .reduce((sum, n) => sum + n.xp_awarded, 0) || 0;
+
+  const todayMissionsCompleted = notifications
+    ?.filter(n => {
+      const today = new Date().toDateString();
+      return new Date(n.created_at).toDateString() === today;
+    }).length || 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -123,6 +153,34 @@ export default function WorkerHome() {
               >
                 Details
               </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* Today's Wins */}
+        {notifications && notifications.length > 0 && (
+          <Card className="p-6 border-primary/30 bg-primary/5">
+            <div className="flex items-center gap-3 mb-4">
+              <Trophy className="w-6 h-6 text-primary" />
+              <h2 className="text-xl font-bold">Today's Wins</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="text-center p-3 rounded-lg bg-background">
+                <p className="text-3xl font-bold text-primary">{todayMissionsCompleted}</p>
+                <p className="text-sm text-muted-foreground">Missions</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-background">
+                <p className="text-3xl font-bold text-primary">{todayXP}</p>
+                <p className="text-sm text-muted-foreground">XP Earned</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {notifications.slice(0, 3).map((notif) => (
+                <div key={notif.id} className="p-3 rounded-lg bg-background border text-sm">
+                  <div className="font-semibold">{notif.title}</div>
+                  <div className="text-muted-foreground">{notif.message}</div>
+                </div>
+              ))}
             </div>
           </Card>
         )}

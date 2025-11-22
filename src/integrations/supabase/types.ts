@@ -240,6 +240,33 @@ export type Database = {
           },
         ]
       }
+      executive_reports: {
+        Row: {
+          data: Json
+          delivered_channels: Json | null
+          generated_at: string
+          id: string
+          period: string
+          report_date: string
+        }
+        Insert: {
+          data: Json
+          delivered_channels?: Json | null
+          generated_at?: string
+          id?: string
+          period: string
+          report_date: string
+        }
+        Update: {
+          data?: Json
+          delivered_channels?: Json | null
+          generated_at?: string
+          id?: string
+          period?: string
+          report_date?: string
+        }
+        Relationships: []
+      }
       forecast_snapshots: {
         Row: {
           actual_revenue_total: number | null
@@ -432,6 +459,115 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      influencer_conversions: {
+        Row: {
+          campaign_id: string
+          conversion_type: string
+          created_at: string
+          id: string
+          occurred_at: string
+          post_id: string | null
+          store_id: string | null
+          value: number | null
+          wholesale_hub_id: string | null
+        }
+        Insert: {
+          campaign_id: string
+          conversion_type: string
+          created_at?: string
+          id?: string
+          occurred_at?: string
+          post_id?: string | null
+          store_id?: string | null
+          value?: number | null
+          wholesale_hub_id?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          conversion_type?: string
+          created_at?: string
+          id?: string
+          occurred_at?: string
+          post_id?: string | null
+          store_id?: string | null
+          value?: number | null
+          wholesale_hub_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "influencer_conversions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "influencer_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "influencer_conversions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "influencer_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "influencer_conversions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "influencer_conversions_wholesale_hub_id_fkey"
+            columns: ["wholesale_hub_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      influencer_posts: {
+        Row: {
+          campaign_id: string
+          caption: string | null
+          created_at: string
+          hashtags: Json | null
+          id: string
+          metrics: Json | null
+          platform_post_id: string | null
+          posted_at: string | null
+          url: string | null
+        }
+        Insert: {
+          campaign_id: string
+          caption?: string | null
+          created_at?: string
+          hashtags?: Json | null
+          id?: string
+          metrics?: Json | null
+          platform_post_id?: string | null
+          posted_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          caption?: string | null
+          created_at?: string
+          hashtags?: Json | null
+          id?: string
+          metrics?: Json | null
+          platform_post_id?: string | null
+          posted_at?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "influencer_posts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "influencer_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       influencers: {
         Row: {
@@ -705,6 +841,57 @@ export type Database = {
           },
         ]
       }
+      mission_notifications: {
+        Row: {
+          badge_awarded: string | null
+          created_at: string
+          id: string
+          message: string
+          mission_id: string
+          read: boolean
+          title: string
+          user_id: string
+          xp_awarded: number
+        }
+        Insert: {
+          badge_awarded?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          mission_id: string
+          read?: boolean
+          title: string
+          user_id: string
+          xp_awarded?: number
+        }
+        Update: {
+          badge_awarded?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          mission_id?: string
+          read?: boolean
+          title?: string
+          user_id?: string
+          xp_awarded?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_notifications_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "mission_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mission_templates: {
         Row: {
           cash_bonus: number | null
@@ -835,6 +1022,50 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      route_insights: {
+        Row: {
+          average_arrival_delay_minutes: number | null
+          average_service_time_minutes: number | null
+          best_time_window: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          store_id: string
+          updated_at: string
+          visit_success_rate: number | null
+        }
+        Insert: {
+          average_arrival_delay_minutes?: number | null
+          average_service_time_minutes?: number | null
+          best_time_window?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          store_id: string
+          updated_at?: string
+          visit_success_rate?: number | null
+        }
+        Update: {
+          average_arrival_delay_minutes?: number | null
+          average_service_time_minutes?: number | null
+          best_time_window?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          store_id?: string
+          updated_at?: string
+          visit_success_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_insights_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       route_stops: {
         Row: {

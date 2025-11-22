@@ -22,6 +22,8 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Influencers from "./pages/Influencers";
 import Missions from "./pages/Missions";
+import InfluencerCampaigns from "./pages/InfluencerCampaigns";
+import ExecutiveReports from "./pages/ExecutiveReports";
 import Territories from "./pages/Territories";
 import RevenueBrain from "./pages/RevenueBrain";
 import OpportunityRadar from "./pages/OpportunityRadar";
@@ -174,6 +176,26 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <Missions />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/influencers/campaigns"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <InfluencerCampaigns />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/executive"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <ExecutiveReports />
                   </Layout>
                 </ProtectedRoute>
               }
