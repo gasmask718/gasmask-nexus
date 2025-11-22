@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
+import { CommunicationWidget } from '@/components/communication/CommunicationWidget';
+import {
   Store, 
   TrendingUp, 
   DollarSign, 
@@ -128,7 +129,9 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
+        <CommunicationWidget />
+        
         <Card className="glass-card border-border/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

@@ -2,8 +2,9 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { SendMessageModal } from '@/components/communication/SendMessageModal';
 import { 
-  LayoutDashboard, 
+  LayoutDashboard,
   Store, 
   Map, 
   MapPin,
@@ -15,6 +16,7 @@ import {
   Menu,
   Building2,
   MessageCircle,
+  MessageSquarePlus,
   Target,
   Brain,
   Radar,
@@ -40,6 +42,7 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const { signOut, userRole } = useAuth();
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
+  const [sendMessageOpen, setSendMessageOpen] = useState(false);
 
   useEffect(() => {
     if (userRole === 'admin') {
@@ -197,6 +200,15 @@ const Layout = ({ children }: LayoutProps) => {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSendMessageOpen(true)}
+              className="border-primary/50"
+            >
+              <MessageSquarePlus className="h-4 w-4 mr-2" />
+              New Message
+            </Button>
             <NotificationCenter />
             <Button
               variant="ghost"
@@ -224,6 +236,8 @@ const Layout = ({ children }: LayoutProps) => {
           {children}
         </main>
       </div>
+
+      <SendMessageModal open={sendMessageOpen} onOpenChange={setSendMessageOpen} />
     </div>
   );
 };

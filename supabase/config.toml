@@ -71,3 +71,9 @@ verify_jwt = false
 
 [functions.ai-financial-analysis]
 verify_jwt = false
+
+[functions.ai-generate-message]
+verify_jwt = false
+
+[functions.communication-automation]
+verify_jwt = false
