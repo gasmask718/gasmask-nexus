@@ -762,6 +762,13 @@ const Map = () => {
               fetchStores();
               toast.success('Routes optimized! Refreshing map...');
             }}
+            onStoreSelect={(storeId, lat, lng) => {
+              map.current?.flyTo({
+                center: [lng, lat],
+                zoom: 15,
+                duration: 1000
+              });
+            }}
           />
         </div>
       )}

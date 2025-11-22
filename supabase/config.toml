@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.optimize-routes]
 verify_jwt = false
+
+[functions.fraud-check]
+verify_jwt = false
+
+[functions.generate-missions]
+verify_jwt = false
