@@ -830,6 +830,47 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_balance: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          last_invoice_date: string | null
+          last_payment_date: string | null
+          next_due_date: string | null
+          outstanding_balance: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          last_invoice_date?: string | null
+          last_payment_date?: string | null
+          next_due_date?: string | null
+          outstanding_balance?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          last_invoice_date?: string | null
+          last_payment_date?: string | null
+          next_due_date?: string | null
+          outstanding_balance?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_balance_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "crm_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_files: {
         Row: {
           created_at: string | null
@@ -869,31 +910,43 @@ export type Database = {
         Row: {
           created_at: string | null
           customer_id: string | null
+          due_date: string | null
           id: string
           invoice_date: string | null
           invoice_number: string | null
+          notes: string | null
           pdf_url: string | null
           status: string | null
+          subtotal: number | null
+          tax: number | null
           total_amount: number | null
         }
         Insert: {
           created_at?: string | null
           customer_id?: string | null
+          due_date?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
+          notes?: string | null
           pdf_url?: string | null
           status?: string | null
+          subtotal?: number | null
+          tax?: number | null
           total_amount?: number | null
         }
         Update: {
           created_at?: string | null
           customer_id?: string | null
+          due_date?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
+          notes?: string | null
           pdf_url?: string | null
           status?: string | null
+          subtotal?: number | null
+          tax?: number | null
           total_amount?: number | null
         }
         Relationships: [
@@ -953,12 +1006,95 @@ export type Database = {
           },
         ]
       }
+      customer_payment_methods: {
+        Row: {
+          brand: string | null
+          created_at: string
+          customer_id: string
+          exp_month: number | null
+          exp_year: number | null
+          id: string
+          is_default: boolean | null
+          last4: string | null
+          stripe_customer_id: string | null
+          stripe_payment_method_id: string | null
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          customer_id: string
+          exp_month?: number | null
+          exp_year?: number | null
+          id?: string
+          is_default?: boolean | null
+          last4?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          customer_id?: string
+          exp_month?: number | null
+          exp_year?: number | null
+          id?: string
+          is_default?: boolean | null
+          last4?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_payment_methods_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "crm_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_portal_sessions: {
+        Row: {
+          created_at: string
+          customer_id: string
+          expires_at: string
+          id: string
+          last_accessed: string | null
+          session_token: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          expires_at: string
+          id?: string
+          last_accessed?: string | null
+          session_token: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          expires_at?: string
+          id?: string
+          last_accessed?: string | null
+          session_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_portal_sessions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "crm_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_receipts: {
         Row: {
           amount_paid: number | null
           created_at: string | null
           customer_id: string | null
           id: string
+          invoice_id: string | null
           payment_method: string | null
           pdf_url: string | null
           receipt_date: string | null
@@ -969,6 +1105,7 @@ export type Database = {
           created_at?: string | null
           customer_id?: string | null
           id?: string
+          invoice_id?: string | null
           payment_method?: string | null
           pdf_url?: string | null
           receipt_date?: string | null
@@ -979,6 +1116,7 @@ export type Database = {
           created_at?: string | null
           customer_id?: string | null
           id?: string
+          invoice_id?: string | null
           payment_method?: string | null
           pdf_url?: string | null
           receipt_date?: string | null
@@ -990,6 +1128,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "crm_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_receipts_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "customer_invoices"
             referencedColumns: ["id"]
           },
         ]
