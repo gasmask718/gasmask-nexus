@@ -558,6 +558,61 @@ export type Database = {
         }
         Relationships: []
       }
+      assigned_closing_partner: {
+        Row: {
+          acquisition_id: string
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          partner_id: string
+          status: string
+        }
+        Insert: {
+          acquisition_id: string
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          partner_id: string
+          status?: string
+        }
+        Update: {
+          acquisition_id?: string
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          partner_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assigned_closing_partner_acquisition_id_fkey"
+            columns: ["acquisition_id"]
+            isOneToOne: false
+            referencedRelation: "acquisitions_pipeline"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assigned_closing_partner_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assigned_closing_partner_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "closing_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -823,6 +878,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      closing_partners: {
+        Row: {
+          address: string | null
+          average_close_days: number | null
+          city: string | null
+          company_name: string
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          fees_range: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          partner_type: string
+          phone: string | null
+          rating: number | null
+          state: string | null
+          states_served: string[]
+          wholesale_friendly: boolean
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          average_close_days?: number | null
+          city?: string | null
+          company_name: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          fees_range?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          partner_type: string
+          phone?: string | null
+          rating?: number | null
+          state?: string | null
+          states_served?: string[]
+          wholesale_friendly?: boolean
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          average_close_days?: number | null
+          city?: string | null
+          company_name?: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          fees_range?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          partner_type?: string
+          phone?: string | null
+          rating?: number | null
+          state?: string | null
+          states_served?: string[]
+          wholesale_friendly?: boolean
+          zip_code?: string | null
+        }
+        Relationships: []
       }
       communication_events: {
         Row: {
@@ -1964,6 +2082,81 @@ export type Database = {
           },
         ]
       }
+      esign_documents: {
+        Row: {
+          acquisition_id: string | null
+          created_at: string
+          document_type: string
+          expires_at: string | null
+          id: string
+          lead_id: string
+          pdf_url: string | null
+          secure_token: string | null
+          sent_at: string | null
+          signed_at: string | null
+          signed_url: string | null
+          signer_email: string | null
+          signer_ip: string | null
+          signer_name: string
+          signer_phone: string | null
+          status: string
+          viewed_at: string | null
+        }
+        Insert: {
+          acquisition_id?: string | null
+          created_at?: string
+          document_type: string
+          expires_at?: string | null
+          id?: string
+          lead_id: string
+          pdf_url?: string | null
+          secure_token?: string | null
+          sent_at?: string | null
+          signed_at?: string | null
+          signed_url?: string | null
+          signer_email?: string | null
+          signer_ip?: string | null
+          signer_name: string
+          signer_phone?: string | null
+          status?: string
+          viewed_at?: string | null
+        }
+        Update: {
+          acquisition_id?: string | null
+          created_at?: string
+          document_type?: string
+          expires_at?: string | null
+          id?: string
+          lead_id?: string
+          pdf_url?: string | null
+          secure_token?: string | null
+          sent_at?: string | null
+          signed_at?: string | null
+          signed_url?: string | null
+          signer_email?: string | null
+          signer_ip?: string | null
+          signer_name?: string
+          signer_phone?: string | null
+          status?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "esign_documents_acquisition_id_fkey"
+            columns: ["acquisition_id"]
+            isOneToOne: false
+            referencedRelation: "acquisitions_pipeline"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "esign_documents_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       executive_report_logs: {
         Row: {
           created_at: string | null
@@ -2134,6 +2327,90 @@ export type Database = {
           score?: number
           state?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      follow_up_logs: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          lead_id: string
+          message_sent: string | null
+          next_action: string | null
+          response_received: string | null
+          sent_at: string
+          sentiment: string | null
+          sequence_id: string | null
+          step_number: number
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          message_sent?: string | null
+          next_action?: string | null
+          response_received?: string | null
+          sent_at?: string
+          sentiment?: string | null
+          sequence_id?: string | null
+          step_number: number
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          message_sent?: string | null
+          next_action?: string | null
+          response_received?: string | null
+          sent_at?: string
+          sentiment?: string | null
+          sequence_id?: string | null
+          step_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_up_logs_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "follow_up_sequences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      follow_up_sequences: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          steps: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          steps?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          steps?: Json
         }
         Relationships: []
       }
@@ -3625,6 +3902,53 @@ export type Database = {
           },
         ]
       }
+      investor_subscriptions: {
+        Row: {
+          active: boolean
+          created_at: string
+          ends_at: string | null
+          id: string
+          investor_id: string
+          monthly_fee: number
+          started_at: string
+          stripe_subscription_id: string | null
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          investor_id: string
+          monthly_fee?: number
+          started_at?: string
+          stripe_subscription_id?: string | null
+          tier: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          investor_id?: string
+          monthly_fee?: number
+          started_at?: string
+          stripe_subscription_id?: string | null
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_subscriptions_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "investor_buy_boxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount_paid: number
@@ -3917,6 +4241,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mass_offer_campaigns: {
+        Row: {
+          accepted_count: number
+          campaign_name: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          offer_formula: Json | null
+          sent_count: number
+          started_at: string | null
+          status: string
+          target_count: number
+        }
+        Insert: {
+          accepted_count?: number
+          campaign_name: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          offer_formula?: Json | null
+          sent_count?: number
+          started_at?: string | null
+          status?: string
+          target_count?: number
+        }
+        Update: {
+          accepted_count?: number
+          campaign_name?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          offer_formula?: Json | null
+          sent_count?: number
+          started_at?: string | null
+          status?: string
+          target_count?: number
+        }
+        Relationships: []
       }
       mission_assignments: {
         Row: {
@@ -4410,6 +4773,59 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      real_estate_notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          message: string
+          notification_type: string
+          priority: string
+          read: boolean
+          read_at: string | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          message: string
+          notification_type: string
+          priority?: string
+          read?: boolean
+          read_at?: string | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          message?: string
+          notification_type?: string
+          priority?: string
+          read?: boolean
+          read_at?: string | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "real_estate_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       real_estate_team: {
         Row: {
