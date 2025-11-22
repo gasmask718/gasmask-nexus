@@ -10,7 +10,8 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import VisitLogModal from '@/components/VisitLogModal';
 import { InventoryPredictionCard } from '@/components/map/InventoryPredictionCard';
-import { 
+import { CommunicationTimeline } from '@/components/CommunicationTimeline';
+import {
   MapPin, 
   Phone, 
   Mail, 
@@ -364,6 +365,22 @@ const StoreDetail = () => {
                   </Badge>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Communication Timeline */}
+          <Card className="glass-card border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                Communication Timeline
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CommunicationTimeline 
+                entityType="store" 
+                entityId={id || ''} 
+              />
             </CardContent>
           </Card>
 
