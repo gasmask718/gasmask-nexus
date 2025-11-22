@@ -621,6 +621,57 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_manifest: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delivery_date: string
+          driver_id: string | null
+          id: string
+          manifest: Json
+          notes: string | null
+          status: string
+          total_units: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delivery_date: string
+          driver_id?: string | null
+          id?: string
+          manifest?: Json
+          notes?: string | null
+          status?: string
+          total_units?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delivery_date?: string
+          driver_id?: string | null
+          id?: string
+          manifest?: Json
+          notes?: string | null
+          status?: string
+          total_units?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_manifest_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_manifest_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_payouts: {
         Row: {
           amount: number
@@ -1393,6 +1444,67 @@ export type Database = {
           },
         ]
       }
+      inventory_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_type: string
+          id: string
+          new_value: string | null
+          notes: string | null
+          old_value: string | null
+          product_id: string | null
+          store_id: string | null
+          units_changed: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_type: string
+          id?: string
+          new_value?: string | null
+          notes?: string | null
+          old_value?: string | null
+          product_id?: string | null
+          store_id?: string | null
+          units_changed?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_type?: string
+          id?: string
+          new_value?: string | null
+          notes?: string | null
+          old_value?: string | null
+          product_id?: string | null
+          store_id?: string | null
+          units_changed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_events_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_hubs: {
         Row: {
           created_at: string
@@ -1508,8 +1620,12 @@ export type Database = {
         Row: {
           consumption_rate_per_day: number | null
           created_at: string
+          estimated_units_remaining: number | null
           id: string
+          inventory_level: string | null
+          last_delivery_date: string | null
           last_order_date: string | null
+          manual_override: boolean | null
           predicted_stockout_date: string | null
           product_id: string
           quantity_current: number
@@ -1521,8 +1637,12 @@ export type Database = {
         Insert: {
           consumption_rate_per_day?: number | null
           created_at?: string
+          estimated_units_remaining?: number | null
           id?: string
+          inventory_level?: string | null
+          last_delivery_date?: string | null
           last_order_date?: string | null
+          manual_override?: boolean | null
           predicted_stockout_date?: string | null
           product_id: string
           quantity_current?: number
@@ -1534,8 +1654,12 @@ export type Database = {
         Update: {
           consumption_rate_per_day?: number | null
           created_at?: string
+          estimated_units_remaining?: number | null
           id?: string
+          inventory_level?: string | null
+          last_delivery_date?: string | null
           last_order_date?: string | null
+          manual_override?: boolean | null
           predicted_stockout_date?: string | null
           product_id?: string
           quantity_current?: number
@@ -1937,37 +2061,46 @@ export type Database = {
       products: {
         Row: {
           brand_id: string | null
+          category: string | null
           created_at: string | null
           id: string
           is_active: boolean | null
           name: string
+          sku: string | null
           suggested_retail_price: number | null
           type: string
           unit_type: string
+          units_per_box: number | null
           weight_per_unit: number | null
           wholesale_price: number | null
         }
         Insert: {
           brand_id?: string | null
+          category?: string | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
           name: string
+          sku?: string | null
           suggested_retail_price?: number | null
           type: string
           unit_type: string
+          units_per_box?: number | null
           weight_per_unit?: number | null
           wholesale_price?: number | null
         }
         Update: {
           brand_id?: string | null
+          category?: string | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
+          sku?: string | null
           suggested_retail_price?: number | null
           type?: string
           unit_type?: string
+          units_per_box?: number | null
           weight_per_unit?: number | null
           wholesale_price?: number | null
         }
@@ -2908,6 +3041,65 @@ export type Database = {
           },
         ]
       }
+      store_performance_snapshots: {
+        Row: {
+          ai_recommendation: string | null
+          communication_score: number | null
+          created_at: string
+          daily_sales: number | null
+          driver_visit_count: number | null
+          id: string
+          inventory_age_days: number | null
+          monthly_sales: number | null
+          performance_score: number | null
+          restock_frequency: number | null
+          risk_score: number | null
+          sell_through_rate: number | null
+          store_id: string
+          weekly_sales: number | null
+        }
+        Insert: {
+          ai_recommendation?: string | null
+          communication_score?: number | null
+          created_at?: string
+          daily_sales?: number | null
+          driver_visit_count?: number | null
+          id?: string
+          inventory_age_days?: number | null
+          monthly_sales?: number | null
+          performance_score?: number | null
+          restock_frequency?: number | null
+          risk_score?: number | null
+          sell_through_rate?: number | null
+          store_id: string
+          weekly_sales?: number | null
+        }
+        Update: {
+          ai_recommendation?: string | null
+          communication_score?: number | null
+          created_at?: string
+          daily_sales?: number | null
+          driver_visit_count?: number | null
+          id?: string
+          inventory_age_days?: number | null
+          monthly_sales?: number | null
+          performance_score?: number | null
+          restock_frequency?: number | null
+          risk_score?: number | null
+          sell_through_rate?: number | null
+          store_id?: string
+          weekly_sales?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_performance_snapshots_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_product_state: {
         Row: {
           average_sellthrough_days: number | null
@@ -3194,12 +3386,15 @@ export type Database = {
           health_score: number | null
           id: string
           last_active_date: string | null
+          last_performance_update: string | null
           lat: number | null
           lng: number | null
           market_code: string | null
           name: string
           notes: string | null
           open_date: string | null
+          performance_score: number | null
+          performance_tier: string | null
           phone: string | null
           primary_contact_name: string | null
           region_id: string | null
@@ -3222,12 +3417,15 @@ export type Database = {
           health_score?: number | null
           id?: string
           last_active_date?: string | null
+          last_performance_update?: string | null
           lat?: number | null
           lng?: number | null
           market_code?: string | null
           name: string
           notes?: string | null
           open_date?: string | null
+          performance_score?: number | null
+          performance_tier?: string | null
           phone?: string | null
           primary_contact_name?: string | null
           region_id?: string | null
@@ -3250,12 +3448,15 @@ export type Database = {
           health_score?: number | null
           id?: string
           last_active_date?: string | null
+          last_performance_update?: string | null
           lat?: number | null
           lng?: number | null
           market_code?: string | null
           name?: string
           notes?: string | null
           open_date?: string | null
+          performance_score?: number | null
+          performance_tier?: string | null
           phone?: string | null
           primary_contact_name?: string | null
           region_id?: string | null

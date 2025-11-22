@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { StorePerformanceTab } from '@/components/store/StorePerformanceTab';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import VisitLogModal from '@/components/VisitLogModal';
@@ -532,10 +533,14 @@ const StoreDetail = () => {
 
           {/* Tabs for Inventory & History */}
           <Tabs defaultValue="inventory" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="inventory">
                 <Package className="h-4 w-4 mr-2" />
                 Inventory
+              </TabsTrigger>
+              <TabsTrigger value="performance">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Performance
               </TabsTrigger>
               <TabsTrigger value="history">
                 <Clock className="h-4 w-4 mr-2" />
@@ -601,6 +606,10 @@ const StoreDetail = () => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="performance">
+              <StorePerformanceTab storeId={id!} storeName={store.name} />
             </TabsContent>
 
             <TabsContent value="history" className="space-y-4">
