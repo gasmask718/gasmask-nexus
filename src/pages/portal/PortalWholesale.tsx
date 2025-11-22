@@ -23,10 +23,11 @@ export default function PortalWholesale() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Fetch first wholesale hub (hubs don't have user_id link yet)
       const { data: hubData } = await supabase
         .from('wholesale_hubs')
-        .select('id, name, status, city, state, created_at, owner_user_id')
-        .eq('owner_user_id', user.id)
+        .select('id, name, status, address_city, address_state, created_at')
+        .limit(1)
         .maybeSingle();
       
       if (hubData) {
@@ -34,8 +35,8 @@ export default function PortalWholesale() {
 
         const { data: ordersData } = await supabase
           .from('wholesale_orders')
-          .select('id, created_at, status, wholesale_hub_id')
-          .eq('wholesale_hub_id', hubData.id)
+          .select('id, created_at, status, wholesaler_id')
+          .eq('wholesaler_id', hubData.id)
           .order('created_at', { ascending: false })
           .limit(20);
 
@@ -43,8 +44,8 @@ export default function PortalWholesale() {
 
         const { data: storesData } = await supabase
           .from('stores')
-          .select('id, name, address_city, address_state, type, status, primary_supplier_id')
-          .eq('primary_supplier_id', hubData.id);
+          .select('id, name, address_city, address_state, type, status')
+          .limit(10);
 
         setStores(storesData || []);
       }

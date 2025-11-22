@@ -22,10 +22,11 @@ export default function PortalStore() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Fetch first store (stores don't have user_id link yet)
       const { data: storeData } = await supabase
         .from('stores')
-        .select('id, name, address_street, address_city, address_state, address_zip, status, type, created_at, owner_user_id')
-        .eq('owner_user_id', user.id)
+        .select('id, name, address_street, address_city, address_state, address_zip, status, type, created_at')
+        .limit(1)
         .maybeSingle();
 
       if (storeData) {

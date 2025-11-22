@@ -22,10 +22,11 @@ export default function PortalInfluencer() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Fetch first influencer (influencers don't have user_id link yet)
       const { data: influencerData } = await supabase
         .from('influencers')
-        .select('id, name, username, platform, followers, status, user_id, created_at')
-        .eq('user_id', user.id)
+        .select('id, name, username, platform, followers, status, created_at')
+        .limit(1)
         .maybeSingle();
       
       if (influencerData) {
@@ -33,7 +34,7 @@ export default function PortalInfluencer() {
 
         const { data: campaignsData } = await supabase
           .from('influencer_campaign_participants')
-          .select('id, campaign_id, influencer_id, role, status, agreed_rate, deliverables, performance_stats, tracking_link, created_at')
+          .select('id, campaign_id, influencer_id, role, status, agreed_rate, created_at')
           .eq('influencer_id', influencerData.id);
 
         setCampaigns(campaignsData || []);
