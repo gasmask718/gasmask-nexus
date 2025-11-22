@@ -23,6 +23,11 @@ import NotFound from "./pages/NotFound";
 import Influencers from "./pages/Influencers";
 import Missions from "./pages/Missions";
 import Territories from "./pages/Territories";
+import RevenueBrain from "./pages/RevenueBrain";
+import OpportunityRadar from "./pages/OpportunityRadar";
+import MissionsHQ from "./pages/MissionsHQ";
+import WorkerHome from "./pages/WorkerHome";
+import AutomationSettings from "./pages/AutomationSettings";
 
 const queryClient = new QueryClient();
 
@@ -174,11 +179,59 @@ const App = () => (
               }
             />
             <Route
+              path="/missions"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <MissionsHQ />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/territories"
               element={
                 <ProtectedRoute>
                   <Layout>
                     <Territories />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics/revenue-brain"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RevenueBrain />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ops/opportunity-radar"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <OpportunityRadar />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/me/home"
+              element={
+                <ProtectedRoute>
+                  <WorkerHome />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings/automation"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AutomationSettings />
                   </Layout>
                 </ProtectedRoute>
               }

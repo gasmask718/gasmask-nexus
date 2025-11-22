@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      automation_settings: {
+        Row: {
+          created_at: string
+          id: string
+          is_enabled: boolean
+          mode: string
+          notes: string | null
+          scope: string
+          updated_at: string
+          va_owner_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          mode?: string
+          notes?: string | null
+          scope: string
+          updated_at?: string
+          va_owner_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          mode?: string
+          notes?: string | null
+          scope?: string
+          updated_at?: string
+          va_owner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_settings_va_owner_id_fkey"
+            columns: ["va_owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           color: string | null
@@ -37,6 +78,66 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      communication_events: {
+        Row: {
+          channel: string | null
+          created_at: string
+          direction: string
+          event_type: string
+          external_contact: string | null
+          id: string
+          linked_entity_id: string | null
+          linked_entity_type: string | null
+          payload: Json | null
+          store_id: string | null
+          summary: string
+          user_id: string | null
+        }
+        Insert: {
+          channel?: string | null
+          created_at?: string
+          direction: string
+          event_type: string
+          external_contact?: string | null
+          id?: string
+          linked_entity_id?: string | null
+          linked_entity_type?: string | null
+          payload?: Json | null
+          store_id?: string | null
+          summary: string
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string | null
+          created_at?: string
+          direction?: string
+          event_type?: string
+          external_contact?: string | null
+          id?: string
+          linked_entity_id?: string | null
+          linked_entity_type?: string | null
+          payload?: Json | null
+          store_id?: string | null
+          summary?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       daily_missions: {
         Row: {
@@ -139,6 +240,48 @@ export type Database = {
           },
         ]
       }
+      forecast_snapshots: {
+        Row: {
+          actual_revenue_total: number | null
+          assumptions: Json | null
+          created_at: string
+          id: string
+          period_end: string
+          period_start: string
+          period_type: string
+          predicted_revenue_influencer: number
+          predicted_revenue_stores: number
+          predicted_revenue_total: number
+          predicted_revenue_wholesale: number
+        }
+        Insert: {
+          actual_revenue_total?: number | null
+          assumptions?: Json | null
+          created_at?: string
+          id?: string
+          period_end: string
+          period_start: string
+          period_type: string
+          predicted_revenue_influencer?: number
+          predicted_revenue_stores?: number
+          predicted_revenue_total?: number
+          predicted_revenue_wholesale?: number
+        }
+        Update: {
+          actual_revenue_total?: number | null
+          assumptions?: Json | null
+          created_at?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          period_type?: string
+          predicted_revenue_influencer?: number
+          predicted_revenue_stores?: number
+          predicted_revenue_total?: number
+          predicted_revenue_wholesale?: number
+        }
+        Relationships: []
+      }
       fraud_flags: {
         Row: {
           created_at: string | null
@@ -196,6 +339,99 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      influencer_campaign_participants: {
+        Row: {
+          agreed_rate: number | null
+          campaign_id: string
+          created_at: string
+          deliverables: Json | null
+          id: string
+          influencer_id: string
+          performance_stats: Json | null
+          role: string
+          status: string
+          tracking_link: string | null
+        }
+        Insert: {
+          agreed_rate?: number | null
+          campaign_id: string
+          created_at?: string
+          deliverables?: Json | null
+          id?: string
+          influencer_id: string
+          performance_stats?: Json | null
+          role: string
+          status?: string
+          tracking_link?: string | null
+        }
+        Update: {
+          agreed_rate?: number | null
+          campaign_id?: string
+          created_at?: string
+          deliverables?: Json | null
+          id?: string
+          influencer_id?: string
+          performance_stats?: Json | null
+          role?: string
+          status?: string
+          tracking_link?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "influencer_campaign_participants_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "influencer_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "influencer_campaign_participants_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      influencer_campaigns: {
+        Row: {
+          budget: number | null
+          created_at: string
+          end_date: string | null
+          expected_reach: number | null
+          id: string
+          name: string
+          objective: string | null
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string
+          end_date?: string | null
+          expected_reach?: number | null
+          id?: string
+          name: string
+          objective?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string
+          end_date?: string | null
+          expected_reach?: number | null
+          id?: string
+          name?: string
+          objective?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       influencers: {
         Row: {
@@ -350,6 +586,57 @@ export type Database = {
           },
         ]
       }
+      mission_assignments: {
+        Row: {
+          assigned_at: string
+          completed_at: string | null
+          due_at: string | null
+          id: string
+          mission_template_id: string
+          progress_current: number
+          progress_target: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          completed_at?: string | null
+          due_at?: string | null
+          id?: string
+          mission_template_id: string
+          progress_current?: number
+          progress_target?: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          completed_at?: string | null
+          due_at?: string | null
+          id?: string
+          mission_template_id?: string
+          progress_current?: number
+          progress_target?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_assignments_mission_template_id_fkey"
+            columns: ["mission_template_id"]
+            isOneToOne: false
+            referencedRelation: "mission_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mission_items: {
         Row: {
           category: string
@@ -417,6 +704,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mission_templates: {
+        Row: {
+          cash_bonus: number | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          mission_type: string
+          name: string
+          role: Database["public"]["Enums"]["app_role"]
+          target_count: number
+          updated_at: string
+          validity_days: number
+          xp_reward: number
+        }
+        Insert: {
+          cash_bonus?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          mission_type: string
+          name: string
+          role: Database["public"]["Enums"]["app_role"]
+          target_count?: number
+          updated_at?: string
+          validity_days?: number
+          xp_reward?: number
+        }
+        Update: {
+          cash_bonus?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          mission_type?: string
+          name?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          target_count?: number
+          updated_at?: string
+          validity_days?: number
+          xp_reward?: number
+        }
+        Relationships: []
       }
       products: {
         Row: {
@@ -883,6 +1215,62 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      worker_scores: {
+        Row: {
+          badges: Json | null
+          created_at: string
+          id: string
+          last_activity_at: string | null
+          level: number
+          missions_completed: number
+          role: Database["public"]["Enums"]["app_role"]
+          stores_activated: number
+          streak_days: number
+          updated_at: string
+          user_id: string
+          wholesale_intros: number
+          xp_total: number
+        }
+        Insert: {
+          badges?: Json | null
+          created_at?: string
+          id?: string
+          last_activity_at?: string | null
+          level?: number
+          missions_completed?: number
+          role: Database["public"]["Enums"]["app_role"]
+          stores_activated?: number
+          streak_days?: number
+          updated_at?: string
+          user_id: string
+          wholesale_intros?: number
+          xp_total?: number
+        }
+        Update: {
+          badges?: Json | null
+          created_at?: string
+          id?: string
+          last_activity_at?: string | null
+          level?: number
+          missions_completed?: number
+          role?: Database["public"]["Enums"]["app_role"]
+          stores_activated?: number
+          streak_days?: number
+          updated_at?: string
+          user_id?: string
+          wholesale_intros?: number
+          xp_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worker_scores_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

@@ -11,3 +11,12 @@ verify_jwt = false
 
 [functions.generate-missions]
 verify_jwt = false
+
+[functions.forecasting]
+verify_jwt = false
+
+[functions.optimization]
+verify_jwt = false
+
+[functions.missions-engine]
+verify_jwt = false

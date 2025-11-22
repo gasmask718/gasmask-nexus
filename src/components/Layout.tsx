@@ -14,7 +14,11 @@ import {
   Menu,
   Building2,
   MessageCircle,
-  Target
+  Target,
+  Brain,
+  Radar,
+  Trophy,
+  Settings
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -36,10 +40,15 @@ const Layout = ({ children }: LayoutProps) => {
     { to: '/wholesale', icon: Building2, label: 'Wholesale', roles: ['admin', 'csr'] },
     { to: '/influencers', icon: MessageCircle, label: 'Influencers', roles: ['admin', 'csr'] },
     { to: '/missions/today', icon: Target, label: 'Missions', roles: ['admin', 'csr', 'driver', 'biker'] },
+    { to: '/missions', icon: Trophy, label: 'Missions HQ', roles: ['admin', 'csr'] },
     { to: '/territories', icon: Map, label: 'Territories', roles: ['admin', 'csr'] },
+    { to: '/analytics/revenue-brain', icon: Brain, label: 'Revenue Brain', roles: ['admin'] },
+    { to: '/ops/opportunity-radar', icon: Radar, label: 'Opportunity Radar', roles: ['admin', 'csr'] },
+    { to: '/me/home', icon: MapPin, label: 'Worker Home', roles: ['driver', 'biker', 'ambassador'] },
     { to: '/team', icon: Users, label: 'Team', roles: ['admin'] },
     { to: '/products', icon: Package, label: 'Products', roles: ['admin'] },
     { to: '/analytics', icon: TrendingUp, label: 'Analytics', roles: ['admin', 'accountant'] },
+    { to: '/settings/automation', icon: Settings, label: 'Automation', roles: ['admin'] },
   ];
 
   const filteredNavItems = navigationItems.filter(
