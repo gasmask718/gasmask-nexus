@@ -11,7 +11,9 @@ import { Loader2, X } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
+import { TemplateSelector } from "./TemplateSelector";
 
 interface BulkCommunicationLogModalProps {
   open: boolean;
@@ -20,7 +22,8 @@ interface BulkCommunicationLogModalProps {
 }
 
 export const BulkCommunicationLogModal = ({ open, onOpenChange, onSuccess }: BulkCommunicationLogModalProps) => {
-  const [selectedStores, setSelectedStores] = useState<Array<{ id: string; name: string }>>([]);
+  const [entityType, setEntityType] = useState<'store' | 'wholesaler' | 'influencer'>('store');
+  const [selectedEntities, setSelectedEntities] = useState<Array<{ id: string; name: string }>>([]);
   const [method, setMethod] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
@@ -37,14 +40,43 @@ export const BulkCommunicationLogModal = ({ open, onOpenChange, onSuccess }: Bul
       if (error) throw error;
       return data;
     },
+    enabled: entityType === 'store',
   });
+
+  const { data: wholesalers } = useQuery({
+    queryKey: ['wholesalers-for-bulk-comms'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('wholesale_hubs')
+        .select('id, name')
+        .order('name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: entityType === 'wholesaler',
+  });
+
+  const { data: influencers } = useQuery({
+    queryKey: ['influencers-for-bulk-comms'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('influencers')
+        .select('id, name')
+        .order('name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: entityType === 'influencer',
+  });
+
+  const entities = entityType === 'store' ? stores : entityType === 'wholesaler' ? wholesalers : influencers;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedStores.length === 0) {
+    if (selectedEntities.length === 0) {
       toast({
-        title: "No stores selected",
-        description: "Please select at least one store",
+        title: `No ${entityType}s selected`,
+        description: `Please select at least one ${entityType}`,
         variant: "destructive",
       });
       return;
@@ -55,15 +87,15 @@ export const BulkCommunicationLogModal = ({ open, onOpenChange, onSuccess }: Bul
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Insert communication events for each selected store
-      const communications = selectedStores.map(store => ({
+      // Insert communication events for each selected entity
+      const communications = selectedEntities.map(entity => ({
         channel: method,
         event_type: 'manual_log',
-        direction: 'outgoing',
+        direction: 'outbound',
         summary: notes,
-        linked_entity_type: 'store',
-        linked_entity_id: store.id,
-        store_id: store.id,
+        linked_entity_type: entityType,
+        linked_entity_id: entity.id,
+        store_id: entityType === 'store' ? entity.id : null,
         user_id: user.id,
       }));
 
@@ -75,12 +107,19 @@ export const BulkCommunicationLogModal = ({ open, onOpenChange, onSuccess }: Bul
 
       // Create reminders if follow-up date is provided
       if (followUpDate) {
-        const reminders = selectedStores.map(store => ({
-          store_id: store.id,
-          assigned_to: user.id,
-          follow_up_date: followUpDate,
-          notes: `Follow-up for: ${notes.substring(0, 100)}`,
-        }));
+        const reminders = selectedEntities.map(entity => {
+          const reminderData: any = {
+            assigned_to: user.id,
+            follow_up_date: followUpDate,
+            notes: `Follow-up for: ${notes.substring(0, 100)}`,
+          };
+
+          if (entityType === 'store') reminderData.store_id = entity.id;
+          else if (entityType === 'wholesaler') reminderData.wholesaler_id = entity.id;
+          else if (entityType === 'influencer') reminderData.influencer_id = entity.id;
+
+          return reminderData;
+        });
 
         const { error: reminderError } = await supabase
           .from('reminders')
@@ -91,10 +130,10 @@ export const BulkCommunicationLogModal = ({ open, onOpenChange, onSuccess }: Bul
 
       toast({
         title: "Success",
-        description: `Logged communication for ${selectedStores.length} store(s)`,
+        description: `Logged communication for ${selectedEntities.length} ${entityType}(s)`,
       });
 
-      setSelectedStores([]);
+      setSelectedEntities([]);
       setMethod("");
       setNotes("");
       setFollowUpDate("");
@@ -112,16 +151,16 @@ export const BulkCommunicationLogModal = ({ open, onOpenChange, onSuccess }: Bul
     }
   };
 
-  const toggleStore = (store: { id: string; name: string }) => {
-    setSelectedStores(prev => 
-      prev.find(s => s.id === store.id)
-        ? prev.filter(s => s.id !== store.id)
-        : [...prev, store]
+  const toggleEntity = (entity: { id: string; name: string }) => {
+    setSelectedEntities(prev => 
+      prev.find(e => e.id === entity.id)
+        ? prev.filter(e => e.id !== entity.id)
+        : [...prev, entity]
     );
   };
 
-  const removeStore = (storeId: string) => {
-    setSelectedStores(prev => prev.filter(s => s.id !== storeId));
+  const removeEntity = (entityId: string) => {
+    setSelectedEntities(prev => prev.filter(e => e.id !== entityId));
   };
 
   return (
@@ -132,7 +171,21 @@ export const BulkCommunicationLogModal = ({ open, onOpenChange, onSuccess }: Bul
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Select Stores</Label>
+            <Label>Entity Type</Label>
+            <Tabs value={entityType} onValueChange={(v) => {
+              setEntityType(v as 'store' | 'wholesaler' | 'influencer');
+              setSelectedEntities([]);
+            }}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="store">Stores</TabsTrigger>
+                <TabsTrigger value="wholesaler">Wholesalers</TabsTrigger>
+                <TabsTrigger value="influencer">Influencers</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Select {entityType === 'store' ? 'Stores' : entityType === 'wholesaler' ? 'Wholesalers' : 'Influencers'}</Label>
             <Popover open={searchOpen} onOpenChange={setSearchOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -140,29 +193,29 @@ export const BulkCommunicationLogModal = ({ open, onOpenChange, onSuccess }: Bul
                   role="combobox"
                   className="w-full justify-between"
                 >
-                  {selectedStores.length > 0
-                    ? `${selectedStores.length} store(s) selected`
-                    : "Select stores..."}
+                  {selectedEntities.length > 0
+                    ? `${selectedEntities.length} ${entityType}(s) selected`
+                    : `Select ${entityType}s...`}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[500px] p-0">
                 <Command>
-                  <CommandInput placeholder="Search stores..." />
-                  <CommandEmpty>No stores found.</CommandEmpty>
+                  <CommandInput placeholder={`Search ${entityType}s...`} />
+                  <CommandEmpty>No {entityType}s found.</CommandEmpty>
                   <CommandGroup className="max-h-64 overflow-auto">
-                    {stores?.map((store) => (
+                    {entities?.map((entity) => (
                       <CommandItem
-                        key={store.id}
-                        onSelect={() => toggleStore(store)}
+                        key={entity.id}
+                        onSelect={() => toggleEntity(entity)}
                       >
                         <div className="flex items-center gap-2">
                           <input
                             type="checkbox"
-                            checked={selectedStores.some(s => s.id === store.id)}
-                            onChange={() => toggleStore(store)}
+                            checked={selectedEntities.some(e => e.id === entity.id)}
+                            onChange={() => toggleEntity(entity)}
                             className="h-4 w-4"
                           />
-                          <span>{store.name}</span>
+                          <span>{entity.name}</span>
                         </div>
                       </CommandItem>
                     ))}
@@ -170,14 +223,14 @@ export const BulkCommunicationLogModal = ({ open, onOpenChange, onSuccess }: Bul
                 </Command>
               </PopoverContent>
             </Popover>
-            {selectedStores.length > 0 && (
+            {selectedEntities.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
-                {selectedStores.map(store => (
-                  <Badge key={store.id} variant="secondary" className="gap-1">
-                    {store.name}
+                {selectedEntities.map(entity => (
+                  <Badge key={entity.id} variant="secondary" className="gap-1">
+                    {entity.name}
                     <X
                       className="h-3 w-3 cursor-pointer"
-                      onClick={() => removeStore(store.id)}
+                      onClick={() => removeEntity(entity.id)}
                     />
                   </Badge>
                 ))}
@@ -202,7 +255,13 @@ export const BulkCommunicationLogModal = ({ open, onOpenChange, onSuccess }: Bul
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bulk-notes">Notes</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="bulk-notes">Notes</Label>
+              <TemplateSelector 
+                category={entityType} 
+                onSelect={(template) => setNotes(template)} 
+              />
+            </div>
             <Textarea
               id="bulk-notes"
               value={notes}
