@@ -110,6 +110,10 @@ import RealEstateExpansion from "./pages/RealEstateExpansion";
 import RealEstateSubscriptions from "./pages/RealEstateSubscriptions";
 import RealEstatePartners from "./pages/RealEstatePartners";
 import RealEstatePL from "./pages/RealEstatePL";
+import LoanProducts from "./pages/LoanProducts";
+import LenderDirectory from "./pages/LenderDirectory";
+import LoanCalculators from "./pages/LoanCalculators";
+import FundingRequests from "./pages/FundingRequests";
 
 const queryClient = new QueryClient();
 
@@ -1059,6 +1063,46 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <RealEstatePL />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/funding/products"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <LoanProducts />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/funding/lenders"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <LenderDirectory />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/funding/calculators"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <LoanCalculators />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/funding/requests"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <FundingRequests />
                   </Layout>
                 </ProtectedRoute>
               }

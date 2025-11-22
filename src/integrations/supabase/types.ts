@@ -4194,6 +4194,527 @@ export type Database = {
         }
         Relationships: []
       }
+      lender_applications: {
+        Row: {
+          acquisition_id: string | null
+          arv: number | null
+          borrower_credit_score: number | null
+          borrower_email: string | null
+          borrower_name: string | null
+          borrower_phone: string | null
+          created_at: string
+          decision_date: string | null
+          dscr: number | null
+          id: string
+          lead_id: string
+          lender_id: string
+          loan_amount: number
+          loan_purpose: string
+          loan_to_cost: number | null
+          ltv: number | null
+          monthly_rent: number | null
+          notes: string | null
+          product_id: string | null
+          property_value: number | null
+          purchase_price: number | null
+          rehab_budget: number | null
+          status: string
+          submitted_at: string | null
+          underwriter_notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          acquisition_id?: string | null
+          arv?: number | null
+          borrower_credit_score?: number | null
+          borrower_email?: string | null
+          borrower_name?: string | null
+          borrower_phone?: string | null
+          created_at?: string
+          decision_date?: string | null
+          dscr?: number | null
+          id?: string
+          lead_id: string
+          lender_id: string
+          loan_amount: number
+          loan_purpose: string
+          loan_to_cost?: number | null
+          ltv?: number | null
+          monthly_rent?: number | null
+          notes?: string | null
+          product_id?: string | null
+          property_value?: number | null
+          purchase_price?: number | null
+          rehab_budget?: number | null
+          status?: string
+          submitted_at?: string | null
+          underwriter_notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acquisition_id?: string | null
+          arv?: number | null
+          borrower_credit_score?: number | null
+          borrower_email?: string | null
+          borrower_name?: string | null
+          borrower_phone?: string | null
+          created_at?: string
+          decision_date?: string | null
+          dscr?: number | null
+          id?: string
+          lead_id?: string
+          lender_id?: string
+          loan_amount?: number
+          loan_purpose?: string
+          loan_to_cost?: number | null
+          ltv?: number | null
+          monthly_rent?: number | null
+          notes?: string | null
+          product_id?: string | null
+          property_value?: number | null
+          purchase_price?: number | null
+          rehab_budget?: number | null
+          status?: string
+          submitted_at?: string | null
+          underwriter_notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_applications_acquisition_id_fkey"
+            columns: ["acquisition_id"]
+            isOneToOne: false
+            referencedRelation: "acquisitions_pipeline"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_applications_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_applications_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_applications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "loan_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lenders: {
+        Row: {
+          asset_types: string[] | null
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          interest_rate_range: string | null
+          is_active: boolean
+          lender_name: string
+          lender_type: string
+          max_loan_amount: number | null
+          max_loan_to_cost: number | null
+          max_ltv: number | null
+          min_credit_score: number | null
+          min_loan_amount: number | null
+          notes: string | null
+          phone: string | null
+          points_range: string | null
+          rating: number | null
+          rehab_holdback_available: boolean | null
+          speed_to_close_days: number | null
+          states_active: string[]
+          typical_terms: string | null
+          website: string | null
+        }
+        Insert: {
+          asset_types?: string[] | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          interest_rate_range?: string | null
+          is_active?: boolean
+          lender_name: string
+          lender_type: string
+          max_loan_amount?: number | null
+          max_loan_to_cost?: number | null
+          max_ltv?: number | null
+          min_credit_score?: number | null
+          min_loan_amount?: number | null
+          notes?: string | null
+          phone?: string | null
+          points_range?: string | null
+          rating?: number | null
+          rehab_holdback_available?: boolean | null
+          speed_to_close_days?: number | null
+          states_active?: string[]
+          typical_terms?: string | null
+          website?: string | null
+        }
+        Update: {
+          asset_types?: string[] | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          interest_rate_range?: string | null
+          is_active?: boolean
+          lender_name?: string
+          lender_type?: string
+          max_loan_amount?: number | null
+          max_loan_to_cost?: number | null
+          max_ltv?: number | null
+          min_credit_score?: number | null
+          min_loan_amount?: number | null
+          notes?: string | null
+          phone?: string | null
+          points_range?: string | null
+          rating?: number | null
+          rehab_holdback_available?: boolean | null
+          speed_to_close_days?: number | null
+          states_active?: string[]
+          typical_terms?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      loan_analysis: {
+        Row: {
+          ai_analysis: string | null
+          arv: number | null
+          calculated_at: string
+          cap_rate: number | null
+          dscr: number | null
+          id: string
+          lead_id: string
+          loan_to_cost: number | null
+          ltv: number | null
+          max_allowable_loan: number | null
+          monthly_expenses: number | null
+          monthly_rent: number | null
+          property_value: number
+          purchase_price: number
+          qualifying_products: Json | null
+          recommended_strategy: string | null
+          rehab_budget: number | null
+        }
+        Insert: {
+          ai_analysis?: string | null
+          arv?: number | null
+          calculated_at?: string
+          cap_rate?: number | null
+          dscr?: number | null
+          id?: string
+          lead_id: string
+          loan_to_cost?: number | null
+          ltv?: number | null
+          max_allowable_loan?: number | null
+          monthly_expenses?: number | null
+          monthly_rent?: number | null
+          property_value: number
+          purchase_price: number
+          qualifying_products?: Json | null
+          recommended_strategy?: string | null
+          rehab_budget?: number | null
+        }
+        Update: {
+          ai_analysis?: string | null
+          arv?: number | null
+          calculated_at?: string
+          cap_rate?: number | null
+          dscr?: number | null
+          id?: string
+          lead_id?: string
+          loan_to_cost?: number | null
+          ltv?: number | null
+          max_allowable_loan?: number | null
+          monthly_expenses?: number | null
+          monthly_rent?: number | null
+          property_value?: number
+          purchase_price?: number
+          qualifying_products?: Json | null
+          recommended_strategy?: string | null
+          rehab_budget?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_analysis_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loan_docs: {
+        Row: {
+          application_id: string
+          doc_name: string
+          doc_type: string
+          file_url: string
+          id: string
+          notes: string | null
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          application_id: string
+          doc_name: string
+          doc_type: string
+          file_url: string
+          id?: string
+          notes?: string | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          application_id?: string
+          doc_name?: string
+          doc_type?: string
+          file_url?: string
+          id?: string
+          notes?: string | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_docs_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "lender_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_docs_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loan_payoffs: {
+        Row: {
+          application_id: string
+          created_at: string
+          funded_amount: number
+          funded_date: string
+          id: string
+          interest_rate: number
+          monthly_payment: number | null
+          payoff_amount: number | null
+          payoff_date: string | null
+          status: string
+          term_months: number
+          total_interest_paid: number | null
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          funded_amount: number
+          funded_date: string
+          id?: string
+          interest_rate: number
+          monthly_payment?: number | null
+          payoff_amount?: number | null
+          payoff_date?: string | null
+          status?: string
+          term_months: number
+          total_interest_paid?: number | null
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          funded_amount?: number
+          funded_date?: string
+          id?: string
+          interest_rate?: number
+          monthly_payment?: number | null
+          payoff_amount?: number | null
+          payoff_date?: string | null
+          status?: string
+          term_months?: number
+          total_interest_paid?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_payoffs_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "lender_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loan_products: {
+        Row: {
+          created_at: string
+          cross_collateral_ok: boolean | null
+          id: string
+          interest_rate_max: number
+          interest_rate_min: number
+          is_active: boolean
+          lender_id: string
+          max_loan: number
+          max_loan_to_cost: number | null
+          max_ltv: number
+          min_credit_score: number | null
+          min_dscr: number | null
+          min_loan: number
+          min_ltv: number
+          origination_points: number | null
+          prepayment_penalty: string | null
+          product_name: string
+          product_type: string
+          property_types: string[] | null
+          rehab_holdback: boolean | null
+          states_available: string[] | null
+          term_months: number | null
+        }
+        Insert: {
+          created_at?: string
+          cross_collateral_ok?: boolean | null
+          id?: string
+          interest_rate_max: number
+          interest_rate_min: number
+          is_active?: boolean
+          lender_id: string
+          max_loan: number
+          max_loan_to_cost?: number | null
+          max_ltv: number
+          min_credit_score?: number | null
+          min_dscr?: number | null
+          min_loan: number
+          min_ltv: number
+          origination_points?: number | null
+          prepayment_penalty?: string | null
+          product_name: string
+          product_type: string
+          property_types?: string[] | null
+          rehab_holdback?: boolean | null
+          states_available?: string[] | null
+          term_months?: number | null
+        }
+        Update: {
+          created_at?: string
+          cross_collateral_ok?: boolean | null
+          id?: string
+          interest_rate_max?: number
+          interest_rate_min?: number
+          is_active?: boolean
+          lender_id?: string
+          max_loan?: number
+          max_loan_to_cost?: number | null
+          max_ltv?: number
+          min_credit_score?: number | null
+          min_dscr?: number | null
+          min_loan?: number
+          min_ltv?: number
+          origination_points?: number | null
+          prepayment_penalty?: string | null
+          product_name?: string
+          product_type?: string
+          property_types?: string[] | null
+          rehab_holdback?: boolean | null
+          states_available?: string[] | null
+          term_months?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_products_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loan_underwriting: {
+        Row: {
+          application_id: string
+          appraisal_value: number | null
+          approved_loan_amount: number | null
+          approved_points: number | null
+          approved_rate: number | null
+          approved_term_months: number | null
+          comps_verified: boolean | null
+          conditions: string[] | null
+          created_at: string
+          decision: string | null
+          decision_date: string | null
+          decision_notes: string | null
+          id: string
+          insurance_quoted: boolean | null
+          property_condition: string | null
+          title_clear: boolean | null
+          underwriter_id: string | null
+        }
+        Insert: {
+          application_id: string
+          appraisal_value?: number | null
+          approved_loan_amount?: number | null
+          approved_points?: number | null
+          approved_rate?: number | null
+          approved_term_months?: number | null
+          comps_verified?: boolean | null
+          conditions?: string[] | null
+          created_at?: string
+          decision?: string | null
+          decision_date?: string | null
+          decision_notes?: string | null
+          id?: string
+          insurance_quoted?: boolean | null
+          property_condition?: string | null
+          title_clear?: boolean | null
+          underwriter_id?: string | null
+        }
+        Update: {
+          application_id?: string
+          appraisal_value?: number | null
+          approved_loan_amount?: number | null
+          approved_points?: number | null
+          approved_rate?: number | null
+          approved_term_months?: number | null
+          comps_verified?: boolean | null
+          conditions?: string[] | null
+          created_at?: string
+          decision?: string | null
+          decision_date?: string | null
+          decision_notes?: string | null
+          id?: string
+          insurance_quoted?: boolean | null
+          property_condition?: string | null
+          title_clear?: boolean | null
+          underwriter_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_underwriting_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "lender_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_underwriting_underwriter_id_fkey"
+            columns: ["underwriter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       location_events: {
         Row: {
           created_at: string | null
@@ -6417,6 +6938,87 @@ export type Database = {
             columns: ["wholesaler_id"]
             isOneToOne: true
             referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      term_sheets: {
+        Row: {
+          accepted_at: string | null
+          application_id: string
+          borrower_name: string
+          conditions: string[] | null
+          created_at: string
+          dscr: number | null
+          expiration_date: string | null
+          id: string
+          interest_rate: number
+          lender_id: string
+          loan_amount: number
+          ltv: number | null
+          origination_points: number | null
+          pdf_url: string | null
+          property_address: string
+          sent_at: string | null
+          status: string
+          term_months: number
+          term_sheet_number: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          application_id: string
+          borrower_name: string
+          conditions?: string[] | null
+          created_at?: string
+          dscr?: number | null
+          expiration_date?: string | null
+          id?: string
+          interest_rate: number
+          lender_id: string
+          loan_amount: number
+          ltv?: number | null
+          origination_points?: number | null
+          pdf_url?: string | null
+          property_address: string
+          sent_at?: string | null
+          status?: string
+          term_months: number
+          term_sheet_number?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          application_id?: string
+          borrower_name?: string
+          conditions?: string[] | null
+          created_at?: string
+          dscr?: number | null
+          expiration_date?: string | null
+          id?: string
+          interest_rate?: number
+          lender_id?: string
+          loan_amount?: number
+          ltv?: number | null
+          origination_points?: number | null
+          pdf_url?: string | null
+          property_address?: string
+          sent_at?: string | null
+          status?: string
+          term_months?: number
+          term_sheet_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "term_sheets_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "lender_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "term_sheets_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
             referencedColumns: ["id"]
           },
         ]
