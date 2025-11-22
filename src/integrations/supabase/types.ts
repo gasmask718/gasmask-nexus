@@ -2690,6 +2690,68 @@ export type Database = {
           },
         ]
       }
+      route_performance_snapshots: {
+        Row: {
+          avg_distance_km: number | null
+          avg_route_duration_minutes: number | null
+          completed_stops: number | null
+          completion_rate: number | null
+          coverage_score: number | null
+          created_at: string
+          date: string
+          driver_id: string | null
+          efficiency_score: number | null
+          id: string
+          late_checkins_count: number | null
+          missed_stops_count: number | null
+          notes: string | null
+          total_routes: number | null
+          total_stops: number | null
+        }
+        Insert: {
+          avg_distance_km?: number | null
+          avg_route_duration_minutes?: number | null
+          completed_stops?: number | null
+          completion_rate?: number | null
+          coverage_score?: number | null
+          created_at?: string
+          date: string
+          driver_id?: string | null
+          efficiency_score?: number | null
+          id?: string
+          late_checkins_count?: number | null
+          missed_stops_count?: number | null
+          notes?: string | null
+          total_routes?: number | null
+          total_stops?: number | null
+        }
+        Update: {
+          avg_distance_km?: number | null
+          avg_route_duration_minutes?: number | null
+          completed_stops?: number | null
+          completion_rate?: number | null
+          coverage_score?: number | null
+          created_at?: string
+          date?: string
+          driver_id?: string | null
+          efficiency_score?: number | null
+          id?: string
+          late_checkins_count?: number | null
+          missed_stops_count?: number | null
+          notes?: string | null
+          total_routes?: number | null
+          total_stops?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_performance_snapshots_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       route_stops: {
         Row: {
           created_at: string | null
@@ -2798,8 +2860,11 @@ export type Database = {
           date: string
           distance_km: number | null
           driver_id: string | null
+          estimated_distance_km: number | null
+          estimated_duration_minutes: number | null
           estimated_minutes: number | null
           id: string
+          optimization_score: number | null
           status: string | null
           stops: Json
           updated_at: string
@@ -2810,8 +2875,11 @@ export type Database = {
           date: string
           distance_km?: number | null
           driver_id?: string | null
+          estimated_distance_km?: number | null
+          estimated_duration_minutes?: number | null
           estimated_minutes?: number | null
           id?: string
+          optimization_score?: number | null
           status?: string | null
           stops?: Json
           updated_at?: string
@@ -2822,8 +2890,11 @@ export type Database = {
           date?: string
           distance_km?: number | null
           driver_id?: string | null
+          estimated_distance_km?: number | null
+          estimated_duration_minutes?: number | null
           estimated_minutes?: number | null
           id?: string
+          optimization_score?: number | null
           status?: string | null
           stops?: Json
           updated_at?: string
@@ -3540,6 +3611,8 @@ export type Database = {
           id: string
           last_active_date: string | null
           last_performance_update: string | null
+          last_visit_date: string | null
+          last_visit_driver_id: string | null
           lat: number | null
           lng: number | null
           market_code: string | null
@@ -3557,6 +3630,8 @@ export type Database = {
           tags: string[] | null
           type: Database["public"]["Enums"]["store_type"]
           updated_at: string | null
+          visit_frequency_target: number | null
+          visit_risk_level: string | null
         }
         Insert: {
           address_city?: string | null
@@ -3571,6 +3646,8 @@ export type Database = {
           id?: string
           last_active_date?: string | null
           last_performance_update?: string | null
+          last_visit_date?: string | null
+          last_visit_driver_id?: string | null
           lat?: number | null
           lng?: number | null
           market_code?: string | null
@@ -3588,6 +3665,8 @@ export type Database = {
           tags?: string[] | null
           type: Database["public"]["Enums"]["store_type"]
           updated_at?: string | null
+          visit_frequency_target?: number | null
+          visit_risk_level?: string | null
         }
         Update: {
           address_city?: string | null
@@ -3602,6 +3681,8 @@ export type Database = {
           id?: string
           last_active_date?: string | null
           last_performance_update?: string | null
+          last_visit_date?: string | null
+          last_visit_driver_id?: string | null
           lat?: number | null
           lng?: number | null
           market_code?: string | null
@@ -3619,8 +3700,17 @@ export type Database = {
           tags?: string[] | null
           type?: Database["public"]["Enums"]["store_type"]
           updated_at?: string | null
+          visit_frequency_target?: number | null
+          visit_risk_level?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "stores_last_visit_driver_id_fkey"
+            columns: ["last_visit_driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "stores_region_id_fkey"
             columns: ["region_id"]
