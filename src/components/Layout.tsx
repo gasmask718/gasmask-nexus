@@ -120,27 +120,7 @@ const Layout = ({ children }: LayoutProps) => {
 
   const NavItems = () => (
     <>
-      {/* DEBUG BOX */}
-      <div style={{
-        background: '#111',
-        color: 'white',
-        padding: '12px',
-        fontSize: '11px',
-        border: '2px solid red',
-        marginBottom: '12px',
-        borderRadius: '4px'
-      }}>
-        <strong>🔍 SIDEBAR DEBUG</strong><br/>
-        <strong>Role:</strong> {normalizedRole ? normalizedRole : 'NULL'}<br/>
-        <strong>Raw Role:</strong> {userRole ? userRole : 'NULL'}<br/>
-        <strong>RealEstate:</strong> {filteredRealEstateNavItems?.length || 0}/{realEstateNavItems?.length || 0}<br/>
-        <strong>POD:</strong> {filteredPodNavItems?.length || 0}/{podNavigationItems?.length || 0}<br/>
-        <strong>CallCenter:</strong> {filteredCallCenterNavItems?.length || 0}/{callCenterNavItems?.length || 0}<br/>
-        <strong style={{color: showRealEstateSection ? 'lime' : 'red'}}>RE Visible: {showRealEstateSection ? 'YES' : 'NO'}</strong><br/>
-        <strong style={{color: showPodSection ? 'lime' : 'red'}}>POD Visible: {showPodSection ? 'YES' : 'NO'}</strong><br/>
-        <strong style={{color: showCallCenterSection ? 'lime' : 'red'}}>CC Visible: {showCallCenterSection ? 'YES' : 'NO'}</strong>
-      </div>
-
+      {/* Main Navigation */}
       {filteredNavItems.map((item) => (
         <NavLink
           key={item.to}
