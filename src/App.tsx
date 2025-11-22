@@ -15,6 +15,7 @@ import MapPage from "./pages/Map";
 import BatchImport from "./pages/BatchImport";
 import Driver from "./pages/Driver";
 import Wholesale from "./pages/Wholesale";
+import WholesaleMarketplace from "./pages/WholesaleMarketplace";
 import Team from "./pages/Team";
 import Products from "./pages/Products";
 import Analytics from "./pages/Analytics";
@@ -130,9 +131,15 @@ const App = () => (
               path="/wholesale"
               element={
                 <ProtectedRoute>
-                  <Layout>
-                    <Wholesale />
-                  </Layout>
+                  <Wholesale />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/wholesale/marketplace"
+              element={
+                <ProtectedRoute>
+                  <WholesaleMarketplace />
                 </ProtectedRoute>
               }
             />
