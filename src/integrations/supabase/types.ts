@@ -201,6 +201,54 @@ export type Database = {
           },
         ]
       }
+      ambassador_regions: {
+        Row: {
+          active: boolean | null
+          ambassador_id: string
+          commission_rate: number | null
+          created_at: string
+          id: string
+          region_id: string
+          role: string | null
+          stats: Json | null
+        }
+        Insert: {
+          active?: boolean | null
+          ambassador_id: string
+          commission_rate?: number | null
+          created_at?: string
+          id?: string
+          region_id: string
+          role?: string | null
+          stats?: Json | null
+        }
+        Update: {
+          active?: boolean | null
+          ambassador_id?: string
+          commission_rate?: number | null
+          created_at?: string
+          id?: string
+          region_id?: string
+          role?: string | null
+          stats?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_regions_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_regions_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ambassadors: {
         Row: {
           created_at: string
@@ -1236,8 +1284,10 @@ export type Database = {
           niche: string | null
           phone: string | null
           platform: string
+          primary_region_id: string | null
           score: number | null
           status: string
+          supported_regions: string[] | null
           updated_at: string | null
           username: string
         }
@@ -1253,8 +1303,10 @@ export type Database = {
           niche?: string | null
           phone?: string | null
           platform: string
+          primary_region_id?: string | null
           score?: number | null
           status?: string
+          supported_regions?: string[] | null
           updated_at?: string | null
           username: string
         }
@@ -1270,12 +1322,22 @@ export type Database = {
           niche?: string | null
           phone?: string | null
           platform?: string
+          primary_region_id?: string | null
           score?: number | null
           status?: string
+          supported_regions?: string[] | null
           updated_at?: string | null
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "influencers_primary_region_id_fkey"
+            columns: ["primary_region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       inventory_alerts: {
         Row: {
@@ -1958,6 +2020,116 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           shirt_size?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      region_scorecards: {
+        Row: {
+          active_store_count: number | null
+          avg_driver_health: number | null
+          avg_store_health: number | null
+          created_at: string
+          id: string
+          notes: string | null
+          penetration_score: number | null
+          potential_score: number | null
+          priority_rank: number | null
+          region_id: string
+          route_efficiency_score: number | null
+          snapshot_date: string
+          store_count: number | null
+          weekly_volume_estimated: number | null
+        }
+        Insert: {
+          active_store_count?: number | null
+          avg_driver_health?: number | null
+          avg_store_health?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          penetration_score?: number | null
+          potential_score?: number | null
+          priority_rank?: number | null
+          region_id: string
+          route_efficiency_score?: number | null
+          snapshot_date: string
+          store_count?: number | null
+          weekly_volume_estimated?: number | null
+        }
+        Update: {
+          active_store_count?: number | null
+          avg_driver_health?: number | null
+          avg_store_health?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          penetration_score?: number | null
+          potential_score?: number | null
+          priority_rank?: number | null
+          region_id?: string
+          route_efficiency_score?: number | null
+          snapshot_date?: string
+          store_count?: number | null
+          weekly_volume_estimated?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "region_scorecards_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regions: {
+        Row: {
+          city_cluster: string[] | null
+          code: string | null
+          country: string | null
+          created_at: string
+          id: string
+          launch_date: string | null
+          name: string
+          notes: string | null
+          primary_city: string | null
+          state: string
+          status: string
+          target_monthly_volume: number | null
+          target_store_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          city_cluster?: string[] | null
+          code?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          launch_date?: string | null
+          name: string
+          notes?: string | null
+          primary_city?: string | null
+          state: string
+          status?: string
+          target_monthly_volume?: number | null
+          target_store_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          city_cluster?: string[] | null
+          code?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          launch_date?: string | null
+          name?: string
+          notes?: string | null
+          primary_city?: string | null
+          state?: string
+          status?: string
+          target_monthly_volume?: number | null
+          target_store_count?: number | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2877,12 +3049,16 @@ export type Database = {
           email: string | null
           health_score: number | null
           id: string
+          last_active_date: string | null
           lat: number | null
           lng: number | null
+          market_code: string | null
           name: string
           notes: string | null
+          open_date: string | null
           phone: string | null
           primary_contact_name: string | null
+          region_id: string | null
           responsiveness: Database["public"]["Enums"]["responsiveness"] | null
           status: Database["public"]["Enums"]["store_status"] | null
           sticker_status: Database["public"]["Enums"]["sticker_status"] | null
@@ -2901,12 +3077,16 @@ export type Database = {
           email?: string | null
           health_score?: number | null
           id?: string
+          last_active_date?: string | null
           lat?: number | null
           lng?: number | null
+          market_code?: string | null
           name: string
           notes?: string | null
+          open_date?: string | null
           phone?: string | null
           primary_contact_name?: string | null
+          region_id?: string | null
           responsiveness?: Database["public"]["Enums"]["responsiveness"] | null
           status?: Database["public"]["Enums"]["store_status"] | null
           sticker_status?: Database["public"]["Enums"]["sticker_status"] | null
@@ -2925,12 +3105,16 @@ export type Database = {
           email?: string | null
           health_score?: number | null
           id?: string
+          last_active_date?: string | null
           lat?: number | null
           lng?: number | null
+          market_code?: string | null
           name?: string
           notes?: string | null
+          open_date?: string | null
           phone?: string | null
           primary_contact_name?: string | null
+          region_id?: string | null
           responsiveness?: Database["public"]["Enums"]["responsiveness"] | null
           status?: Database["public"]["Enums"]["store_status"] | null
           sticker_status?: Database["public"]["Enums"]["sticker_status"] | null
@@ -2938,7 +3122,15 @@ export type Database = {
           type?: Database["public"]["Enums"]["store_type"]
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "stores_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscription_plans: {
         Row: {
@@ -3454,6 +3646,7 @@ export type Database = {
           phone: string | null
           products_available: string[] | null
           rating: number | null
+          region_id: string | null
           status: string | null
           updated_at: string | null
           wholesaler_health_score: number | null
@@ -3474,6 +3667,7 @@ export type Database = {
           phone?: string | null
           products_available?: string[] | null
           rating?: number | null
+          region_id?: string | null
           status?: string | null
           updated_at?: string | null
           wholesaler_health_score?: number | null
@@ -3494,11 +3688,20 @@ export type Database = {
           phone?: string | null
           products_available?: string[] | null
           rating?: number | null
+          region_id?: string | null
           status?: string | null
           updated_at?: string | null
           wholesaler_health_score?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "wholesale_hubs_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wholesale_order_items: {
         Row: {
@@ -3746,6 +3949,53 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zip_density: {
+        Row: {
+          city: string | null
+          density_score: number | null
+          id: string
+          last_updated: string
+          population_estimate: number | null
+          prospect_store_count: number | null
+          region_id: string | null
+          state: string | null
+          store_count: number | null
+          zip_code: string
+        }
+        Insert: {
+          city?: string | null
+          density_score?: number | null
+          id?: string
+          last_updated?: string
+          population_estimate?: number | null
+          prospect_store_count?: number | null
+          region_id?: string | null
+          state?: string | null
+          store_count?: number | null
+          zip_code: string
+        }
+        Update: {
+          city?: string | null
+          density_score?: number | null
+          id?: string
+          last_updated?: string
+          population_estimate?: number | null
+          prospect_store_count?: number | null
+          region_id?: string | null
+          state?: string | null
+          store_count?: number | null
+          zip_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zip_density_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
             referencedColumns: ["id"]
           },
         ]

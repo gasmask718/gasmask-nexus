@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.economic-scan]
 verify_jwt = false
+
+[functions.territory-ai]
+verify_jwt = false
