@@ -6051,6 +6051,193 @@ export type Database = {
           },
         ]
       }
+      pod_ai_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
+      pod_designs: {
+        Row: {
+          ai_description: string | null
+          approval_user_id: string | null
+          approved_by_va: boolean | null
+          category: string
+          created_at: string | null
+          design_image_url: string | null
+          generated_by_ai: boolean | null
+          id: string
+          mockup_urls: string[] | null
+          platforms_uploaded: string[] | null
+          seo_keywords: string[] | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          variations_created: number | null
+        }
+        Insert: {
+          ai_description?: string | null
+          approval_user_id?: string | null
+          approved_by_va?: boolean | null
+          category: string
+          created_at?: string | null
+          design_image_url?: string | null
+          generated_by_ai?: boolean | null
+          id?: string
+          mockup_urls?: string[] | null
+          platforms_uploaded?: string[] | null
+          seo_keywords?: string[] | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          variations_created?: number | null
+        }
+        Update: {
+          ai_description?: string | null
+          approval_user_id?: string | null
+          approved_by_va?: boolean | null
+          category?: string
+          created_at?: string | null
+          design_image_url?: string | null
+          generated_by_ai?: boolean | null
+          id?: string
+          mockup_urls?: string[] | null
+          platforms_uploaded?: string[] | null
+          seo_keywords?: string[] | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          variations_created?: number | null
+        }
+        Relationships: []
+      }
+      pod_marketplace_accounts: {
+        Row: {
+          api_key: string | null
+          connection_status: string | null
+          created_at: string | null
+          id: string
+          platform_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          connection_status?: string | null
+          created_at?: string | null
+          id?: string
+          platform_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          connection_status?: string | null
+          created_at?: string | null
+          id?: string
+          platform_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      pod_sales: {
+        Row: {
+          buyer_geo: string | null
+          design_id: string | null
+          id: string
+          order_date: string | null
+          platform: string
+          profit: number | null
+          sale_price: number | null
+          sku: string | null
+        }
+        Insert: {
+          buyer_geo?: string | null
+          design_id?: string | null
+          id?: string
+          order_date?: string | null
+          platform: string
+          profit?: number | null
+          sale_price?: number | null
+          sku?: string | null
+        }
+        Update: {
+          buyer_geo?: string | null
+          design_id?: string | null
+          id?: string
+          order_date?: string | null
+          platform?: string
+          profit?: number | null
+          sale_price?: number | null
+          sku?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pod_sales_design_id_fkey"
+            columns: ["design_id"]
+            isOneToOne: false
+            referencedRelation: "pod_designs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pod_videos: {
+        Row: {
+          ai_script_used: string | null
+          ai_voice_used: string | null
+          created_at: string | null
+          design_id: string | null
+          id: string
+          performance_metrics: Json | null
+          platform_ready_versions: Json | null
+          video_url: string | null
+        }
+        Insert: {
+          ai_script_used?: string | null
+          ai_voice_used?: string | null
+          created_at?: string | null
+          design_id?: string | null
+          id?: string
+          performance_metrics?: Json | null
+          platform_ready_versions?: Json | null
+          video_url?: string | null
+        }
+        Update: {
+          ai_script_used?: string | null
+          ai_voice_used?: string | null
+          created_at?: string | null
+          design_id?: string | null
+          id?: string
+          performance_metrics?: Json | null
+          platform_ready_versions?: Json | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pod_videos_design_id_fkey"
+            columns: ["design_id"]
+            isOneToOne: false
+            referencedRelation: "pod_designs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           brand_id: string | null
@@ -9227,6 +9414,7 @@ export type Database = {
         | "wholesale"
         | "influencer"
         | "customer"
+        | "pod_worker"
       inventory_level: "empty" | "quarter" | "half" | "threeQuarters" | "full"
       lead_source:
         | "probate"
@@ -9412,6 +9600,7 @@ export const Constants = {
         "wholesale",
         "influencer",
         "customer",
+        "pod_worker",
       ],
       inventory_level: ["empty", "quarter", "half", "threeQuarters", "full"],
       lead_source: [

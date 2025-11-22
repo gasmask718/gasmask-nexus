@@ -129,6 +129,17 @@ import HoldingsTenants from "./pages/HoldingsTenants";
 import HoldingsLoans from "./pages/HoldingsLoans";
 import HoldingsExpenses from "./pages/HoldingsExpenses";
 import HoldingsStrategy from "./pages/HoldingsStrategy";
+import PODOverview from "./pages/PODOverview";
+import PODDesigns from "./pages/PODDesigns";
+import PODGenerate from "./pages/PODGenerate";
+import PODMockups from "./pages/PODMockups";
+import PODUpload from "./pages/PODUpload";
+import PODVideos from "./pages/PODVideos";
+import PODScheduler from "./pages/PODScheduler";
+import PODAnalytics from "./pages/PODAnalytics";
+import PODScaling from "./pages/PODScaling";
+import PODVAControl from "./pages/PODVAControl";
+import PODSettings from "./pages/PODSettings";
 
 const queryClient = new QueryClient();
 
@@ -1286,6 +1297,118 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <HoldingsStrategy />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* POD Department Routes */}
+            <Route
+              path="/pod/overview"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <PODOverview />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pod/designs"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <PODDesigns />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pod/designs/generate"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <PODGenerate />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pod/mockups"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <PODMockups />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pod/upload"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <PODUpload />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pod/videos"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <PODVideos />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pod/scheduler"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <PODScheduler />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pod/analytics"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <PODAnalytics />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pod/scaling"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <PODScaling />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pod/va-control"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <PODVAControl />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pod/settings"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <PODSettings />
                   </Layout>
                 </ProtectedRoute>
               }
