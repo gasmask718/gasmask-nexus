@@ -37,6 +37,11 @@ import Training from './pages/Training';
 import Ambassadors from './pages/Ambassadors';
 import Expansion from './pages/Expansion';
 import Rewards from './pages/Rewards';
+import LiveMap from './pages/LiveMap';
+import WalletPage from './pages/Wallet';
+import Subscriptions from './pages/Subscriptions';
+import DeliveryCapacity from './pages/DeliveryCapacity';
+import CommunicationAutomation from './pages/CommunicationAutomation';
 
 const queryClient = new QueryClient();
 
@@ -328,6 +333,46 @@ const App = () => (
                   <Layout>
                     <Rewards />
                   </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/operations/live-map"
+              element={
+                <ProtectedRoute>
+                  <LiveMap />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/wallet"
+              element={
+                <ProtectedRoute>
+                  <WalletPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/subscriptions"
+              element={
+                <ProtectedRoute>
+                  <Subscriptions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expansion/capacity"
+              element={
+                <ProtectedRoute>
+                  <DeliveryCapacity />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings/automation/communications"
+              element={
+                <ProtectedRoute>
+                  <CommunicationAutomation />
                 </ProtectedRoute>
               }
             />
