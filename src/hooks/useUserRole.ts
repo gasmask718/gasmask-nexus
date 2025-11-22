@@ -27,7 +27,7 @@ export function useUserRole() {
         if (error) throw error;
 
         if (userRoles && userRoles.length > 0) {
-          const rolesList = userRoles.map(r => r.role as AppRole);
+          const rolesList = userRoles.map(r => (r.role as string).trim().toLowerCase() as AppRole);
           setRoles(rolesList);
           // Set primary role (first role, or admin if available)
           const primaryRole = rolesList.includes('admin') 
