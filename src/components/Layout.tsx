@@ -9,6 +9,8 @@ import { callCenterNavItems } from '@/components/layout/callCenterNavigation';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { SendMessageModal } from '@/components/communication/SendMessageModal';
+import { departmentThemes } from '@/theme/departmentThemes';
+import '@/theme/departmentStyles.css';
 import { 
   LayoutDashboard,
   Store, 
@@ -160,8 +162,15 @@ const Layout = ({ children }: LayoutProps) => {
       
       {showRealEstateSection && (
         <>
-          <div className="pt-4 pb-2 mt-2 border-t border-border/50">
-            <div className="px-4 flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <div 
+            className="pt-4 pb-2 mt-2 border-t dept-section"
+            style={{ 
+              borderLeftColor: departmentThemes.realestate.color,
+              backgroundColor: `rgba(${departmentThemes.realestate.colorRgb}, 0.1)`
+            }}
+          >
+            <div className="px-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
+                 style={{ color: departmentThemes.realestate.color }}>
               <Building className="h-4 w-4" />
               <span>Real Estate Department</span>
             </div>
@@ -182,8 +191,15 @@ const Layout = ({ children }: LayoutProps) => {
 
       {showPodSection && (
         <>
-          <div className="pt-4 pb-2 mt-2 border-t border-border/50">
-            <div className="px-4 flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <div 
+            className="pt-4 pb-2 mt-2 border-t dept-section"
+            style={{ 
+              borderLeftColor: departmentThemes.pod.color,
+              backgroundColor: `rgba(${departmentThemes.pod.colorRgb}, 0.1)`
+            }}
+          >
+            <div className="px-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
+                 style={{ color: departmentThemes.pod.color }}>
               <Shirt className="h-4 w-4" />
               <span>POD Department</span>
             </div>
@@ -204,8 +220,15 @@ const Layout = ({ children }: LayoutProps) => {
 
       {showCallCenterSection && (
         <>
-          <div className="pt-4 pb-2 mt-2 border-t border-border/50">
-            <div className="px-4 flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <div 
+            className="pt-4 pb-2 mt-2 border-t dept-section"
+            style={{ 
+              borderLeftColor: departmentThemes.callcenter.color,
+              backgroundColor: `rgba(${departmentThemes.callcenter.colorRgb}, 0.1)`
+            }}
+          >
+            <div className="px-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
+                 style={{ color: departmentThemes.callcenter.color }}>
               <Phone className="h-4 w-4" />
               <span>📞 Call Center Cloud</span>
             </div>

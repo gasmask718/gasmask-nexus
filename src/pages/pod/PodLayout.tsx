@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
+import { departmentThemes } from '@/theme/departmentThemes';
+import '@/theme/departmentStyles.css';
 
 interface PodLayoutProps {
   children: ReactNode;
@@ -9,6 +11,7 @@ interface PodLayoutProps {
 
 export default function PodLayout({ children, title }: PodLayoutProps) {
   const { role, loading } = useUserRole();
+  const theme = departmentThemes.pod;
 
   if (loading) {
     return (
@@ -27,14 +30,21 @@ export default function PodLayout({ children, title }: PodLayoutProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {title && (
-        <div className="border-b border-border/50 pb-4">
-          <h1 className="text-3xl font-bold text-foreground">{title}</h1>
-          <p className="text-sm text-muted-foreground mt-1">POD Department</p>
-        </div>
-      )}
-      {children}
+    <div 
+      className="dept-container dept-tint" 
+      style={{ '--color': theme.color, '--color-rgb': theme.colorRgb } as React.CSSProperties}
+    >
+      <div className="dept-header" style={{ backgroundColor: theme.color }}>
+        {theme.name}
+      </div>
+      <div className="dept-border">
+        {title && (
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-foreground">{title}</h2>
+          </div>
+        )}
+        {children}
+      </div>
     </div>
   );
 }

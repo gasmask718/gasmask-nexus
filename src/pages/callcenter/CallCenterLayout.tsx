@@ -4,14 +4,14 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { departmentThemes } from '@/theme/departmentThemes';
 import '@/theme/departmentStyles.css';
 
-interface RealEstateLayoutProps {
+interface CallCenterLayoutProps {
   children: ReactNode;
   title?: string;
 }
 
-export default function RealEstateLayout({ children, title }: RealEstateLayoutProps) {
-  const { hasRole, isAdmin, loading, role } = useUserRole();
-  const theme = departmentThemes.realestate;
+export default function CallCenterLayout({ children, title }: CallCenterLayoutProps) {
+  const { role, loading } = useUserRole();
+  const theme = departmentThemes.callcenter;
 
   if (loading) {
     return (
@@ -21,11 +21,9 @@ export default function RealEstateLayout({ children, title }: RealEstateLayoutPr
     );
   }
 
-  // Normalize role for comparison
   const normalizedRole = role?.trim().toLowerCase();
 
-  // Only admin and realestate_worker can access Real Estate Department
-  if (normalizedRole !== 'admin' && normalizedRole !== 'realestate_worker') {
+  if (normalizedRole !== 'admin' && normalizedRole !== 'callcenter_worker') {
     return <Navigate to="/" replace />;
   }
 
