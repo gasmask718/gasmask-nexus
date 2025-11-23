@@ -1,19 +1,49 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Users, Phone, Mail, MessageSquare, AlertTriangle, 
-  TrendingUp, Calendar, Plus, Search 
+  TrendingUp, Calendar, Plus, Search, Database 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
+import { useState } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { seedDemoData } from '@/utils/seedDemoData';
 
 const CRM = () => {
   const navigate = useNavigate();
   const { currentBusiness, loading } = useBusiness();
+  const { role } = useUserRole();
+  const [showDemoDialog, setShowDemoDialog] = useState(false);
+  const [loadingDemo, setLoadingDemo] = useState(false);
+
+  const handleLoadDemoData = async () => {
+    if (!currentBusiness?.id) return;
+    
+    setLoadingDemo(true);
+    const success = await seedDemoData(currentBusiness.id);
+    setLoadingDemo(false);
+    setShowDemoDialog(false);
+    
+    if (success) {
+      // Refresh all queries
+      window.location.reload();
+    }
+  };
 
   // Show loading state
   if (loading) {
@@ -136,6 +166,16 @@ const CRM = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          {role === 'admin' && (
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDemoDialog(true)}
+              disabled={loadingDemo}
+            >
+              <Database className="mr-2 h-4 w-4" />
+              Load Demo Data
+            </Button>
+          )}
           <Button variant="outline" onClick={() => navigate('/crm/contacts')}>
             <Users className="mr-2 h-4 w-4" />
             All Contacts
@@ -146,6 +186,24 @@ const CRM = () => {
           </Button>
         </div>
       </div>
+
+      <AlertDialog open={showDemoDialog} onOpenChange={setShowDemoDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Load Demo Data?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will create sample contacts, communication logs, phone numbers, AI agents, and call logs for testing purposes. 
+              This data will be isolated to your current business: <strong>{currentBusiness?.name}</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLoadDemoData} disabled={loadingDemo}>
+              {loadingDemo ? 'Loading...' : 'Load Demo Data'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-4">
