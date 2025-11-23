@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useBusiness } from '@/contexts/BusinessContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,20 +12,25 @@ import { useNavigate } from 'react-router-dom';
 
 const CRMContacts = () => {
   const navigate = useNavigate();
+  const { currentBusiness } = useBusiness();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const { data: contacts, isLoading } = useQuery({
-    queryKey: ['crm-contacts-list'],
+    queryKey: ['crm-contacts-list', currentBusiness?.id],
     queryFn: async () => {
+      if (!currentBusiness?.id) return [];
+      
       const { data, error } = await supabase
         .from('crm_contacts')
         .select('*')
-        .order('last_contact_date', { ascending: false, nullsFirst: false });
+        .eq('business_id', currentBusiness.id)
+        .order('last_contact_date', { ascending: false, nullsFirst: false});
       if (error) throw error;
       return data;
     },
+    enabled: !!currentBusiness?.id,
   });
 
   const filteredContacts = contacts?.filter((contact) => {

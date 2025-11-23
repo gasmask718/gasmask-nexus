@@ -813,6 +813,130 @@ export type Database = {
         }
         Relationships: []
       }
+      business_members: {
+        Row: {
+          business_id: string
+          id: string
+          invited_by: string | null
+          joined_at: string | null
+          permissions: Json | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          id?: string
+          invited_by?: string | null
+          joined_at?: string | null
+          permissions?: Json | null
+          role?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          id?: string
+          invited_by?: string | null
+          joined_at?: string | null
+          permissions?: Json | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_members_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      businesses: {
+        Row: {
+          address: string | null
+          billing_email: string | null
+          city: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          industry: string | null
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          phone: string | null
+          settings: Json | null
+          slug: string
+          state: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          theme_config: Json | null
+          trial_ends_at: string | null
+          updated_at: string | null
+          website: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          billing_email?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          phone?: string | null
+          settings?: Json | null
+          slug: string
+          state?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          theme_config?: Json | null
+          trial_ends_at?: string | null
+          updated_at?: string | null
+          website?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          billing_email?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          phone?: string | null
+          settings?: Json | null
+          slug?: string
+          state?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          theme_config?: Json | null
+          trial_ends_at?: string | null
+          updated_at?: string | null
+          website?: string | null
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
       call_center_ai_agents: {
         Row: {
           allowed_actions: Json | null
@@ -1803,6 +1927,7 @@ export type Database = {
       }
       communication_logs: {
         Row: {
+          business_id: string | null
           channel: string
           contact_id: string | null
           created_at: string
@@ -1820,6 +1945,7 @@ export type Database = {
           wholesaler_id: string | null
         }
         Insert: {
+          business_id?: string | null
           channel: string
           contact_id?: string | null
           created_at?: string
@@ -1837,6 +1963,7 @@ export type Database = {
           wholesaler_id?: string | null
         }
         Update: {
+          business_id?: string | null
           channel?: string
           contact_id?: string | null
           created_at?: string
@@ -1854,6 +1981,13 @@ export type Database = {
           wholesaler_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "communication_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "communication_logs_contact_id_fkey"
             columns: ["contact_id"]
@@ -1952,6 +2086,7 @@ export type Database = {
           ai_next_action: string | null
           ai_priority: number | null
           ai_sentiment: string | null
+          business_id: string | null
           created_at: string
           created_by: string | null
           email: string | null
@@ -1973,6 +2108,7 @@ export type Database = {
           ai_next_action?: string | null
           ai_priority?: number | null
           ai_sentiment?: string | null
+          business_id?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
@@ -1994,6 +2130,7 @@ export type Database = {
           ai_next_action?: string | null
           ai_priority?: number | null
           ai_sentiment?: string | null
+          business_id?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
@@ -2010,6 +2147,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "crm_contacts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "crm_contacts_created_by_fkey"
             columns: ["created_by"]
@@ -9946,6 +10090,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_businesses: {
+        Args: { user_id: string }
+        Returns: {
+          business_id: string
+          business_name: string
+          business_slug: string
+          logo_url: string
+          member_role: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

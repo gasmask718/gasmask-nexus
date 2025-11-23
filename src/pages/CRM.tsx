@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useBusiness } from '@/contexts/BusinessContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,22 +13,29 @@ import { Input } from '@/components/ui/input';
 
 const CRM = () => {
   const navigate = useNavigate();
+  const { currentBusiness } = useBusiness();
 
   const { data: contacts } = useQuery({
-    queryKey: ['crm-contacts'],
+    queryKey: ['crm-contacts', currentBusiness?.id],
     queryFn: async () => {
+      if (!currentBusiness?.id) return [];
+      
       const { data, error } = await supabase
         .from('crm_contacts')
         .select('*')
+        .eq('business_id', currentBusiness.id)
         .order('last_contact_date', { ascending: false, nullsFirst: false });
       if (error) throw error;
       return data;
     },
+    enabled: !!currentBusiness?.id,
   });
 
   const { data: recentLogs } = useQuery({
-    queryKey: ['recent-communication-logs'],
+    queryKey: ['recent-communication-logs', currentBusiness?.id],
     queryFn: async () => {
+      if (!currentBusiness?.id) return [];
+      
       const { data, error } = await supabase
         .from('communication_logs')
         .select(`
@@ -36,19 +44,24 @@ const CRM = () => {
           store:stores(name),
           created_by_profile:profiles!communication_logs_created_by_fkey(name)
         `)
+        .eq('business_id', currentBusiness.id)
         .order('created_at', { ascending: false })
         .limit(10);
       if (error) throw error;
       return data;
     },
+    enabled: !!currentBusiness?.id,
   });
 
   const { data: followUps } = useQuery({
-    queryKey: ['follow-ups-pending'],
+    queryKey: ['follow-ups-pending', currentBusiness?.id],
     queryFn: async () => {
+      if (!currentBusiness?.id) return [];
+      
       const { data, error } = await supabase
         .from('communication_logs')
         .select('*, contact:crm_contacts(name), store:stores(name)')
+        .eq('business_id', currentBusiness.id)
         .eq('follow_up_required', true)
         .gte('follow_up_date', new Date().toISOString())
         .order('follow_up_date', { ascending: true })
@@ -56,6 +69,7 @@ const CRM = () => {
       if (error) throw error;
       return data;
     },
+    enabled: !!currentBusiness?.id,
   });
 
   const totalContacts = contacts?.length || 0;

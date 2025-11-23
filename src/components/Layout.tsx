@@ -1,5 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBusiness } from '@/contexts/BusinessContext';
+import { BusinessSwitcher } from '@/components/business/BusinessSwitcher';
 import { navigationItems } from '@/components/layout/navigationItems';
 import { realEstateNavItems } from '@/components/layout/realEstateNavigation';
 import { podNavigationItems } from '@/components/layout/podNavigation';
@@ -55,6 +57,7 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const { signOut, userRole } = useAuth();
+  const { currentBusiness, loading: businessLoading } = useBusiness();
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
 
@@ -223,8 +226,11 @@ const Layout = ({ children }: LayoutProps) => {
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
               <div className="flex flex-col h-full overflow-hidden py-6">
-                <div className="px-4 mb-6 flex-shrink-0">
+                <div className="px-4 mb-6 flex-shrink-0 space-y-3">
                   <h2 className="text-xl font-bold text-primary">GasMask OS</h2>
+                  {!businessLoading && currentBusiness && (
+                    <BusinessSwitcher />
+                  )}
                 </div>
                 <nav className="flex-1 overflow-y-auto space-y-1 px-3 scrollbar-thin scrollbar-thumb-accent/40 scrollbar-track-transparent">
                   <NavItems />
@@ -277,6 +283,11 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="flex">
         {/* Sidebar - Desktop */}
         <aside className="hidden md:flex w-64 flex-col border-r border-border/50 bg-card/50 h-[calc(100vh-4rem)] overflow-hidden">
+          <div className="p-4 border-b border-border/50">
+            {!businessLoading && currentBusiness && (
+              <BusinessSwitcher />
+            )}
+          </div>
           <nav className="flex-1 overflow-y-auto space-y-1 p-4 scrollbar-thin scrollbar-thumb-accent/40 scrollbar-track-transparent">
             <NavItems />
           </nav>
