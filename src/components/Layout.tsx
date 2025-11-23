@@ -61,6 +61,18 @@ const Layout = ({ children }: LayoutProps) => {
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
 
+  // Show loading state while business context initializes
+  if (businessLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading your workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
   useEffect(() => {
     if (userRole === 'admin') {
       const fetchUnreadCount = async () => {
