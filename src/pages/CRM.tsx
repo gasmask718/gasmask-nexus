@@ -13,7 +13,34 @@ import { Input } from '@/components/ui/input';
 
 const CRM = () => {
   const navigate = useNavigate();
-  const { currentBusiness } = useBusiness();
+  const { currentBusiness, loading } = useBusiness();
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading CRM...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if no business selected
+  if (!currentBusiness) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Card className="p-8 text-center max-w-md">
+          <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-semibold mb-2">No Business Selected</h3>
+          <p className="text-sm text-muted-foreground">
+            Please select a business to access CRM features.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   const { data: contacts } = useQuery({
     queryKey: ['crm-contacts', currentBusiness?.id],

@@ -12,10 +12,37 @@ import { useNavigate } from 'react-router-dom';
 
 const CRMContacts = () => {
   const navigate = useNavigate();
-  const { currentBusiness } = useBusiness();
+  const { currentBusiness, loading } = useBusiness();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading contacts...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if no business selected
+  if (!currentBusiness) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Card className="p-8 text-center max-w-md">
+          <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-semibold mb-2">No Business Selected</h3>
+          <p className="text-sm text-muted-foreground">
+            Please select a business to view contacts.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   const { data: contacts, isLoading } = useQuery({
     queryKey: ['crm-contacts-list', currentBusiness?.id],

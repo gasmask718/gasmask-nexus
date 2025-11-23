@@ -15,7 +15,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 
 const CRMDataExport = () => {
-  const { currentBusiness } = useBusiness();
+  const { currentBusiness, loading } = useBusiness();
   const { toast } = useToast();
   const [exportType, setExportType] = useState<string>('contacts');
   const [format, setFormat] = useState<string>('csv');
@@ -24,6 +24,33 @@ const CRMDataExport = () => {
     includeDeleted: false,
   });
   const [isExporting, setIsExporting] = useState(false);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading export...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if no business selected
+  if (!currentBusiness) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Card className="p-8 text-center max-w-md">
+          <Download className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-semibold mb-2">No Business Selected</h3>
+          <p className="text-sm text-muted-foreground">
+            Please select a business to export data.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   const { data: exports, refetch } = useQuery({
     queryKey: ['crm-exports', currentBusiness?.id],

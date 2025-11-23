@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 
 const CRMBackupSettings = () => {
-  const { currentBusiness } = useBusiness();
+  const { currentBusiness, loading } = useBusiness();
   const { toast } = useToast();
   const [settings, setSettings] = useState({
     auto_export_enabled: false,
@@ -25,6 +25,33 @@ const CRMBackupSettings = () => {
     storage_provider: 'local',
   });
   const [isSaving, setIsSaving] = useState(false);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading backup settings...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if no business selected
+  if (!currentBusiness) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Card className="p-8 text-center max-w-md">
+          <Database className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-semibold mb-2">No Business Selected</h3>
+          <p className="text-sm text-muted-foreground">
+            Please select a business to configure backup settings.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   const { data: backupSettings, refetch } = useQuery({
     queryKey: ['crm-backup-settings', currentBusiness?.id],
