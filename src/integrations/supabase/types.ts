@@ -2079,6 +2079,59 @@ export type Database = {
           },
         ]
       }
+      crm_backup_settings: {
+        Row: {
+          auto_export_enabled: boolean | null
+          business_id: string
+          created_at: string
+          export_failures: number | null
+          export_frequency: string | null
+          export_time: string | null
+          id: string
+          last_export_at: string | null
+          next_export_at: string | null
+          storage_config: Json | null
+          storage_provider: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_export_enabled?: boolean | null
+          business_id: string
+          created_at?: string
+          export_failures?: number | null
+          export_frequency?: string | null
+          export_time?: string | null
+          id?: string
+          last_export_at?: string | null
+          next_export_at?: string | null
+          storage_config?: Json | null
+          storage_provider?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_export_enabled?: boolean | null
+          business_id?: string
+          created_at?: string
+          export_failures?: number | null
+          export_frequency?: string | null
+          export_time?: string | null
+          id?: string
+          last_export_at?: string | null
+          next_export_at?: string | null
+          storage_config?: Json | null
+          storage_provider?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_backup_settings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_contacts: {
         Row: {
           ai_keywords: string[] | null
@@ -2216,6 +2269,198 @@ export type Database = {
           zip?: string | null
         }
         Relationships: []
+      }
+      crm_exports: {
+        Row: {
+          business_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          error_message: string | null
+          export_type: string
+          file_url: string | null
+          filters: Json | null
+          format: string
+          id: string
+          record_count: number | null
+          status: string
+        }
+        Insert: {
+          business_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          error_message?: string | null
+          export_type: string
+          file_url?: string | null
+          filters?: Json | null
+          format: string
+          id?: string
+          record_count?: number | null
+          status?: string
+        }
+        Update: {
+          business_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          error_message?: string | null
+          export_type?: string
+          file_url?: string | null
+          filters?: Json | null
+          format?: string
+          id?: string
+          record_count?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_exports_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_exports_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_imports: {
+        Row: {
+          business_id: string
+          can_rollback: boolean | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          duplicate_rows: number | null
+          error_message: string | null
+          failed_rows: number | null
+          file_name: string
+          file_url: string | null
+          id: string
+          import_type: string
+          mapping: Json | null
+          status: string
+          successful_rows: number | null
+          total_rows: number | null
+          validation_errors: Json | null
+        }
+        Insert: {
+          business_id: string
+          can_rollback?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          duplicate_rows?: number | null
+          error_message?: string | null
+          failed_rows?: number | null
+          file_name: string
+          file_url?: string | null
+          id?: string
+          import_type: string
+          mapping?: Json | null
+          status?: string
+          successful_rows?: number | null
+          total_rows?: number | null
+          validation_errors?: Json | null
+        }
+        Update: {
+          business_id?: string
+          can_rollback?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          duplicate_rows?: number | null
+          error_message?: string | null
+          failed_rows?: number | null
+          file_name?: string
+          file_url?: string | null
+          id?: string
+          import_type?: string
+          mapping?: Json | null
+          status?: string
+          successful_rows?: number | null
+          total_rows?: number | null
+          validation_errors?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_imports_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_imports_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_snapshots: {
+        Row: {
+          business_id: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          file_url: string | null
+          id: string
+          metadata: Json | null
+          record_counts: Json | null
+          size_bytes: number | null
+          snapshot_data: Json
+          snapshot_type: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          file_url?: string | null
+          id?: string
+          metadata?: Json | null
+          record_counts?: Json | null
+          size_bytes?: number | null
+          snapshot_data: Json
+          snapshot_type?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          file_url?: string | null
+          id?: string
+          metadata?: Json | null
+          record_counts?: Json | null
+          size_bytes?: number | null
+          snapshot_data?: Json
+          snapshot_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_snapshots_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_balance: {
         Row: {

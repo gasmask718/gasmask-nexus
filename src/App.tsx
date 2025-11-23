@@ -77,6 +77,9 @@ import CRMCustomers from "./pages/CRMCustomers";
 import CRMCustomerNew from "./pages/CRMCustomerNew";
 import CRMCustomerDetail from "./pages/CRMCustomerDetail";
 import CRMCustomerImport from "./pages/CRMCustomerImport";
+import CRMDataExport from "./pages/CRMDataExport";
+import CRMDataImport from "./pages/CRMDataImport";
+import CRMBackupSettings from "./pages/CRMBackupSettings";
 import CallCenter from "./pages/CallCenter";
 import TextCenter from "./pages/TextCenter";
 import EmailCenter from "./pages/EmailCenter";
@@ -852,6 +855,36 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <CRMFollowUps />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/crm/export"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CRMDataExport />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/crm/import"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CRMDataImport />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/crm/settings/backups"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CRMBackupSettings />
                   </Layout>
                 </ProtectedRoute>
               }
