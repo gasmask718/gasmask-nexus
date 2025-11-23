@@ -1,6 +1,7 @@
 import {
   MapPin, Package, Users, TrendingUp, FileText, Phone, MessageCircle, Mail,
-  BarChart3, Map, Radar, Brain, Target, DollarSign, Trophy, Gift, Home, Settings
+  BarChart3, Map, Radar, Brain, Target, DollarSign, Trophy, Gift, Home, Settings,
+  Database
 } from 'lucide-react';
 
 export const navigationItems = [
@@ -18,6 +19,7 @@ export const navigationItems = [
   { to: '/communications', icon: MessageCircle, label: 'Communications', roles: ['admin', 'csr'] },
   { to: '/crm', icon: Users, label: 'CRM', roles: ['admin', 'csr'] },
   { to: '/crm/customers', icon: Users, label: 'Customer CRM', roles: ['admin', 'csr'] },
+  { to: '/crm/data', icon: Database, label: 'Data Management', roles: ['admin', 'csr'] },
   { to: '/communication/ai-center', icon: Brain, label: 'AI Command Center', roles: ['admin', 'csr'] },
   { to: '/communication/calls', icon: Phone, label: 'Call Center', roles: ['admin', 'csr'] },
   { to: '/communication/texts', icon: MessageCircle, label: 'Text Center', roles: ['admin', 'csr'] },

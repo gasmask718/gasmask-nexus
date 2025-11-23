@@ -77,6 +77,7 @@ import CRMCustomers from "./pages/CRMCustomers";
 import CRMCustomerNew from "./pages/CRMCustomerNew";
 import CRMCustomerDetail from "./pages/CRMCustomerDetail";
 import CRMCustomerImport from "./pages/CRMCustomerImport";
+import CRMData from "./pages/CRMData";
 import CRMDataExport from "./pages/CRMDataExport";
 import CRMDataImport from "./pages/CRMDataImport";
 import CRMBackupSettings from "./pages/CRMBackupSettings";
@@ -860,7 +861,17 @@ const App = () => (
               }
             />
             <Route
-              path="/crm/export"
+              path="/crm/data"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CRMData />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/crm/data/export"
               element={
                 <ProtectedRoute>
                   <Layout>
@@ -870,7 +881,7 @@ const App = () => (
               }
             />
             <Route
-              path="/crm/import"
+              path="/crm/data/import"
               element={
                 <ProtectedRoute>
                   <Layout>
@@ -880,7 +891,7 @@ const App = () => (
               }
             />
             <Route
-              path="/crm/settings/backups"
+              path="/crm/data/backup"
               element={
                 <ProtectedRoute>
                   <Layout>
