@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { seedDemoData } from '@/utils/seedDemoData';
+import CRMLayout from './crm/CRMLayout';
 
 const CRM = () => {
   const navigate = useNavigate();
@@ -157,7 +158,8 @@ const CRM = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <CRMLayout title="CRM Command Center">
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">CRM Command Center</h1>
@@ -370,7 +372,8 @@ const CRM = () => {
           </div>
         </Card>
       )}
-    </div>
+      </div>
+    </CRMLayout>
   );
 };
 

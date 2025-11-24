@@ -6,6 +6,7 @@ import { Phone, PhoneIncoming, PhoneOutgoing, Play, FileText, Search } from "luc
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import CallCenterLayout from "./CallCenterLayout";
 
 export default function CallLogs() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,7 +38,8 @@ export default function CallLogs() {
   };
 
   return (
-    <div className="space-y-6">
+    <CallCenterLayout title="Call Logs">
+      <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Call Logs</h1>
         <p className="text-muted-foreground">View all incoming and outgoing calls</p>
@@ -145,6 +147,7 @@ export default function CallLogs() {
           </Card>
         )}
       </div>
-    </div>
+      </div>
+    </CallCenterLayout>
   );
 }

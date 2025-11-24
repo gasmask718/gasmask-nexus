@@ -3,6 +3,8 @@ import { Phone, MessageSquare, Mail, TrendingUp, AlertCircle, Users } from "luci
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+import CallCenterLayout from "./CallCenterLayout";
+
 export default function CallCenterDashboard() {
   const { data: stats } = useQuery({
     queryKey: ['callcenter-stats'],
@@ -38,7 +40,8 @@ export default function CallCenterDashboard() {
   });
 
   return (
-    <div className="space-y-6">
+    <CallCenterLayout title="Dashboard">
+      <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Call Center Cloud</h1>
         <p className="text-muted-foreground">Multi-business AI telephony command center</p>
@@ -146,6 +149,7 @@ export default function CallCenterDashboard() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </CallCenterLayout>
   );
 }
