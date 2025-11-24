@@ -47,5 +47,13 @@ export const departmentThemes: Record<string, DepartmentTheme> = {
     accent: '#34D399',
     lightBg: '#D1FAE5',     // Light emerald
     colorRgb: '16, 185, 129'
+  },
+  communication: {
+    key: 'communication',
+    name: 'Communication Center',
+    color: '#0E2A47',       // Deep Blue
+    accent: '#1E3A5F',
+    lightBg: '#D8E6F3',     // Light Blue
+    colorRgb: '14, 42, 71'
   }
 };
