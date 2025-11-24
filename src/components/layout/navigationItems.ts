@@ -18,7 +18,6 @@ export const navigationItems = [
   { to: '/missions-hq', icon: Target, label: 'Missions HQ', roles: ['admin'] },
   { to: '/communications', icon: MessageCircle, label: 'Communications', roles: ['admin', 'csr'] },
   { to: '/crm', icon: Users, label: 'CRM', roles: ['admin', 'csr'] },
-  { to: '/crm/customers', icon: Users, label: 'Customer CRM', roles: ['admin', 'csr'] },
   { to: '/crm/data', icon: Database, label: 'Data Management', roles: ['admin', 'csr'] },
   { to: '/communication/ai-center', icon: Brain, label: 'AI Command Center', roles: ['admin', 'csr'] },
   { to: '/communication/calls', icon: Phone, label: 'Call Center', roles: ['admin', 'csr'] },

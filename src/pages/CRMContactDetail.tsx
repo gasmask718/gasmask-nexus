@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Phone, Mail, MessageSquare } from 'lucide-react';
 import { CommunicationTimelineCRM } from '@/components/crm/CommunicationTimelineCRM';
+import { CustomerSimpleTimeline } from '@/components/crm/CustomerSimpleTimeline';
+import { CustomerNotesSimpleEditor } from '@/components/crm/CustomerNotesSimpleEditor';
 
 const CRMContactDetail = () => {
   const { id } = useParams();
@@ -14,6 +16,8 @@ const CRMContactDetail = () => {
   const { data: contact, isLoading } = useQuery({
     queryKey: ['crm-contact-detail', id],
     queryFn: async () => {
+      if (!id) return null;
+      
       const { data, error } = await supabase
         .from('crm_contacts')
         .select('*')
@@ -22,6 +26,7 @@ const CRMContactDetail = () => {
       if (error) throw error;
       return data;
     },
+    enabled: !!id,
   });
 
   if (isLoading) {
@@ -82,10 +87,17 @@ const CRMContactDetail = () => {
           </div>
         </Card>
 
-        <Card className="p-6 lg:col-span-2">
-          <h2 className="font-semibold mb-4">Communication Timeline</h2>
-          <CommunicationTimelineCRM contactId={id} />
-        </Card>
+        <div className="lg:col-span-2 space-y-6">
+          <CustomerNotesSimpleEditor 
+            contactId={id!} 
+            initialNotes={contact.notes}
+          />
+          
+          <Card className="p-6">
+            <h2 className="font-semibold mb-4">Communication Timeline</h2>
+            <CustomerSimpleTimeline contactId={id} />
+          </Card>
+        </div>
       </div>
     </div>
   );

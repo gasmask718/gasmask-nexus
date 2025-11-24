@@ -43,9 +43,9 @@ export const departmentThemes: Record<string, DepartmentTheme> = {
   crm: {
     key: 'crm',
     name: 'CRM Department',
-    color: '#FFD700',
-    accent: '#FDB913',
-    lightBg: '#FFFBEB',
-    colorRgb: '255, 215, 0'
+    color: '#10B981',       // Emerald green
+    accent: '#34D399',
+    lightBg: '#D1FAE5',     // Light emerald
+    colorRgb: '16, 185, 129'
   }
 };
