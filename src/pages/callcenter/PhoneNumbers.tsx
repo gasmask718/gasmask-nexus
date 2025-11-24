@@ -17,12 +17,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import CallCenterLayout from "./CallCenterLayout";
+import { useBusiness } from "@/contexts/BusinessContext";
+import { seedDemoData } from "@/utils/seedDemoData";
 
 export default function PhoneNumbers() {
+  const { currentBusiness } = useBusiness();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newNumber, setNewNumber] = useState({
     phone_number: '',
-    business_name: '',
     label: '',
     type: 'both' as 'call' | 'sms' | 'both'
   });
@@ -30,31 +32,50 @@ export default function PhoneNumbers() {
   const queryClient = useQueryClient();
 
   const { data: phoneNumbers, isLoading } = useQuery({
-    queryKey: ['call-center-phone-numbers'],
+    queryKey: ['call-center-phone-numbers', currentBusiness?.id],
     queryFn: async () => {
+      if (!currentBusiness?.id) return [];
+      
       const { data, error } = await supabase
         .from('call_center_phone_numbers')
         .select('*')
+        .eq('business_name', currentBusiness.name)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
+      
+      // Auto-seed if no data
+      if (!data || data.length === 0) {
+        await seedDemoData(currentBusiness.id);
+        // Refetch after seeding
+        const { data: newData } = await supabase
+          .from('call_center_phone_numbers')
+          .select('*')
+          .eq('business_name', currentBusiness.name)
+          .order('created_at', { ascending: false });
+        return newData || [];
+      }
+      
       return data;
-    }
+    },
+    enabled: !!currentBusiness?.id
   });
 
   const addNumberMutation = useMutation({
     mutationFn: async (numberData: typeof newNumber) => {
+      if (!currentBusiness?.id) throw new Error('No business selected');
+      
       const { error } = await supabase
         .from('call_center_phone_numbers')
-        .insert([numberData]);
+        .insert([{ ...numberData, business_name: currentBusiness.name }]);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-center-phone-numbers'] });
+      queryClient.invalidateQueries({ queryKey: ['call-center-phone-numbers', currentBusiness?.id] });
       toast.success('Phone number added successfully');
       setIsAddOpen(false);
-      setNewNumber({ phone_number: '', business_name: '', label: '', type: 'both' });
+      setNewNumber({ phone_number: '', label: '', type: 'both' });
     },
     onError: () => {
       toast.error('Failed to add phone number');
@@ -71,7 +92,7 @@ export default function PhoneNumbers() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-center-phone-numbers'] });
+      queryClient.invalidateQueries({ queryKey: ['call-center-phone-numbers', currentBusiness?.id] });
       toast.success('Phone number deleted');
     },
     onError: () => {
@@ -113,28 +134,6 @@ export default function PhoneNumbers() {
                 />
               </div>
               <div>
-                <Label htmlFor="business">Business</Label>
-                <Select
-                  value={newNumber.business_name}
-                  onValueChange={(value) => setNewNumber({ ...newNumber, business_name: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select business" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="GasMask">GasMask</SelectItem>
-                    <SelectItem value="GasMask Wholesale">GasMask Wholesale</SelectItem>
-                    <SelectItem value="Hot Mama">Hot Mama</SelectItem>
-                    <SelectItem value="TopTier Transport">TopTier Transport</SelectItem>
-                    <SelectItem value="PlayBoxxx">PlayBoxxx</SelectItem>
-                    <SelectItem value="Real Estate">Real Estate</SelectItem>
-                    <SelectItem value="POD Department">POD Department</SelectItem>
-                    <SelectItem value="Funding">Funding</SelectItem>
-                    <SelectItem value="Cleaning">Cleaning</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
                 <Label htmlFor="label">Label</Label>
                 <Input
                   id="label"
@@ -161,7 +160,7 @@ export default function PhoneNumbers() {
               </div>
               <Button 
                 onClick={() => addNumberMutation.mutate(newNumber)}
-                disabled={!newNumber.phone_number || !newNumber.business_name || !newNumber.label}
+                disabled={!newNumber.phone_number || !newNumber.label}
                 className="w-full"
               >
                 Add Phone Number

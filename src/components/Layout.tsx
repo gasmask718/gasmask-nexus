@@ -9,8 +9,9 @@ import { callCenterNavItems } from '@/components/layout/callCenterNavigation';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { SendMessageModal } from '@/components/communication/SendMessageModal';
-import { departmentThemes } from '@/theme/departmentThemes';
+import { departmentThemes } from '@/config/departmentThemes';
 import '@/theme/departmentStyles.css';
+import { useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard,
   Store, 
@@ -60,8 +61,16 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const { signOut, userRole } = useAuth();
   const { currentBusiness, loading: businessLoading } = useBusiness();
+  const location = useLocation();
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
+  
+  // Determine active department based on current route
+  const activeDepartment = location.pathname.startsWith('/real-estate') ? 'realestate'
+    : location.pathname.startsWith('/pod') ? 'pod'
+    : location.pathname.startsWith('/call-center') ? 'callcenter'
+    : location.pathname.startsWith('/crm') ? 'crm'
+    : 'main';
 
   // All hooks must be called before any conditional returns
   useEffect(() => {
@@ -165,12 +174,17 @@ const Layout = ({ children }: LayoutProps) => {
           <div 
             className="pt-4 pb-2 mt-2 border-t dept-section"
             style={{ 
-              borderLeftColor: departmentThemes.realestate.color,
-              backgroundColor: `rgba(${departmentThemes.realestate.colorRgb}, 0.1)`
+              borderLeft: `4px solid ${departmentThemes.realEstate.color}`,
+              backgroundColor: activeDepartment === 'realestate' ? departmentThemes.realEstate.lightBg : 'transparent'
             }}
           >
-            <div className="px-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
-                 style={{ color: departmentThemes.realestate.color }}>
+            <div 
+              className="px-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
+              style={{ 
+                color: activeDepartment === 'realestate' ? departmentThemes.realEstate.color : 'inherit',
+                fontWeight: activeDepartment === 'realestate' ? 'bold' : 'normal'
+              }}
+            >
               <Building className="h-4 w-4" />
               <span>Real Estate Department</span>
             </div>
@@ -179,8 +193,19 @@ const Layout = ({ children }: LayoutProps) => {
             <NavLink
               key={item.to}
               to={item.to}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
-              activeClassName="bg-primary/10 text-primary hover:bg-primary/20"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors"
+              style={{
+                backgroundColor: activeDepartment === 'realestate' && location.pathname === item.to 
+                  ? departmentThemes.realEstate.lightBg 
+                  : activeDepartment === 'realestate' 
+                  ? `${departmentThemes.realEstate.lightBg}80`
+                  : 'transparent',
+                borderLeft: location.pathname === item.to && activeDepartment === 'realestate'
+                  ? `3px solid ${departmentThemes.realEstate.accent}`
+                  : '3px solid transparent',
+                color: activeDepartment === 'realestate' ? departmentThemes.realEstate.color : 'inherit'
+              }}
+              activeClassName=""
             >
               <item.icon className="h-5 w-5" />
               <span className="font-medium">{item.label}</span>
@@ -194,12 +219,17 @@ const Layout = ({ children }: LayoutProps) => {
           <div 
             className="pt-4 pb-2 mt-2 border-t dept-section"
             style={{ 
-              borderLeftColor: departmentThemes.pod.color,
-              backgroundColor: `rgba(${departmentThemes.pod.colorRgb}, 0.1)`
+              borderLeft: `4px solid ${departmentThemes.pod.color}`,
+              backgroundColor: activeDepartment === 'pod' ? departmentThemes.pod.lightBg : 'transparent'
             }}
           >
-            <div className="px-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
-                 style={{ color: departmentThemes.pod.color }}>
+            <div 
+              className="px-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
+              style={{ 
+                color: activeDepartment === 'pod' ? departmentThemes.pod.color : 'inherit',
+                fontWeight: activeDepartment === 'pod' ? 'bold' : 'normal'
+              }}
+            >
               <Shirt className="h-4 w-4" />
               <span>POD Department</span>
             </div>
@@ -208,8 +238,19 @@ const Layout = ({ children }: LayoutProps) => {
             <NavLink
               key={item.to}
               to={item.to}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
-              activeClassName="bg-primary/10 text-primary hover:bg-primary/20"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors"
+              style={{
+                backgroundColor: activeDepartment === 'pod' && location.pathname === item.to 
+                  ? departmentThemes.pod.lightBg 
+                  : activeDepartment === 'pod' 
+                  ? `${departmentThemes.pod.lightBg}80`
+                  : 'transparent',
+                borderLeft: location.pathname === item.to && activeDepartment === 'pod'
+                  ? `3px solid ${departmentThemes.pod.accent}`
+                  : '3px solid transparent',
+                color: activeDepartment === 'pod' ? departmentThemes.pod.color : 'inherit'
+              }}
+              activeClassName=""
             >
               <item.icon className="h-5 w-5" />
               <span className="font-medium">{item.label}</span>
@@ -223,22 +264,38 @@ const Layout = ({ children }: LayoutProps) => {
           <div 
             className="pt-4 pb-2 mt-2 border-t dept-section"
             style={{ 
-              borderLeftColor: departmentThemes.callcenter.color,
-              backgroundColor: `rgba(${departmentThemes.callcenter.colorRgb}, 0.1)`
+              borderLeft: `4px solid ${departmentThemes.callCenter.color}`,
+              backgroundColor: activeDepartment === 'callcenter' ? departmentThemes.callCenter.lightBg : 'transparent'
             }}
           >
-            <div className="px-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
-                 style={{ color: departmentThemes.callcenter.color }}>
+            <div 
+              className="px-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
+              style={{ 
+                color: activeDepartment === 'callcenter' ? departmentThemes.callCenter.color : 'inherit',
+                fontWeight: activeDepartment === 'callcenter' ? 'bold' : 'normal'
+              }}
+            >
               <Phone className="h-4 w-4" />
-              <span>📞 Call Center Cloud</span>
+              <span>Call Center Cloud</span>
             </div>
           </div>
           {filteredCallCenterNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
-              activeClassName="bg-primary/10 text-primary hover:bg-primary/20"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors"
+              style={{
+                backgroundColor: activeDepartment === 'callcenter' && location.pathname === item.to 
+                  ? departmentThemes.callCenter.lightBg 
+                  : activeDepartment === 'callcenter' 
+                  ? `${departmentThemes.callCenter.lightBg}80`
+                  : 'transparent',
+                borderLeft: location.pathname === item.to && activeDepartment === 'callcenter'
+                  ? `3px solid ${departmentThemes.callCenter.accent}`
+                  : '3px solid transparent',
+                color: activeDepartment === 'callcenter' ? departmentThemes.callCenter.color : 'inherit'
+              }}
+              activeClassName=""
             >
               <item.icon className="h-5 w-5" />
               <span className="font-medium">{item.label}</span>

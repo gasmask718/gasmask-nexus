@@ -7,22 +7,43 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import CallCenterLayout from "./CallCenterLayout";
+import { useBusiness } from "@/contexts/BusinessContext";
+import { seedDemoData } from "@/utils/seedDemoData";
 
 export default function CallLogs() {
+  const { currentBusiness } = useBusiness();
   const [searchTerm, setSearchTerm] = useState('');
   
   const { data: callLogs, isLoading } = useQuery({
-    queryKey: ['call-center-logs'],
+    queryKey: ['call-center-logs', currentBusiness?.id],
     queryFn: async () => {
+      if (!currentBusiness?.id) return [];
+      
       const { data, error } = await supabase
         .from('call_center_logs')
         .select('*')
+        .eq('business_name', currentBusiness.name)
         .order('created_at', { ascending: false })
         .limit(100);
       
       if (error) throw error;
+      
+      // Auto-seed if no data
+      if (!data || data.length === 0) {
+        await seedDemoData(currentBusiness.id);
+        // Refetch after seeding
+        const { data: newData } = await supabase
+          .from('call_center_logs')
+          .select('*')
+          .eq('business_name', currentBusiness.name)
+          .order('created_at', { ascending: false })
+          .limit(100);
+        return newData || [];
+      }
+      
       return data;
-    }
+    },
+    enabled: !!currentBusiness?.id
   });
 
   const filteredLogs = callLogs?.filter(log => 
