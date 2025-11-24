@@ -96,6 +96,15 @@ import CallCenterAnalytics from "./pages/callcenter/CallCenterAnalytics";
 import Messages from "./pages/callcenter/Messages";
 import Emails from "./pages/callcenter/Emails";
 import CRMFollowUps from "./pages/CRMFollowUps";
+import CommunicationOverview from "./pages/communication/CommunicationOverview";
+import CommunicationCalls from "./pages/communication/CommunicationCalls";
+import CommunicationSMS from "./pages/communication/CommunicationSMS";
+import CommunicationEmail from "./pages/communication/CommunicationEmail";
+import CommunicationAIAgents from "./pages/communication/CommunicationAIAgents";
+import CommunicationNumbers from "./pages/communication/CommunicationNumbers";
+import CommunicationLogs from "./pages/communication/CommunicationLogs";
+import CommunicationAnalytics from "./pages/communication/CommunicationAnalytics";
+import CommunicationSettings from "./pages/communication/CommunicationSettings";
 import BillingCenter from "./pages/BillingCenter";
 import BillingInvoices from "./pages/BillingInvoices";
 import BillingInvoiceNew from "./pages/BillingInvoiceNew";
@@ -432,6 +441,99 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              
+              {/* Communication Center - Unified */}
+              <Route
+                path="/communication"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CommunicationOverview />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/communication/calls"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CommunicationCalls />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/communication/sms"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CommunicationSMS />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/communication/email"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CommunicationEmail />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/communication/ai-agents"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CommunicationAIAgents />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/communication/numbers"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CommunicationNumbers />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/communication/logs"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CommunicationLogs />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/communication/analytics"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CommunicationAnalytics />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/communication/settings"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CommunicationSettings />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              {/* End Communication Center */}
               <Route
                 path="/templates"
                 element={

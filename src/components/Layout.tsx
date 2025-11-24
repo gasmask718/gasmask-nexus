@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { BusinessSwitcher } from '@/components/business/BusinessSwitcher';
+import { communicationNavItems } from '@/components/layout/communicationNavigation';
 import { navigationItems } from '@/components/layout/navigationItems';
 import { realEstateNavItems } from '@/components/layout/realEstateNavigation';
 import { podNavigationItems } from '@/components/layout/podNavigation';
@@ -65,10 +66,10 @@ const Layout = ({ children }: LayoutProps) => {
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
   
-  // Determine active department based on current route
   const activeDepartment = location.pathname.startsWith('/real-estate') ? 'realestate'
     : location.pathname.startsWith('/pod') ? 'pod'
     : location.pathname.startsWith('/call-center') ? 'callcenter'
+    : location.pathname.startsWith('/communication') ? 'communication'
     : location.pathname.startsWith('/crm') ? 'crm'
     : 'main';
 
@@ -133,16 +134,19 @@ const Layout = ({ children }: LayoutProps) => {
   const filteredRealEstateNavItems = realEstateNavItems;
   const filteredPodNavItems = podNavigationItems;
   const filteredCallCenterNavItems = callCenterNavItems;
+  const filteredCommunicationNavItems = communicationNavItems;
 
   // Force all sections to show
   const showRealEstateSection = true;
   const showPodSection = true;
   const showCallCenterSection = true;
+  const showCommunicationSection = true;
   
   console.log('👁️ Force Visible - ALL Sections:', { 
     realestate: showRealEstateSection, 
     pod: showPodSection, 
     callcenter: showCallCenterSection,
+    communication: showCommunicationSection,
     mainItems: filteredNavItems.length,
     realEstateItems: filteredRealEstateNavItems.length,
     podItems: filteredPodNavItems.length,
@@ -294,6 +298,51 @@ const Layout = ({ children }: LayoutProps) => {
                   ? `3px solid ${departmentThemes.callCenter.accent}`
                   : '3px solid transparent',
                 color: activeDepartment === 'callcenter' ? departmentThemes.callCenter.color : 'inherit'
+              }}
+              activeClassName=""
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="font-medium">{item.label}</span>
+            </NavLink>
+          ))}
+        </>
+      )}
+
+      {showCommunicationSection && (
+        <>
+          <div 
+            className="pt-4 pb-2 mt-2 border-t dept-section"
+            style={{ 
+              borderLeft: `4px solid ${departmentThemes.communication.color}`,
+              backgroundColor: activeDepartment === 'communication' ? departmentThemes.communication.lightBg : 'transparent'
+            }}
+          >
+            <div 
+              className="px-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
+              style={{ 
+                color: activeDepartment === 'communication' ? departmentThemes.communication.color : 'inherit',
+                fontWeight: activeDepartment === 'communication' ? 'bold' : 'normal'
+              }}
+            >
+              <MessageSquare className="h-4 w-4" />
+              <span>Communication Center</span>
+            </div>
+          </div>
+          {filteredCommunicationNavItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors"
+              style={{
+                backgroundColor: activeDepartment === 'communication' && location.pathname === item.to 
+                  ? departmentThemes.communication.lightBg 
+                  : activeDepartment === 'communication' 
+                  ? `${departmentThemes.communication.lightBg}80`
+                  : 'transparent',
+                borderLeft: location.pathname === item.to && activeDepartment === 'communication'
+                  ? `3px solid ${departmentThemes.communication.accent}`
+                  : '3px solid transparent',
+                color: activeDepartment === 'communication' ? departmentThemes.communication.color : 'inherit'
               }}
               activeClassName=""
             >
