@@ -1577,6 +1577,219 @@ export type Database = {
           },
         ]
       }
+      campaign_messages: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          delivered_at: string | null
+          external_id: string | null
+          id: string
+          message_content: string
+          recipient_id: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          delivered_at?: string | null
+          external_id?: string | null
+          id?: string
+          message_content: string
+          recipient_id: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          delivered_at?: string | null
+          external_id?: string | null
+          id?: string
+          message_content?: string
+          recipient_id?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_messages_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_messages_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_recipients: {
+        Row: {
+          campaign_id: string
+          contact_id: string | null
+          contact_name: string | null
+          contact_value: string
+          created_at: string | null
+          delivered_at: string | null
+          failed_reason: string | null
+          id: string
+          metadata: Json | null
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          campaign_id: string
+          contact_id?: string | null
+          contact_name?: string | null
+          contact_value: string
+          created_at?: string | null
+          delivered_at?: string | null
+          failed_reason?: string | null
+          id?: string
+          metadata?: Json | null
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          campaign_id?: string
+          contact_id?: string | null
+          contact_name?: string | null
+          contact_value?: string
+          created_at?: string | null
+          delivered_at?: string | null
+          failed_reason?: string | null
+          id?: string
+          metadata?: Json | null
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_stats: {
+        Row: {
+          campaign_id: string
+          id: string
+          metadata: Json | null
+          metric_name: string
+          metric_value: number
+          recorded_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          id?: string
+          metadata?: Json | null
+          metric_name: string
+          metric_value?: number
+          recorded_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          id?: string
+          metadata?: Json | null
+          metric_name?: string
+          metric_value?: number
+          recorded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_stats_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          business_id: string
+          channel: string
+          click_count: number | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          delivered_count: number | null
+          failed_count: number | null
+          id: string
+          message_template: string | null
+          name: string
+          open_count: number | null
+          reply_count: number | null
+          scheduled_at: string | null
+          sent_count: number | null
+          settings: Json | null
+          status: string
+          subject: string | null
+          total_recipients: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          channel: string
+          click_count?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          delivered_count?: number | null
+          failed_count?: number | null
+          id?: string
+          message_template?: string | null
+          name: string
+          open_count?: number | null
+          reply_count?: number | null
+          scheduled_at?: string | null
+          sent_count?: number | null
+          settings?: Json | null
+          status?: string
+          subject?: string | null
+          total_recipients?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          channel?: string
+          click_count?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          delivered_count?: number | null
+          failed_count?: number | null
+          id?: string
+          message_template?: string | null
+          name?: string
+          open_count?: number | null
+          reply_count?: number | null
+          scheduled_at?: string | null
+          sent_count?: number | null
+          settings?: Json | null
+          status?: string
+          subject?: string | null
+          total_recipients?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ceo_actions: {
         Row: {
           action_description: string

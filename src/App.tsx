@@ -97,6 +97,9 @@ import Messages from "./pages/callcenter/Messages";
 import Emails from "./pages/callcenter/Emails";
 import CRMFollowUps from "./pages/CRMFollowUps";
 import CommunicationOverview from "./pages/communication/CommunicationOverview";
+import CommunicationCampaigns from "./pages/communication/CommunicationCampaigns";
+import CommunicationCampaignNew from "./pages/communication/CommunicationCampaignNew";
+import CommunicationCampaignDetail from "./pages/communication/CommunicationCampaignDetail";
 import CommunicationCalls from "./pages/communication/CommunicationCalls";
 import CommunicationSMS from "./pages/communication/CommunicationSMS";
 import CommunicationEmail from "./pages/communication/CommunicationEmail";
@@ -449,6 +452,36 @@ const App = () => (
                   <ProtectedRoute>
                     <Layout>
                       <CommunicationOverview />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/communication/campaigns"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CommunicationCampaigns />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/communication/campaigns/new"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CommunicationCampaignNew />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/communication/campaigns/:id"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CommunicationCampaignDetail />
                     </Layout>
                   </ProtectedRoute>
                 }
