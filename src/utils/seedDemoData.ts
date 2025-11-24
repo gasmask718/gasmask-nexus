@@ -82,6 +82,15 @@ function randomFutureDate(daysAhead: number): string {
 export async function seedDemoData(businessId: string) {
   try {
     console.log('Starting demo data seed for business:', businessId);
+    
+    // Fetch business name
+    const { data: business } = await supabase
+      .from('businesses')
+      .select('name')
+      .eq('id', businessId)
+      .single();
+    
+    const businessName = business?.name || 'Demo Business';
 
     // 1. Insert demo contacts
     const contactsToInsert = demoContacts.map(contact => ({
@@ -132,26 +141,23 @@ export async function seedDemoData(businessId: string) {
     const phoneNumbers = [
       {
         phone_number: '+1-917-555-2301',
-        business_name: 'GasMask Demo',
-        label: 'GasMask Support',
+        business_name: businessName,
+        label: 'Support Line',
         type: 'both',
-        business_id: businessId,
         is_active: true
       },
       {
         phone_number: '+1-646-555-8821',
-        business_name: 'GasMask Demo',
+        business_name: businessName,
         label: 'Wholesale Line',
         type: 'both',
-        business_id: businessId,
         is_active: true
       },
       {
         phone_number: '+1-212-555-9305',
-        business_name: 'GasMask Demo',
+        business_name: businessName,
         label: 'VIP Line',
         type: 'both',
-        business_id: businessId,
         is_active: true
       }
     ];
@@ -167,10 +173,10 @@ export async function seedDemoData(businessId: string) {
     // 4. Insert AI agents
     const aiAgents = [
       {
-        business_name: 'GasMask Demo',
-        name: 'GasMask Support AI',
+        business_name: businessName,
+        name: 'Support AI',
         personality: 'Helpful, friendly, and professional customer service representative',
-        greeting_message: 'Hello! Thanks for calling GasMask. How can I help you today?',
+        greeting_message: `Hello! Thanks for calling ${businessName}. How can I help you today?`,
         is_active: true,
         allowed_actions: ['transfer_call', 'schedule_callback', 'send_sms', 'create_ticket'],
         escalation_rules: { conditions: ['angry_customer', 'complex_issue'], action: 'transfer_to_human' },
@@ -181,10 +187,10 @@ export async function seedDemoData(businessId: string) {
         }
       },
       {
-        business_name: 'GasMask Demo',
+        business_name: businessName,
         name: 'Wholesale AI Closer',
         personality: 'Professional, persuasive, and knowledgeable about bulk pricing',
-        greeting_message: 'Welcome to GasMask Wholesale! I can help you with bulk orders and special pricing.',
+        greeting_message: `Welcome to ${businessName} Wholesale! I can help you with bulk orders and special pricing.`,
         is_active: true,
         allowed_actions: ['send_quote', 'schedule_callback', 'send_email'],
         escalation_rules: { conditions: ['large_order', 'custom_pricing'], action: 'transfer_to_sales' },
@@ -194,7 +200,7 @@ export async function seedDemoData(businessId: string) {
         }
       },
       {
-        business_name: 'GasMask Demo',
+        business_name: businessName,
         name: 'VIP Concierge AI',
         personality: 'Exclusive, attentive, and focused on premium service',
         greeting_message: 'Welcome back, VIP! How can I provide exceptional service today?',
@@ -224,7 +230,7 @@ export async function seedDemoData(businessId: string) {
       const tagOptions = ['complaint', 'order_inquiry', 'good_lead', 'support', 'follow_up'];
       
       return {
-        business_name: 'GasMask Demo',
+        business_name: businessName,
         caller_id: `+1-${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 9000 + 1000)}`,
         direction: directions[Math.floor(Math.random() * directions.length)],
         duration: Math.floor(Math.random() * 290) + 30,

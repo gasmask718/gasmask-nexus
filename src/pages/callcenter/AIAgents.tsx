@@ -5,19 +5,40 @@ import { Brain, Settings, Edit, CheckCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import CallCenterLayout from "./CallCenterLayout";
+import { useBusiness } from "@/contexts/BusinessContext";
+import { seedDemoData } from "@/utils/seedDemoData";
 
 export default function AIAgents() {
+  const { currentBusiness } = useBusiness();
+  
   const { data: aiAgents, isLoading } = useQuery({
-    queryKey: ['call-center-ai-agents'],
+    queryKey: ['call-center-ai-agents', currentBusiness?.id],
     queryFn: async () => {
+      if (!currentBusiness?.id) return [];
+      
       const { data, error } = await supabase
         .from('call_center_ai_agents')
         .select('*')
-        .order('business_name');
+        .eq('business_name', currentBusiness.name)
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
+      
+      // Auto-seed if no data
+      if (!data || data.length === 0) {
+        await seedDemoData(currentBusiness.id);
+        // Refetch after seeding
+        const { data: newData } = await supabase
+          .from('call_center_ai_agents')
+          .select('*')
+          .eq('business_name', currentBusiness.name)
+          .order('created_at', { ascending: false });
+        return newData || [];
+      }
+      
       return data;
-    }
+    },
+    enabled: !!currentBusiness?.id
   });
 
   return (
@@ -44,7 +65,7 @@ export default function AIAgents() {
                     <Brain className="h-5 w-5 text-primary" />
                     <div>
                       <CardTitle className="text-lg">{agent.name}</CardTitle>
-                      <CardDescription>{agent.business_name}</CardDescription>
+                      <CardDescription>{currentBusiness?.name}</CardDescription>
                     </div>
                   </div>
                   <Badge variant={agent.is_active ? 'default' : 'secondary'}>

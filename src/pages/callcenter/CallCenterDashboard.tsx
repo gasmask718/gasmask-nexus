@@ -11,16 +11,18 @@ export default function CallCenterDashboard() {
   const { data: stats } = useQuery({
     queryKey: ['callcenter-stats', currentBusiness?.id],
     queryFn: async () => {
+      if (!currentBusiness?.id) return null;
+      
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
       const [allCalls, todayCalls, messages, emails, alerts, agents] = await Promise.all([
-        supabase.from('call_center_logs').select('*', { count: 'exact', head: true }),
-        supabase.from('call_center_logs').select('*').gte('created_at', today.toISOString()),
-        supabase.from('call_center_messages').select('*', { count: 'exact', head: true }),
-        supabase.from('call_center_emails').select('*', { count: 'exact', head: true }),
+        supabase.from('call_center_logs').select('*', { count: 'exact', head: true }).eq('business_name', currentBusiness.name),
+        supabase.from('call_center_logs').select('*').eq('business_name', currentBusiness.name).gte('created_at', today.toISOString()),
+        supabase.from('call_center_messages').select('*', { count: 'exact', head: true }).eq('business_name', currentBusiness.name),
+        supabase.from('call_center_emails').select('*', { count: 'exact', head: true }).eq('business_name', currentBusiness.name),
         supabase.from('call_center_alerts').select('*').eq('acknowledged', false),
-        supabase.from('call_center_ai_agents').select('*').eq('is_active', true)
+        supabase.from('call_center_ai_agents').select('*').eq('business_name', currentBusiness.name).eq('is_active', true)
       ]);
 
       const aiHandled = todayCalls.data?.filter(c => c.ai_agent_id !== null).length || 0;
@@ -41,20 +43,23 @@ export default function CallCenterDashboard() {
         activeAgents: agents.data?.length || 0
       };
     },
-    enabled: !!currentBusiness
+    enabled: !!currentBusiness?.id
   });
 
   const { data: recentCalls } = useQuery({
     queryKey: ['recent-calls', currentBusiness?.id],
     queryFn: async () => {
+      if (!currentBusiness?.id) return [];
+      
       const { data } = await supabase
         .from('call_center_logs')
         .select('*')
+        .eq('business_name', currentBusiness.name)
         .order('created_at', { ascending: false })
         .limit(5);
       return data || [];
     },
-    enabled: !!currentBusiness
+    enabled: !!currentBusiness?.id
   });
 
   return (
@@ -123,12 +128,12 @@ export default function CallCenterDashboard() {
                 <div key={call.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">{call.caller_id}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {call.business_name} • {call.direction}
-                      </p>
-                    </div>
+                     <div>
+                       <p className="text-sm font-medium">{call.caller_id}</p>
+                       <p className="text-xs text-muted-foreground">
+                         {call.business_name} • {call.direction}
+                       </p>
+                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {new Date(call.created_at).toLocaleTimeString()}
