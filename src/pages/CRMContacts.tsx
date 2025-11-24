@@ -9,6 +9,16 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Plus, Phone, Mail, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { CustomerSimpleFilters } from '@/components/crm/CustomerSimpleFilters';
+import { CustomerSnapshotCard } from '@/components/crm/CustomerSnapshotCard';
+import { QuickAddContactForm } from '@/components/crm/QuickAddContactForm';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 const CRMContacts = () => {
   const navigate = useNavigate();
@@ -16,6 +26,8 @@ const CRMContacts = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<any>(null);
 
   // Show loading state
   if (loading) {
@@ -118,54 +130,53 @@ const CRMContacts = () => {
             Manage all your business relationships
           </p>
         </div>
-        <Button onClick={() => navigate('/crm/contacts/new')}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Contact
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={showQuickAdd} onOpenChange={setShowQuickAdd}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                Quick Add
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Quick Add Contact</DialogTitle>
+              </DialogHeader>
+              <QuickAddContactForm onSuccess={() => {
+                setShowQuickAdd(false);
+                window.location.reload();
+              }} />
+            </DialogContent>
+          </Dialog>
+          <Button onClick={() => navigate('/crm/contacts/new')}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Contact
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
       <Card className="p-4">
-        <div className="flex flex-wrap gap-4">
-          <div className="flex-1 min-w-[250px]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, email, or phone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="store">Store</SelectItem>
-              <SelectItem value="driver">Driver</SelectItem>
-              <SelectItem value="influencer">Influencer</SelectItem>
-              <SelectItem value="wholesaler">Wholesaler</SelectItem>
-              <SelectItem value="partner">Partner</SelectItem>
-              <SelectItem value="lead">Lead</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="warm">Warm</SelectItem>
-              <SelectItem value="cold">Cold</SelectItem>
-              <SelectItem value="lost">Lost</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <CustomerSimpleFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          typeFilter={typeFilter}
+          onTypeChange={setTypeFilter}
+          statusFilter={statusFilter}
+          onStatusChange={setStatusFilter}
+        />
       </Card>
+
+      {selectedContact && (
+        <Dialog open={!!selectedContact} onOpenChange={() => setSelectedContact(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Contact Snapshot</DialogTitle>
+            </DialogHeader>
+            <CustomerSnapshotCard contact={selectedContact} />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Contacts Table */}
       <Card className="p-6">

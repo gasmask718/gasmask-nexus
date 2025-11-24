@@ -24,6 +24,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { seedDemoData } from '@/utils/seedDemoData';
 import CRMLayout from './crm/CRMLayout';
+import { QuickAddContactForm } from '@/components/crm/QuickAddContactForm';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 const CRM = () => {
   const navigate = useNavigate();
@@ -31,6 +39,7 @@ const CRM = () => {
   const { role } = useUserRole();
   const [showDemoDialog, setShowDemoDialog] = useState(false);
   const [loadingDemo, setLoadingDemo] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
 
   const handleLoadDemoData = async () => {
     if (!currentBusiness?.id) return;
@@ -182,6 +191,23 @@ const CRM = () => {
             <Users className="mr-2 h-4 w-4" />
             All Contacts
           </Button>
+          <Dialog open={showQuickAdd} onOpenChange={setShowQuickAdd}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                Quick Add
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Quick Add Contact</DialogTitle>
+              </DialogHeader>
+              <QuickAddContactForm onSuccess={() => {
+                setShowQuickAdd(false);
+                window.location.reload();
+              }} />
+            </DialogContent>
+          </Dialog>
           <Button onClick={() => navigate('/crm/contacts/new')}>
             <Plus className="mr-2 h-4 w-4" />
             New Contact
