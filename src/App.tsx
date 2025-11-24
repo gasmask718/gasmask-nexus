@@ -91,6 +91,8 @@ import CallLogs from "./pages/callcenter/CallLogs";
 import AIAgents from "./pages/callcenter/AIAgents";
 import LiveMonitoring from "./pages/callcenter/LiveMonitoring";
 import CallCenterSettings from "./pages/callcenter/CallCenterSettings";
+import CallCenterDialer from "./pages/callcenter/CallCenterDialer";
+import CallCenterAnalytics from "./pages/callcenter/CallCenterAnalytics";
 import Messages from "./pages/callcenter/Messages";
 import Emails from "./pages/callcenter/Emails";
 import CRMFollowUps from "./pages/CRMFollowUps";
@@ -930,106 +932,66 @@ const App = () => (
               />
               
               {/* Call Center Cloud Routes */}
-              <Route
-                path="/callcenter"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <CallCenterDashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/callcenter/numbers"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <PhoneNumbers />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/callcenter/logs"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <CallLogs />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/callcenter/ai"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <AIAgents />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/callcenter/live-monitoring"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <LiveMonitoring />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/callcenter/settings"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <CallCenterSettings />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/callcenter/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <CallCenterDashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/callcenter/ai-agents"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <AIAgents />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/callcenter/messages"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Messages />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/callcenter/emails"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Emails />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/call-center" element={
+                <ProtectedRoute><Layout><CallCenterDashboard /></Layout></ProtectedRoute>
+              } />
+              <Route path="/call-center/dashboard" element={
+                <ProtectedRoute><Layout><CallCenterDashboard /></Layout></ProtectedRoute>
+              } />
+              <Route path="/call-center/numbers" element={
+                <ProtectedRoute><Layout><PhoneNumbers /></Layout></ProtectedRoute>
+              } />
+              <Route path="/call-center/ai-agents" element={
+                <ProtectedRoute><Layout><AIAgents /></Layout></ProtectedRoute>
+              } />
+              <Route path="/call-center/logs" element={
+                <ProtectedRoute><Layout><CallLogs /></Layout></ProtectedRoute>
+              } />
+              <Route path="/call-center/live-monitoring" element={
+                <ProtectedRoute><Layout><LiveMonitoring /></Layout></ProtectedRoute>
+              } />
+              <Route path="/call-center/dialer" element={
+                <ProtectedRoute><Layout><CallCenterDialer /></Layout></ProtectedRoute>
+              } />
+              <Route path="/call-center/analytics" element={
+                <ProtectedRoute><Layout><CallCenterAnalytics /></Layout></ProtectedRoute>
+              } />
+              <Route path="/call-center/settings" element={
+                <ProtectedRoute><Layout><CallCenterSettings /></Layout></ProtectedRoute>
+              } />
+              
+              {/* Legacy call center routes */}
+              <Route path="/callcenter" element={
+                <ProtectedRoute><Layout><CallCenterDashboard /></Layout></ProtectedRoute>
+              } />
+              <Route path="/callcenter/dashboard" element={
+                <ProtectedRoute><Layout><CallCenterDashboard /></Layout></ProtectedRoute>
+              } />
+              <Route path="/callcenter/numbers" element={
+                <ProtectedRoute><Layout><PhoneNumbers /></Layout></ProtectedRoute>
+              } />
+              <Route path="/callcenter/logs" element={
+                <ProtectedRoute><Layout><CallLogs /></Layout></ProtectedRoute>
+              } />
+              <Route path="/callcenter/ai" element={
+                <ProtectedRoute><Layout><AIAgents /></Layout></ProtectedRoute>
+              } />
+              <Route path="/callcenter/ai-agents" element={
+                <ProtectedRoute><Layout><AIAgents /></Layout></ProtectedRoute>
+              } />
+              <Route path="/callcenter/live-monitoring" element={
+                <ProtectedRoute><Layout><LiveMonitoring /></Layout></ProtectedRoute>
+              } />
+              <Route path="/callcenter/messages" element={
+                <ProtectedRoute><Layout><Messages /></Layout></ProtectedRoute>
+              } />
+              <Route path="/callcenter/emails" element={
+                <ProtectedRoute><Layout><Emails /></Layout></ProtectedRoute>
+              } />
+              <Route path="/callcenter/settings" element={
+                <ProtectedRoute><Layout><CallCenterSettings /></Layout></ProtectedRoute>
+              } />
+              
               
               {/* Billing Center Routes */}
               <Route
