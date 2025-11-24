@@ -89,6 +89,10 @@ import CallCenterDashboard from "./pages/callcenter/CallCenterDashboard";
 import PhoneNumbers from "./pages/callcenter/PhoneNumbers";
 import CallLogs from "./pages/callcenter/CallLogs";
 import AIAgents from "./pages/callcenter/AIAgents";
+import LiveMonitoring from "./pages/callcenter/LiveMonitoring";
+import CallCenterSettings from "./pages/callcenter/CallCenterSettings";
+import Messages from "./pages/callcenter/Messages";
+import Emails from "./pages/callcenter/Emails";
 import CRMFollowUps from "./pages/CRMFollowUps";
 import BillingCenter from "./pages/BillingCenter";
 import BillingInvoices from "./pages/BillingInvoices";
@@ -962,6 +966,66 @@ const App = () => (
                   <ProtectedRoute>
                     <Layout>
                       <AIAgents />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/callcenter/live-monitoring"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <LiveMonitoring />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/callcenter/settings"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CallCenterSettings />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/callcenter/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CallCenterDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/callcenter/ai-agents"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AIAgents />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/callcenter/messages"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Messages />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/callcenter/emails"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Emails />
                     </Layout>
                   </ProtectedRoute>
                 }

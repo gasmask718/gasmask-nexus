@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import CallCenterLayout from "./CallCenterLayout";
 
 export default function PhoneNumbers() {
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -79,7 +80,8 @@ export default function PhoneNumbers() {
   });
 
   return (
-    <div className="space-y-6">
+    <CallCenterLayout title="Phone Numbers">
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Phone Numbers</h1>
@@ -232,6 +234,7 @@ export default function PhoneNumbers() {
           </Card>
         )}
       </div>
-    </div>
+      </div>
+    </CallCenterLayout>
   );
 }

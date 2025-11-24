@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Brain, Settings, Edit, CheckCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import CallCenterLayout from "./CallCenterLayout";
 
 export default function AIAgents() {
   const { data: aiAgents, isLoading } = useQuery({
@@ -20,7 +21,8 @@ export default function AIAgents() {
   });
 
   return (
-    <div className="space-y-6">
+    <CallCenterLayout title="AI Agents">
+      <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">AI Agents</h1>
         <p className="text-muted-foreground">Manage AI agents for each business line</p>
@@ -100,6 +102,7 @@ export default function AIAgents() {
           </Card>
         )}
       </div>
-    </div>
+      </div>
+    </CallCenterLayout>
   );
 }
