@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Send, Mail, Phone, Users, BarChart3, Upload } from 'lucide-react';
+import { Send, Mail, Phone, Users, BarChart3, Upload, Shield } from 'lucide-react';
+import { useVAPermissions } from '@/hooks/useVAPermissions';
 import BlastTextModule from '@/components/communications/BlastTextModule';
 import BlastEmailModule from '@/components/communications/BlastEmailModule';
 import AIVoiceCallModule from '@/components/communications/AIVoiceCallModule';
@@ -115,6 +116,38 @@ const brands = [
 export default function CommunicationsCenterOverview() {
   const [selectedBrand, setSelectedBrand] = useState(brands[0]);
   const [activeModule, setActiveModule] = useState<'text' | 'email' | 'voice' | 'crm' | 'batch' | 'conversations'>('text');
+  const { getAllowedBrands, isLoading: permissionsLoading } = useVAPermissions();
+
+  // Filter brands based on VA permissions
+  const allowedBrandNames = getAllowedBrands();
+  const filteredBrands = brands.filter(brand => 
+    allowedBrandNames.includes(brand.name) || allowedBrandNames.length === 0
+  );
+
+  // If loading permissions, show loading state
+  if (permissionsLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <Shield className="w-12 h-12 mx-auto mb-4 animate-pulse" />
+          <p>Loading permissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no access to any brands, show access denied
+  if (filteredBrands.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <Shield className="w-12 h-12 mx-auto mb-4 text-red-600" />
+          <h2 className="text-xl font-bold mb-2">Access Restricted</h2>
+          <p className="text-muted-foreground">You don't have permission to access the Communications Center.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -137,7 +170,7 @@ export default function CommunicationsCenterOverview() {
             if (brand) setSelectedBrand(brand);
           }}>
             <TabsList className="w-full flex-wrap h-auto gap-2">
-              {brands.map((brand) => (
+              {filteredBrands.map((brand) => (
                 <TabsTrigger
                   key={brand.id}
                   value={brand.id}
@@ -157,6 +190,10 @@ export default function CommunicationsCenterOverview() {
               ))}
             </TabsList>
           </Tabs>
+          <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+            <Shield className="w-3 h-3" />
+            <span>Access to {filteredBrands.length} brand{filteredBrands.length > 1 ? 's' : ''}</span>
+          </div>
         </CardContent>
       </Card>
 
