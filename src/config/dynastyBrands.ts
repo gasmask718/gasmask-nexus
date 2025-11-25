@@ -134,6 +134,7 @@ export const dynastyFloors: Floor[] = [
           { path: '/grabba/cluster', icon: Building, label: 'Grabba Cluster Operations' },
           { path: '/grabba/unified-upload', icon: Upload, label: 'Unified Upload Center' },
           { path: '/grabba/delivery-runs', icon: Truck, label: 'Multi-Brand Delivery' },
+          { path: '/grabba/ai-insights', icon: Brain, label: 'AI Insights' },
           { path: '/grabba/store-master', icon: Store, label: 'Store Master Profiles' },
           { path: '/grabba/products', icon: Package, label: 'Products' },
           { path: '/grabba/inventory', icon: Package, label: 'Inventory' },

@@ -179,6 +179,9 @@ import GrabbaClusterDashboard from "./pages/grabba/GrabbaClusterDashboard";
 import UnifiedUploadCenter from "./pages/grabba/UnifiedUploadCenter";
 import MultiBrandDelivery from "./pages/grabba/MultiBrandDelivery";
 import StoreMasterProfile from "./pages/grabba/StoreMasterProfile";
+import BrandCRM from "./pages/grabba/BrandCRM";
+import BrandCommunications from "./pages/grabba/BrandCommunications";
+import AIInsights from "./pages/grabba/AIInsights";
 
 const queryClient = new QueryClient();
 
@@ -272,7 +275,10 @@ const App = () => (
               <Route path="/grabba/cluster" element={<ProtectedRoute><Layout><GrabbaClusterDashboard /></Layout></ProtectedRoute>} />
               <Route path="/grabba/unified-upload" element={<ProtectedRoute><Layout><UnifiedUploadCenter /></Layout></ProtectedRoute>} />
               <Route path="/grabba/delivery-runs" element={<ProtectedRoute><Layout><MultiBrandDelivery /></Layout></ProtectedRoute>} />
+              <Route path="/grabba/ai-insights" element={<ProtectedRoute><Layout><AIInsights /></Layout></ProtectedRoute>} />
               <Route path="/grabba/store-master/:id" element={<ProtectedRoute><Layout><StoreMasterProfile /></Layout></ProtectedRoute>} />
+              <Route path="/grabba/brand/:brand" element={<ProtectedRoute><Layout><BrandCRM /></Layout></ProtectedRoute>} />
+              <Route path="/grabba/brand/:brand/communications" element={<ProtectedRoute><Layout><BrandCommunications /></Layout></ProtectedRoute>} />
               <Route path="/grabba/*" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
               
               {/* HotMama Routes */}
