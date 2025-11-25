@@ -175,6 +175,10 @@ import PODSettings from "./pages/pod/settings";
 import PodLayout from "./pages/pod/PodLayout";
 import RealEstateLayout from "./pages/realestate/RealEstateLayout";
 import BrandPlaceholder from "./pages/BrandPlaceholder";
+import GrabbaClusterDashboard from "./pages/grabba/GrabbaClusterDashboard";
+import UnifiedUploadCenter from "./pages/grabba/UnifiedUploadCenter";
+import MultiBrandDelivery from "./pages/grabba/MultiBrandDelivery";
+import StoreMasterProfile from "./pages/grabba/StoreMasterProfile";
 
 const queryClient = new QueryClient();
 
@@ -262,6 +266,17 @@ const App = () => (
               <Route path="/gasmask/wholesale/:id" element={<ProtectedRoute><Layout><WholesalerDetail /></Layout></ProtectedRoute>} />
               <Route path="/gasmask/communications" element={<ProtectedRoute><Layout><Communications /></Layout></ProtectedRoute>} />
               <Route path="/gasmask/settings" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              
+              {/* Grabba Cluster Routes */}
+              <Route path="/grabba" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              <Route path="/grabba/cluster" element={<ProtectedRoute><Layout><GrabbaClusterDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/grabba/unified-upload" element={<ProtectedRoute><Layout><UnifiedUploadCenter /></Layout></ProtectedRoute>} />
+              <Route path="/grabba/delivery-runs" element={<ProtectedRoute><Layout><MultiBrandDelivery /></Layout></ProtectedRoute>} />
+              <Route path="/grabba/store-master/:id" element={<ProtectedRoute><Layout><StoreMasterProfile /></Layout></ProtectedRoute>} />
+              <Route path="/grabba/*" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              
+              {/* HotMama Routes */}
+              <Route path="/hotmama/*" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
               
               {/* Finance & Real Estate Routes */}
               <Route path="/finance" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />

@@ -4,7 +4,7 @@ import {
   ShoppingCart, MessageSquare, Phone, Settings, Activity, Bot, Database,
   BarChart3, Map, Box, Store, Megaphone, FileText, Navigation, Target, Award,
   Briefcase, GraduationCap, FileCheck, Send, Calculator, Rocket, Brain, Shield,
-  Zap, Wallet, Gift, Bell, ClipboardList
+  Zap, Wallet, Gift, Bell, ClipboardList, Upload, LayoutDashboard, Hash, Mail
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -131,6 +131,10 @@ export const dynastyFloors: Floor[] = [
         style: 'Colorful NYC nostalgic bodega aesthetic',
         routes: [
           { path: '/grabba', icon: ShoppingBag, label: 'Dashboard' },
+          { path: '/grabba/cluster', icon: Building, label: 'Grabba Cluster Operations' },
+          { path: '/grabba/unified-upload', icon: Upload, label: 'Unified Upload Center' },
+          { path: '/grabba/delivery-runs', icon: Truck, label: 'Multi-Brand Delivery' },
+          { path: '/grabba/store-master', icon: Store, label: 'Store Master Profiles' },
           { path: '/grabba/products', icon: Package, label: 'Products' },
           { path: '/grabba/inventory', icon: Package, label: 'Inventory' },
           { path: '/grabba/stores', icon: Building, label: 'Stores' },
