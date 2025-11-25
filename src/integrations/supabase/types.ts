@@ -789,6 +789,168 @@ export type Database = {
           },
         ]
       }
+      batch_upload_history: {
+        Row: {
+          brands_detected: string[] | null
+          created_at: string | null
+          error_count: number | null
+          file_name: string
+          id: string
+          rows_processed: number | null
+          success_count: number | null
+          va_id: string | null
+        }
+        Insert: {
+          brands_detected?: string[] | null
+          created_at?: string | null
+          error_count?: number | null
+          file_name: string
+          id?: string
+          rows_processed?: number | null
+          success_count?: number | null
+          va_id?: string | null
+        }
+        Update: {
+          brands_detected?: string[] | null
+          created_at?: string | null
+          error_count?: number | null
+          file_name?: string
+          id?: string
+          rows_processed?: number | null
+          success_count?: number | null
+          va_id?: string | null
+        }
+        Relationships: []
+      }
+      biker_routes: {
+        Row: {
+          biker_name: string
+          biker_phone: string | null
+          completed: boolean | null
+          created_at: string | null
+          delivery_summary: string | null
+          id: string
+          route_date: string
+          store_master_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          biker_name: string
+          biker_phone?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          delivery_summary?: string | null
+          id?: string
+          route_date: string
+          store_master_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          biker_name?: string
+          biker_phone?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          delivery_summary?: string | null
+          id?: string
+          route_date?: string
+          store_master_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "biker_routes_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_crm_contacts: {
+        Row: {
+          brand: Database["public"]["Enums"]["brand_type"]
+          contact_email: string | null
+          contact_name: string
+          contact_phone: string | null
+          created_at: string | null
+          id: string
+          last_contacted: string | null
+          store_brand_account_id: string
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          brand: Database["public"]["Enums"]["brand_type"]
+          contact_email?: string | null
+          contact_name: string
+          contact_phone?: string | null
+          created_at?: string | null
+          id?: string
+          last_contacted?: string | null
+          store_brand_account_id: string
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          brand?: Database["public"]["Enums"]["brand_type"]
+          contact_email?: string | null
+          contact_name?: string
+          contact_phone?: string | null
+          created_at?: string | null
+          id?: string
+          last_contacted?: string | null
+          store_brand_account_id?: string
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_crm_contacts_store_brand_account_id_fkey"
+            columns: ["store_brand_account_id"]
+            isOneToOne: false
+            referencedRelation: "store_brand_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_inventory_movements: {
+        Row: {
+          brand: Database["public"]["Enums"]["brand_type"]
+          created_at: string | null
+          id: string
+          movement_type: string
+          product_type: string
+          quantity: number | null
+          store_brand_account_id: string | null
+        }
+        Insert: {
+          brand: Database["public"]["Enums"]["brand_type"]
+          created_at?: string | null
+          id?: string
+          movement_type: string
+          product_type: string
+          quantity?: number | null
+          store_brand_account_id?: string | null
+        }
+        Update: {
+          brand?: Database["public"]["Enums"]["brand_type"]
+          created_at?: string | null
+          id?: string
+          movement_type?: string
+          product_type?: string
+          quantity?: number | null
+          store_brand_account_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_inventory_movements_store_brand_account_id_fkey"
+            columns: ["store_brand_account_id"]
+            isOneToOne: false
+            referencedRelation: "store_brand_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           color: string | null
@@ -8406,6 +8568,94 @@ export type Database = {
           },
         ]
       }
+      store_ai_insights: {
+        Row: {
+          brand: Database["public"]["Enums"]["brand_type"] | null
+          created_at: string | null
+          id: string
+          insight_data: Json | null
+          insight_type: string
+          store_master_id: string | null
+        }
+        Insert: {
+          brand?: Database["public"]["Enums"]["brand_type"] | null
+          created_at?: string | null
+          id?: string
+          insight_data?: Json | null
+          insight_type: string
+          store_master_id?: string | null
+        }
+        Update: {
+          brand?: Database["public"]["Enums"]["brand_type"] | null
+          created_at?: string | null
+          id?: string
+          insight_data?: Json | null
+          insight_type?: string
+          store_master_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_insights_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_brand_accounts: {
+        Row: {
+          active_status: boolean | null
+          brand: Database["public"]["Enums"]["brand_type"]
+          created_at: string | null
+          credit_terms: Database["public"]["Enums"]["credit_terms_type"] | null
+          id: string
+          last_order_date: string | null
+          loyalty_level:
+            | Database["public"]["Enums"]["loyalty_level_type"]
+            | null
+          store_master_id: string
+          total_spent: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active_status?: boolean | null
+          brand: Database["public"]["Enums"]["brand_type"]
+          created_at?: string | null
+          credit_terms?: Database["public"]["Enums"]["credit_terms_type"] | null
+          id?: string
+          last_order_date?: string | null
+          loyalty_level?:
+            | Database["public"]["Enums"]["loyalty_level_type"]
+            | null
+          store_master_id: string
+          total_spent?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active_status?: boolean | null
+          brand?: Database["public"]["Enums"]["brand_type"]
+          created_at?: string | null
+          credit_terms?: Database["public"]["Enums"]["credit_terms_type"] | null
+          id?: string
+          last_order_date?: string | null
+          loyalty_level?:
+            | Database["public"]["Enums"]["loyalty_level_type"]
+            | null
+          store_master_id?: string
+          total_spent?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_brand_accounts_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_credit_transactions: {
         Row: {
           amount: number
@@ -8484,6 +8734,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      store_master: {
+        Row: {
+          address: string
+          city: string
+          created_at: string | null
+          email: string | null
+          id: string
+          notes: string | null
+          owner_name: string | null
+          phone: string | null
+          state: string
+          store_name: string
+          store_type: string | null
+          updated_at: string | null
+          zip: string
+        }
+        Insert: {
+          address: string
+          city: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          state: string
+          store_name: string
+          store_type?: string | null
+          updated_at?: string | null
+          zip: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          state?: string
+          store_name?: string
+          store_type?: string | null
+          updated_at?: string | null
+          zip?: string
+        }
+        Relationships: []
       }
       store_order_items: {
         Row: {
@@ -10602,6 +10900,8 @@ export type Database = {
         | "customer"
         | "pod_worker"
         | "realestate_worker"
+      brand_type: "GasMask" | "HotMama" | "GrabbaRUs" | "HotScalati"
+      credit_terms_type: "COD" | "NET7" | "NET14" | "NET30"
       inventory_level: "empty" | "quarter" | "half" | "threeQuarters" | "full"
       lead_source:
         | "probate"
@@ -10616,6 +10916,7 @@ export type Database = {
         | "redfin"
         | "direct_mail"
         | "cold_call"
+      loyalty_level_type: "Bronze" | "Silver" | "Gold" | "VIP"
       payment_method: "cash" | "zelle" | "cashapp" | "venmo" | "other"
       property_type:
         | "single_family"
@@ -10790,6 +11091,8 @@ export const Constants = {
         "pod_worker",
         "realestate_worker",
       ],
+      brand_type: ["GasMask", "HotMama", "GrabbaRUs", "HotScalati"],
+      credit_terms_type: ["COD", "NET7", "NET14", "NET30"],
       inventory_level: ["empty", "quarter", "half", "threeQuarters", "full"],
       lead_source: [
         "probate",
@@ -10805,6 +11108,7 @@ export const Constants = {
         "direct_mail",
         "cold_call",
       ],
+      loyalty_level_type: ["Bronze", "Silver", "Gold", "VIP"],
       payment_method: ["cash", "zelle", "cashapp", "venmo", "other"],
       property_type: [
         "single_family",
