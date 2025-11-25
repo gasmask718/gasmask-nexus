@@ -108,6 +108,9 @@ import CommunicationNumbers from "./pages/communication/CommunicationNumbers";
 import CommunicationLogs from "./pages/communication/CommunicationLogs";
 import CommunicationAnalytics from "./pages/communication/CommunicationAnalytics";
 import CommunicationSettings from "./pages/communication/CommunicationSettings";
+import CommunicationsCenterOverview from "./pages/CommunicationsCenterOverview";
+import CommunicationsCenterLogs from "./pages/CommunicationsCenterLogs";
+import CallCenterLayout from "./pages/callcenter/CallCenterLayout";
 import BillingCenter from "./pages/BillingCenter";
 import BillingInvoices from "./pages/BillingInvoices";
 import BillingInvoiceNew from "./pages/BillingInvoiceNew";
@@ -296,6 +299,25 @@ const App = () => (
               <Route path="/communication-automation" element={<ProtectedRoute><Layout><CommunicationAutomation /></Layout></ProtectedRoute>} />
               <Route path="/communications-ai" element={<ProtectedRoute><Layout><CommunicationsAI /></Layout></ProtectedRoute>} />
               <Route path="/communication-insights" element={<ProtectedRoute><Layout><CommunicationInsights /></Layout></ProtectedRoute>} />
+              
+              {/* Communications Center Routes */}
+              <Route path="/communications-center" element={<ProtectedRoute><Layout><CommunicationsCenterOverview /></Layout></ProtectedRoute>} />
+              <Route path="/communications-center/campaigns" element={<ProtectedRoute><Layout><CommunicationCampaigns /></Layout></ProtectedRoute>} />
+              <Route path="/communications-center/logs" element={<ProtectedRoute><Layout><CommunicationsCenterLogs /></Layout></ProtectedRoute>} />
+              <Route path="/communications-center/analytics" element={<ProtectedRoute><Layout><CommunicationAnalytics /></Layout></ProtectedRoute>} />
+
+              {/* Call Center Routes */}
+              <Route path="/call-center" element={<ProtectedRoute><Layout><CallCenterDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/call-center/dashboard" element={<ProtectedRoute><Layout><CallCenterDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/call-center/dialer" element={<ProtectedRoute><Layout><CallCenterDialer /></Layout></ProtectedRoute>} />
+              <Route path="/call-center/logs" element={<ProtectedRoute><Layout><CallLogs /></Layout></ProtectedRoute>} />
+              <Route path="/call-center/analytics" element={<ProtectedRoute><Layout><CallCenterAnalytics /></Layout></ProtectedRoute>} />
+              <Route path="/call-center/ai-agents" element={<ProtectedRoute><Layout><AIAgents /></Layout></ProtectedRoute>} />
+              <Route path="/call-center/phone-numbers" element={<ProtectedRoute><Layout><PhoneNumbers /></Layout></ProtectedRoute>} />
+              <Route path="/call-center/monitoring" element={<ProtectedRoute><Layout><LiveMonitoring /></Layout></ProtectedRoute>} />
+              <Route path="/call-center/messages" element={<ProtectedRoute><Layout><Messages /></Layout></ProtectedRoute>} />
+              <Route path="/call-center/emails" element={<ProtectedRoute><Layout><Emails /></Layout></ProtectedRoute>} />
+              <Route path="/call-center/settings" element={<ProtectedRoute><Layout><CallCenterSettings /></Layout></ProtectedRoute>} />
               <Route path="/text-center" element={<ProtectedRoute><Layout><TextCenter /></Layout></ProtectedRoute>} />
               <Route path="/email-center" element={<ProtectedRoute><Layout><EmailCenter /></Layout></ProtectedRoute>} />
               <Route path="/va-performance" element={<ProtectedRoute><Layout><VAPerformance /></Layout></ProtectedRoute>} />
