@@ -262,12 +262,12 @@ export default function CommunicationsCenterOverview() {
 
           {/* Active Module Content */}
           <div className="mt-6">
-            {activeModule === 'text' && <BlastTextModule brand={selectedBrand} />}
-            {activeModule === 'email' && <BlastEmailModule brand={selectedBrand} />}
-            {activeModule === 'voice' && <AIVoiceCallModule brand={selectedBrand} />}
-            {activeModule === 'crm' && <CRMSegmentationModule brand={selectedBrand} />}
-            {activeModule === 'batch' && <BatchUploadModule brand={selectedBrand} />}
-            {activeModule === 'conversations' && <ConversationsView brand={selectedBrand} />}
+            {activeModule === 'text' && <BlastTextModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
+            {activeModule === 'email' && <BlastEmailModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
+            {activeModule === 'voice' && <AIVoiceCallModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
+            {activeModule === 'crm' && <CRMSegmentationModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
+            {activeModule === 'batch' && <BatchUploadModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
+            {activeModule === 'conversations' && <ConversationsView brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
           </div>
         </CardContent>
       </Card>

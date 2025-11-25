@@ -5,14 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Mail, Phone, Calendar } from 'lucide-react';
 
 interface ConversationsViewProps {
-  brand: {
-    id: string;
-    name: string;
-    colors: { primary: string; secondary: string; accent: string };
-  };
+  brand: string;
+  brandColor?: string;
 }
 
-export default function ConversationsView({ brand }: ConversationsViewProps) {
+export default function ConversationsView({ brand, brandColor = '#6366f1' }: ConversationsViewProps) {
   const conversations = [
     {
       contact: 'John\'s Corner Store',
@@ -48,9 +45,12 @@ export default function ConversationsView({ brand }: ConversationsViewProps) {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card style={{ borderTop: `4px solid ${brandColor}` }}>
         <CardHeader>
-          <CardTitle>Conversation History - {brand.name}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5" style={{ color: brandColor }} />
+            Conversation History - {brand}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Search */}
@@ -74,13 +74,13 @@ export default function ConversationsView({ brand }: ConversationsViewProps) {
               <div
                 key={i}
                 className="p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                style={conv.unread ? { borderLeft: `4px solid ${brand.colors.primary}` } : {}}
+                style={conv.unread ? { borderLeft: `4px solid ${brandColor}` } : {}}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div
                       className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                      style={{ backgroundColor: brand.colors.primary }}
+                      style={{ backgroundColor: brandColor }}
                     >
                       {conv.contact.charAt(0)}
                     </div>
@@ -107,7 +107,7 @@ export default function ConversationsView({ brand }: ConversationsViewProps) {
               <Calendar className="w-4 h-4" />
               Contact Timeline
             </Label>
-            <div className="p-4 rounded-lg border bg-muted/50">
+            <div className="p-4 rounded-lg border" style={{ backgroundColor: `${brandColor}10` }}>
               <p className="text-sm text-center text-muted-foreground">
                 Select a conversation to view full timeline
               </p>
