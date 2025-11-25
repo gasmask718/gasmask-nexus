@@ -1789,13 +1789,213 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              {/* Dynasty OS Brand Routes - Floor 1: Product Companies */}
+              {/* Dynasty OS Brand Routes - Floor 1: Product Companies - GasMask */}
               <Route
-                path="/gasmask/*"
+                path="/gasmask"
                 element={
                   <ProtectedRoute>
                     <Layout>
-                      <BrandPlaceholder />
+                      <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/analytics"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Analytics />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/routes"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <RoutesPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/routes/optimizer"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <RouteOptimizer />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/routes/ops-center"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <RouteOpsCenter />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/routes/:id"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <RouteDetail />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/stores"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Stores />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/stores/:id"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <StoreDetail />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/store-performance"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <StorePerformance />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/products"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Products />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/inventory"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BatchImport />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/map"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <MapPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/live-map"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <LiveMap />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/ambassadors"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Ambassadors />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/ambassador-payouts"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AmbassadorPayouts />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/ambassador-regions"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AmbassadorRegions />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/wholesale"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Wholesale />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/wholesale/marketplace"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <WholesaleMarketplace />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/wholesale/fulfillment"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <WholesaleFulfillment />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/wholesale/:id"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <WholesalerDetail />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gasmask/communications"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Communications />
                     </Layout>
                   </ProtectedRoute>
                 }
