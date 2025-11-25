@@ -209,6 +209,111 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              
+              {/* GasMask Routes */}
+              <Route path="/gasmask/driver" element={<ProtectedRoute><Layout><Driver /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/team" element={<ProtectedRoute><Layout><Team /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/training" element={<ProtectedRoute><Layout><Training /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/missions" element={<ProtectedRoute><Layout><Missions /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/leaderboard" element={<ProtectedRoute><Layout><Leaderboard /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/rewards" element={<ProtectedRoute><Layout><Rewards /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/territories" element={<ProtectedRoute><Layout><Territories /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/expansion" element={<ProtectedRoute><Layout><Expansion /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/expansion/regions" element={<ProtectedRoute><Layout><ExpansionRegions /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/expansion/heatmap" element={<ProtectedRoute><Layout><ExpansionHeatmap /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/templates" element={<ProtectedRoute><Layout><Templates /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/reminders" element={<ProtectedRoute><Layout><Reminders /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/sales" element={<ProtectedRoute><Layout><Sales /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/sales/prospects" element={<ProtectedRoute><Layout><SalesProspects /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/sales/prospects/new" element={<ProtectedRoute><Layout><SalesProspectNew /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/sales/prospects/:id" element={<ProtectedRoute><Layout><SalesProspectDetail /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/sales/report" element={<ProtectedRoute><Layout><SalesReport /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/billing" element={<ProtectedRoute><Layout><Billing /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/billing-center" element={<ProtectedRoute><Layout><BillingCenter /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/billing/invoices" element={<ProtectedRoute><Layout><BillingInvoices /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/billing/invoices/new" element={<ProtectedRoute><Layout><BillingInvoiceNew /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/payroll" element={<ProtectedRoute><Layout><Payroll /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/biker-payouts" element={<ProtectedRoute><Layout><BikerPayouts /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/delivery-capacity" element={<ProtectedRoute><Layout><DeliveryCapacity /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/subscriptions" element={<ProtectedRoute><Layout><Subscriptions /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/wallet" element={<ProtectedRoute><Layout><WalletPage /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/analytics" element={<ProtectedRoute><Layout><Analytics /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/routes" element={<ProtectedRoute><Layout><RoutesPage /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/routes/optimizer" element={<ProtectedRoute><Layout><RouteOptimizer /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/routes/ops-center" element={<ProtectedRoute><Layout><RouteOpsCenter /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/routes/:id" element={<ProtectedRoute><Layout><RouteDetail /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/stores" element={<ProtectedRoute><Layout><Stores /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/stores/:id" element={<ProtectedRoute><Layout><StoreDetail /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/stores/:id/order" element={<ProtectedRoute><Layout><StoreOrder /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/store-performance" element={<ProtectedRoute><Layout><StorePerformance /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/products" element={<ProtectedRoute><Layout><Products /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/inventory" element={<ProtectedRoute><Layout><Products /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/map" element={<ProtectedRoute><Layout><MapPage /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/live-map" element={<ProtectedRoute><Layout><LiveMap /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/ambassadors" element={<ProtectedRoute><Layout><Ambassadors /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/ambassador-payouts" element={<ProtectedRoute><Layout><AmbassadorPayouts /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/ambassador-regions" element={<ProtectedRoute><Layout><AmbassadorRegions /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/wholesale" element={<ProtectedRoute><Layout><Wholesale /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/wholesale/marketplace" element={<ProtectedRoute><Layout><WholesaleMarketplace /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/wholesale/fulfillment" element={<ProtectedRoute><Layout><WholesaleFulfillment /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/wholesale/:id" element={<ProtectedRoute><Layout><WholesalerDetail /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/communications" element={<ProtectedRoute><Layout><Communications /></Layout></ProtectedRoute>} />
+              <Route path="/gasmask/settings" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              
+              {/* Finance & Real Estate Routes */}
+              <Route path="/finance" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              <Route path="/finance/funding" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              <Route path="/finance/funding-requests" element={<ProtectedRoute><Layout><FundingRequests /></Layout></ProtectedRoute>} />
+              <Route path="/finance/grants" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              <Route path="/finance/credit-repair" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              <Route path="/finance/chexsystems" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              <Route path="/finance/investment" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              <Route path="/finance/trading" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              <Route path="/finance/economic-analytics" element={<ProtectedRoute><Layout><EconomicAnalytics /></Layout></ProtectedRoute>} />
+              <Route path="/finance/revenue-brain" element={<ProtectedRoute><Layout><RevenueBrain /></Layout></ProtectedRoute>} />
+              <Route path="/finance/opportunity-radar" element={<ProtectedRoute><Layout><OpportunityRadar /></Layout></ProtectedRoute>} />
+              <Route path="/loan-products" element={<ProtectedRoute><Layout><LoanProducts /></Layout></ProtectedRoute>} />
+              <Route path="/lender-directory" element={<ProtectedRoute><Layout><LenderDirectory /></Layout></ProtectedRoute>} />
+              <Route path="/loan-calculators" element={<ProtectedRoute><Layout><LoanCalculators /></Layout></ProtectedRoute>} />
+              <Route path="/deal-sheets-generator" element={<ProtectedRoute><Layout><DealSheetsGenerator /></Layout></ProtectedRoute>} />
+              <Route path="/investor-blast-system" element={<ProtectedRoute><Layout><InvestorBlastSystem /></Layout></ProtectedRoute>} />
+              <Route path="/offer-analyzer" element={<ProtectedRoute><Layout><OfferAnalyzer /></Layout></ProtectedRoute>} />
+              <Route path="/assignment-fee-optimizer" element={<ProtectedRoute><Layout><AssignmentFeeOptimizer /></Layout></ProtectedRoute>} />
+              <Route path="/holdings/overview" element={<ProtectedRoute><Layout><HoldingsOverview /></Layout></ProtectedRoute>} />
+              <Route path="/holdings/assets" element={<ProtectedRoute><Layout><HoldingsAssets /></Layout></ProtectedRoute>} />
+              <Route path="/holdings/airbnb" element={<ProtectedRoute><Layout><HoldingsAirbnb /></Layout></ProtectedRoute>} />
+              <Route path="/holdings/tenants" element={<ProtectedRoute><Layout><HoldingsTenants /></Layout></ProtectedRoute>} />
+              <Route path="/holdings/loans" element={<ProtectedRoute><Layout><HoldingsLoans /></Layout></ProtectedRoute>} />
+              <Route path="/holdings/expenses" element={<ProtectedRoute><Layout><HoldingsExpenses /></Layout></ProtectedRoute>} />
+              <Route path="/holdings/strategy" element={<ProtectedRoute><Layout><HoldingsStrategy /></Layout></ProtectedRoute>} />
+              
+              {/* Systems & Engine Room Routes */}
+              <Route path="/systems" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              <Route path="/ai-ceo-control-room" element={<ProtectedRoute><Layout><AICEOControlRoom /></Layout></ProtectedRoute>} />
+              <Route path="/meta-ai" element={<ProtectedRoute><Layout><MetaAI /></Layout></ProtectedRoute>} />
+              <Route path="/executive-reports" element={<ProtectedRoute><Layout><ExecutiveReports /></Layout></ProtectedRoute>} />
+              <Route path="/missions-hq" element={<ProtectedRoute><Layout><MissionsHQ /></Layout></ProtectedRoute>} />
+              <Route path="/communication-automation" element={<ProtectedRoute><Layout><CommunicationAutomation /></Layout></ProtectedRoute>} />
+              <Route path="/communications-ai" element={<ProtectedRoute><Layout><CommunicationsAI /></Layout></ProtectedRoute>} />
+              <Route path="/communication-insights" element={<ProtectedRoute><Layout><CommunicationInsights /></Layout></ProtectedRoute>} />
+              <Route path="/text-center" element={<ProtectedRoute><Layout><TextCenter /></Layout></ProtectedRoute>} />
+              <Route path="/email-center" element={<ProtectedRoute><Layout><EmailCenter /></Layout></ProtectedRoute>} />
+              <Route path="/va-performance" element={<ProtectedRoute><Layout><VAPerformance /></Layout></ProtectedRoute>} />
+              <Route path="/va-ranking" element={<ProtectedRoute><Layout><VARanking /></Layout></ProtectedRoute>} />
+              <Route path="/va-task-center" element={<ProtectedRoute><Layout><VATaskCenter /></Layout></ProtectedRoute>} />
+              <Route path="/batch-import" element={<ProtectedRoute><Layout><BatchImport /></Layout></ProtectedRoute>} />
+              <Route path="/hr" element={<ProtectedRoute><Layout><HR /></Layout></ProtectedRoute>} />
+              <Route path="/hr/applicants" element={<ProtectedRoute><Layout><HRApplicants /></Layout></ProtectedRoute>} />
+              <Route path="/hr/applicants/:id" element={<ProtectedRoute><Layout><HRApplicantDetail /></Layout></ProtectedRoute>} />
+              <Route path="/hr/employees" element={<ProtectedRoute><Layout><HREmployees /></Layout></ProtectedRoute>} />
+              <Route path="/hr/employees/:id" element={<ProtectedRoute><Layout><HREmployeeDetail /></Layout></ProtectedRoute>} />
+              <Route path="/hr/interviews" element={<ProtectedRoute><Layout><HRInterviews /></Layout></ProtectedRoute>} />
+              <Route path="/hr/documents" element={<ProtectedRoute><Layout><HRDocuments /></Layout></ProtectedRoute>} />
+              <Route path="/hr/onboarding" element={<ProtectedRoute><Layout><HROnboarding /></Layout></ProtectedRoute>} />
+              <Route path="/hr/payroll" element={<ProtectedRoute><Layout><HRPayroll /></Layout></ProtectedRoute>} />
+              <Route path="/my-hr" element={<ProtectedRoute><Layout><MyHR /></Layout></ProtectedRoute>} />
+              
+              {/* Legacy fallback routes (keep old paths working) */}
               <Route
                 path="/stores"
                 element={
