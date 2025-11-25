@@ -2,54 +2,20 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { BusinessSwitcher } from '@/components/business/BusinessSwitcher';
-import { communicationNavItems } from '@/components/layout/communicationNavigation';
-import { navigationItems } from '@/components/layout/navigationItems';
-import { realEstateNavItems } from '@/components/layout/realEstateNavigation';
-import { podNavigationItems } from '@/components/layout/podNavigation';
-import { callCenterNavItems } from '@/components/layout/callCenterNavigation';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { SendMessageModal } from '@/components/communication/SendMessageModal';
 import { departmentThemes } from '@/config/departmentThemes';
 import '@/theme/departmentStyles.css';
 import { useLocation } from 'react-router-dom';
+import { dynastyFloors } from '@/config/dynastyBrands';
 import { 
-  LayoutDashboard,
-  Store, 
-  Map, 
-  MapPin,
-  Upload,
-  Users, 
-  Package, 
-  TrendingUp, 
   LogOut,
   Menu,
-  Building2,
-  MessageCircle,
   MessageSquarePlus,
-  Target,
-  Brain,
-  Radar,
-  Trophy,
-  Settings,
-  FileText,
-  BarChart3,
-  Navigation,
-  Gift,
-  DollarSign,
-  Home,
-  Phone,
-  Mail,
-  Shirt,
-  Building,
-  FileSearch,
-  FileSignature,
-  CreditCard,
-  Warehouse,
-  Mic,
-  MessageSquare,
-  PhoneCall,
-  CheckSquare
+  Package,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -65,13 +31,9 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
+  const [expandedFloors, setExpandedFloors] = useState<string[]>(['systems-engine']);
   
-  const activeDepartment = location.pathname.startsWith('/real-estate') ? 'realestate'
-    : location.pathname.startsWith('/pod') ? 'pod'
-    : location.pathname.startsWith('/call-center') ? 'callcenter'
-    : location.pathname.startsWith('/communication') ? 'communication'
-    : location.pathname.startsWith('/crm') ? 'crm'
-    : 'main';
+  const currentPath = location.pathname;
 
   // All hooks must be called before any conditional returns
   useEffect(() => {
@@ -122,238 +84,100 @@ const Layout = ({ children }: LayoutProps) => {
   }
 
 
-  // DEBUG MODE: Temporarily disable role filtering to verify rendering
-  // TODO: Re-enable role filtering after confirming visibility
-  const normalizedRole = userRole?.trim().toLowerCase() || null;
-  
-  console.log('🎯 DEBUG MODE - Role filtering DISABLED');
-  console.log('🎯 User Role:', normalizedRole);
-  
-  // FORCE SHOW ALL - No filtering applied
-  const filteredNavItems = navigationItems;
-  const filteredRealEstateNavItems = realEstateNavItems;
-  const filteredPodNavItems = podNavigationItems;
-  const filteredCallCenterNavItems = callCenterNavItems;
-  const filteredCommunicationNavItems = communicationNavItems;
+  const toggleFloor = (floorId: string) => {
+    setExpandedFloors(prev =>
+      prev.includes(floorId)
+        ? prev.filter(id => id !== floorId)
+        : [...prev, floorId]
+    );
+  };
 
-  // Force all sections to show
-  const showRealEstateSection = true;
-  const showPodSection = true;
-  const showCallCenterSection = true;
-  const showCommunicationSection = true;
-  
-  console.log('👁️ Force Visible - ALL Sections:', { 
-    realestate: showRealEstateSection, 
-    pod: showPodSection, 
-    callcenter: showCallCenterSection,
-    communication: showCommunicationSection,
-    mainItems: filteredNavItems.length,
-    realEstateItems: filteredRealEstateNavItems.length,
-    podItems: filteredPodNavItems.length,
-    callCenterItems: filteredCallCenterNavItems.length
-  });
+  const FloorNavigation = () => {
+    return (
+      <div className="space-y-2">
+        {/* Dynasty OS Title */}
+        <div className="px-3 py-2 mb-4">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Dynasty OS
+          </h2>
+        </div>
 
-  const NavItems = () => (
-    <>
-      {/* Main Navigation */}
-      {filteredNavItems.map((item) => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors relative"
-          activeClassName="bg-primary/10 text-primary hover:bg-primary/20"
-        >
-          <item.icon className="h-5 w-5" />
-          <span className="font-medium">{item.label}</span>
-          {item.to === '/reports/executive' && unreadReportsCount > 0 && (
-            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
-              {unreadReportsCount}
-            </span>
-          )}
-        </NavLink>
-      ))}
-      
-      {showRealEstateSection && (
-        <>
-          <div 
-            className="pt-4 pb-2 mt-2 border-t dept-section"
-            style={{ 
-              borderLeft: `4px solid ${departmentThemes.realEstate.color}`,
-              backgroundColor: activeDepartment === 'realestate' ? departmentThemes.realEstate.lightBg : 'transparent'
-            }}
-          >
-            <div 
-              className="px-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
-              style={{ 
-                color: activeDepartment === 'realestate' ? departmentThemes.realEstate.color : 'inherit',
-                fontWeight: activeDepartment === 'realestate' ? 'bold' : 'normal'
-              }}
-            >
-              <Building className="h-4 w-4" />
-              <span>Real Estate Department</span>
+        {/* Render Each Floor */}
+        {dynastyFloors.map((floor) => {
+          const isExpanded = expandedFloors.includes(floor.id);
+          return (
+            <div key={floor.id} className="space-y-1">
+              {/* Floor Header */}
+              <button
+                onClick={() => toggleFloor(floor.id)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/50 rounded-md transition-colors"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+                <floor.icon className="h-4 w-4" />
+                <span className="flex-1 text-left">{floor.name}</span>
+              </button>
+
+              {/* Floor Brands */}
+              {isExpanded && (
+                <div className="ml-4 space-y-3 border-l-2 border-border pl-3">
+                  {floor.brands.map((brand) => (
+                    <div key={brand.id} className="space-y-1">
+                      {/* Brand Header with Color */}
+                      <div
+                        className="px-2 py-1 rounded-md text-xs font-semibold uppercase tracking-wider"
+                        style={{
+                          backgroundColor: `${brand.colors.primary}15`,
+                          color: brand.colors.primary,
+                          borderLeft: `3px solid ${brand.colors.primary}`
+                        }}
+                      >
+                        {brand.name}
+                      </div>
+
+                      {/* Brand Routes */}
+                      <div className="space-y-0.5">
+                        {brand.routes.map((route) => {
+                          const isActive = currentPath === route.path || currentPath.startsWith(route.path + '/');
+                          const Icon = route.icon;
+
+                          return (
+                            <NavLink
+                              key={route.path}
+                              to={route.path}
+                              className={`flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
+                                isActive
+                                  ? 'font-medium'
+                                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                              }`}
+                              style={
+                                isActive
+                                  ? {
+                                      backgroundColor: `${brand.colors.primary}20`,
+                                      color: brand.colors.primary
+                                    }
+                                  : undefined
+                              }
+                            >
+                              <Icon className="h-4 w-4 flex-shrink-0" />
+                              <span className="flex-1">{route.label}</span>
+                            </NavLink>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-          {filteredRealEstateNavItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors"
-              style={{
-                backgroundColor: activeDepartment === 'realestate' && location.pathname === item.to 
-                  ? departmentThemes.realEstate.lightBg 
-                  : activeDepartment === 'realestate' 
-                  ? `${departmentThemes.realEstate.lightBg}80`
-                  : 'transparent',
-                borderLeft: location.pathname === item.to && activeDepartment === 'realestate'
-                  ? `3px solid ${departmentThemes.realEstate.accent}`
-                  : '3px solid transparent',
-                color: activeDepartment === 'realestate' ? departmentThemes.realEstate.color : 'inherit'
-              }}
-              activeClassName=""
-            >
-              <item.icon className="h-5 w-5" />
-              <span className="font-medium">{item.label}</span>
-            </NavLink>
-          ))}
-        </>
-      )}
-
-      {showPodSection && (
-        <>
-          <div 
-            className="pt-4 pb-2 mt-2 border-t dept-section"
-            style={{ 
-              borderLeft: `4px solid ${departmentThemes.pod.color}`,
-              backgroundColor: activeDepartment === 'pod' ? departmentThemes.pod.lightBg : 'transparent'
-            }}
-          >
-            <div 
-              className="px-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
-              style={{ 
-                color: activeDepartment === 'pod' ? departmentThemes.pod.color : 'inherit',
-                fontWeight: activeDepartment === 'pod' ? 'bold' : 'normal'
-              }}
-            >
-              <Shirt className="h-4 w-4" />
-              <span>POD Department</span>
-            </div>
-          </div>
-          {filteredPodNavItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors"
-              style={{
-                backgroundColor: activeDepartment === 'pod' && location.pathname === item.to 
-                  ? departmentThemes.pod.lightBg 
-                  : activeDepartment === 'pod' 
-                  ? `${departmentThemes.pod.lightBg}80`
-                  : 'transparent',
-                borderLeft: location.pathname === item.to && activeDepartment === 'pod'
-                  ? `3px solid ${departmentThemes.pod.accent}`
-                  : '3px solid transparent',
-                color: activeDepartment === 'pod' ? departmentThemes.pod.color : 'inherit'
-              }}
-              activeClassName=""
-            >
-              <item.icon className="h-5 w-5" />
-              <span className="font-medium">{item.label}</span>
-            </NavLink>
-          ))}
-        </>
-      )}
-
-      {showCallCenterSection && (
-        <>
-          <div 
-            className="pt-4 pb-2 mt-2 border-t dept-section"
-            style={{ 
-              borderLeft: `4px solid ${departmentThemes.callCenter.color}`,
-              backgroundColor: activeDepartment === 'callcenter' ? departmentThemes.callCenter.lightBg : 'transparent'
-            }}
-          >
-            <div 
-              className="px-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
-              style={{ 
-                color: activeDepartment === 'callcenter' ? departmentThemes.callCenter.color : 'inherit',
-                fontWeight: activeDepartment === 'callcenter' ? 'bold' : 'normal'
-              }}
-            >
-              <Phone className="h-4 w-4" />
-              <span>Call Center Cloud</span>
-            </div>
-          </div>
-          {filteredCallCenterNavItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors"
-              style={{
-                backgroundColor: activeDepartment === 'callcenter' && location.pathname === item.to 
-                  ? departmentThemes.callCenter.lightBg 
-                  : activeDepartment === 'callcenter' 
-                  ? `${departmentThemes.callCenter.lightBg}80`
-                  : 'transparent',
-                borderLeft: location.pathname === item.to && activeDepartment === 'callcenter'
-                  ? `3px solid ${departmentThemes.callCenter.accent}`
-                  : '3px solid transparent',
-                color: activeDepartment === 'callcenter' ? departmentThemes.callCenter.color : 'inherit'
-              }}
-              activeClassName=""
-            >
-              <item.icon className="h-5 w-5" />
-              <span className="font-medium">{item.label}</span>
-            </NavLink>
-          ))}
-        </>
-      )}
-
-      {showCommunicationSection && (
-        <>
-          <div 
-            className="pt-4 pb-2 mt-2 border-t dept-section"
-            style={{ 
-              borderLeft: `4px solid ${departmentThemes.communication.color}`,
-              backgroundColor: activeDepartment === 'communication' ? departmentThemes.communication.lightBg : 'transparent'
-            }}
-          >
-            <div 
-              className="px-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
-              style={{ 
-                color: activeDepartment === 'communication' ? departmentThemes.communication.color : 'inherit',
-                fontWeight: activeDepartment === 'communication' ? 'bold' : 'normal'
-              }}
-            >
-              <MessageSquare className="h-4 w-4" />
-              <span>Communication Center</span>
-            </div>
-          </div>
-          {filteredCommunicationNavItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors"
-              style={{
-                backgroundColor: activeDepartment === 'communication' && location.pathname === item.to 
-                  ? departmentThemes.communication.lightBg 
-                  : activeDepartment === 'communication' 
-                  ? `${departmentThemes.communication.lightBg}80`
-                  : 'transparent',
-                borderLeft: location.pathname === item.to && activeDepartment === 'communication'
-                  ? `3px solid ${departmentThemes.communication.accent}`
-                  : '3px solid transparent',
-                color: activeDepartment === 'communication' ? departmentThemes.communication.color : 'inherit'
-              }}
-              activeClassName=""
-            >
-              <item.icon className="h-5 w-5" />
-              <span className="font-medium">{item.label}</span>
-            </NavLink>
-          ))}
-        </>
-      )}
-    </>
-  );
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -369,13 +193,13 @@ const Layout = ({ children }: LayoutProps) => {
             <SheetContent side="left" className="w-64 p-0">
               <div className="flex flex-col h-full overflow-hidden py-6">
                 <div className="px-4 mb-6 flex-shrink-0 space-y-3">
-                  <h2 className="text-xl font-bold text-primary">GasMask OS</h2>
+                  <h2 className="text-xl font-bold text-primary">Dynasty OS</h2>
                   {!businessLoading && currentBusiness && (
                     <BusinessSwitcher />
                   )}
                 </div>
                 <nav className="flex-1 overflow-y-auto space-y-1 px-3 scrollbar-thin scrollbar-thumb-accent/40 scrollbar-track-transparent">
-                  <NavItems />
+            <FloorNavigation />
                 </nav>
                 <div className="px-3 pt-4 border-t border-border/50">
                   <Button
@@ -395,7 +219,7 @@ const Layout = ({ children }: LayoutProps) => {
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
               <Package className="h-4 w-4 text-primary" />
             </div>
-            <h1 className="text-xl font-bold hidden sm:block">GasMask Universe OS</h1>
+            <h1 className="text-xl font-bold hidden sm:block">Dynasty OS</h1>
           </div>
 
           <div className="ml-auto flex items-center gap-2">
@@ -431,7 +255,7 @@ const Layout = ({ children }: LayoutProps) => {
             )}
           </div>
           <nav className="flex-1 overflow-y-auto space-y-1 p-4 scrollbar-thin scrollbar-thumb-accent/40 scrollbar-track-transparent">
-            <NavItems />
+            <FloorNavigation />
           </nav>
         </aside>
 

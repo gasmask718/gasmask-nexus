@@ -171,6 +171,7 @@ import PODVAControl from "./pages/pod/va";
 import PODSettings from "./pages/pod/settings";
 import PodLayout from "./pages/pod/PodLayout";
 import RealEstateLayout from "./pages/realestate/RealEstateLayout";
+import BrandPlaceholder from "./pages/BrandPlaceholder";
 
 const queryClient = new QueryClient();
 
@@ -1788,6 +1789,138 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              {/* Dynasty OS Brand Routes - Floor 1: Product Companies */}
+              <Route
+                path="/gasmask/*"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BrandPlaceholder />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/hotmama/*"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BrandPlaceholder />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/grabba/*"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BrandPlaceholder />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/scalati/*"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BrandPlaceholder />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Dynasty OS Brand Routes - Floor 2: Service & Experience */}
+              <Route
+                path="/toptier/*"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BrandPlaceholder />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/unforgettable/*"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BrandPlaceholder />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/iclean/*"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BrandPlaceholder />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Dynasty OS Brand Routes - Floor 3: Platforms & Digital */}
+              <Route
+                path="/playboxxx/*"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BrandPlaceholder />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/specialneeds/*"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BrandPlaceholder />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Dynasty OS Brand Routes - Floor 4: Finance & Acquisition */}
+              <Route
+                path="/finance/*"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BrandPlaceholder />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Dynasty OS Brand Routes - Floor 5: E-Commerce */}
+              <Route
+                path="/ecommerce/*"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BrandPlaceholder />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Dynasty OS Brand Routes - Floor 6: Systems */}
+              <Route
+                path="/systems/*"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BrandPlaceholder />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BusinessProvider>
