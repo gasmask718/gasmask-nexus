@@ -6,14 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Users, Filter, Download } from 'lucide-react';
 
 interface CRMSegmentationModuleProps {
-  brand: {
-    id: string;
-    name: string;
-    colors: { primary: string; secondary: string; accent: string };
-  };
+  brand: string;
+  brandColor?: string;
 }
 
-export default function CRMSegmentationModule({ brand }: CRMSegmentationModuleProps) {
+export default function CRMSegmentationModule({ brand, brandColor = '#6366f1' }: CRMSegmentationModuleProps) {
   const segments = [
     { name: 'All Contacts', count: 1250, color: 'default' },
     { name: 'Customers', count: 820, color: 'default' },
@@ -37,11 +34,11 @@ export default function CRMSegmentationModule({ brand }: CRMSegmentationModulePr
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card style={{ borderTop: `4px solid ${brandColor}` }}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            CRM Segments for {brand.name}
+            <Users className="w-5 h-5" style={{ color: brandColor }} />
+            CRM Segments for {brand}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -84,19 +81,19 @@ export default function CRMSegmentationModule({ brand }: CRMSegmentationModulePr
           </div>
 
           {/* Selected Segment Info */}
-          <div className="p-4 rounded-lg border bg-muted/50">
+          <div className="p-4 rounded-lg border" style={{ backgroundColor: `${brandColor}10` }}>
             <div className="flex items-center justify-between mb-2">
               <span className="font-medium">Current Selection:</span>
               <Badge>1,250 contacts</Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              All contacts for {brand.name} brand
+              All contacts for {brand} brand
             </p>
           </div>
 
           {/* Actions */}
           <div className="flex gap-2">
-            <Button className="flex-1" style={{ backgroundColor: brand.colors.primary }}>
+            <Button className="flex-1" style={{ backgroundColor: brandColor, color: 'white' }}>
               Use in Campaign
             </Button>
             <Button variant="outline">

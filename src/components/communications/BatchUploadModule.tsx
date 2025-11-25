@@ -7,14 +7,11 @@ import { Upload, FileText, CheckCircle, XCircle, AlertCircle } from 'lucide-reac
 import { toast } from 'sonner';
 
 interface BatchUploadModuleProps {
-  brand: {
-    id: string;
-    name: string;
-    colors: { primary: string; secondary: string; accent: string };
-  };
+  brand: string;
+  brandColor?: string;
 }
 
-export default function BatchUploadModule({ brand }: BatchUploadModuleProps) {
+export default function BatchUploadModule({ brand, brandColor = '#6366f1' }: BatchUploadModuleProps) {
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'processing' | 'complete'>('idle');
   const [uploadResults, setUploadResults] = useState<{
     total: number;
@@ -44,11 +41,11 @@ export default function BatchUploadModule({ brand }: BatchUploadModuleProps) {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card style={{ borderTop: `4px solid ${brandColor}` }}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5" />
-            Batch Contact Upload for {brand.name}
+            <Upload className="w-5 h-5" style={{ color: brandColor }} />
+            Batch Contact Upload for {brand}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -70,7 +67,7 @@ export default function BatchUploadModule({ brand }: BatchUploadModuleProps) {
               <Button
                 variant="outline"
                 asChild
-                style={uploadStatus === 'idle' ? { borderColor: brand.colors.primary } : {}}
+                style={uploadStatus === 'idle' ? { borderColor: brandColor } : {}}
               >
                 <span>
                   <Upload className="w-4 h-4 mr-2" />
