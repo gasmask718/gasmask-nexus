@@ -1,7 +1,8 @@
 import {
   Package, Truck, MapPin, Users, Building, ShoppingBag, Flame, Droplet,
   Calendar, Sparkles, Home, Heart, Video, DollarSign, CreditCard, TrendingUp,
-  ShoppingCart, MessageSquare, Phone, Settings, Activity, Bot, Database
+  ShoppingCart, MessageSquare, Phone, Settings, Activity, Bot, Database,
+  BarChart3, Map, Box, Store, Megaphone, FileText, Navigation
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -50,14 +51,24 @@ export const dynastyFloors: Floor[] = [
         },
         style: 'Dark industrial, premium street-luxury',
         routes: [
-          { path: '/gasmask', icon: Package, label: 'Dashboard' },
+          { path: '/gasmask', icon: Activity, label: 'Dashboard' },
+          { path: '/gasmask/analytics', icon: BarChart3, label: 'AI Analytics' },
+          { path: '/gasmask/routes', icon: Truck, label: 'Biker Route Manager' },
+          { path: '/gasmask/routes/optimizer', icon: Navigation, label: 'Route Optimizer' },
+          { path: '/gasmask/routes/ops-center', icon: Activity, label: 'Route Ops Center' },
+          { path: '/gasmask/stores', icon: Store, label: 'Store Performance' },
+          { path: '/gasmask/store-performance', icon: TrendingUp, label: 'Store Rankings' },
           { path: '/gasmask/products', icon: Package, label: 'Products' },
-          { path: '/gasmask/inventory', icon: Package, label: 'Inventory' },
-          { path: '/gasmask/stores', icon: Building, label: 'Stores' },
-          { path: '/gasmask/ambassadors', icon: Users, label: 'Ambassadors' },
-          { path: '/gasmask/wholesale', icon: ShoppingBag, label: 'Wholesale Portal' },
-          { path: '/gasmask/routes', icon: Truck, label: 'Biker Routes' },
-          { path: '/gasmask/analytics', icon: TrendingUp, label: 'Retail Analytics' },
+          { path: '/gasmask/inventory', icon: Box, label: 'Inventory Dashboard' },
+          { path: '/gasmask/map', icon: Map, label: 'Retail Heatmap' },
+          { path: '/gasmask/live-map', icon: MapPin, label: 'Live Map' },
+          { path: '/gasmask/ambassadors', icon: Users, label: 'Ambassador Manager' },
+          { path: '/gasmask/ambassador-payouts', icon: DollarSign, label: 'Ambassador Payouts' },
+          { path: '/gasmask/ambassador-regions', icon: MapPin, label: 'Ambassador Regions' },
+          { path: '/gasmask/wholesale', icon: ShoppingBag, label: 'Wholesale Accounts' },
+          { path: '/gasmask/wholesale/marketplace', icon: Building, label: 'Wholesale Marketplace' },
+          { path: '/gasmask/wholesale/fulfillment', icon: Truck, label: 'Wholesale Fulfillment' },
+          { path: '/gasmask/communications', icon: MessageSquare, label: 'Communication Center' },
           { path: '/gasmask/settings', icon: Settings, label: 'Brand Settings' },
         ]
       },
