@@ -2090,49 +2090,52 @@ export type Database = {
       }
       ceo_actions: {
         Row: {
-          action_description: string
           action_type: string
           assigned_to: string | null
-          automated: boolean | null
+          completed_at: string | null
           created_at: string | null
+          created_by: string | null
+          description: string | null
           due_date: string | null
-          executed_at: string | null
           id: string
           priority: string | null
-          result: Json | null
+          related_brand: string | null
+          related_entity_id: string | null
+          related_entity_type: string | null
           status: string | null
-          target_entity_id: string | null
-          target_entity_type: string | null
+          title: string
         }
         Insert: {
-          action_description: string
           action_type: string
           assigned_to?: string | null
-          automated?: boolean | null
+          completed_at?: string | null
           created_at?: string | null
+          created_by?: string | null
+          description?: string | null
           due_date?: string | null
-          executed_at?: string | null
           id?: string
           priority?: string | null
-          result?: Json | null
+          related_brand?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
           status?: string | null
-          target_entity_id?: string | null
-          target_entity_type?: string | null
+          title: string
         }
         Update: {
-          action_description?: string
           action_type?: string
           assigned_to?: string | null
-          automated?: boolean | null
+          completed_at?: string | null
           created_at?: string | null
+          created_by?: string | null
+          description?: string | null
           due_date?: string | null
-          executed_at?: string | null
           id?: string
           priority?: string | null
-          result?: Json | null
+          related_brand?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
           status?: string | null
-          target_entity_id?: string | null
-          target_entity_type?: string | null
+          title?: string
         }
         Relationships: []
       }
@@ -2183,52 +2186,37 @@ export type Database = {
       }
       ceo_forecasts: {
         Row: {
-          accuracy_score: number | null
-          actual_results: Json | null
+          ai_reasoning: string | null
+          confidence_score: number | null
           created_at: string | null
+          data_sources: Json | null
           forecast_date: string
-          forecast_period: string
           forecast_type: string
           id: string
-          market_conditions: Json | null
-          metrics: Json
-          opportunities: Json | null
-          predicted_assignment_fees: number | null
-          predicted_deals_closed: number | null
-          predicted_revenue: number | null
-          risk_factors: Json | null
+          predictions: Json | null
+          timeframe: string
         }
         Insert: {
-          accuracy_score?: number | null
-          actual_results?: Json | null
+          ai_reasoning?: string | null
+          confidence_score?: number | null
           created_at?: string | null
-          forecast_date: string
-          forecast_period: string
+          data_sources?: Json | null
+          forecast_date?: string
           forecast_type: string
           id?: string
-          market_conditions?: Json | null
-          metrics?: Json
-          opportunities?: Json | null
-          predicted_assignment_fees?: number | null
-          predicted_deals_closed?: number | null
-          predicted_revenue?: number | null
-          risk_factors?: Json | null
+          predictions?: Json | null
+          timeframe: string
         }
         Update: {
-          accuracy_score?: number | null
-          actual_results?: Json | null
+          ai_reasoning?: string | null
+          confidence_score?: number | null
           created_at?: string | null
+          data_sources?: Json | null
           forecast_date?: string
-          forecast_period?: string
           forecast_type?: string
           id?: string
-          market_conditions?: Json | null
-          metrics?: Json
-          opportunities?: Json | null
-          predicted_assignment_fees?: number | null
-          predicted_deals_closed?: number | null
-          predicted_revenue?: number | null
-          risk_factors?: Json | null
+          predictions?: Json | null
+          timeframe?: string
         }
         Relationships: []
       }
@@ -3979,6 +3967,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      excel_analyses: {
+        Row: {
+          action_plan: Json | null
+          ai_recommendations: string | null
+          ai_summary: string | null
+          analysis_results: Json | null
+          attached_to_brand: string | null
+          attached_to_store: string | null
+          columns_detected: Json | null
+          created_at: string | null
+          data_classification: Json | null
+          file_name: string
+          id: string
+          status: string | null
+          upload_date: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          action_plan?: Json | null
+          ai_recommendations?: string | null
+          ai_summary?: string | null
+          analysis_results?: Json | null
+          attached_to_brand?: string | null
+          attached_to_store?: string | null
+          columns_detected?: Json | null
+          created_at?: string | null
+          data_classification?: Json | null
+          file_name: string
+          id?: string
+          status?: string | null
+          upload_date?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          action_plan?: Json | null
+          ai_recommendations?: string | null
+          ai_summary?: string | null
+          analysis_results?: Json | null
+          attached_to_brand?: string | null
+          attached_to_store?: string | null
+          columns_detected?: Json | null
+          created_at?: string | null
+          data_classification?: Json | null
+          file_name?: string
+          id?: string
+          status?: string | null
+          upload_date?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: []
       }
       executive_report_logs: {
         Row: {
