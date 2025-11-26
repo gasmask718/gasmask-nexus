@@ -7,6 +7,7 @@ import { useVAPermissions } from '@/hooks/useVAPermissions';
 import BlastTextModule from '@/components/communications/BlastTextModule';
 import BlastEmailModule from '@/components/communications/BlastEmailModule';
 import AIVoiceCallModule from '@/components/communications/AIVoiceCallModule';
+import VACallPanel from '@/components/communications/VACallPanel';
 import CRMSegmentationModule from '@/components/communications/CRMSegmentationModule';
 import BatchUploadModule from '@/components/communications/BatchUploadModule';
 import ConversationsView from '@/components/communications/ConversationsView';
@@ -115,7 +116,7 @@ const brands = [
 
 export default function CommunicationsCenterOverview() {
   const [selectedBrand, setSelectedBrand] = useState(brands[0]);
-  const [activeModule, setActiveModule] = useState<'text' | 'email' | 'voice' | 'crm' | 'batch' | 'conversations'>('text');
+  const [activeModule, setActiveModule] = useState<'text' | 'email' | 'voice' | 'va-call' | 'crm' | 'batch' | 'conversations'>('text');
   const { getAllowedBrands, isLoading: permissionsLoading } = useVAPermissions();
 
   // Filter brands based on VA permissions
@@ -217,7 +218,7 @@ export default function CommunicationsCenterOverview() {
         </CardHeader>
         <CardContent>
           {/* Module Selection */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 mb-6">
             <Button
               variant={activeModule === 'text' ? 'default' : 'outline'}
               className="flex flex-col h-20 gap-1"
@@ -255,6 +256,19 @@ export default function CommunicationsCenterOverview() {
             >
               <Phone className="w-5 h-5" />
               <span className="text-xs">AI Voice</span>
+            </Button>
+            
+            <Button
+              variant={activeModule === 'va-call' ? 'default' : 'outline'}
+              className="flex flex-col h-20 gap-1"
+              onClick={() => setActiveModule('va-call')}
+              style={activeModule === 'va-call' ? {
+                backgroundColor: selectedBrand.colors.primary,
+                color: 'white'
+              } : {}}
+            >
+              <Phone className="w-5 h-5" />
+              <span className="text-xs">VA Call</span>
             </Button>
             
             <Button
@@ -302,6 +316,7 @@ export default function CommunicationsCenterOverview() {
             {activeModule === 'text' && <BlastTextModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
             {activeModule === 'email' && <BlastEmailModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
             {activeModule === 'voice' && <AIVoiceCallModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
+            {activeModule === 'va-call' && <VACallPanel brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
             {activeModule === 'crm' && <CRMSegmentationModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
             {activeModule === 'batch' && <BatchUploadModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
             {activeModule === 'conversations' && <ConversationsView brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
