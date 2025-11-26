@@ -1,6 +1,8 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Phone, Mail, Building2, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface CustomerSnapshotCardProps {
   contact: {
@@ -17,6 +19,8 @@ interface CustomerSnapshotCardProps {
 }
 
 export const CustomerSnapshotCard = ({ contact }: CustomerSnapshotCardProps) => {
+  const navigate = useNavigate();
+  
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       active: 'bg-green-500/10 text-green-500 border-green-500/20',
@@ -75,6 +79,39 @@ export const CustomerSnapshotCard = ({ contact }: CustomerSnapshotCardProps) => 
           ))}
         </div>
       )}
+
+      <div className="flex gap-2 pt-2 border-t">
+        <Button 
+          size="sm" 
+          variant="outline" 
+          className="flex-1"
+          onClick={() => navigate('/communications-center', {
+            state: {
+              activeModule: 'va-call',
+              contactId: contact.id,
+              contactName: contact.name,
+              contactPhone: contact.phone
+            }
+          })}
+        >
+          <Phone className="w-3.5 h-3.5 mr-1" />
+          Call
+        </Button>
+        <Button 
+          size="sm" 
+          variant="outline" 
+          className="flex-1"
+          onClick={() => navigate('/communications-center', {
+            state: {
+              activeModule: 'email',
+              contactEmail: contact.email
+            }
+          })}
+        >
+          <Mail className="w-3.5 h-3.5 mr-1" />
+          Email
+        </Button>
+      </div>
     </Card>
   );
 };

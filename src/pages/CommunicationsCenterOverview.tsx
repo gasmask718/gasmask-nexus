@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,9 @@ import VACallPanel from '@/components/communications/VACallPanel';
 import CRMSegmentationModule from '@/components/communications/CRMSegmentationModule';
 import BatchUploadModule from '@/components/communications/BatchUploadModule';
 import ConversationsView from '@/components/communications/ConversationsView';
+import CampaignMethodModal from '@/components/communications/CampaignMethodModal';
+import { toast } from 'sonner';
+import { useLocation } from 'react-router-dom';
 
 // Brand configurations with their colors and voice personas
 const brands = [
@@ -117,7 +121,40 @@ const brands = [
 export default function CommunicationsCenterOverview() {
   const [selectedBrand, setSelectedBrand] = useState(brands[0]);
   const [activeModule, setActiveModule] = useState<'text' | 'email' | 'voice' | 'va-call' | 'crm' | 'batch' | 'conversations'>('text');
+  const [campaignModalOpen, setCampaignModalOpen] = useState(false);
   const { getAllowedBrands, isLoading: permissionsLoading } = useVAPermissions();
+  const location = useLocation();
+
+  // Handle navigation state for Click-to-Call
+  React.useEffect(() => {
+    if (location.state) {
+      const { activeModule: stateModule } = location.state as any;
+      if (stateModule) {
+        setActiveModule(stateModule);
+      }
+    }
+  }, [location.state]);
+
+  const handleCampaignMethodSelect = (method: 'sms' | 'email' | 'ai-call' | 'va-call') => {
+    switch (method) {
+      case 'sms':
+        setActiveModule('text');
+        toast.success('Switched to SMS Campaign');
+        break;
+      case 'email':
+        setActiveModule('email');
+        toast.success('Switched to Email Campaign');
+        break;
+      case 'ai-call':
+        setActiveModule('voice');
+        toast.success('Switched to AI Call Campaign');
+        break;
+      case 'va-call':
+        setActiveModule('va-call');
+        toast.success('Switched to VA Call Queue');
+        break;
+    }
+  };
 
   // Filter brands based on VA permissions
   const allowedBrandNames = getAllowedBrands();
@@ -316,13 +353,28 @@ export default function CommunicationsCenterOverview() {
             {activeModule === 'text' && <BlastTextModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
             {activeModule === 'email' && <BlastEmailModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
             {activeModule === 'voice' && <AIVoiceCallModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
-            {activeModule === 'va-call' && <VACallPanel brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
+            {activeModule === 'va-call' && (
+              <VACallPanel 
+                brand={selectedBrand.name} 
+                brandColor={selectedBrand.colors.primary}
+                contactId={(location.state as any)?.contactId}
+                contactName={(location.state as any)?.contactName}
+                contactPhone={(location.state as any)?.contactPhone}
+              />
+            )}
             {activeModule === 'crm' && <CRMSegmentationModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
             {activeModule === 'batch' && <BatchUploadModule brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
             {activeModule === 'conversations' && <ConversationsView brand={selectedBrand.name} brandColor={selectedBrand.colors.primary} />}
           </div>
         </CardContent>
       </Card>
+
+      <CampaignMethodModal
+        open={campaignModalOpen}
+        onClose={() => setCampaignModalOpen(false)}
+        onSelect={handleCampaignMethodSelect}
+        brandColor={selectedBrand.colors.primary}
+      />
     </div>
   );
 }
