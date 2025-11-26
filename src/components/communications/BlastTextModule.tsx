@@ -5,7 +5,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Send, Calendar, Sparkles, AlertCircle, MessageSquare } from 'lucide-react';
+import { Send, Calendar, Sparkles, AlertCircle, MessageSquare, Eye } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -18,6 +19,8 @@ export default function BlastTextModule({ brand, brandColor = '#6366f1' }: Blast
   const [message, setMessage] = useState('');
   const [selectedSegment, setSelectedSegment] = useState('all');
   const [scheduleDate, setScheduleDate] = useState('');
+
+  const [showPreview, setShowPreview] = useState(false);
 
   const dynamicFields = ['{name}', '{store}', '{date}', '{product}', '{amount}'];
   
@@ -39,40 +42,84 @@ export default function BlastTextModule({ brand, brandColor = '#6366f1' }: Blast
     setMessage('');
   };
 
+  const previewMessage = () => {
+    setShowPreview(true);
+  };
+
   return (
-    <Card style={{ borderTop: `4px solid ${brandColor}` }}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MessageSquare className="w-5 h-5" style={{ color: brandColor }} />
-          Blast SMS - {brand}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <label className="text-sm font-medium">Target Segment</label>
-          <select className="w-full mt-1 p-2 border rounded-lg" value={selectedSegment} onChange={(e) => setSelectedSegment(e.target.value)}>
-            <option value="all">All {brand} contacts</option>
-            <option value="recent">Recent customers</option>
-            <option value="inactive">Inactive 30+ days</option>
-            <option value="vip">VIP tier only</option>
-          </select>
-        </div>
-        <div>
-          <Label>Message ({message.length}/160)</Label>
-          <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder="Your message..." />
-        </div>
-        <div className="flex gap-3">
-          <Button onClick={sendBlastText} style={{ backgroundColor: brandColor, color: 'white' }}>
-            <Send className="w-4 h-4 mr-2" />
-            Send Now
-          </Button>
-          <Button variant="outline">Schedule</Button>
-          <Button variant="outline" onClick={generateAIMessage}>
-            <Sparkles className="w-4 h-4 mr-2" />
-            AI Generate
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <>
+      <Card style={{ borderTop: `4px solid ${brandColor}` }}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5" style={{ color: brandColor }} />
+            Blast SMS - {brand}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Target Segment</label>
+            <select className="w-full mt-1 p-2 border rounded-lg" value={selectedSegment} onChange={(e) => setSelectedSegment(e.target.value)}>
+              <option value="all">All {brand} contacts</option>
+              <option value="recent">Recent customers</option>
+              <option value="inactive">Inactive 30+ days</option>
+              <option value="vip">VIP tier only</option>
+            </select>
+          </div>
+          <div>
+            <Label>Message ({message.length}/160)</Label>
+            <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder="Your message..." />
+          </div>
+          <div>
+            <Label className="text-xs">Insert Variables</Label>
+            <div className="flex gap-2 flex-wrap mt-2">
+              {dynamicFields.map(field => (
+                <Button
+                  key={field}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => insertField(field)}
+                >
+                  {field}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-3 flex-wrap">
+            <Button onClick={sendBlastText} style={{ backgroundColor: brandColor, color: 'white' }}>
+              <Send className="w-4 h-4 mr-2" />
+              Send Now
+            </Button>
+            <Button variant="outline" onClick={previewMessage}>
+              <Eye className="w-4 h-4 mr-2" />
+              Preview
+            </Button>
+            <Button variant="outline">
+              <Calendar className="w-4 h-4 mr-2" />
+              Schedule
+            </Button>
+            <Button variant="outline" onClick={generateAIMessage}>
+              <Sparkles className="w-4 h-4 mr-2" />
+              AI Generate
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>SMS Preview</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-muted p-4 rounded-lg">
+              <p className="text-sm whitespace-pre-wrap">{message || '(No message)'}</p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Character count: {message.length}/160
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
