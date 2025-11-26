@@ -4,7 +4,7 @@ import {
   ShoppingCart, MessageSquare, Phone, Settings, Activity, Bot, Database,
   BarChart3, Map, Box, Store, Megaphone, FileText, Navigation, Target, Award,
   Briefcase, GraduationCap, FileCheck, Send, Calculator, Rocket, Brain, Shield,
-  Zap, Wallet, Gift, Bell, ClipboardList, Upload, LayoutDashboard, Hash, Mail
+  Zap, Wallet, Gift, Bell, ClipboardList, Upload, LayoutDashboard, Hash, Mail, Crown
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -388,7 +388,7 @@ export const dynastyFloors: Floor[] = [
         routes: [
           { path: '/systems', icon: Settings, label: 'Dashboard' },
           { path: '/communications-center', icon: MessageSquare, label: 'Communications Center', roles: ['admin', 'csr'] },
-          { path: '/ai-ceo-control-room', icon: Brain, label: 'AI CEO Control Room', roles: ['admin'] },
+          { path: '/ai-ceo-control-room', icon: Crown, label: 'CEO Command Center', roles: ['admin'] },
           { path: '/meta-ai', icon: Zap, label: 'Meta AI Supervisor', roles: ['admin'] },
           { path: '/executive-reports', icon: FileText, label: 'Executive Reports', roles: ['admin'] },
           { path: '/missions-hq', icon: Target, label: 'Missions HQ', roles: ['admin'] },
