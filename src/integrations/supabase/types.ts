@@ -748,6 +748,142 @@ export type Database = {
         }
         Relationships: []
       }
+      automation_logs: {
+        Row: {
+          action_type: string
+          automation_rule_id: string | null
+          brand: string | null
+          business_id: string | null
+          communication_log_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          message_sent: string | null
+          recipient_email: string | null
+          recipient_phone: string | null
+          status: string | null
+        }
+        Insert: {
+          action_type: string
+          automation_rule_id?: string | null
+          brand?: string | null
+          business_id?: string | null
+          communication_log_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          message_sent?: string | null
+          recipient_email?: string | null
+          recipient_phone?: string | null
+          status?: string | null
+        }
+        Update: {
+          action_type?: string
+          automation_rule_id?: string | null
+          brand?: string | null
+          business_id?: string | null
+          communication_log_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          message_sent?: string | null
+          recipient_email?: string | null
+          recipient_phone?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_logs_automation_rule_id_fkey"
+            columns: ["automation_rule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_logs_communication_log_id_fkey"
+            columns: ["communication_log_id"]
+            isOneToOne: false
+            referencedRelation: "communication_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_rules: {
+        Row: {
+          action_type: string
+          brand: string | null
+          business_id: string | null
+          conditions: Json | null
+          created_at: string
+          created_by: string | null
+          event_type: string
+          id: string
+          is_enabled: boolean | null
+          metadata: Json | null
+          template_message: string
+          updated_at: string
+        }
+        Insert: {
+          action_type?: string
+          brand?: string | null
+          business_id?: string | null
+          conditions?: Json | null
+          created_at?: string
+          created_by?: string | null
+          event_type: string
+          id?: string
+          is_enabled?: boolean | null
+          metadata?: Json | null
+          template_message: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          brand?: string | null
+          business_id?: string | null
+          conditions?: Json | null
+          created_at?: string
+          created_by?: string | null
+          event_type?: string
+          id?: string
+          is_enabled?: boolean | null
+          metadata?: Json | null
+          template_message?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_rules_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_settings: {
         Row: {
           created_at: string
@@ -11032,6 +11168,17 @@ export type Database = {
           p_metadata?: Json
         }
         Returns: string
+      }
+      process_automation_event: {
+        Args: {
+          p_brand?: string
+          p_business_id?: string
+          p_entity_id: string
+          p_entity_type: string
+          p_event_type: string
+          p_metadata?: Json
+        }
+        Returns: undefined
       }
       update_relationship_status: { Args: never; Returns: undefined }
     }

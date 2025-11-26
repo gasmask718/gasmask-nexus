@@ -153,6 +153,7 @@ import DealSheetsGenerator from "./pages/DealSheetsGenerator";
 import InvestorBlastSystem from "./pages/InvestorBlastSystem";
 import OfferAnalyzer from "./pages/OfferAnalyzer";
 import AssignmentFeeOptimizer from "./pages/AssignmentFeeOptimizer";
+import DynastyAutomations from "./pages/DynastyAutomations";
 import AICEOControlRoom from "./pages/AICEOControlRoom";
 import HoldingsOverview from "./pages/HoldingsOverview";
 import HoldingsAssets from "./pages/HoldingsAssets";
@@ -320,6 +321,7 @@ const App = () => (
               <Route path="/communication-automation" element={<ProtectedRoute><Layout><CommunicationAutomation /></Layout></ProtectedRoute>} />
               <Route path="/communications-ai" element={<ProtectedRoute><Layout><CommunicationsAI /></Layout></ProtectedRoute>} />
               <Route path="/communication-insights" element={<ProtectedRoute><Layout><CommunicationInsights /></Layout></ProtectedRoute>} />
+              <Route path="/dynasty-automations" element={<ProtectedRoute><Layout><DynastyAutomations /></Layout></ProtectedRoute>} />
               
               {/* Communications Center Routes */}
               <Route path="/communications-center" element={<ProtectedRoute><Layout><CommunicationsCenterOverview /></Layout></ProtectedRoute>} />
