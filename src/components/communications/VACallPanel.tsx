@@ -54,7 +54,7 @@ export default function VACallPanel({ brand, brandColor = '#6366f1', contactId, 
     setPhoneNumber(prev => prev + digit);
   };
 
-  const startCall = () => {
+  const startCall = async () => {
     setCalling(true);
     const interval = setInterval(() => {
       setCallTimer(prev => prev + 1);
@@ -62,29 +62,50 @@ export default function VACallPanel({ brand, brandColor = '#6366f1', contactId, 
     
     // Store interval ID for cleanup
     (window as any).callTimerInterval = interval;
+    
+    // Log call start
+    try {
+      const { logCommunication } = await import('@/services/communicationLogger');
+      await logCommunication({
+        channel: 'va_call',
+        direction: 'outbound',
+        summary: 'VA call started',
+        contact_id: selectedContact?.id,
+        recipient_phone: phoneNumber,
+        brand,
+        performed_by: 'va',
+        delivery_status: 'connected',
+      });
+    } catch (error) {
+      console.error('Failed to log call start:', error);
+    }
   };
 
   const endCall = async () => {
     setCalling(false);
     clearInterval((window as any).callTimerInterval);
     
-    if (outcome && contactId) {
-      // Save call log to database (using type assertion for now)
-      const { error } = await supabase.from('communication_logs').insert({
-        store_brand_account_id: contactId,
-        type: 'manual-call',
-        message: notes,
-        call_outcome: outcome,
-        performed_by: 'VA',
-        channel: 'phone',
-        direction: 'outbound'
-      } as any);
-
-      if (error) {
-        toast.error('Failed to save call log');
-      } else {
-        toast.success('Call logged successfully');
-      }
+    // Log call end
+    try {
+      const { logCommunication } = await import('@/services/communicationLogger');
+      await logCommunication({
+        channel: 'va_call',
+        direction: 'outbound',
+        summary: `VA call ended - ${outcome}`,
+        message_content: notes,
+        outcome: outcome || undefined,
+        contact_id: selectedContact?.id,
+        recipient_phone: phoneNumber,
+        brand,
+        performed_by: 'va',
+        delivery_status: 'completed',
+        call_duration: callTimer,
+      });
+      
+      toast.success('Call ended and logged');
+    } catch (error) {
+      console.error('Failed to log call:', error);
+      toast.error('Call ended but failed to log');
     }
     
     setCallTimer(0);

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +19,7 @@ export const CommunicationTimelineCRM = ({
   influencerId,
   wholesalerId,
 }: CommunicationTimelineCRMProps) => {
-  const { data: logs, isLoading } = useQuery({
+  const { data: logs, isLoading, refetch } = useQuery({
     queryKey: ['communication-logs-crm', storeId, contactId, driverId, influencerId, wholesalerId],
     queryFn: async () => {
       let query = supabase
@@ -42,6 +43,29 @@ export const CommunicationTimelineCRM = ({
       return data;
     },
   });
+
+  // Real-time subscription for instant updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('communication-logs-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'communication_logs',
+        },
+        (payload) => {
+          console.log('🔄 Communication log updated:', payload);
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
 
   const getChannelIcon = (channel: string) => {
     switch (channel) {

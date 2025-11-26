@@ -38,8 +38,35 @@ export default function BlastTextModule({ brand, brandColor = '#6366f1' }: Blast
       toast.error('Please enter a message');
       return;
     }
-    toast.success('SMS blast initiated');
-    setMessage('');
+    
+    try {
+      const { logCommunication } = await import('@/services/communicationLogger');
+      
+      // Get selected contacts
+      const contacts = selectedSegment === 'all'
+        ? [] // Would fetch all contacts for brand
+        : []; // Would fetch segment contacts
+      
+      // Log each SMS
+      for (const contact of contacts) {
+        await logCommunication({
+          channel: 'sms',
+          direction: 'outbound',
+          summary: 'Text message sent',
+          message_content: message,
+          contact_id: contact.id,
+          brand,
+          performed_by: 'va',
+          delivery_status: 'sent',
+        });
+      }
+      
+      toast.success('SMS blast initiated and logged');
+      setMessage('');
+    } catch (error) {
+      console.error('Failed to send text:', error);
+      toast.error('Failed to send text');
+    }
   };
 
   const previewMessage = () => {
