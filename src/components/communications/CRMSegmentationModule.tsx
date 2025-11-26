@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, Filter, Download } from 'lucide-react';
+import CampaignMethodModal from './CampaignMethodModal';
+import { toast } from 'sonner';
 
 interface CRMSegmentationModuleProps {
   brand: string;
@@ -11,6 +14,12 @@ interface CRMSegmentationModuleProps {
 }
 
 export default function CRMSegmentationModule({ brand, brandColor = '#6366f1' }: CRMSegmentationModuleProps) {
+  const [campaignModalOpen, setCampaignModalOpen] = useState(false);
+
+  const handleCampaignMethodSelect = (method: 'sms' | 'email' | 'ai-call' | 'va-call') => {
+    toast.success(`Campaign method selected: ${method}`);
+  };
+
   const segments = [
     { name: 'All Contacts', count: 1250, color: 'default' },
     { name: 'Customers', count: 820, color: 'default' },
@@ -93,7 +102,11 @@ export default function CRMSegmentationModule({ brand, brandColor = '#6366f1' }:
 
           {/* Actions */}
           <div className="flex gap-2">
-            <Button className="flex-1" style={{ backgroundColor: brandColor, color: 'white' }}>
+            <Button 
+              className="flex-1" 
+              style={{ backgroundColor: brandColor, color: 'white' }}
+              onClick={() => setCampaignModalOpen(true)}
+            >
               Use in Campaign
             </Button>
             <Button variant="outline">
@@ -101,6 +114,13 @@ export default function CRMSegmentationModule({ brand, brandColor = '#6366f1' }:
               Export
             </Button>
           </div>
+
+          <CampaignMethodModal
+            open={campaignModalOpen}
+            onClose={() => setCampaignModalOpen(false)}
+            onSelect={handleCampaignMethodSelect}
+            brandColor={brandColor}
+          />
 
           {/* Recent Activity */}
           <div className="space-y-2">

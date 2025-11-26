@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Clock, Save, X, CheckCircle, XCircle, PhoneCall } from 'lucide-react';
+import { Phone, Clock, Save, X, CheckCircle, XCircle, PhoneCall, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface VACallPanelProps {
   brand: string;
@@ -21,6 +23,36 @@ export default function VACallPanel({ brand, brandColor = '#6366f1', contactId, 
   const [callTimer, setCallTimer] = useState(0);
   const [notes, setNotes] = useState('');
   const [outcome, setOutcome] = useState<string | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState(contactPhone || '');
+  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    setPhoneNumber(contactPhone || '');
+  }, [contactPhone]);
+
+  useEffect(() => {
+    fetchContacts();
+  }, [brand]);
+
+  const fetchContacts = async () => {
+    const { data } = await supabase
+      .from('crm_contacts')
+      .select('*')
+      .order('name');
+    setContacts(data || []);
+  };
+
+  const handleContactSelect = (contact: any) => {
+    setSelectedContact(contact);
+    setPhoneNumber(contact.phone || '');
+    setSearchOpen(false);
+  };
+
+  const handleKeypadPress = (digit: string) => {
+    setPhoneNumber(prev => prev + digit);
+  };
 
   const startCall = () => {
     setCalling(true);
@@ -91,12 +123,68 @@ export default function VACallPanel({ brand, brandColor = '#6366f1', contactId, 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Contact Info */}
-        <div className="p-4 rounded-lg border">
-          <div className="text-sm text-muted-foreground mb-1">Contact</div>
-          <div className="font-semibold">{contactName || 'No contact selected'}</div>
-          <div className="text-sm text-muted-foreground">{contactPhone || 'No phone'}</div>
+        {/* Contact Picker */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Select Contact</label>
+          <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start">
+                <Search className="w-4 h-4 mr-2" />
+                {selectedContact ? selectedContact.name : 'Search contacts...'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Search contacts..." />
+                <CommandList>
+                  <CommandEmpty>No contacts found.</CommandEmpty>
+                  <CommandGroup>
+                    {contacts.map((contact) => (
+                      <CommandItem
+                        key={contact.id}
+                        value={contact.name}
+                        onSelect={() => handleContactSelect(contact)}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">{contact.name}</span>
+                          <span className="text-xs text-muted-foreground">{contact.phone}</span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
+
+        {/* Manual Phone Number Input */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Phone Number</label>
+          <Input
+            type="tel"
+            placeholder="Enter phone number"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            disabled={calling}
+          />
+        </div>
+
+        {/* Numeric Keypad */}
+        {!calling && (
+          <div className="grid grid-cols-3 gap-2">
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((digit) => (
+              <Button
+                key={digit}
+                variant="outline"
+                className="h-12 text-lg"
+                onClick={() => handleKeypadPress(digit)}
+              >
+                {digit}
+              </Button>
+            ))}
+          </div>
+        )}
 
         {/* Call Script */}
         <div className="p-4 rounded-lg" style={{ backgroundColor: `${brandColor}10` }}>
@@ -114,7 +202,7 @@ export default function VACallPanel({ brand, brandColor = '#6366f1', contactId, 
               size="lg"
               style={{ backgroundColor: brandColor, color: 'white' }}
               onClick={startCall}
-              disabled={!contactPhone}
+              disabled={!phoneNumber}
             >
               <Phone className="w-4 h-4 mr-2" />
               Start Call

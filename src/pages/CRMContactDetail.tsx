@@ -75,13 +75,41 @@ const CRMContactDetail = () => {
             )}
           </div>
           <div className="mt-6 space-y-2">
-            <Button className="w-full" onClick={() => navigate('/communication/calls')}>
+            <Button 
+              className="w-full" 
+              onClick={() => navigate('/communications-center', {
+                state: {
+                  activeModule: 'va-call',
+                  contactId: id,
+                  contactName: contact.name,
+                  contactPhone: contact.phone
+                }
+              })}
+            >
               <Phone className="mr-2 h-4 w-4" />Call
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => navigate('/communication/texts')}>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={() => navigate('/communications-center', {
+                state: {
+                  activeModule: 'text',
+                  contactPhone: contact.phone
+                }
+              })}
+            >
               <MessageSquare className="mr-2 h-4 w-4" />Text
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => navigate('/communication/email')}>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={() => navigate('/communications-center', {
+                state: {
+                  activeModule: 'email',
+                  contactEmail: contact.email
+                }
+              })}
+            >
               <Mail className="mr-2 h-4 w-4" />Email
             </Button>
           </div>
