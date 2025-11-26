@@ -28,7 +28,25 @@ export default function AIVoiceCallModule({ brand, brandColor = '#6366f1' }: AIV
 
   const startAICall = async (type: 'single' | 'test' | 'campaign') => {
     if (type === 'single') {
-      toast.success('Starting AI call to selected contact...');
+      try {
+        const { logCommunication } = await import('@/services/communicationLogger');
+        
+        // Log AI call
+        await logCommunication({
+          channel: 'ai_call',
+          direction: 'outbound',
+          summary: `AI call - ${callScripts.find(s => s.id === selectedScript)?.name}`,
+          message_content: `AI voice call with script: ${selectedScript}`,
+          brand,
+          performed_by: 'ai',
+          delivery_status: 'initiated',
+        });
+        
+        toast.success('Starting AI call to selected contact...');
+      } catch (error) {
+        console.error('Failed to log AI call:', error);
+        toast.error('Failed to start AI call');
+      }
     } else if (type === 'test') {
       toast.info('Running AI call simulation...');
       setTimeout(() => {

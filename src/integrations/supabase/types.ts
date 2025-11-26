@@ -2302,11 +2302,15 @@ export type Database = {
       }
       communication_logs: {
         Row: {
+          ai_confidence_score: number | null
+          brand: string | null
           business_id: string | null
+          call_duration: number | null
           channel: string
           contact_id: string | null
           created_at: string
           created_by: string | null
+          delivery_status: string | null
           direction: string
           driver_id: string | null
           follow_up_date: string | null
@@ -2314,17 +2318,28 @@ export type Database = {
           full_message: string | null
           id: string
           influencer_id: string | null
+          message_content: string | null
           outcome: string | null
+          performed_by: string | null
+          recipient_email: string | null
+          recipient_phone: string | null
+          recording_url: string | null
+          sender_email: string | null
+          sender_phone: string | null
           store_id: string | null
           summary: string
           wholesaler_id: string | null
         }
         Insert: {
+          ai_confidence_score?: number | null
+          brand?: string | null
           business_id?: string | null
+          call_duration?: number | null
           channel: string
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          delivery_status?: string | null
           direction: string
           driver_id?: string | null
           follow_up_date?: string | null
@@ -2332,17 +2347,28 @@ export type Database = {
           full_message?: string | null
           id?: string
           influencer_id?: string | null
+          message_content?: string | null
           outcome?: string | null
+          performed_by?: string | null
+          recipient_email?: string | null
+          recipient_phone?: string | null
+          recording_url?: string | null
+          sender_email?: string | null
+          sender_phone?: string | null
           store_id?: string | null
           summary: string
           wholesaler_id?: string | null
         }
         Update: {
+          ai_confidence_score?: number | null
+          brand?: string | null
           business_id?: string | null
+          call_duration?: number | null
           channel?: string
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          delivery_status?: string | null
           direction?: string
           driver_id?: string | null
           follow_up_date?: string | null
@@ -2350,7 +2376,14 @@ export type Database = {
           full_message?: string | null
           id?: string
           influencer_id?: string | null
+          message_content?: string | null
           outcome?: string | null
+          performed_by?: string | null
+          recipient_email?: string | null
+          recipient_phone?: string | null
+          recording_url?: string | null
+          sender_email?: string | null
+          sender_phone?: string | null
           store_id?: string | null
           summary?: string
           wholesaler_id?: string | null
@@ -9707,6 +9740,73 @@ export type Database = {
             columns: ["module_id"]
             isOneToOne: false
             referencedRelation: "training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unmatched_messages: {
+        Row: {
+          ai_confidence_score: number | null
+          ai_suggested_contact_id: string | null
+          business_id: string | null
+          channel: string
+          created_at: string
+          id: string
+          matched_at: string | null
+          matched_by: string | null
+          message_content: string | null
+          sender_email: string | null
+          sender_phone: string | null
+          status: string | null
+        }
+        Insert: {
+          ai_confidence_score?: number | null
+          ai_suggested_contact_id?: string | null
+          business_id?: string | null
+          channel: string
+          created_at?: string
+          id?: string
+          matched_at?: string | null
+          matched_by?: string | null
+          message_content?: string | null
+          sender_email?: string | null
+          sender_phone?: string | null
+          status?: string | null
+        }
+        Update: {
+          ai_confidence_score?: number | null
+          ai_suggested_contact_id?: string | null
+          business_id?: string | null
+          channel?: string
+          created_at?: string
+          id?: string
+          matched_at?: string | null
+          matched_by?: string | null
+          message_content?: string | null
+          sender_email?: string | null
+          sender_phone?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unmatched_messages_ai_suggested_contact_id_fkey"
+            columns: ["ai_suggested_contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unmatched_messages_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unmatched_messages_matched_by_fkey"
+            columns: ["matched_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
