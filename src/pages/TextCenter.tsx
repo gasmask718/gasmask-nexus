@@ -26,7 +26,7 @@ const TextCenter = () => {
       const { data, error } = await supabase
         .from('communication_templates')
         .select('*')
-        .eq('category', 'sms')
+        .eq('template_type', 'sms' as any)
         .eq('is_active', true)
         .order('name');
       if (error) throw error;
