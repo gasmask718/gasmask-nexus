@@ -41,7 +41,7 @@ export default function Templates() {
       }
 
       if (categoryFilter !== 'all') {
-        query = query.eq('category', categoryFilter);
+        query = query.eq('category', categoryFilter as any);
       }
 
       const { data, error } = await query;

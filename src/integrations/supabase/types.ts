@@ -2409,7 +2409,9 @@ export type Database = {
       }
       communication_templates: {
         Row: {
-          category: string
+          brand: Database["public"]["Enums"]["brand_type"] | null
+          category: Database["public"]["Enums"]["template_category"]
+          content: string
           created_at: string | null
           created_by: string | null
           id: string
@@ -2417,11 +2419,17 @@ export type Database = {
           last_used_at: string | null
           message_template: string
           name: string
+          subject: string | null
+          template_type: Database["public"]["Enums"]["template_type"] | null
+          tone_config: Json | null
           updated_at: string | null
           usage_count: number | null
+          variables: Json | null
         }
         Insert: {
-          category: string
+          brand?: Database["public"]["Enums"]["brand_type"] | null
+          category: Database["public"]["Enums"]["template_category"]
+          content: string
           created_at?: string | null
           created_by?: string | null
           id?: string
@@ -2429,11 +2437,17 @@ export type Database = {
           last_used_at?: string | null
           message_template: string
           name: string
+          subject?: string | null
+          template_type?: Database["public"]["Enums"]["template_type"] | null
+          tone_config?: Json | null
           updated_at?: string | null
           usage_count?: number | null
+          variables?: Json | null
         }
         Update: {
-          category?: string
+          brand?: Database["public"]["Enums"]["brand_type"] | null
+          category?: Database["public"]["Enums"]["template_category"]
+          content?: string
           created_at?: string | null
           created_by?: string | null
           id?: string
@@ -2441,8 +2455,12 @@ export type Database = {
           last_used_at?: string | null
           message_template?: string
           name?: string
+          subject?: string | null
+          template_type?: Database["public"]["Enums"]["template_type"] | null
+          tone_config?: Json | null
           updated_at?: string | null
           usage_count?: number | null
+          variables?: Json | null
         }
         Relationships: [
           {
@@ -10979,6 +10997,35 @@ export type Database = {
         | "gas_station"
         | "wholesaler"
         | "other"
+      template_category:
+        | "reorder_reminder"
+        | "thank_you"
+        | "delivery_confirmation"
+        | "upsell"
+        | "late_payment"
+        | "promotion"
+        | "cold_outreach"
+        | "wholesale_invitation"
+        | "ambassador_recruitment"
+        | "multi_brand_announcement"
+        | "welcome_sequence"
+        | "invoice"
+        | "receipt"
+        | "onboarding"
+        | "follow_up"
+        | "account_update"
+        | "contract_renewal"
+        | "abandoned_cart"
+        | "grant_request"
+        | "store_reorder_call"
+        | "wholesale_warm_call"
+        | "new_store_onboarding"
+        | "collection_reminder"
+        | "funding_intake"
+        | "credit_repair_update"
+        | "chauffeur_confirmation"
+        | "model_verification"
+      template_type: "sms" | "email" | "call_script" | "tone_pack"
       va_role:
         | "grabba_cluster_va"
         | "gasmask_va"
@@ -11190,6 +11237,36 @@ export const Constants = {
         "wholesaler",
         "other",
       ],
+      template_category: [
+        "reorder_reminder",
+        "thank_you",
+        "delivery_confirmation",
+        "upsell",
+        "late_payment",
+        "promotion",
+        "cold_outreach",
+        "wholesale_invitation",
+        "ambassador_recruitment",
+        "multi_brand_announcement",
+        "welcome_sequence",
+        "invoice",
+        "receipt",
+        "onboarding",
+        "follow_up",
+        "account_update",
+        "contract_renewal",
+        "abandoned_cart",
+        "grant_request",
+        "store_reorder_call",
+        "wholesale_warm_call",
+        "new_store_onboarding",
+        "collection_reminder",
+        "funding_intake",
+        "credit_repair_update",
+        "chauffeur_confirmation",
+        "model_verification",
+      ],
+      template_type: ["sms", "email", "call_script", "tone_pack"],
       va_role: [
         "grabba_cluster_va",
         "gasmask_va",

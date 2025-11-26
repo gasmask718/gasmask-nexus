@@ -28,7 +28,7 @@ const EmailCenter = () => {
       const { data, error } = await supabase
         .from('communication_templates')
         .select('*')
-        .eq('category', 'email')
+        .eq('template_type', 'email' as any)
         .eq('is_active', true)
         .order('name');
       if (error) throw error;

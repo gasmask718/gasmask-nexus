@@ -21,7 +21,7 @@ export const TemplateSelector = ({ category, onSelect }: TemplateSelectorProps) 
         .order('name');
 
       if (category) {
-        query = query.eq('category', category);
+        query = query.eq('category', category as any);
       }
 
       const { data, error } = await query;
