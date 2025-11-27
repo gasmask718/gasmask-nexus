@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TubeMathEngine } from '@/components/company/TubeMathEngine';
 import { PaymentReliabilityPanel } from '@/components/company/PaymentReliabilityPanel';
 import { BrandBreakdownCards } from '@/components/company/BrandBreakdownCards';
+import { NeighborhoodIntelligence } from '@/components/company/NeighborhoodIntelligence';
 import { TubeIntelligencePanel } from '@/components/company/TubeIntelligencePanel';
 import { PaymentScoreBadge } from '@/components/company/PaymentScoreBadge';
 import { PaymentSummaryPanel } from '@/components/company/PaymentSummaryPanel';
@@ -546,13 +547,85 @@ export default function CompanyProfile() {
           </TabsContent>
 
           {/* === TUBE ANALYTICS TAB === */}
-          <TabsContent value="tubes" className="space-y-4">
-            <TubeMathEngine companyId={id!} />
+          <TabsContent value="tubes" className="space-y-6">
+            <div>
+              <h2 className="text-lg font-semibold">Tube & Brand Intelligence</h2>
+              <p className="text-xs text-muted-foreground">
+                Live breakdown of all GasMask & Grabba brand movement for this company.
+              </p>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              {/* Left: TubeMathEngine full analytics */}
+              <div className="lg:col-span-2">
+                <div className="rounded-xl border border-white/5 bg-gradient-to-br from-slate-950/60 via-slate-900/60 to-black/80 p-4 md:p-6 shadow-lg shadow-black/40">
+                  <TubeMathEngine companyId={id!} />
+                </div>
+              </div>
+
+              {/* Right: Neighborhood intelligence */}
+              <div className="lg:col-span-1">
+                <div className="rounded-xl border border-white/5 bg-gradient-to-br from-slate-950/60 via-slate-900/60 to-black/80 p-4 md:p-6 shadow-lg shadow-black/40">
+                  <h3 className="text-sm font-medium mb-2">Neighborhood Snapshot</h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    How this company's area performs across all stores and brands.
+                  </p>
+
+                  {(!company.neighborhood && !company.boro) ? (
+                    <div className="text-xs text-muted-foreground py-4 text-center">
+                      No neighborhood / boro saved yet. Add it to unlock area intelligence.
+                    </div>
+                  ) : (
+                    <NeighborhoodIntelligence
+                      neighborhood={company.neighborhood || undefined}
+                      boro={company.boro || undefined}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
           </TabsContent>
 
           {/* === PAYMENT RELIABILITY TAB === */}
-          <TabsContent value="reliability" className="space-y-4">
-            <PaymentReliabilityPanel companyId={id!} />
+          <TabsContent value="reliability" className="space-y-6">
+            <div>
+              <h2 className="text-lg font-semibold">Payment Reliability & Risk</h2>
+              <p className="text-xs text-muted-foreground">
+                Score, behavior, and risk profile built from invoices + payments.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-white/5 bg-gradient-to-br from-slate-950/60 via-slate-900/60 to-black/80 p-4 md:p-6 shadow-lg shadow-black/40">
+              <PaymentReliabilityPanel companyId={id!} />
+            </div>
+
+            {/* Info pills */}
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+                <p className="text-[11px] uppercase tracking-wide text-emerald-300/80 mb-1">
+                  On-Time Behavior
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Use this score to decide who gets priority delivery, new flavors first, and better credit terms.
+                </p>
+              </div>
+              <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-3">
+                <p className="text-[11px] uppercase tracking-wide text-yellow-300/80 mb-1">
+                  Watch List
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Stores with many late / unpaid invoices should be flagged for cash-only or shorter refill cycles.
+                </p>
+              </div>
+              <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3">
+                <p className="text-[11px] uppercase tracking-wide text-red-300/80 mb-1">
+                  Risk Guardrails
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Your drivers and team can check this tab before extending credit or dropping big orders.
+                </p>
+              </div>
+            </div>
           </TabsContent>
 
           {/* === NOTES TAB === */}
