@@ -1,0 +1,1 @@
+ALTER TABLE public.invoices ALTER COLUMN total_amount DROP NOT NULL;
