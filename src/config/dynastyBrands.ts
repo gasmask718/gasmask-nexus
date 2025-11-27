@@ -36,24 +36,6 @@ export interface Floor {
   brands: Brand[];
 }
 
-export interface GlobalRoute {
-  path: string;
-  label: string;
-  icon: LucideIcon;
-  roles: string[];
-  premium?: boolean;
-}
-
-export const globalRoutes: GlobalRoute[] = [
-  { 
-    path: '/system-operations/ai-ceo-control-room', 
-    label: 'CEO Command Center', 
-    icon: Crown, 
-    roles: ['ceo'],
-    premium: true 
-  }
-];
-
 export const dynastyFloors: Floor[] = [
   {
     id: 'product-companies',
