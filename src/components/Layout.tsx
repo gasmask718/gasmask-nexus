@@ -8,7 +8,7 @@ import { SendMessageModal } from '@/components/communication/SendMessageModal';
 import { departmentThemes } from '@/config/departmentThemes';
 import '@/theme/departmentStyles.css';
 import { useLocation } from 'react-router-dom';
-import { dynastyFloors, globalRoutes } from '@/config/dynastyBrands';
+import { dynastyFloors } from '@/config/dynastyBrands';
 import { 
   LogOut,
   Menu,
@@ -97,37 +97,30 @@ const Layout = ({ children }: LayoutProps) => {
     return (
       <div className="space-y-2">
         {/* Dynasty OS Title */}
-        <div className="px-3 py-2 mb-4">
+        <div className="px-3 py-2 mb-2">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Dynasty OS
           </h2>
         </div>
 
-        {/* Global Routes - Top-Level Links */}
-        <div className="space-y-1 mb-4">
-          {globalRoutes
-            .filter(route => !route.roles || route.roles.includes(userRole as string))
-            .map((route) => {
-              const Icon = route.icon;
-              const isActive = currentPath === route.path || currentPath.startsWith(route.path + '/');
-              
-              return (
-                <NavLink
-                  key={route.path}
-                  to={route.path}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm font-medium",
-                    route.premium && "bg-gradient-to-r from-[#FFD700] via-[#DAA520] to-[#000000] text-white shadow-md hover:shadow-lg hover:shadow-yellow-500/50 hover:scale-[1.02]",
-                    !route.premium && isActive && "bg-primary/10 text-primary",
-                    !route.premium && !isActive && "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  )}
-                >
-                  <Icon className="h-4 w-4 flex-shrink-0" />
-                  <span>{route.label}</span>
-                </NavLink>
-              );
-            })}
-        </div>
+        {/* CEO Command Center - Premium Top-Level Link */}
+        {userRole === 'ceo' && (
+          <div className="mb-6 px-1">
+            <NavLink
+              to="/system-operations/ai-ceo-control-room"
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm font-semibold",
+                "bg-gradient-to-r from-[#FFD700] via-[#B8860B] to-[#000000]",
+                "text-white shadow-lg hover:shadow-xl hover:shadow-yellow-500/60",
+                "hover:scale-[1.02] active:scale-[0.98]",
+                "border border-yellow-600/30"
+              )}
+            >
+              <span className="text-lg">👑</span>
+              <span className="tracking-wide">CEO Command Center</span>
+            </NavLink>
+          </div>
+        )}
 
         {/* Render Each Floor */}
         {dynastyFloors.map((floor) => {
