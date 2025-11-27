@@ -15,7 +15,8 @@ import {
   MessageSquarePlus,
   Package,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Crown
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -116,7 +117,7 @@ const Layout = ({ children }: LayoutProps) => {
                 "border border-yellow-600/30"
               )}
             >
-              <span className="text-lg">👑</span>
+              <Crown className="h-5 w-5" />
               <span className="tracking-wide">CEO Command Center</span>
             </NavLink>
           </div>
