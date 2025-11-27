@@ -314,7 +314,7 @@ const App = () => (
               
               {/* Systems & Engine Room Routes */}
               <Route path="/systems" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
-              <Route path="/ai-ceo-control-room" element={<ProtectedRoute><Layout><AICEOControlRoom /></Layout></ProtectedRoute>} />
+              <Route path="/system-operations/ai-ceo-control-room" element={<ProtectedRoute><Layout><AICEOControlRoom /></Layout></ProtectedRoute>} />
               <Route path="/meta-ai" element={<ProtectedRoute><Layout><MetaAI /></Layout></ProtectedRoute>} />
               <Route path="/executive-reports" element={<ProtectedRoute><Layout><ExecutiveReports /></Layout></ProtectedRoute>} />
               <Route path="/missions-hq" element={<ProtectedRoute><Layout><MissionsHQ /></Layout></ProtectedRoute>} />
