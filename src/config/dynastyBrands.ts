@@ -388,7 +388,6 @@ export const dynastyFloors: Floor[] = [
         routes: [
           { path: '/systems', icon: Settings, label: 'Dashboard' },
           { path: '/communications-center', icon: MessageSquare, label: 'Communications Center', roles: ['admin', 'csr'] },
-          { path: '/ai-ceo-control-room', icon: Crown, label: 'CEO Command Center', roles: ['admin'] },
           { path: '/meta-ai', icon: Zap, label: 'Meta AI Supervisor', roles: ['admin'] },
           { path: '/executive-reports', icon: FileText, label: 'Executive Reports', roles: ['admin'] },
           { path: '/missions-hq', icon: Target, label: 'Missions HQ', roles: ['admin'] },
