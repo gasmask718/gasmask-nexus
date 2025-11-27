@@ -1,11 +1,12 @@
 import {
   MapPin, Package, Users, TrendingUp, FileText, Phone, MessageCircle, Mail,
   BarChart3, Map, Radar, Brain, Target, DollarSign, Trophy, Gift, Home, Settings,
-  Database
+  Database, Crown
 } from 'lucide-react';
 
 export const navigationItems = [
   { to: '/', icon: MapPin, label: 'Dashboard', roles: ['admin', 'driver', 'biker', 'clerk'] },
+  { to: '/system-operations/ai-ceo-control-room', icon: Crown, label: 'CEO Command Center', roles: ['ceo'], premium: true },
   { to: '/stores', icon: Package, label: 'Stores', roles: ['admin', 'driver'] },
   { to: '/routes', icon: MapPin, label: 'Routes', roles: ['admin', 'driver'] },
   { to: '/map', icon: Map, label: 'Live Map', roles: ['admin', 'driver', 'csr'] },
