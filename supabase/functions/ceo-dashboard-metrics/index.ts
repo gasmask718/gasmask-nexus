@@ -30,26 +30,73 @@ serve(async (req) => {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     }
 
-    // Fetch today's revenue from visit logs
-    const { data: visitLogs } = await supabaseClient
-      .from('visit_logs')
-      .select('cash_collected')
-      .gte('visit_datetime', startDate.toISOString());
+    // Fetch all stores with new fields
+    const { data: stores } = await supabaseClient
+      .from('stores')
+      .select('id, name, address_city, address_state, neighborhood, boro, status, sells_flowers, prime_time_energy, rpa_status, health_score, region_id');
 
-    const totalRevenue = visitLogs?.reduce((sum, log) => sum + (log.cash_collected || 0), 0) || 0;
+    // Calculate store metrics by region/state/boro
+    const storesByState: Record<string, number> = {};
+    const storesByBoro: Record<string, number> = {};
+    const activeStores = stores?.filter(s => s.status === 'active').length || 0;
+    const rpaStores = stores?.filter(s => s.rpa_status === 'rpa').length || 0;
+    const flowerStores = stores?.filter(s => s.sells_flowers).length || 0;
+    const primeTimeStores = stores?.filter(s => s.prime_time_energy).length || 0;
 
-    // Fetch orders
-    const { data: orders, count: ordersCount } = await supabaseClient
+    stores?.forEach(store => {
+      if (store.address_state) {
+        storesByState[store.address_state] = (storesByState[store.address_state] || 0) + 1;
+      }
+      if (store.boro) {
+        storesByBoro[store.boro] = (storesByBoro[store.boro] || 0) + 1;
+      }
+    });
+
+    // Fetch orders with brand and tubes
+    const { data: orders } = await supabaseClient
       .from('wholesale_orders')
-      .select('*', { count: 'exact' })
+      .select('id, store_id, brand, total, subtotal, created_at, order_date, boxes, tubes_per_box')
       .gte('created_at', startDate.toISOString());
+
+    const ordersCount = orders?.length || 0;
+    const totalRevenue = orders?.reduce((sum, o) => sum + (o.total || o.subtotal || 0), 0) || 0;
+
+    // Calculate tubes sold
+    const tubesSold = orders?.reduce((sum, o) => {
+      const boxes = o.boxes || 1;
+      const tubesPerBox = o.tubes_per_box || 50;
+      return sum + (boxes * tubesPerBox);
+    }, 0) || 0;
+
+    // Orders by brand
+    const ordersByBrand: Record<string, { count: number; revenue: number; tubes: number }> = {};
+    orders?.forEach(order => {
+      const b = order.brand || 'unknown';
+      if (!ordersByBrand[b]) {
+        ordersByBrand[b] = { count: 0, revenue: 0, tubes: 0 };
+      }
+      ordersByBrand[b].count++;
+      ordersByBrand[b].revenue += order.total || order.subtotal || 0;
+      ordersByBrand[b].tubes += (order.boxes || 1) * (order.tubes_per_box || 50);
+    });
+
+    // Fetch tube inventory
+    const { data: inventory } = await supabaseClient
+      .from('store_tube_inventory')
+      .select('store_id, brand, current_tubes_left');
+
+    const totalTubesInStock = inventory?.reduce((sum, i) => sum + (i.current_tubes_left || 0), 0) || 0;
+    const inventoryByBrand: Record<string, number> = {};
+    inventory?.forEach(inv => {
+      inventoryByBrand[inv.brand] = (inventoryByBrand[inv.brand] || 0) + (inv.current_tubes_left || 0);
+    });
 
     // Fetch deliveries
     const { data: routes } = await supabaseClient
       .from('routes')
-      .select('status')
-      .gte('date', startDate.toISOString().split('T')[0])
-      .eq('status', 'completed');
+      .select('status, created_at')
+      .eq('status', 'completed')
+      .gte('created_at', startDate.toISOString());
 
     const deliveriesCompleted = routes?.length || 0;
 
@@ -79,64 +126,94 @@ serve(async (req) => {
       .select('*', { count: 'exact' })
       .gte('created_at', startDate.toISOString());
 
-    // Fetch new signups across brands
-    const { count: newSignups } = await supabaseClient
-      .from('crm_contacts')
-      .select('*', { count: 'exact' })
-      .gte('created_at', startDate.toISOString());
+    // Fetch payments status
+    const { data: payments } = await supabaseClient
+      .from('store_payments')
+      .select('payment_status, owed_amount, paid_amount');
 
-    // Fetch driver/biker activity
-    const { data: checkins } = await supabaseClient
-      .from('route_checkins')
-      .select('*')
-      .gte('checkin_time', startDate.toISOString());
+    const paymentStats = {
+      totalOwed: payments?.reduce((sum, p) => sum + (p.owed_amount || 0), 0) || 0,
+      totalPaid: payments?.reduce((sum, p) => sum + (p.paid_amount || 0), 0) || 0,
+      unpaidCount: payments?.filter(p => p.payment_status === 'unpaid').length || 0,
+      paidCount: payments?.filter(p => p.payment_status === 'paid').length || 0,
+    };
 
-    const driverActivity = checkins?.length || 0;
-
-    // Brand-specific data if brand is provided
+    // Brand-specific data
     let brandData = null;
     if (brand) {
-      const { data: brandStores } = await supabaseClient
-        .from('store_brand_accounts')
-        .select('*, store_master(*)')
-        .eq('brand', brand);
+      const brandOrders = orders?.filter(o => o.brand === brand) || [];
+      const brandRevenue = brandOrders.reduce((sum, o) => sum + (o.total || o.subtotal || 0), 0);
+      const brandTubes = brandOrders.reduce((sum, o) => sum + ((o.boxes || 1) * (o.tubes_per_box || 50)), 0);
 
-      const { data: brandComms } = await supabaseClient
-        .from('communication_logs')
-        .select('*')
-        .eq('brand', brand)
-        .gte('created_at', startDate.toISOString());
+      // Get unique stores that ordered this brand
+      const brandStoreIds = [...new Set(brandOrders.map(o => o.store_id))];
+      const brandStores = stores?.filter(s => brandStoreIds.includes(s.id)) || [];
 
-      const { data: brandOrders } = await supabaseClient
-        .from('wholesale_orders')
-        .select('total_amount')
-        .eq('brand', brand)
-        .gte('created_at', startDate.toISOString());
-
-      const brandRevenue = brandOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
+      // Top neighborhoods/boros for this brand
+      const neighborhoodCounts: Record<string, number> = {};
+      const boroCounts: Record<string, number> = {};
+      brandStores.forEach(s => {
+        if (s.neighborhood) neighborhoodCounts[s.neighborhood] = (neighborhoodCounts[s.neighborhood] || 0) + 1;
+        if (s.boro) boroCounts[s.boro] = (boroCounts[s.boro] || 0) + 1;
+      });
 
       brandData = {
-        activeAccounts: brandStores?.length || 0,
+        activeAccounts: brandStores.length,
         revenue: brandRevenue,
-        communicationVolume: brandComms?.length || 0,
-        orders: brandOrders?.length || 0,
-        topStores: brandStores?.slice(0, 10) || [],
+        tubesSold: brandTubes,
+        orders: brandOrders.length,
+        topNeighborhoods: Object.entries(neighborhoodCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([name, count]) => ({ name, count })),
+        topBoros: Object.entries(boroCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([name, count]) => ({ name, count })),
+        inventoryInStock: inventoryByBrand[brand] || 0,
       };
     }
+
+    // Heat map data
+    const heatMapData = {
+      byState: Object.entries(storesByState).map(([state, count]) => {
+        const stateStores = stores?.filter(s => s.address_state === state) || [];
+        const avgHealth = stateStores.length > 0 
+          ? Math.round(stateStores.reduce((sum, s) => sum + (s.health_score || 50), 0) / stateStores.length)
+          : 50;
+        return { state, count, avgHealth };
+      }),
+      byBoro: Object.entries(storesByBoro).map(([boro, count]) => {
+        const boroStores = stores?.filter(s => s.boro === boro) || [];
+        const avgHealth = boroStores.length > 0
+          ? Math.round(boroStores.reduce((sum, s) => sum + (s.health_score || 50), 0) / boroStores.length)
+          : 50;
+        return { boro, count, avgHealth };
+      }),
+    };
 
     return new Response(JSON.stringify({
       success: true,
       timeframe,
       metrics: {
         totalRevenue,
-        ordersToday: ordersCount || 0,
+        ordersToday: ordersCount,
         deliveriesCompleted,
         newStores: newStoresCount || 0,
         communicationVolume: commVolume,
         automationsTriggered: automationsTriggered || 0,
-        newSignups: newSignups || 0,
-        driverActivity,
+        tubesSold,
+        totalTubesInStock,
+        activeStores,
+        rpaStores,
+        flowerStores,
+        primeTimeStores,
+        totalStores: stores?.length || 0,
       },
+      ordersByBrand,
+      inventoryByBrand,
+      paymentStats,
+      heatMapData,
       brandData,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
