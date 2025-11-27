@@ -8,9 +8,11 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
-  TrendingUp, TrendingDown, DollarSign, Package, Store, 
-  MapPin, BarChart3, Users, AlertTriangle, Zap, Clock
+  TrendingUp, DollarSign, Package, Store, 
+  MapPin, BarChart3, Users, AlertTriangle
 } from "lucide-react";
+
+const TOBACCO_BRANDS = ["gasmask", "hotmama", "hotscolati", "grabba_r_us"];
 
 const brandConfigs: Record<string, { name: string; primary: string; secondary: string; gradient: string }> = {
   gasmask: { 
@@ -40,8 +42,9 @@ const brandConfigs: Record<string, { name: string; primary: string; secondary: s
 };
 
 export default function BrandDashboard() {
-  const { brand } = useParams<{ brand: string }>();
-  const brandConfig = brandConfigs[brand || ""] || brandConfigs.gasmask;
+  const { brand: urlBrand } = useParams<{ brand: string }>();
+  const brand = TOBACCO_BRANDS.includes(urlBrand || "") ? urlBrand : "gasmask";
+  const brandConfig = brandConfigs[brand || "gasmask"];
 
   const { data: brandStats } = useQuery({
     queryKey: ["brand-stats", brand],
@@ -49,7 +52,7 @@ export default function BrandDashboard() {
       // Get orders for this brand
       const { data: orders } = await supabase
         .from("wholesale_orders")
-        .select("*")
+        .select("*, companies(id, name, neighborhood, boro)")
         .eq("brand", brand);
 
       // Get invoices for this brand
@@ -60,10 +63,13 @@ export default function BrandDashboard() {
 
       const totalTubes = orders?.reduce((sum, o) => sum + (o.tubes_total || (o.boxes || 0) * 100), 0) || 0;
       const totalBoxes = orders?.reduce((sum, o) => sum + (o.boxes || 0), 0) || 0;
-      const totalRevenue = invoices?.reduce((sum, inv) => sum + Number(inv.total || inv.total_amount || 0), 0) || 0;
+      const totalRevenue = invoices?.reduce((sum, inv) => sum + (Number(inv.total) || Number(inv.total_amount) || 0), 0) || 0;
       const unpaidAmount = invoices
         ?.filter(inv => inv.payment_status !== "paid")
-        .reduce((sum, inv) => sum + Number(inv.total || inv.total_amount || 0), 0) || 0;
+        .reduce((sum, inv) => sum + (Number(inv.total) || Number(inv.total_amount) || 0), 0) || 0;
+
+      // Count unique companies
+      const companyIds = new Set(orders?.map(o => o.company_id).filter(Boolean));
 
       return {
         totalTubes,
@@ -71,9 +77,10 @@ export default function BrandDashboard() {
         totalRevenue,
         unpaidAmount,
         orderCount: orders?.length || 0,
-        activeStores: new Set(orders?.map(o => o.store_id).filter(Boolean)).size,
+        activeStores: companyIds.size,
       };
     },
+    enabled: !!brand,
   });
 
   const { data: topStores } = useQuery({
@@ -82,30 +89,36 @@ export default function BrandDashboard() {
       const { data: orders } = await supabase
         .from("wholesale_orders")
         .select(`
-          store_id,
+          company_id,
           boxes,
           tubes_total,
-          stores (name, neighborhood, boro)
+          companies (id, name, neighborhood, boro)
         `)
         .eq("brand", brand);
 
-      // Aggregate by store
-      const storeMap = new Map<string, { name: string; tubes: number; boxes: number; neighborhood: string }>();
+      // Aggregate by company
+      const companyMap = new Map<string, { name: string; tubes: number; boxes: number; neighborhood: string }>();
       orders?.forEach((o) => {
-        const store = o.stores as any;
-        if (o.store_id && store) {
-          const existing = storeMap.get(o.store_id) || { name: store.name, tubes: 0, boxes: 0, neighborhood: store.neighborhood || "" };
+        const company = o.companies as { id?: string; name?: string; neighborhood?: string; boro?: string } | null;
+        if (o.company_id && company) {
+          const existing = companyMap.get(o.company_id) || { 
+            name: company.name || "Unknown", 
+            tubes: 0, 
+            boxes: 0, 
+            neighborhood: company.neighborhood || company.boro || "" 
+          };
           existing.tubes += o.tubes_total || (o.boxes || 0) * 100;
           existing.boxes += o.boxes || 0;
-          storeMap.set(o.store_id, existing);
+          companyMap.set(o.company_id, existing);
         }
       });
 
-      return Array.from(storeMap.entries())
+      return Array.from(companyMap.entries())
         .map(([id, data]) => ({ id, ...data }))
         .sort((a, b) => b.tubes - a.tubes)
         .slice(0, 10);
     },
+    enabled: !!brand,
   });
 
   const { data: neighborhoodBreakdown } = useQuery({
@@ -116,25 +129,44 @@ export default function BrandDashboard() {
         .select(`
           boxes,
           tubes_total,
-          stores (neighborhood, boro)
+          companies (neighborhood, boro)
         `)
         .eq("brand", brand);
 
-      const neighborhoodMap = new Map<string, { tubes: number; stores: Set<string> }>();
+      const neighborhoodMap = new Map<string, { tubes: number; storeCount: number }>();
+      const seenCompanies = new Map<string, Set<string>>();
+      
       orders?.forEach((o) => {
-        const store = o.stores as any;
-        if (store?.neighborhood) {
-          const existing = neighborhoodMap.get(store.neighborhood) || { tubes: 0, stores: new Set() };
+        const company = o.companies as { neighborhood?: string; boro?: string } | null;
+        const hood = company?.neighborhood || company?.boro;
+        if (hood) {
+          const existing = neighborhoodMap.get(hood) || { tubes: 0, storeCount: 0 };
           existing.tubes += o.tubes_total || (o.boxes || 0) * 100;
-          neighborhoodMap.set(store.neighborhood, existing);
+          neighborhoodMap.set(hood, existing);
         }
       });
 
       return Array.from(neighborhoodMap.entries())
-        .map(([name, data]) => ({ name, tubes: data.tubes, storeCount: data.stores.size }))
+        .map(([name, data]) => ({ name, tubes: data.tubes, storeCount: data.storeCount }))
         .sort((a, b) => b.tubes - a.tubes)
         .slice(0, 10);
     },
+    enabled: !!brand,
+  });
+
+  const { data: unpaidInvoices } = useQuery({
+    queryKey: ["brand-unpaid", brand],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("invoices")
+        .select(`*, companies(id, name, default_city)`)
+        .eq("brand", brand)
+        .in("payment_status", ["unpaid", "partial", "overdue"])
+        .order("due_date", { ascending: true })
+        .limit(10);
+      return data || [];
+    },
+    enabled: !!brand,
   });
 
   return (
@@ -159,7 +191,7 @@ export default function BrandDashboard() {
               <div className="text-3xl font-bold">{brandStats?.totalTubes?.toLocaleString() || 0}</div>
               <div className="flex items-center gap-1 text-green-500 text-sm">
                 <TrendingUp className="h-3 w-3" />
-                +12% this month
+                All time
               </div>
             </CardContent>
           </Card>
@@ -181,7 +213,7 @@ export default function BrandDashboard() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
                 <Store className="h-4 w-4" />
-                Active Stores
+                Active Companies
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -215,8 +247,7 @@ export default function BrandDashboard() {
           <TabsList>
             <TabsTrigger value="stores">Top Stores</TabsTrigger>
             <TabsTrigger value="neighborhoods">Neighborhoods</TabsTrigger>
-            <TabsTrigger value="inventory">Inventory</TabsTrigger>
-            <TabsTrigger value="payments">Outstanding</TabsTrigger>
+            <TabsTrigger value="outstanding">Outstanding</TabsTrigger>
           </TabsList>
 
           <TabsContent value="stores">
@@ -224,7 +255,7 @@ export default function BrandDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  Top Performing Stores
+                  Top Performing Companies
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -232,7 +263,7 @@ export default function BrandDashboard() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Rank</TableHead>
-                      <TableHead>Store</TableHead>
+                      <TableHead>Company</TableHead>
                       <TableHead>Neighborhood</TableHead>
                       <TableHead>Tubes Sold</TableHead>
                       <TableHead>Boxes</TableHead>
@@ -289,7 +320,6 @@ export default function BrandDashboard() {
                         </Badge>
                         <div>
                           <p className="font-medium">{hood.name}</p>
-                          <p className="text-xs text-muted-foreground">{hood.storeCount} stores</p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -298,29 +328,17 @@ export default function BrandDashboard() {
                       </div>
                     </div>
                   ))}
+                  {(!neighborhoodBreakdown || neighborhoodBreakdown.length === 0) && (
+                    <div className="col-span-2 text-center py-8 text-muted-foreground">
+                      No neighborhood data available
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="inventory">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  Inventory Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Inventory tracking coming soon</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="payments">
+          <TabsContent value="outstanding">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -329,7 +347,7 @@ export default function BrandDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-center gap-8 py-8">
+                <div className="flex items-center justify-center gap-8 py-4 mb-6 bg-muted/30 rounded-lg">
                   <div className="text-center">
                     <p className="text-4xl font-bold text-red-500">
                       ${brandStats?.unpaidAmount?.toLocaleString() || 0}
@@ -339,11 +357,48 @@ export default function BrandDashboard() {
                   <div className="h-16 w-px bg-border"></div>
                   <div className="text-center">
                     <p className="text-4xl font-bold text-green-500">
-                      ${(brandStats?.totalRevenue || 0) - (brandStats?.unpaidAmount || 0)}
+                      ${((brandStats?.totalRevenue || 0) - (brandStats?.unpaidAmount || 0)).toLocaleString()}
                     </p>
                     <p className="text-sm text-muted-foreground">Collected</p>
                   </div>
                 </div>
+                
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Invoice #</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {unpaidInvoices?.map((inv) => {
+                      const company = inv.companies as { name?: string } | null;
+                      return (
+                        <TableRow key={inv.id}>
+                          <TableCell>{company?.name || "Unknown"}</TableCell>
+                          <TableCell className="font-mono">{inv.invoice_number || "—"}</TableCell>
+                          <TableCell className="text-red-500 font-bold">
+                            ${(Number(inv.total) || Number(inv.total_amount) || 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={inv.payment_status === "overdue" ? "destructive" : "secondary"}>
+                              {inv.payment_status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {(!unpaidInvoices || unpaidInvoices.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          No outstanding invoices
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>

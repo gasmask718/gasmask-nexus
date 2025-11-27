@@ -5,19 +5,29 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Package, TrendingUp, Clock, BarChart3, Zap } from "lucide-react";
 
+const TOBACCO_BRANDS = ["gasmask", "hotmama", "hotscolati", "grabba_r_us"];
+
 interface TubeMathEngineProps {
   companyId: string;
 }
 
+const brandColors: Record<string, string> = {
+  gasmask: "bg-red-600",
+  hotmama: "bg-rose-400",
+  hotscolati: "bg-red-700",
+  grabba_r_us: "bg-purple-500",
+};
+
 export function TubeMathEngine({ companyId }: TubeMathEngineProps) {
-  const { data: tubeStats } = useQuery({
+  const { data: tubeStats, isLoading } = useQuery({
     queryKey: ["tube-math", companyId],
     queryFn: async () => {
-      // Get all orders for this company
+      // Get all orders for this company - filter to tobacco brands only
       const { data: orders } = await supabase
         .from("wholesale_orders")
         .select("*")
-        .or(`company_id.eq.${companyId},store_id.eq.${companyId}`)
+        .eq("company_id", companyId)
+        .in("brand", TOBACCO_BRANDS)
         .order("created_at", { ascending: true });
 
       if (!orders || orders.length === 0) {
@@ -29,7 +39,7 @@ export function TubeMathEngine({ companyId }: TubeMathEngineProps) {
           estimatedInventory: 0,
           avgTubesPerWeek: 0,
           etaPrediction: 0,
-          brandBreakdown: {},
+          brandBreakdown: {} as Record<string, number>,
         };
       }
 
@@ -66,7 +76,9 @@ export function TubeMathEngine({ companyId }: TubeMathEngineProps) {
       const brandBreakdown: Record<string, number> = {};
       orders.forEach((o) => {
         const brand = o.brand || "unknown";
-        brandBreakdown[brand] = (brandBreakdown[brand] || 0) + (o.tubes_total || (o.boxes || 0) * 100);
+        if (TOBACCO_BRANDS.includes(brand)) {
+          brandBreakdown[brand] = (brandBreakdown[brand] || 0) + (o.tubes_total || (o.boxes || 0) * 100);
+        }
       });
 
       return {
@@ -83,13 +95,13 @@ export function TubeMathEngine({ companyId }: TubeMathEngineProps) {
     enabled: !!companyId,
   });
 
-  const brandColors: Record<string, string> = {
-    gasmask: "bg-red-500",
-    hotmama: "bg-rose-400",
-    hotscolati: "bg-red-700",
-    grabba_r_us: "bg-purple-500",
-    unknown: "bg-gray-500",
-  };
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -176,15 +188,18 @@ export function TubeMathEngine({ companyId }: TubeMathEngineProps) {
                 </Badge>
                 <div className="flex-1">
                   <Progress 
-                    value={(tubes as number / (tubeStats?.totalTubesPurchased || 1)) * 100} 
+                    value={(tubes / (tubeStats?.totalTubesPurchased || 1)) * 100} 
                     className="h-2"
                   />
                 </div>
                 <span className="text-sm font-medium w-20 text-right">
-                  {(tubes as number).toLocaleString()}
+                  {tubes.toLocaleString()}
                 </span>
               </div>
             ))}
+            {Object.keys(tubeStats?.brandBreakdown || {}).length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No order history</p>
+            )}
           </div>
         </CardContent>
       </Card>
