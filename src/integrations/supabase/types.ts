@@ -2631,6 +2631,7 @@ export type Database = {
       }
       companies: {
         Row: {
+          boro: string | null
           brand_focus: string[] | null
           created_at: string | null
           created_by: string | null
@@ -2642,7 +2643,12 @@ export type Database = {
           health_score: number | null
           id: string
           name: string
+          neighborhood: string | null
           notes: string | null
+          payment_reliability_score: number | null
+          payment_reliability_tier: string | null
+          rpa_status: string | null
+          sells_flowers: boolean | null
           tags: string[] | null
           total_orders: number | null
           total_revenue: number | null
@@ -2650,6 +2656,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          boro?: string | null
           brand_focus?: string[] | null
           created_at?: string | null
           created_by?: string | null
@@ -2661,7 +2668,12 @@ export type Database = {
           health_score?: number | null
           id?: string
           name: string
+          neighborhood?: string | null
           notes?: string | null
+          payment_reliability_score?: number | null
+          payment_reliability_tier?: string | null
+          rpa_status?: string | null
+          sells_flowers?: boolean | null
           tags?: string[] | null
           total_orders?: number | null
           total_revenue?: number | null
@@ -2669,6 +2681,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          boro?: string | null
           brand_focus?: string[] | null
           created_at?: string | null
           created_by?: string | null
@@ -2680,7 +2693,12 @@ export type Database = {
           health_score?: number | null
           id?: string
           name?: string
+          neighborhood?: string | null
           notes?: string | null
+          payment_reliability_score?: number | null
+          payment_reliability_tier?: string | null
+          rpa_status?: string | null
+          sells_flowers?: boolean | null
           tags?: string[] | null
           total_orders?: number | null
           total_revenue?: number | null
@@ -9378,6 +9396,7 @@ export type Database = {
           created_by: string | null
           due_date: string | null
           id: string
+          invoice_id: string | null
           issue_date: string | null
           order_id: string | null
           owed_amount: number | null
@@ -9392,6 +9411,7 @@ export type Database = {
           created_by?: string | null
           due_date?: string | null
           id?: string
+          invoice_id?: string | null
           issue_date?: string | null
           order_id?: string | null
           owed_amount?: number | null
@@ -9406,6 +9426,7 @@ export type Database = {
           created_by?: string | null
           due_date?: string | null
           id?: string
+          invoice_id?: string | null
           issue_date?: string | null
           order_id?: string | null
           owed_amount?: number | null
@@ -9420,6 +9441,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
           {

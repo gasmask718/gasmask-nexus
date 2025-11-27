@@ -11,9 +11,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { 
   Truck, Phone, MessageSquare, DollarSign, MapPin, Send, 
-  CheckCircle, XCircle, Clock, Route, Users, AlertTriangle 
+  CheckCircle, Clock, Route, Users, AlertTriangle 
 } from "lucide-react";
 import { format } from "date-fns";
+
+const TOBACCO_BRANDS = ["gasmask", "hotmama", "hotscolati", "grabba_r_us"];
+
+const typeLabels: Record<string, string> = {
+  store: "Store",
+  wholesaler: "Wholesaler",
+  direct_customer: "Direct Customer",
+};
 
 export default function DriverDebtCollection() {
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
@@ -33,6 +41,7 @@ export default function DriverDebtCollection() {
           )
         `)
         .in("payment_status", ["unpaid", "partial", "overdue"])
+        .in("brand", TOBACCO_BRANDS)
         .order("due_date", { ascending: true });
 
       if (error) throw error;
@@ -60,13 +69,23 @@ export default function DriverDebtCollection() {
       
       // Create dispatch list message
       const listItems = selectedData?.map((inv, i) => {
-        const company = inv.companies as any;
-        return `${i + 1}. ${company?.name}\n   📍 ${company?.default_city}, ${company?.default_state}\n   💰 $${Number(inv.total || inv.total_amount || 0).toLocaleString()} owed\n   📞 ${company?.default_phone || 'No phone'}\n`;
+        const company = inv.companies as {
+          name?: string;
+          default_city?: string;
+          default_state?: string;
+          default_phone?: string;
+        } | null;
+        const amount = Number(inv.total) || Number(inv.total_amount) || 0;
+        return `${i + 1}. ${company?.name || 'Unknown'}\n   📍 ${company?.default_city || ''}, ${company?.default_state || ''}\n   💰 $${amount.toLocaleString()} owed\n   📞 ${company?.default_phone || 'No phone'}\n`;
       }).join("\n");
 
-      const message = `🚚 COLLECTION ROUTE\n\n${listItems}\n\nTotal: $${selectedData?.reduce((sum, inv) => sum + Number(inv.total || inv.total_amount || 0), 0).toLocaleString()}\n\nUpdate status: [link]`;
+      const totalAmount = selectedData?.reduce((sum, inv) => {
+        return sum + (Number(inv.total) || Number(inv.total_amount) || 0);
+      }, 0) || 0;
 
-      // Log the dispatch (simplified for now)
+      const message = `🚚 COLLECTION ROUTE\n\n${listItems}\n\nTotal: $${totalAmount.toLocaleString()}\n\nDriver: ${driverPhone || 'Not specified'}`;
+
+      // Log the dispatch - just console log for now since communication_logs schema may vary
       console.log("Dispatch message:", message);
 
       return { message, count: selectedData?.length };
@@ -101,7 +120,11 @@ export default function DriverDebtCollection() {
   const totalSelected = selectedAccounts.length;
   const totalOwed = unpaidAccounts
     ?.filter((a) => selectedAccounts.includes(a.id))
-    .reduce((sum, inv) => sum + Number(inv.total || inv.total_amount || 0), 0) || 0;
+    .reduce((sum, inv) => sum + (Number(inv.total) || Number(inv.total_amount) || 0), 0) || 0;
+
+  const totalOutstanding = unpaidAccounts?.reduce((sum, inv) => {
+    return sum + (Number(inv.total) || Number(inv.total_amount) || 0);
+  }, 0) || 0;
 
   return (
     <Layout>
@@ -178,9 +201,7 @@ export default function DriverDebtCollection() {
                   <DollarSign className="h-6 w-6 text-orange-500" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">
-                    ${unpaidAccounts?.reduce((sum, inv) => sum + Number(inv.total || inv.total_amount || 0), 0).toLocaleString() || "0"}
-                  </p>
+                  <p className="text-2xl font-bold">${totalOutstanding.toLocaleString()}</p>
                   <p className="text-sm text-muted-foreground">Total Outstanding</p>
                 </div>
               </div>
@@ -236,6 +257,7 @@ export default function DriverDebtCollection() {
                     <TableHead className="w-12"></TableHead>
                     <TableHead>Company</TableHead>
                     <TableHead>Location</TableHead>
+                    <TableHead>Brand</TableHead>
                     <TableHead>Amount Owed</TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>Status</TableHead>
@@ -244,8 +266,18 @@ export default function DriverDebtCollection() {
                 </TableHeader>
                 <TableBody>
                   {unpaidAccounts?.map((invoice) => {
-                    const company = invoice.companies as any;
+                    const company = invoice.companies as {
+                      name?: string;
+                      type?: string;
+                      default_city?: string;
+                      default_state?: string;
+                      default_phone?: string;
+                      neighborhood?: string;
+                      boro?: string;
+                    } | null;
                     const isSelected = selectedAccounts.includes(invoice.id);
+                    const amount = Number(invoice.total) || Number(invoice.total_amount) || 0;
+                    
                     return (
                       <TableRow 
                         key={invoice.id} 
@@ -261,7 +293,7 @@ export default function DriverDebtCollection() {
                           <div>
                             <p className="font-medium">{company?.name || "Unknown"}</p>
                             <Badge variant="outline" className="text-xs">
-                              {company?.type || "store"}
+                              {typeLabels[company?.type || "store"] || company?.type}
                             </Badge>
                           </div>
                         </TableCell>
@@ -275,8 +307,13 @@ export default function DriverDebtCollection() {
                           </p>
                         </TableCell>
                         <TableCell>
+                          <Badge variant="secondary" className="capitalize">
+                            {(invoice.brand || "").replace("_", " ")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
                           <span className="font-bold text-red-500">
-                            ${Number(invoice.total || invoice.total_amount || 0).toLocaleString()}
+                            ${amount.toLocaleString()}
                           </span>
                         </TableCell>
                         <TableCell>
@@ -294,6 +331,7 @@ export default function DriverDebtCollection() {
                               variant="ghost"
                               className="h-8 w-8 text-green-500"
                               onClick={() => updatePaymentMutation.mutate({ invoiceId: invoice.id, status: "paid" })}
+                              title="Mark Paid"
                             >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
@@ -302,6 +340,7 @@ export default function DriverDebtCollection() {
                               variant="ghost"
                               className="h-8 w-8 text-yellow-500"
                               onClick={() => updatePaymentMutation.mutate({ invoiceId: invoice.id, status: "partial" })}
+                              title="Mark Partial"
                             >
                               <Clock className="h-4 w-4" />
                             </Button>
@@ -309,6 +348,7 @@ export default function DriverDebtCollection() {
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8"
+                              title="Call"
                             >
                               <Phone className="h-4 w-4" />
                             </Button>
@@ -316,6 +356,7 @@ export default function DriverDebtCollection() {
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8"
+                              title="Message"
                             >
                               <MessageSquare className="h-4 w-4" />
                             </Button>
@@ -324,6 +365,13 @@ export default function DriverDebtCollection() {
                       </TableRow>
                     );
                   })}
+                  {(!unpaidAccounts || unpaidAccounts.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        No unpaid accounts found
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             )}

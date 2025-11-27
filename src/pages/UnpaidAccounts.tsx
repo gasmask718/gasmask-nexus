@@ -1,22 +1,31 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Phone, MessageSquare, DollarSign, AlertTriangle, Star, Building2, Filter, Search, TrendingDown } from "lucide-react";
-import { format } from "date-fns";
+import { Phone, MessageSquare, DollarSign, AlertTriangle, Star, Building2, Search, TrendingDown, CheckCircle, Clock, ExternalLink } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
+import { toast } from "sonner";
 
-const brandColors: Record<string, { primary: string; secondary: string }> = {
-  gasmask: { primary: "bg-red-600", secondary: "text-red-600" },
-  hotmama: { primary: "bg-rose-400", secondary: "text-rose-400" },
-  hotscolati: { primary: "bg-red-700", secondary: "text-red-700" },
-  grabba_r_us: { primary: "bg-gradient-to-r from-purple-500 to-pink-500", secondary: "text-purple-600" },
+const TOBACCO_BRANDS = ["gasmask", "hotmama", "hotscolati", "grabba_r_us"];
+
+const brandColors: Record<string, { bg: string; text: string; gradient: string }> = {
+  gasmask: { bg: "bg-red-600", text: "text-red-600", gradient: "from-red-600 to-black" },
+  hotmama: { bg: "bg-rose-400", text: "text-rose-400", gradient: "from-rose-400 to-rose-600" },
+  hotscolati: { bg: "bg-red-700", text: "text-red-700", gradient: "from-red-700 to-black" },
+  grabba_r_us: { bg: "bg-purple-500", text: "text-purple-500", gradient: "from-purple-500 to-pink-500" },
+};
+
+const typeLabels: Record<string, string> = {
+  store: "Store",
+  wholesaler: "Wholesaler",
+  direct_customer: "Direct Customer",
 };
 
 const PaymentReliabilityBadge = ({ score, tier }: { score: number; tier: string }) => {
@@ -34,6 +43,8 @@ const PaymentReliabilityBadge = ({ score, tier }: { score: number; tier: string 
 };
 
 export default function UnpaidAccounts() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [brandFilter, setBrandFilter] = useState<string>("all");
   const [overdueFilter, setOverdueFilter] = useState<string>("all");
@@ -41,7 +52,7 @@ export default function UnpaidAccounts() {
   const [boroFilter, setBoroFilter] = useState<string>("all");
 
   const { data: unpaidInvoices, isLoading } = useQuery({
-    queryKey: ["unpaid-accounts", brandFilter, overdueFilter, typeFilter, boroFilter],
+    queryKey: ["unpaid-accounts", brandFilter],
     queryFn: async () => {
       let query = supabase
         .from("invoices")
@@ -49,11 +60,11 @@ export default function UnpaidAccounts() {
           *,
           companies (
             id, name, type, default_phone, default_email, default_city, default_state,
-            total_revenue, total_orders, health_score, tags, neighborhood, boro,
-            payment_reliability_score, payment_reliability_tier, sells_flowers, rpa_status
+            neighborhood, boro, payment_reliability_score, payment_reliability_tier
           )
         `)
-        .in("payment_status", ["unpaid", "partial", "overdue"]);
+        .in("payment_status", ["unpaid", "partial", "overdue"])
+        .in("brand", TOBACCO_BRANDS);
 
       if (brandFilter !== "all") {
         query = query.eq("brand", brandFilter);
@@ -70,13 +81,16 @@ export default function UnpaidAccounts() {
     queryFn: async () => {
       const { data: invoices } = await supabase
         .from("invoices")
-        .select("total, payment_status, brand")
-        .in("payment_status", ["unpaid", "partial", "overdue"]);
+        .select("total, total_amount, payment_status, brand")
+        .in("payment_status", ["unpaid", "partial", "overdue"])
+        .in("brand", TOBACCO_BRANDS);
 
-      const totalOwed = invoices?.reduce((sum, inv) => sum + (Number(inv.total) || 0), 0) || 0;
+      const totalOwed = invoices?.reduce((sum, inv) => sum + (Number(inv.total) || Number(inv.total_amount) || 0), 0) || 0;
       const byBrand = invoices?.reduce((acc, inv) => {
         const brand = inv.brand || "unknown";
-        acc[brand] = (acc[brand] || 0) + (Number(inv.total) || 0);
+        if (TOBACCO_BRANDS.includes(brand)) {
+          acc[brand] = (acc[brand] || 0) + (Number(inv.total) || Number(inv.total_amount) || 0);
+        }
         return acc;
       }, {} as Record<string, number>) || {};
 
@@ -84,20 +98,45 @@ export default function UnpaidAccounts() {
     },
   });
 
+  const updatePaymentMutation = useMutation({
+    mutationFn: async ({ invoiceId, status }: { invoiceId: string; status: string }) => {
+      const { error } = await supabase
+        .from("invoices")
+        .update({ 
+          payment_status: status,
+          paid_at: status === "paid" ? new Date().toISOString() : null 
+        })
+        .eq("id", invoiceId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["unpaid-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["payment-stats"] });
+      toast.success("Payment status updated");
+    },
+  });
+
   const filteredInvoices = unpaidInvoices?.filter((inv) => {
+    const company = inv.companies as { name?: string; type?: string; boro?: string } | null;
+    
     if (search) {
-      const companyName = (inv.companies as any)?.name?.toLowerCase() || "";
+      const companyName = company?.name?.toLowerCase() || "";
       if (!companyName.includes(search.toLowerCase())) return false;
     }
-    if (typeFilter !== "all" && (inv.companies as any)?.type !== typeFilter) return false;
-    if (boroFilter !== "all" && (inv.companies as any)?.boro !== boroFilter) return false;
+    if (typeFilter !== "all" && company?.type !== typeFilter) return false;
+    if (boroFilter !== "all" && company?.boro !== boroFilter) return false;
+    
+    if (overdueFilter !== "all" && inv.due_date) {
+      const overdueDays = differenceInDays(new Date(), new Date(inv.due_date));
+      if (overdueDays < parseInt(overdueFilter)) return false;
+    }
+    
     return true;
   });
 
-  const getOverdueDays = (dueDate: string) => {
-    const due = new Date(dueDate);
-    const today = new Date();
-    const diff = Math.floor((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+  const getOverdueDays = (dueDate: string | null) => {
+    if (!dueDate) return 0;
+    const diff = differenceInDays(new Date(), new Date(dueDate));
     return diff > 0 ? diff : 0;
   };
 
@@ -110,16 +149,12 @@ export default function UnpaidAccounts() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
               Unpaid Accounts
             </h1>
-            <p className="text-muted-foreground">Track and manage outstanding payments across all brands</p>
+            <p className="text-muted-foreground">Track and manage outstanding payments for GasMask & Grabba brands</p>
           </div>
-          <Button variant="destructive" className="gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Generate Collection Report
-          </Button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card className="border-red-500/20 bg-gradient-to-br from-red-500/10 to-transparent">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-muted-foreground">Total Outstanding</CardTitle>
@@ -132,15 +167,15 @@ export default function UnpaidAccounts() {
             </CardContent>
           </Card>
 
-          {Object.entries(paymentStats?.byBrand || {}).slice(0, 3).map(([brand, amount]) => (
-            <Card key={brand} className="border-border/50">
+          {TOBACCO_BRANDS.map((brand) => (
+            <Card key={brand} className={`border-border/50 bg-gradient-to-br ${brandColors[brand]?.gradient ? `from-${brand === 'gasmask' ? 'red-600' : brand === 'hotmama' ? 'rose-400' : brand === 'hotscolati' ? 'red-700' : 'purple-500'}/10` : ''} to-transparent`}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground capitalize">{brand.replace("_", " ")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${(amount as number).toLocaleString()}</div>
-                <Badge className={brandColors[brand]?.primary || "bg-gray-500"} variant="secondary">
-                  {brand}
+                <div className="text-2xl font-bold">${(paymentStats?.byBrand?.[brand] || 0).toLocaleString()}</div>
+                <Badge className={brandColors[brand]?.bg || "bg-gray-500"}>
+                  {brand.replace("_", " ")}
                 </Badge>
               </CardContent>
             </Card>
@@ -191,9 +226,9 @@ export default function UnpaidAccounts() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="store">Stores</SelectItem>
-                  <SelectItem value="wholesaler">Wholesalers</SelectItem>
-                  <SelectItem value="direct_customer">Direct</SelectItem>
+                  <SelectItem value="store">Store</SelectItem>
+                  <SelectItem value="wholesaler">Wholesaler</SelectItem>
+                  <SelectItem value="direct_customer">Direct Customer</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={boroFilter} onValueChange={setBoroFilter}>
@@ -242,8 +277,18 @@ export default function UnpaidAccounts() {
                 </TableHeader>
                 <TableBody>
                   {filteredInvoices?.map((invoice) => {
-                    const company = invoice.companies as any;
+                    const company = invoice.companies as {
+                      id?: string;
+                      name?: string;
+                      type?: string;
+                      default_city?: string;
+                      default_state?: string;
+                      payment_reliability_score?: number;
+                      payment_reliability_tier?: string;
+                    } | null;
                     const overdueDays = getOverdueDays(invoice.due_date);
+                    const amount = Number(invoice.total) || Number(invoice.total_amount) || 0;
+                    
                     return (
                       <TableRow key={invoice.id} className={overdueDays > 30 ? "bg-red-500/5" : ""}>
                         <TableCell>
@@ -251,22 +296,27 @@ export default function UnpaidAccounts() {
                             <Building2 className="h-4 w-4 text-muted-foreground" />
                             <div>
                               <p className="font-medium">{company?.name || "Unknown"}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {company?.default_city}, {company?.default_state}
-                              </p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span>{company?.default_city}, {company?.default_state}</span>
+                                <Badge variant="outline" className="text-[10px]">
+                                  {typeLabels[company?.type || "store"] || company?.type}
+                                </Badge>
+                              </div>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={brandColors[invoice.brand || ""]?.primary || "bg-gray-500"}>
-                            {invoice.brand || "N/A"}
+                          <Badge className={brandColors[invoice.brand || ""]?.bg || "bg-gray-500"}>
+                            {(invoice.brand || "N/A").replace("_", " ")}
                           </Badge>
                         </TableCell>
-                        <TableCell className="font-mono">{invoice.invoice_number}</TableCell>
+                        <TableCell className="font-mono">{invoice.invoice_number || "—"}</TableCell>
                         <TableCell className="font-bold text-red-500">
-                          ${Number(invoice.total || invoice.total_amount || 0).toLocaleString()}
+                          ${amount.toLocaleString()}
                         </TableCell>
-                        <TableCell>{format(new Date(invoice.due_date), "MMM d, yyyy")}</TableCell>
+                        <TableCell>
+                          {invoice.due_date ? format(new Date(invoice.due_date), "MMM d, yyyy") : "—"}
+                        </TableCell>
                         <TableCell>
                           <Badge variant={overdueDays > 30 ? "destructive" : overdueDays > 7 ? "secondary" : "outline"}>
                             {overdueDays} days
@@ -280,14 +330,32 @@ export default function UnpaidAccounts() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
-                            <Button size="icon" variant="ghost" className="h-8 w-8">
-                              <Phone className="h-4 w-4" />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-green-500"
+                              onClick={() => updatePaymentMutation.mutate({ invoiceId: invoice.id, status: "paid" })}
+                              title="Mark Paid"
+                            >
+                              <CheckCircle className="h-4 w-4" />
                             </Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8">
-                              <MessageSquare className="h-4 w-4" />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-yellow-500"
+                              onClick={() => updatePaymentMutation.mutate({ invoiceId: invoice.id, status: "partial" })}
+                              title="Mark Partial"
+                            >
+                              <Clock className="h-4 w-4" />
                             </Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-green-500">
-                              <DollarSign className="h-4 w-4" />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => company?.id && navigate(`/companies/${company.id}`)}
+                              title="Open Company"
+                            >
+                              <ExternalLink className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>

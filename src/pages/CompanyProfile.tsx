@@ -7,10 +7,20 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TubeMathEngine } from '@/components/company/TubeMathEngine';
+import { PaymentReliabilityPanel } from '@/components/company/PaymentReliabilityPanel';
 import { 
   Building2, Phone, Mail, MapPin, ArrowLeft, Users, ShoppingCart, 
-  FileText, CreditCard, Package, StickyNote, Store, Truck, User
+  FileText, CreditCard, Package, StickyNote, Store, Truck, User, BarChart3, Star
 } from 'lucide-react';
+import { format } from 'date-fns';
+
+// Company type labels
+const typeLabels: Record<string, string> = {
+  store: 'Store',
+  wholesaler: 'Wholesaler',
+  direct_customer: 'Direct Customer',
+};
 
 // Company type badge colors
 const typeBadgeColors: Record<string, string> = {
@@ -54,7 +64,7 @@ export default function CompanyProfile() {
         .select('*')
         .eq('company_id', id)
         .order('is_primary', { ascending: false });
-      if (error) throw error;
+      if (error) return [];
       return data;
     },
     enabled: !!id,
@@ -69,7 +79,7 @@ export default function CompanyProfile() {
         .select('*')
         .eq('company_id', id)
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) return [];
       return data;
     },
     enabled: !!id,
@@ -84,7 +94,7 @@ export default function CompanyProfile() {
         .select('*')
         .eq('company_id', id)
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) return [];
       return data;
     },
     enabled: !!id,
@@ -99,7 +109,7 @@ export default function CompanyProfile() {
         .select('*')
         .eq('company_id', id)
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) return [];
       return data;
     },
     enabled: !!id,
@@ -127,9 +137,9 @@ export default function CompanyProfile() {
   }
 
   // Calculate totals
-  const totalRevenue = invoices?.reduce((sum, inv) => sum + (inv.total || 0), 0) || 0;
+  const totalRevenue = invoices?.reduce((sum, inv) => sum + (Number(inv.total) || Number(inv.total_amount) || 0), 0) || 0;
   const paidInvoices = invoices?.filter(inv => inv.payment_status === 'paid').length || 0;
-  const unpaidInvoices = invoices?.filter(inv => inv.payment_status === 'unpaid' || inv.payment_status === 'partial').length || 0;
+  const unpaidInvoices = invoices?.filter(inv => inv.payment_status === 'unpaid' || inv.payment_status === 'partial' || inv.payment_status === 'overdue').length || 0;
 
   return (
     <Layout>
@@ -145,14 +155,14 @@ export default function CompanyProfile() {
                 <h1 className="text-2xl font-bold">{company.name}</h1>
                 <Badge className={typeBadgeColors[company.type] || 'bg-muted'}>
                   {typeIcons[company.type]}
-                  <span className="ml-1 capitalize">{company.type?.replace('_', ' ')}</span>
+                  <span className="ml-1">{typeLabels[company.type] || company.type}</span>
                 </Badge>
               </div>
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                {company.default_city && (
+                {(company.default_city || company.neighborhood) && (
                   <span className="flex items-center gap-1">
                     <MapPin className="h-4 w-4" />
-                    {company.default_city}, {company.default_state}
+                    {company.neighborhood || company.default_city}, {company.boro || company.default_state}
                   </span>
                 )}
                 {company.default_phone && (
@@ -171,9 +181,20 @@ export default function CompanyProfile() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className={company.health_score >= 80 ? 'border-green-500 text-green-500' : company.health_score >= 50 ? 'border-yellow-500 text-yellow-500' : 'border-red-500 text-red-500'}>
-              Health: {company.health_score}%
-            </Badge>
+            {company.payment_reliability_tier && (
+              <Badge variant="outline" className={
+                company.payment_reliability_tier === 'elite' ? 'border-yellow-500 text-yellow-500' :
+                company.payment_reliability_tier === 'solid' ? 'border-green-500 text-green-500' :
+                company.payment_reliability_tier === 'concerning' ? 'border-orange-500 text-orange-500' :
+                company.payment_reliability_tier === 'danger' ? 'border-red-500 text-red-500' :
+                'border-gray-500 text-gray-500'
+              }>
+                <Star className="h-3 w-3 mr-1" />
+                {company.payment_reliability_tier.toUpperCase()} ({company.payment_reliability_score || 50})
+              </Badge>
+            )}
+            {company.sells_flowers && <Badge variant="secondary">🌸 Flowers</Badge>}
+            {company.rpa_status === 'rpa' && <Badge variant="secondary">📻 RPA</Badge>}
           </div>
         </div>
 
@@ -193,13 +214,13 @@ export default function CompanyProfile() {
           </Card>
           <Card className="p-4">
             <p className="text-sm text-muted-foreground">Unpaid Invoices</p>
-            <p className="text-2xl font-bold text-yellow-500">{unpaidInvoices}</p>
+            <p className="text-2xl font-bold text-red-500">{unpaidInvoices}</p>
           </Card>
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid grid-cols-6 w-full max-w-3xl">
+          <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -220,6 +241,14 @@ export default function CompanyProfile() {
               <CreditCard className="h-4 w-4" />
               <span className="hidden sm:inline">Payments</span>
             </TabsTrigger>
+            <TabsTrigger value="tubes" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              <span className="hidden sm:inline">Tubes</span>
+            </TabsTrigger>
+            <TabsTrigger value="reliability" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Reliability</span>
+            </TabsTrigger>
             <TabsTrigger value="notes" className="flex items-center gap-2">
               <StickyNote className="h-4 w-4" />
               <span className="hidden sm:inline">Notes</span>
@@ -234,11 +263,11 @@ export default function CompanyProfile() {
                 <div className="space-y-3">
                   <div>
                     <p className="text-sm text-muted-foreground">Type</p>
-                    <p className="capitalize">{company.type?.replace('_', ' ')}</p>
+                    <p>{typeLabels[company.type] || company.type}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Location</p>
-                    <p>{company.default_city}, {company.default_state}</p>
+                    <p>{company.neighborhood || company.default_city}, {company.boro || company.default_state}</p>
                   </div>
                   {company.default_billing_address && (
                     <div>
@@ -308,15 +337,15 @@ export default function CompanyProfile() {
                   orders.map((order) => (
                     <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <p className="font-medium">{order.brand || 'Order'}</p>
+                        <p className="font-medium capitalize">{(order.brand || 'Order').replace('_', ' ')}</p>
                         <p className="text-sm text-muted-foreground">
-                          {order.boxes} boxes • {order.tubes_per_box || 50} tubes/box
+                          {order.boxes} boxes • {order.tubes_total || (order.boxes || 0) * 100} tubes
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">${(order.total || order.subtotal || 0).toLocaleString()}</p>
-                        <Badge variant={order.status === 'paid' ? 'default' : 'secondary'}>
-                          {order.status}
+                        <p className="font-medium">${(Number(order.total) || Number(order.subtotal) || 0).toLocaleString()}</p>
+                        <Badge variant={order.status === 'delivered' ? 'default' : 'secondary'}>
+                          {order.status || 'pending'}
                         </Badge>
                       </div>
                     </div>
@@ -337,12 +366,15 @@ export default function CompanyProfile() {
                   invoices.map((invoice) => (
                     <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <p className="font-medium">{invoice.invoice_number}</p>
-                        <p className="text-sm text-muted-foreground">{invoice.brand}</p>
+                        <p className="font-medium">{invoice.invoice_number || 'Invoice'}</p>
+                        <p className="text-sm text-muted-foreground capitalize">{(invoice.brand || '').replace('_', ' ')}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">${(invoice.total || 0).toLocaleString()}</p>
-                        <Badge variant={invoice.payment_status === 'paid' ? 'default' : invoice.payment_status === 'partial' ? 'secondary' : 'destructive'}>
+                        <p className="font-medium">${(Number(invoice.total) || Number(invoice.total_amount) || 0).toLocaleString()}</p>
+                        <Badge variant={
+                          invoice.payment_status === 'paid' ? 'default' : 
+                          invoice.payment_status === 'partial' ? 'secondary' : 'destructive'
+                        }>
                           {invoice.payment_status}
                         </Badge>
                       </div>
@@ -364,8 +396,8 @@ export default function CompanyProfile() {
                   payments.map((payment) => (
                     <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <p className="font-medium">${(payment.paid_amount || 0).toLocaleString()}</p>
-                        <p className="text-sm text-muted-foreground capitalize">{payment.payment_method}</p>
+                        <p className="font-medium">${(Number(payment.paid_amount) || 0).toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground capitalize">{payment.payment_method || 'Unknown'}</p>
                       </div>
                       <Badge variant={payment.payment_status === 'paid' ? 'default' : 'secondary'}>
                         {payment.payment_status}
@@ -377,6 +409,16 @@ export default function CompanyProfile() {
                 )}
               </div>
             </Card>
+          </TabsContent>
+
+          {/* Tube Analytics Tab */}
+          <TabsContent value="tubes" className="space-y-4">
+            <TubeMathEngine companyId={id!} />
+          </TabsContent>
+
+          {/* Payment Reliability Tab */}
+          <TabsContent value="reliability" className="space-y-4">
+            <PaymentReliabilityPanel companyId={id!} />
           </TabsContent>
 
           {/* Notes Tab */}
