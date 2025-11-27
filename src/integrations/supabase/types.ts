@@ -8882,6 +8882,47 @@ export type Database = {
           },
         ]
       }
+      store_contacts: {
+        Row: {
+          can_receive_sms: boolean | null
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          name: string
+          phone: string | null
+          role: string | null
+          store_id: string
+        }
+        Insert: {
+          can_receive_sms?: boolean | null
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          name: string
+          phone?: string | null
+          role?: string | null
+          store_id: string
+        }
+        Update: {
+          can_receive_sms?: boolean | null
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          name?: string
+          phone?: string | null
+          role?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_credit_transactions: {
         Row: {
           amount: number
@@ -9135,6 +9176,60 @@ export type Database = {
           },
           {
             foreignKeyName: "store_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_payments: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          due_date: string | null
+          id: string
+          issue_date: string | null
+          order_id: string | null
+          owed_amount: number | null
+          paid_amount: number | null
+          payment_status: string | null
+          store_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          issue_date?: string | null
+          order_id?: string | null
+          owed_amount?: number | null
+          paid_amount?: number | null
+          payment_status?: string | null
+          store_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          issue_date?: string | null
+          order_id?: string | null
+          owed_amount?: number | null
+          paid_amount?: number | null
+          payment_status?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_payments_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
@@ -9430,6 +9525,41 @@ export type Database = {
           },
         ]
       }
+      store_tube_inventory: {
+        Row: {
+          brand: string
+          created_by: string | null
+          current_tubes_left: number | null
+          id: string
+          last_updated: string | null
+          store_id: string
+        }
+        Insert: {
+          brand: string
+          created_by?: string | null
+          current_tubes_left?: number | null
+          id?: string
+          last_updated?: string | null
+          store_id: string
+        }
+        Update: {
+          brand?: string
+          created_by?: string | null
+          current_tubes_left?: number | null
+          id?: string
+          last_updated?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_tube_inventory_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_wallet: {
         Row: {
           balance: number
@@ -9482,7 +9612,10 @@ export type Database = {
           address_street: string | null
           address_zip: string | null
           alt_phone: string | null
+          boro: string | null
+          connected_group_id: string | null
           created_at: string | null
+          created_by: string | null
           email: string | null
           health_score: number | null
           id: string
@@ -9494,21 +9627,30 @@ export type Database = {
           lng: number | null
           market_code: string | null
           name: string
+          neighborhood: string | null
           notes: string | null
+          notes_old: string | null
+          notes_overview: string | null
           open_date: string | null
           performance_score: number | null
           performance_tier: string | null
           phone: string | null
           primary_contact_name: string | null
+          prime_time_energy: boolean | null
           region_id: string | null
           responsiveness: Database["public"]["Enums"]["responsiveness"] | null
+          rpa_status: string | null
+          sells_flowers: boolean | null
+          special_information: string | null
           status: Database["public"]["Enums"]["store_status"] | null
           sticker_status: Database["public"]["Enums"]["sticker_status"] | null
+          store_code: string | null
           tags: string[] | null
           type: Database["public"]["Enums"]["store_type"]
           updated_at: string | null
           visit_frequency_target: number | null
           visit_risk_level: string | null
+          wholesaler_name: string | null
         }
         Insert: {
           address_city?: string | null
@@ -9517,7 +9659,10 @@ export type Database = {
           address_street?: string | null
           address_zip?: string | null
           alt_phone?: string | null
+          boro?: string | null
+          connected_group_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           email?: string | null
           health_score?: number | null
           id?: string
@@ -9529,21 +9674,30 @@ export type Database = {
           lng?: number | null
           market_code?: string | null
           name: string
+          neighborhood?: string | null
           notes?: string | null
+          notes_old?: string | null
+          notes_overview?: string | null
           open_date?: string | null
           performance_score?: number | null
           performance_tier?: string | null
           phone?: string | null
           primary_contact_name?: string | null
+          prime_time_energy?: boolean | null
           region_id?: string | null
           responsiveness?: Database["public"]["Enums"]["responsiveness"] | null
+          rpa_status?: string | null
+          sells_flowers?: boolean | null
+          special_information?: string | null
           status?: Database["public"]["Enums"]["store_status"] | null
           sticker_status?: Database["public"]["Enums"]["sticker_status"] | null
+          store_code?: string | null
           tags?: string[] | null
           type: Database["public"]["Enums"]["store_type"]
           updated_at?: string | null
           visit_frequency_target?: number | null
           visit_risk_level?: string | null
+          wholesaler_name?: string | null
         }
         Update: {
           address_city?: string | null
@@ -9552,7 +9706,10 @@ export type Database = {
           address_street?: string | null
           address_zip?: string | null
           alt_phone?: string | null
+          boro?: string | null
+          connected_group_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           email?: string | null
           health_score?: number | null
           id?: string
@@ -9564,21 +9721,30 @@ export type Database = {
           lng?: number | null
           market_code?: string | null
           name?: string
+          neighborhood?: string | null
           notes?: string | null
+          notes_old?: string | null
+          notes_overview?: string | null
           open_date?: string | null
           performance_score?: number | null
           performance_tier?: string | null
           phone?: string | null
           primary_contact_name?: string | null
+          prime_time_energy?: boolean | null
           region_id?: string | null
           responsiveness?: Database["public"]["Enums"]["responsiveness"] | null
+          rpa_status?: string | null
+          sells_flowers?: boolean | null
+          special_information?: string | null
           status?: Database["public"]["Enums"]["store_status"] | null
           sticker_status?: Database["public"]["Enums"]["sticker_status"] | null
+          store_code?: string | null
           tags?: string[] | null
           type?: Database["public"]["Enums"]["store_type"]
           updated_at?: string | null
           visit_frequency_target?: number | null
           visit_risk_level?: string | null
+          wholesaler_name?: string | null
         }
         Relationships: [
           {
@@ -10923,53 +11089,71 @@ export type Database = {
       }
       wholesale_orders: {
         Row: {
+          boxes: number | null
+          brand: string | null
           commission_amount: number
           commission_percentage: number
           created_at: string
+          created_by: string | null
           delivered_at: string | null
           delivery_method: string
           driver_id: string | null
           id: string
           notes: string | null
+          order_date: string | null
           route_id: string | null
           status: string
           store_id: string
           subtotal: number
           total: number
+          tubes_per_box: number | null
+          tubes_total: number | null
           updated_at: string
           wholesaler_id: string
         }
         Insert: {
+          boxes?: number | null
+          brand?: string | null
           commission_amount?: number
           commission_percentage?: number
           created_at?: string
+          created_by?: string | null
           delivered_at?: string | null
           delivery_method?: string
           driver_id?: string | null
           id?: string
           notes?: string | null
+          order_date?: string | null
           route_id?: string | null
           status?: string
           store_id: string
           subtotal?: number
           total?: number
+          tubes_per_box?: number | null
+          tubes_total?: number | null
           updated_at?: string
           wholesaler_id: string
         }
         Update: {
+          boxes?: number | null
+          brand?: string | null
           commission_amount?: number
           commission_percentage?: number
           created_at?: string
+          created_by?: string | null
           delivered_at?: string | null
           delivery_method?: string
           driver_id?: string | null
           id?: string
           notes?: string | null
+          order_date?: string | null
           route_id?: string | null
           status?: string
           store_id?: string
           subtotal?: number
           total?: number
+          tubes_per_box?: number | null
+          tubes_total?: number | null
           updated_at?: string
           wholesaler_id?: string
         }

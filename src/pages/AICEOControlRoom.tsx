@@ -106,7 +106,7 @@ export default function AICEOControlRoom() {
               <div className="flex gap-2 items-center text-sm">
                 <span className="font-medium">Revenue Today:</span>
                 <span className="text-2xl font-bold text-primary">
-                  ${metrics?.totalRevenue?.toLocaleString() || '0'}
+                  ${metrics?.metrics?.totalRevenue?.toLocaleString() || '0'}
                 </span>
               </div>
             </div>
@@ -151,7 +151,7 @@ export default function AICEOControlRoom() {
                 </Button>
               ))}
             </div>
-            <BrandPerformance brand={selectedBrand} metrics={metrics?.brandMetrics} />
+            <BrandPerformance brand={selectedBrand} metrics={metrics} />
           </CollapsibleContent>
         </Collapsible>
 

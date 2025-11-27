@@ -7,9 +7,11 @@ import {
   Store,
   MessageSquare,
   Zap,
-  UserPlus,
   DollarSign,
-  Activity
+  Activity,
+  Flower2,
+  Filter,
+  Box
 } from 'lucide-react';
 
 interface DailyOverviewProps {
@@ -34,18 +36,54 @@ export function DailyOverview({ metrics, loading }: DailyOverviewProps) {
       color: 'text-blue-500',
     },
     {
+      title: 'Tubes Sold',
+      value: metrics?.metrics?.tubesSold,
+      format: 'number',
+      icon: Box,
+      color: 'text-purple-500',
+    },
+    {
+      title: 'Tubes In Stock',
+      value: metrics?.metrics?.totalTubesInStock,
+      format: 'number',
+      icon: Box,
+      color: 'text-cyan-500',
+    },
+    {
       title: 'Deliveries Completed',
       value: metrics?.metrics?.deliveriesCompleted,
       format: 'number',
       icon: Truck,
-      color: 'text-purple-500',
+      color: 'text-indigo-500',
     },
     {
-      title: 'New Stores',
-      value: metrics?.metrics?.newStores,
+      title: 'Active Stores',
+      value: metrics?.metrics?.activeStores,
       format: 'number',
       icon: Store,
       color: 'text-orange-500',
+      subtitle: `${metrics?.metrics?.totalStores || 0} total`,
+    },
+    {
+      title: 'RPA Stores',
+      value: metrics?.metrics?.rpaStores,
+      format: 'number',
+      icon: Filter,
+      color: 'text-blue-500',
+    },
+    {
+      title: 'Flower Stores',
+      value: metrics?.metrics?.flowerStores,
+      format: 'number',
+      icon: Flower2,
+      color: 'text-pink-500',
+    },
+    {
+      title: 'Prime Time Energy',
+      value: metrics?.metrics?.primeTimeStores,
+      format: 'number',
+      icon: Zap,
+      color: 'text-yellow-500',
     },
     {
       title: 'Communication Volume',
@@ -59,22 +97,15 @@ export function DailyOverview({ metrics, loading }: DailyOverviewProps) {
       title: 'Automations Triggered',
       value: metrics?.metrics?.automationsTriggered,
       format: 'number',
-      icon: Zap,
+      icon: Activity,
       color: 'text-yellow-500',
     },
     {
-      title: 'New Signups',
-      value: metrics?.metrics?.newSignups,
+      title: 'New Stores',
+      value: metrics?.metrics?.newStores,
       format: 'number',
-      icon: UserPlus,
-      color: 'text-pink-500',
-    },
-    {
-      title: 'Driver/Biker Activity',
-      value: metrics?.metrics?.driverActivity,
-      format: 'number',
-      icon: Activity,
-      color: 'text-indigo-500',
+      icon: TrendingUp,
+      color: 'text-green-500',
     },
   ];
 
@@ -84,9 +115,11 @@ export function DailyOverview({ metrics, loading }: DailyOverviewProps) {
     return value.toLocaleString();
   };
 
+  // Payment stats
+  const paymentStats = metrics?.paymentStats;
+
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Daily Empire Overview</h2>
+    <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {metricCards.map((card, index) => (
           <Card key={index} className="p-6">
@@ -111,6 +144,73 @@ export function DailyOverview({ metrics, loading }: DailyOverviewProps) {
           </Card>
         ))}
       </div>
+
+      {/* Payment Summary */}
+      {paymentStats && (
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-green-500" />
+            Payment Summary
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Owed</p>
+              <p className="text-2xl font-bold text-red-500">${paymentStats.totalOwed?.toLocaleString() || 0}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Paid</p>
+              <p className="text-2xl font-bold text-green-500">${paymentStats.totalPaid?.toLocaleString() || 0}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Unpaid Orders</p>
+              <p className="text-2xl font-bold text-orange-500">{paymentStats.unpaidCount || 0}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Paid Orders</p>
+              <p className="text-2xl font-bold text-green-500">{paymentStats.paidCount || 0}</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Orders by Brand */}
+      {metrics?.ordersByBrand && Object.keys(metrics.ordersByBrand).length > 0 && (
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Package className="h-5 w-5 text-blue-500" />
+            Orders by Brand
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Object.entries(metrics.ordersByBrand).map(([brand, data]: [string, any]) => (
+              <div key={brand} className="p-4 border rounded-lg">
+                <p className="text-sm font-medium capitalize">{brand.replace(/_/g, ' ')}</p>
+                <p className="text-xl font-bold">{data.count} orders</p>
+                <p className="text-sm text-muted-foreground">${data.revenue?.toLocaleString() || 0}</p>
+                <p className="text-xs text-muted-foreground">{data.tubes} tubes</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Inventory by Brand */}
+      {metrics?.inventoryByBrand && Object.keys(metrics.inventoryByBrand).length > 0 && (
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Box className="h-5 w-5 text-purple-500" />
+            Inventory by Brand
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Object.entries(metrics.inventoryByBrand).map(([brand, tubes]: [string, any]) => (
+              <div key={brand} className="p-4 border rounded-lg">
+                <p className="text-sm font-medium capitalize">{brand.replace(/_/g, ' ')}</p>
+                <p className="text-xl font-bold">{tubes?.toLocaleString() || 0}</p>
+                <p className="text-xs text-muted-foreground">tubes in stock</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
