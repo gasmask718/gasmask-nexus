@@ -104,24 +104,22 @@ const Layout = ({ children }: LayoutProps) => {
           </h2>
         </div>
 
-        {/* CEO Command Center - Premium Top-Level Link */}
-        {userRole === 'ceo' && (
-          <div className="mb-6 px-1">
-            <NavLink
-              to="/system-operations/ai-ceo-control-room"
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm font-semibold",
-                "bg-gradient-to-r from-[#FFD700] via-[#B8860B] to-[#000000]",
-                "text-white shadow-lg hover:shadow-xl hover:shadow-yellow-500/60",
-                "hover:scale-[1.02] active:scale-[0.98]",
-                "border border-yellow-600/30"
-              )}
-            >
-              <Crown className="h-5 w-5" />
-              <span className="tracking-wide">CEO Command Center</span>
-            </NavLink>
-          </div>
-        )}
+        {/* CEO Command Center - Premium Top-Level Link (ALWAYS VISIBLE FOR DEBUG) */}
+        <div className="mb-6 px-1">
+          <NavLink
+            to="/system-operations/ai-ceo-control-room"
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm font-semibold",
+              "bg-gradient-to-r from-[#FFD700] via-[#B8860B] to-[#000000]",
+              "text-white shadow-lg hover:shadow-xl hover:shadow-yellow-500/60",
+              "hover:scale-[1.02] active:scale-[0.98]",
+              "border border-yellow-600/30"
+            )}
+          >
+            <Crown className="h-5 w-5" />
+            <span className="tracking-wide">CEO Command Center</span>
+          </NavLink>
+        </div>
 
         {/* Render Each Floor */}
         {dynastyFloors.map((floor) => {
