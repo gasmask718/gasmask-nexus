@@ -157,6 +157,9 @@ import DynastyAutomations from "./pages/DynastyAutomations";
 import AICEOControlRoom from "./pages/AICEOControlRoom";
 import Companies from "./pages/Companies";
 import CompanyProfile from "./pages/CompanyProfile";
+import UnpaidAccounts from "./pages/UnpaidAccounts";
+import DriverDebtCollection from "./pages/DriverDebtCollection";
+import BrandDashboard from "./pages/BrandDashboard";
 import HoldingsOverview from "./pages/HoldingsOverview";
 import HoldingsAssets from "./pages/HoldingsAssets";
 import HoldingsAirbnb from "./pages/HoldingsAirbnb";
@@ -259,6 +262,9 @@ const App = () => (
               <Route path="/gasmask/stores/:id" element={<ProtectedRoute><Layout><StoreDetail /></Layout></ProtectedRoute>} />
               <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
               <Route path="/companies/:id" element={<ProtectedRoute><CompanyProfile /></ProtectedRoute>} />
+              <Route path="/unpaid-accounts" element={<ProtectedRoute><UnpaidAccounts /></ProtectedRoute>} />
+              <Route path="/driver-debt-collection" element={<ProtectedRoute><DriverDebtCollection /></ProtectedRoute>} />
+              <Route path="/brand/:brand" element={<ProtectedRoute><BrandDashboard /></ProtectedRoute>} />
               <Route path="/gasmask/stores/:id/order" element={<ProtectedRoute><Layout><StoreOrder /></Layout></ProtectedRoute>} />
               <Route path="/gasmask/store-performance" element={<ProtectedRoute><Layout><StorePerformance /></Layout></ProtectedRoute>} />
               <Route path="/gasmask/products" element={<ProtectedRoute><Layout><Products /></Layout></ProtectedRoute>} />
