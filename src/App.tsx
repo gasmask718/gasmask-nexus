@@ -155,6 +155,8 @@ import OfferAnalyzer from "./pages/OfferAnalyzer";
 import AssignmentFeeOptimizer from "./pages/AssignmentFeeOptimizer";
 import DynastyAutomations from "./pages/DynastyAutomations";
 import AICEOControlRoom from "./pages/AICEOControlRoom";
+import Companies from "./pages/Companies";
+import CompanyProfile from "./pages/CompanyProfile";
 import HoldingsOverview from "./pages/HoldingsOverview";
 import HoldingsAssets from "./pages/HoldingsAssets";
 import HoldingsAirbnb from "./pages/HoldingsAirbnb";
@@ -255,6 +257,8 @@ const App = () => (
               <Route path="/gasmask/routes/:id" element={<ProtectedRoute><Layout><RouteDetail /></Layout></ProtectedRoute>} />
               <Route path="/gasmask/stores" element={<ProtectedRoute><Layout><Stores /></Layout></ProtectedRoute>} />
               <Route path="/gasmask/stores/:id" element={<ProtectedRoute><Layout><StoreDetail /></Layout></ProtectedRoute>} />
+              <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
+              <Route path="/companies/:id" element={<ProtectedRoute><CompanyProfile /></ProtectedRoute>} />
               <Route path="/gasmask/stores/:id/order" element={<ProtectedRoute><Layout><StoreOrder /></Layout></ProtectedRoute>} />
               <Route path="/gasmask/store-performance" element={<ProtectedRoute><Layout><StorePerformance /></Layout></ProtectedRoute>} />
               <Route path="/gasmask/products" element={<ProtectedRoute><Layout><Products /></Layout></ProtectedRoute>} />

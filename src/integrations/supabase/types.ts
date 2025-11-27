@@ -2629,6 +2629,119 @@ export type Database = {
           },
         ]
       }
+      companies: {
+        Row: {
+          brand_focus: string[] | null
+          created_at: string | null
+          created_by: string | null
+          default_billing_address: string | null
+          default_city: string | null
+          default_email: string | null
+          default_phone: string | null
+          default_state: string | null
+          health_score: number | null
+          id: string
+          name: string
+          notes: string | null
+          tags: string[] | null
+          total_orders: number | null
+          total_revenue: number | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          brand_focus?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          default_billing_address?: string | null
+          default_city?: string | null
+          default_email?: string | null
+          default_phone?: string | null
+          default_state?: string | null
+          health_score?: number | null
+          id?: string
+          name: string
+          notes?: string | null
+          tags?: string[] | null
+          total_orders?: number | null
+          total_revenue?: number | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          brand_focus?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          default_billing_address?: string | null
+          default_city?: string | null
+          default_email?: string | null
+          default_phone?: string | null
+          default_state?: string | null
+          health_score?: number | null
+          id?: string
+          name?: string
+          notes?: string | null
+          tags?: string[] | null
+          total_orders?: number | null
+          total_revenue?: number | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      company_contacts: {
+        Row: {
+          can_receive_email: boolean | null
+          can_receive_sms: boolean | null
+          company_id: string
+          created_at: string | null
+          email: string | null
+          id: string
+          is_primary: boolean | null
+          name: string
+          notes: string | null
+          phone: string | null
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          can_receive_email?: boolean | null
+          can_receive_sms?: boolean | null
+          company_id: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_primary?: boolean | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          can_receive_email?: boolean | null
+          can_receive_sms?: boolean | null
+          company_id?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_primary?: boolean | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_backup_settings: {
         Row: {
           auto_export_enabled: boolean | null
@@ -3704,6 +3817,50 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      direct_customers: {
+        Row: {
+          auth_user_id: string | null
+          channel: string | null
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          notes: string | null
+          updated_at: string | null
+          vip_status: boolean | null
+        }
+        Insert: {
+          auth_user_id?: string | null
+          channel?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          updated_at?: string | null
+          vip_status?: boolean | null
+        }
+        Update: {
+          auth_user_id?: string | null
+          channel?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          updated_at?: string | null
+          vip_status?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "direct_customers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -6337,47 +6494,78 @@ export type Database = {
       invoices: {
         Row: {
           amount_paid: number
+          brand: string | null
+          company_id: string | null
           created_at: string
+          created_by: string | null
+          customer_type: string | null
           due_date: string
           id: string
           invoice_number: string
+          invoice_pdf_url: string | null
           notes: string | null
           order_id: string | null
           paid_at: string | null
           payment_method: string | null
           payment_status: string
-          store_id: string
-          total_amount: number
+          store_id: string | null
+          subtotal: number | null
+          tax: number | null
+          total: number | null
+          total_amount: number | null
         }
         Insert: {
           amount_paid?: number
+          brand?: string | null
+          company_id?: string | null
           created_at?: string
+          created_by?: string | null
+          customer_type?: string | null
           due_date: string
           id?: string
           invoice_number: string
+          invoice_pdf_url?: string | null
           notes?: string | null
           order_id?: string | null
           paid_at?: string | null
           payment_method?: string | null
           payment_status?: string
-          store_id: string
-          total_amount: number
+          store_id?: string | null
+          subtotal?: number | null
+          tax?: number | null
+          total?: number | null
+          total_amount?: number | null
         }
         Update: {
           amount_paid?: number
+          brand?: string | null
+          company_id?: string | null
           created_at?: string
+          created_by?: string | null
+          customer_type?: string | null
           due_date?: string
           id?: string
           invoice_number?: string
+          invoice_pdf_url?: string | null
           notes?: string | null
           order_id?: string | null
           paid_at?: string | null
           payment_method?: string | null
           payment_status?: string
-          store_id?: string
-          total_amount?: number
+          store_id?: string | null
+          subtotal?: number | null
+          tax?: number | null
+          total?: number | null
+          total_amount?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoices_order_id_fkey"
             columns: ["order_id"]
@@ -9185,6 +9373,7 @@ export type Database = {
       }
       store_payments: {
         Row: {
+          company_id: string | null
           created_at: string | null
           created_by: string | null
           due_date: string | null
@@ -9193,10 +9382,12 @@ export type Database = {
           order_id: string | null
           owed_amount: number | null
           paid_amount: number | null
+          payment_method: string | null
           payment_status: string | null
           store_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string | null
           created_by?: string | null
           due_date?: string | null
@@ -9205,10 +9396,12 @@ export type Database = {
           order_id?: string | null
           owed_amount?: number | null
           paid_amount?: number | null
+          payment_method?: string | null
           payment_status?: string | null
           store_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string | null
           created_by?: string | null
           due_date?: string | null
@@ -9217,10 +9410,18 @@ export type Database = {
           order_id?: string | null
           owed_amount?: number | null
           paid_amount?: number | null
+          payment_method?: string | null
           payment_status?: string | null
           store_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "store_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "store_payments_order_id_fkey"
             columns: ["order_id"]
@@ -9613,6 +9814,7 @@ export type Database = {
           address_zip: string | null
           alt_phone: string | null
           boro: string | null
+          company_id: string | null
           connected_group_id: string | null
           created_at: string | null
           created_by: string | null
@@ -9660,6 +9862,7 @@ export type Database = {
           address_zip?: string | null
           alt_phone?: string | null
           boro?: string | null
+          company_id?: string | null
           connected_group_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -9707,6 +9910,7 @@ export type Database = {
           address_zip?: string | null
           alt_phone?: string | null
           boro?: string | null
+          company_id?: string | null
           connected_group_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -9747,6 +9951,13 @@ export type Database = {
           wholesaler_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "stores_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "stores_last_visit_driver_id_fkey"
             columns: ["last_visit_driver_id"]
@@ -11093,8 +11304,10 @@ export type Database = {
           brand: string | null
           commission_amount: number
           commission_percentage: number
+          company_id: string | null
           created_at: string
           created_by: string | null
+          customer_type: string | null
           delivered_at: string | null
           delivery_method: string
           driver_id: string | null
@@ -11116,8 +11329,10 @@ export type Database = {
           brand?: string | null
           commission_amount?: number
           commission_percentage?: number
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
+          customer_type?: string | null
           delivered_at?: string | null
           delivery_method?: string
           driver_id?: string | null
@@ -11139,8 +11354,10 @@ export type Database = {
           brand?: string | null
           commission_amount?: number
           commission_percentage?: number
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
+          customer_type?: string | null
           delivered_at?: string | null
           delivery_method?: string
           driver_id?: string | null
@@ -11158,6 +11375,13 @@ export type Database = {
           wholesaler_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "wholesale_orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wholesale_orders_driver_id_fkey"
             columns: ["driver_id"]
@@ -11250,6 +11474,62 @@ export type Database = {
             columns: ["wholesaler_id"]
             isOneToOne: false
             referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesaler_accounts: {
+        Row: {
+          commission_rate: number | null
+          company_id: string | null
+          contact_name: string | null
+          created_at: string | null
+          created_by: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          payment_terms: string | null
+          phone: string | null
+          region: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          commission_rate?: number | null
+          company_id?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          region?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          commission_rate?: number | null
+          company_id?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          region?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
