@@ -146,6 +146,8 @@ export const dynastyFloors: Floor[] = [
         },
         style: 'Colorful NYC nostalgic bodega aesthetic',
         routes: [
+          // Command Penthouse - Top Level
+          { path: '/grabba/command-penthouse', icon: Crown, label: 'Grabba Command Penthouse', description: 'Executive command center for all Grabba brands' },
           // Multi-brand Hub
           { path: '/grabba', icon: ShoppingBag, label: 'Dashboard', description: 'Multi-brand operations hub' },
           { path: '/grabba/cluster', icon: Building, label: 'Grabba Cluster Ops', description: 'Unified operations for all 4 Grabba brands' },

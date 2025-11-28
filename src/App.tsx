@@ -196,6 +196,7 @@ import GrabbaDeliveries from "./pages/grabba/GrabbaDeliveries";
 import GrabbaAmbassadors from "./pages/grabba/GrabbaAmbassadors";
 import GrabbaWholesalePlatform from "./pages/grabba/GrabbaWholesalePlatform";
 import GrabbaFinance from "./pages/grabba/GrabbaFinance";
+import GrabbaCommandPenthouse from "./pages/grabba/GrabbaCommandPenthouse";
 
 const queryClient = new QueryClient();
 
@@ -2182,6 +2183,16 @@ const App = () => (
                   <ProtectedRoute>
                     <Layout>
                       <BrandPlaceholder />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/grabba/command-penthouse"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <GrabbaCommandPenthouse />
                     </Layout>
                   </ProtectedRoute>
                 }
