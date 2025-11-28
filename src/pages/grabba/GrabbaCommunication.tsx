@@ -20,13 +20,33 @@ export default function GrabbaCommunication() {
   const [channelFilter, setChannelFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch communication logs
+  // Fetch communication logs with related data
   const { data: logs, isLoading } = useQuery({
     queryKey: ["grabba-communication-logs", brandFilter, channelFilter, companyFilter],
     queryFn: async () => {
       let query = supabase
         .from("communication_logs")
-        .select(`*`)
+        .select(`
+          *,
+          companies (
+            id, name, type, neighborhood, boro, default_phone, default_email
+          ),
+          stores (
+            id, name, neighborhood, boro
+          ),
+          crm_contacts (
+            id, first_name, last_name, phone, email
+          ),
+          grabba_drivers (
+            id, name, phone
+          ),
+          wholesalers (
+            id, name, contact_name, phone
+          ),
+          ambassadors (
+            id, user_id, tracking_code
+          )
+        `)
         .order("created_at", { ascending: false })
         .limit(100);
 
@@ -48,9 +68,24 @@ export default function GrabbaCommunication() {
     },
   });
 
+  const getContactName = (log: any) => {
+    if (log.companies?.name) return log.companies.name;
+    if (log.stores?.name) return log.stores.name;
+    if (log.crm_contacts) {
+      const c = log.crm_contacts;
+      return [c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unknown Contact';
+    }
+    if (log.grabba_drivers?.name) return log.grabba_drivers.name;
+    if (log.wholesalers?.name) return log.wholesalers.name;
+    if (log.ambassadors?.tracking_code) return `Ambassador: ${log.ambassadors.tracking_code}`;
+    return log.contact_id || 'Unknown';
+  };
+
   const filteredLogs = logs?.filter(log => {
+    const contactName = getContactName(log);
     const matchesSearch = !searchQuery || 
-      log.summary?.toLowerCase().includes(searchQuery.toLowerCase());
+      log.summary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contactName?.toLowerCase().includes(searchQuery.toLowerCase());
     
     return matchesSearch;
   });
@@ -161,10 +196,10 @@ export default function GrabbaCommunication() {
                           <div className={`p-2 rounded-lg ${log.direction === 'inbound' ? 'bg-blue-500/20' : 'bg-green-500/20'}`}>
                             {getChannelIcon(log.channel)}
                           </div>
-                          <div>
+                        <div>
                             <div className="flex items-center gap-2">
                             <span className="font-medium text-foreground">
-                                {log.contact_id || 'Unknown Contact'}
+                                {getContactName(log)}
                               </span>
                               <Badge variant="outline" className="text-xs">
                                 {log.direction}
