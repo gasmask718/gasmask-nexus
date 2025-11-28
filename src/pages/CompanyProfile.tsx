@@ -60,6 +60,12 @@ export default function CompanyProfile() {
         .eq('id', id)
         .single();
       if (error) throw error;
+
+      // Debug: check for invalid rows
+      if (!data.id || !data.name) {
+        console.warn("INVALID COMPANY ROW:", data);
+      }
+
       // Apply safe defaults for missing fields
       return {
         ...data,

@@ -30,23 +30,43 @@ export default function Companies() {
   const { data: companies, isLoading } = useQuery({
     queryKey: ['companies', typeFilter],
     queryFn: async () => {
-      let query = supabase
-        .from('companies')
-        .select('*')
-        .order('name', { ascending: true });
-      
-      // Only filter by type if user explicitly selects one
-      if (typeFilter && typeFilter !== 'all') {
-        query = query.eq('type', typeFilter);
+      try {
+        let query = supabase
+          .from('companies')
+          .select('*')
+          .order('name', { ascending: true });
+
+        if (typeFilter && typeFilter !== 'all') {
+          query = query.eq('type', typeFilter);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        console.log("COMPANY LIST RAW:", data);
+        return data || [];
+      } catch (e) {
+        console.error("COMPANY FETCH ERROR:", e);
+        return [];
       }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
     },
   });
 
-  const filteredCompanies = companies?.filter(company =>
+  // Normalize all companies with safe defaults
+  const normalizedCompanies = companies?.map(c => ({
+    ...c,
+    name: c.name || 'Unnamed Company',
+    type: c.type || 'store',
+    neighborhood: c.neighborhood || null,
+    boro: c.boro || null,
+    default_city: c.default_city || null,
+    default_state: c.default_state || null,
+    health_score: c.health_score ?? 50,
+    payment_reliability_score: c.payment_reliability_score ?? 50,
+    payment_reliability_tier: c.payment_reliability_tier || 'middle',
+  }));
+
+  const filteredCompanies = normalizedCompanies?.filter(company =>
     company.name.toLowerCase().includes(search.toLowerCase()) ||
     company.default_city?.toLowerCase().includes(search.toLowerCase()) ||
     company.default_state?.toLowerCase().includes(search.toLowerCase())
