@@ -140,86 +140,115 @@ export default function CompanyProfile() {
     enabled: !!id,
   });
 
-  // Live Tube Inventory (Manual Counts)
-  const { data: liveTubeInventory } = useQuery({
-    queryKey: ['live-tube-inventory', id],
+  // UNIFIED INVENTORY QUERY: Fetches stores, live inventory, and calculates automated metrics
+  const { data: inventoryData } = useQuery({
+    queryKey: ['unified-inventory', id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // 1. Fetch all stores for this company
+      const { data: storesForCompany } = await supabase
+        .from('stores')
+        .select('id, name')
+        .eq('company_id', id!);
+
+      const storeIds = storesForCompany?.map(s => s.id) || [];
+
+      // If no stores found, return empty defaults
+      if (storeIds.length === 0) {
+        return {
+          totalTubes: 0,
+          totalBoxes: 0,
+          estimatedInventory: 0,
+          etaPrediction: 0,
+          liveBrandInventory: [],
+          storeCount: 0,
+        };
+      }
+
+      // 2. Fetch live inventory across all stores
+      const { data: liveTubeData } = await supabase
         .from('store_tube_inventory')
-        .select('id, brand, current_tubes_left, last_updated')
-        .eq('store_id', id!)
+        .select('*')
+        .in('store_id', storeIds)
         .order('last_updated', { ascending: false });
 
-      if (error || !data || data.length === 0) return [];
-
-      // Group by brand, keep only latest per brand
-      const brandMap = new Map<string, (typeof data)[number]>();
-      for (const row of data) {
-        if (!brandMap.has(row.brand)) {
-          brandMap.set(row.brand, row);
+      // 3. Consolidate live inventory by brand (use latest entry per brand)
+      const liveBrandMap = new Map<string, (typeof liveTubeData extends (infer U)[] | null ? U : never)>();
+      for (const row of liveTubeData || []) {
+        const key = row.brand;
+        if (!liveBrandMap.has(key)) {
+          liveBrandMap.set(key, row);
         }
       }
-      return Array.from(brandMap.values());
-    },
-    enabled: !!id,
-  });
+      const liveBrandInventory = Array.from(liveBrandMap.values());
 
-  // Tube Inventory Intelligence Header Stats
-  const { data: tubeHeaderStats } = useQuery({
-    queryKey: ['tube-header', id],
-    queryFn: async () => {
+      // 4. Fetch wholesale orders for all stores
       const { data: tubeOrders } = await supabase
         .from('wholesale_orders')
         .select('*')
-        .eq('company_id', id)
-        .in('brand', ['gasmask', 'hotmama', 'hotscolati', 'grabba_r_us'])
+        .in('store_id', storeIds)
         .order('created_at', { ascending: true });
 
+      // 5. If no orders, return with live inventory but empty metrics
       if (!tubeOrders || tubeOrders.length === 0) {
         return {
           totalTubes: 0,
           totalBoxes: 0,
           estimatedInventory: 0,
           etaPrediction: 0,
+          liveBrandInventory,
+          storeCount: storeIds.length,
         };
       }
 
+      // 6. Automated ETA & inventory calculation
       const totalTubes = tubeOrders.reduce(
         (sum, o) => sum + (o.tubes_total || (o.boxes || 0) * 100),
         0
       );
-      const totalBoxes = tubeOrders.reduce((sum, o) => sum + (o.boxes || 0), 0);
+
+      const totalBoxes = tubeOrders.reduce(
+        (sum, o) => sum + (o.boxes || 0),
+        0
+      );
 
       const firstOrder = new Date(tubeOrders[0].created_at);
       const lastOrder = new Date(tubeOrders[tubeOrders.length - 1].created_at);
+
       const weeksBetween = Math.max(
         1,
         Math.floor(
           (lastOrder.getTime() - firstOrder.getTime()) / (1000 * 60 * 60 * 24 * 7)
         )
       );
+
       const avgTubesPerWeek = Math.round(totalTubes / weeksBetween);
 
       const lastOrderTubes =
         tubeOrders[tubeOrders.length - 1].tubes_total ||
         (tubeOrders[tubeOrders.length - 1].boxes || 0) * 100;
-      const daysSinceLastOrder = Math.floor(
+
+      const daysSinceLast = Math.floor(
         (Date.now() - lastOrder.getTime()) / (1000 * 60 * 60 * 24)
       );
-      const estimatedConsumption = Math.round(
-        (avgTubesPerWeek / 7) * daysSinceLastOrder
-      );
+
+      const estimatedConsumption = Math.round((avgTubesPerWeek / 7) * daysSinceLast);
+
       const estimatedInventory = Math.max(0, lastOrderTubes - estimatedConsumption);
 
       const tubesPerDay = avgTubesPerWeek / 7;
-      const etaPrediction =
-        tubesPerDay > 0 ? Math.round(estimatedInventory / tubesPerDay) : 0;
 
+      const etaPrediction = tubesPerDay > 0
+        ? Math.round(estimatedInventory / tubesPerDay)
+        : 0;
+
+      // 7. Return final merged metrics
       return {
         totalTubes,
         totalBoxes,
         estimatedInventory,
         etaPrediction,
+        liveBrandInventory,
+        storeCount: storeIds.length,
       };
     },
     enabled: !!id,
@@ -387,7 +416,7 @@ export default function CompanyProfile() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {allBrands.map((brand) => {
               const config = liveBrandConfig[brand];
-              const inventoryRow = liveTubeInventory?.find(row => row.brand === brand);
+              const inventoryRow = inventoryData?.liveBrandInventory?.find(row => row.brand === brand);
               
               if (inventoryRow) {
                 const tubes = inventoryRow.current_tubes_left || 0;
@@ -455,25 +484,25 @@ export default function CompanyProfile() {
             <div className="p-4 rounded-lg bg-card/50 border border-border/50">
               <p className="text-xs text-muted-foreground">Estimated Inventory</p>
               <p className="text-xl font-bold text-foreground">
-                {tubeHeaderStats?.estimatedInventory?.toLocaleString() || 0} tubes
+                {inventoryData?.estimatedInventory?.toLocaleString() || 0} tubes
               </p>
             </div>
             <div className="p-4 rounded-lg bg-card/50 border border-border/50">
               <p className="text-xs text-muted-foreground">ETA Until Restock</p>
               <p className="text-xl font-bold text-foreground">
-                {tubeHeaderStats?.etaPrediction || 0} days
+                {inventoryData?.etaPrediction || 0} days
               </p>
             </div>
             <div className="p-4 rounded-lg bg-card/50 border border-border/50">
               <p className="text-xs text-muted-foreground">Total Boxes Sold</p>
               <p className="text-xl font-bold text-foreground">
-                {tubeHeaderStats?.totalBoxes?.toLocaleString() || 0}
+                {inventoryData?.totalBoxes?.toLocaleString() || 0}
               </p>
             </div>
             <div className="p-4 rounded-lg bg-card/50 border border-border/50">
               <p className="text-xs text-muted-foreground">Total Tubes Sold</p>
               <p className="text-xl font-bold text-foreground">
-                {tubeHeaderStats?.totalTubes?.toLocaleString() || 0}
+                {inventoryData?.totalTubes?.toLocaleString() || 0}
               </p>
             </div>
           </div>
