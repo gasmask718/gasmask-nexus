@@ -13,6 +13,7 @@ export interface BrandRoute {
   label: string;
   icon: LucideIcon;
   roles?: string[];
+  description?: string;
 }
 
 export interface Brand {
@@ -53,48 +54,54 @@ export const dynastyFloors: Floor[] = [
         },
         style: 'Dark industrial, premium street-luxury',
         routes: [
-          { path: '/', icon: Activity, label: 'Dashboard' },
-          { path: '/gasmask/analytics', icon: BarChart3, label: 'AI Analytics' },
-          { path: '/gasmask/routes', icon: Truck, label: 'Biker Route Manager' },
-          { path: '/gasmask/routes/optimizer', icon: Navigation, label: 'Route Optimizer' },
-          { path: '/gasmask/routes/ops-center', icon: Activity, label: 'Route Ops Center' },
-          { path: '/gasmask/stores', icon: Store, label: 'Store Performance' },
-          { path: '/gasmask/store-performance', icon: TrendingUp, label: 'Store Rankings' },
-          { path: '/gasmask/products', icon: Package, label: 'Products' },
-          { path: '/gasmask/inventory', icon: Box, label: 'Inventory Dashboard' },
-          { path: '/gasmask/map', icon: Map, label: 'Retail Heatmap' },
-          { path: '/gasmask/live-map', icon: MapPin, label: 'Live Map' },
-          { path: '/gasmask/ambassadors', icon: Users, label: 'Ambassador Manager' },
-          { path: '/gasmask/ambassador-payouts', icon: DollarSign, label: 'Ambassador Payouts' },
-          { path: '/gasmask/ambassador-regions', icon: MapPin, label: 'Ambassador Regions' },
-          { path: '/gasmask/wholesale', icon: ShoppingBag, label: 'Wholesale Accounts' },
-          { path: '/gasmask/wholesale/marketplace', icon: Building, label: 'Wholesale Marketplace' },
-          { path: '/gasmask/wholesale/fulfillment', icon: Truck, label: 'Wholesale Fulfillment' },
-          { path: '/gasmask/driver', icon: Truck, label: 'Driver Portal' },
-          { path: '/gasmask/team', icon: Users, label: 'Team Management' },
-          { path: '/gasmask/training', icon: GraduationCap, label: 'Training' },
-          { path: '/gasmask/missions', icon: Target, label: 'Missions' },
-          { path: '/gasmask/leaderboard', icon: Award, label: 'Leaderboard' },
-          { path: '/gasmask/rewards', icon: Gift, label: 'Rewards' },
-          { path: '/gasmask/territories', icon: Map, label: 'Territories' },
-          { path: '/gasmask/expansion', icon: Rocket, label: 'Expansion' },
-          { path: '/gasmask/expansion/regions', icon: MapPin, label: 'Expansion Regions' },
-          { path: '/gasmask/expansion/heatmap', icon: Map, label: 'Expansion Heatmap' },
-          { path: '/gasmask/communications', icon: MessageSquare, label: 'Communication Center' },
-          { path: '/gasmask/templates', icon: FileText, label: 'Templates' },
-          { path: '/gasmask/reminders', icon: Bell, label: 'Reminders' },
-          { path: '/gasmask/sales', icon: TrendingUp, label: 'Sales Pipeline' },
-          { path: '/gasmask/sales/prospects', icon: Users, label: 'Sales Prospects' },
-          { path: '/gasmask/sales/report', icon: FileText, label: 'Sales Report' },
-          { path: '/gasmask/billing', icon: DollarSign, label: 'Billing' },
-          { path: '/gasmask/billing-center', icon: CreditCard, label: 'Billing Center' },
-          { path: '/gasmask/billing/invoices', icon: FileText, label: 'Invoices' },
-          { path: '/gasmask/payroll', icon: DollarSign, label: 'Payroll' },
-          { path: '/gasmask/biker-payouts', icon: DollarSign, label: 'Biker Payouts' },
-          { path: '/gasmask/delivery-capacity', icon: Truck, label: 'Delivery Capacity' },
-          { path: '/gasmask/subscriptions', icon: Package, label: 'Subscriptions' },
-          { path: '/gasmask/wallet', icon: Wallet, label: 'Wallet' },
-          { path: '/gasmask/settings', icon: Settings, label: 'Brand Settings' },
+          // FLOOR 1 - CRM & Companies
+          { path: '/gasmask/crm', icon: Users, label: 'CRM & Companies', description: 'Master record of all stores, wholesalers, buyers, and their order/payment history' },
+          { path: '/gasmask/companies', icon: Building, label: 'All Companies', description: 'Browse and manage all company profiles' },
+          // FLOOR 2 - Store Intelligence
+          { path: '/gasmask/stores', icon: Store, label: 'Store Intelligence', description: 'Store list, performance, and live inventory tracking' },
+          { path: '/gasmask/store-performance', icon: TrendingUp, label: 'Store Rankings', description: 'Performance rankings across all stores' },
+          { path: '/gasmask/map', icon: Map, label: 'Retail Heatmap', description: 'Geographic view of store performance' },
+          { path: '/gasmask/live-map', icon: MapPin, label: 'Live Map', description: 'Real-time driver and delivery tracking' },
+          // FLOOR 3 - Orders & Logistics
+          { path: '/gasmask/wholesale', icon: ShoppingBag, label: 'Orders & Logistics', description: 'View and manage all wholesale orders' },
+          { path: '/gasmask/wholesale/marketplace', icon: Building, label: 'Wholesale Marketplace', description: 'Browse wholesale catalog and pricing' },
+          { path: '/gasmask/wholesale/fulfillment', icon: Truck, label: 'Wholesale Fulfillment', description: 'Order fulfillment and dispatch' },
+          // FLOOR 4 - Invoices & Collections
+          { path: '/gasmask/billing', icon: DollarSign, label: 'Invoices & Collections', description: 'All invoices and payment tracking' },
+          { path: '/gasmask/billing-center', icon: CreditCard, label: 'Billing Center', description: 'Payment processing and billing management' },
+          { path: '/gasmask/billing/invoices', icon: FileText, label: 'All Invoices', description: 'Complete invoice history and status' },
+          { path: '/gasmask/unpaid-accounts', icon: DollarSign, label: 'Unpaid Accounts', description: 'Outstanding balances and collections' },
+          // FLOOR 5 - Inventory & Tube Analytics
+          { path: '/gasmask/inventory', icon: Box, label: 'Inventory Dashboard', description: 'Live inventory and automated tube tracking with ETA forecasting' },
+          { path: '/gasmask/products', icon: Package, label: 'Products', description: 'Product catalog and pricing' },
+          // FLOOR 6 - Drivers & Route Planner
+          { path: '/gasmask/routes', icon: Truck, label: 'Biker Routes', description: 'Route planner and dispatch hub for bikers/drivers' },
+          { path: '/gasmask/routes/optimizer', icon: Navigation, label: 'Route Optimizer', description: 'AI-powered route optimization' },
+          { path: '/gasmask/routes/ops-center', icon: Activity, label: 'Route Ops Center', description: 'Real-time operations dashboard' },
+          { path: '/gasmask/driver', icon: Truck, label: 'Driver Portal', description: 'Driver dashboard and task management' },
+          { path: '/gasmask/biker-payouts', icon: DollarSign, label: 'Biker Payouts', description: 'Driver pay and commission tracking' },
+          { path: '/gasmask/delivery-capacity', icon: Truck, label: 'Delivery Capacity', description: 'Capacity planning and scheduling' },
+          // FLOOR 7 - Ambassadors & Wholesalers
+          { path: '/gasmask/ambassadors', icon: Users, label: 'Ambassador Manager', description: 'Ambassador signup and management' },
+          { path: '/gasmask/ambassador-payouts', icon: DollarSign, label: 'Ambassador Payouts', description: 'Ambassador commission and payouts' },
+          { path: '/gasmask/ambassador-regions', icon: MapPin, label: 'Ambassador Regions', description: 'Regional ambassador assignments' },
+          // Additional Features
+          { path: '/gasmask/analytics', icon: BarChart3, label: 'AI Analytics', description: 'AI-powered insights and analytics' },
+          { path: '/gasmask/team', icon: Users, label: 'Team Management', description: 'Team roster and permissions' },
+          { path: '/gasmask/training', icon: GraduationCap, label: 'Training', description: 'Training materials and certifications' },
+          { path: '/gasmask/missions', icon: Target, label: 'Missions', description: 'Daily missions and goals' },
+          { path: '/gasmask/leaderboard', icon: Award, label: 'Leaderboard', description: 'Performance rankings' },
+          { path: '/gasmask/rewards', icon: Gift, label: 'Rewards', description: 'Rewards and incentives' },
+          { path: '/gasmask/territories', icon: Map, label: 'Territories', description: 'Territory management' },
+          { path: '/gasmask/expansion', icon: Rocket, label: 'Expansion', description: 'Growth and expansion planning' },
+          { path: '/gasmask/communications', icon: MessageSquare, label: 'Communications', description: 'Communication center and logs' },
+          { path: '/gasmask/templates', icon: FileText, label: 'Templates', description: 'Message and document templates' },
+          { path: '/gasmask/reminders', icon: Bell, label: 'Reminders', description: 'Follow-up reminders' },
+          { path: '/gasmask/sales', icon: TrendingUp, label: 'Sales Pipeline', description: 'Sales tracking and pipeline' },
+          { path: '/gasmask/payroll', icon: DollarSign, label: 'Payroll', description: 'Payroll management' },
+          { path: '/gasmask/subscriptions', icon: Package, label: 'Subscriptions', description: 'Subscription management' },
+          { path: '/gasmask/wallet', icon: Wallet, label: 'Wallet', description: 'Financial wallet' },
+          { path: '/gasmask/settings', icon: Settings, label: 'Brand Settings', description: 'Brand configuration' },
         ]
       },
       {
@@ -108,15 +115,24 @@ export const dynastyFloors: Floor[] = [
         },
         style: 'Feminine luxury metallic',
         routes: [
-          { path: '/hotmama', icon: Flame, label: 'Dashboard' },
-          { path: '/hotmama/products', icon: Package, label: 'Products' },
-          { path: '/hotmama/inventory', icon: Package, label: 'Inventory' },
-          { path: '/hotmama/stores', icon: Building, label: 'Stores' },
-          { path: '/hotmama/ambassadors', icon: Users, label: 'Ambassadors' },
-          { path: '/hotmama/wholesale', icon: ShoppingBag, label: 'Wholesale Portal' },
-          { path: '/hotmama/routes', icon: Truck, label: 'Biker Routes' },
-          { path: '/hotmama/analytics', icon: TrendingUp, label: 'Retail Analytics' },
-          { path: '/hotmama/settings', icon: Settings, label: 'Brand Settings' },
+          // FLOOR 1 - CRM & Companies
+          { path: '/hotmama/crm', icon: Users, label: 'CRM & Companies', description: 'Master record of all stores, wholesalers, and buyers' },
+          // FLOOR 2 - Store Intelligence
+          { path: '/hotmama/stores', icon: Building, label: 'Store Intelligence', description: 'Store list and performance tracking' },
+          // FLOOR 3 - Orders & Logistics
+          { path: '/hotmama/wholesale', icon: ShoppingBag, label: 'Orders & Logistics', description: 'View and manage all wholesale orders' },
+          // FLOOR 4 - Invoices & Collections
+          { path: '/hotmama/billing', icon: DollarSign, label: 'Invoices & Collections', description: 'All invoices and payment tracking' },
+          // FLOOR 5 - Inventory & Tube Analytics
+          { path: '/hotmama/inventory', icon: Package, label: 'Inventory Dashboard', description: 'Live inventory and tube tracking with ETA forecasting' },
+          { path: '/hotmama/products', icon: Package, label: 'Products', description: 'Product catalog' },
+          // FLOOR 6 - Drivers & Route Planner
+          { path: '/hotmama/routes', icon: Truck, label: 'Biker Routes', description: 'Route planner and dispatch hub' },
+          // FLOOR 7 - Ambassadors
+          { path: '/hotmama/ambassadors', icon: Users, label: 'Ambassadors', description: 'Ambassador management' },
+          // Analytics & Settings
+          { path: '/hotmama/analytics', icon: TrendingUp, label: 'Analytics', description: 'Retail analytics and insights' },
+          { path: '/hotmama/settings', icon: Settings, label: 'Brand Settings', description: 'Brand configuration' },
         ]
       },
       {
@@ -130,20 +146,31 @@ export const dynastyFloors: Floor[] = [
         },
         style: 'Colorful NYC nostalgic bodega aesthetic',
         routes: [
-          { path: '/grabba', icon: ShoppingBag, label: 'Dashboard' },
-          { path: '/grabba/cluster', icon: Building, label: 'Grabba Cluster Operations' },
-          { path: '/grabba/unified-upload', icon: Upload, label: 'Unified Upload Center' },
-          { path: '/grabba/delivery-runs', icon: Truck, label: 'Multi-Brand Delivery' },
-          { path: '/grabba/ai-insights', icon: Brain, label: 'AI Insights' },
-          { path: '/grabba/store-master', icon: Store, label: 'Store Master Profiles' },
-          { path: '/grabba/products', icon: Package, label: 'Products' },
-          { path: '/grabba/inventory', icon: Package, label: 'Inventory' },
-          { path: '/grabba/stores', icon: Building, label: 'Stores' },
-          { path: '/grabba/ambassadors', icon: Users, label: 'Ambassadors' },
-          { path: '/grabba/wholesale', icon: ShoppingBag, label: 'Wholesale Portal' },
-          { path: '/grabba/routes', icon: Truck, label: 'Biker Routes' },
-          { path: '/grabba/analytics', icon: TrendingUp, label: 'Retail Analytics' },
-          { path: '/grabba/settings', icon: Settings, label: 'Brand Settings' },
+          // Multi-brand Hub
+          { path: '/grabba', icon: ShoppingBag, label: 'Dashboard', description: 'Multi-brand operations hub' },
+          { path: '/grabba/cluster', icon: Building, label: 'Grabba Cluster Ops', description: 'Unified operations for all 4 Grabba brands' },
+          { path: '/grabba/unified-upload', icon: Upload, label: 'Unified Upload', description: 'Batch upload for all brands' },
+          { path: '/grabba/delivery-runs', icon: Truck, label: 'Multi-Brand Delivery', description: 'Coordinate deliveries across brands' },
+          { path: '/grabba/ai-insights', icon: Brain, label: 'AI Insights', description: 'Cross-brand AI analytics' },
+          { path: '/grabba/store-master', icon: Store, label: 'Store Master Profiles', description: 'Unified store profiles across brands' },
+          // FLOOR 1 - CRM & Companies
+          { path: '/grabba/crm', icon: Users, label: 'CRM & Companies', description: 'Master record of all stores and wholesalers' },
+          // FLOOR 2 - Store Intelligence
+          { path: '/grabba/stores', icon: Building, label: 'Store Intelligence', description: 'Store list and performance' },
+          // FLOOR 3 - Orders & Logistics
+          { path: '/grabba/wholesale', icon: ShoppingBag, label: 'Orders & Logistics', description: 'Wholesale order management' },
+          // FLOOR 4 - Invoices & Collections
+          { path: '/grabba/billing', icon: DollarSign, label: 'Invoices & Collections', description: 'Invoice and payment tracking' },
+          // FLOOR 5 - Inventory
+          { path: '/grabba/inventory', icon: Package, label: 'Inventory Dashboard', description: 'Live inventory and ETA forecasting' },
+          { path: '/grabba/products', icon: Package, label: 'Products', description: 'Product catalog' },
+          // FLOOR 6 - Drivers
+          { path: '/grabba/routes', icon: Truck, label: 'Biker Routes', description: 'Route planning and dispatch' },
+          // FLOOR 7 - Ambassadors
+          { path: '/grabba/ambassadors', icon: Users, label: 'Ambassadors', description: 'Ambassador network' },
+          // Analytics & Settings
+          { path: '/grabba/analytics', icon: TrendingUp, label: 'Analytics', description: 'Cross-brand analytics' },
+          { path: '/grabba/settings', icon: Settings, label: 'Brand Settings', description: 'Brand configuration' },
         ]
       },
       {
@@ -156,15 +183,24 @@ export const dynastyFloors: Floor[] = [
         },
         style: 'Chocolate brown & fire orange',
         routes: [
-          { path: '/scalati', icon: Flame, label: 'Dashboard' },
-          { path: '/scalati/products', icon: Package, label: 'Products' },
-          { path: '/scalati/inventory', icon: Package, label: 'Inventory' },
-          { path: '/scalati/stores', icon: Building, label: 'Stores' },
-          { path: '/scalati/ambassadors', icon: Users, label: 'Ambassadors' },
-          { path: '/scalati/wholesale', icon: ShoppingBag, label: 'Wholesale Portal' },
-          { path: '/scalati/routes', icon: Truck, label: 'Biker Routes' },
-          { path: '/scalati/analytics', icon: TrendingUp, label: 'Retail Analytics' },
-          { path: '/scalati/settings', icon: Settings, label: 'Brand Settings' },
+          // FLOOR 1 - CRM & Companies
+          { path: '/scalati/crm', icon: Users, label: 'CRM & Companies', description: 'Master record of all stores and wholesalers' },
+          // FLOOR 2 - Store Intelligence
+          { path: '/scalati/stores', icon: Building, label: 'Store Intelligence', description: 'Store list and performance' },
+          // FLOOR 3 - Orders & Logistics
+          { path: '/scalati/wholesale', icon: ShoppingBag, label: 'Orders & Logistics', description: 'Wholesale order management' },
+          // FLOOR 4 - Invoices & Collections
+          { path: '/scalati/billing', icon: DollarSign, label: 'Invoices & Collections', description: 'Invoice and payment tracking' },
+          // FLOOR 5 - Inventory
+          { path: '/scalati/inventory', icon: Package, label: 'Inventory Dashboard', description: 'Live inventory and ETA forecasting' },
+          { path: '/scalati/products', icon: Package, label: 'Products', description: 'Product catalog' },
+          // FLOOR 6 - Drivers
+          { path: '/scalati/routes', icon: Truck, label: 'Biker Routes', description: 'Route planning and dispatch' },
+          // FLOOR 7 - Ambassadors
+          { path: '/scalati/ambassadors', icon: Users, label: 'Ambassadors', description: 'Ambassador network' },
+          // Analytics & Settings
+          { path: '/scalati/analytics', icon: TrendingUp, label: 'Analytics', description: 'Retail analytics' },
+          { path: '/scalati/settings', icon: Settings, label: 'Brand Settings', description: 'Brand configuration' },
         ]
       }
     ]
