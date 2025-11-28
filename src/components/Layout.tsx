@@ -9,6 +9,7 @@ import { departmentThemes } from '@/config/departmentThemes';
 import '@/theme/departmentStyles.css';
 import { useLocation } from 'react-router-dom';
 import { dynastyFloors } from '@/config/dynastyBrands';
+import { GRABBA_PENTHOUSE, GRABBA_FLOORS, getGrabbaNavItems } from '@/config/grabbaSkyscraper';
 import { 
   LogOut,
   Menu,
@@ -16,7 +17,8 @@ import {
   Package,
   ChevronDown,
   ChevronRight,
-  Crown
+  Crown,
+  Building
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -33,7 +35,7 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
-  const [expandedFloors, setExpandedFloors] = useState<string[]>(['systems-engine']);
+  const [expandedFloors, setExpandedFloors] = useState<string[]>(['grabba-companies', 'systems-engine']);
   
   const currentPath = location.pathname;
 
@@ -95,6 +97,9 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   const FloorNavigation = () => {
+    const isGrabbaExpanded = expandedFloors.includes('grabba-companies');
+    const grabbaNavItems = getGrabbaNavItems();
+
     return (
       <div className="space-y-2">
         {/* Dynasty OS Title */}
@@ -104,8 +109,8 @@ const Layout = ({ children }: LayoutProps) => {
           </h2>
         </div>
 
-        {/* CEO Command Center - Premium Top-Level Link (ALWAYS VISIBLE FOR DEBUG) */}
-        <div className="mb-6 px-1">
+        {/* CEO Command Center - Premium Top-Level Link */}
+        <div className="mb-4 px-1">
           <NavLink
             to="/system-operations/ai-ceo-control-room"
             className={cn(
@@ -121,8 +126,69 @@ const Layout = ({ children }: LayoutProps) => {
           </NavLink>
         </div>
 
-        {/* Render Each Floor */}
-        {dynastyFloors.map((floor) => {
+        {/* ═══════════════════════════════════════════════════════════════════════════ */}
+        {/* 🏢 GRABBA COMPANIES — Unified Skyscraper Navigation                        */}
+        {/* ═══════════════════════════════════════════════════════════════════════════ */}
+        <div className="space-y-1">
+          <button
+            onClick={() => toggleFloor('grabba-companies')}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-foreground hover:bg-muted/50 rounded-md transition-colors bg-gradient-to-r from-red-500/10 to-yellow-500/10 border border-red-500/20"
+          >
+            {isGrabbaExpanded ? (
+              <ChevronDown className="h-4 w-4 text-red-500" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-red-500" />
+            )}
+            <Building className="h-4 w-4 text-red-500" />
+            <span className="flex-1 text-left text-red-600">GRABBA COMPANIES</span>
+          </button>
+
+          {isGrabbaExpanded && (
+            <div className="ml-2 space-y-0.5 border-l-2 border-red-500/30 pl-2">
+              {/* 👑 Penthouse - Always First */}
+              <NavLink
+                to={GRABBA_PENTHOUSE.path}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-all",
+                  currentPath === GRABBA_PENTHOUSE.path
+                    ? "bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-600 font-semibold border-l-2 border-yellow-500"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                <Crown className="h-4 w-4 text-yellow-500" />
+                <span className="flex-1">{GRABBA_PENTHOUSE.emoji} {GRABBA_PENTHOUSE.name}</span>
+              </NavLink>
+
+              {/* 🏢 8 Floors */}
+              {GRABBA_FLOORS.map((floor, index) => {
+                const isActive = currentPath === floor.path || currentPath.startsWith(floor.path + '/');
+                const FloorIcon = floor.icon;
+
+                return (
+                  <NavLink
+                    key={floor.id}
+                    to={floor.path}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors",
+                      isActive
+                        ? "bg-red-500/10 text-red-600 font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    )}
+                    title={floor.description}
+                  >
+                    <FloorIcon className={cn("h-4 w-4 flex-shrink-0", isActive && "text-red-500")} />
+                    <span className="flex-1">F{index + 1}: {floor.name}</span>
+                  </NavLink>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ═══════════════════════════════════════════════════════════════════════════ */}
+        {/* OTHER DYNASTY FLOORS (Service, Finance, etc.)                              */}
+        {/* ═══════════════════════════════════════════════════════════════════════════ */}
+        {dynastyFloors.filter(floor => floor.id !== 'product-companies').map((floor) => {
           const isExpanded = expandedFloors.includes(floor.id);
           return (
             <div key={floor.id} className="space-y-1">
