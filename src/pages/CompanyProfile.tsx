@@ -67,6 +67,8 @@ export default function CompanyProfile() {
         default_state: data.default_state || null,
         neighborhood: data.neighborhood || null,
         boro: data.boro || null,
+        sells_flowers: data.sells_flowers || false,
+        rpa_status: data.rpa_status || 'none',
         health_score: data.health_score ?? 50,
         payment_reliability_score: data.payment_reliability_score ?? 50,
         payment_reliability_tier: data.payment_reliability_tier || 'middle',
