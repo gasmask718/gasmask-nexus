@@ -6,44 +6,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { 
   Crown, Store, Users, Truck, Package, DollarSign, MessageSquare, 
-  MapPin, Factory, Globe, Award, Search
+  MapPin, Factory, Globe, Award, Search, AlertTriangle, Zap, Activity
 } from "lucide-react";
 import { useState } from "react";
 import { GRABBA_BRAND_CONFIG, formatTubesAsBoxes, GRABBA_BRANDS } from "@/config/grabbaBrands";
 import { format } from "date-fns";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
+import { useGrabbaPenthouseStats } from "@/hooks/useGrabbaData";
 
 const GRABBA_BRAND_FILTER = ['gasmask', 'hotmama', 'hotscolati', 'grabba_r_us'];
 
-// Hero Section with KPIs
+// ═══════════════════════════════════════════════════════════════════════════════
+// EMPIRE SNAPSHOT (uses centralized useGrabbaPenthouseStats)
+// ═══════════════════════════════════════════════════════════════════════════════
 const EmpireSnapshot = () => {
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ['grabba-penthouse-overview'],
-    queryFn: async () => {
-      const [storesRes, wholesalersRes, ambassadorsRes, driversRes, ordersRes, paymentsRes] = await Promise.all([
-        supabase.from('stores').select('id', { count: 'exact', head: true }),
-        supabase.from('wholesalers').select('id', { count: 'exact', head: true }),
-        supabase.from('ambassadors').select('id', { count: 'exact', head: true }),
-        supabase.from('grabba_drivers').select('id', { count: 'exact', head: true }),
-        supabase.from('wholesale_orders').select('quantity'),
-        supabase.from('store_payments').select('owed_amount, paid_amount, payment_status')
-      ]);
-      
-      const totalTubes = (ordersRes.data as any[] || []).reduce((sum, o) => sum + (o.quantity || 0), 0);
-      const unpaid = (paymentsRes.data || []).filter(p => p.payment_status !== 'paid')
-        .reduce((sum, p) => sum + ((p.owed_amount || 0) - (p.paid_amount || 0)), 0);
-      
-      return {
-        activeStores: storesRes.count || 0,
-        activeWholesalers: wholesalersRes.count || 0,
-        ambassadors: ambassadorsRes.count || 0,
-        drivers: driversRes.count || 0,
-        totalTubesSold: totalTubes,
-        outstandingBalance: unpaid
-      };
-    }
-  });
+  const { data: stats, isLoading } = useGrabbaPenthouseStats();
 
   if (isLoading) {
     return (
@@ -64,12 +42,12 @@ const EmpireSnapshot = () => {
   }
 
   const kpis = [
-    { label: 'Active Stores', value: stats?.activeStores || 0, icon: Store, color: 'text-red-500' },
-    { label: 'Wholesalers', value: stats?.activeWholesalers || 0, icon: Globe, color: 'text-purple-500' },
-    { label: 'Ambassadors', value: stats?.ambassadors || 0, icon: Award, color: 'text-amber-500' },
-    { label: 'Drivers', value: stats?.drivers || 0, icon: Truck, color: 'text-green-500' },
-    { label: 'Tubes Sold', value: stats?.totalTubesSold?.toLocaleString() || '0', icon: Package, color: 'text-blue-500' },
-    { label: 'Outstanding', value: `$${(stats?.outstandingBalance || 0).toLocaleString()}`, icon: DollarSign, color: 'text-orange-500' },
+    { label: 'Active Stores', value: stats?.totalStores || 0, icon: Store, color: 'text-red-500' },
+    { label: 'Wholesalers', value: stats?.totalWholesalers || 0, icon: Globe, color: 'text-purple-500' },
+    { label: 'Ambassadors', value: stats?.totalAmbassadors || 0, icon: Award, color: 'text-amber-500' },
+    { label: 'Drivers', value: stats?.totalDrivers || 0, icon: Truck, color: 'text-green-500' },
+    { label: 'Tubes Sold', value: stats?.totalTubes?.toLocaleString() || '0', icon: Package, color: 'text-blue-500' },
+    { label: 'Outstanding', value: `$${(stats?.unpaidBalance || 0).toLocaleString()}`, icon: DollarSign, color: 'text-orange-500' },
   ];
 
   return (
@@ -97,6 +75,289 @@ const EmpireSnapshot = () => {
             ))}
           </div>
         </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BRAND BREAKDOWN PANEL
+// ═══════════════════════════════════════════════════════════════════════════════
+const BrandBreakdownPanel = () => {
+  const { data: stats, isLoading } = useGrabbaPenthouseStats();
+
+  if (isLoading) {
+    return (
+      <Card className="bg-gradient-to-br from-purple-500/5 to-pink-500/5 border-purple-500/20">
+        <CardHeader>
+          <CardTitle>Brand Breakdown</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const brandStats = (stats?.brandStats || {}) as Record<string, number>;
+  const totalTubes = stats?.totalTubes || 1;
+
+  return (
+    <Card className="bg-gradient-to-br from-purple-500/5 to-pink-500/5 border-purple-500/20">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Package className="h-5 w-5 text-purple-500" />
+          Brand Breakdown
+        </CardTitle>
+        <CardDescription>Tube sales by brand</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {GRABBA_BRAND_FILTER.map(brand => {
+          const config = GRABBA_BRAND_CONFIG[brand as keyof typeof GRABBA_BRAND_CONFIG];
+          const tubes = brandStats[brand] || 0;
+          const percentage = totalTubes > 0 ? Math.round((tubes / totalTubes) * 100) : 0;
+          
+          return (
+            <div key={brand} className={`p-3 rounded-lg bg-gradient-to-r ${config?.gradient || ''} border`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span>{config?.icon}</span>
+                  <Badge className={config?.pill}>{config?.label}</Badge>
+                </div>
+                <span className="text-sm font-bold">{percentage}%</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-lg font-bold">{tubes.toLocaleString()}</span>
+                <span className="text-xs text-muted-foreground">tubes</span>
+                <span className="text-xs text-muted-foreground ml-auto">{Math.floor(tubes / 100)} boxes</span>
+              </div>
+              <div className="w-full h-2 bg-background/50 rounded-full mt-2 overflow-hidden">
+                <div 
+                  className="h-full bg-current opacity-50 rounded-full transition-all"
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LIVE DELIVERY ACTIVITY
+// ═══════════════════════════════════════════════════════════════════════════════
+const LiveDeliveryActivity = () => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['grabba-live-deliveries'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const [routesRes, driversRes, stopsRes] = await Promise.all([
+        supabase.from('driver_route_stops')
+          .select('id, completed, completed_at, task_type, brand, route_id')
+          .gte('created_at', today)
+          .order('created_at', { ascending: false })
+          .limit(50),
+        supabase.from('grabba_drivers').select('id, name, active'),
+        supabase.from('driver_route_stops')
+          .select('completed')
+          .gte('created_at', today)
+      ]);
+      
+      const stops = (stopsRes.data || []) as { completed: boolean }[];
+      const completed = stops.filter(s => s.completed === true).length;
+      const pending = stops.filter(s => s.completed === false).length;
+      
+      const drivers = (driversRes.data || []) as { id: string; name: string; active: boolean }[];
+      const activeDrivers = drivers.filter(d => d.active === true).length;
+      
+      const recentDeliveries = ((routesRes.data || []) as any[]).slice(0, 8);
+      
+      return {
+        todayStops: stops.length,
+        completed,
+        pending,
+        inProgress: 0,
+        activeDrivers,
+        totalDrivers: drivers.length,
+        recentDeliveries
+      };
+    },
+    refetchInterval: 30000
+  });
+
+  if (isLoading) {
+    return (
+      <Card className="bg-gradient-to-br from-green-500/5 to-emerald-500/5 border-green-500/20">
+        <CardHeader>
+          <CardTitle>Live Delivery Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-40 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-gradient-to-br from-green-500/5 to-emerald-500/5 border-green-500/20">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Activity className="h-5 w-5 text-green-500 animate-pulse" />
+          Live Delivery Activity
+        </CardTitle>
+        <CardDescription>Today's delivery operations</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <div className="text-center p-3 rounded bg-green-500/10 border border-green-500/20">
+            <p className="text-xl font-bold text-green-600">{data?.completed || 0}</p>
+            <p className="text-xs text-muted-foreground">Delivered</p>
+          </div>
+          <div className="text-center p-3 rounded bg-blue-500/10 border border-blue-500/20">
+            <p className="text-xl font-bold text-blue-600">{data?.inProgress || 0}</p>
+            <p className="text-xs text-muted-foreground">In Progress</p>
+          </div>
+          <div className="text-center p-3 rounded bg-amber-500/10 border border-amber-500/20">
+            <p className="text-xl font-bold text-amber-600">{data?.pending || 0}</p>
+            <p className="text-xs text-muted-foreground">Pending</p>
+          </div>
+          <div className="text-center p-3 rounded bg-purple-500/10 border border-purple-500/20">
+            <p className="text-xl font-bold text-purple-600">{data?.activeDrivers || 0}/{data?.totalDrivers || 0}</p>
+            <p className="text-xs text-muted-foreground">Active Drivers</p>
+          </div>
+        </div>
+        
+        {data?.recentDeliveries && data.recentDeliveries.length > 0 ? (
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {data.recentDeliveries.map((del: any) => (
+              <div key={del.id} className="flex items-center justify-between p-2 rounded bg-card border border-border/50 text-sm">
+                <div className="flex items-center gap-2">
+                  <Truck className="h-3 w-3 text-muted-foreground" />
+                  <span className="capitalize">{del.task_type || 'Delivery'}</span>
+                  {del.brand && (
+                    <Badge variant="outline" className="text-xs">{del.brand}</Badge>
+                  )}
+                </div>
+                <Badge variant={del.completed ? 'default' : 'secondary'}>
+                  {del.completed ? 'Done' : 'Pending'}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-4">No deliveries scheduled today</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AI ALERTS SUMMARY
+// ═══════════════════════════════════════════════════════════════════════════════
+const AIAlertsSummary = () => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['grabba-ai-alerts'],
+    queryFn: async () => {
+      const [recommendationsRes, queueRes] = await Promise.all([
+        supabase.from('ai_recommendations')
+          .select('*')
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(10),
+        supabase.from('ai_communication_queue')
+          .select('*')
+          .eq('status', 'pending')
+          .order('urgency', { ascending: false })
+          .limit(10)
+      ]);
+      
+      const recommendations = recommendationsRes.data || [];
+      const queue = queueRes.data || [];
+      
+      const criticalCount = recommendations.filter((r: any) => r.severity === 'critical').length;
+      const warningCount = recommendations.filter((r: any) => r.severity === 'warning').length;
+      const infoCount = recommendations.filter((r: any) => r.severity === 'info').length;
+      
+      return {
+        total: recommendations.length + queue.length,
+        critical: criticalCount,
+        warnings: warningCount,
+        info: infoCount,
+        pendingActions: queue.length,
+        alerts: [...recommendations, ...queue].slice(0, 6)
+      };
+    }
+  });
+
+  if (isLoading) {
+    return (
+      <Card className="bg-gradient-to-br from-red-500/5 to-orange-500/5 border-red-500/20">
+        <CardHeader>
+          <CardTitle>AI Alerts</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-40 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-gradient-to-br from-red-500/5 to-orange-500/5 border-red-500/20">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Zap className="h-5 w-5 text-red-500" />
+          AI Alerts Summary
+        </CardTitle>
+        <CardDescription>System intelligence & recommendations</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          <div className="text-center p-2 rounded bg-red-500/10 border border-red-500/20">
+            <p className="text-lg font-bold text-red-600">{data?.critical || 0}</p>
+            <p className="text-xs text-muted-foreground">Critical</p>
+          </div>
+          <div className="text-center p-2 rounded bg-amber-500/10 border border-amber-500/20">
+            <p className="text-lg font-bold text-amber-600">{data?.warnings || 0}</p>
+            <p className="text-xs text-muted-foreground">Warnings</p>
+          </div>
+          <div className="text-center p-2 rounded bg-blue-500/10 border border-blue-500/20">
+            <p className="text-lg font-bold text-blue-600">{data?.info || 0}</p>
+            <p className="text-xs text-muted-foreground">Info</p>
+          </div>
+          <div className="text-center p-2 rounded bg-purple-500/10 border border-purple-500/20">
+            <p className="text-lg font-bold text-purple-600">{data?.pendingActions || 0}</p>
+            <p className="text-xs text-muted-foreground">Actions</p>
+          </div>
+        </div>
+        
+        {data?.alerts && data.alerts.length > 0 ? (
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {data.alerts.map((alert: any) => (
+              <div key={alert.id} className="flex items-start gap-2 p-2 rounded bg-card border border-border/50 text-sm">
+                <AlertTriangle className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
+                  alert.severity === 'critical' ? 'text-red-500' :
+                  alert.severity === 'warning' ? 'text-amber-500' : 'text-blue-500'
+                }`} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{alert.title || alert.reason}</p>
+                  <p className="text-xs text-muted-foreground truncate">{alert.description || alert.suggested_action}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-sm text-green-600 font-medium">✓ All systems operational</p>
+            <p className="text-xs text-muted-foreground">No pending alerts</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -877,29 +1138,38 @@ const GrabbaCommandPenthouse = () => {
         />
       </div>
 
-      {/* Row 0: Hero */}
+      {/* Row 0: Hero KPIs */}
       <EmpireSnapshot />
       
-      {/* Row 1: Tube Intelligence */}
+      {/* Row 1: Brand Breakdown + AI Alerts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <BrandBreakdownPanel />
+        <AIAlertsSummary />
+      </div>
+      
+      {/* Row 2: Tube Intelligence */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TubeIntelligenceMatrix />
         <LiveTubeInventory />
       </div>
       
-      {/* Row 2: Neighborhoods & Money */}
+      {/* Row 3: Live Delivery + Neighborhoods */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <LiveDeliveryActivity />
         <NeighborhoodPerformance />
-        <UnpaidBalanceBoard />
       </div>
       
-      {/* Row 3: Production, Ambassadors, Wholesale */}
+      {/* Row 4: Unpaid Balances */}
+      <UnpaidBalanceBoard />
+      
+      {/* Row 5: Production, Ambassadors, Wholesale */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <ProductionOverview />
         <AmbassadorPerformance />
         <WholesaleMarketplacePulse />
       </div>
       
-      {/* Row 4: Communication Intelligence */}
+      {/* Row 6: Communication Intelligence */}
       <CommunicationIntelligence />
     </div>
   );
