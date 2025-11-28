@@ -140,6 +140,30 @@ export default function CompanyProfile() {
     enabled: !!id,
   });
 
+  // Live Tube Inventory (Manual Counts)
+  const { data: liveTubeInventory } = useQuery({
+    queryKey: ['live-tube-inventory', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('store_tube_inventory')
+        .select('id, brand, current_tubes_left, last_updated')
+        .eq('store_id', id)
+        .order('last_updated', { ascending: false });
+
+      if (error || !data) return [];
+
+      // Group by brand, keep only latest per brand
+      const brandMap = new Map<string, typeof data[0]>();
+      for (const row of data) {
+        if (!brandMap.has(row.brand)) {
+          brandMap.set(row.brand, row);
+        }
+      }
+      return Array.from(brandMap.values());
+    },
+    enabled: !!id,
+  });
+
   // Tube Inventory Intelligence Header Stats
   const { data: tubeHeaderStats } = useQuery({
     queryKey: ['tube-header', id],
@@ -200,6 +224,55 @@ export default function CompanyProfile() {
     },
     enabled: !!id,
   });
+
+  // Helper: Convert tubes to fractional box format
+  const formatTubesAsBoxes = (tubes: number) => {
+    const fullBoxes = Math.floor(tubes / 100);
+    const remainder = tubes % 100;
+    
+    let fractionLabel = '';
+    if (remainder === 0 && fullBoxes > 0) {
+      fractionLabel = `${fullBoxes} full box${fullBoxes > 1 ? 'es' : ''}`;
+    } else if (remainder > 0 && remainder <= 24) {
+      fractionLabel = fullBoxes > 0 ? `${fullBoxes} box + ¼` : '¼ box';
+    } else if (remainder >= 25 && remainder <= 49) {
+      fractionLabel = fullBoxes > 0 ? `${fullBoxes} box + ½` : '½ box';
+    } else if (remainder >= 50 && remainder <= 74) {
+      fractionLabel = fullBoxes > 0 ? `${fullBoxes} box + ¾` : '¾ box';
+    } else if (remainder >= 75) {
+      fractionLabel = fullBoxes > 0 ? `${fullBoxes} box + almost full` : 'Almost 1 box';
+    } else {
+      fractionLabel = 'Empty';
+    }
+
+    return { fullBoxes, remainder, fractionLabel };
+  };
+
+  // Brand display configs for Live Inventory
+  const liveBrandConfig: Record<string, { label: string; gradient: string; pillClass: string }> = {
+    gasmask: { 
+      label: 'GasMask', 
+      gradient: 'from-red-600/30 to-red-900/30 border-red-500/50',
+      pillClass: 'bg-red-500/20 text-red-300 border-red-500/40'
+    },
+    hotmama: { 
+      label: 'HotMama', 
+      gradient: 'from-pink-500/30 to-rose-600/30 border-pink-500/50',
+      pillClass: 'bg-pink-500/20 text-pink-300 border-pink-500/40'
+    },
+    hotscolati: { 
+      label: 'HotScolati', 
+      gradient: 'from-amber-500/30 to-yellow-600/30 border-amber-500/50',
+      pillClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+    },
+    grabba_r_us: { 
+      label: 'Grabba R Us', 
+      gradient: 'from-emerald-500/30 to-green-600/30 border-emerald-500/50',
+      pillClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+    },
+  };
+
+  const allBrands = ['gasmask', 'hotmama', 'hotscolati', 'grabba_r_us'];
 
   if (companyLoading) {
     return (
@@ -292,12 +365,85 @@ export default function CompanyProfile() {
           </div>
         </div>
 
-        {/* === INVENTORY & ETA HEADER === */}
+        {/* === LIVE TUBE INVENTORY (MANUAL COUNTS) === */}
+        <div className="w-full p-5 rounded-xl bg-gradient-to-br from-slate-900/60 to-slate-800/40 border border-border/40 backdrop-blur-md">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Package className="h-5 w-5 text-emerald-400" />
+                Current Tube Inventory (Live)
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">Manual counts updated by your team</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {allBrands.map((brand) => {
+              const config = liveBrandConfig[brand];
+              const inventoryRow = liveTubeInventory?.find(row => row.brand === brand);
+              
+              if (inventoryRow) {
+                const tubes = inventoryRow.current_tubes_left || 0;
+                const boxInfo = formatTubesAsBoxes(tubes);
+                const lastUpdated = inventoryRow.last_updated 
+                  ? format(new Date(inventoryRow.last_updated), 'MM/dd/yyyy')
+                  : 'N/A';
+                
+                return (
+                  <div 
+                    key={brand}
+                    className={`p-4 rounded-lg bg-gradient-to-br ${config.gradient} border backdrop-blur-sm`}
+                  >
+                    <Badge className={`${config.pillClass} border mb-2`}>
+                      {config.label}
+                    </Badge>
+                    <p className="text-2xl font-bold text-foreground">
+                      {tubes.toLocaleString()} tubes
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {boxInfo.fractionLabel}
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 mt-2 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      Updated: {lastUpdated}
+                    </p>
+                  </div>
+                );
+              }
+              
+              // No inventory row for this brand yet
+              return (
+                <div 
+                  key={brand}
+                  className="p-4 rounded-lg bg-muted/20 border border-dashed border-border/50"
+                >
+                  <Badge className={`${config.pillClass} border mb-2`}>
+                    {config.label}
+                  </Badge>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    No manual inventory saved yet
+                  </p>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="mt-2 text-xs h-7 px-2"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Count
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* === INVENTORY & ETA HEADER (AUTOMATED) === */}
         <div className="w-full p-5 rounded-xl bg-black/30 border border-border/30 backdrop-blur-md">
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
             <Package className="h-5 w-5 text-primary" />
             Store Inventory Intelligence
           </h3>
+          <p className="text-xs text-muted-foreground mb-4">Automated calculations based on order history</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 rounded-lg bg-card/50 border border-border/50">
               <p className="text-xs text-muted-foreground">Estimated Inventory</p>
