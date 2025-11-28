@@ -61,6 +61,8 @@ export default function Companies() {
     boro: c.boro || null,
     default_city: c.default_city || null,
     default_state: c.default_state || null,
+    sells_flowers: c.sells_flowers || false,
+    rpa_status: c.rpa_status || 'none',
     health_score: c.health_score ?? 50,
     payment_reliability_score: c.payment_reliability_score ?? 50,
     payment_reliability_tier: c.payment_reliability_tier || 'middle',
