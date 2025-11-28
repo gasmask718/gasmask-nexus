@@ -140,6 +140,67 @@ export default function CompanyProfile() {
     enabled: !!id,
   });
 
+  // Tube Inventory Intelligence Header Stats
+  const { data: tubeHeaderStats } = useQuery({
+    queryKey: ['tube-header', id],
+    queryFn: async () => {
+      const { data: tubeOrders } = await supabase
+        .from('wholesale_orders')
+        .select('*')
+        .eq('company_id', id)
+        .in('brand', ['gasmask', 'hotmama', 'hotscolati', 'grabba_r_us'])
+        .order('created_at', { ascending: true });
+
+      if (!tubeOrders || tubeOrders.length === 0) {
+        return {
+          totalTubes: 0,
+          totalBoxes: 0,
+          estimatedInventory: 0,
+          etaPrediction: 0,
+        };
+      }
+
+      const totalTubes = tubeOrders.reduce(
+        (sum, o) => sum + (o.tubes_total || (o.boxes || 0) * 100),
+        0
+      );
+      const totalBoxes = tubeOrders.reduce((sum, o) => sum + (o.boxes || 0), 0);
+
+      const firstOrder = new Date(tubeOrders[0].created_at);
+      const lastOrder = new Date(tubeOrders[tubeOrders.length - 1].created_at);
+      const weeksBetween = Math.max(
+        1,
+        Math.floor(
+          (lastOrder.getTime() - firstOrder.getTime()) / (1000 * 60 * 60 * 24 * 7)
+        )
+      );
+      const avgTubesPerWeek = Math.round(totalTubes / weeksBetween);
+
+      const lastOrderTubes =
+        tubeOrders[tubeOrders.length - 1].tubes_total ||
+        (tubeOrders[tubeOrders.length - 1].boxes || 0) * 100;
+      const daysSinceLastOrder = Math.floor(
+        (Date.now() - lastOrder.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const estimatedConsumption = Math.round(
+        (avgTubesPerWeek / 7) * daysSinceLastOrder
+      );
+      const estimatedInventory = Math.max(0, lastOrderTubes - estimatedConsumption);
+
+      const tubesPerDay = avgTubesPerWeek / 7;
+      const etaPrediction =
+        tubesPerDay > 0 ? Math.round(estimatedInventory / tubesPerDay) : 0;
+
+      return {
+        totalTubes,
+        totalBoxes,
+        estimatedInventory,
+        etaPrediction,
+      };
+    },
+    enabled: !!id,
+  });
+
   if (companyLoading) {
     return (
       <Layout>
@@ -227,6 +288,40 @@ export default function CompanyProfile() {
                 score={company.payment_reliability_score || 50} 
                 tier={company.payment_reliability_tier || 'middle'} 
               />
+            </div>
+          </div>
+        </div>
+
+        {/* === INVENTORY & ETA HEADER === */}
+        <div className="w-full p-5 rounded-xl bg-black/30 border border-border/30 backdrop-blur-md">
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <Package className="h-5 w-5 text-primary" />
+            Store Inventory Intelligence
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-lg bg-card/50 border border-border/50">
+              <p className="text-xs text-muted-foreground">Estimated Inventory</p>
+              <p className="text-xl font-bold text-foreground">
+                {tubeHeaderStats?.estimatedInventory?.toLocaleString() || 0} tubes
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-card/50 border border-border/50">
+              <p className="text-xs text-muted-foreground">ETA Until Restock</p>
+              <p className="text-xl font-bold text-foreground">
+                {tubeHeaderStats?.etaPrediction || 0} days
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-card/50 border border-border/50">
+              <p className="text-xs text-muted-foreground">Total Boxes Sold</p>
+              <p className="text-xl font-bold text-foreground">
+                {tubeHeaderStats?.totalBoxes?.toLocaleString() || 0}
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-card/50 border border-border/50">
+              <p className="text-xs text-muted-foreground">Total Tubes Sold</p>
+              <p className="text-xl font-bold text-foreground">
+                {tubeHeaderStats?.totalTubes?.toLocaleString() || 0}
+              </p>
             </div>
           </div>
         </div>
