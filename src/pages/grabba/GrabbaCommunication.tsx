@@ -20,22 +20,29 @@ export default function GrabbaCommunication() {
   const [channelFilter, setChannelFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch communication logs
+  // Fetch communication logs (simple + stable)
   const { data: logs, isLoading } = useQuery({
     queryKey: ["grabba-communication-logs", brandFilter, channelFilter, companyFilter],
     queryFn: async () => {
-      let query = supabase
+      const { data } = await supabase
         .from("communication_logs")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(200);
 
+      let result = data || [];
+      
       if (channelFilter !== "all") {
-        query = query.eq("channel", channelFilter);
+        result = result.filter((r: any) => r.channel === channelFilter);
+      }
+      if (brandFilter !== "all") {
+        result = result.filter((r: any) => r.brand === brandFilter);
+      }
+      if (companyFilter) {
+        result = result.filter((r: any) => r.company_id === companyFilter);
       }
 
-      const { data } = await query;
-      return (data || []) as any[];
+      return result as any[];
     },
   });
 
