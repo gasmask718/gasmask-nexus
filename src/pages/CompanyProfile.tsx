@@ -60,7 +60,16 @@ export default function CompanyProfile() {
         .eq('id', id)
         .single();
       if (error) throw error;
-      return data;
+      // Apply safe defaults for missing fields
+      return {
+        ...data,
+        default_city: data.default_city || null,
+        default_state: data.default_state || null,
+        neighborhood: data.neighborhood || null,
+        boro: data.boro || null,
+        health_score: data.health_score ?? 50,
+        type: data.type || 'store',
+      };
     },
     enabled: !!id,
   });

@@ -33,15 +33,16 @@ export default function Companies() {
       let query = supabase
         .from('companies')
         .select('*')
-        .order('name');
+        .order('name', { ascending: true });
       
-      if (typeFilter !== 'all') {
+      // Only filter by type if user explicitly selects one
+      if (typeFilter && typeFilter !== 'all') {
         query = query.eq('type', typeFilter);
       }
       
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
