@@ -50,8 +50,7 @@ export default function GrabbaCommunication() {
 
   const filteredLogs = logs?.filter(log => {
     const matchesSearch = !searchQuery || 
-      log.summary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.contact?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+      log.summary?.toLowerCase().includes(searchQuery.toLowerCase());
     
     return matchesSearch;
   });
