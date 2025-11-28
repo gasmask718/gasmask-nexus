@@ -147,13 +147,13 @@ export default function CompanyProfile() {
       const { data, error } = await supabase
         .from('store_tube_inventory')
         .select('id, brand, current_tubes_left, last_updated')
-        .eq('store_id', id)
+        .eq('store_id', id!)
         .order('last_updated', { ascending: false });
 
-      if (error || !data) return [];
+      if (error || !data || data.length === 0) return [];
 
       // Group by brand, keep only latest per brand
-      const brandMap = new Map<string, typeof data[0]>();
+      const brandMap = new Map<string, (typeof data)[number]>();
       for (const row of data) {
         if (!brandMap.has(row.brand)) {
           brandMap.set(row.brand, row);
@@ -227,22 +227,29 @@ export default function CompanyProfile() {
 
   // Helper: Convert tubes to fractional box format
   const formatTubesAsBoxes = (tubes: number) => {
+    if (tubes === 0) return { fullBoxes: 0, remainder: 0, fractionLabel: 'Empty' };
+    
     const fullBoxes = Math.floor(tubes / 100);
     const remainder = tubes % 100;
     
     let fractionLabel = '';
-    if (remainder === 0 && fullBoxes > 0) {
+    
+    if (fullBoxes > 0 && remainder === 0) {
       fractionLabel = `${fullBoxes} full box${fullBoxes > 1 ? 'es' : ''}`;
-    } else if (remainder > 0 && remainder <= 24) {
-      fractionLabel = fullBoxes > 0 ? `${fullBoxes} box + ¼` : '¼ box';
-    } else if (remainder >= 25 && remainder <= 49) {
-      fractionLabel = fullBoxes > 0 ? `${fullBoxes} box + ½` : '½ box';
-    } else if (remainder >= 50 && remainder <= 74) {
-      fractionLabel = fullBoxes > 0 ? `${fullBoxes} box + ¾` : '¾ box';
-    } else if (remainder >= 75) {
-      fractionLabel = fullBoxes > 0 ? `${fullBoxes} box + almost full` : 'Almost 1 box';
+    } else if (fullBoxes > 0) {
+      // Multiple boxes + remainder
+      let remainderStr = '';
+      if (remainder >= 1 && remainder <= 24) remainderStr = '¼ box';
+      else if (remainder >= 25 && remainder <= 49) remainderStr = '½ box';
+      else if (remainder >= 50 && remainder <= 74) remainderStr = '¾ box';
+      else if (remainder >= 75 && remainder <= 99) remainderStr = 'almost full box';
+      fractionLabel = `${fullBoxes} box${fullBoxes > 1 ? 'es' : ''} + ${remainderStr}`;
     } else {
-      fractionLabel = 'Empty';
+      // Less than 100 tubes (no full boxes)
+      if (remainder >= 1 && remainder <= 24) fractionLabel = '¼ box';
+      else if (remainder >= 25 && remainder <= 49) fractionLabel = '½ box';
+      else if (remainder >= 50 && remainder <= 74) fractionLabel = '¾ box';
+      else if (remainder >= 75 && remainder <= 99) fractionLabel = 'Almost full box';
     }
 
     return { fullBoxes, remainder, fractionLabel };
