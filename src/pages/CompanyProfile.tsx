@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TubeMathEngine } from '@/components/company/TubeMathEngine';
 import { PaymentReliabilityPanel } from '@/components/company/PaymentReliabilityPanel';
 import { BrandBreakdownCards } from '@/components/company/BrandBreakdownCards';
@@ -17,7 +18,7 @@ import { PaymentSummaryPanel } from '@/components/company/PaymentSummaryPanel';
 import { 
   Building2, Phone, Mail, MapPin, ArrowLeft, Users, ShoppingCart, 
   FileText, CreditCard, Package, StickyNote, Store, Truck, User, BarChart3, 
-  Star, MessageCircle, Plus, Calendar
+  Star, MessageCircle, Plus, Calendar, Filter
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 
@@ -50,6 +51,7 @@ export default function CompanyProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [brandFilter, setBrandFilter] = useState<string>('all');
 
   const { data: company, isLoading: companyLoading } = useQuery({
     queryKey: ['company', id],
@@ -136,6 +138,34 @@ export default function CompanyProfile() {
         .order('created_at', { ascending: false });
       if (error) return [];
       return data;
+    },
+    enabled: !!id,
+  });
+
+  // Communication logs query (fetched through contacts linked to this company)
+  const { data: communicationLogs } = useQuery({
+    queryKey: ['company-communication-logs', id],
+    queryFn: async () => {
+      // First get contacts for this company
+      const { data: companyContacts } = await supabase
+        .from('company_contacts')
+        .select('id')
+        .eq('company_id', id!);
+      
+      if (!companyContacts || companyContacts.length === 0) return [];
+      
+      const contactIds = companyContacts.map(c => c.id);
+      
+      // Get communication logs for these contacts
+      const { data, error } = await supabase
+        .from('communication_logs')
+        .select('*')
+        .in('contact_id', contactIds)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (error) return [];
+      return data || [];
     },
     enabled: !!id,
   });
@@ -332,8 +362,17 @@ export default function CompanyProfile() {
   }
 
   const totalRevenue = invoices?.reduce((sum, inv) => sum + (Number(inv.total) || Number(inv.total_amount) || 0), 0) || 0;
-  const recentInvoices = invoices?.slice(0, 5) || [];
-  const recentOrders = orders?.slice(0, 5) || [];
+  
+  // Filter orders and invoices by brand
+  const filteredOrders = brandFilter === 'all' 
+    ? orders 
+    : orders?.filter(o => o.brand === brandFilter);
+  const filteredInvoices = brandFilter === 'all'
+    ? invoices
+    : invoices?.filter(i => i.brand === brandFilter);
+  
+  const recentInvoices = filteredInvoices?.slice(0, 5) || [];
+  const recentOrders = filteredOrders?.slice(0, 5) || [];
 
   return (
     <Layout>
@@ -509,8 +548,27 @@ export default function CompanyProfile() {
         </div>
 
         {/* === TABS === */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <h2 className="text-lg font-semibold">Company Details</h2>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={brandFilter} onValueChange={setBrandFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by brand" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Brands</SelectItem>
+                <SelectItem value="gasmask">GasMask</SelectItem>
+                <SelectItem value="hotmama">HotMama</SelectItem>
+                <SelectItem value="hotscolati">HotScolati</SelectItem>
+                <SelectItem value="grabba_r_us">Grabba R Us</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full bg-slate-900/50">
+          <TabsList className="grid grid-cols-5 md:grid-cols-9 w-full bg-slate-900/50">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -534,6 +592,10 @@ export default function CompanyProfile() {
             <TabsTrigger value="tubes" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               <span className="hidden sm:inline">Tube Intel</span>
+            </TabsTrigger>
+            <TabsTrigger value="comms" className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">Comms</span>
             </TabsTrigger>
             <TabsTrigger value="reliability" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
@@ -725,12 +787,13 @@ export default function CompanyProfile() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5" />
-                  Orders ({orders?.length || 0})
+                  Orders ({filteredOrders?.length || 0})
+                  {brandFilter !== 'all' && <Badge variant="outline" className="ml-2">{brandFilter}</Badge>}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {orders && orders.length > 0 ? (
-                  orders.map((order) => {
+                {filteredOrders && filteredOrders.length > 0 ? (
+                  filteredOrders.map((order) => {
                     const brandGradient = brandGradients[order.brand] || '';
                     return (
                       <div key={order.id} className={`flex items-center justify-between p-4 rounded-lg border bg-gradient-to-r ${brandGradient || 'bg-card'}`}>
@@ -753,7 +816,7 @@ export default function CompanyProfile() {
                     );
                   })
                 ) : (
-                  <p className="text-muted-foreground text-center py-8">No orders found</p>
+                  <p className="text-muted-foreground text-center py-8">No orders found{brandFilter !== 'all' ? ` for ${brandFilter}` : ''}</p>
                 )}
               </CardContent>
             </Card>
@@ -765,12 +828,13 @@ export default function CompanyProfile() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Invoices ({invoices?.length || 0})
+                  Invoices ({filteredInvoices?.length || 0})
+                  {brandFilter !== 'all' && <Badge variant="outline" className="ml-2">{brandFilter}</Badge>}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {invoices && invoices.length > 0 ? (
-                  invoices.map((invoice) => {
+                {filteredInvoices && filteredInvoices.length > 0 ? (
+                  filteredInvoices.map((invoice) => {
                     const daysOverdue = invoice.due_date && invoice.payment_status !== 'paid'
                       ? Math.max(0, differenceInDays(new Date(), new Date(invoice.due_date)))
                       : 0;
@@ -804,7 +868,7 @@ export default function CompanyProfile() {
                     );
                   })
                 ) : (
-                  <p className="text-muted-foreground text-center py-8">No invoices found</p>
+                  <p className="text-muted-foreground text-center py-8">No invoices found{brandFilter !== 'all' ? ` for ${brandFilter}` : ''}</p>
                 )}
               </CardContent>
             </Card>
@@ -909,6 +973,81 @@ export default function CompanyProfile() {
                 </div>
               </div>
             </div>
+          </TabsContent>
+
+          {/* === COMMUNICATION LOG TAB === */}
+          <TabsContent value="comms" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  Communication Log ({communicationLogs?.length || 0})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {communicationLogs && communicationLogs.length > 0 ? (
+                  communicationLogs.map((log) => {
+                    const channelIcons: Record<string, React.ReactNode> = {
+                      call: <Phone className="h-4 w-4" />,
+                      sms: <MessageCircle className="h-4 w-4" />,
+                      email: <Mail className="h-4 w-4" />,
+                    };
+                    const channelColors: Record<string, string> = {
+                      call: 'bg-green-500/20 text-green-400 border-green-500/30',
+                      sms: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+                      email: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+                    };
+                    
+                    return (
+                      <div key={log.id} className="flex items-start justify-between p-4 border rounded-lg bg-card hover:bg-muted/30 transition-colors">
+                        <div className="flex gap-3">
+                          <div className={`p-2 rounded-full ${channelColors[log.channel] || 'bg-muted'}`}>
+                            {channelIcons[log.channel] || <MessageCircle className="h-4 w-4" />}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium capitalize">{log.channel || 'Message'}</p>
+                              <Badge variant="outline" className="text-xs">
+                                {log.direction === 'inbound' ? '← Incoming' : '→ Outgoing'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {log.summary || 'No summary'}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {log.created_at && format(new Date(log.created_at), 'MMM d, yyyy h:mm a')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="ghost" className="h-8">
+                            View
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-12">
+                    <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+                    <p className="text-muted-foreground">No communication logs yet</p>
+                    <p className="text-sm text-muted-foreground/70 mt-1">
+                      Calls, SMS, and emails will appear here
+                    </p>
+                    <div className="flex justify-center gap-2 mt-4">
+                      <Button size="sm" variant="outline">
+                        <Phone className="h-4 w-4 mr-2" />
+                        Log Call
+                      </Button>
+                      <Button size="sm" variant="outline">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Send SMS
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* === PAYMENT RELIABILITY TAB === */}
