@@ -845,23 +845,52 @@ export default function CompanyProfile() {
           {/* === TUBE ANALYTICS TAB === */}
           <TabsContent value="tubes" className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold">Tube & Brand Intelligence</h2>
-              <p className="text-xs text-muted-foreground">
-                Live breakdown of all GasMask & Grabba brand movement for this company.
-              </p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Overall Performance</h3>
+              <p className="text-muted-foreground text-sm">Everything across all stores linked to this company.</p>
+            </div>
+
+            {/* Unified Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-4 rounded-xl bg-card/50 border border-border/50">
+                <div className="text-muted-foreground text-sm">Total Tubes</div>
+                <div className="text-2xl font-bold text-foreground">
+                  {inventoryData?.totalTubes?.toLocaleString() || 0}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-card/50 border border-border/50">
+                <div className="text-muted-foreground text-sm">Total Boxes</div>
+                <div className="text-2xl font-bold text-foreground">
+                  {inventoryData?.totalBoxes?.toLocaleString() || 0}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-card/50 border border-border/50">
+                <div className="text-muted-foreground text-sm">Estimated Inventory</div>
+                <div className="text-2xl font-bold text-foreground">
+                  {inventoryData?.estimatedInventory?.toLocaleString() || 0} tubes
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-card/50 border border-border/50">
+                <div className="text-muted-foreground text-sm">ETA Until Restock</div>
+                <div className="text-2xl font-bold text-foreground">
+                  {inventoryData?.etaPrediction || 0} days
+                </div>
+              </div>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
               {/* Left: TubeMathEngine full analytics */}
               <div className="lg:col-span-2">
-                <div className="rounded-xl border border-white/5 bg-gradient-to-br from-slate-950/60 via-slate-900/60 to-black/80 p-4 md:p-6 shadow-lg shadow-black/40">
+                <div className="rounded-xl border border-border/20 bg-gradient-to-br from-slate-950/60 via-slate-900/60 to-black/80 p-4 md:p-6 shadow-lg shadow-black/40">
                   <TubeMathEngine companyId={id!} />
                 </div>
               </div>
 
               {/* Right: Neighborhood intelligence */}
               <div className="lg:col-span-1">
-                <div className="rounded-xl border border-white/5 bg-gradient-to-br from-slate-950/60 via-slate-900/60 to-black/80 p-4 md:p-6 shadow-lg shadow-black/40">
+                <div className="rounded-xl border border-border/20 bg-gradient-to-br from-slate-950/60 via-slate-900/60 to-black/80 p-4 md:p-6 shadow-lg shadow-black/40">
                   <h3 className="text-sm font-medium mb-2">Neighborhood Snapshot</h3>
                   <p className="text-xs text-muted-foreground mb-4">
                     How this company's area performs across all stores and brands.
