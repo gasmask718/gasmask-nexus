@@ -197,6 +197,7 @@ import GrabbaAmbassadors from "./pages/grabba/GrabbaAmbassadors";
 import GrabbaWholesalePlatform from "./pages/grabba/GrabbaWholesalePlatform";
 import GrabbaFinance from "./pages/grabba/GrabbaFinance";
 import GrabbaCommandPenthouse from "./pages/grabba/GrabbaCommandPenthouse";
+import { GrabbaLayout } from "./components/grabba/GrabbaLayout";
 
 const queryClient = new QueryClient();
 
@@ -290,25 +291,25 @@ const App = () => (
               <Route path="/gasmask/communications" element={<ProtectedRoute><Layout><Communications /></Layout></ProtectedRoute>} />
               <Route path="/gasmask/settings" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
               
-              {/* Grabba Cluster Routes */}
-              <Route path="/grabba" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/crm" element={<ProtectedRoute><Layout><GrabbaCRM /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/communication" element={<ProtectedRoute><Layout><GrabbaCommunication /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/inventory" element={<ProtectedRoute><Layout><GrabbaInventory /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/production" element={<ProtectedRoute><Layout><GrabbaProduction /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/deliveries" element={<ProtectedRoute><Layout><GrabbaDeliveries /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/ambassadors" element={<ProtectedRoute><Layout><GrabbaAmbassadors /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/wholesale-platform" element={<ProtectedRoute><Layout><GrabbaWholesalePlatform /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/finance" element={<ProtectedRoute><Layout><GrabbaFinance /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/cluster" element={<ProtectedRoute><Layout><GrabbaClusterDashboard /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/unified-upload" element={<ProtectedRoute><Layout><UnifiedUploadCenter /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/delivery-runs" element={<ProtectedRoute><Layout><MultiBrandDelivery /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/ai-insights" element={<ProtectedRoute><Layout><AIInsights /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/store-master/:id" element={<ProtectedRoute><Layout><StoreMasterProfile /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/brand/:brand" element={<ProtectedRoute><Layout><BrandCRM /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/brand/:brand/communications" element={<ProtectedRoute><Layout><BrandCommunications /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/command-penthouse" element={<ProtectedRoute><Layout><GrabbaCommandPenthouse /></Layout></ProtectedRoute>} />
-              <Route path="/grabba/*" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              {/* Grabba Cluster Routes - with GrabbaLayout wrapper */}
+              <Route path="/grabba" element={<ProtectedRoute><Layout><GrabbaLayout><BrandPlaceholder /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/crm" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCRM /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/communication" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommunication /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/inventory" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaInventory /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/production" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaProduction /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/deliveries" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaDeliveries /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/ambassadors" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaAmbassadors /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/wholesale-platform" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaWholesalePlatform /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/finance" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaFinance /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/cluster" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaClusterDashboard /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/unified-upload" element={<ProtectedRoute><Layout><GrabbaLayout><UnifiedUploadCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/delivery-runs" element={<ProtectedRoute><Layout><GrabbaLayout><MultiBrandDelivery /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/ai-insights" element={<ProtectedRoute><Layout><GrabbaLayout><AIInsights /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/store-master/:id" element={<ProtectedRoute><Layout><GrabbaLayout><StoreMasterProfile /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/brand/:brand" element={<ProtectedRoute><Layout><GrabbaLayout><BrandCRM /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/brand/:brand/communications" element={<ProtectedRoute><Layout><GrabbaLayout><BrandCommunications /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/command-penthouse" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommandPenthouse /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/*" element={<ProtectedRoute><Layout><GrabbaLayout><BrandPlaceholder /></GrabbaLayout></Layout></ProtectedRoute>} />
               
               {/* HotMama Routes */}
               <Route path="/hotmama/*" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />

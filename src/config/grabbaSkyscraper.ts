@@ -207,3 +207,59 @@ export const getGrabbaNavItems = () => {
     ...GRABBA_FLOORS
   ];
 };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FLOOR ROUTE MAPPING (which routes belong to each floor)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const FLOOR_ROUTE_MAP: Record<string, string[]> = {
+  'penthouse': ['/grabba/command-penthouse'],
+  'floor-1-crm': ['/grabba/crm', '/grabba/brand/', '/grabba/store-master/'],
+  'floor-2-communication': ['/grabba/communication', '/grabba/brand/*/communications'],
+  'floor-3-inventory': ['/grabba/inventory'],
+  'floor-4-delivery': ['/grabba/deliveries', '/grabba/delivery-runs'],
+  'floor-5-orders': ['/grabba/finance', '/unpaid-accounts', '/wholesale-orders', '/billing'],
+  'floor-6-production': ['/grabba/production'],
+  'floor-7-wholesale': ['/grabba/wholesale-platform', '/wholesale/marketplace'],
+  'floor-8-ambassadors': ['/grabba/ambassadors', '/ambassadors/regions'],
+};
+
+// Helper to find which floor a route belongs to
+export const getFloorByRoute = (path: string): GrabbaFloor | undefined => {
+  // Check penthouse first
+  if (path === '/grabba/command-penthouse') {
+    return GRABBA_PENTHOUSE;
+  }
+  
+  // Check each floor's routes
+  for (const floor of GRABBA_FLOORS) {
+    const floorRoutes = FLOOR_ROUTE_MAP[floor.id] || [];
+    for (const route of floorRoutes) {
+      if (path === route || path.startsWith(route.replace('*', ''))) {
+        return floor;
+      }
+    }
+  }
+  
+  // Fallback: check if path starts with the floor's primary path
+  for (const floor of GRABBA_FLOORS) {
+    if (path === floor.path || path.startsWith(floor.path + '/')) {
+      return floor;
+    }
+  }
+  
+  return undefined;
+};
+
+// Check if a path is a Grabba route
+export const isGrabbaRoute = (path: string): boolean => {
+  if (path.startsWith('/grabba')) return true;
+  
+  // Check non-grabba routes that belong to Grabba floors
+  const grabbaRelatedPaths = [
+    '/unpaid-accounts', '/wholesale-orders', '/billing',
+    '/wholesale/marketplace', '/ambassadors/regions'
+  ];
+  
+  return grabbaRelatedPaths.some(p => path === p || path.startsWith(p));
+};

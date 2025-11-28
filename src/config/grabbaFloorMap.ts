@@ -3,6 +3,8 @@
 // Complete mapping of all pages to their floors
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { GRABBA_PENTHOUSE, GRABBA_FLOORS } from './grabbaSkyscraper';
+
 export interface FloorPage {
   path: string;
   component: string;
@@ -179,6 +181,13 @@ export const FLOOR_5_ORDERS: SkyscraperFloor = {
       description: 'Orders, invoices, payments, unpaid accounts, reliability scores',
       status: 'active',
     },
+    {
+      path: '/unpaid-accounts',
+      component: 'UnpaidAccounts',
+      label: 'Unpaid Accounts',
+      description: 'Track and manage unpaid store accounts',
+      status: 'active',
+    },
   ],
 };
 
@@ -219,6 +228,13 @@ export const FLOOR_7_WHOLESALE: SkyscraperFloor = {
       description: 'Wholesaler signup, orders, marketplace, AI sourcing',
       status: 'active',
     },
+    {
+      path: '/wholesale/marketplace',
+      component: 'WholesaleMarketplace',
+      label: 'National Marketplace',
+      description: 'National wholesale marketplace access',
+      status: 'active',
+    },
   ],
 };
 
@@ -237,6 +253,13 @@ export const FLOOR_8_AMBASSADORS: SkyscraperFloor = {
       component: 'GrabbaAmbassadors',
       label: 'Ambassador Network',
       description: 'Ambassador signup, commissions, territory tracking, missions',
+      status: 'active',
+    },
+    {
+      path: '/ambassadors/regions',
+      component: 'AmbassadorRegions',
+      label: 'Regional Ambassadors',
+      description: 'Ambassador regional assignments and performance',
       status: 'active',
     },
   ],
