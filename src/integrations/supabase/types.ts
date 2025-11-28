@@ -344,6 +344,51 @@ export type Database = {
         }
         Relationships: []
       }
+      ambassador_assignments: {
+        Row: {
+          ambassador_id: string | null
+          commission_rate: number | null
+          company_id: string | null
+          created_at: string | null
+          id: string
+          role_type: string | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          ambassador_id?: string | null
+          commission_rate?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          role_type?: string | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          ambassador_id?: string | null
+          commission_rate?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          role_type?: string | null
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ambassador_commissions: {
         Row: {
           ambassador_id: string
@@ -3956,6 +4001,105 @@ export type Database = {
           },
         ]
       }
+      driver_route_stops: {
+        Row: {
+          amount_owed: number | null
+          brand: string | null
+          company_id: string | null
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          route_id: string | null
+          sequence: number | null
+          store_id: string | null
+          task_type: string | null
+        }
+        Insert: {
+          amount_owed?: number | null
+          brand?: string | null
+          company_id?: string | null
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          route_id?: string | null
+          sequence?: number | null
+          store_id?: string | null
+          task_type?: string | null
+        }
+        Update: {
+          amount_owed?: number | null
+          brand?: string | null
+          company_id?: string | null
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          route_id?: string | null
+          sequence?: number | null
+          store_id?: string | null
+          task_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_route_stops_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_route_stops_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "driver_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_route_stops_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_routes: {
+        Row: {
+          created_at: string | null
+          driver_id: string | null
+          id: string
+          notes: string | null
+          route_date: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          driver_id?: string | null
+          id?: string
+          notes?: string | null
+          route_date: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          driver_id?: string | null
+          id?: string
+          notes?: string | null
+          route_date?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_routes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "grabba_drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_sessions: {
         Row: {
           ended_at: string | null
@@ -4597,6 +4741,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      grabba_drivers: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          name: string
+          phone: string | null
+          region: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          region?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          region?: string | null
+        }
+        Relationships: []
       }
       holdings_airbnb_units: {
         Row: {
@@ -7354,6 +7525,50 @@ export type Database = {
           },
         ]
       }
+      machine_service_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          issue_description: string | null
+          machine_name: string
+          office_id: string | null
+          resolved_at: string | null
+          service_action: string | null
+          serviced_by: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          issue_description?: string | null
+          machine_name: string
+          office_id?: string | null
+          resolved_at?: string | null
+          service_action?: string | null
+          serviced_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          issue_description?: string | null
+          machine_name?: string
+          office_id?: string | null
+          resolved_at?: string | null
+          service_action?: string | null
+          serviced_by?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "machine_service_logs_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketing_engines: {
         Row: {
           config: Json | null
@@ -8004,6 +8219,109 @@ export type Database = {
             columns: ["design_id"]
             isOneToOne: false
             referencedRelation: "pod_designs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_batches: {
+        Row: {
+          boxes_produced: number | null
+          brand: string
+          created_at: string | null
+          id: string
+          office_id: string | null
+          produced_by: string | null
+          shift_label: string | null
+          tubes_total: number | null
+        }
+        Insert: {
+          boxes_produced?: number | null
+          brand: string
+          created_at?: string | null
+          id?: string
+          office_id?: string | null
+          produced_by?: string | null
+          shift_label?: string | null
+          tubes_total?: number | null
+        }
+        Update: {
+          boxes_produced?: number | null
+          brand?: string
+          created_at?: string | null
+          id?: string
+          office_id?: string | null
+          produced_by?: string | null
+          shift_label?: string | null
+          tubes_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_batches_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_offices: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          location: string | null
+          name: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          location?: string | null
+          name: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
+      production_tools_issued: {
+        Row: {
+          id: string
+          issued_at: string | null
+          issued_to: string | null
+          office_id: string | null
+          quantity: number | null
+          returned_at: string | null
+          tool_name: string
+        }
+        Insert: {
+          id?: string
+          issued_at?: string | null
+          issued_to?: string | null
+          office_id?: string | null
+          quantity?: number | null
+          returned_at?: string | null
+          tool_name: string
+        }
+        Update: {
+          id?: string
+          issued_at?: string | null
+          issued_to?: string | null
+          office_id?: string | null
+          quantity?: number | null
+          returned_at?: string | null
+          tool_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_tools_issued_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
             referencedColumns: ["id"]
           },
         ]
@@ -11153,6 +11471,39 @@ export type Database = {
         }
         Relationships: []
       }
+      wholesale_ai_sourcing: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          product_name: string
+          status: string | null
+          suggested_resale_price: number | null
+          suggested_supplier: string | null
+          supplier_cost: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          product_name: string
+          status?: string | null
+          suggested_resale_price?: number | null
+          suggested_supplier?: string | null
+          supplier_cost?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          product_name?: string
+          status?: string | null
+          suggested_resale_price?: number | null
+          suggested_supplier?: string | null
+          supplier_cost?: number | null
+        }
+        Relationships: []
+      }
       wholesale_bids: {
         Row: {
           accepted_at: string | null
@@ -11440,6 +11791,48 @@ export type Database = {
           },
         ]
       }
+      wholesale_orders_platform: {
+        Row: {
+          buyer_company_id: string | null
+          created_at: string | null
+          id: string
+          status: string | null
+          total_amount: number | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          buyer_company_id?: string | null
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          total_amount?: number | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          buyer_company_id?: string | null
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          total_amount?: number | null
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesale_orders_platform_buyer_company_id_fkey"
+            columns: ["buyer_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesale_orders_platform_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wholesale_products: {
         Row: {
           brand_id: string | null
@@ -11555,6 +11948,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "wholesaler_accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesalers: {
+        Row: {
+          company_id: string | null
+          contact_name: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          status: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          status?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesalers_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
