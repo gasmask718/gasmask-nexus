@@ -68,6 +68,8 @@ export default function CompanyProfile() {
         neighborhood: data.neighborhood || null,
         boro: data.boro || null,
         health_score: data.health_score ?? 50,
+        payment_reliability_score: data.payment_reliability_score ?? 50,
+        payment_reliability_tier: data.payment_reliability_tier || 'middle',
         type: data.type || 'store',
       };
     },
