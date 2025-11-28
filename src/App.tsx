@@ -307,6 +307,7 @@ const App = () => (
               <Route path="/grabba/store-master/:id" element={<ProtectedRoute><Layout><StoreMasterProfile /></Layout></ProtectedRoute>} />
               <Route path="/grabba/brand/:brand" element={<ProtectedRoute><Layout><BrandCRM /></Layout></ProtectedRoute>} />
               <Route path="/grabba/brand/:brand/communications" element={<ProtectedRoute><Layout><BrandCommunications /></Layout></ProtectedRoute>} />
+              <Route path="/grabba/command-penthouse" element={<ProtectedRoute><Layout><GrabbaCommandPenthouse /></Layout></ProtectedRoute>} />
               <Route path="/grabba/*" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
               
               {/* HotMama Routes */}
