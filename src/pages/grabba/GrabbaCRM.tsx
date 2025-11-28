@@ -9,23 +9,27 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Users, Search, Phone, Mail, MapPin, Star, ExternalLink, MessageSquare, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { GRABBA_BRANDS, GRABBA_BRAND_CONFIG, getBrandConfig } from "@/config/grabbaBrands";
+import { GRABBA_BRANDS, GRABBA_BRAND_CONFIG, getBrandConfig, GrabbaBrand } from "@/config/grabbaBrands";
+import { BrandFilterBar, BrandBadgesRow } from "@/components/grabba/BrandFilterBar";
+import { useGrabbaBrandFilter } from "@/contexts/GrabbaBrandContext";
+import { useGrabbaBrandActivity, useGrabbaBrandCounts } from "@/hooks/useGrabbaData";
 
 export default function GrabbaCRM() {
   const navigate = useNavigate();
-  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrandFilter();
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch companies with Grabba activity
   const { data: companies, isLoading } = useQuery({
-    queryKey: ["grabba-crm-companies", brandFilter],
+    queryKey: ["grabba-crm-companies", selectedBrand],
     queryFn: async () => {
+      const brandsToQuery = getBrandQuery();
       // Get companies that have orders with Grabba brands
       const { data: ordersWithCompanies } = await supabase
         .from("wholesale_orders")
         .select("company_id, brand")
-        .in("brand", GRABBA_BRANDS);
+        .in("brand", brandsToQuery);
 
       const companyIds = [...new Set(ordersWithCompanies?.map(o => o.company_id).filter(Boolean))];
       
@@ -45,27 +49,10 @@ export default function GrabbaCRM() {
   });
 
   // Fetch brand activity per company
-  const { data: brandActivity } = useQuery({
-    queryKey: ["grabba-brand-activity"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("wholesale_orders")
-        .select("company_id, brand")
-        .in("brand", GRABBA_BRANDS);
-      
-      const activityMap: Record<string, Set<string>> = {};
-      data?.forEach(order => {
-        if (order.company_id) {
-          if (!activityMap[order.company_id]) activityMap[order.company_id] = new Set();
-          activityMap[order.company_id].add(order.brand);
-        }
-      });
-      
-      return Object.fromEntries(
-        Object.entries(activityMap).map(([k, v]) => [k, Array.from(v)])
-      );
-    },
-  });
+  const { data: brandActivity } = useGrabbaBrandActivity();
+  
+  // Fetch brand counts for filter bar
+  const { data: brandCounts } = useGrabbaBrandCounts();
 
   const filteredCompanies = companies?.filter(company => {
     const matchesSearch = !searchQuery || 
@@ -76,7 +63,7 @@ export default function GrabbaCRM() {
     const matchesType = typeFilter === "all" || company.type === typeFilter;
     
     const companyBrands = brandActivity?.[company.id] || [];
-    const matchesBrand = brandFilter === "all" || companyBrands.includes(brandFilter);
+    const matchesBrand = selectedBrand === "all" || companyBrands.includes(selectedBrand as GrabbaBrand);
     
     return matchesSearch && matchesType && matchesBrand;
   });
@@ -121,19 +108,13 @@ export default function GrabbaCRM() {
                 />
               </div>
               
-              <Select value={brandFilter} onValueChange={setBrandFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by brand" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Brands</SelectItem>
-                  {GRABBA_BRANDS.map(brand => (
-                    <SelectItem key={brand} value={brand}>
-                      {getBrandConfig(brand).label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <BrandFilterBar
+                selectedBrand={selectedBrand}
+                onBrandChange={setSelectedBrand}
+                showCounts={true}
+                counts={brandCounts || {}}
+                variant="default"
+              />
 
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger>
@@ -147,7 +128,7 @@ export default function GrabbaCRM() {
                 </SelectContent>
               </Select>
 
-              <Button variant="outline" onClick={() => { setBrandFilter("all"); setTypeFilter("all"); setSearchQuery(""); }}>
+              <Button variant="outline" onClick={() => { setSelectedBrand("all"); setTypeFilter("all"); setSearchQuery(""); }}>
                 Clear Filters
               </Button>
             </div>
@@ -195,16 +176,9 @@ export default function GrabbaCRM() {
                         </div>
 
                         {/* Brand Pills */}
-                        <div className="flex gap-2 mt-3">
-                          {companyBrands.map(brand => {
-                            const config = getBrandConfig(brand);
-                            return (
-                              <Badge key={brand} className={config.pill}>
-                                {config.icon} {config.label}
-                              </Badge>
-                            );
-                          })}
-                        </div>
+                        {companyBrands.length > 0 && (
+                          <BrandBadgesRow brands={companyBrands as GrabbaBrand[]} className="mt-3" />
+                        )}
                       </div>
 
                       {/* Payment Reliability */}
