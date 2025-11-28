@@ -9,8 +9,10 @@ import {
   MapPin, Factory, Globe, Award, Search
 } from "lucide-react";
 import { useState } from "react";
-import { GRABBA_BRAND_CONFIG, formatTubesAsBoxes } from "@/config/grabbaBrands";
+import { GRABBA_BRAND_CONFIG, formatTubesAsBoxes, GRABBA_BRANDS } from "@/config/grabbaBrands";
 import { format } from "date-fns";
+import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
+import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 
 const GRABBA_BRAND_FILTER = ['gasmask', 'hotmama', 'hotscolati', 'grabba_r_us'];
 
@@ -853,8 +855,28 @@ const CommunicationIntelligence = () => {
 
 // Main Page Component
 const GrabbaCommandPenthouse = () => {
+  const { selectedBrand, setSelectedBrand } = useGrabbaBrand();
+  
   return (
     <div className="space-y-6 p-1">
+      {/* Brand Filter Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+        <div className="flex items-center gap-3">
+          <Crown className="h-8 w-8 text-yellow-500" />
+          <div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-yellow-500 to-amber-600 bg-clip-text text-transparent">
+              Grabba Command Penthouse
+            </h1>
+            <p className="text-sm text-muted-foreground">Live command view for all Grabba brands</p>
+          </div>
+        </div>
+        <BrandFilterBar
+          selectedBrand={selectedBrand}
+          onBrandChange={setSelectedBrand}
+          variant="default"
+        />
+      </div>
+
       {/* Row 0: Hero */}
       <EmpireSnapshot />
       

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,8 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Truck, MapPin, DollarSign, CheckCircle, Clock, Plus, User } from "lucide-react";
 import { format } from "date-fns";
+import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
+import { BrandFilterBar, BrandBadge } from "@/components/grabba/BrandFilterBar";
+import { GrabbaBrand } from "@/config/grabbaBrands";
 
 export default function GrabbaDeliveries() {
+  const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrand();
+
   // Fetch drivers
   const { data: drivers } = useQuery({
     queryKey: ["grabba-drivers"],
@@ -22,11 +26,13 @@ export default function GrabbaDeliveries() {
     },
   });
 
-  // Fetch today's routes
+  // Fetch today's routes with brand filtering
   const { data: todayRoutes } = useQuery({
-    queryKey: ["grabba-routes-today"],
+    queryKey: ["grabba-routes-today", selectedBrand],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
+      const brandsToQuery = getBrandQuery();
+      
       const { data } = await supabase
         .from("driver_routes")
         .select(`
@@ -40,14 +46,23 @@ export default function GrabbaDeliveries() {
         `)
         .eq("route_date", today)
         .order("created_at", { ascending: false });
-      return data || [];
+      
+      // Filter by brand if applicable
+      let result = data || [];
+      if (selectedBrand !== 'all') {
+        result = result.filter((route: any) => 
+          route.stops?.some((stop: any) => stop.brand === selectedBrand)
+        );
+      }
+      return result;
     },
   });
 
-  // Fetch unpaid accounts for collection
+  // Fetch unpaid accounts for collection with brand filtering
   const { data: unpaidAccounts } = useQuery({
-    queryKey: ["grabba-unpaid-accounts"],
+    queryKey: ["grabba-unpaid-accounts", selectedBrand],
     queryFn: async () => {
+      const brandsToQuery = getBrandQuery();
       const { data } = await supabase
         .from("invoices")
         .select(`
@@ -55,6 +70,7 @@ export default function GrabbaDeliveries() {
           company:companies(id, name, default_phone, neighborhood)
         `)
         .eq("payment_status", "unpaid")
+        .in("brand", brandsToQuery)
         .order("total_amount", { ascending: false })
         .limit(20);
       return data || [];
@@ -73,14 +89,21 @@ export default function GrabbaDeliveries() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <Truck className="h-8 w-8 text-primary" />
-            Grabba Deliveries & Drivers
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Routes, drivers, bikers, collections, and delivery performance for Grabba
-          </p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+              <Truck className="h-8 w-8 text-primary" />
+              Grabba Deliveries & Drivers
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Routes, drivers, bikers, collections, and delivery performance for Grabba
+            </p>
+          </div>
+          <BrandFilterBar
+            selectedBrand={selectedBrand}
+            onBrandChange={setSelectedBrand}
+            variant="default"
+          />
         </div>
 
         {/* KPI Cards */}

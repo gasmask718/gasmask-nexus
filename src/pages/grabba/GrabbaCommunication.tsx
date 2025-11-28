@@ -11,38 +11,39 @@ import { MessageSquare, Phone, Mail, Search, Send, Clock, CheckCircle, XCircle }
 import { format } from "date-fns";
 import { useSearchParams } from "react-router-dom";
 import { GRABBA_BRANDS, getBrandConfig } from "@/config/grabbaBrands";
+import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
+import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 
 export default function GrabbaCommunication() {
   const [searchParams] = useSearchParams();
   const companyFilter = searchParams.get("company") || "";
   
-  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrand();
   const [channelFilter, setChannelFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch communication logs (simple + stable)
+  // Fetch communication logs with brand filtering
   const { data: logs, isLoading } = useQuery({
-    queryKey: ["grabba-communication-logs", brandFilter, channelFilter, companyFilter],
+    queryKey: ["grabba-communication-logs", selectedBrand, channelFilter, companyFilter],
     queryFn: async () => {
+      const brandsToQuery = getBrandQuery();
       const { data } = await supabase
         .from("communication_logs")
         .select("*")
+        .in("brand", brandsToQuery)
         .order("created_at", { ascending: false })
         .limit(200);
 
-      let result = data || [];
+      let result = (data || []) as any[];
       
       if (channelFilter !== "all") {
-        result = result.filter((r: any) => r.channel === channelFilter);
-      }
-      if (brandFilter !== "all") {
-        result = result.filter((r: any) => r.brand === brandFilter);
+        result = result.filter(r => r.channel === channelFilter);
       }
       if (companyFilter) {
-        result = result.filter((r: any) => r.company_id === companyFilter);
+        result = result.filter(r => r.company_id === companyFilter);
       }
 
-      return result as any[];
+      return result;
     },
   });
 
@@ -129,7 +130,7 @@ export default function GrabbaCommunication() {
             {/* Filters */}
             <Card className="bg-card/50 backdrop-blur border-border/50">
               <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -140,19 +141,11 @@ export default function GrabbaCommunication() {
                     />
                   </div>
                   
-                  <Select value={brandFilter} onValueChange={setBrandFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Filter by brand" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Brands</SelectItem>
-                      {GRABBA_BRANDS.map(brand => (
-                        <SelectItem key={brand} value={brand}>
-                          {getBrandConfig(brand).label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <BrandFilterBar
+                    selectedBrand={selectedBrand}
+                    onBrandChange={setSelectedBrand}
+                    variant="compact"
+                  />
 
                   <Select value={channelFilter} onValueChange={setChannelFilter}>
                     <SelectTrigger>

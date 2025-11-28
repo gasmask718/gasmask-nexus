@@ -2,52 +2,45 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, TrendingUp, Clock, MapPin, Box } from "lucide-react";
 import { format } from "date-fns";
 import { GRABBA_BRANDS, getBrandConfig, formatTubesAsBoxes } from "@/config/grabbaBrands";
+import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
+import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 
 export default function GrabbaInventory() {
-  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrand();
 
-  // Fetch live inventory
+  // Fetch live inventory with brand filtering
   const { data: liveInventory, isLoading: loadingInventory } = useQuery({
-    queryKey: ["grabba-live-inventory", brandFilter],
+    queryKey: ["grabba-live-inventory", selectedBrand],
     queryFn: async () => {
-      let query = supabase
+      const brandsToQuery = getBrandQuery();
+      const { data } = await supabase
         .from("store_tube_inventory")
         .select(`
           *,
           store:stores(id, name, company_id, neighborhood)
         `)
+        .in("brand", brandsToQuery)
         .order("last_updated", { ascending: false });
 
-      if (brandFilter !== "all") {
-        query = query.eq("brand", brandFilter);
-      }
-
-      const { data } = await query;
       return data || [];
     },
   });
 
-  // Fetch orders for ETA calculation
+  // Fetch orders for ETA calculation with brand filtering
   const { data: orderStats } = useQuery({
-    queryKey: ["grabba-order-stats", brandFilter],
+    queryKey: ["grabba-order-stats", selectedBrand],
     queryFn: async () => {
-      let query = supabase
+      const brandsToQuery = getBrandQuery();
+      const { data: orders } = await supabase
         .from("wholesale_orders")
         .select("*")
-        .in("brand", GRABBA_BRANDS)
+        .in("brand", brandsToQuery)
         .order("created_at", { ascending: true });
-
-      if (brandFilter !== "all") {
-        query = query.eq("brand", brandFilter);
-      }
-
-      const { data: orders } = await query;
       
       if (!orders || orders.length === 0) return {
         totalTubes: 0,
@@ -129,19 +122,11 @@ export default function GrabbaInventory() {
               Live tube counts, ETA, and neighborhood performance across all Grabba brands
             </p>
           </div>
-          <Select value={brandFilter} onValueChange={setBrandFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filter by brand" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Brands</SelectItem>
-              {GRABBA_BRANDS.map(brand => (
-                <SelectItem key={brand} value={brand}>
-                  {getBrandConfig(brand).label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <BrandFilterBar
+            selectedBrand={selectedBrand}
+            onBrandChange={setSelectedBrand}
+            variant="default"
+          />
         </div>
 
         {/* Global Snapshot */}

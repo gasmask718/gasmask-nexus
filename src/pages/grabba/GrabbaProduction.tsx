@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,26 +11,25 @@ import { Factory, Box, Wrench, AlertTriangle, Plus, CheckCircle } from "lucide-r
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { GRABBA_BRANDS, getBrandConfig } from "@/config/grabbaBrands";
+import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
+import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 
 export default function GrabbaProduction() {
   const queryClient = useQueryClient();
-  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrand();
 
-  // Fetch production batches
+  // Fetch production batches with brand filtering
   const { data: batches, isLoading: loadingBatches } = useQuery({
-    queryKey: ["grabba-production-batches", brandFilter],
+    queryKey: ["grabba-production-batches", selectedBrand],
     queryFn: async () => {
-      let query = supabase
+      const brandsToQuery = getBrandQuery();
+      const { data } = await supabase
         .from("production_batches")
         .select(`*, office:production_offices(name)`)
+        .in("brand", brandsToQuery)
         .order("created_at", { ascending: false })
         .limit(50);
 
-      if (brandFilter !== "all") {
-        query = query.eq("brand", brandFilter);
-      }
-
-      const { data } = await query;
       return data || [];
     },
   });
@@ -94,19 +92,11 @@ export default function GrabbaProduction() {
               Monitor boxes made, tools issued, machinery health, and production office performance
             </p>
           </div>
-          <Select value={brandFilter} onValueChange={setBrandFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filter by brand" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Brands</SelectItem>
-              {GRABBA_BRANDS.map(brand => (
-                <SelectItem key={brand} value={brand}>
-                  {getBrandConfig(brand).label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <BrandFilterBar
+            selectedBrand={selectedBrand}
+            onBrandChange={setSelectedBrand}
+            variant="default"
+          />
         </div>
 
         {/* KPI Cards */}

@@ -1,48 +1,41 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DollarSign, TrendingUp, AlertTriangle, Clock, CheckCircle, Users } from "lucide-react";
 import { GRABBA_BRANDS, getBrandConfig } from "@/config/grabbaBrands";
+import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
+import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 
 export default function GrabbaFinance() {
-  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrand();
 
-  // Fetch invoices
+  // Fetch invoices with brand filtering
   const { data: invoices } = useQuery({
-    queryKey: ["grabba-finance-invoices", brandFilter],
+    queryKey: ["grabba-finance-invoices", selectedBrand],
     queryFn: async () => {
-      let query = supabase
+      const brandsToQuery = getBrandQuery();
+      const { data } = await supabase
         .from("invoices")
         .select(`*, company:companies(name)`)
+        .in("brand", brandsToQuery)
         .order("created_at", { ascending: false });
 
-      if (brandFilter !== "all") {
-        query = query.eq("brand", brandFilter);
-      }
-
-      const { data } = await query;
       return data || [];
     },
   });
 
-  // Fetch orders for revenue
+  // Fetch orders for revenue with brand filtering
   const { data: orders } = useQuery({
-    queryKey: ["grabba-finance-orders", brandFilter],
+    queryKey: ["grabba-finance-orders", selectedBrand],
     queryFn: async () => {
-      let query = supabase
+      const brandsToQuery = getBrandQuery();
+      const { data } = await supabase
         .from("wholesale_orders")
         .select("*")
-        .in("brand", GRABBA_BRANDS);
+        .in("brand", brandsToQuery);
 
-      if (brandFilter !== "all") {
-        query = query.eq("brand", brandFilter);
-      }
-
-      const { data } = await query;
       return data || [];
     },
   });
@@ -105,19 +98,11 @@ export default function GrabbaFinance() {
               Profit, costs, commissions, unpaid, and risk scores for all Grabba product companies
             </p>
           </div>
-          <Select value={brandFilter} onValueChange={setBrandFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filter by brand" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Brands</SelectItem>
-              {GRABBA_BRANDS.map(brand => (
-                <SelectItem key={brand} value={brand}>
-                  {getBrandConfig(brand).label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <BrandFilterBar
+            selectedBrand={selectedBrand}
+            onBrandChange={setSelectedBrand}
+            variant="default"
+          />
         </div>
 
         {/* KPI Cards */}

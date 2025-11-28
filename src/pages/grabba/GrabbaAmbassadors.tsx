@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,8 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Award, Users, DollarSign, TrendingUp, Plus, Star } from "lucide-react";
 import { format } from "date-fns";
+import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
+import { BrandFilterBar, BrandBadge } from "@/components/grabba/BrandFilterBar";
+import { GRABBA_BRANDS, GrabbaBrand } from "@/config/grabbaBrands";
 
 export default function GrabbaAmbassadors() {
+  const { selectedBrand, setSelectedBrand } = useGrabbaBrand();
+
   // Fetch ambassadors
   const { data: ambassadors, isLoading } = useQuery({
     queryKey: ["grabba-ambassadors"],
@@ -65,15 +69,22 @@ export default function GrabbaAmbassadors() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <Award className="h-8 w-8 text-primary" />
-            Grabba Ambassadors & Reps
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Partner reps who find and maintain stores and wholesalers – with tracked commissions
-          </p>
+        {/* Header with Brand Filter */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+              <Award className="h-8 w-8 text-primary" />
+              Grabba Ambassadors & Reps
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Partner reps who find and maintain stores and wholesalers – with tracked commissions
+            </p>
+          </div>
+          <BrandFilterBar
+            selectedBrand={selectedBrand}
+            onBrandChange={setSelectedBrand}
+            variant="default"
+          />
         </div>
 
         {/* KPI Cards */}
