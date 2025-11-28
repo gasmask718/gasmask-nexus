@@ -8,8 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Globe, Package, DollarSign, Lightbulb, Search, Plus, CheckCircle, Clock } from "lucide-react";
 import { format } from "date-fns";
+import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
+import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
+import { GRABBA_BRANDS, getBrandConfig, GrabbaBrand } from "@/config/grabbaBrands";
 
 export default function GrabbaWholesalePlatform() {
+  const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrand();
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch wholesalers
@@ -24,22 +28,28 @@ export default function GrabbaWholesalePlatform() {
     },
   });
 
-  // Fetch products
+  // Fetch products with brand filtering
   const { data: products } = useQuery({
-    queryKey: ["grabba-wholesale-products"],
+    queryKey: ["grabba-wholesale-products", selectedBrand],
     queryFn: async () => {
+      const brandsToQuery = getBrandQuery();
       const { data } = await supabase
         .from("wholesale_products")
         .select(`*`)
-        .eq("is_active", true)
-        .order("created_at", { ascending: false });
-      return data || [];
+        .eq("is_active", true);
+      
+      // Filter by brand in JS to avoid type issues
+      let result = (data || []) as any[];
+      if (selectedBrand !== 'all') {
+        result = result.filter(p => p.brand === selectedBrand);
+      }
+      return result;
     },
   });
 
-  // Fetch platform orders
+  // Fetch platform orders with brand filtering
   const { data: platformOrders } = useQuery({
-    queryKey: ["grabba-platform-orders"],
+    queryKey: ["grabba-platform-orders", selectedBrand],
     queryFn: async () => {
       const { data } = await supabase
         .from("wholesale_orders_platform")
@@ -50,7 +60,13 @@ export default function GrabbaWholesalePlatform() {
         `)
         .order("created_at", { ascending: false })
         .limit(50);
-      return data || [];
+      
+      // Filter by brand in JS to avoid type issues
+      let result = (data || []) as any[];
+      if (selectedBrand !== 'all') {
+        result = result.filter(o => o.brand === selectedBrand);
+      }
+      return result;
     },
   });
 
@@ -81,14 +97,21 @@ export default function GrabbaWholesalePlatform() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <Globe className="h-8 w-8 text-primary" />
-            National Wholesale Platform
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Wholesalers upload products, sell through our network, and get sourced with top items
-          </p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+              <Globe className="h-8 w-8 text-primary" />
+              National Wholesale Platform
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Wholesalers upload products, sell through our network, and get sourced with top items
+            </p>
+          </div>
+          <BrandFilterBar
+            selectedBrand={selectedBrand}
+            onBrandChange={setSelectedBrand}
+            variant="default"
+          />
         </div>
 
         {/* KPI Cards */}
