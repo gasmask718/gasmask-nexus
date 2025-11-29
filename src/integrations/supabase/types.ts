@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_ledger: {
+        Row: {
+          amount: number
+          brand: string | null
+          category: string | null
+          created_at: string | null
+          direction: string
+          id: string
+          notes: string | null
+          recorded_by: string | null
+          source_id: string | null
+          source_type: string
+        }
+        Insert: {
+          amount: number
+          brand?: string | null
+          category?: string | null
+          created_at?: string | null
+          direction: string
+          id?: string
+          notes?: string | null
+          recorded_by?: string | null
+          source_id?: string | null
+          source_type: string
+        }
+        Update: {
+          amount?: number
+          brand?: string | null
+          category?: string | null
+          created_at?: string | null
+          direction?: string
+          id?: string
+          notes?: string | null
+          recorded_by?: string | null
+          source_id?: string | null
+          source_type?: string
+        }
+        Relationships: []
+      }
       acquisitions_pipeline: {
         Row: {
           actual_assignment_fee: number | null
@@ -285,6 +324,105 @@ export type Database = {
           trigger_type?: string
         }
         Relationships: []
+      }
+      affiliate_clicks: {
+        Row: {
+          ambassador_id: string | null
+          converted: boolean | null
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          landing_page: string | null
+          referral_code: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          ambassador_id?: string | null
+          converted?: boolean | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          landing_page?: string | null
+          referral_code?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          ambassador_id?: string | null
+          converted?: boolean | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          landing_page?: string | null
+          referral_code?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_clicks_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_conversions: {
+        Row: {
+          ambassador_id: string | null
+          click_id: string | null
+          commission_amount: number | null
+          commission_rate: number | null
+          created_at: string | null
+          id: string
+          order_id: string | null
+          paid_at: string | null
+          status: string | null
+        }
+        Insert: {
+          ambassador_id?: string | null
+          click_id?: string | null
+          commission_amount?: number | null
+          commission_rate?: number | null
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          paid_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          ambassador_id?: string | null
+          click_id?: string | null
+          commission_amount?: number | null
+          commission_rate?: number | null
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          paid_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_conversions_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_conversions_click_id_fkey"
+            columns: ["click_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_clicks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_conversions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_command_logs: {
         Row: {
@@ -3202,6 +3340,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cart_items: {
+        Row: {
+          cart_id: string | null
+          created_at: string | null
+          id: string
+          price_locked: number | null
+          product_id: string | null
+          qty: number | null
+        }
+        Insert: {
+          cart_id?: string | null
+          created_at?: string | null
+          id?: string
+          price_locked?: number | null
+          product_id?: string | null
+          qty?: number | null
+        }
+        Update: {
+          cart_id?: string | null
+          created_at?: string | null
+          id?: string
+          price_locked?: number | null
+          product_id?: string | null
+          qty?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "carts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carts: {
+        Row: {
+          created_at: string | null
+          id: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       ceo_actions: {
         Row: {
@@ -8963,6 +9167,126 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_order_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          order_id: string | null
+          price_each: number
+          product_id: string | null
+          qty: number | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          price_each: number
+          product_id?: string | null
+          qty?: number | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          price_each?: number
+          product_id?: string | null
+          qty?: number | null
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_order_items_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_orders: {
+        Row: {
+          billing_address: Json | null
+          created_at: string | null
+          fulfillment_status: string | null
+          id: string
+          notes: string | null
+          order_type: string | null
+          payment_status: string | null
+          shipping_address: Json | null
+          shipping_cost: number | null
+          shipping_funded_by_customer: boolean | null
+          stripe_payment_intent_id: string | null
+          subtotal: number | null
+          tax_amount: number | null
+          total: number | null
+          updated_at: string | null
+          user_id: string
+          wholesaler_id: string | null
+        }
+        Insert: {
+          billing_address?: Json | null
+          created_at?: string | null
+          fulfillment_status?: string | null
+          id?: string
+          notes?: string | null
+          order_type?: string | null
+          payment_status?: string | null
+          shipping_address?: Json | null
+          shipping_cost?: number | null
+          shipping_funded_by_customer?: boolean | null
+          stripe_payment_intent_id?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          total?: number | null
+          updated_at?: string | null
+          user_id: string
+          wholesaler_id?: string | null
+        }
+        Update: {
+          billing_address?: Json | null
+          created_at?: string | null
+          fulfillment_status?: string | null
+          id?: string
+          notes?: string | null
+          order_type?: string | null
+          payment_status?: string | null
+          shipping_address?: Json | null
+          shipping_cost?: number | null
+          shipping_funded_by_customer?: boolean | null
+          stripe_payment_intent_id?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          total?: number | null
+          updated_at?: string | null
+          user_id?: string
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_orders_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mass_offer_campaigns: {
         Row: {
           accepted_count: number
@@ -9217,6 +9541,42 @@ export type Database = {
         }
         Relationships: []
       }
+      multi_language_content: {
+        Row: {
+          content_ar: string | null
+          content_en: string | null
+          content_es: string | null
+          content_fr: string | null
+          created_at: string | null
+          id: string
+          key: string
+          module: string
+          updated_at: string | null
+        }
+        Insert: {
+          content_ar?: string | null
+          content_en?: string | null
+          content_es?: string | null
+          content_fr?: string | null
+          created_at?: string | null
+          id?: string
+          key: string
+          module: string
+          updated_at?: string | null
+        }
+        Update: {
+          content_ar?: string | null
+          content_en?: string | null
+          content_es?: string | null
+          content_fr?: string | null
+          created_at?: string | null
+          id?: string
+          key?: string
+          module?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       networth_snapshots: {
         Row: {
           assets_breakdown: Json | null
@@ -9366,6 +9726,83 @@ export type Database = {
           },
         ]
       }
+      order_routing: {
+        Row: {
+          assigned_at: string | null
+          assigned_biker_id: string | null
+          assigned_driver_id: string | null
+          assigned_wholesaler_id: string | null
+          cash_amount: number | null
+          cash_collection: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          delivery_type: string | null
+          id: string
+          order_id: string | null
+          pickup_required: boolean | null
+          status: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_biker_id?: string | null
+          assigned_driver_id?: string | null
+          assigned_wholesaler_id?: string | null
+          cash_amount?: number | null
+          cash_collection?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          delivery_type?: string | null
+          id?: string
+          order_id?: string | null
+          pickup_required?: boolean | null
+          status?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_biker_id?: string | null
+          assigned_driver_id?: string | null
+          assigned_wholesaler_id?: string | null
+          cash_amount?: number | null
+          cash_collection?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          delivery_type?: string | null
+          id?: string
+          order_id?: string | null
+          pickup_required?: boolean | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_routing_assigned_biker_id_fkey"
+            columns: ["assigned_biker_id"]
+            isOneToOne: false
+            referencedRelation: "biker_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_routing_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_routing_assigned_wholesaler_id_fkey"
+            columns: ["assigned_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_routing_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payouts: {
         Row: {
           assignment_fee: number
@@ -9493,6 +9930,42 @@ export type Database = {
           pay_period_end?: string
           pay_period_start?: string
           status?: string | null
+        }
+        Relationships: []
+      }
+      personal_finance: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          subcategory: string | null
+          transaction_date: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          subcategory?: string | null
+          transaction_date?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          subcategory?: string | null
+          transaction_date?: string | null
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -9773,6 +10246,41 @@ export type Database = {
           },
         ]
       }
+      pricing_tiers: {
+        Row: {
+          created_at: string | null
+          id: string
+          min_qty: number | null
+          price_per_unit: number
+          product_id: string | null
+          tier: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          min_qty?: number | null
+          price_per_unit: number
+          product_id?: string | null
+          tier: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          min_qty?: number | null
+          price_per_unit?: number
+          product_id?: string | null
+          tier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_batches: {
         Row: {
           boxes_produced: number | null
@@ -9861,6 +10369,56 @@ export type Database = {
           total_cost?: number
         }
         Relationships: []
+      }
+      production_logs: {
+        Row: {
+          boxes_packed: number | null
+          brand_id: string | null
+          created_at: string | null
+          created_by: string | null
+          defects_count: number | null
+          id: string
+          labor_hours: number | null
+          materials_used: Json | null
+          notes: string | null
+          production_date: string | null
+          tubes_produced: number | null
+        }
+        Insert: {
+          boxes_packed?: number | null
+          brand_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          defects_count?: number | null
+          id?: string
+          labor_hours?: number | null
+          materials_used?: Json | null
+          notes?: string | null
+          production_date?: string | null
+          tubes_produced?: number | null
+        }
+        Update: {
+          boxes_packed?: number | null
+          brand_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          defects_count?: number | null
+          id?: string
+          labor_hours?: number | null
+          materials_used?: Json | null
+          notes?: string | null
+          production_date?: string | null
+          tubes_produced?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_logs_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       production_offices: {
         Row: {
@@ -10012,6 +10570,87 @@ export type Database = {
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products_all: {
+        Row: {
+          brand_id: string | null
+          created_at: string | null
+          description: string | null
+          dimensions: Json | null
+          id: string
+          images: Json | null
+          inventory_qty: number | null
+          processing_time: string | null
+          product_name: string
+          retail_price: number | null
+          shipping_from_city: string | null
+          shipping_from_state: string | null
+          status: string | null
+          store_price: number | null
+          unit_type: string | null
+          updated_at: string | null
+          weight_oz: number | null
+          wholesale_price: number | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          brand_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          dimensions?: Json | null
+          id?: string
+          images?: Json | null
+          inventory_qty?: number | null
+          processing_time?: string | null
+          product_name: string
+          retail_price?: number | null
+          shipping_from_city?: string | null
+          shipping_from_state?: string | null
+          status?: string | null
+          store_price?: number | null
+          unit_type?: string | null
+          updated_at?: string | null
+          weight_oz?: number | null
+          wholesale_price?: number | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          brand_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          dimensions?: Json | null
+          id?: string
+          images?: Json | null
+          inventory_qty?: number | null
+          processing_time?: string | null
+          product_name?: string
+          retail_price?: number | null
+          shipping_from_city?: string | null
+          shipping_from_state?: string | null
+          status?: string | null
+          store_price?: number | null
+          unit_type?: string | null
+          updated_at?: string | null
+          weight_oz?: number | null
+          wholesale_price?: number | null
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_all_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_all_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -10998,6 +11637,53 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipping_labels: {
+        Row: {
+          carrier: string | null
+          created_at: string | null
+          id: string
+          label_cost: number | null
+          label_url: string | null
+          order_id: string | null
+          service_type: string | null
+          status: string | null
+          tracking_number: string | null
+          tracking_url: string | null
+        }
+        Insert: {
+          carrier?: string | null
+          created_at?: string | null
+          id?: string
+          label_cost?: number | null
+          label_url?: string | null
+          order_id?: string | null
+          service_type?: string | null
+          status?: string | null
+          tracking_number?: string | null
+          tracking_url?: string | null
+        }
+        Update: {
+          carrier?: string | null
+          created_at?: string | null
+          id?: string
+          label_cost?: number | null
+          label_url?: string | null
+          order_id?: string | null
+          service_type?: string | null
+          status?: string | null
+          tracking_number?: string | null
+          tracking_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipping_labels_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -13857,6 +14543,59 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesaler_payouts: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          net_amount: number
+          paid_at: string | null
+          payout_method: string | null
+          payout_reference: string | null
+          period_end: string | null
+          period_start: string | null
+          platform_fee: number | null
+          status: string | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          net_amount: number
+          paid_at?: string | null
+          payout_method?: string | null
+          payout_reference?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          platform_fee?: number | null
+          status?: string | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          net_amount?: number
+          paid_at?: string | null
+          payout_method?: string | null
+          payout_reference?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          platform_fee?: number | null
+          status?: string | null
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_payouts_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
         ]
