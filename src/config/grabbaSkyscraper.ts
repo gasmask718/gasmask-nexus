@@ -76,7 +76,7 @@ export const GRABBA_FLOORS: GrabbaFloor[] = [
     name: 'Delivery & Drivers',
     icon: Truck,
     path: '/grabba/deliveries',
-    description: 'Routes, Driver management, Bikers, Delivery confirmations',
+    description: 'Floor 4 — Delivery: Routes, drivers, bikers, payouts, and delivery ops for Grabba brands.',
     emoji: '🚴'
   },
   {
