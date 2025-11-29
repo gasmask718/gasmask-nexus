@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,16 +7,88 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { 
   Award, Users, DollarSign, TrendingUp, Plus, Star, MapPin, 
-  Store, Package, Search, Building2, Wallet, CheckCircle2, Clock
+  Store, Package, Search, Building2, Wallet, CheckCircle2, Clock, Edit, Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 import { useState } from "react";
+import { EntityModal } from "@/components/crud/EntityModal";
+import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
+import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
+import { TableRowActions, type RowAction } from "@/components/crud/TableRowActions";
+import { ambassadorFields } from "@/config/entityFieldConfigs";
+import { toast } from "sonner";
 
 export default function GrabbaAmbassadors() {
   const { selectedBrand, setSelectedBrand } = useGrabbaBrand();
   const [searchTerm, setSearchTerm] = useState("");
+  const queryClient = useQueryClient();
+  
+  // CRUD Modal States
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedAmbassador, setSelectedAmbassador] = useState<any>(null);
+  
+  // CRUD Mutations
+  const createMutation = useMutation({
+    mutationFn: async (data: Record<string, unknown>) => {
+      const { data: result, error } = await supabase
+        .from("ambassadors")
+        .insert(data as any)
+        .select()
+        .single();
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["grabba-ambassadors"] });
+      toast.success("Ambassador created successfully");
+    },
+    onError: (error: Error) => toast.error(`Failed: ${error.message}`),
+  });
+  
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...data }: { id: string } & Record<string, unknown>) => {
+      const { error } = await supabase
+        .from("ambassadors")
+        .update(data as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["grabba-ambassadors"] });
+      toast.success("Ambassador updated successfully");
+    },
+    onError: (error: Error) => toast.error(`Failed: ${error.message}`),
+  });
+  
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("ambassadors").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["grabba-ambassadors"] });
+      toast.success("Ambassador deleted successfully");
+    },
+    onError: (error: Error) => toast.error(`Failed: ${error.message}`),
+  });
+  
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase
+        .from("ambassadors")
+        .update({ is_active })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["grabba-ambassadors"] });
+      toast.success("Status updated");
+    },
+  });
 
   // Fetch ambassadors
   const { data: ambassadors, isLoading } = useQuery({
@@ -221,7 +293,7 @@ export default function GrabbaAmbassadors() {
                       className="pl-9 w-64"
                     />
                   </div>
-                  <Button size="sm" className="gap-2">
+                  <Button size="sm" className="gap-2" onClick={() => setCreateModalOpen(true)}>
                     <Plus className="h-4 w-4" /> Add Ambassador
                   </Button>
                 </div>
@@ -236,6 +308,12 @@ export default function GrabbaAmbassadors() {
                     {filteredAmbassadors?.map((amb, i) => {
                       const ambStores = assignments?.filter(a => a.ambassador?.id === amb.id && (a.role_type === 'store_finder' || a.company?.type === 'store'))?.length || 0;
                       const ambWholesalers = assignments?.filter(a => a.ambassador?.id === amb.id && (a.role_type === 'wholesaler_finder' || a.company?.type === 'wholesaler'))?.length || 0;
+                      
+                      const rowActions: RowAction[] = [
+                        { type: 'edit', onClick: () => { setSelectedAmbassador(amb); setEditModalOpen(true); }},
+                        { type: amb.is_active ? 'deactivate' : 'activate', onClick: () => toggleStatusMutation.mutate({ id: amb.id, is_active: !amb.is_active })},
+                        { type: 'delete', onClick: () => { setSelectedAmbassador(amb); setDeleteModalOpen(true); }, destructive: true },
+                      ];
                       
                       return (
                         <div key={amb.id} className="p-4 rounded-xl border border-border/50 bg-card/30 flex items-center justify-between">
@@ -272,6 +350,7 @@ export default function GrabbaAmbassadors() {
                                 Code: {amb.tracking_code}
                               </div>
                             </div>
+                            <TableRowActions actions={rowActions} />
                           </div>
                         </div>
                       );
@@ -637,6 +716,50 @@ export default function GrabbaAmbassadors() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Floating Add Button */}
+      <GlobalAddButton
+        label="+New Ambassador"
+        onClick={() => setCreateModalOpen(true)}
+        variant="floating"
+      />
+      
+      {/* Create Modal */}
+      <EntityModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        title="Create Ambassador"
+        fields={ambassadorFields}
+        onSubmit={async (data) => { await createMutation.mutateAsync(data); }}
+        mode="create"
+      />
+      
+      {/* Edit Modal */}
+      <EntityModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        title="Edit Ambassador"
+        fields={ambassadorFields}
+        defaultValues={selectedAmbassador || {}}
+        onSubmit={async (data) => { 
+          if (selectedAmbassador) {
+            await updateMutation.mutateAsync({ id: selectedAmbassador.id, ...data });
+          }
+        }}
+        mode="edit"
+      />
+      
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        itemName={selectedAmbassador?.tracking_code}
+        onConfirm={async () => {
+          if (selectedAmbassador) {
+            await deleteMutation.mutateAsync(selectedAmbassador.id);
+          }
+        }}
+      />
     </div>
   );
 }

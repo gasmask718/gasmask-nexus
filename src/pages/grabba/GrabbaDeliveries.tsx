@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,12 +10,18 @@ import { Progress } from "@/components/ui/progress";
 import { 
   Truck, MapPin, DollarSign, CheckCircle, Clock, Plus, User, 
   Search, Route, Zap, TrendingUp, AlertTriangle, Bike, Star,
-  Phone, Navigation, Package, BarChart3
+  Phone, Navigation, Package, BarChart3, Edit, Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 import { GRABBA_BRAND_CONFIG, type GrabbaBrand, getBrandConfig } from "@/config/grabbaSkyscraper";
+import { EntityModal } from "@/components/crud/EntityModal";
+import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
+import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
+import { TableRowActions, type RowAction } from "@/components/crud/TableRowActions";
+import { driverFields, routeFields } from "@/config/entityFieldConfigs";
+import { toast } from "sonner";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FLOOR 4 — GRABBA DELIVERIES & DRIVERS
@@ -25,6 +31,62 @@ import { GRABBA_BRAND_CONFIG, type GrabbaBrand, getBrandConfig } from "@/config/
 export default function GrabbaDeliveries() {
   const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrand();
   const [search, setSearch] = useState("");
+  const queryClient = useQueryClient();
+  
+  // CRUD Modal States
+  const [createDriverOpen, setCreateDriverOpen] = useState(false);
+  const [editDriverOpen, setEditDriverOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<any>(null);
+  const [createRouteOpen, setCreateRouteOpen] = useState(false);
+  
+  // Driver CRUD Mutations
+  const createDriverMutation = useMutation({
+    mutationFn: async (data: Record<string, unknown>) => {
+      const { error } = await supabase.from("grabba_drivers").insert(data as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["grabba-drivers"] });
+      toast.success("Driver created");
+    },
+    onError: (error: Error) => toast.error(`Failed: ${error.message}`),
+  });
+  
+  const updateDriverMutation = useMutation({
+    mutationFn: async ({ id, ...data }: { id: string } & Record<string, unknown>) => {
+      const { error } = await supabase.from("grabba_drivers").update(data as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["grabba-drivers"] });
+      toast.success("Driver updated");
+    },
+    onError: (error: Error) => toast.error(`Failed: ${error.message}`),
+  });
+  
+  const deleteDriverMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("grabba_drivers").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["grabba-drivers"] });
+      toast.success("Driver deleted");
+    },
+    onError: (error: Error) => toast.error(`Failed: ${error.message}`),
+  });
+  
+  const toggleDriverStatus = useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      const { error } = await supabase.from("grabba_drivers").update({ active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["grabba-drivers"] });
+      toast.success("Status updated");
+    },
+  });
 
   // ─────────────────────────────────────────────────────────────────────────────
   // FETCH DRIVERS
@@ -737,6 +799,46 @@ export default function GrabbaDeliveries() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Floating Add Button */}
+      <GlobalAddButton
+        label="+New Driver"
+        onClick={() => setCreateDriverOpen(true)}
+        variant="floating"
+      />
+      
+      {/* Create Driver Modal */}
+      <EntityModal
+        open={createDriverOpen}
+        onOpenChange={setCreateDriverOpen}
+        title="Create Driver"
+        fields={driverFields}
+        onSubmit={async (data) => { await createDriverMutation.mutateAsync(data); }}
+        mode="create"
+      />
+      
+      {/* Edit Driver Modal */}
+      <EntityModal
+        open={editDriverOpen}
+        onOpenChange={setEditDriverOpen}
+        title="Edit Driver"
+        fields={driverFields}
+        defaultValues={selectedDriver || {}}
+        onSubmit={async (data) => { 
+          if (selectedDriver) await updateDriverMutation.mutateAsync({ id: selectedDriver.id, ...data });
+        }}
+        mode="edit"
+      />
+      
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        itemName={selectedDriver?.name}
+        onConfirm={async () => {
+          if (selectedDriver) await deleteDriverMutation.mutateAsync(selectedDriver.id);
+        }}
+      />
     </div>
   );
 }
