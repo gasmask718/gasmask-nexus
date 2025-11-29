@@ -21,6 +21,7 @@ import { useInsightPanel, useInsightData, getAISuggestions } from "@/hooks/useIn
 import { InteractiveStatTile } from "@/components/system/InteractiveStatTile";
 import { DrillDownTile } from "@/components/drilldown/DrillDownTile";
 import { DrillDownEntity, DrillDownFilters } from "@/lib/drilldown";
+import { AutoOpsPanel } from "@/components/grabba/AutoOpsPanel";
 
 // Use canonical brand IDs from grabbaSkyscraper.ts
 const GRABBA_BRAND_FILTER = [...GRABBA_BRAND_IDS];
@@ -1229,8 +1230,13 @@ const GrabbaCommandPenthouse = () => {
         <WholesaleMarketplacePulse />
       </div>
       
-      {/* Row 6: Communication Intelligence */}
-      <CommunicationIntelligence />
+      {/* Row 6: Auto-Ops + Communication Intelligence */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <CommunicationIntelligence />
+        </div>
+        <AutoOpsPanel />
+      </div>
       
       {/* Row 7: Data Health (Admin Tools) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -236,6 +236,44 @@ export type Database = {
           },
         ]
       }
+      ai_playbooks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          steps: Json
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          steps?: Json
+          title: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          steps?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_playbooks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_recommendations: {
         Row: {
           actioned_at: string | null
@@ -291,6 +329,95 @@ export type Database = {
             columns: ["actioned_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_routine_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          playbook_id: string | null
+          result: Json | null
+          routine_id: string | null
+          run_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          playbook_id?: string | null
+          result?: Json | null
+          routine_id?: string | null
+          run_at?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          playbook_id?: string | null
+          result?: Json | null
+          routine_id?: string | null
+          run_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_routine_logs_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "ai_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_routine_logs_routine_id_fkey"
+            columns: ["routine_id"]
+            isOneToOne: false
+            referencedRelation: "ai_routines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_routines: {
+        Row: {
+          active: boolean
+          created_at: string
+          frequency: string
+          id: string
+          next_run_at: string
+          notify_user: boolean
+          playbook_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          frequency?: string
+          id?: string
+          next_run_at?: string
+          notify_user?: boolean
+          playbook_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          frequency?: string
+          id?: string
+          next_run_at?: string
+          notify_user?: boolean
+          playbook_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_routines_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "ai_playbooks"
             referencedColumns: ["id"]
           },
         ]
