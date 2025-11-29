@@ -19,7 +19,7 @@ import { GRABBA_BRAND_IDS, getBrandConfig, type GrabbaBrand, GRABBA_BRAND_CONFIG
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 import { AIFinanceForecast } from "@/components/grabba/intelligence";
-import { EntityModal, FieldConfig } from "@/components/crud/EntityModal";
+import { EntityModal, FieldConfig, ExportButton } from "@/components/crud";
 import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
 import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
 import { TableRowActions } from "@/components/crud/TableRowActions";

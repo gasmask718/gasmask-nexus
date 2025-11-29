@@ -19,7 +19,7 @@ import { BrandFilterBar, BrandBadgesRow } from "@/components/grabba/BrandFilterB
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { useGrabbaBrandActivity, useGrabbaBrandCounts } from "@/hooks/useGrabbaData";
 import { AICRMInsights } from "@/components/grabba/intelligence";
-import { EntityModal } from "@/components/crud/EntityModal";
+import { EntityModal, ExportButton } from "@/components/crud";
 import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
 import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
 import { useCrudOperations } from "@/hooks/useCrudOperations";

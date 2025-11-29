@@ -163,3 +163,73 @@ export const communicationLogFields: FieldConfig[] = [
     { value: 'not_interested', label: 'Not Interested' },
   ]},
 ];
+
+// Delivery Run Fields
+export const deliveryRunFields: FieldConfig[] = [
+  { name: 'route_date', label: 'Route Date', type: 'date', required: true },
+  { name: 'status', label: 'Status', type: 'select', options: [
+    { value: 'planned', label: 'Planned' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'cancelled', label: 'Cancelled' },
+  ]},
+  { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Route notes...' },
+];
+
+// Wholesale Item Fields
+export const wholesaleItemFields: FieldConfig[] = [
+  { name: 'name', label: 'Product Name', type: 'text', required: true, placeholder: 'Product name' },
+  { name: 'brand', label: 'Brand', type: 'select', required: true, options: brandOptions.slice(1) },
+  { name: 'sku', label: 'SKU', type: 'text', placeholder: 'SKU-001' },
+  { name: 'price', label: 'Price ($)', type: 'number', required: true, placeholder: '0.00' },
+  { name: 'cost', label: 'Cost ($)', type: 'number', placeholder: '0.00' },
+  { name: 'moq', label: 'Min Order Qty', type: 'number', placeholder: '1' },
+  { name: 'in_stock', label: 'In Stock', type: 'switch', defaultValue: true },
+  { name: 'marketplace_enabled', label: 'Marketplace Enabled', type: 'switch', defaultValue: false },
+];
+
+// CRM Contact Fields
+export const crmContactFields: FieldConfig[] = [
+  { name: 'contact_name', label: 'Contact Name', type: 'text', required: true, placeholder: 'Full name' },
+  { name: 'contact_phone', label: 'Phone', type: 'phone', placeholder: '(555) 123-4567' },
+  { name: 'contact_email', label: 'Email', type: 'email', placeholder: 'contact@example.com' },
+  { name: 'role', label: 'Role', type: 'text', placeholder: 'e.g., Owner, Manager' },
+  { name: 'is_primary', label: 'Primary Contact', type: 'switch', defaultValue: false },
+  { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Contact notes...' },
+];
+
+// Machine Maintenance Fields
+export const maintenanceLogFields: FieldConfig[] = [
+  { name: 'machine_name', label: 'Machine', type: 'text', required: true, placeholder: 'Machine name' },
+  { name: 'maintenance_type', label: 'Type', type: 'select', required: true, options: [
+    { value: 'routine', label: 'Routine' },
+    { value: 'repair', label: 'Repair' },
+    { value: 'emergency', label: 'Emergency' },
+    { value: 'inspection', label: 'Inspection' },
+  ]},
+  { name: 'description', label: 'Description', type: 'textarea', required: true, placeholder: 'What was done...' },
+  { name: 'cost', label: 'Cost ($)', type: 'number', placeholder: '0.00' },
+  { name: 'completed_at', label: 'Date Completed', type: 'date' },
+  { name: 'next_due', label: 'Next Due', type: 'date' },
+];
+
+// AI Task Fields
+export const aiTaskFields: FieldConfig[] = [
+  { name: 'name', label: 'Task Name', type: 'text', required: true, placeholder: 'Task name' },
+  { name: 'category', label: 'Category', type: 'select', required: true, options: [
+    { value: 'finance', label: 'Finance' },
+    { value: 'deliveries', label: 'Deliveries' },
+    { value: 'crm', label: 'CRM' },
+    { value: 'wholesale', label: 'Wholesale' },
+    { value: 'production', label: 'Production' },
+    { value: 'communication', label: 'Communication' },
+  ]},
+  { name: 'schedule', label: 'Schedule', type: 'select', options: [
+    { value: 'daily', label: 'Daily' },
+    { value: 'weekly', label: 'Weekly' },
+    { value: 'monthly', label: 'Monthly' },
+    { value: 'manual', label: 'Manual' },
+  ]},
+  { name: 'is_enabled', label: 'Enabled', type: 'switch', defaultValue: true },
+  { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Task description...' },
+];
