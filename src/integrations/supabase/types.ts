@@ -236,6 +236,54 @@ export type Database = {
           },
         ]
       }
+      ai_kpi_snapshots: {
+        Row: {
+          active_stores: number | null
+          brand: string | null
+          created_at: string
+          deliveries_today: number | null
+          id: string
+          inactive_stores: number | null
+          low_stock_items: number | null
+          region: string | null
+          snapshot_date: string
+          total_invoices: number | null
+          total_revenue: number | null
+          total_stores: number | null
+          unpaid_invoices: number | null
+        }
+        Insert: {
+          active_stores?: number | null
+          brand?: string | null
+          created_at?: string
+          deliveries_today?: number | null
+          id?: string
+          inactive_stores?: number | null
+          low_stock_items?: number | null
+          region?: string | null
+          snapshot_date?: string
+          total_invoices?: number | null
+          total_revenue?: number | null
+          total_stores?: number | null
+          unpaid_invoices?: number | null
+        }
+        Update: {
+          active_stores?: number | null
+          brand?: string | null
+          created_at?: string
+          deliveries_today?: number | null
+          id?: string
+          inactive_stores?: number | null
+          low_stock_items?: number | null
+          region?: string | null
+          snapshot_date?: string
+          total_invoices?: number | null
+          total_revenue?: number | null
+          total_stores?: number | null
+          unpaid_invoices?: number | null
+        }
+        Relationships: []
+      }
       ai_playbooks: {
         Row: {
           created_at: string
@@ -332,6 +380,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ai_risk_insights: {
+        Row: {
+          brand: string | null
+          created_at: string
+          details: string | null
+          entity_id: string | null
+          entity_type: string
+          expires_at: string | null
+          headline: string
+          id: string
+          recommended_action: string | null
+          region: string | null
+          risk_level: string
+          risk_score: number
+          risk_type: string
+          source_data: Json | null
+          status: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          details?: string | null
+          entity_id?: string | null
+          entity_type: string
+          expires_at?: string | null
+          headline: string
+          id?: string
+          recommended_action?: string | null
+          region?: string | null
+          risk_level?: string
+          risk_score?: number
+          risk_type: string
+          source_data?: Json | null
+          status?: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          details?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          expires_at?: string | null
+          headline?: string
+          id?: string
+          recommended_action?: string | null
+          region?: string | null
+          risk_level?: string
+          risk_score?: number
+          risk_type?: string
+          source_data?: Json | null
+          status?: string
+        }
+        Relationships: []
       }
       ai_routine_logs: {
         Row: {

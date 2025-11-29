@@ -212,6 +212,7 @@ import DrillDownPage from "./pages/grabba/drilldown/DrillDownPage";
 import AiCommandConsole from "./pages/grabba/AiCommandConsole";
 import AiPlaybooks from "./pages/grabba/AiPlaybooks";
 import AiRoutines from "./pages/grabba/AiRoutines";
+import RiskRadar from "./pages/grabba/RiskRadar";
 import { GrabbaLayout } from "./components/grabba/GrabbaLayout";
 import AIOperationsDashboard from "./pages/grabba/ai-operations/AIOperationsDashboard";
 import AITasks from "./pages/grabba/ai-operations/AITasks";
@@ -2208,6 +2209,7 @@ const App = () => (
               <Route path="/grabba/ai-console" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'csr']}><Layout><AiCommandConsole /></Layout></RequireRole></ProtectedRoute>} />
               <Route path="/grabba/ai-playbooks" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee']}><Layout><AiPlaybooks /></Layout></RequireRole></ProtectedRoute>} />
               <Route path="/grabba/routines" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee']}><Layout><AiRoutines /></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/risk-radar" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee']}><Layout><RiskRadar /></Layout></RequireRole></ProtectedRoute>} />
               
               {/* 🏢 FLOOR 1 — CRM & Store Control */}
               <Route path="/grabba/crm" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'driver', 'csr', 'ambassador', 'accountant']}><Layout><GrabbaLayout><GrabbaCRM /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
