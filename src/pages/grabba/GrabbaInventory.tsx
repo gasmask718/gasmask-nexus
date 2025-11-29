@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { GRABBA_BRAND_IDS, getBrandConfig, formatTubesAsBoxes, type GrabbaBrand, GRABBA_BRAND_CONFIG } from "@/config/grabbaSkyscraper";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
+import { AIInventoryWatch } from "@/components/grabba/intelligence";
 import { EntityModal, FieldConfig } from "@/components/crud/EntityModal";
 import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
 import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
@@ -320,30 +321,33 @@ export default function GrabbaInventory() {
           </Card>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="inventory" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <TabsList className="bg-muted/50">
-              <TabsTrigger value="inventory">Live Inventory</TabsTrigger>
-              <TabsTrigger value="brands">Brand Breakdown</TabsTrigger>
-              <TabsTrigger value="neighborhoods">Neighborhoods</TabsTrigger>
-              <TabsTrigger value="alerts">Low Stock Alerts</TabsTrigger>
-            </TabsList>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10 w-64"
-                />
+        {/* AI Inventory Watch Panel */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <div className="lg:col-span-3">
+            {/* Tabs */}
+            <Tabs defaultValue="inventory" className="space-y-6">
+              <div className="flex items-center justify-between">
+                <TabsList className="bg-muted/50">
+                  <TabsTrigger value="inventory">Live Inventory</TabsTrigger>
+                  <TabsTrigger value="brands">Brand Breakdown</TabsTrigger>
+                  <TabsTrigger value="neighborhoods">Neighborhoods</TabsTrigger>
+                  <TabsTrigger value="alerts">Low Stock Alerts</TabsTrigger>
+                </TabsList>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="pl-10 w-64"
+                    />
+                  </div>
+                  <Button onClick={() => setCreateModalOpen(true)} size="sm" className="gap-2">
+                    <Plus className="h-4 w-4" /> Add Inventory
+                  </Button>
+                </div>
               </div>
-              <Button onClick={() => setCreateModalOpen(true)} size="sm" className="gap-2">
-                <Plus className="h-4 w-4" /> Add Inventory
-              </Button>
-            </div>
-          </div>
 
           {/* Live Inventory Tab */}
           <TabsContent value="inventory">
@@ -504,7 +508,14 @@ export default function GrabbaInventory() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+            </Tabs>
+          </div>
+          
+          {/* AI Inventory Watch Sidebar */}
+          <div className="hidden lg:block">
+            <AIInventoryWatch />
+          </div>
+        </div>
       </div>
 
       {/* Modals */}
