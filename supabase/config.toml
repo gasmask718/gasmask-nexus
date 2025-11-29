@@ -158,3 +158,15 @@ verify_jwt = false
 
 [functions.ai-market-optimizer]
 verify_jwt = false
+
+[functions.ai-routine-runner]
+verify_jwt = false
+
+[functions.ai-risk-scan]
+verify_jwt = false
+
+[functions.follow-up-engine]
+verify_jwt = false
+
+[functions.daily-briefing]
+verify_jwt = false

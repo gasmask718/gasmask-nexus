@@ -238,6 +238,7 @@ export type Database = {
       }
       ai_daily_briefings: {
         Row: {
+          ai_summary: string | null
           brand: string | null
           briefing_date: string
           briefing_type: string
@@ -246,6 +247,7 @@ export type Database = {
           id: string
         }
         Insert: {
+          ai_summary?: string | null
           brand?: string | null
           briefing_date?: string
           briefing_type: string
@@ -254,6 +256,7 @@ export type Database = {
           id?: string
         }
         Update: {
+          ai_summary?: string | null
           brand?: string | null
           briefing_date?: string
           briefing_type?: string

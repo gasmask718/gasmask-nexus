@@ -23,6 +23,7 @@ import { DrillDownTile } from "@/components/drilldown/DrillDownTile";
 import { DrillDownEntity, DrillDownFilters } from "@/lib/drilldown";
 import { AutoOpsPanel } from "@/components/grabba/AutoOpsPanel";
 import { RiskRadarPanel } from "@/components/grabba/RiskRadarPanel";
+import { DailyBriefingSnapshot } from "@/components/grabba/DailyBriefingSnapshot";
 
 // Use canonical brand IDs from grabbaSkyscraper.ts
 const GRABBA_BRAND_FILTER = [...GRABBA_BRAND_IDS];
@@ -1231,13 +1232,16 @@ const GrabbaCommandPenthouse = () => {
         <WholesaleMarketplacePulse />
       </div>
       
-      {/* Row 6: Auto-Ops + Communication Intelligence */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Row 6: Auto-Ops + Risk + Briefing */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-2">
           <CommunicationIntelligence />
         </div>
         <AutoOpsPanel />
-        <RiskRadarPanel />
+        <div className="space-y-6">
+          <DailyBriefingSnapshot />
+          <RiskRadarPanel />
+        </div>
       </div>
       
       {/* Row 7: Data Health (Admin Tools) */}
