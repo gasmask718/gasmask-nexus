@@ -1,9 +1,15 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { GRABBA_BRANDS, GrabbaBrand, GRABBA_BRAND_CONFIG } from '@/config/grabbaBrands';
+import { 
+  GRABBA_BRAND_IDS, 
+  GRABBA_BRAND_CONFIG, 
+  ALL_BRANDS_OPTION,
+  type GrabbaBrand 
+} from '@/config/grabbaSkyscraper';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GRABBA BRAND CONTEXT
 // Unified brand filtering across all Grabba floors
+// Uses the canonical config from grabbaSkyscraper.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export type BrandFilterValue = GrabbaBrand | 'all';
@@ -25,12 +31,12 @@ export function GrabbaBrandProvider({ children }: { children: ReactNode }) {
 
   // Returns array of brands to filter by
   const brandFilter = selectedBrand === 'all' 
-    ? [...GRABBA_BRANDS] 
+    ? [...GRABBA_BRAND_IDS] 
     : [selectedBrand];
 
   // For Supabase queries - returns brands to filter
   const getBrandQuery = (): GrabbaBrand[] => {
-    return selectedBrand === 'all' ? [...GRABBA_BRANDS] : [selectedBrand];
+    return selectedBrand === 'all' ? [...GRABBA_BRAND_IDS] : [selectedBrand];
   };
 
   const isBrandSelected = (brand: GrabbaBrand): boolean => {
@@ -50,7 +56,7 @@ export function GrabbaBrandProvider({ children }: { children: ReactNode }) {
         getBrandQuery,
         isBrandSelected,
         getBrandConfig: getBrandConfigFn,
-        allBrands: GRABBA_BRANDS,
+        allBrands: GRABBA_BRAND_IDS,
       }}
     >
       {children}
@@ -71,11 +77,11 @@ export function useGrabbaBrandFilter() {
   const [selectedBrand, setSelectedBrand] = useState<BrandFilterValue>('all');
   
   const brandFilter = selectedBrand === 'all' 
-    ? [...GRABBA_BRANDS] 
+    ? [...GRABBA_BRAND_IDS] 
     : [selectedBrand];
 
   const getBrandQuery = (): GrabbaBrand[] => {
-    return selectedBrand === 'all' ? [...GRABBA_BRANDS] : [selectedBrand];
+    return selectedBrand === 'all' ? [...GRABBA_BRAND_IDS] : [selectedBrand];
   };
 
   return {
@@ -83,7 +89,12 @@ export function useGrabbaBrandFilter() {
     setSelectedBrand,
     brandFilter,
     getBrandQuery,
-    allBrands: GRABBA_BRANDS,
+    allBrands: GRABBA_BRAND_IDS,
     config: GRABBA_BRAND_CONFIG,
+    allBrandsOption: ALL_BRANDS_OPTION,
   };
 }
+
+// Re-export types and constants for convenience
+export { GRABBA_BRAND_IDS, GRABBA_BRAND_CONFIG, ALL_BRANDS_OPTION };
+export type { GrabbaBrand };

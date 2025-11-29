@@ -2198,26 +2198,47 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/grabba/command-penthouse"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <GrabbaCommandPenthouse />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/grabba/*"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <BrandPlaceholder />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
+              {/* ═══════════════════════════════════════════════════════════════════════════ */}
+              {/* GRABBA EMPIRE — 8-Floor Skyscraper + Penthouse Routes                        */}
+              {/* ═══════════════════════════════════════════════════════════════════════════ */}
+              
+              {/* 👑 PENTHOUSE — Command Center */}
+              <Route path="/grabba/command-penthouse" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommandPenthouse /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/cluster" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaClusterDashboard /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/ai-insights" element={<ProtectedRoute><Layout><GrabbaLayout><AIInsights /></GrabbaLayout></Layout></ProtectedRoute>} />
+              
+              {/* 🏢 FLOOR 1 — CRM & Store Control */}
+              <Route path="/grabba/crm" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCRM /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/store-master/:id" element={<ProtectedRoute><Layout><GrabbaLayout><StoreMasterProfile /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/brand/:brand" element={<ProtectedRoute><Layout><GrabbaLayout><BrandCRM /></GrabbaLayout></Layout></ProtectedRoute>} />
+              
+              {/* 📞 FLOOR 2 — Communication Center */}
+              <Route path="/grabba/communication" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommunication /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/text-center" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaTextCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/email-center" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaEmailCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/call-center" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCallCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/communication-logs" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommunicationLogs /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/brand/:brand/communications" element={<ProtectedRoute><Layout><GrabbaLayout><BrandCommunications /></GrabbaLayout></Layout></ProtectedRoute>} />
+              
+              {/* 📦 FLOOR 3 — Inventory Engine */}
+              <Route path="/grabba/inventory" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaInventory /></GrabbaLayout></Layout></ProtectedRoute>} />
+              
+              {/* 🚚 FLOOR 4 — Delivery & Drivers */}
+              <Route path="/grabba/deliveries" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaDeliveries /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/delivery-runs" element={<ProtectedRoute><Layout><GrabbaLayout><MultiBrandDelivery /></GrabbaLayout></Layout></ProtectedRoute>} />
+              
+              {/* 💰 FLOOR 5 — Finance & Orders */}
+              <Route path="/grabba/finance" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaFinance /></GrabbaLayout></Layout></ProtectedRoute>} />
+              
+              {/* 🏭 FLOOR 6 — Production & Machinery */}
+              <Route path="/grabba/production" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaProduction /></GrabbaLayout></Layout></ProtectedRoute>} />
+              
+              {/* 🌎 FLOOR 7 — Wholesale Marketplace */}
+              <Route path="/grabba/wholesale-platform" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaWholesalePlatform /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/upload-center" element={<ProtectedRoute><Layout><GrabbaLayout><UnifiedUploadCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
+              
+              {/* 👥 FLOOR 8 — Ambassadors & Reps */}
+              <Route path="/grabba/ambassadors" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaAmbassadors /></GrabbaLayout></Layout></ProtectedRoute>} />
               <Route
                 path="/scalati/*"
                 element={
