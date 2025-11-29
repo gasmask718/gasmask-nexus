@@ -11,7 +11,7 @@ import {
   Zap, Search, AlertTriangle, BarChart3, Building2 
 } from "lucide-react";
 import { format } from "date-fns";
-import { GRABBA_BRANDS, getBrandConfig, formatTubesAsBoxes, GrabbaBrand, GRABBA_BRAND_CONFIG } from "@/config/grabbaBrands";
+import { GRABBA_BRAND_IDS, getBrandConfig, formatTubesAsBoxes, type GrabbaBrand, GRABBA_BRAND_CONFIG } from "@/config/grabbaSkyscraper";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 
@@ -110,10 +110,10 @@ export default function GrabbaInventory() {
       const { data: orders } = await supabase
         .from("wholesale_orders")
         .select("brand, tubes_total, boxes")
-        .in("brand", GRABBA_BRANDS);
+        .in("brand", [...GRABBA_BRAND_IDS]);
 
       const breakdown: Record<GrabbaBrand, { tubes: number; boxes: number }> = {} as any;
-      GRABBA_BRANDS.forEach(brand => {
+      GRABBA_BRAND_IDS.forEach(brand => {
         breakdown[brand] = { tubes: 0, boxes: 0 };
       });
 
@@ -349,7 +349,7 @@ export default function GrabbaInventory() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {GRABBA_BRANDS.map(brand => {
+              {GRABBA_BRAND_IDS.map(brand => {
                 const config = GRABBA_BRAND_CONFIG[brand];
                 const data = brandBreakdown?.[brand] || { tubes: 0, boxes: 0 };
                 const percentage = totalBrandTubes > 0 ? (data.tubes / totalBrandTubes) * 100 : 0;

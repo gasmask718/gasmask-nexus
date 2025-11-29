@@ -14,7 +14,7 @@ import {
   Filter, X
 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
-import { GRABBA_BRANDS, GRABBA_BRAND_CONFIG, getBrandConfig, GrabbaBrand } from "@/config/grabbaBrands";
+import { GRABBA_BRAND_IDS, GRABBA_BRAND_CONFIG, getBrandConfig, type GrabbaBrand } from "@/config/grabbaSkyscraper";
 import { BrandFilterBar, BrandBadgesRow } from "@/components/grabba/BrandFilterBar";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { useGrabbaBrandActivity, useGrabbaBrandCounts } from "@/hooks/useGrabbaData";
@@ -464,7 +464,7 @@ export default function GrabbaCRM() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {GRABBA_BRANDS.map(brand => {
+            {GRABBA_BRAND_IDS.map(brand => {
               const config = getBrandConfig(brand);
               return (
                 <Badge key={brand} className={config.pill}>

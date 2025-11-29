@@ -12,7 +12,7 @@ import {
   TrendingUp, Calendar, Search, Zap, BarChart3, Clock
 } from "lucide-react";
 import { format, startOfWeek, endOfWeek, subWeeks, differenceInDays } from "date-fns";
-import { GRABBA_BRANDS, getBrandConfig, GrabbaBrand, GRABBA_BRAND_CONFIG } from "@/config/grabbaBrands";
+import { GRABBA_BRAND_IDS, getBrandConfig, type GrabbaBrand, GRABBA_BRAND_CONFIG } from "@/config/grabbaSkyscraper";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 
@@ -136,7 +136,7 @@ export default function GrabbaProduction() {
 
   // Brand breakdown
   const brandOutput: Record<GrabbaBrand, { boxes: number; tubes: number; batches: number }> = {} as any;
-  GRABBA_BRANDS.forEach(brand => {
+  GRABBA_BRAND_IDS.forEach(brand => {
     const brandBatches = batches?.filter(b => b.brand === brand) || [];
     brandOutput[brand] = {
       boxes: brandBatches.reduce((sum, b) => sum + (b.boxes_produced || 0), 0),
@@ -563,7 +563,7 @@ export default function GrabbaProduction() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {GRABBA_BRANDS.map(brand => {
+                  {GRABBA_BRAND_IDS.map(brand => {
                     const config = GRABBA_BRAND_CONFIG[brand];
                     const data = brandOutput[brand];
                     const percentage = totalAllBoxes > 0 ? (data.boxes / totalAllBoxes) * 100 : 0;

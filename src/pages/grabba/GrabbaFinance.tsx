@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { toast } from "sonner";
-import { GRABBA_BRANDS, getBrandConfig, GrabbaBrand, GRABBA_BRAND_CONFIG } from "@/config/grabbaBrands";
+import { GRABBA_BRAND_IDS, getBrandConfig, type GrabbaBrand, GRABBA_BRAND_CONFIG } from "@/config/grabbaSkyscraper";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 
@@ -142,7 +142,7 @@ export default function GrabbaFinance() {
 
   // Revenue by brand
   const revenueByBrand: Record<GrabbaBrand, number> = {} as any;
-  GRABBA_BRANDS.forEach(brand => {
+  GRABBA_BRAND_IDS.forEach(brand => {
     revenueByBrand[brand] = invoices?.filter(i => i.brand === brand)?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
   });
 
@@ -638,7 +638,7 @@ export default function GrabbaFinance() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {GRABBA_BRANDS.map(brand => {
+                  {GRABBA_BRAND_IDS.map(brand => {
                     const config = GRABBA_BRAND_CONFIG[brand];
                     const revenue = revenueByBrand[brand];
                     const unpaid = invoices?.filter(i => i.brand === brand && i.payment_status !== 'paid')

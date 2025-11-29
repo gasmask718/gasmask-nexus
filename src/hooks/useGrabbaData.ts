@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { GRABBA_BRANDS, GrabbaBrand } from '@/config/grabbaBrands';
+import { GRABBA_BRAND_IDS, type GrabbaBrand } from '@/config/grabbaSkyscraper';
+
+// Use canonical brand IDs
+const GRABBA_BRANDS = [...GRABBA_BRAND_IDS];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GRABBA DATA HOOKS

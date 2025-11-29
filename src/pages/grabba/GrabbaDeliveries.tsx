@@ -15,7 +15,7 @@ import {
 import { format } from "date-fns";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
-import { GRABBA_BRAND_CONFIG, GrabbaBrand, getBrandConfig } from "@/config/grabbaBrands";
+import { GRABBA_BRAND_CONFIG, type GrabbaBrand, getBrandConfig } from "@/config/grabbaSkyscraper";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FLOOR 4 — GRABBA DELIVERIES & DRIVERS

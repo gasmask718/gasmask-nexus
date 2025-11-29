@@ -9,13 +9,14 @@ import {
   MapPin, Factory, Globe, Award, Search, AlertTriangle, Zap, Activity
 } from "lucide-react";
 import { useState } from "react";
-import { GRABBA_BRAND_CONFIG, formatTubesAsBoxes, GRABBA_BRANDS } from "@/config/grabbaBrands";
+import { GRABBA_BRAND_CONFIG, formatTubesAsBoxes, GRABBA_BRAND_IDS, type GrabbaBrand } from "@/config/grabbaSkyscraper";
 import { format } from "date-fns";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 import { useGrabbaPenthouseStats } from "@/hooks/useGrabbaData";
 
-const GRABBA_BRAND_FILTER = ['gasmask', 'hotmama', 'hotscolati', 'grabba_r_us'];
+// Use canonical brand IDs from grabbaSkyscraper.ts
+const GRABBA_BRAND_FILTER = [...GRABBA_BRAND_IDS];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // EMPIRE SNAPSHOT (uses centralized useGrabbaPenthouseStats)
