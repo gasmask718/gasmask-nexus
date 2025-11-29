@@ -4516,6 +4516,51 @@ export type Database = {
           },
         ]
       }
+      customer_profiles: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          marketing_opt_in: boolean | null
+          phone: string | null
+          preferred_language: string | null
+          state: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          marketing_opt_in?: boolean | null
+          phone?: string | null
+          preferred_language?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          marketing_opt_in?: boolean | null
+          phone?: string | null
+          preferred_language?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       customer_receipts: {
         Row: {
           amount_paid: number | null
@@ -9921,6 +9966,7 @@ export type Database = {
           is_active: boolean | null
           name: string
           sku: string | null
+          store_price: number | null
           suggested_retail_price: number | null
           type: string
           unit_type: string
@@ -9936,6 +9982,7 @@ export type Database = {
           is_active?: boolean | null
           name: string
           sku?: string | null
+          store_price?: number | null
           suggested_retail_price?: number | null
           type: string
           unit_type: string
@@ -9951,6 +9998,7 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           sku?: string | null
+          store_price?: number | null
           suggested_retail_price?: number | null
           type?: string
           unit_type?: string

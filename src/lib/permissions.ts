@@ -1,5 +1,5 @@
 // Role-based permission definitions
-export type Role = 'admin' | 'va' | 'driver' | 'biker' | 'ambassador' | 'wholesaler' | 'store_owner' | 'production';
+export type Role = 'admin' | 'va' | 'driver' | 'biker' | 'ambassador' | 'wholesaler' | 'store_owner' | 'production' | 'customer';
 
 export type Permission = 
   // Driver permissions
@@ -43,6 +43,12 @@ export type Permission =
   | 'assign_tasks'
   | 'view_all_stores'
   | 'view_all_orders'
+  // Customer permissions
+  | 'shop_products'
+  | 'manage_cart'
+  | 'view_customer_orders'
+  | 'manage_addresses'
+  | 'view_rewards'
   // Admin permissions
   | 'admin_full_access';
 
@@ -134,6 +140,13 @@ export const PERMISSIONS: Record<Role, Permission[]> = {
     'log_defects',
     'record_box_output',
     'view_production_stats',
+  ],
+  customer: [
+    'shop_products',
+    'manage_cart',
+    'view_customer_orders',
+    'manage_addresses',
+    'view_rewards',
   ],
 };
 

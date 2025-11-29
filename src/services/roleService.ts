@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type PrimaryRole = 'admin' | 'va' | 'driver' | 'biker' | 'ambassador' | 'wholesaler' | 'store_owner' | 'production';
+export type PrimaryRole = 'admin' | 'va' | 'driver' | 'biker' | 'ambassador' | 'wholesaler' | 'store_owner' | 'production' | 'customer';
 export type PreferredLanguage = 'en' | 'es' | 'ar' | 'fr';
 
 export interface UserProfile {
@@ -34,6 +34,8 @@ export function getRoleRedirectPath(primaryRole: PrimaryRole): string {
       return '/portal/store';
     case 'production':
       return '/portal/production';
+    case 'customer':
+      return '/portal/customer';
     default:
       return '/portal/home';
   }
@@ -48,7 +50,8 @@ export function getRoleDisplayName(role: PrimaryRole): string {
     ambassador: 'Ambassador',
     wholesaler: 'Wholesaler',
     store_owner: 'Store Owner',
-    production: 'Production Staff'
+    production: 'Production Staff',
+    customer: 'Customer'
   };
   return names[role] || role;
 }
@@ -135,6 +138,14 @@ export async function getCurrentUserProfile() {
         .single();
       roleProfile = vaProfile;
       break;
+    case 'customer':
+      const { data: customerProfile } = await supabase
+        .from('customer_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      roleProfile = customerProfile;
+      break;
   }
 
   return { profile: profile as UserProfile, roleProfile };
@@ -218,6 +229,13 @@ export async function createRoleProfile(
     case 'va':
       result = await supabase
         .from('va_profiles')
+        .insert({ user_id: userId, ...data })
+        .select()
+        .single();
+      break;
+    case 'customer':
+      result = await supabase
+        .from('customer_profiles')
         .insert({ user_id: userId, ...data })
         .select()
         .single();
