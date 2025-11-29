@@ -127,6 +127,7 @@ import AmbassadorPortal from "./pages/portal/AmbassadorPortal";
 import StorePortal from "./pages/portal/StorePortal";
 import WholesalerPortal from "./pages/portal/WholesalerPortal";
 import { WholesalerDashboard, WholesalerProducts, WholesalerProductForm, WholesalerOrders, WholesalerFinance, WholesalerSettings } from "./pages/portal/wholesaler";
+import { StoreDashboard, StoreProducts, StoreCart, StoreCheckout, StoreOrders, StoreOrderDetail, StoreInvoices, StoreSettings } from "./pages/portal/store";
 import ProductionPortal from "./pages/portal/ProductionPortal";
 import VAPortal from "./pages/portal/VAPortal";
 import CustomerPortal from "./pages/portal/CustomerPortal";
@@ -1378,7 +1379,16 @@ const App = () => (
               <Route path="/portal/driver" element={<ProtectedRoute><DriverPortal /></ProtectedRoute>} />
               <Route path="/portal/biker" element={<ProtectedRoute><BikerPortal /></ProtectedRoute>} />
               <Route path="/portal/ambassador" element={<ProtectedRoute><AmbassadorPortal /></ProtectedRoute>} />
-              <Route path="/portal/store" element={<ProtectedRoute><StorePortal /></ProtectedRoute>} />
+              <Route path="/portal/store" element={<ProtectedRoute><StoreDashboard /></ProtectedRoute>} />
+              <Route path="/portal/store/dashboard" element={<ProtectedRoute><StoreDashboard /></ProtectedRoute>} />
+              <Route path="/portal/store/products" element={<ProtectedRoute><StoreProducts /></ProtectedRoute>} />
+              <Route path="/portal/store/products/:productId" element={<ProtectedRoute><StoreProducts /></ProtectedRoute>} />
+              <Route path="/portal/store/cart" element={<ProtectedRoute><StoreCart /></ProtectedRoute>} />
+              <Route path="/portal/store/checkout" element={<ProtectedRoute><StoreCheckout /></ProtectedRoute>} />
+              <Route path="/portal/store/orders" element={<ProtectedRoute><StoreOrders /></ProtectedRoute>} />
+              <Route path="/portal/store/orders/:orderId" element={<ProtectedRoute><StoreOrderDetail /></ProtectedRoute>} />
+              <Route path="/portal/store/invoices" element={<ProtectedRoute><StoreInvoices /></ProtectedRoute>} />
+              <Route path="/portal/store/settings" element={<ProtectedRoute><StoreSettings /></ProtectedRoute>} />
               <Route path="/portal/wholesaler" element={<ProtectedRoute><WholesalerDashboard /></ProtectedRoute>} />
               <Route path="/portal/wholesaler/products" element={<ProtectedRoute><WholesalerProducts /></ProtectedRoute>} />
               <Route path="/portal/wholesaler/products/new" element={<ProtectedRoute><WholesalerProductForm /></ProtectedRoute>} />
