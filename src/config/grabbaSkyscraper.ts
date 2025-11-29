@@ -28,11 +28,11 @@ export type GrabbaBrandId = GrabbaBrand | 'all';
 
 // Legacy array format for backward compatibility
 export const GRABBA_BRANDS = [
-  { id: 'all', name: 'All Brands', color: '#6366F1' },
-  { id: 'gasmask', name: 'GasMask', color: '#D30000' },
-  { id: 'hotmama', name: 'HotMama', color: '#B76E79' },
-  { id: 'scalati', name: 'Hot Scalati', color: '#FF7A00' },
-  { id: 'grabba', name: 'Grabba R Us', color: '#FFD400' },
+  { id: 'all', name: 'All Brands', color: '#6366F1', emoji: '🏢' },
+  { id: 'gasmask', name: 'GasMask', color: '#FF0000', emoji: '🔴' },
+  { id: 'hotmama', name: 'HotMama', color: '#B76E79', emoji: '🟣' },
+  { id: 'scalati', name: 'Hot Scalati', color: '#FF7A00', emoji: '🟠' },
+  { id: 'grabba', name: 'Grabba R Us', color: '#A020F0', emoji: '🟪' },
 ] as const;
 
 // All Brands option for filters
@@ -60,6 +60,7 @@ export const GRABBA_BRAND_CONFIG: Record<GrabbaBrand, {
   primary: string;
   secondary: string;
   gradient: string;
+  roseGoldGradient?: string[];
   bgLight: string;
   textColor: string;
   borderColor: string;
@@ -70,12 +71,12 @@ export const GRABBA_BRAND_CONFIG: Record<GrabbaBrand, {
     id: 'gasmask',
     name: 'GasMask',
     label: 'GasMask',
-    color: '#D30000',
-    primary: '#D30000',
+    color: '#FF0000',
+    primary: '#FF0000',
     secondary: '#000000',
-    gradient: 'from-red-600 to-black',
+    gradient: 'from-red-600 to-red-900',
     bgLight: 'bg-red-50',
-    textColor: 'text-red-600',
+    textColor: 'text-red-500',
     borderColor: 'border-red-500',
     pill: 'bg-red-500/20 text-red-300 border-red-500/40',
     icon: '🔴',
@@ -86,13 +87,14 @@ export const GRABBA_BRAND_CONFIG: Record<GrabbaBrand, {
     label: 'HotMama',
     color: '#B76E79',
     primary: '#B76E79',
-    secondary: '#E0BFB8',
-    gradient: 'from-rose-400 to-rose-600',
+    secondary: '#E7C1B4',
+    gradient: 'from-rose-400 via-rose-300 to-amber-200',
+    roseGoldGradient: ['#B76E79', '#E7C1B4', '#F7E6DF'],
     bgLight: 'bg-rose-50',
-    textColor: 'text-rose-600',
-    borderColor: 'border-rose-500',
-    pill: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-    icon: '🩷',
+    textColor: 'text-rose-500',
+    borderColor: 'border-rose-400',
+    pill: 'bg-rose-500/20 text-rose-300 border-rose-400/40',
+    icon: '🟣',
   },
   scalati: {
     id: 'scalati',
@@ -103,24 +105,24 @@ export const GRABBA_BRAND_CONFIG: Record<GrabbaBrand, {
     secondary: '#5A3A2E',
     gradient: 'from-orange-500 to-amber-600',
     bgLight: 'bg-orange-50',
-    textColor: 'text-orange-600',
+    textColor: 'text-orange-500',
     borderColor: 'border-orange-500',
-    pill: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    pill: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
     icon: '🟠',
   },
   grabba: {
     id: 'grabba',
     name: 'Grabba R Us',
     label: 'Grabba R Us',
-    color: '#FFD400',
-    primary: '#FFD400',
-    secondary: '#245BFF',
-    gradient: 'from-yellow-400 to-blue-500',
-    bgLight: 'bg-yellow-50',
-    textColor: 'text-yellow-600',
-    borderColor: 'border-yellow-500',
+    color: '#A020F0',
+    primary: '#A020F0',
+    secondary: '#7B68EE',
+    gradient: 'from-purple-600 to-violet-700',
+    bgLight: 'bg-purple-50',
+    textColor: 'text-purple-500',
+    borderColor: 'border-purple-500',
     pill: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
-    icon: '🟡',
+    icon: '🟪',
   },
 };
 
@@ -287,39 +289,44 @@ export const GRABBA_BRAND_THEMES = {
     gradient: 'from-indigo-500 to-purple-600',
     bgLight: 'bg-indigo-50',
     textColor: 'text-indigo-600',
-    borderColor: 'border-indigo-500'
+    borderColor: 'border-indigo-500',
+    icon: '🏢'
   },
   gasmask: {
-    primary: '#D30000',
+    primary: '#FF0000',
     secondary: '#000000',
-    gradient: 'from-red-600 to-black',
+    gradient: 'from-red-600 to-red-900',
     bgLight: 'bg-red-50',
-    textColor: 'text-red-600',
-    borderColor: 'border-red-500'
+    textColor: 'text-red-500',
+    borderColor: 'border-red-500',
+    icon: '🔴'
   },
   hotmama: {
     primary: '#B76E79',
-    secondary: '#E0BFB8',
-    gradient: 'from-rose-400 to-rose-600',
+    secondary: '#E7C1B4',
+    gradient: 'from-rose-400 via-rose-300 to-amber-200',
     bgLight: 'bg-rose-50',
-    textColor: 'text-rose-600',
-    borderColor: 'border-rose-500'
+    textColor: 'text-rose-500',
+    borderColor: 'border-rose-400',
+    icon: '🟣'
   },
   scalati: {
     primary: '#FF7A00',
     secondary: '#5A3A2E',
     gradient: 'from-orange-500 to-amber-600',
     bgLight: 'bg-orange-50',
-    textColor: 'text-orange-600',
-    borderColor: 'border-orange-500'
+    textColor: 'text-orange-500',
+    borderColor: 'border-orange-500',
+    icon: '🟠'
   },
   grabba: {
-    primary: '#FFD400',
-    secondary: '#245BFF',
-    gradient: 'from-yellow-400 to-blue-500',
-    bgLight: 'bg-yellow-50',
-    textColor: 'text-yellow-600',
-    borderColor: 'border-yellow-500'
+    primary: '#A020F0',
+    secondary: '#7B68EE',
+    gradient: 'from-purple-600 to-violet-700',
+    bgLight: 'bg-purple-50',
+    textColor: 'text-purple-500',
+    borderColor: 'border-purple-500',
+    icon: '🟪'
   }
 } as const;
 

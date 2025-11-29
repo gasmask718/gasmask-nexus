@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useGrabbaPermissions } from '@/hooks/useGrabbaPermissions';
+import { useActivityLogger } from '@/hooks/useActivityFeed';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -38,6 +39,7 @@ export function useGrabbaActions() {
   const queryClient = useQueryClient();
   const grabbaPermissions = useGrabbaPermissions();
   const { role, crmPermissions, inventoryPermissions, deliveryPermissions } = grabbaPermissions;
+  const { logActivity } = useActivityLogger();
   
   // Modal states
   const [activeModal, setActiveModal] = useState<ActionType | null>(null);
@@ -78,8 +80,9 @@ export function useGrabbaActions() {
       if (error) throw error;
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['grabba-finance-orders'] });
+      logActivity('new_order', { brand: result?.brand as any, entityId: result?.id });
       toast.success('Order created successfully');
       closeModal();
     },
@@ -103,8 +106,9 @@ export function useGrabbaActions() {
       if (error) throw error;
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['grabba-finance-invoices'] });
+      logActivity('invoice_created', { brand: result?.brand as any, entityId: result?.id });
       toast.success('Invoice created');
       closeModal();
     },
@@ -158,7 +162,7 @@ export function useGrabbaActions() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['grabba-communication-logs'] });
+      logActivity('sms_sent', {});
       toast.success('Communication logged');
       closeModal();
     },
@@ -178,6 +182,7 @@ export function useGrabbaActions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['grabba-live-inventory'] });
+      logActivity('inventory_added', {});
       toast.success('Inventory added');
       closeModal();
     },
@@ -194,6 +199,7 @@ export function useGrabbaActions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['grabba-live-inventory'] });
+      logActivity('inventory_adjusted', {});
       toast.success('Inventory adjusted');
       closeModal();
     },
@@ -232,8 +238,9 @@ export function useGrabbaActions() {
       
       return route;
     },
-    onSuccess: () => {
+    onSuccess: (route) => {
       queryClient.invalidateQueries({ queryKey: ['grabba-routes-today'] });
+      logActivity('route_planned', { entityId: route?.id });
       toast.success('Route created');
       closeModal();
     },
@@ -283,6 +290,7 @@ export function useGrabbaActions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['grabba-routes-today'] });
+      logActivity('delivery_completed', {});
       toast.success('Delivery marked complete');
     },
     onError: (e: Error) => toast.error(`Failed: ${e.message}`),
@@ -303,6 +311,7 @@ export function useGrabbaActions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['grabba-production-batches'] });
+      logActivity('batch_created', {});
       toast.success('Production batch logged');
       closeModal();
     },
@@ -318,6 +327,7 @@ export function useGrabbaActions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['grabba-machine-service'] });
+      logActivity('machine_service_logged', {});
       toast.success('Service ticket created');
       closeModal();
     },
@@ -337,6 +347,7 @@ export function useGrabbaActions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['grabba-ambassador-commissions'] });
+      logActivity('payout_edited', {});
       toast.success('Payout adjustment recorded');
       closeModal();
     },
@@ -361,6 +372,7 @@ export function useGrabbaActions() {
       if (error) throw error;
     },
     onSuccess: () => {
+      logActivity('ai_task_started', {});
       toast.success('AI task queued');
       closeModal();
     },

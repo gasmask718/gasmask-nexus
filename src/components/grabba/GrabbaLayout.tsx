@@ -1,11 +1,11 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { GrabbaBrandProvider } from '@/contexts/GrabbaBrandContext';
+import { GrabbaBrandProvider, useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { GRABBA_PENTHOUSE, GRABBA_FLOORS, getFloorByRoute } from '@/config/grabbaSkyscraper';
 import { useFloorPermissions } from '@/hooks/useFloorPermissions';
 import { useReadOnly } from '@/components/security/RequireRole';
 import { cn } from '@/lib/utils';
-import { Crown, ChevronRight, Building, Lock, Eye } from 'lucide-react';
+import { Crown, ChevronRight, Building, Lock, Eye, Activity } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -13,6 +13,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { LiveTicker } from '@/components/activity/LiveTicker';
+import { ActivityTray } from '@/components/activity/ActivityTray';
+import { ActivityFeedPanel } from '@/components/activity/ActivityFeedPanel';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GRABBA LAYOUT WRAPPER
@@ -101,13 +104,45 @@ function FloorBreadcrumb() {
   );
 }
 
+function GrabbaLayoutContent({ children }: GrabbaLayoutProps) {
+  const [feedOpen, setFeedOpen] = useState(false);
+  const location = useLocation();
+  const currentFloor = getFloorByRoute(location.pathname);
+  const { selectedBrand } = useGrabbaBrand();
+
+  return (
+    <div className="min-h-full">
+      {/* Live Activity Ticker */}
+      <LiveTicker
+        brand={selectedBrand}
+        floorId={currentFloor?.id}
+        onOpenFeed={() => setFeedOpen(true)}
+      />
+      
+      <FloorBreadcrumb />
+      {children}
+      
+      {/* Floating Activity Tray */}
+      <ActivityTray
+        floorId={currentFloor?.id}
+        brand={selectedBrand}
+      />
+      
+      {/* Full Activity Panel */}
+      <ActivityFeedPanel
+        isOpen={feedOpen}
+        onClose={() => setFeedOpen(false)}
+        defaultFloor={currentFloor?.id}
+        defaultBrand={selectedBrand}
+      />
+    </div>
+  );
+}
+
 export function GrabbaLayout({ children }: GrabbaLayoutProps) {
   return (
     <GrabbaBrandProvider>
-      <div className="min-h-full">
-        <FloorBreadcrumb />
-        {children}
-      </div>
+      <GrabbaLayoutContent>{children}</GrabbaLayoutContent>
     </GrabbaBrandProvider>
   );
 }
