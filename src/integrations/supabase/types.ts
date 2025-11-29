@@ -919,6 +919,129 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_work_tasks: {
+        Row: {
+          assigned_to_worker_id: string | null
+          auto_assigned: boolean | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          error_message: string | null
+          id: string
+          input_data: Json | null
+          output: Json | null
+          parent_task_id: string | null
+          priority: string
+          started_at: string | null
+          status: string
+          tags: string[] | null
+          task_details: string | null
+          task_title: string
+        }
+        Insert: {
+          assigned_to_worker_id?: string | null
+          auto_assigned?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          error_message?: string | null
+          id?: string
+          input_data?: Json | null
+          output?: Json | null
+          parent_task_id?: string | null
+          priority?: string
+          started_at?: string | null
+          status?: string
+          tags?: string[] | null
+          task_details?: string | null
+          task_title: string
+        }
+        Update: {
+          assigned_to_worker_id?: string | null
+          auto_assigned?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          error_message?: string | null
+          id?: string
+          input_data?: Json | null
+          output?: Json | null
+          parent_task_id?: string | null
+          priority?: string
+          started_at?: string | null
+          status?: string
+          tags?: string[] | null
+          task_details?: string | null
+          task_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_work_tasks_assigned_to_worker_id_fkey"
+            columns: ["assigned_to_worker_id"]
+            isOneToOne: false
+            referencedRelation: "ai_workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_work_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_workers: {
+        Row: {
+          created_at: string
+          description: string | null
+          experience_points: number | null
+          id: string
+          kpi_metrics: Json | null
+          last_task_at: string | null
+          memory: Json | null
+          status: string
+          tasks_completed: number | null
+          tasks_failed: number | null
+          worker_department: string
+          worker_name: string
+          worker_role: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          experience_points?: number | null
+          id?: string
+          kpi_metrics?: Json | null
+          last_task_at?: string | null
+          memory?: Json | null
+          status?: string
+          tasks_completed?: number | null
+          tasks_failed?: number | null
+          worker_department: string
+          worker_name: string
+          worker_role: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          experience_points?: number | null
+          id?: string
+          kpi_metrics?: Json | null
+          last_task_at?: string | null
+          memory?: Json | null
+          status?: string
+          tasks_completed?: number | null
+          tasks_failed?: number | null
+          worker_department?: string
+          worker_name?: string
+          worker_role?: string
+        }
+        Relationships: []
+      }
       airbnb_candidates: {
         Row: {
           address: string

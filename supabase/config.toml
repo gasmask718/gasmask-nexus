@@ -49,3 +49,6 @@ verify_jwt = false
 
 [functions.advisor-instincts]
 verify_jwt = false
+
+[functions.ai-worker-engine]
+verify_jwt = false
