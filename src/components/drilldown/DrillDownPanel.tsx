@@ -23,10 +23,10 @@ import {
 } from '@/components/ui/select';
 import { 
   Search, ArrowLeft, RefreshCw, Download, Filter, 
-  Store, FileText, Truck, Package, Users, Route, DollarSign
+  Store, FileText, Truck, Package, Users, Route, DollarSign, Bot
 } from 'lucide-react';
 import { useDrillDownData } from '@/hooks/useDrillDownData';
-import { DrillDownEntity, DrillDownFilters, getEntityTitle } from '@/lib/drilldown';
+import { DrillDownEntity, DrillDownFilters, getEntityTitle, buildDrillDownUrl } from '@/lib/drilldown';
 import { ResultsPanelActions, PanelType } from '@/components/results/ResultsPanelActions';
 import { EntityDrawer } from '@/components/editing/EntityDrawer';
 import { useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
@@ -211,6 +211,25 @@ export function DrillDownPanel({
           </div>
           
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                const params = new URLSearchParams();
+                params.set('entity', entity);
+                Object.entries(effectiveFilters).forEach(([key, value]) => {
+                  if (value) params.set(key, String(value));
+                });
+                if (selectedIds.length > 0) {
+                  params.set('selected', selectedIds.join(','));
+                }
+                navigate(`/grabba/ai-console?${params.toString()}`);
+              }}
+              className="gap-1"
+            >
+              <Bot className="h-4 w-4" />
+              <span className="hidden sm:inline">AI Copilot</span>
+            </Button>
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4" />
             </Button>

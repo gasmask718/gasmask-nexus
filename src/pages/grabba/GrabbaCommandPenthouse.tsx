@@ -6,9 +6,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Crown, Store, Users, Truck, Package, DollarSign, MessageSquare, 
-  MapPin, Factory, Globe, Award, Search, AlertTriangle, Zap, Activity, Download
+  MapPin, Factory, Globe, Award, Search, AlertTriangle, Zap, Activity, Download, Bot
 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { GRABBA_BRAND_CONFIG, formatTubesAsBoxes, GRABBA_BRAND_IDS, type GrabbaBrand } from "@/config/grabbaSkyscraper";
 import { format } from "date-fns";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
@@ -1144,6 +1145,7 @@ const CommunicationIntelligence = () => {
 
 // Main Page Component
 const GrabbaCommandPenthouse = () => {
+  const navigate = useNavigate();
   const { selectedBrand, setSelectedBrand } = useGrabbaBrand();
   const { isOpen, type, openPanel, closePanel, getMeta, getActions } = useInsightPanel();
   const { data: insightRecords = [], isLoading: insightLoading } = useInsightData(
@@ -1179,11 +1181,21 @@ const GrabbaCommandPenthouse = () => {
             <p className="text-sm text-muted-foreground">Live command view for all Grabba brands</p>
           </div>
         </div>
-        <BrandFilterBar
-          selectedBrand={selectedBrand}
-          onBrandChange={setSelectedBrand}
-          variant="default"
-        />
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/grabba/ai-console')}
+            className="gap-2"
+          >
+            <Bot className="h-4 w-4" />
+            AI Copilot
+          </Button>
+          <BrandFilterBar
+            selectedBrand={selectedBrand}
+            onBrandChange={setSelectedBrand}
+            variant="default"
+          />
+        </div>
       </div>
 
       {/* Row 0: Hero KPIs */}
