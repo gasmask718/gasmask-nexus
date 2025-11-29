@@ -9367,6 +9367,56 @@ export type Database = {
           },
         ]
       }
+      scheduled_tasks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          id: string
+          last_run_at: string | null
+          payload: Json | null
+          recurrence_rule: string | null
+          run_at: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          last_run_at?: string | null
+          payload?: Json | null
+          recurrence_rule?: string | null
+          run_at: string
+          status?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          last_run_at?: string | null
+          payload?: Json | null
+          recurrence_rule?: string | null
+          run_at?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seller_profiles: {
         Row: {
           best_time_to_contact: string | null
