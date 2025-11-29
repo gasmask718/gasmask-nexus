@@ -108,7 +108,7 @@ export const GRABBA_FLOORS: GrabbaFloor[] = [
     name: 'Ambassadors & Reps',
     icon: Users,
     path: '/grabba/ambassadors',
-    description: 'Ambassador network, Commissions, Territory tracking, Missions',
+    description: 'Floor 8 — Ambassadors: Reps network, regions, payouts, assigned stores, wholesalers, and finders fees.',
     emoji: '🤝'
   }
 ];
