@@ -170,3 +170,12 @@ verify_jwt = false
 
 [functions.daily-briefing]
 verify_jwt = false
+
+[functions.morning-ops-cycle]
+verify_jwt = false
+
+[functions.midday-monitor-cycle]
+verify_jwt = false
+
+[functions.evening-ops-cycle]
+verify_jwt = false

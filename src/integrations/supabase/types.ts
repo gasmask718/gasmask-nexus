@@ -324,24 +324,33 @@ export type Database = {
         Row: {
           category: string
           created_at: string
+          evening_enabled: boolean | null
           id: string
           is_enabled: boolean | null
+          midday_enabled: boolean | null
+          morning_enabled: boolean | null
           settings: Json
           updated_at: string
         }
         Insert: {
           category: string
           created_at?: string
+          evening_enabled?: boolean | null
           id?: string
           is_enabled?: boolean | null
+          midday_enabled?: boolean | null
+          morning_enabled?: boolean | null
           settings?: Json
           updated_at?: string
         }
         Update: {
           category?: string
           created_at?: string
+          evening_enabled?: boolean | null
           id?: string
           is_enabled?: boolean | null
+          midday_enabled?: boolean | null
+          morning_enabled?: boolean | null
           settings?: Json
           updated_at?: string
         }
@@ -392,6 +401,39 @@ export type Database = {
           total_revenue?: number | null
           total_stores?: number | null
           unpaid_invoices?: number | null
+        }
+        Relationships: []
+      }
+      ai_ops_log: {
+        Row: {
+          created_at: string
+          cycle_type: string
+          errors: Json | null
+          id: string
+          notes: string | null
+          results: Json
+          run_at: string
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          cycle_type: string
+          errors?: Json | null
+          id?: string
+          notes?: string | null
+          results?: Json
+          run_at?: string
+          success?: boolean
+        }
+        Update: {
+          created_at?: string
+          cycle_type?: string
+          errors?: Json | null
+          id?: string
+          notes?: string | null
+          results?: Json
+          run_at?: string
+          success?: boolean
         }
         Relationships: []
       }
