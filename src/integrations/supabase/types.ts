@@ -232,6 +232,60 @@ export type Database = {
         }
         Relationships: []
       }
+      advisor_triggers: {
+        Row: {
+          auto_generated_task: boolean | null
+          category: string
+          condition_detected: string
+          created_at: string
+          details: Json | null
+          id: string
+          recommended_action: string | null
+          related_entity_id: string | null
+          related_entity_type: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string | null
+          trigger_name: string
+          trigger_type: string
+        }
+        Insert: {
+          auto_generated_task?: boolean | null
+          category: string
+          condition_detected: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          recommended_action?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string | null
+          trigger_name: string
+          trigger_type: string
+        }
+        Update: {
+          auto_generated_task?: boolean | null
+          category?: string
+          condition_detected?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          recommended_action?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string | null
+          trigger_name?: string
+          trigger_type?: string
+        }
+        Relationships: []
+      }
       ai_command_logs: {
         Row: {
           affected_entity_ids: string[] | null
@@ -1544,6 +1598,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      autopilot_settings: {
+        Row: {
+          auto_assign_routes: boolean | null
+          auto_create_tasks: boolean | null
+          auto_financial_corrections: boolean | null
+          auto_send_communications: boolean | null
+          autopilot_enabled: boolean | null
+          created_at: string
+          id: string
+          severity_threshold: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          auto_assign_routes?: boolean | null
+          auto_create_tasks?: boolean | null
+          auto_financial_corrections?: boolean | null
+          auto_send_communications?: boolean | null
+          autopilot_enabled?: boolean | null
+          created_at?: string
+          id?: string
+          severity_threshold?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          auto_assign_routes?: boolean | null
+          auto_create_tasks?: boolean | null
+          auto_financial_corrections?: boolean | null
+          auto_send_communications?: boolean | null
+          autopilot_enabled?: boolean | null
+          created_at?: string
+          id?: string
+          severity_threshold?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       batch_upload_history: {
         Row: {
