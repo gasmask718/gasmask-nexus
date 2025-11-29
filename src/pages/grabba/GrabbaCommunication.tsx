@@ -1,18 +1,26 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Phone, Mail, Search, Send, Clock, CheckCircle, XCircle, FileText } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { MessageSquare, Phone, Mail, Search, Send, Clock, CheckCircle, XCircle, FileText, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { useSearchParams, Link } from "react-router-dom";
 import { GRABBA_BRAND_IDS, getBrandConfig, GRABBA_BRAND_CONFIG, type GrabbaBrand } from "@/config/grabbaSkyscraper";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
+import { EntityModal } from "@/components/crud/EntityModal";
+import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
+import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
+import { TableRowActions } from "@/components/crud/TableRowActions";
+import { DataTablePagination } from "@/components/crud/DataTablePagination";
+import { useCrudOperations } from "@/hooks/useCrudOperations";
+import { communicationLogFields } from "@/config/entityFieldConfigs";
 
 export default function GrabbaCommunication() {
   const [searchParams] = useSearchParams();
@@ -21,8 +29,26 @@ export default function GrabbaCommunication() {
   const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrand();
   const [channelFilter, setChannelFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
-  // Fetch communication logs with brand filtering
+  // Modal states
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editingLog, setEditingLog] = useState<any>(null);
+  const [deletingItem, setDeletingItem] = useState<{ id: string; name: string } | null>(null);
+
+  // CRUD operations
+  const logCrud = useCrudOperations({
+    table: "communication_logs",
+    queryKey: ["grabba-communication-logs"],
+    successMessages: {
+      create: "Communication logged",
+      update: "Log updated",
+      delete: "Log deleted"
+    }
+  });
+
+  // Fetch communication logs
   const { data: logs, isLoading } = useQuery({
     queryKey: ["grabba-communication-logs", selectedBrand, channelFilter, companyFilter],
     queryFn: async () => {
@@ -32,7 +58,7 @@ export default function GrabbaCommunication() {
         .select("*")
         .in("brand", brandsToQuery)
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(500);
 
       let result = (data || []) as any[];
       
@@ -56,9 +82,11 @@ export default function GrabbaCommunication() {
     },
   });
 
-  const getContactName = (log: any) => {
-    return log.contact_id || log.store_id || log.driver_id || log.wholesaler_id || log.influencer_id || 'Unknown';
-  };
+  // Calculate stats
+  const totalLogs = logs?.length || 0;
+  const smsCount = logs?.filter(l => l.channel === 'sms').length || 0;
+  const callCount = logs?.filter(l => l.channel === 'call').length || 0;
+  const emailCount = logs?.filter(l => l.channel === 'email').length || 0;
 
   const filteredLogs = logs?.filter((log: any) => {
     const text = searchQuery?.toLowerCase() || "";
@@ -73,16 +101,14 @@ export default function GrabbaCommunication() {
       log.brand,
       log.recipient_phone,
       log.recipient_email,
-      log.sender_phone,
-      log.sender_email,
-      log.contact_id,
-      log.store_id,
     ];
 
     return fields.some(f =>
       typeof f === "string" && f.toLowerCase().includes(text)
     );
-  });
+  }) || [];
+
+  const paginatedLogs = filteredLogs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const getChannelIcon = (channel: string) => {
     switch (channel) {
@@ -105,6 +131,26 @@ export default function GrabbaCommunication() {
     }
   };
 
+  // Handlers
+  const handleCreate = async (data: Record<string, any>) => {
+    await logCrud.create({ ...data, brand: selectedBrand === 'all' ? 'grabba' : selectedBrand });
+    setCreateModalOpen(false);
+  };
+
+  const handleUpdate = async (data: Record<string, any>) => {
+    if (editingLog) {
+      await logCrud.update({ id: editingLog.id, ...data });
+      setEditingLog(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deletingItem) {
+      await logCrud.remove(deletingItem.id);
+      setDeletingItem(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -124,6 +170,49 @@ export default function GrabbaCommunication() {
             onBrandChange={setSelectedBrand}
             variant="compact"
           />
+        </div>
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-900/5 border-blue-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-blue-400">
+                <MessageSquare className="h-4 w-4" />
+                <span className="text-xs">Total Communications</span>
+              </div>
+              <div className="text-2xl font-bold text-foreground mt-1">{totalLogs}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-500/10 to-green-900/5 border-green-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-green-400">
+                <MessageSquare className="h-4 w-4" />
+                <span className="text-xs">SMS Messages</span>
+              </div>
+              <div className="text-2xl font-bold text-foreground mt-1">{smsCount}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-900/5 border-purple-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-purple-400">
+                <Phone className="h-4 w-4" />
+                <span className="text-xs">Calls</span>
+              </div>
+              <div className="text-2xl font-bold text-foreground mt-1">{callCount}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-amber-500/10 to-amber-900/5 border-amber-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-amber-400">
+                <Mail className="h-4 w-4" />
+                <span className="text-xs">Emails</span>
+              </div>
+              <div className="text-2xl font-bold text-foreground mt-1">{emailCount}</div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Quick Nav Cards */}
@@ -183,18 +272,36 @@ export default function GrabbaCommunication() {
         </div>
 
         <Tabs defaultValue="logs" className="space-y-6">
-          <TabsList className="bg-muted/50">
-            <TabsTrigger value="logs">Recent Communications</TabsTrigger>
-            <TabsTrigger value="campaigns">Campaign Builder</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between">
+            <TabsList className="bg-muted/50">
+              <TabsTrigger value="logs">Recent Communications</TabsTrigger>
+              <TabsTrigger value="campaigns">Campaign Builder</TabsTrigger>
+              <TabsTrigger value="templates">Templates</TabsTrigger>
+            </TabsList>
+            <div className="flex items-center gap-2">
+              <Select value={channelFilter} onValueChange={setChannelFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Channel" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Channels</SelectItem>
+                  <SelectItem value="sms">SMS</SelectItem>
+                  <SelectItem value="call">Call</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={() => setCreateModalOpen(true)} size="sm" className="gap-2">
+                <Plus className="h-4 w-4" /> Log Communication
+              </Button>
+            </div>
+          </div>
 
           <TabsContent value="logs" className="space-y-6">
             {/* Filters */}
             <Card className="bg-card/50 backdrop-blur border-border/50">
               <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="relative">
+                <div className="flex items-center gap-4">
+                  <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search messages..."
@@ -203,75 +310,73 @@ export default function GrabbaCommunication() {
                       className="pl-10"
                     />
                   </div>
-                  
-                  <BrandFilterBar
-                    selectedBrand={selectedBrand}
-                    onBrandChange={setSelectedBrand}
-                    variant="compact"
-                  />
-
-                  <Select value={channelFilter} onValueChange={setChannelFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Filter by channel" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Channels</SelectItem>
-                      <SelectItem value="sms">SMS</SelectItem>
-                      <SelectItem value="call">Call</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Button className="gap-2">
-                    <Send className="h-4 w-4" />
-                    New Message
-                  </Button>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Logs List */}
-            <div className="grid gap-3">
-              {isLoading ? (
-                <Card className="p-8 text-center text-muted-foreground">Loading communications...</Card>
-              ) : filteredLogs?.length === 0 ? (
-                <Card className="p-8 text-center text-muted-foreground">No communications found</Card>
-              ) : (
-                filteredLogs?.map(log => (
-                  <Card key={log.id} className="bg-card/50 backdrop-blur border-border/50">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className={`p-2 rounded-lg ${log.direction === 'inbound' ? 'bg-blue-500/20' : 'bg-green-500/20'}`}>
+            {/* Logs Table */}
+            <Card className="bg-card/50 backdrop-blur border-border/50">
+              <CardHeader>
+                <CardTitle>Communication Logs</CardTitle>
+                <CardDescription>{filteredLogs.length} total communications</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Channel</TableHead>
+                      <TableHead>Direction</TableHead>
+                      <TableHead>Summary</TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedLogs.map((log: any) => (
+                      <TableRow key={log.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
                             {getChannelIcon(log.channel)}
+                            <span className="capitalize">{log.channel}</span>
                           </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                            <span className="font-medium text-foreground">
-                                {getContactName(log)}
-                              </span>
-                              <Badge variant="outline" className="text-xs">
-                                {log.direction}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
-                              {log.summary || 'No summary'}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                          {getStatusBadge(log.delivery_status || 'pending')}
-                          <span className="text-sm text-muted-foreground">
-                            {log.created_at ? format(new Date(log.created_at), "MMM d, h:mm a") : ''}
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">{log.direction}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          {log.summary || log.message_content || 'No summary'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{log.brand}</Badge>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(log.delivery_status || 'pending')}</TableCell>
+                        <TableCell>
+                          {log.created_at ? format(new Date(log.created_at), "MMM d, h:mm a") : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <TableRowActions
+                            actions={[
+                              { type: 'view', onClick: () => setEditingLog(log) },
+                              { type: 'delete', onClick: () => setDeletingItem({ id: log.id, name: log.summary || 'Communication' }) }
+                            ]}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <DataTablePagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(filteredLogs.length / pageSize)}
+                  pageSize={pageSize}
+                  totalItems={filteredLogs.length}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="campaigns">
@@ -351,6 +456,40 @@ export default function GrabbaCommunication() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modals */}
+      <EntityModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        title="Log Communication"
+        fields={communicationLogFields}
+        onSubmit={handleCreate}
+        mode="create"
+      />
+
+      <EntityModal
+        open={!!editingLog}
+        onOpenChange={(open) => !open && setEditingLog(null)}
+        title="View/Edit Communication"
+        fields={communicationLogFields}
+        defaultValues={editingLog || {}}
+        onSubmit={handleUpdate}
+        mode="edit"
+      />
+
+      <DeleteConfirmModal
+        open={!!deletingItem}
+        onOpenChange={(open) => !open && setDeletingItem(null)}
+        title="Delete Communication Log"
+        itemName={deletingItem?.name}
+        onConfirm={handleDelete}
+      />
+
+      <GlobalAddButton
+        label="Log Communication"
+        onClick={() => setCreateModalOpen(true)}
+        variant="floating"
+      />
     </div>
   );
 }

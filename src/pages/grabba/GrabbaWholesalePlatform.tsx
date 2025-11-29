@@ -1,27 +1,50 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
   Globe, Package, DollarSign, Lightbulb, Search, Plus, CheckCircle, Clock,
-  Upload, Truck, Brain, TrendingUp, AlertTriangle, BarChart3, Zap, RefreshCw,
-  FileSpreadsheet, ArrowRight, Target, Sparkles
+  Upload, Truck, Brain, TrendingUp, AlertTriangle, BarChart3, Zap, RefreshCw
 } from "lucide-react";
 import { format } from "date-fns";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 import { toast } from "sonner";
+import { EntityModal } from "@/components/crud/EntityModal";
+import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
+import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
+import { TableRowActions } from "@/components/crud/TableRowActions";
+import { DataTablePagination } from "@/components/crud/DataTablePagination";
+import { useCrudOperations } from "@/hooks/useCrudOperations";
+import { wholesalerFields } from "@/config/entityFieldConfigs";
 
 export default function GrabbaWholesalePlatform() {
   const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrand();
   const [searchQuery, setSearchQuery] = useState("");
-  const [uploadSearch, setUploadSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const queryClient = useQueryClient();
+
+  // Modal states
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editingWholesaler, setEditingWholesaler] = useState<any>(null);
+  const [deletingItem, setDeletingItem] = useState<{ id: string; name: string } | null>(null);
+
+  // CRUD operations
+  const wholesalerCrud = useCrudOperations({
+    table: "wholesalers",
+    queryKey: ["grabba-wholesalers"],
+    successMessages: {
+      create: "Wholesaler added",
+      update: "Wholesaler updated",
+      delete: "Wholesaler removed"
+    }
+  });
 
   // Fetch wholesalers
   const { data: wholesalers, isLoading } = useQuery({
@@ -35,7 +58,7 @@ export default function GrabbaWholesalePlatform() {
     },
   });
 
-  // Fetch products with brand filtering
+  // Fetch products
   const { data: products } = useQuery({
     queryKey: ["grabba-wholesale-products", selectedBrand],
     queryFn: async () => {
@@ -52,7 +75,7 @@ export default function GrabbaWholesalePlatform() {
     },
   });
 
-  // Fetch platform orders with brand filtering
+  // Fetch platform orders
   const { data: platformOrders } = useQuery({
     queryKey: ["grabba-platform-orders", selectedBrand],
     queryFn: async () => {
@@ -64,7 +87,7 @@ export default function GrabbaWholesalePlatform() {
           wholesaler:wholesalers(name)
         `)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(100);
       
       let result = (data || []) as any[];
       if (selectedBrand !== 'all') {
@@ -82,19 +105,6 @@ export default function GrabbaWholesalePlatform() {
         .from("wholesale_ai_sourcing")
         .select("*")
         .order("created_at", { ascending: false });
-      return data || [];
-    },
-  });
-
-  // Fetch wholesaler uploads/submissions
-  const { data: wholesalerUploads } = useQuery({
-    queryKey: ["grabba-wholesaler-uploads"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("wholesale_products")
-        .select(`*`)
-        .order("created_at", { ascending: false })
-        .limit(100);
       return data || [];
     },
   });
@@ -127,60 +137,56 @@ export default function GrabbaWholesalePlatform() {
   const totalRevenue = platformOrders?.filter(o => o.status === 'paid' || o.status === 'delivered')
     ?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
 
-  // Fulfillment stats
   const pendingFulfillment = fulfillmentOrders?.filter(o => o.status === 'pending')?.length || 0;
   const processingOrders = fulfillmentOrders?.filter(o => o.status === 'processing')?.length || 0;
   const shippedOrders = fulfillmentOrders?.filter(o => o.status === 'shipped')?.length || 0;
-  const deliveredOrders = fulfillmentOrders?.filter(o => o.status === 'delivered')?.length || 0;
-  const totalFulfillmentValue = fulfillmentOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
 
-  // Upload stats
-  const pendingReview = wholesalerUploads?.filter(u => !u.is_active)?.length || 0;
-  const approvedProducts = wholesalerUploads?.filter(u => u.is_active)?.length || 0;
-
-  // AI sourcing stats
   const liveSourcing = sourcingIdeas?.filter(s => s.status === 'live')?.length || 0;
   const testingSourcing = sourcingIdeas?.filter(s => s.status === 'testing')?.length || 0;
-  const avgMargin = sourcingIdeas?.length 
-    ? Math.round(sourcingIdeas.reduce((sum, s) => {
-        const margin = s.supplier_cost && s.suggested_resale_price 
-          ? ((s.suggested_resale_price - s.supplier_cost) / s.suggested_resale_price) * 100 
-          : 0;
-        return sum + margin;
-      }, 0) / sourcingIdeas.length)
-    : 0;
+
+  // Filter and paginate
+  const filteredWholesalers = wholesalers?.filter(w =>
+    !searchQuery ||
+    w.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    w.contact_name?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
+  const paginatedWholesalers = filteredWholesalers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const filteredProducts = products?.filter(p => 
     !searchQuery || 
     p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.category?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) || [];
 
-  const filteredUploads = wholesalerUploads?.filter(u =>
-    !uploadSearch ||
-    u.name?.toLowerCase().includes(uploadSearch.toLowerCase()) ||
-    u.category?.toLowerCase().includes(uploadSearch.toLowerCase())
-  );
-
-  const handleApproveProduct = async (productId: string) => {
-    const { error } = await supabase
-      .from("wholesale_products")
-      .update({ is_active: true })
-      .eq("id", productId);
-    
-    if (error) {
-      toast.error("Failed to approve product");
-    } else {
-      toast.success("Product approved");
-      queryClient.invalidateQueries({ queryKey: ["grabba-wholesaler-uploads"] });
-      queryClient.invalidateQueries({ queryKey: ["grabba-wholesale-products"] });
-    }
+  const handleApproveWholesaler = async (id: string) => {
+    await wholesalerCrud.update({ id, status: 'active' });
   };
 
   const handleRunAISourcing = () => {
     toast.success("AI Sourcing Engine running...", {
       description: "Analyzing market trends and supplier data"
     });
+  };
+
+  // Handlers
+  const handleCreate = async (data: Record<string, any>) => {
+    await wholesalerCrud.create({ ...data, status: 'pending' });
+    setCreateModalOpen(false);
+  };
+
+  const handleUpdate = async (data: Record<string, any>) => {
+    if (editingWholesaler) {
+      await wholesalerCrud.update({ id: editingWholesaler.id, ...data });
+      setEditingWholesaler(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deletingItem) {
+      await wholesalerCrud.remove(deletingItem.id);
+      setDeletingItem(null);
+    }
   };
 
   return (
@@ -194,7 +200,7 @@ export default function GrabbaWholesalePlatform() {
               Floor 7 — Wholesale Marketplace
             </h1>
             <p className="text-muted-foreground mt-1">
-              Marketplace, wholesaler uploads, fulfillment tracking, and AI sourcing engine
+              Marketplace, wholesaler management, fulfillment tracking, and AI sourcing engine
             </p>
           </div>
           <BrandFilterBar
@@ -224,7 +230,6 @@ export default function GrabbaWholesalePlatform() {
                 <span className="text-xs">Products</span>
               </div>
               <div className="text-2xl font-bold text-foreground mt-1">{products?.length || 0}</div>
-              <div className="text-xs text-muted-foreground">{pendingReview} pending review</div>
             </CardContent>
           </Card>
 
@@ -266,41 +271,103 @@ export default function GrabbaWholesalePlatform() {
             <CardContent className="p-4">
               <div className="flex items-center gap-2 text-cyan-400">
                 <TrendingUp className="h-4 w-4" />
-                <span className="text-xs">Avg Margin</span>
+                <span className="text-xs">Orders</span>
               </div>
-              <div className="text-2xl font-bold text-foreground mt-1">{avgMargin}%</div>
+              <div className="text-2xl font-bold text-foreground mt-1">{platformOrders?.length || 0}</div>
             </CardContent>
           </Card>
         </div>
 
-        <Tabs defaultValue="marketplace" className="space-y-6">
-          <TabsList className="bg-muted/50 flex-wrap h-auto gap-1 p-1">
-            <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
-            <TabsTrigger value="wholesalers">Wholesalers</TabsTrigger>
-            <TabsTrigger value="uploads">Upload Center</TabsTrigger>
-            <TabsTrigger value="fulfillment">Fulfillment</TabsTrigger>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="sourcing">AI Sourcing</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="wholesalers" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <TabsList className="bg-muted/50 flex-wrap h-auto gap-1 p-1">
+              <TabsTrigger value="wholesalers">Wholesalers</TabsTrigger>
+              <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
+              <TabsTrigger value="fulfillment">Fulfillment</TabsTrigger>
+              <TabsTrigger value="orders">Orders</TabsTrigger>
+              <TabsTrigger value="sourcing">AI Sourcing</TabsTrigger>
+            </TabsList>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 w-64"
+                />
+              </div>
+              <Button onClick={() => setCreateModalOpen(true)} size="sm" className="gap-2">
+                <Plus className="h-4 w-4" /> Add Wholesaler
+              </Button>
+            </div>
+          </div>
 
-          {/* MARKETPLACE TAB */}
+          {/* Wholesalers Tab */}
+          <TabsContent value="wholesalers">
+            <Card className="bg-card/50 backdrop-blur border-border/50">
+              <CardHeader>
+                <CardTitle>Wholesaler Directory</CardTitle>
+                <CardDescription>{filteredWholesalers.length} wholesalers</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedWholesalers.map((ws: any) => (
+                      <TableRow key={ws.id}>
+                        <TableCell className="font-medium">{ws.name}</TableCell>
+                        <TableCell>{ws.contact_name || '-'}</TableCell>
+                        <TableCell>{ws.phone || '-'}</TableCell>
+                        <TableCell>{ws.email || '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant={ws.status === 'active' ? 'default' : ws.status === 'pending' ? 'secondary' : 'destructive'}>
+                            {ws.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <TableRowActions
+                            actions={[
+                              { type: 'edit', onClick: () => setEditingWholesaler(ws) },
+                              ...(ws.status === 'pending' ? [{ type: 'activate' as const, label: 'Approve', onClick: () => handleApproveWholesaler(ws.id) }] : []),
+                              { type: 'delete', onClick: () => setDeletingItem({ id: ws.id, name: ws.name }) }
+                            ]}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <DataTablePagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(filteredWholesalers.length / pageSize)}
+                  pageSize={pageSize}
+                  totalItems={filteredWholesalers.length}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Marketplace Tab */}
           <TabsContent value="marketplace">
             <Card className="bg-card/50 backdrop-blur border-border/50">
               <CardHeader>
                 <CardTitle>Product Marketplace</CardTitle>
-                <div className="relative mt-4">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search products..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 max-w-md"
-                  />
-                </div>
               </CardHeader>
               <CardContent>
                 {filteredProducts?.length === 0 ? (
-                  <p className="text-muted-foreground">No products found</p>
+                  <p className="text-muted-foreground text-center py-8">No products found</p>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {filteredProducts?.map(product => (
@@ -330,301 +397,130 @@ export default function GrabbaWholesalePlatform() {
             </Card>
           </TabsContent>
 
-          {/* WHOLESALERS TAB */}
-          <TabsContent value="wholesalers">
+          {/* Fulfillment Tab */}
+          <TabsContent value="fulfillment">
             <Card className="bg-card/50 backdrop-blur border-border/50">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Wholesaler Directory</CardTitle>
-                <Button size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" /> Add Wholesaler
-                </Button>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Truck className="h-5 w-5 text-primary" />
+                  Fulfillment Queue
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                {isLoading ? (
-                  <p className="text-muted-foreground">Loading wholesalers...</p>
-                ) : wholesalers?.length === 0 ? (
-                  <p className="text-muted-foreground">No wholesalers found</p>
-                ) : (
-                  <div className="space-y-3">
-                    {wholesalers?.map(ws => (
-                      <div key={ws.id} className="p-4 rounded-xl border border-border/50 bg-card/30 flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-foreground">{ws.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {ws.contact_name} • {ws.phone} • {ws.email}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={ws.status === 'active' ? 'default' : ws.status === 'pending' ? 'secondary' : 'destructive'}>
-                            {ws.status}
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Order ID</TableHead>
+                      <TableHead>Buyer</TableHead>
+                      <TableHead>Wholesaler</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {fulfillmentOrders?.slice(0, 20).map((order: any) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-mono">{order.id.slice(0,8)}</TableCell>
+                        <TableCell>{order.buyer?.name || '-'}</TableCell>
+                        <TableCell>{order.wholesaler?.name || '-'}</TableCell>
+                        <TableCell>${(order.total_amount || 0).toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={order.status === 'delivered' ? 'default' : order.status === 'shipped' ? 'secondary' : 'outline'}>
+                            {order.status}
                           </Badge>
-                          {ws.status === 'pending' && (
-                            <Button size="sm" variant="outline">Approve</Button>
-                          )}
-                        </div>
-                      </div>
+                        </TableCell>
+                        <TableCell>
+                          {order.created_at ? format(new Date(order.created_at), "MMM d") : '-'}
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </div>
-                )}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* UPLOAD CENTER TAB */}
-          <TabsContent value="uploads">
-            <div className="space-y-6">
-              {/* Upload Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="bg-gradient-to-br from-amber-500/10 to-amber-900/5 border-amber-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 text-amber-400">
-                      <Clock className="h-5 w-5" />
-                      <span className="text-sm">Pending Review</span>
-                    </div>
-                    <div className="text-3xl font-bold text-foreground mt-2">{pendingReview}</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-green-500/10 to-green-900/5 border-green-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 text-green-400">
-                      <CheckCircle className="h-5 w-5" />
-                      <span className="text-sm">Approved</span>
-                    </div>
-                    <div className="text-3xl font-bold text-foreground mt-2">{approvedProducts}</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-blue-500/10 to-blue-900/5 border-blue-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 text-blue-400">
-                      <Upload className="h-5 w-5" />
-                      <span className="text-sm">Total Uploads</span>
-                    </div>
-                    <div className="text-3xl font-bold text-foreground mt-2">{wholesalerUploads?.length || 0}</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-purple-500/10 to-purple-900/5 border-purple-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 text-purple-400">
-                      <Globe className="h-5 w-5" />
-                      <span className="text-sm">Wholesalers</span>
-                    </div>
-                    <div className="text-3xl font-bold text-foreground mt-2">{activeWholesalers}</div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card className="bg-card/50 backdrop-blur border-border/50">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <FileSpreadsheet className="h-5 w-5" />
-                      Wholesaler Product Submissions
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search uploads..."
-                          value={uploadSearch}
-                          onChange={(e) => setUploadSearch(e.target.value)}
-                          className="pl-10 w-64"
-                        />
-                      </div>
-                      <Button size="sm" className="gap-2">
-                        <Upload className="h-4 w-4" /> Bulk Import
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {filteredUploads?.length === 0 ? (
-                    <p className="text-muted-foreground">No uploads found</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {filteredUploads?.map(upload => (
-                        <div key={upload.id} className="p-4 rounded-xl border border-border/50 bg-card/30">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3">
-                                <div className="font-medium text-foreground">{upload.name}</div>
-                                <Badge variant={upload.is_active ? 'default' : 'secondary'}>
-                                  {upload.is_active ? 'Approved' : 'Pending'}
-                                </Badge>
-                              </div>
-                              <div className="text-sm text-muted-foreground mt-1">
-                                Category: {upload.category} • 
-                                Price: ${upload.price} • 
-                                Stock: {upload.stock}
-                              </div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Uploaded {format(new Date(upload.created_at), "MMM d, yyyy h:mm a")}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {!upload.is_active && (
-                                <>
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline"
-                                    onClick={() => handleApproveProduct(upload.id)}
-                                    className="gap-1"
-                                  >
-                                    <CheckCircle className="h-4 w-4" /> Approve
-                                  </Button>
-                                  <Button size="sm" variant="ghost" className="text-destructive">
-                                    Reject
-                                  </Button>
-                                </>
-                              )}
-                              <Button size="sm" variant="ghost">View</Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* FULFILLMENT TAB */}
-          <TabsContent value="fulfillment">
-            <div className="space-y-6">
-              {/* Fulfillment Pipeline */}
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <Card className="bg-gradient-to-br from-amber-500/10 to-amber-900/5 border-amber-500/20">
-                  <CardContent className="p-4 text-center">
-                    <div className="text-amber-400 text-sm">Pending</div>
-                    <div className="text-3xl font-bold text-foreground mt-1">{pendingFulfillment}</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-blue-500/10 to-blue-900/5 border-blue-500/20">
-                  <CardContent className="p-4 text-center">
-                    <div className="text-blue-400 text-sm">Processing</div>
-                    <div className="text-3xl font-bold text-foreground mt-1">{processingOrders}</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-purple-500/10 to-purple-900/5 border-purple-500/20">
-                  <CardContent className="p-4 text-center">
-                    <div className="text-purple-400 text-sm">Shipped</div>
-                    <div className="text-3xl font-bold text-foreground mt-1">{shippedOrders}</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-green-500/10 to-green-900/5 border-green-500/20">
-                  <CardContent className="p-4 text-center">
-                    <div className="text-green-400 text-sm">Delivered</div>
-                    <div className="text-3xl font-bold text-foreground mt-1">{deliveredOrders}</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-900/5 border-cyan-500/20">
-                  <CardContent className="p-4 text-center">
-                    <div className="text-cyan-400 text-sm">Total Value</div>
-                    <div className="text-2xl font-bold text-foreground mt-1">${totalFulfillmentValue.toLocaleString()}</div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Fulfillment Progress */}
-              <Card className="bg-card/50 backdrop-blur border-border/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Truck className="h-5 w-5" />
-                    Fulfillment Pipeline
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-muted-foreground">Overall Progress</span>
-                        <span className="text-foreground">
-                          {fulfillmentOrders?.length ? Math.round((deliveredOrders / fulfillmentOrders.length) * 100) : 0}% Complete
-                        </span>
-                      </div>
-                      <Progress 
-                        value={fulfillmentOrders?.length ? (deliveredOrders / fulfillmentOrders.length) * 100 : 0} 
-                        className="h-3"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Fulfillment Orders List */}
-              <Card className="bg-card/50 backdrop-blur border-border/50">
-                <CardHeader>
-                  <CardTitle>Active Fulfillment Orders</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {fulfillmentOrders?.length === 0 ? (
-                    <p className="text-muted-foreground">No fulfillment orders</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {fulfillmentOrders?.slice(0, 20).map(order => (
-                        <div key={order.id} className="p-4 rounded-xl border border-border/50 bg-card/30">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-foreground">{order.buyer?.name}</span>
-                                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-muted-foreground">{order.wholesaler?.name}</span>
-                              </div>
-                              <div className="text-sm text-muted-foreground mt-1">
-                                {order.buyer?.city} • {format(new Date(order.created_at), "MMM d, yyyy")}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <div className="text-right">
-                                <div className="text-lg font-bold text-foreground">${order.total_amount?.toLocaleString()}</div>
-                              </div>
-                              <Badge 
-                                variant={
-                                  order.status === 'delivered' ? 'default' : 
-                                  order.status === 'shipped' ? 'secondary' : 
-                                  order.status === 'processing' ? 'outline' : 'destructive'
-                                }
-                              >
-                                {order.status}
-                              </Badge>
-                              <Button size="sm" variant="outline">Update</Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* ORDERS TAB */}
+          {/* Orders Tab */}
           <TabsContent value="orders">
             <Card className="bg-card/50 backdrop-blur border-border/50">
               <CardHeader>
                 <CardTitle>Platform Orders</CardTitle>
               </CardHeader>
               <CardContent>
-                {platformOrders?.length === 0 ? (
-                  <p className="text-muted-foreground">No orders found</p>
-                ) : (
-                  <div className="space-y-3">
-                    {platformOrders?.map(order => (
-                      <div key={order.id} className="p-4 rounded-xl border border-border/50 bg-card/30 flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-foreground">
-                            {order.buyer?.name} → {order.wholesaler?.name}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {format(new Date(order.created_at), "MMM d, yyyy h:mm a")}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-xl font-bold text-foreground">${order.total_amount?.toLocaleString()}</div>
-                          <Badge variant={order.status === 'delivered' ? 'default' : 'secondary'}>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Order ID</TableHead>
+                      <TableHead>Buyer</TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {platformOrders?.slice(0, 20).map((order: any) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-mono">{order.id.slice(0,8)}</TableCell>
+                        <TableCell>{order.buyer?.name || '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{order.brand}</Badge>
+                        </TableCell>
+                        <TableCell>${(order.total_amount || 0).toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={order.status === 'delivered' || order.status === 'paid' ? 'default' : 'secondary'}>
                             {order.status}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {order.created_at ? format(new Date(order.created_at), "MMM d") : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* AI Sourcing Tab */}
+          <TabsContent value="sourcing">
+            <Card className="bg-card/50 backdrop-blur border-border/50">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-purple-500" />
+                    AI Sourcing Engine
+                  </CardTitle>
+                  <CardDescription>AI-generated product sourcing opportunities</CardDescription>
+                </div>
+                <Button onClick={handleRunAISourcing} className="gap-2">
+                  <RefreshCw className="h-4 w-4" /> Run AI Analysis
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {sourcingIdeas?.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No sourcing ideas yet. Run AI analysis to generate recommendations.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {sourcingIdeas?.map((idea: any) => (
+                      <div key={idea.id} className="p-4 rounded-xl border border-border/50 bg-card/30">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">{idea.product_name}</span>
+                          <Badge variant={idea.status === 'live' ? 'default' : 'secondary'}>
+                            {idea.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{idea.reasoning}</p>
+                        <div className="flex gap-4 mt-2 text-sm">
+                          <span>Cost: ${idea.supplier_cost}</span>
+                          <span>Suggested: ${idea.suggested_resale_price}</span>
+                          <span className="text-green-400">
+                            Margin: {idea.supplier_cost && idea.suggested_resale_price
+                              ? Math.round(((idea.suggested_resale_price - idea.supplier_cost) / idea.suggested_resale_price) * 100)
+                              : 0}%
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -633,139 +529,42 @@ export default function GrabbaWholesalePlatform() {
               </CardContent>
             </Card>
           </TabsContent>
-
-          {/* AI SOURCING TAB */}
-          <TabsContent value="sourcing">
-            <div className="space-y-6">
-              {/* AI Sourcing Header */}
-              <Card className="bg-gradient-to-r from-purple-500/20 via-indigo-500/20 to-blue-500/20 border-purple-500/30">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-                        <Brain className="h-8 w-8 text-white" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                          AI Sourcing Engine
-                          <Sparkles className="h-5 w-5 text-amber-400" />
-                        </h2>
-                        <p className="text-muted-foreground">
-                          Automated product discovery, margin analysis, and supplier recommendations
-                        </p>
-                      </div>
-                    </div>
-                    <Button onClick={handleRunAISourcing} className="gap-2 bg-gradient-to-r from-purple-600 to-indigo-600">
-                      <RefreshCw className="h-4 w-4" /> Run Analysis
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* AI Sourcing Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="bg-gradient-to-br from-green-500/10 to-green-900/5 border-green-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 text-green-400">
-                      <Zap className="h-5 w-5" />
-                      <span className="text-sm">Live Products</span>
-                    </div>
-                    <div className="text-3xl font-bold text-foreground mt-2">{liveSourcing}</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-amber-500/10 to-amber-900/5 border-amber-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 text-amber-400">
-                      <Target className="h-5 w-5" />
-                      <span className="text-sm">Testing</span>
-                    </div>
-                    <div className="text-3xl font-bold text-foreground mt-2">{testingSourcing}</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-900/5 border-cyan-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 text-cyan-400">
-                      <TrendingUp className="h-5 w-5" />
-                      <span className="text-sm">Avg Margin</span>
-                    </div>
-                    <div className="text-3xl font-bold text-foreground mt-2">{avgMargin}%</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-purple-500/10 to-purple-900/5 border-purple-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 text-purple-400">
-                      <BarChart3 className="h-5 w-5" />
-                      <span className="text-sm">Total Ideas</span>
-                    </div>
-                    <div className="text-3xl font-bold text-foreground mt-2">{sourcingIdeas?.length || 0}</div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* AI Sourcing Ideas */}
-              <Card className="bg-card/50 backdrop-blur border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Lightbulb className="h-5 w-5" />
-                    AI Sourcing Recommendations
-                  </CardTitle>
-                  <Button size="sm" variant="outline" className="gap-2">
-                    <Plus className="h-4 w-4" /> Add Manual Idea
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {sourcingIdeas?.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">No sourcing ideas yet</p>
-                      <p className="text-sm text-muted-foreground mt-1">Run the AI engine to discover opportunities</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {sourcingIdeas?.map(idea => (
-                        <div key={idea.id} className="p-4 rounded-xl border border-border/50 bg-card/30">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <div className="font-medium text-foreground">{idea.product_name}</div>
-                                <Badge variant={idea.status === 'live' ? 'default' : idea.status === 'testing' ? 'secondary' : 'outline'}>
-                                  {idea.status}
-                                </Badge>
-                              </div>
-                              <div className="text-sm text-muted-foreground mt-1">
-                                Category: {idea.category} • Supplier: {idea.suggested_supplier || 'TBD'}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-6">
-                              <div className="text-center">
-                                <div className="text-xs text-muted-foreground">Cost</div>
-                                <div className="font-medium text-foreground">${idea.supplier_cost}</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-xs text-muted-foreground">Resale</div>
-                                <div className="font-medium text-green-400">${idea.suggested_resale_price}</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-xs text-muted-foreground">Margin</div>
-                                <div className="font-bold text-amber-400">
-                                  {idea.supplier_cost && idea.suggested_resale_price 
-                                    ? Math.round(((idea.suggested_resale_price - idea.supplier_cost) / idea.suggested_resale_price) * 100)
-                                    : 0}%
-                                </div>
-                              </div>
-                              <Button size="sm" variant="outline">Action</Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modals */}
+      <EntityModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        title="Add Wholesaler"
+        fields={wholesalerFields}
+        onSubmit={handleCreate}
+        mode="create"
+      />
+
+      <EntityModal
+        open={!!editingWholesaler}
+        onOpenChange={(open) => !open && setEditingWholesaler(null)}
+        title="Edit Wholesaler"
+        fields={wholesalerFields}
+        defaultValues={editingWholesaler || {}}
+        onSubmit={handleUpdate}
+        mode="edit"
+      />
+
+      <DeleteConfirmModal
+        open={!!deletingItem}
+        onOpenChange={(open) => !open && setDeletingItem(null)}
+        title="Delete Wholesaler"
+        itemName={deletingItem?.name}
+        onConfirm={handleDelete}
+      />
+
+      <GlobalAddButton
+        label="Add Wholesaler"
+        onClick={() => setCreateModalOpen(true)}
+        variant="floating"
+      />
     </div>
   );
 }

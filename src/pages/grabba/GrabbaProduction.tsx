@@ -6,28 +6,47 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { 
   Factory, Box, Wrench, AlertTriangle, Plus, CheckCircle, Building2,
   TrendingUp, Calendar, Search, Zap, BarChart3, Clock
 } from "lucide-react";
-import { format, startOfWeek, endOfWeek, subWeeks, differenceInDays } from "date-fns";
+import { format, startOfWeek, endOfWeek, subWeeks } from "date-fns";
 import { GRABBA_BRAND_IDS, getBrandConfig, type GrabbaBrand, GRABBA_BRAND_CONFIG } from "@/config/grabbaSkyscraper";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// FLOOR 6 — GRABBA PRODUCTION & MACHINERY
-// Box output, tools, machinery service, and office performance for Grabba
-// ═══════════════════════════════════════════════════════════════════════════════
+import { EntityModal, FieldConfig } from "@/components/crud/EntityModal";
+import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
+import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
+import { TableRowActions } from "@/components/crud/TableRowActions";
+import { DataTablePagination } from "@/components/crud/DataTablePagination";
+import { useCrudOperations } from "@/hooks/useCrudOperations";
+import { productionBatchFields } from "@/config/entityFieldConfigs";
 
 export default function GrabbaProduction() {
   const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrand();
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // FETCH PRODUCTION BATCHES (BOX PRODUCTION LOGS)
-  // ─────────────────────────────────────────────────────────────────────────────
+  // Modal states
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editingBatch, setEditingBatch] = useState<any>(null);
+  const [deletingItem, setDeletingItem] = useState<{ id: string; name: string } | null>(null);
+
+  // CRUD operations
+  const batchCrud = useCrudOperations({
+    table: "production_batches",
+    queryKey: ["grabba-production-batches"],
+    successMessages: {
+      create: "Production batch created",
+      update: "Batch updated",
+      delete: "Batch deleted"
+    }
+  });
+
+  // Fetch production batches
   const { data: batches, isLoading: loadingBatches } = useQuery({
     queryKey: ["grabba-production-batches", selectedBrand],
     queryFn: async () => {
@@ -38,14 +57,11 @@ export default function GrabbaProduction() {
         .in("brand", brandsToQuery)
         .order("created_at", { ascending: false })
         .limit(100);
-
       return data || [];
     },
   });
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // FETCH PRODUCTION OFFICES
-  // ─────────────────────────────────────────────────────────────────────────────
+  // Fetch offices
   const { data: offices } = useQuery({
     queryKey: ["grabba-production-offices"],
     queryFn: async () => {
@@ -58,9 +74,7 @@ export default function GrabbaProduction() {
     },
   });
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // FETCH TOOLS ISSUED
-  // ─────────────────────────────────────────────────────────────────────────────
+  // Fetch tools
   const { data: tools } = useQuery({
     queryKey: ["grabba-tools-issued"],
     queryFn: async () => {
@@ -73,9 +87,7 @@ export default function GrabbaProduction() {
     },
   });
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // FETCH MACHINE SERVICE LOGS
-  // ─────────────────────────────────────────────────────────────────────────────
+  // Fetch service tickets
   const { data: serviceTickets } = useQuery({
     queryKey: ["grabba-machine-service"],
     queryFn: async () => {
@@ -88,9 +100,7 @@ export default function GrabbaProduction() {
     },
   });
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // CALCULATE STATS
-  // ─────────────────────────────────────────────────────────────────────────────
+  // Calculate stats
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   
@@ -98,22 +108,16 @@ export default function GrabbaProduction() {
   const todayBoxes = todayBatches.reduce((sum, b) => sum + (b.boxes_produced || 0), 0);
   const todayTubes = todayBatches.reduce((sum, b) => sum + (b.tubes_total || 0), 0);
 
-  // Last 7 days
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const last7DaysBatches = batches?.filter(b => new Date(b.created_at) >= sevenDaysAgo) || [];
   const totalBoxes7Days = last7DaysBatches.reduce((sum, b) => sum + (b.boxes_produced || 0), 0);
-  const totalTubes7Days = last7DaysBatches.reduce((sum, b) => sum + (b.tubes_total || 0), 0);
 
-  // This week vs last week comparison
   const thisWeekStart = startOfWeek(now);
-  const thisWeekEnd = endOfWeek(now);
   const lastWeekStart = startOfWeek(subWeeks(now, 1));
   const lastWeekEnd = endOfWeek(subWeeks(now, 1));
 
-  const thisWeekBoxes = batches?.filter(b => {
-    const date = new Date(b.created_at);
-    return date >= thisWeekStart && date <= thisWeekEnd;
-  }).reduce((sum, b) => sum + (b.boxes_produced || 0), 0) || 0;
+  const thisWeekBoxes = batches?.filter(b => new Date(b.created_at) >= thisWeekStart)
+    .reduce((sum, b) => sum + (b.boxes_produced || 0), 0) || 0;
 
   const lastWeekBoxes = batches?.filter(b => {
     const date = new Date(b.created_at);
@@ -124,46 +128,49 @@ export default function GrabbaProduction() {
     ? Math.round(((thisWeekBoxes - lastWeekBoxes) / lastWeekBoxes) * 100) 
     : 0;
 
-  // Office-by-office output
   const officeOutput = offices?.map(office => {
     const officeBatches = batches?.filter(b => b.office_id === office.id) || [];
     const totalBoxes = officeBatches.reduce((sum, b) => sum + (b.boxes_produced || 0), 0);
-    const totalTubes = officeBatches.reduce((sum, b) => sum + (b.tubes_total || 0), 0);
-    const batchCount = officeBatches.length;
-    const avgBoxesPerBatch = batchCount > 0 ? Math.round(totalBoxes / batchCount) : 0;
-    return { ...office, totalBoxes, totalTubes, batchCount, avgBoxesPerBatch };
+    return { ...office, totalBoxes, batchCount: officeBatches.length };
   }).sort((a, b) => b.totalBoxes - a.totalBoxes) || [];
 
-  // Brand breakdown
-  const brandOutput: Record<GrabbaBrand, { boxes: number; tubes: number; batches: number }> = {} as any;
-  GRABBA_BRAND_IDS.forEach(brand => {
-    const brandBatches = batches?.filter(b => b.brand === brand) || [];
-    brandOutput[brand] = {
-      boxes: brandBatches.reduce((sum, b) => sum + (b.boxes_produced || 0), 0),
-      tubes: brandBatches.reduce((sum, b) => sum + (b.tubes_total || 0), 0),
-      batches: brandBatches.length,
-    };
-  });
-  const totalAllBoxes = Object.values(brandOutput).reduce((sum, b) => sum + b.boxes, 0);
-
-  // Outstanding tools
   const outstandingTools = tools?.filter(t => !t.returned_at) || [];
   const openTickets = serviceTickets?.filter(t => t.status === 'open' || t.status === 'in_progress') || [];
 
-  // Filter batches by search
+  // Filter and paginate
   const filteredBatches = batches?.filter(b => 
     !search || 
     b.office?.name?.toLowerCase().includes(search.toLowerCase()) ||
     b.produced_by?.toLowerCase().includes(search.toLowerCase()) ||
     b.shift_label?.toLowerCase().includes(search.toLowerCase())
-  );
+  ) || [];
+
+  const paginatedBatches = filteredBatches.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  // Handlers
+  const handleCreate = async (data: Record<string, any>) => {
+    await batchCrud.create(data);
+    setCreateModalOpen(false);
+  };
+
+  const handleUpdate = async (data: Record<string, any>) => {
+    if (editingBatch) {
+      await batchCrud.update({ id: editingBatch.id, ...data });
+      setEditingBatch(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deletingItem) {
+      await batchCrud.remove(deletingItem.id);
+      setDeletingItem(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-        {/* HEADER */}
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+        {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
@@ -181,9 +188,7 @@ export default function GrabbaProduction() {
           />
         </div>
 
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-        {/* WEEKLY PRODUCTION INSIGHTS */}
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+        {/* Weekly Insights */}
         <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -196,14 +201,9 @@ export default function GrabbaProduction() {
                   <p className="text-4xl font-bold text-foreground">
                     {thisWeekBoxes.toLocaleString()} boxes
                   </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant={weekOverWeekChange >= 0 ? "default" : "destructive"}>
-                      {weekOverWeekChange >= 0 ? "+" : ""}{weekOverWeekChange}% vs last week
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      (Last week: {lastWeekBoxes.toLocaleString()})
-                    </span>
-                  </div>
+                  <Badge variant={weekOverWeekChange >= 0 ? "default" : "destructive"}>
+                    {weekOverWeekChange >= 0 ? "+" : ""}{weekOverWeekChange}% vs last week
+                  </Badge>
                 </div>
               </div>
               <div className="flex items-center gap-6">
@@ -224,9 +224,7 @@ export default function GrabbaProduction() {
           </CardContent>
         </Card>
 
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-        {/* KPI CARDS */}
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+        {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card className="bg-gradient-to-br from-green-500/10 to-green-900/5 border-green-500/20">
             <CardContent className="p-4">
@@ -246,7 +244,6 @@ export default function GrabbaProduction() {
                 <span className="text-xs">7-Day Output</span>
               </div>
               <div className="text-2xl font-bold text-foreground mt-1">{totalBoxes7Days}</div>
-              <div className="text-xs text-muted-foreground">{totalTubes7Days} tubes</div>
             </CardContent>
           </Card>
 
@@ -281,324 +278,237 @@ export default function GrabbaProduction() {
           </Card>
         </div>
 
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-        {/* TABS */}
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+        {/* Tabs */}
         <Tabs defaultValue="batches" className="space-y-6">
-          <TabsList className="bg-muted/50">
-            <TabsTrigger value="batches">Box Production Logs</TabsTrigger>
-            <TabsTrigger value="offices">Office-by-Office</TabsTrigger>
-            <TabsTrigger value="tools">Tools Issued</TabsTrigger>
-            <TabsTrigger value="service">Machinery Service</TabsTrigger>
-            <TabsTrigger value="brand">Brand Breakdown</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between">
+            <TabsList className="bg-muted/50">
+              <TabsTrigger value="batches">Production Logs</TabsTrigger>
+              <TabsTrigger value="offices">Office Output</TabsTrigger>
+              <TabsTrigger value="tools">Tools Issued</TabsTrigger>
+              <TabsTrigger value="service">Service Tickets</TabsTrigger>
+            </TabsList>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10 w-64"
+                />
+              </div>
+              <Button onClick={() => setCreateModalOpen(true)} size="sm" className="gap-2">
+                <Plus className="h-4 w-4" /> Log Production
+              </Button>
+            </div>
+          </div>
 
-          {/* ─────────────────────────────────────────────────────────────────────────────
-              BOX PRODUCTION LOGS TAB
-          ───────────────────────────────────────────────────────────────────────────── */}
+          {/* Batches Tab */}
           <TabsContent value="batches">
             <Card className="bg-card/50 backdrop-blur border-border/50">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Box className="h-5 w-5 text-primary" />
-                    Box Production Logs
-                  </CardTitle>
-                  <CardDescription>Recent production batches across all offices</CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="relative w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search batches..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                  <Button size="sm" className="gap-2">
-                    <Plus className="h-4 w-4" /> Log Batch
-                  </Button>
-                </div>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Box className="h-5 w-5 text-primary" />
+                  Production Logs
+                </CardTitle>
+                <CardDescription>{filteredBatches.length} total batches</CardDescription>
               </CardHeader>
               <CardContent>
-                {loadingBatches ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                ) : filteredBatches?.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Box className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">No production batches found</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                    {filteredBatches?.map(batch => {
-                      const config = getBrandConfig(batch.brand);
-                      return (
-                        <div key={batch.id} className={`p-4 rounded-xl border ${config.gradient}`}>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <Badge className={config.pill}>{config.label}</Badge>
-                                <span className="text-sm text-muted-foreground">{batch.office?.name || 'Unknown Office'}</span>
-                              </div>
-                              <div className="text-sm text-muted-foreground mt-1 flex items-center gap-3">
-                                {batch.shift_label && <span>Shift: {batch.shift_label}</span>}
-                                {batch.produced_by && <span>By: {batch.produced_by}</span>}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-2xl font-bold text-foreground">{batch.boxes_produced} boxes</div>
-                              <div className="text-sm text-muted-foreground">{batch.tubes_total?.toLocaleString()} tubes</div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {format(new Date(batch.created_at), "MMM d, yyyy h:mm a")}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Batch #</TableHead>
+                      <TableHead>Office</TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Boxes</TableHead>
+                      <TableHead>Tubes</TableHead>
+                      <TableHead>Producer</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedBatches.map((batch: any) => (
+                      <TableRow key={batch.id}>
+                        <TableCell className="font-medium">{batch.batch_number || batch.id.slice(0,8)}</TableCell>
+                        <TableCell>{batch.office?.name || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{batch.brand}</Badge>
+                        </TableCell>
+                        <TableCell>{batch.boxes_produced || 0}</TableCell>
+                        <TableCell>{batch.tubes_total || (batch.boxes_produced || 0) * 100}</TableCell>
+                        <TableCell>{batch.produced_by || '-'}</TableCell>
+                        <TableCell>
+                          {batch.created_at ? format(new Date(batch.created_at), "MMM d, h:mm a") : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <TableRowActions
+                            actions={[
+                              { type: 'edit', onClick: () => setEditingBatch(batch) },
+                              { type: 'delete', onClick: () => setDeletingItem({ id: batch.id, name: batch.batch_number || 'Batch' }) }
+                            ]}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <DataTablePagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(filteredBatches.length / pageSize)}
+                  pageSize={pageSize}
+                  totalItems={filteredBatches.length}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                />
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* ─────────────────────────────────────────────────────────────────────────────
-              OFFICE-BY-OFFICE TAB
-          ───────────────────────────────────────────────────────────────────────────── */}
+          {/* Offices Tab */}
           <TabsContent value="offices">
             <Card className="bg-card/50 backdrop-blur border-border/50">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-primary" />
-                  Office-by-Office Output
-                </CardTitle>
-                <CardDescription>Production performance by office location</CardDescription>
+                <CardTitle>Office-by-Office Output</CardTitle>
               </CardHeader>
               <CardContent>
-                {officeOutput.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">No office data available</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {officeOutput.map((office, i) => {
-                      const maxBoxes = officeOutput[0]?.totalBoxes || 1;
-                      const percentage = (office.totalBoxes / maxBoxes) * 100;
-                      
-                      return (
-                        <div key={office.id} className="p-4 rounded-xl border border-border/50 bg-card/30">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <span className={`text-2xl font-bold ${i < 3 ? 'text-primary' : 'text-muted-foreground'}`}>
-                                #{i + 1}
-                              </span>
-                              <div>
-                                <div className="font-medium text-foreground">{office.name}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  {office.batchCount} batches • {office.avgBoxesPerBatch} avg boxes/batch
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-2xl font-bold text-foreground">{office.totalBoxes.toLocaleString()} boxes</div>
-                              <div className="text-sm text-muted-foreground">{office.totalTubes.toLocaleString()} tubes</div>
-                            </div>
-                          </div>
-                          <Progress value={percentage} className="h-2" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {officeOutput.map((office: any) => (
+                    <Card key={office.id} className="bg-muted/30">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">{office.name}</span>
+                          <Badge variant="outline">{office.batchCount} batches</Badge>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        <p className="text-2xl font-bold">{office.totalBoxes.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">total boxes produced</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* ─────────────────────────────────────────────────────────────────────────────
-              TOOLS ISSUED TAB
-          ───────────────────────────────────────────────────────────────────────────── */}
+          {/* Tools Tab */}
           <TabsContent value="tools">
-            <Card className="bg-card/50 backdrop-blur border-border/50">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Wrench className="h-5 w-5 text-amber-500" />
-                    Tools Issued Logs
-                  </CardTitle>
-                  <CardDescription>Track tools checked out to workers</CardDescription>
-                </div>
-                <Button size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" /> Issue Tool
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {tools?.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Wrench className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">No tools issued</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                    {tools?.map(tool => (
-                      <div key={tool.id} className={`p-4 rounded-xl border ${!tool.returned_at ? 'border-amber-500/20 bg-amber-500/5' : 'border-border/50 bg-card/30'} flex items-center justify-between`}>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-foreground">{tool.tool_name}</span>
-                            {!tool.returned_at && <Badge variant="secondary">Outstanding</Badge>}
-                            {tool.returned_at && <Badge variant="outline">Returned</Badge>}
-                          </div>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            Qty: {tool.quantity} • Issued to: {tool.issued_to || 'Unknown'} • {tool.office?.name}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-muted-foreground">
-                            Issued: {format(new Date(tool.issued_at), "MMM d, yyyy")}
-                          </div>
-                          {tool.returned_at ? (
-                            <div className="text-xs text-green-500">
-                              Returned: {format(new Date(tool.returned_at), "MMM d, yyyy")}
-                            </div>
-                          ) : (
-                            <Button size="sm" variant="outline" className="mt-2">
-                              <CheckCircle className="h-3 w-3 mr-1" /> Mark Returned
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ─────────────────────────────────────────────────────────────────────────────
-              MACHINERY SERVICE TAB
-          ───────────────────────────────────────────────────────────────────────────── */}
-          <TabsContent value="service">
-            <Card className="bg-card/50 backdrop-blur border-border/50">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-red-500" />
-                    Machinery Service Logs
-                  </CardTitle>
-                  <CardDescription>Machine maintenance and repair tickets</CardDescription>
-                </div>
-                <Button size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" /> New Ticket
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {serviceTickets?.length === 0 ? (
-                  <div className="text-center py-8">
-                    <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-2" />
-                    <p className="text-muted-foreground">All machines running smoothly!</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                    {serviceTickets?.map(ticket => {
-                      const daysOpen = ticket.created_at 
-                        ? differenceInDays(new Date(), new Date(ticket.created_at)) 
-                        : 0;
-                      const isOpen = ticket.status === 'open' || ticket.status === 'in_progress';
-                      
-                      return (
-                        <div key={ticket.id} className={`p-4 rounded-xl border ${isOpen ? 'border-red-500/20 bg-red-500/5' : 'border-border/50 bg-card/30'}`}>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-foreground">{ticket.machine_name}</span>
-                                <Badge variant={ticket.status === 'open' ? 'destructive' : ticket.status === 'in_progress' ? 'secondary' : 'default'}>
-                                  {ticket.status}
-                                </Badge>
-                                {isOpen && daysOpen > 0 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    <Clock className="h-3 w-3 mr-1" /> {daysOpen} days
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="text-sm text-muted-foreground mt-1">{ticket.office?.name}</div>
-                              <p className="text-sm text-foreground mt-2">{ticket.issue_description}</p>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-sm text-muted-foreground">
-                                {format(new Date(ticket.created_at), "MMM d, yyyy")}
-                              </div>
-                              {ticket.serviced_by && (
-                                <div className="text-sm text-muted-foreground">Assigned: {ticket.serviced_by}</div>
-                              )}
-                              {ticket.resolved_at && (
-                                <div className="text-xs text-green-500 mt-1">
-                                  Resolved: {format(new Date(ticket.resolved_at), "MMM d")}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ─────────────────────────────────────────────────────────────────────────────
-              BRAND BREAKDOWN TAB
-          ───────────────────────────────────────────────────────────────────────────── */}
-          <TabsContent value="brand">
             <Card className="bg-card/50 backdrop-blur border-border/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                  Production by Brand
+                  <Wrench className="h-5 w-5 text-primary" />
+                  Tools Issued
                 </CardTitle>
-                <CardDescription>Output breakdown across Grabba brands</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {GRABBA_BRAND_IDS.map(brand => {
-                    const config = GRABBA_BRAND_CONFIG[brand];
-                    const data = brandOutput[brand];
-                    const percentage = totalAllBoxes > 0 ? (data.boxes / totalAllBoxes) * 100 : 0;
-                    
-                    return (
-                      <div key={brand} className={`p-4 rounded-xl border ${config.gradient}`}>
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-xl">{config.icon}</span>
-                          <span className="font-medium text-foreground">{config.label}</span>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Boxes</span>
-                            <span className="font-bold text-foreground">{data.boxes.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Tubes</span>
-                            <span className="font-bold text-foreground">{data.tubes.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Batches</span>
-                            <span className="font-medium text-foreground">{data.batches}</span>
-                          </div>
-                          <Progress value={percentage} className="h-2 mt-2" />
-                          <p className="text-xs text-muted-foreground">{percentage.toFixed(1)}% of total</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tool</TableHead>
+                      <TableHead>Office</TableHead>
+                      <TableHead>Issued To</TableHead>
+                      <TableHead>Issued Date</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tools?.map((tool: any) => (
+                      <TableRow key={tool.id}>
+                        <TableCell className="font-medium">{tool.tool_name}</TableCell>
+                        <TableCell>{tool.office?.name || 'N/A'}</TableCell>
+                        <TableCell>{tool.issued_to || '-'}</TableCell>
+                        <TableCell>
+                          {tool.issued_at ? format(new Date(tool.issued_at), "MMM d") : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={tool.returned_at ? 'default' : 'secondary'}>
+                            {tool.returned_at ? 'Returned' : 'Outstanding'}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Service Tab */}
+          <TabsContent value="service">
+            <Card className="bg-card/50 backdrop-blur border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                  Service Tickets
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Machine</TableHead>
+                      <TableHead>Office</TableHead>
+                      <TableHead>Issue</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {serviceTickets?.map((ticket: any) => (
+                      <TableRow key={ticket.id}>
+                        <TableCell className="font-medium">{ticket.machine_name}</TableCell>
+                        <TableCell>{ticket.office?.name || 'N/A'}</TableCell>
+                        <TableCell className="max-w-xs truncate">{ticket.issue_description}</TableCell>
+                        <TableCell>
+                          <Badge variant={ticket.status === 'resolved' ? 'default' : ticket.status === 'in_progress' ? 'secondary' : 'destructive'}>
+                            {ticket.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {ticket.created_at ? format(new Date(ticket.created_at), "MMM d") : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modals */}
+      <EntityModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        title="Log Production Batch"
+        fields={productionBatchFields}
+        onSubmit={handleCreate}
+        mode="create"
+      />
+
+      <EntityModal
+        open={!!editingBatch}
+        onOpenChange={(open) => !open && setEditingBatch(null)}
+        title="Edit Production Batch"
+        fields={productionBatchFields}
+        defaultValues={editingBatch || {}}
+        onSubmit={handleUpdate}
+        mode="edit"
+      />
+
+      <DeleteConfirmModal
+        open={!!deletingItem}
+        onOpenChange={(open) => !open && setDeletingItem(null)}
+        title="Delete Production Batch"
+        itemName={deletingItem?.name}
+        onConfirm={handleDelete}
+      />
+
+      <GlobalAddButton
+        label="Log Production"
+        onClick={() => setCreateModalOpen(true)}
+        variant="floating"
+      />
     </div>
   );
 }
