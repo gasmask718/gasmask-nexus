@@ -201,6 +201,7 @@ import GrabbaTextCenter from "./pages/grabba/GrabbaTextCenter";
 import GrabbaEmailCenter from "./pages/grabba/GrabbaEmailCenter";
 import GrabbaCallCenter from "./pages/grabba/GrabbaCallCenter";
 import GrabbaCommunicationLogs from "./pages/grabba/GrabbaCommunicationLogs";
+import GrabbaAutopilotConsole from "./pages/grabba/GrabbaAutopilotConsole";
 import { GrabbaLayout } from "./components/grabba/GrabbaLayout";
 
 const queryClient = new QueryClient();
@@ -2206,6 +2207,7 @@ const App = () => (
               <Route path="/grabba/command-penthouse" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommandPenthouse /></GrabbaLayout></Layout></ProtectedRoute>} />
               <Route path="/grabba/cluster" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaClusterDashboard /></GrabbaLayout></Layout></ProtectedRoute>} />
               <Route path="/grabba/ai-insights" element={<ProtectedRoute><Layout><GrabbaLayout><AIInsights /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/autopilot-console" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaAutopilotConsole /></GrabbaLayout></Layout></ProtectedRoute>} />
               
               {/* 🏢 FLOOR 1 — CRM & Store Control */}
               <Route path="/grabba/crm" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCRM /></GrabbaLayout></Layout></ProtectedRoute>} />

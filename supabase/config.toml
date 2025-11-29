@@ -3,6 +3,9 @@ project_id = "qalaaroashbggynpvqct"
 [functions.intelligence-report]
 verify_jwt = false
 
+[functions.autopilot-daily]
+verify_jwt = false
+
 [functions.ai-clean-data]
 verify_jwt = false
 
