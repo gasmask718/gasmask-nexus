@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { LiveTicker } from '@/components/activity/LiveTicker';
 import { ActivityTray } from '@/components/activity/ActivityTray';
 import { ActivityFeedPanel } from '@/components/activity/ActivityFeedPanel';
+import { AutomationIndicator } from '@/components/automation';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GRABBA LAYOUT WRAPPER
@@ -85,16 +86,21 @@ function FloorBreadcrumb() {
           </TooltipContent>
         </Tooltip>
 
+        {/* Automation Indicator */}
+        <div className="ml-auto">
+          <AutomationIndicator floorId={currentFloor.id} />
+        </div>
+
         {/* Permission indicator */}
         {(isReadOnly || access.permission === 'read') && (
-          <Badge variant="outline" className="ml-auto text-xs flex items-center gap-1 bg-amber-500/10 text-amber-600 border-amber-500/30">
+          <Badge variant="outline" className="text-xs flex items-center gap-1 bg-amber-500/10 text-amber-600 border-amber-500/30">
             <Eye className="h-3 w-3" />
             Read Only
           </Badge>
         )}
         
         {!access.canCreate && !isReadOnly && access.permission === 'full' && (
-          <Badge variant="outline" className="ml-auto text-xs flex items-center gap-1">
+          <Badge variant="outline" className="text-xs flex items-center gap-1">
             <Lock className="h-3 w-3" />
             Limited Access
           </Badge>

@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useGrabbaPermissions } from '@/hooks/useGrabbaPermissions';
 import { useActivityLogger } from '@/hooks/useActivityFeed';
+import { triggerAutomation } from '@/lib/automation/AutomationEngine';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -83,6 +84,7 @@ export function useGrabbaActions() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['grabba-finance-orders'] });
       logActivity('new_order', { brand: result?.brand as any, entityId: result?.id });
+      triggerAutomation('new_order_created', { orderId: result?.id, brand: result?.brand });
       toast.success('Order created successfully');
       closeModal();
     },
