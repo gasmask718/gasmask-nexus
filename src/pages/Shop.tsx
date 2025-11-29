@@ -1,91 +1,58 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useProducts, useBrands, MarketplaceProduct } from '@/services/marketplace/useProducts';
+import { useCart } from '@/services/marketplace/useCart';
+import { usePricing } from '@/services/marketplace/usePricing';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ShoppingCart, Search, User, Package, Star, Filter } from 'lucide-react';
-
-interface Product {
-  id: string;
-  name: string;
-  category: string | null;
-  suggested_retail_price: number | null;
-  wholesale_price: number | null;
-  store_price: number | null;
-  is_active: boolean;
-  sku: string | null;
-}
+import { 
+  ShoppingCart, Search, User, Package, Star, Filter, 
+  Loader2, ArrowRight, Sparkles 
+} from 'lucide-react';
 
 export default function Shop() {
   const navigate = useNavigate();
-  const { data: userData, isLoading: profileLoading } = useCurrentUserProfile();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [cart, setCart] = useState<{ productId: string; quantity: number }[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState<string>('all');
 
-  const isLoggedIn = !!userData?.profile;
-  const isCustomer = userData?.profile?.primary_role === 'customer';
+  const { data: products, isLoading: productsLoading } = useProducts({
+    brandId: selectedBrand !== 'all' ? selectedBrand : undefined,
+    search: searchQuery || undefined,
+  });
+  const { data: brands } = useBrands();
+  const { addToCart, isAddingToCart, totals } = useCart();
+  const { detectTierForUser, getProductPriceForDisplay } = usePricing();
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  const tier = detectTierForUser();
+  const isLoggedIn = !!user;
 
-  async function fetchProducts() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('products')
-      .select('id, name, category, suggested_retail_price, wholesale_price, store_price, is_active, sku')
-      .eq('is_active', true)
-      .order('name');
-
-    if (error) {
-      console.error('Error fetching products:', error);
-      toast.error('Failed to load products');
-    } else {
-      setProducts(data || []);
-    }
-    setLoading(false);
-  }
-
-  const getDisplayPrice = (product: Product) => {
-    // Retail customers see suggested_retail_price
-    return product.suggested_retail_price || 0;
-  };
-
-  const addToCart = (productId: string) => {
+  const handleAddToCart = async (product: MarketplaceProduct) => {
     if (!isLoggedIn) {
       toast.info('Please sign in to add items to cart');
       navigate('/auth');
       return;
     }
-    
-    setCart(prev => {
-      const existing = prev.find(item => item.productId === productId);
-      if (existing) {
-        return prev.map(item => 
-          item.productId === productId 
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prev, { productId, quantity: 1 }];
-    });
-    toast.success('Added to cart');
+
+    try {
+      await addToCart({ productId: product.id, qty: 1, tier });
+    } catch (error) {
+      console.error('Add to cart error:', error);
+    }
   };
 
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (p.category?.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+  const getPrice = (product: MarketplaceProduct) => {
+    return getProductPriceForDisplay({
+      retail_price: product.retail_price,
+      store_price: product.store_price,
+      wholesale_price: product.wholesale_price,
+    }, tier);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
@@ -93,10 +60,14 @@ export default function Shop() {
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Package className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold">Shop</span>
-            </div>
+            <Link to="/shop" className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent">
+                DynastyOS Shop
+              </span>
+            </Link>
 
             <div className="flex-1 max-w-md mx-8">
               <div className="relative">
@@ -113,18 +84,26 @@ export default function Shop() {
             <div className="flex items-center gap-3">
               {isLoggedIn ? (
                 <>
-                  <Button variant="outline" size="sm" className="relative" onClick={() => toast.info('Cart coming soon')}>
+                  <Badge variant="outline" className="hidden sm:flex">
+                    {tier.charAt(0).toUpperCase() + tier.slice(1)} Pricing
+                  </Badge>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="relative"
+                    onClick={() => navigate('/cart')}
+                  >
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     Cart
-                    {cartCount > 0 && (
+                    {totals.itemCount > 0 && (
                       <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center">
-                        {cartCount}
+                        {totals.itemCount}
                       </Badge>
                     )}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => navigate('/portal/customer')}>
                     <User className="h-4 w-4 mr-2" />
-                    My Account
+                    Account
                   </Button>
                 </>
               ) : (
@@ -143,90 +122,178 @@ export default function Shop() {
       </header>
 
       {/* Hero Banner */}
-      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background py-12 px-4">
-        <div className="container mx-auto text-center">
-          <h1 className="text-4xl font-bold mb-4">Premium Products, Direct to You</h1>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Browse our curated selection of quality products with fast delivery and great prices.
+      <div className="relative overflow-hidden bg-gradient-to-r from-primary/10 via-blue-500/10 to-purple-500/10 py-16 px-4">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+        <div className="container mx-auto text-center relative">
+          <Badge variant="secondary" className="mb-4">Multi-Tier Marketplace</Badge>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            Premium Products, Direct to You
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-6">
+            Browse our curated selection from verified wholesalers. 
+            {tier === 'store' && ' Store pricing unlocked!'}
+            {tier === 'wholesale' && ' Wholesale pricing unlocked!'}
           </p>
+          {!isLoggedIn && (
+            <Button onClick={() => navigate('/auth')} size="lg">
+              Sign in for Better Prices
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Categories */}
+      {/* Filters */}
       <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-          <Button variant="secondary" size="sm" className="shrink-0">
-            <Filter className="h-4 w-4 mr-2" />
-            All Products
-          </Button>
-          {categories.map(cat => (
-            <Button key={cat} variant="outline" size="sm" className="shrink-0">
-              {cat}
-            </Button>
-          ))}
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Filter by:</span>
+          </div>
+          <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Brands" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Brands</SelectItem>
+              {brands?.map((brand) => (
+                <SelectItem key={brand.id} value={brand.id}>
+                  {brand.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {searchQuery && (
+            <Badge variant="secondary" className="gap-1">
+              Search: {searchQuery}
+              <button onClick={() => setSearchQuery('')} className="ml-1 hover:text-destructive">×</button>
+            </Badge>
+          )}
         </div>
       </div>
 
       {/* Products Grid */}
       <div className="container mx-auto px-4 pb-12">
-        {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {[...Array(8)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <div className="aspect-square bg-muted" />
-                <CardContent className="p-4">
-                  <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-                  <div className="h-4 bg-muted rounded w-1/2" />
-                </CardContent>
-              </Card>
-            ))}
+        {productsLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="text-center py-12">
-            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium">No products found</h3>
-            <p className="text-muted-foreground">Try adjusting your search</p>
+        ) : !products || products.length === 0 ? (
+          <div className="text-center py-20">
+            <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">No products found</h3>
+            <p className="text-muted-foreground mb-4">Try adjusting your search or filters</p>
+            <Button variant="outline" onClick={() => { setSearchQuery(''); setSelectedBrand('all'); }}>
+              Clear Filters
+            </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredProducts.map((product) => (
-              <Card key={product.id} className="overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="aspect-square bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
-                  <Package className="h-16 w-16 text-muted-foreground/50" />
-                </div>
-                <CardContent className="p-4">
-                  {product.category && (
-                    <Badge variant="secondary" className="mb-2 text-xs">
-                      {product.category}
-                    </Badge>
-                  )}
-                  <h3 className="font-semibold line-clamp-2 group-hover:text-primary transition-colors">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center gap-1 mt-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
-                    ))}
-                    <span className="text-xs text-muted-foreground ml-1">(4.8)</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {products.map((product) => {
+              const price = getPrice(product);
+              const retailPrice = Number(product.retail_price) || 0;
+              const hasDiscount = tier !== 'retail' && price < retailPrice;
+
+              return (
+                <Card key={product.id} className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-border/50">
+                  {/* Product Image */}
+                  <div className="aspect-square bg-gradient-to-br from-muted to-muted/50 relative overflow-hidden">
+                    {product.images?.[0] ? (
+                      <img
+                        src={product.images[0]}
+                        alt={product.product_name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="h-20 w-20 text-muted-foreground/30" />
+                      </div>
+                    )}
+                    {hasDiscount && (
+                      <Badge className="absolute top-3 left-3 bg-green-500">
+                        {Math.round((1 - price / retailPrice) * 100)}% OFF
+                      </Badge>
+                    )}
+                    {product.brand && (
+                      <Badge 
+                        variant="secondary" 
+                        className="absolute top-3 right-3"
+                        style={{ backgroundColor: product.brand.color || undefined }}
+                      >
+                        {product.brand.name}
+                      </Badge>
+                    )}
                   </div>
-                  <p className="text-2xl font-bold mt-2 text-primary">
-                    ${getDisplayPrice(product).toFixed(2)}
-                  </p>
-                </CardContent>
-                <CardFooter className="p-4 pt-0">
-                  <Button 
-                    className="w-full" 
-                    onClick={() => addToCart(product.id)}
-                  >
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Add to Cart
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold line-clamp-2 group-hover:text-primary transition-colors min-h-[2.5rem]">
+                      {product.product_name}
+                    </h3>
+                    
+                    {product.wholesaler && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        by {product.wholesaler.company_name}
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-1 mt-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
+                      ))}
+                      <span className="text-xs text-muted-foreground ml-1">(4.8)</span>
+                    </div>
+
+                    <div className="mt-3 flex items-baseline gap-2">
+                      <span className="text-2xl font-bold text-primary">
+                        ${price.toFixed(2)}
+                      </span>
+                      {hasDiscount && (
+                        <span className="text-sm text-muted-foreground line-through">
+                          ${retailPrice.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+
+                    {product.inventory_qty !== null && product.inventory_qty < 10 && product.inventory_qty > 0 && (
+                      <p className="text-xs text-amber-600 mt-1">Only {product.inventory_qty} left!</p>
+                    )}
+                    {product.inventory_qty === 0 && (
+                      <p className="text-xs text-destructive mt-1">Out of stock</p>
+                    )}
+                  </CardContent>
+
+                  <CardFooter className="p-4 pt-0">
+                    <Button 
+                      className="w-full" 
+                      onClick={() => handleAddToCart(product)}
+                      disabled={isAddingToCart || product.inventory_qty === 0}
+                    >
+                      {isAddingToCart ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                      )}
+                      Add to Cart
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
+
+      {/* Footer */}
+      <footer className="border-t bg-card/50 py-8">
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+          <p>© 2024 DynastyOS Marketplace. All rights reserved.</p>
+          <div className="flex items-center justify-center gap-4 mt-4">
+            <Link to="/shop" className="hover:text-foreground">Shop</Link>
+            <Link to="/portal/customer" className="hover:text-foreground">My Account</Link>
+            <Link to="/cart" className="hover:text-foreground">Cart</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

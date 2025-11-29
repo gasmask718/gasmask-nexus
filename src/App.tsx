@@ -130,6 +130,8 @@ import ProductionPortal from "./pages/portal/ProductionPortal";
 import VAPortal from "./pages/portal/VAPortal";
 import CustomerPortal from "./pages/portal/CustomerPortal";
 import Shop from "./pages/Shop";
+import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
 import RoleRouter from "./components/portal/RoleRouter";
 import PortalInvoiceDetail from "./pages/portal/PortalInvoiceDetail";
 import PortalStore from "./pages/portal/PortalStore";
@@ -253,6 +255,8 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/shop" element={<Shop />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
               <Route path="/sidebar-test" element={
                 <ProtectedRoute>
                   <Layout>
