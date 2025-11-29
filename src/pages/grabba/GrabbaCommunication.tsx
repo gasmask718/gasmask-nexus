@@ -7,10 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Phone, Mail, Search, Send, Clock, CheckCircle, XCircle } from "lucide-react";
+import { MessageSquare, Phone, Mail, Search, Send, Clock, CheckCircle, XCircle, FileText } from "lucide-react";
 import { format } from "date-fns";
-import { useSearchParams } from "react-router-dom";
-import { GRABBA_BRANDS, getBrandConfig } from "@/config/grabbaBrands";
+import { useSearchParams, Link } from "react-router-dom";
+import { GRABBA_BRANDS, getBrandConfig, GRABBA_BRAND_CONFIG, GrabbaBrand } from "@/config/grabbaBrands";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 
@@ -109,14 +109,77 @@ export default function GrabbaCommunication() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <MessageSquare className="h-8 w-8 text-primary" />
-            Grabba Communication Center
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Text, call, and email center powered by AI – focused on Grabba accounts
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+              <MessageSquare className="h-8 w-8 text-primary" />
+              Grabba Communication Center
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Floor 2 — Communications: All SMS, calls, email, and AI messaging for Grabba operations.
+            </p>
+          </div>
+          <BrandFilterBar
+            selectedBrand={selectedBrand}
+            onBrandChange={setSelectedBrand}
+            variant="compact"
+          />
+        </div>
+
+        {/* Quick Nav Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Link to="/grabba/text-center">
+            <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-primary/50 transition-colors cursor-pointer">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-500/20">
+                  <MessageSquare className="h-5 w-5 text-green-500" />
+                </div>
+                <div>
+                  <p className="font-medium">Text Center</p>
+                  <p className="text-xs text-muted-foreground">Send SMS</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/grabba/email-center">
+            <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-primary/50 transition-colors cursor-pointer">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/20">
+                  <Mail className="h-5 w-5 text-purple-500" />
+                </div>
+                <div>
+                  <p className="font-medium">Email Center</p>
+                  <p className="text-xs text-muted-foreground">Send Emails</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/grabba/call-center">
+            <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-primary/50 transition-colors cursor-pointer">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/20">
+                  <Phone className="h-5 w-5 text-blue-500" />
+                </div>
+                <div>
+                  <p className="font-medium">Call Center</p>
+                  <p className="text-xs text-muted-foreground">Voice Calls</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/grabba/communication-logs">
+            <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-primary/50 transition-colors cursor-pointer">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500/20">
+                  <FileText className="h-5 w-5 text-amber-500" />
+                </div>
+                <div>
+                  <p className="font-medium">All Logs</p>
+                  <p className="text-xs text-muted-foreground">Full History</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         <Tabs defaultValue="logs" className="space-y-6">

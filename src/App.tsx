@@ -197,6 +197,10 @@ import GrabbaAmbassadors from "./pages/grabba/GrabbaAmbassadors";
 import GrabbaWholesalePlatform from "./pages/grabba/GrabbaWholesalePlatform";
 import GrabbaFinance from "./pages/grabba/GrabbaFinance";
 import GrabbaCommandPenthouse from "./pages/grabba/GrabbaCommandPenthouse";
+import GrabbaTextCenter from "./pages/grabba/GrabbaTextCenter";
+import GrabbaEmailCenter from "./pages/grabba/GrabbaEmailCenter";
+import GrabbaCallCenter from "./pages/grabba/GrabbaCallCenter";
+import GrabbaCommunicationLogs from "./pages/grabba/GrabbaCommunicationLogs";
 import { GrabbaLayout } from "./components/grabba/GrabbaLayout";
 
 const queryClient = new QueryClient();
@@ -295,6 +299,11 @@ const App = () => (
               <Route path="/grabba" element={<ProtectedRoute><Layout><GrabbaLayout><BrandPlaceholder /></GrabbaLayout></Layout></ProtectedRoute>} />
               <Route path="/grabba/crm" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCRM /></GrabbaLayout></Layout></ProtectedRoute>} />
               <Route path="/grabba/communication" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommunication /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/communications" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommunication /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/text-center" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaTextCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/email-center" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaEmailCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/call-center" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCallCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/communication-logs" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommunicationLogs /></GrabbaLayout></Layout></ProtectedRoute>} />
               <Route path="/grabba/inventory" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaInventory /></GrabbaLayout></Layout></ProtectedRoute>} />
               <Route path="/grabba/production" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaProduction /></GrabbaLayout></Layout></ProtectedRoute>} />
               <Route path="/grabba/deliveries" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaDeliveries /></GrabbaLayout></Layout></ProtectedRoute>} />
