@@ -68,7 +68,7 @@ export const GRABBA_FLOORS: GrabbaFloor[] = [
     name: 'Inventory Engine',
     icon: Package,
     path: '/grabba/inventory',
-    description: 'Tube counts, Box tracking, ETA predictions, Restock alerts',
+    description: 'Floor 3 — Inventory: Live tube counts, ETA engine, consumption tracking, and neighborhood intelligence for Grabba brands.',
     emoji: '📦'
   },
   {
