@@ -84,7 +84,7 @@ export const GRABBA_FLOORS: GrabbaFloor[] = [
     name: 'Orders & Invoices',
     icon: FileText,
     path: '/grabba/finance',
-    description: 'Orders, Invoices, Payments, Unpaid accounts, Reliability scores',
+    description: 'Floor 5 — Orders: Invoices, payments, unpaid accounts, and billing for Grabba brands.',
     emoji: '📑'
   },
   {
