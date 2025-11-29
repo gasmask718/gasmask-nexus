@@ -9940,6 +9940,177 @@ export type Database = {
           },
         ]
       }
+      org_activity_logs: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          org_id: string
+          user_id: string | null
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          org_id: string
+          user_id?: string | null
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          org_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_activity_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_invites: {
+        Row: {
+          accepted: boolean | null
+          accepted_at: string | null
+          created_at: string | null
+          expires_at: string
+          id: string
+          invite_code: string
+          invited_by: string | null
+          invited_email: string
+          invited_role: Database["public"]["Enums"]["org_role"]
+          org_id: string
+        }
+        Insert: {
+          accepted?: boolean | null
+          accepted_at?: string | null
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          invite_code: string
+          invited_by?: string | null
+          invited_email: string
+          invited_role: Database["public"]["Enums"]["org_role"]
+          org_id: string
+        }
+        Update: {
+          accepted?: boolean | null
+          accepted_at?: string | null
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          invite_code?: string
+          invited_by?: string | null
+          invited_email?: string
+          invited_role?: Database["public"]["Enums"]["org_role"]
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_invites_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_users: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          joined_at: string | null
+          org_id: string
+          permissions: Json | null
+          role: Database["public"]["Enums"]["org_role"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          joined_at?: string | null
+          org_id: string
+          permissions?: Json | null
+          role?: Database["public"]["Enums"]["org_role"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          joined_at?: string | null
+          org_id?: string
+          permissions?: Json | null
+          role?: Database["public"]["Enums"]["org_role"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_users_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          billing_email: string | null
+          created_at: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          org_type: string
+          owner_user_id: string | null
+          settings: Json | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          billing_email?: string | null
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          org_type: string
+          owner_user_id?: string | null
+          settings?: Json | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          billing_email?: string | null
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          org_type?: string
+          owner_user_id?: string | null
+          settings?: Json | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       payouts: {
         Row: {
           assignment_fee: number
@@ -10067,6 +10238,33 @@ export type Database = {
           pay_period_end?: string
           pay_period_start?: string
           status?: string | null
+        }
+        Relationships: []
+      }
+      permissions_matrix: {
+        Row: {
+          category: string | null
+          description: string | null
+          id: string
+          org_types: string[] | null
+          permission_key: string
+          permission_name: string
+        }
+        Insert: {
+          category?: string | null
+          description?: string | null
+          id?: string
+          org_types?: string[] | null
+          permission_key: string
+          permission_name: string
+        }
+        Update: {
+          category?: string | null
+          description?: string | null
+          id?: string
+          org_types?: string[] | null
+          permission_key?: string
+          permission_name?: string
         }
         Relationships: []
       }
@@ -14938,6 +15136,10 @@ export type Database = {
         Args: { _brand: string; _user_id: string }
         Returns: boolean
       }
+      can_manage_org: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
       get_user_businesses: {
         Args: { user_id: string }
         Returns: {
@@ -14948,11 +15150,23 @@ export type Database = {
           member_role: string
         }[]
       }
+      has_org_role: {
+        Args: {
+          _org_id: string
+          _role: Database["public"]["Enums"]["org_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_org_member: {
+        Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
       log_audit_event: {
@@ -15020,6 +15234,14 @@ export type Database = {
         | "direct_mail"
         | "cold_call"
       loyalty_level_type: "Bronze" | "Silver" | "Gold" | "VIP"
+      org_role:
+        | "owner"
+        | "manager"
+        | "inventory_staff"
+        | "cashier"
+        | "shipping_staff"
+        | "support_staff"
+        | "back_office"
       payment_method: "cash" | "zelle" | "cashapp" | "venmo" | "other"
       property_type:
         | "single_family"
@@ -15258,6 +15480,15 @@ export const Constants = {
         "cold_call",
       ],
       loyalty_level_type: ["Bronze", "Silver", "Gold", "VIP"],
+      org_role: [
+        "owner",
+        "manager",
+        "inventory_staff",
+        "cashier",
+        "shipping_staff",
+        "support_staff",
+        "back_office",
+      ],
       payment_method: ["cash", "zelle", "cashapp", "venmo", "other"],
       property_type: [
         "single_family",
