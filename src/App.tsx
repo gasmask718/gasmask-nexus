@@ -128,6 +128,9 @@ import StorePortal from "./pages/portal/StorePortal";
 import WholesalerPortal from "./pages/portal/WholesalerPortal";
 import { WholesalerDashboard, WholesalerProducts, WholesalerProductForm, WholesalerOrders, WholesalerFinance, WholesalerSettings, WholesalerMessages } from "./pages/portal/wholesaler";
 import { StoreDashboard, StoreProducts, StoreCart, StoreCheckout, StoreOrders, StoreOrderDetail, StoreInvoices, StoreSettings, StoreMessages } from "./pages/portal/store";
+import StoreTeam from "./pages/portal/store/StoreTeam";
+import WholesalerTeam from "./pages/portal/wholesaler/WholesalerTeam";
+import JoinOrg from "./pages/portal/JoinOrg";
 import ProductionPortal from "./pages/portal/ProductionPortal";
 import VAPortal from "./pages/portal/VAPortal";
 import CustomerPortal from "./pages/portal/CustomerPortal";
@@ -1394,6 +1397,8 @@ const App = () => (
               <Route path="/portal/store/settings" element={<ProtectedRoute><StoreSettings /></ProtectedRoute>} />
               <Route path="/portal/store/messages" element={<ProtectedRoute><StoreMessages /></ProtectedRoute>} />
               <Route path="/portal/store/messages/:threadId" element={<ProtectedRoute><StoreMessages /></ProtectedRoute>} />
+              <Route path="/portal/store/team" element={<ProtectedRoute><StoreTeam /></ProtectedRoute>} />
+              <Route path="/portal/join" element={<ProtectedRoute><JoinOrg /></ProtectedRoute>} />
               <Route path="/portal/wholesaler" element={<ProtectedRoute><WholesalerDashboard /></ProtectedRoute>} />
               <Route path="/portal/wholesaler/products" element={<ProtectedRoute><WholesalerProducts /></ProtectedRoute>} />
               <Route path="/portal/wholesaler/products/new" element={<ProtectedRoute><WholesalerProductForm /></ProtectedRoute>} />
@@ -1404,6 +1409,7 @@ const App = () => (
               <Route path="/portal/wholesaler/settings" element={<ProtectedRoute><WholesalerSettings /></ProtectedRoute>} />
               <Route path="/portal/wholesaler/messages" element={<ProtectedRoute><WholesalerMessages /></ProtectedRoute>} />
               <Route path="/portal/wholesaler/messages/:threadId" element={<ProtectedRoute><WholesalerMessages /></ProtectedRoute>} />
+              <Route path="/portal/wholesaler/team" element={<ProtectedRoute><WholesalerTeam /></ProtectedRoute>} />
               <Route path="/portal/production" element={<ProtectedRoute><ProductionPortal /></ProtectedRoute>} />
               <Route path="/portal/va" element={<ProtectedRoute><VAPortal /></ProtectedRoute>} />
               <Route path="/portal/customer" element={<ProtectedRoute><CustomerPortal /></ProtectedRoute>} />
