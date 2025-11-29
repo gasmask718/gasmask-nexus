@@ -18,11 +18,13 @@ import { toast } from "sonner";
 import { GRABBA_BRAND_IDS, getBrandConfig, type GrabbaBrand, GRABBA_BRAND_CONFIG } from "@/config/grabbaSkyscraper";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// FLOOR 5 — GRABBA ORDERS & INVOICES
-// Invoices, payments, unpaid accounts, and billing for Grabba brands
-// ═══════════════════════════════════════════════════════════════════════════════
+import { EntityModal, FieldConfig } from "@/components/crud/EntityModal";
+import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
+import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
+import { TableRowActions } from "@/components/crud/TableRowActions";
+import { DataTablePagination } from "@/components/crud/DataTablePagination";
+import { useCrudOperations } from "@/hooks/useCrudOperations";
+import { invoiceFields, orderFields } from "@/config/entityFieldConfigs";
 
 const PaymentReliabilityBadge = ({ score, tier }: { score: number; tier: string }) => {
   const stars = tier === 'elite' ? 5 : tier === 'solid' ? 4 : tier === 'middle' ? 3 : tier === 'concerning' ? 2 : 1;
@@ -41,11 +43,40 @@ const PaymentReliabilityBadge = ({ score, tier }: { score: number; tier: string 
 export default function GrabbaFinance() {
   const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrand();
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const queryClient = useQueryClient();
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // FETCH INVOICES WITH BRAND FILTERING
-  // ─────────────────────────────────────────────────────────────────────────────
+  // Modal states
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<any>(null);
+  const [editingOrder, setEditingOrder] = useState<any>(null);
+  const [deletingItem, setDeletingItem] = useState<{ id: string; type: 'invoice' | 'order'; name: string } | null>(null);
+
+  // CRUD operations
+  const invoiceCrud = useCrudOperations({
+    table: "invoices",
+    queryKey: ["grabba-finance-invoices"],
+    successMessages: {
+      create: "Invoice created",
+      update: "Invoice updated",
+      delete: "Invoice deleted"
+    }
+  });
+
+  const orderCrud = useCrudOperations({
+    table: "wholesale_orders",
+    queryKey: ["grabba-finance-orders"],
+    successMessages: {
+      create: "Order created",
+      update: "Order updated",
+      delete: "Order deleted"
+    }
+  });
+
+  // Fetch invoices
   const { data: invoices, isLoading: loadingInvoices } = useQuery({
     queryKey: ["grabba-finance-invoices", selectedBrand],
     queryFn: async () => {
@@ -58,14 +89,11 @@ export default function GrabbaFinance() {
         `)
         .in("brand", brandsToQuery)
         .order("created_at", { ascending: false });
-
       return data || [];
     },
   });
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // FETCH ORDERS WITH BRAND FILTERING
-  // ─────────────────────────────────────────────────────────────────────────────
+  // Fetch orders
   const { data: orders, isLoading: loadingOrders } = useQuery({
     queryKey: ["grabba-finance-orders", selectedBrand],
     queryFn: async () => {
@@ -78,16 +106,12 @@ export default function GrabbaFinance() {
           store:stores(id, name)
         `)
         .in("brand", brandsToQuery)
-        .order("created_at", { ascending: false })
-        .limit(100);
-
+        .order("created_at", { ascending: false });
       return data || [];
     },
   });
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // FETCH AMBASSADOR COMMISSIONS
-  // ─────────────────────────────────────────────────────────────────────────────
+  // Fetch commissions
   const { data: commissions } = useQuery({
     queryKey: ["grabba-finance-commissions"],
     queryFn: async () => {
@@ -99,35 +123,12 @@ export default function GrabbaFinance() {
     },
   });
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // UPDATE PAYMENT STATUS
-  // ─────────────────────────────────────────────────────────────────────────────
-  const updatePaymentMutation = useMutation({
-    mutationFn: async ({ invoiceId, status }: { invoiceId: string; status: string }) => {
-      const { error } = await supabase
-        .from("invoices")
-        .update({ 
-          payment_status: status,
-          paid_at: status === "paid" ? new Date().toISOString() : null 
-        })
-        .eq("id", invoiceId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["grabba-finance-invoices"] });
-      toast.success("Payment status updated");
-    },
-  });
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // CALCULATE METRICS
-  // ─────────────────────────────────────────────────────────────────────────────
+  // Calculate metrics
   const totalRevenue = invoices?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
   const paidRevenue = invoices?.filter(i => i.payment_status === 'paid')?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
   const unpaidTotal = invoices?.filter(i => i.payment_status !== 'paid')?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
   const unpaidInvoices = invoices?.filter(i => i.payment_status !== 'paid') || [];
 
-  // Aging buckets
   const now = new Date();
   const aging = { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 };
   
@@ -140,33 +141,27 @@ export default function GrabbaFinance() {
     else aging['90+'] += inv.total_amount || 0;
   });
 
-  // Revenue by brand
-  const revenueByBrand: Record<GrabbaBrand, number> = {} as any;
-  GRABBA_BRAND_IDS.forEach(brand => {
-    revenueByBrand[brand] = invoices?.filter(i => i.brand === brand)?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
-  });
-
-  // Order stats
   const totalOrders = orders?.length || 0;
   const totalTubes = orders?.reduce((sum, o) => sum + (o.tubes_total || (o.boxes || 0) * 100), 0) || 0;
   const totalBoxes = orders?.reduce((sum, o) => sum + (o.boxes || 0), 0) || 0;
-
   const pendingCommissions = commissions?.filter(c => c.status === 'pending')?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
   const paidCommissions = commissions?.filter(c => c.status === 'paid')?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
 
-  // Filter invoices by search
+  // Filter and paginate
   const filteredInvoices = invoices?.filter(inv => 
     !search || 
     inv.company?.name?.toLowerCase().includes(search.toLowerCase()) ||
     inv.invoice_number?.toLowerCase().includes(search.toLowerCase())
-  );
+  ) || [];
 
-  // Filter orders by search
   const filteredOrders = orders?.filter(o => 
     !search || 
     o.company?.name?.toLowerCase().includes(search.toLowerCase()) ||
     o.store?.name?.toLowerCase().includes(search.toLowerCase())
-  );
+  ) || [];
+
+  const paginatedInvoices = filteredInvoices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const paginatedOrders = filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const getOverdueDays = (dueDate: string | null) => {
     if (!dueDate) return 0;
@@ -174,12 +169,50 @@ export default function GrabbaFinance() {
     return diff > 0 ? diff : 0;
   };
 
+  // Handlers
+  const handleCreateInvoice = async (data: Record<string, any>) => {
+    await invoiceCrud.create(data);
+    setInvoiceModalOpen(false);
+  };
+
+  const handleUpdateInvoice = async (data: Record<string, any>) => {
+    if (editingInvoice) {
+      await invoiceCrud.update({ id: editingInvoice.id, ...data });
+      setEditingInvoice(null);
+    }
+  };
+
+  const handleCreateOrder = async (data: Record<string, any>) => {
+    await orderCrud.create(data);
+    setOrderModalOpen(false);
+  };
+
+  const handleUpdateOrder = async (data: Record<string, any>) => {
+    if (editingOrder) {
+      await orderCrud.update({ id: editingOrder.id, ...data });
+      setEditingOrder(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deletingItem) {
+      if (deletingItem.type === 'invoice') {
+        await invoiceCrud.remove(deletingItem.id);
+      } else {
+        await orderCrud.remove(deletingItem.id);
+      }
+      setDeletingItem(null);
+    }
+  };
+
+  const handleMarkPaid = async (invoiceId: string) => {
+    await invoiceCrud.update({ id: invoiceId, payment_status: 'paid', paid_at: new Date().toISOString() });
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-        {/* HEADER */}
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+        {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
@@ -197,9 +230,7 @@ export default function GrabbaFinance() {
           />
         </div>
 
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-        {/* UNPAID BALANCE SNAPSHOT */}
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+        {/* Unpaid Balance Snapshot */}
         <Card className="bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent border-red-500/20">
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -235,9 +266,7 @@ export default function GrabbaFinance() {
           </CardContent>
         </Card>
 
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-        {/* KPI CARDS */}
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+        {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card className="bg-gradient-to-br from-green-500/10 to-green-900/5 border-green-500/20">
             <CardContent className="p-4">
@@ -300,380 +329,194 @@ export default function GrabbaFinance() {
           </Card>
         </div>
 
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-        {/* TABS */}
-        {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-        <Tabs defaultValue="unpaid" className="space-y-6">
-          <TabsList className="bg-muted/50">
-            <TabsTrigger value="unpaid">Unpaid Accounts</TabsTrigger>
-            <TabsTrigger value="orders">Order Tables</TabsTrigger>
-            <TabsTrigger value="invoices">All Invoices</TabsTrigger>
-            <TabsTrigger value="aging">Aging Report</TabsTrigger>
-            <TabsTrigger value="brand">Brand Breakdown</TabsTrigger>
-            <TabsTrigger value="commissions">Commissions</TabsTrigger>
-          </TabsList>
+        {/* Tabs */}
+        <Tabs defaultValue="invoices" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <TabsList className="bg-muted/50">
+              <TabsTrigger value="invoices">All Invoices</TabsTrigger>
+              <TabsTrigger value="orders">Order Tables</TabsTrigger>
+              <TabsTrigger value="aging">Aging Report</TabsTrigger>
+              <TabsTrigger value="commissions">Commissions</TabsTrigger>
+            </TabsList>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10 w-64"
+                />
+              </div>
+            </div>
+          </div>
 
-          {/* ─────────────────────────────────────────────────────────────────────────────
-              UNPAID ACCOUNTS TAB
-          ───────────────────────────────────────────────────────────────────────────── */}
-          <TabsContent value="unpaid">
-            <Card className="bg-card/50 backdrop-blur border-border/50">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-red-500" />
-                    Unpaid Accounts
-                  </CardTitle>
-                  <CardDescription>Outstanding balances requiring collection</CardDescription>
-                </div>
-                <div className="relative w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search companies..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-              </CardHeader>
-              <CardContent>
-                {loadingInvoices ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                ) : unpaidInvoices.length === 0 ? (
-                  <div className="text-center py-8">
-                    <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-2" />
-                    <p className="text-muted-foreground">All accounts are paid!</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Company</TableHead>
-                          <TableHead>Brand</TableHead>
-                          <TableHead>Invoice #</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Due Date</TableHead>
-                          <TableHead>Overdue</TableHead>
-                          <TableHead>Reliability</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredInvoices?.filter(i => i.payment_status !== 'paid').map((invoice) => {
-                          const config = invoice.brand ? getBrandConfig(invoice.brand as GrabbaBrand) : null;
-                          const overdueDays = getOverdueDays(invoice.due_date);
-                          const company = invoice.company as any;
-                          
-                          return (
-                            <TableRow key={invoice.id} className={overdueDays > 30 ? "bg-red-500/5" : ""}>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                                  <div>
-                                    <p className="font-medium">{company?.name || "Unknown"}</p>
-                                    <p className="text-xs text-muted-foreground">{company?.neighborhood}</p>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {config && <Badge className={config.pill}>{config.label}</Badge>}
-                              </TableCell>
-                              <TableCell className="font-mono text-sm">{invoice.invoice_number || "—"}</TableCell>
-                              <TableCell className="font-bold text-red-500">
-                                ${(invoice.total_amount || 0).toLocaleString()}
-                              </TableCell>
-                              <TableCell>
-                                {invoice.due_date ? format(new Date(invoice.due_date), "MMM d, yyyy") : "—"}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={overdueDays > 30 ? "destructive" : overdueDays > 7 ? "secondary" : "outline"}>
-                                  {overdueDays} days
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <PaymentReliabilityBadge
-                                  score={company?.payment_reliability_score || 50}
-                                  tier={company?.payment_reliability_tier || "middle"}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex gap-1">
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 text-green-500"
-                                    onClick={() => updatePaymentMutation.mutate({ invoiceId: invoice.id, status: "paid" })}
-                                    title="Mark Paid"
-                                  >
-                                    <CheckCircle className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 text-yellow-500"
-                                    onClick={() => updatePaymentMutation.mutate({ invoiceId: invoice.id, status: "partial" })}
-                                    title="Mark Partial"
-                                  >
-                                    <Clock className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ─────────────────────────────────────────────────────────────────────────────
-              ORDER TABLES TAB (BRAND FILTERED)
-          ───────────────────────────────────────────────────────────────────────────── */}
-          <TabsContent value="orders">
-            <Card className="bg-card/50 backdrop-blur border-border/50">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-primary" />
-                    Order Tables
-                  </CardTitle>
-                  <CardDescription>Company-wide delivery orders filtered by brand</CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="relative w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search orders..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                  <Button size="sm" className="gap-2">
-                    <Plus className="h-4 w-4" /> New Order
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {loadingOrders ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                ) : filteredOrders?.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Package className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">No orders found</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto max-h-[600px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Company/Store</TableHead>
-                          <TableHead>Brand</TableHead>
-                          <TableHead>Boxes</TableHead>
-                          <TableHead>Tubes</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredOrders?.map((order) => {
-                          const config = order.brand ? getBrandConfig(order.brand as GrabbaBrand) : null;
-                          return (
-                            <TableRow key={order.id}>
-                              <TableCell className="text-sm">
-                                {order.created_at ? format(new Date(order.created_at), "MMM d, yyyy") : "—"}
-                              </TableCell>
-                              <TableCell>
-                                <div>
-                                  <p className="font-medium">{order.company?.name || order.store?.name || "Unknown"}</p>
-                                  <p className="text-xs text-muted-foreground">{order.company?.neighborhood}</p>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {config && <Badge className={config.pill}>{config.label}</Badge>}
-                              </TableCell>
-                              <TableCell className="font-medium">{order.boxes || 0}</TableCell>
-                              <TableCell className="font-medium">{order.tubes_total || (order.boxes || 0) * 100}</TableCell>
-                              <TableCell>
-                                <Badge variant={order.status === 'delivered' ? 'default' : 'secondary'}>
-                                  {order.status || 'pending'}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ─────────────────────────────────────────────────────────────────────────────
-              ALL INVOICES TAB
-          ───────────────────────────────────────────────────────────────────────────── */}
+          {/* Invoices Tab */}
           <TabsContent value="invoices">
             <Card className="bg-card/50 backdrop-blur border-border/50">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Receipt className="h-5 w-5 text-primary" />
-                    All Invoices
+                    Invoices
                   </CardTitle>
-                  <CardDescription>Complete invoice history</CardDescription>
+                  <CardDescription>{filteredInvoices.length} total invoices</CardDescription>
                 </div>
-                <Button size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" /> Create Invoice
+                <Button onClick={() => setInvoiceModalOpen(true)} size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" /> New Invoice
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto max-h-[600px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Invoice #</TableHead>
-                        <TableHead>Company</TableHead>
-                        <TableHead>Brand</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Date</TableHead>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Invoice #</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Due Date</TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedInvoices.map((inv: any) => (
+                      <TableRow key={inv.id}>
+                        <TableCell className="font-medium">{inv.invoice_number}</TableCell>
+                        <TableCell>{inv.company?.name || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{inv.brand}</Badge>
+                        </TableCell>
+                        <TableCell>${(inv.total_amount || 0).toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={inv.payment_status === 'paid' ? 'default' : 'destructive'}>
+                            {inv.payment_status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {inv.due_date ? format(new Date(inv.due_date), "MMM d, yyyy") : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <TableRowActions
+                            actions={[
+                              { type: 'edit', onClick: () => setEditingInvoice(inv) },
+                              ...(inv.payment_status !== 'paid' ? [{ type: 'activate' as const, label: 'Mark Paid', onClick: () => handleMarkPaid(inv.id) }] : []),
+                              { type: 'delete', onClick: () => setDeletingItem({ id: inv.id, type: 'invoice', name: inv.invoice_number }) }
+                            ]}
+                          />
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredInvoices?.map((invoice) => {
-                        const config = invoice.brand ? getBrandConfig(invoice.brand as GrabbaBrand) : null;
-                        return (
-                          <TableRow key={invoice.id}>
-                            <TableCell className="font-mono text-sm">{invoice.invoice_number || invoice.id.slice(0, 8)}</TableCell>
-                            <TableCell>{invoice.company?.name || "Unknown"}</TableCell>
-                            <TableCell>
-                              {config && <Badge className={config.pill}>{config.label}</Badge>}
-                            </TableCell>
-                            <TableCell className="font-medium">${(invoice.total_amount || 0).toLocaleString()}</TableCell>
-                            <TableCell>
-                              <Badge variant={invoice.payment_status === 'paid' ? 'default' : invoice.payment_status === 'partial' ? 'secondary' : 'destructive'}>
-                                {invoice.payment_status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {invoice.created_at ? format(new Date(invoice.created_at), "MMM d, yyyy") : "—"}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+                    ))}
+                  </TableBody>
+                </Table>
+                <DataTablePagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(filteredInvoices.length / pageSize)}
+                  pageSize={pageSize}
+                  totalItems={filteredInvoices.length}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                />
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* ─────────────────────────────────────────────────────────────────────────────
-              AGING REPORT TAB
-          ───────────────────────────────────────────────────────────────────────────── */}
+          {/* Orders Tab */}
+          <TabsContent value="orders">
+            <Card className="bg-card/50 backdrop-blur border-border/50">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-primary" />
+                    Orders
+                  </CardTitle>
+                  <CardDescription>{filteredOrders.length} total orders</CardDescription>
+                </div>
+                <Button onClick={() => setOrderModalOpen(true)} size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" /> New Order
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Company/Store</TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Boxes</TableHead>
+                      <TableHead>Tubes</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedOrders.map((order: any) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">
+                          {order.company?.name || order.store?.name || 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{order.brand}</Badge>
+                        </TableCell>
+                        <TableCell>{order.boxes || 0}</TableCell>
+                        <TableCell>{order.tubes_total || (order.boxes || 0) * 100}</TableCell>
+                        <TableCell>${(order.total_amount || 0).toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={order.status === 'delivered' ? 'default' : 'secondary'}>
+                            {order.status || 'pending'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {order.created_at ? format(new Date(order.created_at), "MMM d") : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <TableRowActions
+                            actions={[
+                              { type: 'edit', onClick: () => setEditingOrder(order) },
+                              { type: 'delete', onClick: () => setDeletingItem({ id: order.id, type: 'order', name: `Order ${order.id.slice(0,8)}` }) }
+                            ]}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <DataTablePagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(filteredOrders.length / pageSize)}
+                  pageSize={pageSize}
+                  totalItems={filteredOrders.length}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Aging Tab */}
           <TabsContent value="aging">
             <Card className="bg-card/50 backdrop-blur border-border/50">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-amber-500" />
-                  Aging Report
-                </CardTitle>
+                <CardTitle>Aging Report</CardTitle>
                 <CardDescription>Outstanding balances by age</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20">
-                    <div className="text-sm text-green-400">0-30 Days</div>
-                    <div className="text-2xl font-bold text-foreground mt-1">
-                      ${aging['0-30'].toLocaleString()}
-                    </div>
-                    <Progress value={unpaidTotal > 0 ? (aging['0-30'] / unpaidTotal) * 100 : 0} className="h-2 mt-2" />
-                  </div>
-                  <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                    <div className="text-sm text-amber-400">31-60 Days</div>
-                    <div className="text-2xl font-bold text-foreground mt-1">
-                      ${aging['31-60'].toLocaleString()}
-                    </div>
-                    <Progress value={unpaidTotal > 0 ? (aging['31-60'] / unpaidTotal) * 100 : 0} className="h-2 mt-2" />
-                  </div>
-                  <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
-                    <div className="text-sm text-orange-400">61-90 Days</div>
-                    <div className="text-2xl font-bold text-foreground mt-1">
-                      ${aging['61-90'].toLocaleString()}
-                    </div>
-                    <Progress value={unpaidTotal > 0 ? (aging['61-90'] / unpaidTotal) * 100 : 0} className="h-2 mt-2" />
-                  </div>
-                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-                    <div className="text-sm text-red-400">90+ Days</div>
-                    <div className="text-2xl font-bold text-foreground mt-1">
-                      ${aging['90+'].toLocaleString()}
-                    </div>
-                    <Progress value={unpaidTotal > 0 ? (aging['90+'] / unpaidTotal) * 100 : 0} className="h-2 mt-2" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ─────────────────────────────────────────────────────────────────────────────
-              BRAND BREAKDOWN TAB
-          ───────────────────────────────────────────────────────────────────────────── */}
-          <TabsContent value="brand">
-            <Card className="bg-card/50 backdrop-blur border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                  Revenue by Brand
-                </CardTitle>
-                <CardDescription>Financial breakdown across Grabba brands</CardDescription>
-              </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {GRABBA_BRAND_IDS.map(brand => {
-                    const config = GRABBA_BRAND_CONFIG[brand];
-                    const revenue = revenueByBrand[brand];
-                    const unpaid = invoices?.filter(i => i.brand === brand && i.payment_status !== 'paid')
-                      ?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
-                    const percentage = totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0;
-                    
-                    return (
-                      <div key={brand} className={`p-4 rounded-xl border ${config.gradient}`}>
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-xl">{config.icon}</span>
-                          <span className="font-medium text-foreground">{config.label}</span>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Revenue</span>
-                            <span className="font-bold text-foreground">${revenue.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Unpaid</span>
-                            <span className="font-bold text-red-400">${unpaid.toLocaleString()}</span>
-                          </div>
-                          <Progress value={percentage} className="h-2" />
-                          <p className="text-xs text-muted-foreground">{percentage.toFixed(1)}% of total</p>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {Object.entries(aging).map(([range, amount]) => (
+                    <Card key={range} className="bg-muted/30">
+                      <CardContent className="p-4">
+                        <p className="text-sm text-muted-foreground">{range} days</p>
+                        <p className="text-2xl font-bold">${amount.toLocaleString()}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* ─────────────────────────────────────────────────────────────────────────────
-              COMMISSIONS TAB
-          ───────────────────────────────────────────────────────────────────────────── */}
+          {/* Commissions Tab */}
           <TabsContent value="commissions">
             <Card className="bg-card/50 backdrop-blur border-border/50">
               <CardHeader>
@@ -681,37 +524,92 @@ export default function GrabbaFinance() {
                   <Users className="h-5 w-5 text-primary" />
                   Ambassador Commissions
                 </CardTitle>
-                <CardDescription>Track and manage ambassador payouts</CardDescription>
               </CardHeader>
               <CardContent>
-                {commissions?.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">No commissions found</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                    {commissions?.map(comm => (
-                      <div key={comm.id} className="p-4 rounded-xl border border-border/50 bg-card/30 flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-foreground capitalize">{comm.entity_type}</div>
-                          <div className="text-sm text-muted-foreground">{comm.notes || 'No notes'}</div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-xl font-bold text-green-400">${comm.amount?.toLocaleString()}</div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ambassador</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {commissions?.slice(0, 20).map((comm: any) => (
+                      <TableRow key={comm.id}>
+                        <TableCell>{comm.ambassador_id?.slice(0, 8)}</TableCell>
+                        <TableCell>${(comm.amount || 0).toLocaleString()}</TableCell>
+                        <TableCell>
                           <Badge variant={comm.status === 'paid' ? 'default' : 'secondary'}>
                             {comm.status}
                           </Badge>
-                        </div>
-                      </div>
+                        </TableCell>
+                        <TableCell>
+                          {comm.created_at ? format(new Date(comm.created_at), "MMM d") : '-'}
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </div>
-                )}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modals */}
+      <EntityModal
+        open={invoiceModalOpen}
+        onOpenChange={setInvoiceModalOpen}
+        title="Create Invoice"
+        fields={invoiceFields}
+        onSubmit={handleCreateInvoice}
+        mode="create"
+      />
+
+      <EntityModal
+        open={!!editingInvoice}
+        onOpenChange={(open) => !open && setEditingInvoice(null)}
+        title="Edit Invoice"
+        fields={invoiceFields}
+        defaultValues={editingInvoice || {}}
+        onSubmit={handleUpdateInvoice}
+        mode="edit"
+      />
+
+      <EntityModal
+        open={orderModalOpen}
+        onOpenChange={setOrderModalOpen}
+        title="Create Order"
+        fields={orderFields}
+        onSubmit={handleCreateOrder}
+        mode="create"
+      />
+
+      <EntityModal
+        open={!!editingOrder}
+        onOpenChange={(open) => !open && setEditingOrder(null)}
+        title="Edit Order"
+        fields={orderFields}
+        defaultValues={editingOrder || {}}
+        onSubmit={handleUpdateOrder}
+        mode="edit"
+      />
+
+      <DeleteConfirmModal
+        open={deleteModalOpen || !!deletingItem}
+        onOpenChange={(open) => { setDeleteModalOpen(open); if (!open) setDeletingItem(null); }}
+        title={`Delete ${deletingItem?.type}`}
+        itemName={deletingItem?.name}
+        onConfirm={handleDelete}
+      />
+
+      <GlobalAddButton
+        label="New Invoice"
+        onClick={() => setInvoiceModalOpen(true)}
+        variant="floating"
+      />
     </div>
   );
 }
