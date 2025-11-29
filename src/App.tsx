@@ -224,6 +224,7 @@ import FinancialDashboard from "./pages/grabba/FinancialDashboard";
 import PersonalFinance from "./pages/grabba/PersonalFinance";
 import PayrollManager from "./pages/grabba/PayrollManager";
 import AdvisorPenthouse from "./pages/grabba/AdvisorPenthouse";
+import InstinctLog from "./pages/grabba/InstinctLog";
 
 const queryClient = new QueryClient();
 
@@ -2363,6 +2364,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AdvisorPenthouse />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/grabba/instinct-log"
+                element={
+                  <ProtectedRoute>
+                    <InstinctLog />
                   </ProtectedRoute>
                 }
               />

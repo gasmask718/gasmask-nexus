@@ -1,175 +1,36 @@
 project_id = "qalaaroashbggynpvqct"
 
-[functions.intelligence-report]
-verify_jwt = false
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
 
-[functions.autopilot-daily]
-verify_jwt = false
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
 
-[functions.ai-clean-data]
-verify_jwt = false
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
 
-[functions.ai-map-columns]
-verify_jwt = false
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["https://127.0.0.1:3000"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = false
 
-[functions.ai-dedupe-review]
-verify_jwt = false
-
-[functions.import-cleaned-data]
-verify_jwt = false
-
-[functions.predict-inventory]
-verify_jwt = false
-
-[functions.optimize-routes]
-verify_jwt = false
-
-[functions.fraud-check]
-verify_jwt = false
-
-[functions.generate-missions]
-verify_jwt = false
-
-[functions.forecasting]
-verify_jwt = false
-
-[functions.optimization]
-verify_jwt = false
-
-[functions.missions-engine]
-verify_jwt = false
-
-[functions.executive-reports]
-verify_jwt = false
-
-[functions.route-learning]
-verify_jwt = false
-
-[functions.followup-ai]
-verify_jwt = false
-
-[functions.risk-monitor]
-verify_jwt = false
-
-[functions.replenishment-ai]
-verify_jwt = false
-
-[functions.auto-text-ai]
-verify_jwt = false
-
-[functions.communication-brain]
-verify_jwt = false
-
-[functions.communication-insights]
-verify_jwt = false
-
-[functions.route-ai]
-verify_jwt = false
-
-[functions.meta-ai-supervisor]
-verify_jwt = false
-
-[functions.economic-scan]
-verify_jwt = false
-
-[functions.territory-ai]
-verify_jwt = false
-
-[functions.ai-sales-scorer]
-verify_jwt = false
-
-[functions.store-performance-engine]
-verify_jwt = false
-
-[functions.route-optimizer-engine]
-verify_jwt = false
-
-[functions.ai-communication-analyzer]
-verify_jwt = false
-
-[functions.ai-financial-analysis]
-verify_jwt = false
-
-[functions.ai-generate-message]
-verify_jwt = false
-
-[functions.communication-automation]
-verify_jwt = false
-
-[functions.scrape-leads]
-verify_jwt = false
-
-[functions.ai-comps]
-verify_jwt = false
-
-[functions.investor-matcher]
-verify_jwt = false
-
-[functions.generate-contract]
-verify_jwt = false
-
-[functions.send-mass-offers]
-verify_jwt = false
-
-[functions.auto-assign-deals]
-verify_jwt = false
-
-[functions.scale-engine]
-verify_jwt = false
-
-[functions.va-trainer-ai]
-verify_jwt = false
-
-[functions.va-evaluator-ai]
-verify_jwt = false
-
-[functions.va-task-router-ai]
-verify_jwt = false
-
-[functions.loan-prequal-ai]
-verify_jwt = false
-
-[functions.generate-term-sheet-ai]
-verify_jwt = false
-
-[functions.auto-send-loan-package]
-verify_jwt = false
-
-[functions.generate-deal-sheet-ai]
-verify_jwt = false
-
-[functions.blast-investors-ai]
-verify_jwt = false
-
-[functions.optimize-assignment-fee-ai]
-verify_jwt = false
-
-[functions.ai-ceo-report]
-verify_jwt = false
-
-[functions.ai-decision-engine]
-verify_jwt = false
-
-[functions.ai-kpi-enforcer]
-verify_jwt = false
-
-[functions.ai-scaling-strategy]
-verify_jwt = false
-
-[functions.ai-market-optimizer]
-verify_jwt = false
-
-[functions.ai-routine-runner]
-verify_jwt = false
-
-[functions.ai-risk-scan]
-verify_jwt = false
-
-[functions.follow-up-engine]
-verify_jwt = false
-
-[functions.daily-briefing]
-verify_jwt = false
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
 
 [functions.morning-ops-cycle]
 verify_jwt = false
@@ -184,4 +45,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.advisor-mind]
+verify_jwt = false
+
+[functions.advisor-instincts]
 verify_jwt = false
