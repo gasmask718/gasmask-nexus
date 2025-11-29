@@ -220,6 +220,9 @@ import AIOperationsDashboard from "./pages/grabba/ai-operations/AIOperationsDash
 import AITasks from "./pages/grabba/ai-operations/AITasks";
 import AIPredictions from "./pages/grabba/ai-operations/AIPredictions";
 import AIAlerts from "./pages/grabba/ai-operations/AIAlerts";
+import FinancialDashboard from "./pages/grabba/FinancialDashboard";
+import PersonalFinance from "./pages/grabba/PersonalFinance";
+import PayrollManager from "./pages/grabba/PayrollManager";
 
 const queryClient = new QueryClient();
 
@@ -2320,6 +2323,30 @@ const App = () => (
               />
 
               {/* Dynasty OS Brand Routes - Floor 4: Finance & Acquisition */}
+              <Route
+                path="/grabba/financial-dashboard"
+                element={
+                  <ProtectedRoute>
+                    <FinancialDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/grabba/personal-finance"
+                element={
+                  <ProtectedRoute>
+                    <PersonalFinance />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/grabba/payroll-manager"
+                element={
+                  <ProtectedRoute>
+                    <PayrollManager />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/finance/*"
                 element={
