@@ -3,23 +3,28 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect } from 'react';
+import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { useRouteBuilder } from '@/hooks/useRouteBuilder';
+import { useScheduler } from '@/hooks/useScheduler';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useRouteBuilder } from '@/hooks/useRouteBuilder';
-import { useScheduler } from '@/hooks/useScheduler';
-import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Calendar, Clock, User, Route } from 'lucide-react';
-import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
 
 interface SendToRouteModalProps {
   open: boolean;
@@ -48,48 +53,65 @@ export function SendToRouteModal({
 
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedDriver, setSelectedDriver] = useState<string>('');
-  const [scheduledDate, setScheduledDate] = useState(
+  const [scheduledDate, setScheduledDate] = useState<string>(
     format(new Date(Date.now() + 86400000), 'yyyy-MM-dd')
   );
-  const [startTime, setStartTime] = useState('10:00');
-  const [routeName, setRouteName] = useState('');
-  const [taskOnly, setTaskOnly] = useState(false);
+  const [startTime, setStartTime] = useState<string>('10:00');
+  const [routeName, setRouteName] = useState<string>('');
+  const [taskOnly, setTaskOnly] = useState<boolean>(false);
 
   const loading = routeLoading || taskLoading;
 
   useEffect(() => {
     if (!open) return;
-    
-    // Fetch drivers - cast to any to avoid TS depth issues
-    const client = supabase as any;
-    client
-      .from('profiles')
-      .select('id, name, role')
-      .eq('status', 'active')
-      .then((result: any) => {
+
+    const fetchDrivers = async () => {
+      try {
+        const client = supabase as any;
+        const result = await client
+          .from('profiles')
+          .select('id, name, role')
+          .eq('status', 'active');
+
         if (result.data) {
-          const driverList = result.data
+          const driverList: Driver[] = result.data
             .filter((p: any) => ['driver', 'biker'].includes(p.role))
-            .map((d: any) => ({ id: d.id, name: d.name || 'Unknown' }));
+            .map((d: any) => ({
+              id: d.id,
+              name: d.name || 'Unknown',
+            }));
           setDrivers(driverList);
         }
-      });
-    
+      } catch (err) {
+        console.error('Failed to fetch drivers', err);
+      }
+    };
+
+    fetchDrivers();
+
     const dateStr = format(new Date(scheduledDate), 'MMM d');
     setRouteName(`${brand || 'Route'} - ${dateStr}`);
   }, [open, brand, scheduledDate]);
 
   const handleSubmit = async () => {
+    if (!storeIds.length) return;
+
     const date = new Date(scheduledDate);
     const [hours, minutes] = startTime.split(':').map(Number);
     date.setHours(hours, minutes, 0, 0);
 
-    const driverId = selectedDriver && selectedDriver !== 'unassigned' ? selectedDriver : undefined;
+    const driverId =
+      selectedDriver && selectedDriver !== 'unassigned' ? selectedDriver : undefined;
 
     if (taskOnly) {
       await createTask({
         type: 'visit_stores',
-        payload: { store_ids: storeIds, driver_id: driverId, brand, region },
+        payload: {
+          store_ids: storeIds,
+          driver_id: driverId,
+          brand,
+          region,
+        },
         runAt: date,
       });
     } else {
@@ -107,7 +129,13 @@ export function SendToRouteModal({
 
       await createTask({
         type: 'delivery_run',
-        payload: { store_ids: storeIds, driver_id: driverId, brand, region, route_name: routeName },
+        payload: {
+          store_ids: storeIds,
+          driver_id: driverId,
+          brand,
+          region,
+          route_name: routeName,
+        },
         runAt: date,
       });
     }
@@ -116,99 +144,113 @@ export function SendToRouteModal({
     onOpenChange(false);
   };
 
+  const handleClose = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setSelectedDriver('');
+      setTaskOnly(false);
+    }
+    onOpenChange(nextOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Route className="h-5 w-5" />
-            Send to Route
-          </DialogTitle>
+          <DialogTitle>Send to Route</DialogTitle>
+          <DialogDescription>
+            Creating route / scheduled task for {storeIds.length} store
+            {storeIds.length === 1 ? '' : 's'}
+            {brand ? ` (${brand})` : ''}
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="text-sm text-muted-foreground">
-            Creating route for <span className="font-medium text-foreground">{storeIds.length} stores</span>
-            {brand && <span> ({brand})</span>}
-          </div>
-
-          {!taskOnly && (
-            <div className="space-y-2">
-              <Label htmlFor="routeName">Route Name</Label>
-              <Input
-                id="routeName"
-                value={routeName}
-                onChange={(e) => setRouteName(e.target.value)}
-                placeholder="e.g. Brooklyn Run - Dec 1"
-              />
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label>
-              <User className="h-4 w-4 inline mr-1" />
-              Assign Driver
-            </Label>
-            <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a driver (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {drivers.map(driver => (
-                  <SelectItem key={driver.id} value={driver.id}>
-                    {driver.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>
-              <Calendar className="h-4 w-4 inline mr-1" />
-              Scheduled Date
-            </Label>
+        {!taskOnly && (
+          <div className="space-y-1">
+            <Label htmlFor="route-name">Route Name</Label>
             <Input
+              id="route-name"
+              value={routeName}
+              onChange={(e) => setRouteName(e.target.value)}
+              placeholder="e.g. Brooklyn Run - Dec 1"
+            />
+          </div>
+        )}
+
+        <div className="space-y-1">
+          <Label>Assign Driver</Label>
+          <Select
+            value={selectedDriver || 'unassigned'}
+            onValueChange={(value) =>
+              setSelectedDriver(value === 'unassigned' ? '' : value)
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select driver" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+              {drivers.map((driver) => (
+                <SelectItem key={driver.id} value={driver.id}>
+                  {driver.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label htmlFor="route-date">Scheduled Date</Label>
+            <Input
+              id="route-date"
               type="date"
               value={scheduledDate}
               onChange={(e) => setScheduledDate(e.target.value)}
             />
           </div>
-
-          <div className="space-y-2">
-            <Label>
-              <Clock className="h-4 w-4 inline mr-1" />
-              Start Time
-            </Label>
+          <div className="space-y-1">
+            <Label htmlFor="route-time">Start Time</Label>
             <Input
+              id="route-time"
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
             />
           </div>
-
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="taskOnly"
-              checked={taskOnly}
-              onCheckedChange={(checked) => setTaskOnly(checked as boolean)}
-            />
-            <Label htmlFor="taskOnly" className="text-sm cursor-pointer">
-              Create scheduled task only (no route)
-            </Label>
-          </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="task-only"
+            checked={taskOnly}
+            onCheckedChange={(checked) => setTaskOnly(Boolean(checked))}
+          />
+          <Label htmlFor="task-only" className="cursor-pointer">
+            Create scheduled task only (no route)
+          </Label>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => handleClose(false)}
+            disabled={loading}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {taskOnly ? 'Schedule Task' : 'Create Route'}
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading || !storeIds.length}
+          >
+            {loading
+              ? 'Working...'
+              : taskOnly
+              ? 'Schedule Task'
+              : 'Create Route'}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
