@@ -60,7 +60,7 @@ export const GRABBA_FLOORS: GrabbaFloor[] = [
     name: 'Communication Center',
     icon: MessageSquare,
     path: '/grabba/communication',
-    description: 'Bulk Text, Email, AI Calls, VA Dialer, Templates, Automation',
+    description: 'Floor 2 — Communications: All SMS, calls, email, and AI messaging for Grabba operations.',
     emoji: '📞'
   },
   {
@@ -215,7 +215,7 @@ export const getGrabbaNavItems = () => {
 export const FLOOR_ROUTE_MAP: Record<string, string[]> = {
   'penthouse': ['/grabba/command-penthouse'],
   'floor-1-crm': ['/grabba/crm', '/grabba/brand/', '/grabba/store-master/'],
-  'floor-2-communication': ['/grabba/communication', '/grabba/brand/*/communications'],
+  'floor-2-communication': ['/grabba/communication', '/grabba/communications', '/grabba/text-center', '/grabba/email-center', '/grabba/call-center', '/grabba/communication-logs', '/grabba/brand/*/communications'],
   'floor-3-inventory': ['/grabba/inventory'],
   'floor-4-delivery': ['/grabba/deliveries', '/grabba/delivery-runs'],
   'floor-5-orders': ['/grabba/finance', '/unpaid-accounts', '/wholesale-orders', '/billing'],
