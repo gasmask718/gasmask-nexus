@@ -1,11 +1,13 @@
 import { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, Home, User, Globe } from 'lucide-react';
+import { LogOut, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
-import { getRoleDisplayName, getLanguageDisplayName, PreferredLanguage } from '@/services/roleService';
+import { getRoleDisplayName } from '@/services/roleService';
+import { LanguageSelector } from './LanguageSelector';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface PortalLayoutProps {
   children: ReactNode;
@@ -16,6 +18,7 @@ export default function PortalLayout({ children, title }: PortalLayoutProps) {
   const navigate = useNavigate();
   const { data: profileData } = useCurrentUserProfile();
   const profile = profileData?.profile;
+  const { isRTL } = useTranslation();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -23,7 +26,7 @@ export default function PortalLayout({ children, title }: PortalLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -39,17 +42,12 @@ export default function PortalLayout({ children, title }: PortalLayoutProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Language Badge */}
-            {profile?.preferred_language && (
-              <Badge variant="outline" className="gap-1 hidden sm:flex">
-                <Globe className="h-3 w-3" />
-                {getLanguageDisplayName(profile.preferred_language as PreferredLanguage)}
-              </Badge>
-            )}
+            {/* Language Selector */}
+            <LanguageSelector />
 
             {/* Role Badge */}
             {profile?.primary_role && (
-              <Badge variant="secondary">
+              <Badge variant="secondary" className="hidden sm:flex">
                 {getRoleDisplayName(profile.primary_role)}
               </Badge>
             )}

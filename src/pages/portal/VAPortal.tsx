@@ -1,16 +1,19 @@
-import { ClipboardList, Database, Users, Package, MessageSquare, ArrowRight } from 'lucide-react';
+import { ClipboardList, Database, Users, Package, MessageSquare, ArrowRight, Upload, Bot } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import PortalLayout from '@/components/portal/PortalLayout';
+import { PermissionGate } from '@/components/portal/PermissionGate';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { useTranslation } from '@/hooks/useTranslation';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function VAPortal() {
   const { data: profileData } = useCurrentUserProfile();
   const vaProfile = profileData?.roleProfile as any;
+  const { t } = useTranslation();
 
   // Fetch pending tasks from AI Workforce
   const { data: pendingTasks } = useQuery({
@@ -28,14 +31,14 @@ export default function VAPortal() {
   });
 
   const quickLinks = [
-    { title: 'Store Master', description: 'Manage store records', icon: Users, path: '/grabba/store-master' },
-    { title: 'Inventory', description: 'Check stock levels', icon: Package, path: '/grabba/inventory' },
-    { title: 'AI Workforce', description: 'View AI tasks', icon: ClipboardList, path: '/ai/workforce' },
-    { title: 'Communications', description: 'Message center', icon: MessageSquare, path: '/grabba/communications' },
+    { title: t('va.store_editor'), description: 'Manage store records', icon: Users, path: '/grabba/store-master', permission: 'edit_store' as const },
+    { title: t('nav.inventory'), description: 'Check stock levels', icon: Package, path: '/grabba/inventory', permission: 'crm_access' as const },
+    { title: t('va.assign_tasks'), description: 'View AI tasks', icon: Bot, path: '/ai/workforce', permission: 'assign_tasks' as const },
+    { title: t('nav.orders'), description: 'Message center', icon: MessageSquare, path: '/grabba/communications', permission: 'crm_access' as const },
   ];
 
   return (
-    <PortalLayout title="VA Portal">
+    <PortalLayout title={t('va.title')}>
       <div className="space-y-6">
         {/* VA Info */}
         <Card>
@@ -54,7 +57,7 @@ export default function VAPortal() {
         </Card>
 
         {/* Quick Stats */}
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Pending Tasks</CardDescription>
@@ -73,78 +76,118 @@ export default function VAPortal() {
               <CardTitle className="text-3xl text-yellow-500">3</CardTitle>
             </CardHeader>
           </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Stores Updated</CardDescription>
+              <CardTitle className="text-3xl">47</CardTitle>
+            </CardHeader>
+          </Card>
         </div>
 
         {/* Task List */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5 text-primary" />
-                  Assigned Tasks
-                </CardTitle>
-                <CardDescription>Tasks from the AI workforce system</CardDescription>
+        <PermissionGate permission="assign_tasks">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <ClipboardList className="h-5 w-5 text-primary" />
+                    Assigned Tasks
+                  </CardTitle>
+                  <CardDescription>Tasks from the AI workforce system</CardDescription>
+                </div>
+                <Button variant="outline" asChild>
+                  <Link to="/ai/workforce">View All</Link>
+                </Button>
               </div>
-              <Button variant="outline" asChild>
-                <Link to="/ai/workforce">View All</Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {pendingTasks && pendingTasks.length > 0 ? (
-              <div className="space-y-3">
-                {pendingTasks.map((task: any) => (
-                  <div key={task.id} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div>
-                      <p className="font-medium">{task.task_title}</p>
-                      <p className="text-sm text-muted-foreground">{task.department}</p>
+            </CardHeader>
+            <CardContent>
+              {pendingTasks && pendingTasks.length > 0 ? (
+                <div className="space-y-3">
+                  {pendingTasks.map((task: any) => (
+                    <div key={task.id} className="flex items-center justify-between p-3 rounded-lg border">
+                      <div>
+                        <p className="font-medium">{task.task_title}</p>
+                        <p className="text-sm text-muted-foreground">{task.department}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={
+                          task.priority === 'critical' ? 'destructive' :
+                          task.priority === 'high' ? 'secondary' : 'outline'
+                        }>
+                          {task.priority}
+                        </Badge>
+                        <Button size="sm">Start</Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={
-                        task.priority === 'critical' ? 'destructive' :
-                        task.priority === 'high' ? 'secondary' : 'outline'
-                      }>
-                        {task.priority}
-                      </Badge>
-                      <Button size="sm">Start</Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">No pending tasks</p>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">{t('no_data')}</p>
+              )}
+            </CardContent>
+          </Card>
+        </PermissionGate>
 
         {/* Quick Links */}
         <Card>
           <CardHeader>
-            <CardTitle>Data Maintenance Shortcuts</CardTitle>
+            <CardTitle>{t('va.crm_dashboard')}</CardTitle>
             <CardDescription>Quick access to common VA tasks</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2">
               {quickLinks.map((link) => (
-                <Link key={link.path} to={link.path}>
-                  <div className="flex items-center justify-between p-4 rounded-lg border hover:border-primary transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <link.icon className="h-5 w-5 text-primary" />
+                <PermissionGate key={link.path} permission={link.permission}>
+                  <Link to={link.path}>
+                    <div className="flex items-center justify-between p-4 rounded-lg border hover:border-primary transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <link.icon className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{link.title}</p>
+                          <p className="text-sm text-muted-foreground">{link.description}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{link.title}</p>
-                        <p className="text-sm text-muted-foreground">{link.description}</p>
-                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </Link>
+                  </Link>
+                </PermissionGate>
               ))}
             </div>
           </CardContent>
         </Card>
+
+        {/* Upload Excel & Contact Editor */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <PermissionGate permission="upload_docs">
+            <Card className="cursor-pointer hover:border-primary transition-colors">
+              <CardContent className="pt-6 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Upload className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">{t('va.upload_excel')}</p>
+                  <p className="text-sm text-muted-foreground">Bulk import store data</p>
+                </div>
+              </CardContent>
+            </Card>
+          </PermissionGate>
+          <PermissionGate permission="edit_contact">
+            <Card className="cursor-pointer hover:border-primary transition-colors">
+              <CardContent className="pt-6 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Users className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">{t('va.contact_editor')}</p>
+                  <p className="text-sm text-muted-foreground">Manage contacts & leads</p>
+                </div>
+              </CardContent>
+            </Card>
+          </PermissionGate>
+        </div>
 
         {/* Internal Notes */}
         <Card>
@@ -154,7 +197,7 @@ export default function VAPortal() {
           </CardHeader>
           <CardContent>
             <div className="p-4 rounded-lg bg-muted/50 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground mb-2">Welcome to the VA Portal</p>
+              <p className="font-medium text-foreground mb-2">{t('welcome')} to the VA Portal</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>Check the task queue regularly for new assignments</li>
                 <li>Update store records when you receive new information</li>
