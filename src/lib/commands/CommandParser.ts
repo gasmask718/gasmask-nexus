@@ -30,9 +30,12 @@ const ACTION_KEYWORDS: Record<ActionIntent, string[]> = {
   update: ['update', 'change', 'modify', 'edit', 'set'],
   notify: ['notify', 'alert', 'tell', 'inform', 'send notification'],
   text: ['text', 'sms', 'message', 'send text'],
-  route: ['route', 'send to route', 'add to route', 'plan route'],
+  route: ['route', 'send to route', 'add to route', 'plan route', 'build route', 'create route'],
   escalate: ['escalate', 'urgent', 'priority', 'flag'],
   export: ['export', 'download', 'extract', 'get csv', 'spreadsheet'],
+  schedule: ['schedule', 'plan', 'set for', 'tomorrow', 'next week', 'on friday', 'on saturday'],
+  create_route: ['create route', 'build route', 'plan route for', 'route for'],
+  follow_up: ['follow up', 'followup', 'follow-up', 'reminder', 'call back'],
 };
 
 const BRAND_KEYWORDS = ['gasmask', 'gas mask', 'hotmama', 'hot mama', 'scalati', 'grabba'];

@@ -30,7 +30,10 @@ export type ActionIntent =
   | 'text'
   | 'route'
   | 'escalate'
-  | 'export';
+  | 'export'
+  | 'schedule'
+  | 'create_route'
+  | 'follow_up';
 
 export interface IntentDefinition {
   id: QueryIntent;
