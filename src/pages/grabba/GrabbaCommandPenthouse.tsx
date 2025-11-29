@@ -16,15 +16,28 @@ import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 import { useGrabbaPenthouseStats } from "@/hooks/useGrabbaData";
 import { ExportButton } from "@/components/crud";
-import { DataConsistencyDashboard, MissingLinksPanel, CleanerBotStatus } from "@/components/system";
+import { DataConsistencyDashboard, MissingLinksPanel, CleanerBotStatus, InsightPanel, InsightType, InsightRecord } from "@/components/system";
+import { useInsightPanel, useInsightData, getAISuggestions } from "@/hooks/useInsightPanel";
+import { InteractiveStatTile } from "@/components/system/InteractiveStatTile";
 
 // Use canonical brand IDs from grabbaSkyscraper.ts
 const GRABBA_BRAND_FILTER = [...GRABBA_BRAND_IDS];
 
+// Insight type mapping for KPIs
+type KPIInsightType = InsightType | null;
+interface KPIConfig {
+  label: string;
+  value: number | string;
+  icon: React.ElementType;
+  color: string;
+  insightType: KPIInsightType;
+  variant: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple';
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // EMPIRE SNAPSHOT (uses centralized useGrabbaPenthouseStats)
 // ═══════════════════════════════════════════════════════════════════════════════
-const EmpireSnapshot = () => {
+const EmpireSnapshot = ({ onOpenInsight }: { onOpenInsight: (type: InsightType) => void }) => {
   const { data: stats, isLoading } = useGrabbaPenthouseStats();
 
   if (isLoading) {
@@ -45,13 +58,13 @@ const EmpireSnapshot = () => {
     );
   }
 
-  const kpis = [
-    { label: 'Active Stores', value: stats?.totalStores || 0, icon: Store, color: 'text-red-500' },
-    { label: 'Wholesalers', value: stats?.totalWholesalers || 0, icon: Globe, color: 'text-purple-500' },
-    { label: 'Ambassadors', value: stats?.totalAmbassadors || 0, icon: Award, color: 'text-amber-500' },
-    { label: 'Drivers', value: stats?.totalDrivers || 0, icon: Truck, color: 'text-green-500' },
-    { label: 'Tubes Sold', value: stats?.totalTubes?.toLocaleString() || '0', icon: Package, color: 'text-blue-500' },
-    { label: 'Outstanding', value: `$${(stats?.unpaidBalance || 0).toLocaleString()}`, icon: DollarSign, color: 'text-orange-500' },
+  const kpis: KPIConfig[] = [
+    { label: 'Active Stores', value: stats?.totalStores || 0, icon: Store, color: 'text-red-500', insightType: 'new_stores', variant: 'info' },
+    { label: 'Wholesalers', value: stats?.totalWholesalers || 0, icon: Globe, color: 'text-purple-500', insightType: 'wholesale_pending', variant: 'purple' },
+    { label: 'Ambassadors', value: stats?.totalAmbassadors || 0, icon: Award, color: 'text-amber-500', insightType: 'inactive_ambassadors', variant: 'warning' },
+    { label: 'Drivers', value: stats?.totalDrivers || 0, icon: Truck, color: 'text-green-500', insightType: 'driver_issues', variant: 'success' },
+    { label: 'Tubes Sold', value: stats?.totalTubes?.toLocaleString() || '0', icon: Package, color: 'text-blue-500', insightType: 'low_stock', variant: 'info' },
+    { label: 'Outstanding', value: `$${(stats?.unpaidBalance || 0).toLocaleString()}`, icon: DollarSign, color: 'text-orange-500', insightType: 'unpaid_stores', variant: 'danger' },
   ];
 
   return (
@@ -66,16 +79,20 @@ const EmpireSnapshot = () => {
               </h1>
             </div>
             <p className="text-muted-foreground">
-              Live command view for all Grabba brands, stores, reps & tubes.
+              Live command view for all Grabba brands, stores, reps & tubes. <span className="text-xs">(Click any stat to drill down)</span>
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             {kpis.map((kpi) => (
-              <div key={kpi.label} className="text-center p-3 rounded-lg bg-card/50 border border-border/50">
-                <kpi.icon className={`h-5 w-5 mx-auto mb-1 ${kpi.color}`} />
-                <p className="text-xl font-bold">{kpi.value}</p>
-                <p className="text-xs text-muted-foreground">{kpi.label}</p>
-              </div>
+              <InteractiveStatTile
+                key={kpi.label}
+                icon={kpi.icon}
+                label={kpi.label}
+                value={kpi.value}
+                variant={kpi.variant}
+                size="sm"
+                onClick={kpi.insightType ? () => onOpenInsight(kpi.insightType!) : undefined}
+              />
             ))}
           </div>
         </div>
@@ -1121,9 +1138,29 @@ const CommunicationIntelligence = () => {
 // Main Page Component
 const GrabbaCommandPenthouse = () => {
   const { selectedBrand, setSelectedBrand } = useGrabbaBrand();
+  const { isOpen, type, openPanel, closePanel, getMeta, getActions } = useInsightPanel();
+  const { data: insightRecords = [], isLoading: insightLoading } = useInsightData(
+    type ? { type, brand: selectedBrand || undefined } : null
+  );
+  const meta = getMeta();
+  const actions = getActions();
+  const aiSuggestions = type ? getAISuggestions(type, insightRecords.length) : [];
   
   return (
     <div className="space-y-6 p-1">
+      {/* Insight Panel */}
+      <InsightPanel
+        isOpen={isOpen}
+        onClose={closePanel}
+        type={type || 'new_stores'}
+        title={meta.title}
+        description={meta.description}
+        records={insightRecords}
+        actions={actions}
+        aiSuggestions={aiSuggestions}
+        isLoading={insightLoading}
+      />
+      
       {/* Brand Filter Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
         <div className="flex items-center gap-3">
@@ -1143,7 +1180,7 @@ const GrabbaCommandPenthouse = () => {
       </div>
 
       {/* Row 0: Hero KPIs */}
-      <EmpireSnapshot />
+      <EmpireSnapshot onOpenInsight={openPanel} />
       
       {/* Row 1: Brand Breakdown + AI Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
