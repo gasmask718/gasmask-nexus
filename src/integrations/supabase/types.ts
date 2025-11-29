@@ -1585,6 +1585,105 @@ export type Database = {
         }
         Relationships: []
       }
+      budget_profiles: {
+        Row: {
+          budget_period: string | null
+          category_budgets: Json | null
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          profile_name: string
+          profile_type: string
+          start_date: string
+          total_budget: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          budget_period?: string | null
+          category_budgets?: Json | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          profile_name: string
+          profile_type: string
+          start_date: string
+          total_budget?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          budget_period?: string | null
+          category_budgets?: Json | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          profile_name?: string
+          profile_type?: string
+          start_date?: string
+          total_budget?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      business_expenses: {
+        Row: {
+          amount: number
+          approved_by: string | null
+          brand: string | null
+          category: string
+          created_at: string
+          department: string | null
+          description: string | null
+          expense_date: string
+          id: string
+          payment_method: string | null
+          receipt_url: string | null
+          recurring: boolean | null
+          recurring_frequency: string | null
+          tags: string[] | null
+          vendor: string | null
+        }
+        Insert: {
+          amount?: number
+          approved_by?: string | null
+          brand?: string | null
+          category: string
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          expense_date?: string
+          id?: string
+          payment_method?: string | null
+          receipt_url?: string | null
+          recurring?: boolean | null
+          recurring_frequency?: string | null
+          tags?: string[] | null
+          vendor?: string | null
+        }
+        Update: {
+          amount?: number
+          approved_by?: string | null
+          brand?: string | null
+          category?: string
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          expense_date?: string
+          id?: string
+          payment_method?: string | null
+          receipt_url?: string | null
+          recurring?: boolean | null
+          recurring_frequency?: string | null
+          tags?: string[] | null
+          vendor?: string | null
+        }
+        Relationships: []
+      }
       business_members: {
         Row: {
           business_id: string
@@ -1636,6 +1735,108 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      business_revenue_streams: {
+        Row: {
+          brand: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          growth_rate: number | null
+          id: string
+          is_active: boolean | null
+          last_30_days: number | null
+          monthly_average: number | null
+          region: string | null
+          stream_name: string
+          stream_type: string
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          growth_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_30_days?: number | null
+          monthly_average?: number | null
+          region?: string | null
+          stream_name: string
+          stream_type: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          growth_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_30_days?: number | null
+          monthly_average?: number | null
+          region?: string | null
+          stream_name?: string
+          stream_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      business_transactions: {
+        Row: {
+          amount: number
+          brand: string | null
+          category: string
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          receipt_url: string | null
+          region: string | null
+          subcategory: string | null
+          tags: string[] | null
+          transaction_date: string
+          transaction_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          brand?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          receipt_url?: string | null
+          region?: string | null
+          subcategory?: string | null
+          tags?: string[] | null
+          transaction_date?: string
+          transaction_type: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          brand?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          receipt_url?: string | null
+          region?: string | null
+          subcategory?: string | null
+          tags?: string[] | null
+          transaction_date?: string
+          transaction_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       businesses: {
         Row: {
@@ -4937,6 +5138,102 @@ export type Database = {
           score?: number
           state?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      financial_ai_insights: {
+        Row: {
+          created_at: string
+          data: Json | null
+          description: string
+          expires_at: string | null
+          id: string
+          insight_category: string
+          insight_type: string
+          is_business: boolean | null
+          recommendations: string[] | null
+          severity: string | null
+          status: string | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          description: string
+          expires_at?: string | null
+          id?: string
+          insight_category: string
+          insight_type: string
+          is_business?: boolean | null
+          recommendations?: string[] | null
+          severity?: string | null
+          status?: string | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          description?: string
+          expires_at?: string | null
+          id?: string
+          insight_category?: string
+          insight_type?: string
+          is_business?: boolean | null
+          recommendations?: string[] | null
+          severity?: string | null
+          status?: string | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      financial_forecasts: {
+        Row: {
+          assumptions: Json | null
+          confidence_score: number | null
+          created_at: string
+          end_date: string
+          forecast_period: string
+          forecast_type: string
+          id: string
+          is_business: boolean | null
+          predicted_expenses: number | null
+          predicted_profit: number | null
+          predicted_revenue: number | null
+          start_date: string
+          user_id: string | null
+        }
+        Insert: {
+          assumptions?: Json | null
+          confidence_score?: number | null
+          created_at?: string
+          end_date: string
+          forecast_period: string
+          forecast_type: string
+          id?: string
+          is_business?: boolean | null
+          predicted_expenses?: number | null
+          predicted_profit?: number | null
+          predicted_revenue?: number | null
+          start_date: string
+          user_id?: string | null
+        }
+        Update: {
+          assumptions?: Json | null
+          confidence_score?: number | null
+          created_at?: string
+          end_date?: string
+          forecast_period?: string
+          forecast_type?: string
+          id?: string
+          is_business?: boolean | null
+          predicted_expenses?: number | null
+          predicted_profit?: number | null
+          predicted_revenue?: number | null
+          start_date?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -8393,6 +8690,45 @@ export type Database = {
         }
         Relationships: []
       }
+      networth_snapshots: {
+        Row: {
+          assets_breakdown: Json | null
+          created_at: string
+          id: string
+          liabilities_breakdown: Json | null
+          net_worth: number | null
+          notes: string | null
+          snapshot_date: string
+          total_assets: number | null
+          total_liabilities: number | null
+          user_id: string
+        }
+        Insert: {
+          assets_breakdown?: Json | null
+          created_at?: string
+          id?: string
+          liabilities_breakdown?: Json | null
+          net_worth?: number | null
+          notes?: string | null
+          snapshot_date?: string
+          total_assets?: number | null
+          total_liabilities?: number | null
+          user_id: string
+        }
+        Update: {
+          assets_breakdown?: Json | null
+          created_at?: string
+          id?: string
+          liabilities_breakdown?: Json | null
+          net_worth?: number | null
+          notes?: string | null
+          snapshot_date?: string
+          total_assets?: number | null
+          total_liabilities?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -8572,6 +8908,156 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payroll_records: {
+        Row: {
+          base_pay: number
+          bonuses: number | null
+          commissions: number | null
+          created_at: string
+          deductions: number | null
+          employee_id: string | null
+          employee_name: string
+          employee_type: string
+          hourly_rate: number | null
+          hours_worked: number | null
+          id: string
+          net_pay: number
+          notes: string | null
+          paid_at: string | null
+          pay_period_end: string
+          pay_period_start: string
+          status: string | null
+        }
+        Insert: {
+          base_pay?: number
+          bonuses?: number | null
+          commissions?: number | null
+          created_at?: string
+          deductions?: number | null
+          employee_id?: string | null
+          employee_name: string
+          employee_type: string
+          hourly_rate?: number | null
+          hours_worked?: number | null
+          id?: string
+          net_pay?: number
+          notes?: string | null
+          paid_at?: string | null
+          pay_period_end: string
+          pay_period_start: string
+          status?: string | null
+        }
+        Update: {
+          base_pay?: number
+          bonuses?: number | null
+          commissions?: number | null
+          created_at?: string
+          deductions?: number | null
+          employee_id?: string | null
+          employee_name?: string
+          employee_type?: string
+          hourly_rate?: number | null
+          hours_worked?: number | null
+          id?: string
+          net_pay?: number
+          notes?: string | null
+          paid_at?: string | null
+          pay_period_end?: string
+          pay_period_start?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
+      personal_manual_entries: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          description: string | null
+          entry_date: string
+          entry_type: string
+          id: string
+          receipt_url: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          category: string
+          created_at?: string
+          description?: string | null
+          entry_date?: string
+          entry_type: string
+          id?: string
+          receipt_url?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          entry_date?: string
+          entry_type?: string
+          id?: string
+          receipt_url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      personal_transactions: {
+        Row: {
+          ai_categorized: boolean | null
+          amount: number
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_recurring: boolean | null
+          merchant: string | null
+          payment_method: string | null
+          receipt_url: string | null
+          subcategory: string | null
+          tags: string[] | null
+          transaction_date: string
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          ai_categorized?: boolean | null
+          amount?: number
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          merchant?: string | null
+          payment_method?: string | null
+          receipt_url?: string | null
+          subcategory?: string | null
+          tags?: string[] | null
+          transaction_date?: string
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          ai_categorized?: boolean | null
+          amount?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          merchant?: string | null
+          payment_method?: string | null
+          receipt_url?: string | null
+          subcategory?: string | null
+          tags?: string[] | null
+          transaction_date?: string
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       pod_ai_logs: {
         Row: {
@@ -8800,6 +9286,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      production_costs: {
+        Row: {
+          batch_number: string | null
+          brand: string | null
+          cost_per_unit: number | null
+          created_at: string
+          id: string
+          labor_cost: number | null
+          material_cost: number | null
+          notes: string | null
+          overhead_cost: number | null
+          product_type: string
+          production_date: string
+          quantity_produced: number
+          total_cost: number
+        }
+        Insert: {
+          batch_number?: string | null
+          brand?: string | null
+          cost_per_unit?: number | null
+          created_at?: string
+          id?: string
+          labor_cost?: number | null
+          material_cost?: number | null
+          notes?: string | null
+          overhead_cost?: number | null
+          product_type: string
+          production_date?: string
+          quantity_produced?: number
+          total_cost?: number
+        }
+        Update: {
+          batch_number?: string | null
+          brand?: string | null
+          cost_per_unit?: number | null
+          created_at?: string
+          id?: string
+          labor_cost?: number | null
+          material_cost?: number | null
+          notes?: string | null
+          overhead_cost?: number | null
+          product_type?: string
+          production_date?: string
+          quantity_produced?: number
+          total_cost?: number
+        }
+        Relationships: []
       }
       production_offices: {
         Row: {
@@ -10907,6 +11441,54 @@ export type Database = {
           },
         ]
       }
+      subscription_expenses: {
+        Row: {
+          amount: number
+          auto_renew: boolean | null
+          billing_cycle: string | null
+          cancellation_url: string | null
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          is_business: boolean | null
+          next_billing_date: string | null
+          notes: string | null
+          service_name: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          auto_renew?: boolean | null
+          billing_cycle?: string | null
+          cancellation_url?: string | null
+          category: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_business?: boolean | null
+          next_billing_date?: string | null
+          notes?: string | null
+          service_name: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          auto_renew?: boolean | null
+          billing_cycle?: string | null
+          cancellation_url?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_business?: boolean | null
+          next_billing_date?: string | null
+          notes?: string | null
+          service_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           benefits: Json
@@ -12144,6 +12726,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wholesale_costs: {
+        Row: {
+          brand: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          order_reference: string | null
+          product_type: string
+          purchase_date: string
+          quality_rating: number | null
+          quantity: number
+          received_date: string | null
+          supplier: string
+          total_cost: number
+          unit_cost: number
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_reference?: string | null
+          product_type: string
+          purchase_date?: string
+          quality_rating?: number | null
+          quantity?: number
+          received_date?: string | null
+          supplier: string
+          total_cost?: number
+          unit_cost?: number
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_reference?: string | null
+          product_type?: string
+          purchase_date?: string
+          quality_rating?: number | null
+          quantity?: number
+          received_date?: string | null
+          supplier?: string
+          total_cost?: number
+          unit_cost?: number
+        }
+        Relationships: []
       }
       wholesale_hubs: {
         Row: {
