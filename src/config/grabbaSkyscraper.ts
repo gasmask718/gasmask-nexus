@@ -100,7 +100,7 @@ export const GRABBA_FLOORS: GrabbaFloor[] = [
     name: 'Wholesale Marketplace',
     icon: Boxes,
     path: '/grabba/wholesale-platform',
-    description: 'Wholesaler signup, Orders, Marketplace, AI sourcing',
+    description: 'Floor 7 — Wholesale: Marketplace, wholesaler uploads, fulfillment overview, and AI sourcing engine.',
     emoji: '🏬'
   },
   {
