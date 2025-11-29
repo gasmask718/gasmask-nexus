@@ -52,7 +52,7 @@ export const GRABBA_FLOORS: GrabbaFloor[] = [
     name: 'CRM & Store Control',
     icon: Building2,
     path: '/grabba/crm',
-    description: 'Unified CRM - Stores, Wholesalers, Customers with brand filtering',
+    description: 'Floor 1 — CRM: All stores, wholesalers, customers, and companies for Grabba brands.',
     emoji: '🏢'
   },
   {
