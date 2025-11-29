@@ -11,13 +11,19 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { 
   Users, Search, Phone, Mail, MapPin, Star, ExternalLink, MessageSquare, 
   Package, Building2, Store, Truck, Award, DollarSign, FileText, ChevronRight,
-  Filter, X
+  Filter, X, Edit, Trash2
 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { GRABBA_BRAND_IDS, GRABBA_BRAND_CONFIG, getBrandConfig, type GrabbaBrand } from "@/config/grabbaSkyscraper";
 import { BrandFilterBar, BrandBadgesRow } from "@/components/grabba/BrandFilterBar";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { useGrabbaBrandActivity, useGrabbaBrandCounts } from "@/hooks/useGrabbaData";
+import { EntityModal } from "@/components/crud/EntityModal";
+import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
+import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
+import { useCrudOperations } from "@/hooks/useCrudOperations";
+import { companyFields, storeFields, wholesalerFields } from "@/config/entityFieldConfigs";
+import { toast } from "sonner";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FLOOR 1 — CRM: All stores, wholesalers, customers, and companies for Grabba brands.
@@ -33,6 +39,31 @@ export default function GrabbaCRM() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<ViewTab>("companies");
   const [neighborhoodFilter, setNeighborhoodFilter] = useState<string>("all");
+  
+  // CRUD Modal States
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState<any>(null);
+  
+  // CRUD Operations
+  const companyCrud = useCrudOperations({
+    table: "companies",
+    queryKey: ["grabba-crm-companies"],
+    successMessages: { create: "Company created", update: "Company updated", delete: "Company deleted" }
+  });
+  
+  const storeCrud = useCrudOperations({
+    table: "stores",
+    queryKey: ["grabba-crm-stores"],
+    successMessages: { create: "Store created", update: "Store updated", delete: "Store deleted" }
+  });
+  
+  const wholesalerCrud = useCrudOperations({
+    table: "wholesalers",
+    queryKey: ["grabba-crm-wholesalers"],
+    successMessages: { create: "Wholesaler created", update: "Wholesaler updated", delete: "Wholesaler deleted" }
+  });
 
   // ═══════════════════════════════════════════════════════════════════════════════
   // DATA QUERIES
@@ -446,11 +477,71 @@ export default function GrabbaCRM() {
   );
 
   // ═══════════════════════════════════════════════════════════════════════════════
+  // CRUD HANDLERS
+  // ═══════════════════════════════════════════════════════════════════════════════
+  
+  const handleCreate = async (data: Record<string, unknown>) => {
+    if (activeTab === 'companies') {
+      await companyCrud.create(data);
+    } else if (activeTab === 'stores') {
+      await storeCrud.create(data);
+    } else if (activeTab === 'wholesalers') {
+      await wholesalerCrud.create(data);
+    }
+  };
+  
+  const handleEdit = async (data: Record<string, unknown>) => {
+    if (!selectedEntity) return;
+    if (activeTab === 'companies') {
+      await companyCrud.update({ id: selectedEntity.id, ...data });
+    } else if (activeTab === 'stores') {
+      await storeCrud.update({ id: selectedEntity.id, ...data });
+    } else if (activeTab === 'wholesalers') {
+      await wholesalerCrud.update({ id: selectedEntity.id, ...data });
+    }
+  };
+  
+  const handleDelete = async () => {
+    if (!selectedEntity) return;
+    if (activeTab === 'companies') {
+      await companyCrud.remove(selectedEntity.id);
+    } else if (activeTab === 'stores') {
+      await storeCrud.remove(selectedEntity.id);
+    } else if (activeTab === 'wholesalers') {
+      await wholesalerCrud.remove(selectedEntity.id);
+    }
+  };
+  
+  const openEditModal = (entity: any) => {
+    setSelectedEntity(entity);
+    setEditModalOpen(true);
+  };
+  
+  const openDeleteModal = (entity: any) => {
+    setSelectedEntity(entity);
+    setDeleteModalOpen(true);
+  };
+  
+  const getActiveFields = () => {
+    if (activeTab === 'companies') return companyFields;
+    if (activeTab === 'stores') return storeFields;
+    if (activeTab === 'wholesalers') return wholesalerFields;
+    return companyFields;
+  };
+  
+  const getAddLabel = () => {
+    if (activeTab === 'companies') return '+New Company';
+    if (activeTab === 'stores') return '+New Store';
+    if (activeTab === 'wholesalers') return '+New Wholesaler';
+    return '+New';
+  };
+
+  // ═══════════════════════════════════════════════════════════════════════════════
   // RENDER
   // ═══════════════════════════════════════════════════════════════════════════════
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-6 pb-24">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -617,6 +708,44 @@ export default function GrabbaCRM() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Floating Add Button */}
+      {activeTab !== 'ambassadors' && (
+        <GlobalAddButton
+          label={getAddLabel()}
+          onClick={() => setCreateModalOpen(true)}
+          variant="floating"
+        />
+      )}
+      
+      {/* Create Modal */}
+      <EntityModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        title={`Create ${activeTab === 'companies' ? 'Company' : activeTab === 'stores' ? 'Store' : 'Wholesaler'}`}
+        fields={getActiveFields()}
+        onSubmit={handleCreate}
+        mode="create"
+      />
+      
+      {/* Edit Modal */}
+      <EntityModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        title={`Edit ${activeTab === 'companies' ? 'Company' : activeTab === 'stores' ? 'Store' : 'Wholesaler'}`}
+        fields={getActiveFields()}
+        defaultValues={selectedEntity || {}}
+        onSubmit={handleEdit}
+        mode="edit"
+      />
+      
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        itemName={selectedEntity?.name}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }
