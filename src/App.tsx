@@ -225,6 +225,7 @@ import PersonalFinance from "./pages/grabba/PersonalFinance";
 import PayrollManager from "./pages/grabba/PayrollManager";
 import AdvisorPenthouse from "./pages/grabba/AdvisorPenthouse";
 import InstinctLog from "./pages/grabba/InstinctLog";
+import AIWorkforce from "./pages/ai/Workforce";
 
 const queryClient = new QueryClient();
 
@@ -2372,6 +2373,16 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <InstinctLog />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* 🤖 AI WORKFORCE — Digital Employee Layer */}
+              <Route
+                path="/ai/workforce"
+                element={
+                  <ProtectedRoute>
+                    <AIWorkforce />
                   </ProtectedRoute>
                 }
               />
