@@ -28,6 +28,7 @@ import {
 import { useDrillDownData } from '@/hooks/useDrillDownData';
 import { DrillDownEntity, DrillDownFilters, getEntityTitle } from '@/lib/drilldown';
 import { ResultsPanelActions, PanelType } from '@/components/results/ResultsPanelActions';
+import { EntityDrawer } from '@/components/editing/EntityDrawer';
 import { useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { cn } from '@/lib/utils';
 
@@ -76,6 +77,8 @@ export function DrillDownPanel({
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [localFilters, setLocalFilters] = useState<DrillDownFilters>(initialFilters);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState<{ id: string; data: any } | null>(null);
   
   // Merge brand from context if not in filters
   const effectiveFilters = useMemo(() => ({
@@ -113,12 +116,18 @@ export function DrillDownPanel({
     }
   };
   
-  const handleSelectRow = (id: string) => {
+  const handleSelectRow = (id: string, e?: React.MouseEvent) => {
+    // Only toggle selection, don't open drawer
     setSelectedIds(prev => 
       prev.includes(id) 
         ? prev.filter(i => i !== id)
         : [...prev, id]
     );
+  };
+
+  const handleRowClick = (item: any) => {
+    setSelectedEntity({ id: item.id, data: item.raw || item });
+    setDrawerOpen(true);
   };
   
   const handleBack = () => {
@@ -316,7 +325,7 @@ export function DrillDownPanel({
                       'cursor-pointer hover:bg-muted/50',
                       selectedIds.includes(item.id) && 'bg-primary/5'
                     )}
-                    onClick={() => handleSelectRow(item.id)}
+                    onClick={() => handleRowClick(item)}
                   >
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <Checkbox
@@ -368,6 +377,16 @@ export function DrillDownPanel({
             </Table>
           </div>
         )}
+
+        {/* Entity Drawer */}
+        <EntityDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          entity={entity}
+          entityId={selectedEntity?.id || ''}
+          data={selectedEntity?.data || {}}
+          onSave={() => refetch()}
+        />
       </CardContent>
     </Card>
   );
