@@ -1,29 +1,31 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// CLICKABLE STAT CARD — KPI Card with Results Panel Navigation
+// SMART STAT CARD — Clickable KPI Card That Navigates to Results
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ChevronRight, LucideIcon } from 'lucide-react';
-import { InsightType } from '@/components/system/InsightPanel';
-import { PanelType } from '@/components/results/ResultsPanelActions';
+import { ChevronRight, LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
+import { encodeQueryToUrl } from '@/hooks/useSmartQuery';
+import { PanelType } from './ResultsPanelActions';
 
-interface ClickableStatCardProps {
+export interface SmartStatCardProps {
   icon: LucideIcon;
   label: string;
   value: number | string;
   subtext?: string;
+  trend?: 'up' | 'down' | 'neutral';
+  trendValue?: string;
   variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'cyan' | 'rose';
-  insightType?: InsightType;
-  onClick?: () => void;
-  className?: string;
-  clickable?: boolean;
-  // NEW: Results panel navigation
-  querySlug?: string;
-  panelType?: PanelType;
+  // Query configuration
+  queryCommand: string;
+  panelType: PanelType;
   brand?: string;
+  // Optional overrides
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
 }
 
 const variantStyles = {
@@ -69,48 +71,49 @@ const variantStyles = {
   },
 };
 
-export function ClickableStatCard({
+export function SmartStatCard({
   icon: Icon,
   label,
   value,
   subtext,
+  trend,
+  trendValue,
   variant = 'default',
-  insightType,
-  onClick,
-  className,
-  clickable = true,
-  querySlug,
+  queryCommand,
   panelType,
   brand,
-}: ClickableStatCardProps) {
+  onClick,
+  disabled = false,
+  className,
+}: SmartStatCardProps) {
   const navigate = useNavigate();
   const styles = variantStyles[variant];
-  const isClickable = clickable && (onClick || insightType || querySlug);
 
   const handleClick = () => {
-    if (!isClickable) return;
+    if (disabled) return;
     
     if (onClick) {
       onClick();
       return;
     }
 
-    // Navigate to results panel if querySlug is provided
-    if (querySlug) {
-      const params = new URLSearchParams();
-      params.set('query', querySlug);
-      if (panelType) params.set('panel', panelType);
-      if (brand) params.set('brand', brand);
-      navigate(`/grabba/results?${params.toString()}`);
-    }
+    // Navigate to results page
+    const queryParams = encodeQueryToUrl({
+      command: queryCommand,
+      brand,
+    });
+    navigate(`/grabba/results?panel=${panelType}&${queryParams}`);
   };
 
+  const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : null;
+
   return (
-    <Card 
+    <Card
       className={cn(
         styles.card,
         'transition-all duration-200',
-        isClickable && 'cursor-pointer hover:scale-[1.02] hover:shadow-md',
+        !disabled && 'cursor-pointer hover:scale-[1.02] hover:shadow-md',
+        disabled && 'opacity-60 cursor-not-allowed',
         className
       )}
       onClick={handleClick}
@@ -119,21 +122,37 @@ export function ClickableStatCard({
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className={cn('flex items-center gap-2', styles.icon)}>
-              <Icon className="h-4 w-4" />
-              <span className="text-xs">{label}</span>
+              <div className={cn('p-1.5 rounded-lg', styles.iconBg)}>
+                <Icon className="h-4 w-4" />
+              </div>
+              <span className="text-xs font-medium">{label}</span>
             </div>
-            <div className="text-2xl font-bold text-foreground mt-1">{value}</div>
-            {subtext && (
-              <div className="text-xs text-muted-foreground">{subtext}</div>
+            <div className="text-2xl font-bold text-foreground mt-2">{value}</div>
+            {(subtext || trendValue) && (
+              <div className="flex items-center gap-2 mt-1">
+                {subtext && (
+                  <span className="text-xs text-muted-foreground">{subtext}</span>
+                )}
+                {trendValue && TrendIcon && (
+                  <span className={cn(
+                    'flex items-center gap-0.5 text-xs',
+                    trend === 'up' && 'text-green-500',
+                    trend === 'down' && 'text-red-500'
+                  )}>
+                    <TrendIcon className="h-3 w-3" />
+                    {trendValue}
+                  </span>
+                )}
+              </div>
             )}
           </div>
-          {isClickable && (
+          {!disabled && (
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           )}
         </div>
-        {isClickable && (
-          <div className="mt-2 pt-2 border-t border-border/50">
-            <Badge variant="outline" className="text-[10px]">
+        {!disabled && (
+          <div className="mt-3 pt-2 border-t border-border/50">
+            <Badge variant="outline" className="text-[10px] bg-background/50">
               Click to view details
             </Badge>
           </div>
@@ -143,4 +162,4 @@ export function ClickableStatCard({
   );
 }
 
-export default ClickableStatCard;
+export default SmartStatCard;
