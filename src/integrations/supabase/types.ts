@@ -4742,6 +4742,69 @@ export type Database = {
           },
         ]
       }
+      grabba_autopilot_tasks: {
+        Row: {
+          brand: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          entity_id: string | null
+          entity_type: string | null
+          floor: number
+          id: string
+          metadata: Json | null
+          notes: string | null
+          priority: string
+          source: string
+          status: string
+          suggested_due_date: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          brand?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          floor?: number
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          priority?: string
+          source?: string
+          status?: string
+          suggested_due_date?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          brand?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          floor?: number
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          priority?: string
+          source?: string
+          status?: string
+          suggested_due_date?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       grabba_drivers: {
         Row: {
           active: boolean | null
@@ -4766,6 +4829,51 @@ export type Database = {
           name?: string
           phone?: string | null
           region?: string | null
+        }
+        Relationships: []
+      }
+      grabba_playbooks: {
+        Row: {
+          brand: string | null
+          checklist: Json | null
+          created_at: string
+          default_priority: string
+          default_type: string
+          description: string | null
+          floor: number
+          id: string
+          is_active: boolean | null
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          checklist?: Json | null
+          created_at?: string
+          default_priority?: string
+          default_type: string
+          description?: string | null
+          floor?: number
+          id?: string
+          is_active?: boolean | null
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          checklist?: Json | null
+          created_at?: string
+          default_priority?: string
+          default_type?: string
+          description?: string | null
+          floor?: number
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          slug?: string
+          updated_at?: string
         }
         Relationships: []
       }
