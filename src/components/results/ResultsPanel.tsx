@@ -141,6 +141,26 @@ export function ResultsPanel({
         { value: 'pending', label: 'Pending' },
         { value: 'sold', label: 'Sold' },
       ],
+      invoices: [
+        { value: 'paid', label: 'Paid' },
+        { value: 'unpaid', label: 'Unpaid' },
+        { value: 'overdue', label: 'Overdue' },
+      ],
+      orders: [
+        { value: 'pending', label: 'Pending' },
+        { value: 'confirmed', label: 'Confirmed' },
+        { value: 'shipped', label: 'Shipped' },
+        { value: 'delivered', label: 'Delivered' },
+      ],
+      commissions: [
+        { value: 'pending', label: 'Pending' },
+        { value: 'paid', label: 'Paid' },
+      ],
+      routes: [
+        { value: 'scheduled', label: 'Scheduled' },
+        { value: 'in_progress', label: 'In Progress' },
+        { value: 'completed', label: 'Completed' },
+      ],
     };
     return optionsByType[type] || [];
   }, [type]);

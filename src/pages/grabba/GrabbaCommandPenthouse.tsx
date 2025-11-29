@@ -5,8 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { 
-  Crown, Store, Users, Truck, Package, DollarSign, MessageSquare, 
+import { Crown, Store, Users, Truck, Package, DollarSign, MessageSquare, 
   MapPin, Factory, Globe, Award, Search, AlertTriangle, Zap, Activity, Download
 } from "lucide-react";
 import { useState } from "react";
@@ -19,6 +18,8 @@ import { ExportButton } from "@/components/crud";
 import { DataConsistencyDashboard, MissingLinksPanel, CleanerBotStatus, InsightPanel, InsightType, InsightRecord } from "@/components/system";
 import { useInsightPanel, useInsightData, getAISuggestions } from "@/hooks/useInsightPanel";
 import { InteractiveStatTile } from "@/components/system/InteractiveStatTile";
+import { DrillDownTile } from "@/components/drilldown/DrillDownTile";
+import { DrillDownEntity, DrillDownFilters } from "@/lib/drilldown";
 
 // Use canonical brand IDs from grabbaSkyscraper.ts
 const GRABBA_BRAND_FILTER = [...GRABBA_BRAND_IDS];
@@ -32,6 +33,10 @@ interface KPIConfig {
   color: string;
   insightType: KPIInsightType;
   variant: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple';
+  drilldown: {
+    entity: DrillDownEntity;
+    filters: DrillDownFilters;
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -59,12 +64,12 @@ const EmpireSnapshot = ({ onOpenInsight }: { onOpenInsight: (type: InsightType) 
   }
 
   const kpis: KPIConfig[] = [
-    { label: 'Active Stores', value: stats?.totalStores || 0, icon: Store, color: 'text-red-500', insightType: 'new_stores', variant: 'info' },
-    { label: 'Wholesalers', value: stats?.totalWholesalers || 0, icon: Globe, color: 'text-purple-500', insightType: 'wholesale_pending', variant: 'purple' },
-    { label: 'Ambassadors', value: stats?.totalAmbassadors || 0, icon: Award, color: 'text-amber-500', insightType: 'inactive_ambassadors', variant: 'warning' },
-    { label: 'Drivers', value: stats?.totalDrivers || 0, icon: Truck, color: 'text-green-500', insightType: 'driver_issues', variant: 'success' },
-    { label: 'Tubes Sold', value: stats?.totalTubes?.toLocaleString() || '0', icon: Package, color: 'text-blue-500', insightType: 'low_stock', variant: 'info' },
-    { label: 'Outstanding', value: `$${(stats?.unpaidBalance || 0).toLocaleString()}`, icon: DollarSign, color: 'text-orange-500', insightType: 'unpaid_stores', variant: 'danger' },
+    { label: 'Active Stores', value: stats?.totalStores || 0, icon: Store, color: 'text-red-500', insightType: 'new_stores', variant: 'info', drilldown: { entity: 'stores', filters: { status: 'active' } } },
+    { label: 'Wholesalers', value: stats?.totalWholesalers || 0, icon: Globe, color: 'text-purple-500', insightType: 'wholesale_pending', variant: 'purple', drilldown: { entity: 'orders', filters: { status: 'pending' } } },
+    { label: 'Ambassadors', value: stats?.totalAmbassadors || 0, icon: Award, color: 'text-amber-500', insightType: 'inactive_ambassadors', variant: 'warning', drilldown: { entity: 'ambassadors', filters: {} } },
+    { label: 'Drivers', value: stats?.totalDrivers || 0, icon: Truck, color: 'text-green-500', insightType: 'driver_issues', variant: 'success', drilldown: { entity: 'drivers', filters: { status: 'active' } } },
+    { label: 'Tubes Sold', value: stats?.totalTubes?.toLocaleString() || '0', icon: Package, color: 'text-blue-500', insightType: 'low_stock', variant: 'info', drilldown: { entity: 'inventory', filters: {} } },
+    { label: 'Outstanding', value: `$${(stats?.unpaidBalance || 0).toLocaleString()}`, icon: DollarSign, color: 'text-orange-500', insightType: 'unpaid_stores', variant: 'danger', drilldown: { entity: 'invoices', filters: { payment_status: 'unpaid' } } },
   ];
 
   return (
@@ -84,14 +89,16 @@ const EmpireSnapshot = ({ onOpenInsight }: { onOpenInsight: (type: InsightType) 
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             {kpis.map((kpi) => (
-              <InteractiveStatTile
+              <DrillDownTile
                 key={kpi.label}
                 icon={kpi.icon}
                 label={kpi.label}
                 value={kpi.value}
                 variant={kpi.variant}
                 size="sm"
-                onClick={kpi.insightType ? () => onOpenInsight(kpi.insightType!) : undefined}
+                entity={kpi.drilldown.entity}
+                filters={kpi.drilldown.filters}
+                title={kpi.label}
               />
             ))}
           </div>
