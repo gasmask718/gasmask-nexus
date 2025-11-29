@@ -24,9 +24,9 @@ export function routeUserByRole(role: AppRole): string {
     case 'ambassador':
       return '/portal/ambassador';
     case 'customer':
-      return '/portal/dashboard';
+      return '/portal/customer';
     default:
-      return '/';
+      return '/portal/dashboard';
   }
 }
 

@@ -128,6 +128,8 @@ import StorePortal from "./pages/portal/StorePortal";
 import WholesalerPortal from "./pages/portal/WholesalerPortal";
 import ProductionPortal from "./pages/portal/ProductionPortal";
 import VAPortal from "./pages/portal/VAPortal";
+import CustomerPortal from "./pages/portal/CustomerPortal";
+import Shop from "./pages/Shop";
 import RoleRouter from "./components/portal/RoleRouter";
 import PortalInvoiceDetail from "./pages/portal/PortalInvoiceDetail";
 import PortalStore from "./pages/portal/PortalStore";
@@ -250,6 +252,7 @@ const App = () => (
           <BusinessProvider>
             <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/shop" element={<Shop />} />
               <Route path="/sidebar-test" element={
                 <ProtectedRoute>
                   <Layout>
@@ -1374,6 +1377,7 @@ const App = () => (
               <Route path="/portal/wholesaler" element={<ProtectedRoute><WholesalerPortal /></ProtectedRoute>} />
               <Route path="/portal/production" element={<ProtectedRoute><ProductionPortal /></ProtectedRoute>} />
               <Route path="/portal/va" element={<ProtectedRoute><VAPortal /></ProtectedRoute>} />
+              <Route path="/portal/customer" element={<ProtectedRoute><CustomerPortal /></ProtectedRoute>} />
               <Route path="/portal/invoices" element={<ProtectedRoute><PortalInvoices /></ProtectedRoute>} />
               <Route path="/portal/invoices/:id" element={<ProtectedRoute><PortalInvoiceDetail /></ProtectedRoute>} />
               <Route path="/portal/wholesale" element={<ProtectedRoute><PortalWholesale /></ProtectedRoute>} />
