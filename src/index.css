@@ -69,6 +69,19 @@ All colors MUST be HSL.
     
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Portal HUD Colors */
+    --hud-cyan: 180 100% 50%;
+    --hud-green: 142 100% 50%;
+    --hud-amber: 38 100% 50%;
+    --hud-purple: 270 100% 60%;
+    --hud-blue: 210 100% 50%;
+    
+    /* Neon glow effects */
+    --neon-red: 0 0 20px hsla(0, 100%, 50%, 0.6);
+    --neon-cyan: 0 0 20px hsla(180, 100%, 50%, 0.6);
+    --neon-green: 0 0 20px hsla(142, 100%, 50%, 0.6);
+    --neon-amber: 0 0 20px hsla(38, 100%, 50%, 0.6);
   }
 }
 
