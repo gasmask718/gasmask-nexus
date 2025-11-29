@@ -1227,6 +1227,48 @@ export type Database = {
           },
         ]
       }
+      ambassador_profiles: {
+        Row: {
+          brand: string
+          commission_rate: number | null
+          country: string | null
+          created_at: string | null
+          id: string
+          instagram_handle: string | null
+          notes: string | null
+          referral_code: string | null
+          status: string
+          tiktok_handle: string | null
+          user_id: string
+        }
+        Insert: {
+          brand?: string
+          commission_rate?: number | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          instagram_handle?: string | null
+          notes?: string | null
+          referral_code?: string | null
+          status?: string
+          tiktok_handle?: string | null
+          user_id: string
+        }
+        Update: {
+          brand?: string
+          commission_rate?: number | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          instagram_handle?: string | null
+          notes?: string | null
+          referral_code?: string | null
+          status?: string
+          tiktok_handle?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ambassador_regions: {
         Row: {
           active: boolean | null
@@ -1791,6 +1833,42 @@ export type Database = {
           rows_processed?: number | null
           success_count?: number | null
           va_id?: string | null
+        }
+        Relationships: []
+      }
+      biker_profiles: {
+        Row: {
+          created_at: string | null
+          default_city: string | null
+          id: string
+          notes: string | null
+          primary_transport: string | null
+          region: string | null
+          status: string
+          user_id: string
+          zone: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_city?: string | null
+          id?: string
+          notes?: string | null
+          primary_transport?: string | null
+          region?: string | null
+          status?: string
+          user_id: string
+          zone?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_city?: string | null
+          id?: string
+          notes?: string | null
+          primary_transport?: string | null
+          region?: string | null
+          status?: string
+          user_id?: string
+          zone?: string | null
         }
         Relationships: []
       }
@@ -4957,6 +5035,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      driver_profiles: {
+        Row: {
+          created_at: string | null
+          default_city: string | null
+          id: string
+          insurance_verified: boolean | null
+          license_number: string | null
+          notes: string | null
+          pay_type: string | null
+          region: string | null
+          status: string
+          user_id: string
+          vehicle_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_city?: string | null
+          id?: string
+          insurance_verified?: boolean | null
+          license_number?: string | null
+          notes?: string | null
+          pay_type?: string | null
+          region?: string | null
+          status?: string
+          user_id: string
+          vehicle_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_city?: string | null
+          id?: string
+          insurance_verified?: boolean | null
+          license_number?: string | null
+          notes?: string | null
+          pay_type?: string | null
+          region?: string | null
+          status?: string
+          user_id?: string
+          vehicle_type?: string | null
+        }
+        Relationships: []
       }
       driver_rewards: {
         Row: {
@@ -9721,6 +9841,39 @@ export type Database = {
         }
         Relationships: []
       }
+      production_profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          role: string
+          shift: string | null
+          station: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          role: string
+          shift?: string | null
+          station?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          role?: string
+          shift?: string | null
+          station?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       production_tools_issued: {
         Row: {
           id: string
@@ -11398,6 +11551,63 @@ export type Database = {
           },
         ]
       }
+      store_profiles: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          city: string | null
+          contact_name: string | null
+          country: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          notes: string | null
+          phone: string | null
+          postal_code: string | null
+          preferred_delivery_day: string | null
+          state: string | null
+          status: string
+          store_name: string
+          user_id: string
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          preferred_delivery_day?: string | null
+          state?: string | null
+          status?: string
+          store_name: string
+          user_id: string
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          preferred_delivery_day?: string | null
+          state?: string | null
+          status?: string
+          store_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       store_rewards: {
         Row: {
           created_at: string
@@ -12376,6 +12586,48 @@ export type Database = {
           },
         ]
       }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          extra_roles: string[] | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          preferred_language: string | null
+          primary_role: string
+          timezone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          extra_roles?: string[] | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          preferred_language?: string | null
+          primary_role: string
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          extra_roles?: string[] | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          preferred_language?: string | null
+          primary_role?: string
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -12593,6 +12845,33 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           va_role?: Database["public"]["Enums"]["va_role"]
+        }
+        Relationships: []
+      }
+      va_profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          label: string | null
+          notes: string | null
+          permissions_bundle: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          label?: string | null
+          notes?: string | null
+          permissions_bundle?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          label?: string | null
+          notes?: string | null
+          permissions_bundle?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -13533,6 +13812,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wholesaler_profiles: {
+        Row: {
+          company_name: string
+          contact_name: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          notes: string | null
+          phone: string | null
+          shipping_preferences: Json | null
+          status: string
+          tax_id: string | null
+          user_id: string
+          website_url: string | null
+          wholesaler_type: string | null
+        }
+        Insert: {
+          company_name: string
+          contact_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          shipping_preferences?: Json | null
+          status?: string
+          tax_id?: string | null
+          user_id: string
+          website_url?: string | null
+          wholesaler_type?: string | null
+        }
+        Update: {
+          company_name?: string
+          contact_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          shipping_preferences?: Json | null
+          status?: string
+          tax_id?: string | null
+          user_id?: string
+          website_url?: string | null
+          wholesaler_type?: string | null
+        }
+        Relationships: []
       }
       wholesalers: {
         Row: {
