@@ -330,18 +330,59 @@ export const getGrabbaNavItems = () => {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FLOOR ROUTE MAPPING (which routes belong to each floor)
+// Complete mapping of all legacy and new routes
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const FLOOR_ROUTE_MAP: Record<string, string[]> = {
-  'penthouse': ['/grabba/command-penthouse'],
-  'floor-1-crm': ['/grabba/crm', '/grabba/brand/', '/grabba/store-master/'],
-  'floor-2-communication': ['/grabba/communication', '/grabba/communications', '/grabba/text-center', '/grabba/email-center', '/grabba/call-center', '/grabba/communication-logs', '/grabba/brand/*/communications'],
-  'floor-3-inventory': ['/grabba/inventory'],
-  'floor-4-delivery': ['/grabba/deliveries', '/grabba/delivery-runs'],
-  'floor-5-orders': ['/grabba/finance', '/unpaid-accounts', '/wholesale-orders', '/billing'],
-  'floor-6-production': ['/grabba/production'],
-  'floor-7-wholesale': ['/grabba/wholesale-platform', '/wholesale/marketplace'],
-  'floor-8-ambassadors': ['/grabba/ambassadors', '/ambassadors/regions'],
+  'penthouse': [
+    '/grabba/command-penthouse',
+    '/grabba/cluster',
+    '/grabba/ai-insights',
+  ],
+  'floor-1-crm': [
+    '/grabba/crm',
+    '/grabba/brand/',
+    '/grabba/store-master/',
+    '/companies',
+    '/stores',
+  ],
+  'floor-2-communication': [
+    '/grabba/communication',
+    '/grabba/text-center',
+    '/grabba/email-center',
+    '/grabba/call-center',
+    '/grabba/communication-logs',
+    '/grabba/brand/*/communications',
+  ],
+  'floor-3-inventory': [
+    '/grabba/inventory',
+  ],
+  'floor-4-delivery': [
+    '/grabba/deliveries',
+    '/grabba/delivery-runs',
+    '/routes',
+    '/driver-debt-collection',
+  ],
+  'floor-5-orders': [
+    '/grabba/finance',
+    '/unpaid-accounts',
+    '/billing',
+    '/billing-center',
+  ],
+  'floor-6-production': [
+    '/grabba/production',
+  ],
+  'floor-7-wholesale': [
+    '/grabba/wholesale-platform',
+    '/grabba/upload-center',
+    '/wholesale/marketplace',
+    '/wholesale',
+  ],
+  'floor-8-ambassadors': [
+    '/grabba/ambassadors',
+    '/ambassador-regions',
+    '/ambassador-payouts',
+  ],
 };
 
 // Helper to find which floor a route belongs to
