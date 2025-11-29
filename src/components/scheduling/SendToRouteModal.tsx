@@ -49,7 +49,7 @@ export function SendToRouteModal({
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedDriver, setSelectedDriver] = useState<string>('');
   const [scheduledDate, setScheduledDate] = useState(
-    format(new Date(Date.now() + 86400000), 'yyyy-MM-dd') // tomorrow
+    format(new Date(Date.now() + 86400000), 'yyyy-MM-dd')
   );
   const [startTime, setStartTime] = useState('10:00');
   const [routeName, setRouteName] = useState('');
@@ -58,21 +58,25 @@ export function SendToRouteModal({
   const loading = routeLoading || taskLoading;
 
   useEffect(() => {
-    if (open) {
-      // Fetch drivers
-      supabase
-        .from('profiles')
-        .select('id, name')
-        .in('role', ['driver', 'biker'])
-        .eq('status', 'active')
-        .then(({ data }) => {
-          setDrivers((data || []) as Driver[]);
-        });
-
-      // Set default route name
-      const dateStr = format(new Date(scheduledDate), 'MMM d');
-      setRouteName(`${brand || 'Route'} - ${dateStr}`);
-    }
+    if (!open) return;
+    
+    // Fetch drivers - cast to any to avoid TS depth issues
+    const client = supabase as any;
+    client
+      .from('profiles')
+      .select('id, name, role')
+      .eq('status', 'active')
+      .then((result: any) => {
+        if (result.data) {
+          const driverList = result.data
+            .filter((p: any) => ['driver', 'biker'].includes(p.role))
+            .map((d: any) => ({ id: d.id, name: d.name || 'Unknown' }));
+          setDrivers(driverList);
+        }
+      });
+    
+    const dateStr = format(new Date(scheduledDate), 'MMM d');
+    setRouteName(`${brand || 'Route'} - ${dateStr}`);
   }, [open, brand, scheduledDate]);
 
   const handleSubmit = async () => {
@@ -80,24 +84,19 @@ export function SendToRouteModal({
     const [hours, minutes] = startTime.split(':').map(Number);
     date.setHours(hours, minutes, 0, 0);
 
+    const driverId = selectedDriver && selectedDriver !== 'unassigned' ? selectedDriver : undefined;
+
     if (taskOnly) {
-      // Create scheduled task only
       await createTask({
         type: 'visit_stores',
-        payload: {
-          store_ids: storeIds,
-          driver_id: selectedDriver || undefined,
-          brand,
-          region,
-        },
+        payload: { store_ids: storeIds, driver_id: driverId, brand, region },
         runAt: date,
       });
     } else {
-      // Build and save route
       const routePayload = await buildRouteFromStores({
         name: routeName,
         storeIds,
-        driverId: selectedDriver || undefined,
+        driverId,
         brand,
         region,
         scheduledDate: date,
@@ -106,16 +105,9 @@ export function SendToRouteModal({
 
       await saveRoute(routePayload);
 
-      // Optionally create a task as well
       await createTask({
         type: 'delivery_run',
-        payload: {
-          store_ids: storeIds,
-          driver_id: selectedDriver || undefined,
-          brand,
-          region,
-          route_name: routeName,
-        },
+        payload: { store_ids: storeIds, driver_id: driverId, brand, region, route_name: routeName },
         runAt: date,
       });
     }
@@ -140,7 +132,6 @@ export function SendToRouteModal({
             {brand && <span> ({brand})</span>}
           </div>
 
-          {/* Route Name */}
           {!taskOnly && (
             <div className="space-y-2">
               <Label htmlFor="routeName">Route Name</Label>
@@ -153,9 +144,8 @@ export function SendToRouteModal({
             </div>
           )}
 
-          {/* Driver Selection */}
           <div className="space-y-2">
-            <Label htmlFor="driver">
+            <Label>
               <User className="h-4 w-4 inline mr-1" />
               Assign Driver
             </Label>
@@ -174,35 +164,30 @@ export function SendToRouteModal({
             </Select>
           </div>
 
-          {/* Date */}
           <div className="space-y-2">
-            <Label htmlFor="date">
+            <Label>
               <Calendar className="h-4 w-4 inline mr-1" />
               Scheduled Date
             </Label>
             <Input
-              id="date"
               type="date"
               value={scheduledDate}
               onChange={(e) => setScheduledDate(e.target.value)}
             />
           </div>
 
-          {/* Start Time */}
           <div className="space-y-2">
-            <Label htmlFor="time">
+            <Label>
               <Clock className="h-4 w-4 inline mr-1" />
               Start Time
             </Label>
             <Input
-              id="time"
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
             />
           </div>
 
-          {/* Task Only Checkbox */}
           <div className="flex items-center gap-2">
             <Checkbox
               id="taskOnly"

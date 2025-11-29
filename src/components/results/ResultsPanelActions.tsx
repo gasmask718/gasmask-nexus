@@ -2,6 +2,7 @@
 // RESULTS PANEL ACTIONS — Action Buttons Based on Panel Type
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -29,12 +30,14 @@ import {
   Mail,
   Users,
   MoreHorizontal,
+  Calendar,
 } from 'lucide-react';
 import { exportData } from '@/utils/exportUtils';
 import { QueryResult } from '@/lib/commands/CommandEngine';
 import { executeAction } from '@/lib/commands/ExecutionEngine';
 import { useGrabbaPermissions } from '@/hooks/useGrabbaPermissions';
 import { usePermissions } from '@/hooks/usePermissions';
+import { SendToRouteModal } from '@/components/scheduling/SendToRouteModal';
 
 export type PanelType = 'stores' | 'deliveries' | 'inventory' | 'finance' | 'ambassadors' | 'drivers' | 'wholesale';
 
@@ -42,6 +45,7 @@ interface ResultsPanelActionsProps {
   panelType: PanelType;
   selectedResults: QueryResult[];
   allResults: QueryResult[];
+  brand?: string;
   onActionComplete?: () => void;
 }
 
@@ -49,12 +53,15 @@ export function ResultsPanelActions({
   panelType,
   selectedResults,
   allResults,
+  brand,
   onActionComplete,
 }: ResultsPanelActionsProps) {
   const { role, isAdmin } = useGrabbaPermissions();
   const { canUpdate } = usePermissions();
   const hasSelection = selectedResults.length > 0;
   const targetResults = hasSelection ? selectedResults : allResults;
+
+  const [showRouteModal, setShowRouteModal] = useState(false);
 
   const canPerformActions = isAdmin || ['admin', 'employee', 'csr'].includes(role || '');
 
@@ -83,6 +90,12 @@ export function ResultsPanelActions({
   const handleAction = async (actionType: string) => {
     if (!canPerformActions) {
       toast.error("You don't have permission to perform this action");
+      return;
+    }
+
+    // Special handling for route_planner
+    if (actionType === 'route_planner') {
+      setShowRouteModal(true);
       return;
     }
 
@@ -131,7 +144,7 @@ export function ResultsPanelActions({
       { id: 'assign_driver', icon: Truck, label: 'Assign Driver', primary: true },
       { id: 'mark_completed', icon: CheckCircle, label: 'Mark Completed' },
       { id: 'mark_failed', icon: XCircle, label: 'Mark Failed' },
-      { id: 'route_optimize', icon: MapPin, label: 'Optimize Route' },
+      { id: 'route_planner', icon: MapPin, label: 'Send to Route' },
     ],
     inventory: [
       { id: 'adjust_stock', icon: Package, label: 'Adjust Stock', primary: true },
@@ -144,6 +157,7 @@ export function ResultsPanelActions({
       { id: 'create_invoice', icon: FileText, label: 'Generate Invoice' },
       { id: 'send_text', icon: MessageSquare, label: 'Contact Store' },
       { id: 'send_email', icon: Mail, label: 'Send Reminder' },
+      { id: 'schedule_followup', icon: Calendar, label: 'Schedule Follow-up' },
     ],
     ambassadors: [
       { id: 'assign_stores', icon: Users, label: 'Assign Stores', primary: true },
@@ -151,7 +165,7 @@ export function ResultsPanelActions({
       { id: 'send_text', icon: MessageSquare, label: 'Message' },
     ],
     drivers: [
-      { id: 'assign_route', icon: Route, label: 'Assign Route', primary: true },
+      { id: 'route_planner', icon: Route, label: 'Create Route', primary: true },
       { id: 'send_text', icon: MessageSquare, label: 'Send Message' },
       { id: 'adjust_payout', icon: DollarSign, label: 'Process Payment' },
     ],
@@ -166,63 +180,77 @@ export function ResultsPanelActions({
   const primaryAction = actions.find(a => a.primary);
   const secondaryActions = actions.filter(a => !a.primary);
 
+  // Get store IDs for route modal
+  const storeIds = targetResults.map(r => r.id);
+
   return (
-    <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border px-4 py-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-sm text-muted-foreground">
-          {hasSelection ? (
-            <span className="font-medium text-foreground">{selectedResults.length} selected</span>
-          ) : (
-            <span>{allResults.length} total results</span>
-          )}
-        </div>
+    <>
+      <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-sm text-muted-foreground">
+            {hasSelection ? (
+              <span className="font-medium text-foreground">{selectedResults.length} selected</span>
+            ) : (
+              <span>{allResults.length} total results</span>
+            )}
+          </div>
 
-        <div className="flex items-center gap-2">
-          {/* Primary Action */}
-          {primaryAction && (
-            <Button onClick={() => handleAction(primaryAction.id)} className="gap-2">
-              <primaryAction.icon className="h-4 w-4" />
-              {primaryAction.label}
-              {hasSelection && <span>({selectedResults.length})</span>}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Primary Action */}
+            {primaryAction && (
+              <Button onClick={() => handleAction(primaryAction.id)} className="gap-2">
+                <primaryAction.icon className="h-4 w-4" />
+                {primaryAction.label}
+                {hasSelection && <span>({selectedResults.length})</span>}
+              </Button>
+            )}
 
-          {/* Secondary Actions Dropdown */}
-          {secondaryActions.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <MoreHorizontal className="h-4 w-4" />
-                  More Actions
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {secondaryActions.map((action) => (
-                  <DropdownMenuItem
-                    key={action.id}
-                    onClick={() => handleAction(action.id)}
-                    className="gap-2"
-                  >
-                    <action.icon className="h-4 w-4" />
-                    {action.label}
+            {/* Secondary Actions Dropdown */}
+            {secondaryActions.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <MoreHorizontal className="h-4 w-4" />
+                    More Actions
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {secondaryActions.map((action) => (
+                    <DropdownMenuItem
+                      key={action.id}
+                      onClick={() => handleAction(action.id)}
+                      className="gap-2"
+                    >
+                      <action.icon className="h-4 w-4" />
+                      {action.label}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleExport} className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Export Data
                   </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleExport} className="gap-2">
-                  <Download className="h-4 w-4" />
-                  Export Data
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
-          {/* Export Button (always visible) */}
-          <Button variant="outline" size="icon" onClick={handleExport}>
-            <Download className="h-4 w-4" />
-          </Button>
+            {/* Export Button (always visible) */}
+            <Button variant="outline" size="icon" onClick={handleExport}>
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Send to Route Modal */}
+      <SendToRouteModal
+        open={showRouteModal}
+        onOpenChange={setShowRouteModal}
+        storeIds={storeIds}
+        brand={brand}
+        onSuccess={onActionComplete}
+      />
+    </>
   );
 }
 

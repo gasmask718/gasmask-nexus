@@ -180,6 +180,7 @@ export function ResultsPanel({
         panelType={type}
         selectedResults={selectedResults}
         allResults={filteredData}
+        brand={currentBrand}
         onActionComplete={handleActionComplete}
       />
     </Card>

@@ -302,6 +302,9 @@ export function mapActionIntentToExecution(intent: ActionIntent): ExecutionActio
     route: 'send_route_to_driver',
     escalate: 'mark_store_tag',
     export: 'export_data',
+    schedule: 'add_followup_task',
+    create_route: 'send_route_to_driver',
+    follow_up: 'add_followup_task',
   };
   return mapping[intent] || 'send_notification';
 }
