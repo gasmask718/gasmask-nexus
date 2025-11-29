@@ -126,13 +126,14 @@ import BikerPortal from "./pages/portal/BikerPortal";
 import AmbassadorPortal from "./pages/portal/AmbassadorPortal";
 import StorePortal from "./pages/portal/StorePortal";
 import WholesalerPortal from "./pages/portal/WholesalerPortal";
-import { WholesalerDashboard, WholesalerProducts, WholesalerProductForm, WholesalerOrders, WholesalerFinance, WholesalerSettings } from "./pages/portal/wholesaler";
-import { StoreDashboard, StoreProducts, StoreCart, StoreCheckout, StoreOrders, StoreOrderDetail, StoreInvoices, StoreSettings } from "./pages/portal/store";
+import { WholesalerDashboard, WholesalerProducts, WholesalerProductForm, WholesalerOrders, WholesalerFinance, WholesalerSettings, WholesalerMessages } from "./pages/portal/wholesaler";
+import { StoreDashboard, StoreProducts, StoreCart, StoreCheckout, StoreOrders, StoreOrderDetail, StoreInvoices, StoreSettings, StoreMessages } from "./pages/portal/store";
 import ProductionPortal from "./pages/portal/ProductionPortal";
 import VAPortal from "./pages/portal/VAPortal";
 import CustomerPortal from "./pages/portal/CustomerPortal";
 import Shop from "./pages/Shop";
 import Cart from "./pages/Cart";
+import MessagesPage from "./pages/Messages";
 import Checkout from "./pages/Checkout";
 import RoleRouter from "./components/portal/RoleRouter";
 import PortalInvoiceDetail from "./pages/portal/PortalInvoiceDetail";
@@ -259,6 +260,8 @@ const App = () => (
               <Route path="/shop" element={<Shop />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
+              <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
+              <Route path="/messages/:threadId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
               <Route path="/sidebar-test" element={
                 <ProtectedRoute>
                   <Layout>
@@ -1389,6 +1392,8 @@ const App = () => (
               <Route path="/portal/store/orders/:orderId" element={<ProtectedRoute><StoreOrderDetail /></ProtectedRoute>} />
               <Route path="/portal/store/invoices" element={<ProtectedRoute><StoreInvoices /></ProtectedRoute>} />
               <Route path="/portal/store/settings" element={<ProtectedRoute><StoreSettings /></ProtectedRoute>} />
+              <Route path="/portal/store/messages" element={<ProtectedRoute><StoreMessages /></ProtectedRoute>} />
+              <Route path="/portal/store/messages/:threadId" element={<ProtectedRoute><StoreMessages /></ProtectedRoute>} />
               <Route path="/portal/wholesaler" element={<ProtectedRoute><WholesalerDashboard /></ProtectedRoute>} />
               <Route path="/portal/wholesaler/products" element={<ProtectedRoute><WholesalerProducts /></ProtectedRoute>} />
               <Route path="/portal/wholesaler/products/new" element={<ProtectedRoute><WholesalerProductForm /></ProtectedRoute>} />
@@ -1397,6 +1402,8 @@ const App = () => (
               <Route path="/portal/wholesaler/orders" element={<ProtectedRoute><WholesalerOrders /></ProtectedRoute>} />
               <Route path="/portal/wholesaler/finance" element={<ProtectedRoute><WholesalerFinance /></ProtectedRoute>} />
               <Route path="/portal/wholesaler/settings" element={<ProtectedRoute><WholesalerSettings /></ProtectedRoute>} />
+              <Route path="/portal/wholesaler/messages" element={<ProtectedRoute><WholesalerMessages /></ProtectedRoute>} />
+              <Route path="/portal/wholesaler/messages/:threadId" element={<ProtectedRoute><WholesalerMessages /></ProtectedRoute>} />
               <Route path="/portal/production" element={<ProtectedRoute><ProductionPortal /></ProtectedRoute>} />
               <Route path="/portal/va" element={<ProtectedRoute><VAPortal /></ProtectedRoute>} />
               <Route path="/portal/customer" element={<ProtectedRoute><CustomerPortal /></ProtectedRoute>} />
