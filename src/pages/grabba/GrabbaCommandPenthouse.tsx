@@ -22,6 +22,7 @@ import { InteractiveStatTile } from "@/components/system/InteractiveStatTile";
 import { DrillDownTile } from "@/components/drilldown/DrillDownTile";
 import { DrillDownEntity, DrillDownFilters } from "@/lib/drilldown";
 import { AutoOpsPanel } from "@/components/grabba/AutoOpsPanel";
+import { RiskRadarPanel } from "@/components/grabba/RiskRadarPanel";
 
 // Use canonical brand IDs from grabbaSkyscraper.ts
 const GRABBA_BRAND_FILTER = [...GRABBA_BRAND_IDS];
@@ -1236,6 +1237,7 @@ const GrabbaCommandPenthouse = () => {
           <CommunicationIntelligence />
         </div>
         <AutoOpsPanel />
+        <RiskRadarPanel />
       </div>
       
       {/* Row 7: Data Health (Admin Tools) */}
