@@ -39,7 +39,7 @@ import { useGrabbaPermissions } from '@/hooks/useGrabbaPermissions';
 import { usePermissions } from '@/hooks/usePermissions';
 import { SendToRouteModal } from '@/components/scheduling/SendToRouteModal';
 
-export type PanelType = 'stores' | 'deliveries' | 'inventory' | 'finance' | 'ambassadors' | 'drivers' | 'wholesale';
+export type PanelType = 'stores' | 'deliveries' | 'inventory' | 'finance' | 'ambassadors' | 'drivers' | 'wholesale' | 'invoices' | 'orders' | 'commissions' | 'routes';
 
 interface ResultsPanelActionsProps {
   panelType: PanelType;
@@ -173,6 +173,25 @@ export function ResultsPanelActions({
       { id: 'push_marketplace', icon: Package, label: 'Push to Marketplace', primary: true },
       { id: 'notify_stores', icon: MessageSquare, label: 'Notify Stores' },
       { id: 'adjust_price', icon: DollarSign, label: 'Adjust Pricing' },
+    ],
+    invoices: [
+      { id: 'mark_paid', icon: DollarSign, label: 'Mark Paid', primary: true },
+      { id: 'send_text', icon: MessageSquare, label: 'Contact Store' },
+      { id: 'send_email', icon: Mail, label: 'Send Reminder' },
+    ],
+    orders: [
+      { id: 'mark_completed', icon: CheckCircle, label: 'Mark Delivered', primary: true },
+      { id: 'send_text', icon: MessageSquare, label: 'Notify Customer' },
+      { id: 'create_invoice', icon: FileText, label: 'Create Invoice' },
+    ],
+    commissions: [
+      { id: 'mark_paid', icon: DollarSign, label: 'Mark Paid', primary: true },
+      { id: 'send_text', icon: MessageSquare, label: 'Notify Ambassador' },
+    ],
+    routes: [
+      { id: 'assign_driver', icon: Truck, label: 'Assign Driver', primary: true },
+      { id: 'mark_completed', icon: CheckCircle, label: 'Mark Completed' },
+      { id: 'send_text', icon: MessageSquare, label: 'Notify Driver' },
     ],
   };
 
