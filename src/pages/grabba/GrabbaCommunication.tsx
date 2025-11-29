@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, Phone, Mail, Search, Send, Clock, CheckCircle, XCircle, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { useSearchParams, Link } from "react-router-dom";
-import { GRABBA_BRANDS, getBrandConfig, GRABBA_BRAND_CONFIG, GrabbaBrand } from "@/config/grabbaBrands";
+import { GRABBA_BRAND_IDS, getBrandConfig, GRABBA_BRAND_CONFIG, type GrabbaBrand } from "@/config/grabbaSkyscraper";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 
