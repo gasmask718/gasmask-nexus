@@ -6,3 +6,4 @@ export { default as StoreOrders } from './StoreOrders';
 export { default as StoreOrderDetail } from './StoreOrderDetail';
 export { default as StoreInvoices } from './StoreInvoices';
 export { default as StoreSettings } from './StoreSettings';
+export { default as StoreMessages } from './StoreMessages';

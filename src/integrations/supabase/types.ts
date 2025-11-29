@@ -1629,6 +1629,45 @@ export type Database = {
         }
         Relationships: []
       }
+      automated_notifications: {
+        Row: {
+          created_at: string
+          generated_by: string
+          id: string
+          message_text: string
+          related_entity_id: string | null
+          related_entity_type: string | null
+          status: string | null
+          target_role: string | null
+          target_user_id: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          generated_by?: string
+          id?: string
+          message_text: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          status?: string | null
+          target_role?: string | null
+          target_user_id?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          generated_by?: string
+          id?: string
+          message_text?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          status?: string | null
+          target_role?: string | null
+          target_user_id?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: []
+      }
       automation_action_queue: {
         Row: {
           action_type: string
@@ -9325,6 +9364,104 @@ export type Database = {
           target_count?: number
         }
         Relationships: []
+      }
+      message_threads: {
+        Row: {
+          created_at: string
+          id: string
+          last_message: string | null
+          last_message_at: string | null
+          order_id: string | null
+          participants: Json
+          status: string | null
+          subject: string | null
+          thread_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message?: string | null
+          last_message_at?: string | null
+          order_id?: string | null
+          participants?: Json
+          status?: string | null
+          subject?: string | null
+          thread_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message?: string | null
+          last_message_at?: string | null
+          order_id?: string | null
+          participants?: Json
+          status?: string | null
+          subject?: string | null
+          thread_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          attachments: Json | null
+          created_at: string
+          id: string
+          is_system_message: boolean | null
+          is_whisper: boolean | null
+          message_text: string
+          read_by: string[] | null
+          receiver_id: string | null
+          receiver_role: string | null
+          sender_id: string
+          sender_role: string
+          starred_by: string[] | null
+          thread_id: string
+          translated_text: Json | null
+        }
+        Insert: {
+          attachments?: Json | null
+          created_at?: string
+          id?: string
+          is_system_message?: boolean | null
+          is_whisper?: boolean | null
+          message_text: string
+          read_by?: string[] | null
+          receiver_id?: string | null
+          receiver_role?: string | null
+          sender_id: string
+          sender_role: string
+          starred_by?: string[] | null
+          thread_id: string
+          translated_text?: Json | null
+        }
+        Update: {
+          attachments?: Json | null
+          created_at?: string
+          id?: string
+          is_system_message?: boolean | null
+          is_whisper?: boolean | null
+          message_text?: string
+          read_by?: string[] | null
+          receiver_id?: string | null
+          receiver_role?: string | null
+          sender_id?: string
+          sender_role?: string
+          starred_by?: string[] | null
+          thread_id?: string
+          translated_text?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "message_threads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mission_assignments: {
         Row: {
