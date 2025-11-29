@@ -203,6 +203,10 @@ import GrabbaCallCenter from "./pages/grabba/GrabbaCallCenter";
 import GrabbaCommunicationLogs from "./pages/grabba/GrabbaCommunicationLogs";
 import GrabbaAutopilotConsole from "./pages/grabba/GrabbaAutopilotConsole";
 import { GrabbaLayout } from "./components/grabba/GrabbaLayout";
+import AIOperationsDashboard from "./pages/grabba/ai-operations/AIOperationsDashboard";
+import AITasks from "./pages/grabba/ai-operations/AITasks";
+import AIPredictions from "./pages/grabba/ai-operations/AIPredictions";
+import AIAlerts from "./pages/grabba/ai-operations/AIAlerts";
 
 const queryClient = new QueryClient();
 
@@ -2241,6 +2245,13 @@ const App = () => (
               
               {/* 👥 FLOOR 8 — Ambassadors & Reps */}
               <Route path="/grabba/ambassadors" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaAmbassadors /></GrabbaLayout></Layout></ProtectedRoute>} />
+              
+              {/* 🤖 AI OPERATIONS FLOOR */}
+              <Route path="/grabba/ai" element={<ProtectedRoute><Layout><GrabbaLayout><AIOperationsDashboard /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/ai/tasks" element={<ProtectedRoute><Layout><GrabbaLayout><AITasks /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/ai/predict" element={<ProtectedRoute><Layout><GrabbaLayout><AIPredictions /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/ai/alerts" element={<ProtectedRoute><Layout><GrabbaLayout><AIAlerts /></GrabbaLayout></Layout></ProtectedRoute>} />
+
               <Route
                 path="/scalati/*"
                 element={

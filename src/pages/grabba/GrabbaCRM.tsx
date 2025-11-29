@@ -18,6 +18,7 @@ import { GRABBA_BRAND_IDS, GRABBA_BRAND_CONFIG, getBrandConfig, type GrabbaBrand
 import { BrandFilterBar, BrandBadgesRow } from "@/components/grabba/BrandFilterBar";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { useGrabbaBrandActivity, useGrabbaBrandCounts } from "@/hooks/useGrabbaData";
+import { AICRMInsights } from "@/components/grabba/intelligence";
 import { EntityModal } from "@/components/crud/EntityModal";
 import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
 import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
@@ -634,26 +635,29 @@ export default function GrabbaCRM() {
           </CardContent>
         </Card>
 
-        {/* Tabs for Different Entity Types */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ViewTab)}>
-          <TabsList className="grid grid-cols-4 w-full max-w-lg">
-            <TabsTrigger value="companies" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Companies
-            </TabsTrigger>
-            <TabsTrigger value="stores" className="flex items-center gap-2">
-              <Store className="h-4 w-4" />
-              Stores
-            </TabsTrigger>
-            <TabsTrigger value="wholesalers" className="flex items-center gap-2">
-              <Truck className="h-4 w-4" />
-              Wholesalers
-            </TabsTrigger>
-            <TabsTrigger value="ambassadors" className="flex items-center gap-2">
-              <Award className="h-4 w-4" />
-              Ambassadors
-            </TabsTrigger>
-          </TabsList>
+        {/* AI Insights Panel */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2">
+            {/* Tabs for Different Entity Types */}
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ViewTab)}>
+              <TabsList className="grid grid-cols-4 w-full max-w-lg">
+                <TabsTrigger value="companies" className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Companies
+                </TabsTrigger>
+                <TabsTrigger value="stores" className="flex items-center gap-2">
+                  <Store className="h-4 w-4" />
+                  Stores
+                </TabsTrigger>
+                <TabsTrigger value="wholesalers" className="flex items-center gap-2">
+                  <Truck className="h-4 w-4" />
+                  Wholesalers
+                </TabsTrigger>
+                <TabsTrigger value="ambassadors" className="flex items-center gap-2">
+                  <Award className="h-4 w-4" />
+                  Ambassadors
+                </TabsTrigger>
+              </TabsList>
 
           {/* Companies Tab */}
           <TabsContent value="companies" className="space-y-3 mt-4">
@@ -706,7 +710,14 @@ export default function GrabbaCRM() {
               ))
             )}
           </TabsContent>
-        </Tabs>
+            </Tabs>
+          </div>
+          
+          {/* AI Insights Sidebar */}
+          <div className="hidden lg:block">
+            <AICRMInsights />
+          </div>
+        </div>
       </div>
       
       {/* Floating Add Button */}

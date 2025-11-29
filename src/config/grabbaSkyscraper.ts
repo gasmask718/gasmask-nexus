@@ -2,7 +2,7 @@ import {
   Crown, Building2, MessageSquare, Package, Truck, FileText, 
   Factory, Boxes, Users, Map, DollarSign, Bell, BarChart3,
   Calculator, Store, Zap, Target, Award, Settings,
-  LayoutDashboard, Box, Shield, Send, Phone, Mail
+  LayoutDashboard, Box, Shield, Send, Phone, Mail, Brain
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -230,6 +230,14 @@ export const GRABBA_FLOORS: GrabbaFloor[] = [
     path: '/grabba/ambassadors',
     description: 'Floor 8 — Ambassadors: Reps network, regions, payouts, assigned stores, wholesalers, and finders fees.',
     emoji: '🤝'
+  },
+  {
+    id: 'floor-9-ai',
+    name: 'AI Operations Center',
+    icon: Brain,
+    path: '/grabba/ai',
+    description: 'Floor 9 — AI: Automated tasks, predictions, alerts, quality control, and intelligence engine.',
+    emoji: '🤖'
   }
 ];
 
@@ -382,6 +390,12 @@ export const FLOOR_ROUTE_MAP: Record<string, string[]> = {
     '/grabba/ambassadors',
     '/ambassador-regions',
     '/ambassador-payouts',
+  ],
+  'floor-9-ai': [
+    '/grabba/ai',
+    '/grabba/ai/tasks',
+    '/grabba/ai/predict',
+    '/grabba/ai/alerts',
   ],
 };
 
