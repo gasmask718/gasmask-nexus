@@ -21,6 +21,12 @@ export interface GrabbaFloor {
   emoji: string;
 }
 
+// Brand type definitions
+export const GRABBA_BRAND_IDS = ['gasmask', 'hotmama', 'scalati', 'grabba'] as const;
+export type GrabbaBrand = typeof GRABBA_BRAND_IDS[number];
+export type GrabbaBrandId = GrabbaBrand | 'all';
+
+// Legacy array format for backward compatibility
 export const GRABBA_BRANDS = [
   { id: 'all', name: 'All Brands', color: '#6366F1' },
   { id: 'gasmask', name: 'GasMask', color: '#D30000' },
@@ -29,7 +35,121 @@ export const GRABBA_BRANDS = [
   { id: 'grabba', name: 'Grabba R Us', color: '#FFD400' },
 ] as const;
 
-export type GrabbaBrandId = typeof GRABBA_BRANDS[number]['id'];
+// All Brands option for filters
+export const ALL_BRANDS_OPTION = {
+  id: 'all' as const,
+  name: 'All Brands',
+  label: 'All Brands',
+  color: '#6366F1',
+  primary: '#6366F1',
+  secondary: '#4F46E5',
+  gradient: 'from-indigo-500 to-purple-600',
+  bgLight: 'bg-indigo-50',
+  textColor: 'text-indigo-600',
+  borderColor: 'border-indigo-500',
+  pill: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40',
+  icon: '🏢',
+};
+
+// Full brand configuration
+export const GRABBA_BRAND_CONFIG: Record<GrabbaBrand, {
+  id: string;
+  name: string;
+  label: string;
+  color: string;
+  primary: string;
+  secondary: string;
+  gradient: string;
+  bgLight: string;
+  textColor: string;
+  borderColor: string;
+  pill: string;
+  icon: string;
+}> = {
+  gasmask: {
+    id: 'gasmask',
+    name: 'GasMask',
+    label: 'GasMask',
+    color: '#D30000',
+    primary: '#D30000',
+    secondary: '#000000',
+    gradient: 'from-red-600 to-black',
+    bgLight: 'bg-red-50',
+    textColor: 'text-red-600',
+    borderColor: 'border-red-500',
+    pill: 'bg-red-500/20 text-red-300 border-red-500/40',
+    icon: '🔴',
+  },
+  hotmama: {
+    id: 'hotmama',
+    name: 'HotMama',
+    label: 'HotMama',
+    color: '#B76E79',
+    primary: '#B76E79',
+    secondary: '#E0BFB8',
+    gradient: 'from-rose-400 to-rose-600',
+    bgLight: 'bg-rose-50',
+    textColor: 'text-rose-600',
+    borderColor: 'border-rose-500',
+    pill: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+    icon: '🩷',
+  },
+  scalati: {
+    id: 'scalati',
+    name: 'Hot Scalati',
+    label: 'Hot Scalati',
+    color: '#FF7A00',
+    primary: '#FF7A00',
+    secondary: '#5A3A2E',
+    gradient: 'from-orange-500 to-amber-600',
+    bgLight: 'bg-orange-50',
+    textColor: 'text-orange-600',
+    borderColor: 'border-orange-500',
+    pill: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    icon: '🟠',
+  },
+  grabba: {
+    id: 'grabba',
+    name: 'Grabba R Us',
+    label: 'Grabba R Us',
+    color: '#FFD400',
+    primary: '#FFD400',
+    secondary: '#245BFF',
+    gradient: 'from-yellow-400 to-blue-500',
+    bgLight: 'bg-yellow-50',
+    textColor: 'text-yellow-600',
+    borderColor: 'border-yellow-500',
+    pill: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+    icon: '🟡',
+  },
+};
+
+// Helper to get brand config
+export const getBrandConfig = (brand: string) => {
+  return GRABBA_BRAND_CONFIG[brand as GrabbaBrand] || GRABBA_BRAND_CONFIG.gasmask;
+};
+
+// Format tubes as boxes helper
+export function formatTubesAsBoxes(tubes: number) {
+  const TUBES_PER_BOX = 100;
+  const fullBoxes = Math.floor(tubes / TUBES_PER_BOX);
+  const remainder = tubes % TUBES_PER_BOX;
+  
+  let fractionLabel = '';
+  if (remainder === 0) {
+    fractionLabel = fullBoxes > 0 ? `${fullBoxes} box${fullBoxes > 1 ? 'es' : ''}` : '0 boxes';
+  } else if (remainder <= 25) {
+    fractionLabel = fullBoxes > 0 ? `${fullBoxes} + ¼ box` : '¼ box';
+  } else if (remainder <= 50) {
+    fractionLabel = fullBoxes > 0 ? `${fullBoxes} + ½ box` : '½ box';
+  } else if (remainder <= 75) {
+    fractionLabel = fullBoxes > 0 ? `${fullBoxes} + ¾ box` : '¾ box';
+  } else {
+    fractionLabel = `${fullBoxes + 1} box${fullBoxes + 1 > 1 ? 'es' : ''} (almost)`;
+  }
+  
+  return { fullBoxes, remainder, fractionLabel };
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 👑 PENTHOUSE — Master Command Center

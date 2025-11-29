@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { GRABBA_BRANDS, GRABBA_BRAND_CONFIG, GrabbaBrand } from '@/config/grabbaBrands';
+import { GRABBA_BRAND_IDS, GRABBA_BRAND_CONFIG, type GrabbaBrand } from '@/config/grabbaSkyscraper';
 import type { BrandFilterValue } from '@/contexts/GrabbaBrandContext';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -43,7 +43,7 @@ export function BrandFilterBar({
         >
           All Brands {showCounts && allCount !== undefined && `(${allCount})`}
         </Badge>
-        {GRABBA_BRANDS.map((brand) => {
+      {GRABBA_BRAND_IDS.map((brand) => {
           const config = GRABBA_BRAND_CONFIG[brand];
           const isSelected = selectedBrand === brand;
           return (
@@ -76,7 +76,7 @@ export function BrandFilterBar({
         >
           All
         </Button>
-        {GRABBA_BRANDS.map((brand) => {
+      {GRABBA_BRAND_IDS.map((brand) => {
           const config = GRABBA_BRAND_CONFIG[brand];
           return (
             <Button
@@ -117,7 +117,7 @@ export function BrandFilterBar({
         )}
       </Button>
 
-      {GRABBA_BRANDS.map((brand) => {
+      {GRABBA_BRAND_IDS.map((brand) => {
         const config = GRABBA_BRAND_CONFIG[brand];
         const isSelected = selectedBrand === brand;
         
