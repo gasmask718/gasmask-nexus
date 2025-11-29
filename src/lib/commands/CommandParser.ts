@@ -143,6 +143,70 @@ function extractEntities(input: string): ParsedEntities {
   return entities;
 }
 
+export interface ParsedSchedule {
+  date?: string;
+  time?: string;
+}
+
+export function parseScheduleFromText(input: string): ParsedSchedule {
+  const schedule: ParsedSchedule = {};
+  const lower = input.toLowerCase();
+  const now = new Date();
+
+  // Parse date references
+  if (lower.includes('tomorrow')) {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    schedule.date = tomorrow.toISOString().split('T')[0];
+  } else if (lower.includes('today')) {
+    schedule.date = now.toISOString().split('T')[0];
+  } else if (lower.includes('next week')) {
+    const nextWeek = new Date(now);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    schedule.date = nextWeek.toISOString().split('T')[0];
+  } else if (lower.includes('next month')) {
+    const nextMonth = new Date(now);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    schedule.date = nextMonth.toISOString().split('T')[0];
+  }
+
+  // Parse day of week
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  for (let i = 0; i < days.length; i++) {
+    if (lower.includes(`on ${days[i]}`) || lower.includes(`next ${days[i]}`)) {
+      const targetDay = i;
+      const currentDay = now.getDay();
+      let daysUntil = targetDay - currentDay;
+      if (daysUntil <= 0) daysUntil += 7;
+      const targetDate = new Date(now);
+      targetDate.setDate(targetDate.getDate() + daysUntil);
+      schedule.date = targetDate.toISOString().split('T')[0];
+      break;
+    }
+  }
+
+  // Parse time references
+  const timeMatch = lower.match(/at\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  if (timeMatch) {
+    let hours = parseInt(timeMatch[1], 10);
+    const minutes = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+    const meridiem = timeMatch[3]?.toLowerCase();
+
+    if (meridiem === 'pm' && hours < 12) hours += 12;
+    if (meridiem === 'am' && hours === 12) hours = 0;
+
+    schedule.time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  } else if (lower.includes('morning')) {
+    schedule.time = '09:00';
+  } else if (lower.includes('afternoon')) {
+    schedule.time = '14:00';
+  } else if (lower.includes('evening')) {
+    schedule.time = '18:00';
+  }
+
+  return schedule;
+}
+
 export function getSuggestedQueries(): string[] {
   return [
     'Show all unpaid stores',

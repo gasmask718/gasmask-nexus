@@ -86,6 +86,53 @@ export type Database = {
           },
         ]
       }
+      ai_command_logs: {
+        Row: {
+          affected_entity_ids: string[] | null
+          affected_entity_type: string | null
+          created_at: string
+          error_message: string | null
+          executed_at: string | null
+          id: string
+          input_text: string
+          parsed_intent: Json | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          affected_entity_ids?: string[] | null
+          affected_entity_type?: string | null
+          created_at?: string
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          input_text: string
+          parsed_intent?: Json | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          affected_entity_ids?: string[] | null
+          affected_entity_type?: string | null
+          created_at?: string
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          input_text?: string
+          parsed_intent?: Json | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_command_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_communication_queue: {
         Row: {
           actioned_at: string | null
