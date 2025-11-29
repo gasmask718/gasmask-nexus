@@ -92,7 +92,7 @@ export const GRABBA_FLOORS: GrabbaFloor[] = [
     name: 'Production & Machinery',
     icon: Factory,
     path: '/grabba/production',
-    description: 'Box output, Tools, Machine servicing, Quality control',
+    description: 'Floor 6 — Production: Box output, tools, machinery service, and office performance for Grabba.',
     emoji: '🏭'
   },
   {
