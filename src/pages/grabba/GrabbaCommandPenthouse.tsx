@@ -16,6 +16,7 @@ import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 import { useGrabbaPenthouseStats } from "@/hooks/useGrabbaData";
 import { ExportButton } from "@/components/crud";
+import { DataConsistencyDashboard, MissingLinksPanel, CleanerBotStatus } from "@/components/system";
 
 // Use canonical brand IDs from grabbaSkyscraper.ts
 const GRABBA_BRAND_FILTER = [...GRABBA_BRAND_IDS];
@@ -1174,6 +1175,25 @@ const GrabbaCommandPenthouse = () => {
       
       {/* Row 6: Communication Intelligence */}
       <CommunicationIntelligence />
+      
+      {/* Row 7: Data Health (Admin Tools) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <DataConsistencyDashboard isAdmin={true} />
+        <MissingLinksPanel entityTypes={['stores', 'orders', 'drivers', 'inventory']} />
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center justify-between">
+              System Status
+              <CleanerBotStatus />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground">
+              Background cleaner bot monitors data integrity and auto-fixes minor issues.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
