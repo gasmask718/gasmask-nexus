@@ -179,3 +179,9 @@ verify_jwt = false
 
 [functions.evening-ops-cycle]
 verify_jwt = false
+
+[functions.ai-financial-briefing]
+verify_jwt = false
+
+[functions.advisor-mind]
+verify_jwt = false

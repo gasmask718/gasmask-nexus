@@ -223,6 +223,7 @@ import AIAlerts from "./pages/grabba/ai-operations/AIAlerts";
 import FinancialDashboard from "./pages/grabba/FinancialDashboard";
 import PersonalFinance from "./pages/grabba/PersonalFinance";
 import PayrollManager from "./pages/grabba/PayrollManager";
+import AdvisorPenthouse from "./pages/grabba/AdvisorPenthouse";
 
 const queryClient = new QueryClient();
 
@@ -2354,6 +2355,14 @@ const App = () => (
                     <Layout>
                       <BrandPlaceholder />
                     </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/grabba/advisor-penthouse"
+                element={
+                  <ProtectedRoute>
+                    <AdvisorPenthouse />
                   </ProtectedRoute>
                 }
               />
