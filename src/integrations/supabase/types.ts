@@ -236,6 +236,114 @@ export type Database = {
           },
         ]
       }
+      ai_daily_briefings: {
+        Row: {
+          brand: string | null
+          briefing_date: string
+          briefing_type: string
+          content: Json
+          created_at: string
+          id: string
+        }
+        Insert: {
+          brand?: string | null
+          briefing_date?: string
+          briefing_type: string
+          content: Json
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          brand?: string | null
+          briefing_date?: string
+          briefing_type?: string
+          content?: Json
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      ai_follow_up_log: {
+        Row: {
+          action_category: string | null
+          action_taken: string
+          brand: string | null
+          created_at: string
+          created_by: string | null
+          entity_id: string | null
+          entity_type: string
+          escalated: boolean | null
+          escalation_level: number | null
+          id: string
+          message_sent: string | null
+          metadata: Json | null
+          next_follow_up_date: string | null
+          region: string | null
+          result: string | null
+        }
+        Insert: {
+          action_category?: string | null
+          action_taken: string
+          brand?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string | null
+          entity_type: string
+          escalated?: boolean | null
+          escalation_level?: number | null
+          id?: string
+          message_sent?: string | null
+          metadata?: Json | null
+          next_follow_up_date?: string | null
+          region?: string | null
+          result?: string | null
+        }
+        Update: {
+          action_category?: string | null
+          action_taken?: string
+          brand?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          escalated?: boolean | null
+          escalation_level?: number | null
+          id?: string
+          message_sent?: string | null
+          metadata?: Json | null
+          next_follow_up_date?: string | null
+          region?: string | null
+          result?: string | null
+        }
+        Relationships: []
+      }
+      ai_follow_up_settings: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_enabled: boolean | null
+          settings: Json
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          settings?: Json
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          settings?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_kpi_snapshots: {
         Row: {
           active_stores: number | null
