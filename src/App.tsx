@@ -128,6 +128,7 @@ import StorePortal from "./pages/portal/StorePortal";
 import WholesalerPortal from "./pages/portal/WholesalerPortal";
 import ProductionPortal from "./pages/portal/ProductionPortal";
 import VAPortal from "./pages/portal/VAPortal";
+import RoleRouter from "./components/portal/RoleRouter";
 import PortalInvoiceDetail from "./pages/portal/PortalInvoiceDetail";
 import PortalStore from "./pages/portal/PortalStore";
 import PortalWholesale from "./pages/portal/PortalWholesale";
@@ -1360,72 +1361,24 @@ const App = () => (
                 }
               />
 
-              {/* Portal Routes */}
+              {/* Portal Routes - Role-Based Routing */}
               <Route path="/portal/login" element={<PortalLogin />} />
-              <Route
-                path="/portal"
-                element={
-                  <ProtectedRoute>
-                    <PortalDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/portal/invoices"
-                element={
-                  <ProtectedRoute>
-                    <PortalInvoices />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/portal/invoices/:id"
-                element={
-                  <ProtectedRoute>
-                    <PortalInvoiceDetail />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/portal/store"
-                element={
-                  <ProtectedRoute>
-                    <PortalStore />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/portal/wholesale"
-                element={
-                  <ProtectedRoute>
-                    <PortalWholesale />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/portal/influencer"
-                element={
-                  <ProtectedRoute>
-                    <PortalInfluencer />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/portal/biker"
-                element={
-                  <ProtectedRoute>
-                    <PortalBiker />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/portal/ambassador"
-                element={
-                  <ProtectedRoute>
-                    <PortalAmbassador />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/portal/register" element={<PortalRegister />} />
+              <Route path="/portal" element={<ProtectedRoute><RoleRouter /></ProtectedRoute>} />
+              <Route path="/portal/home" element={<ProtectedRoute><PortalHome /></ProtectedRoute>} />
+              <Route path="/portal/onboarding" element={<ProtectedRoute><PortalOnboarding /></ProtectedRoute>} />
+              <Route path="/portal/driver" element={<ProtectedRoute><DriverPortal /></ProtectedRoute>} />
+              <Route path="/portal/biker" element={<ProtectedRoute><BikerPortal /></ProtectedRoute>} />
+              <Route path="/portal/ambassador" element={<ProtectedRoute><AmbassadorPortal /></ProtectedRoute>} />
+              <Route path="/portal/store" element={<ProtectedRoute><StorePortal /></ProtectedRoute>} />
+              <Route path="/portal/wholesaler" element={<ProtectedRoute><WholesalerPortal /></ProtectedRoute>} />
+              <Route path="/portal/production" element={<ProtectedRoute><ProductionPortal /></ProtectedRoute>} />
+              <Route path="/portal/va" element={<ProtectedRoute><VAPortal /></ProtectedRoute>} />
+              <Route path="/portal/invoices" element={<ProtectedRoute><PortalInvoices /></ProtectedRoute>} />
+              <Route path="/portal/invoices/:id" element={<ProtectedRoute><PortalInvoiceDetail /></ProtectedRoute>} />
+              <Route path="/portal/wholesale" element={<ProtectedRoute><PortalWholesale /></ProtectedRoute>} />
+              <Route path="/portal/influencer" element={<ProtectedRoute><PortalInfluencer /></ProtectedRoute>} />
+              <Route path="/portal/dashboard" element={<ProtectedRoute><PortalDashboard /></ProtectedRoute>} />
 
               {/* HR Routes */}
               <Route
