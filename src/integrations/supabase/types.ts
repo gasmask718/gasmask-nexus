@@ -86,6 +86,152 @@ export type Database = {
           },
         ]
       }
+      advisor_action_log: {
+        Row: {
+          action_label: string
+          action_type: string
+          created_at: string
+          id: string
+          notes: string | null
+          priority: number | null
+          related_entity_id: string | null
+          related_entity_type: string | null
+          source_session_id: string | null
+          status: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          action_label: string
+          action_type: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          priority?: number | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          source_session_id?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          action_label?: string
+          action_type?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          priority?: number | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          source_session_id?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_action_log_source_session_id_fkey"
+            columns: ["source_session_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      advisor_scenarios: {
+        Row: {
+          ai_analysis: string | null
+          ai_recommendations: string[] | null
+          baseline_metrics: Json | null
+          created_at: string
+          id: string
+          inputs: Json | null
+          is_favorable: boolean | null
+          projected_metrics: Json | null
+          risk_rating: string | null
+          scenario_name: string
+          scenario_type: string
+          user_id: string | null
+        }
+        Insert: {
+          ai_analysis?: string | null
+          ai_recommendations?: string[] | null
+          baseline_metrics?: Json | null
+          created_at?: string
+          id?: string
+          inputs?: Json | null
+          is_favorable?: boolean | null
+          projected_metrics?: Json | null
+          risk_rating?: string | null
+          scenario_name: string
+          scenario_type: string
+          user_id?: string | null
+        }
+        Update: {
+          ai_analysis?: string | null
+          ai_recommendations?: string[] | null
+          baseline_metrics?: Json | null
+          created_at?: string
+          id?: string
+          inputs?: Json | null
+          is_favorable?: boolean | null
+          projected_metrics?: Json | null
+          risk_rating?: string | null
+          scenario_name?: string
+          scenario_type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      advisor_sessions: {
+        Row: {
+          action_items: Json | null
+          ai_recommendations: string[] | null
+          ai_summary: string | null
+          confidence_score: number | null
+          context_sources: string[] | null
+          created_at: string
+          id: string
+          input_prompt: string | null
+          mode: string | null
+          risk_level: string | null
+          session_type: string
+          time_window: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_items?: Json | null
+          ai_recommendations?: string[] | null
+          ai_summary?: string | null
+          confidence_score?: number | null
+          context_sources?: string[] | null
+          created_at?: string
+          id?: string
+          input_prompt?: string | null
+          mode?: string | null
+          risk_level?: string | null
+          session_type?: string
+          time_window?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_items?: Json | null
+          ai_recommendations?: string[] | null
+          ai_summary?: string | null
+          confidence_score?: number | null
+          context_sources?: string[] | null
+          created_at?: string
+          id?: string
+          input_prompt?: string | null
+          mode?: string | null
+          risk_level?: string | null
+          session_type?: string
+          time_window?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_command_logs: {
         Row: {
           affected_entity_ids: string[] | null
