@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { BusinessProvider } from "./contexts/BusinessContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { RequireRole } from "./components/security/RequireRole";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Stores from "./pages/Stores";
@@ -300,30 +301,7 @@ const App = () => (
               <Route path="/gasmask/communications" element={<ProtectedRoute><Layout><Communications /></Layout></ProtectedRoute>} />
               <Route path="/gasmask/settings" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
               
-              {/* Grabba Cluster Routes - with GrabbaLayout wrapper */}
-              <Route path="/grabba" element={<ProtectedRoute><Layout><GrabbaLayout><BrandPlaceholder /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/crm" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCRM /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/communication" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommunication /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/communications" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommunication /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/text-center" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaTextCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/email-center" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaEmailCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/call-center" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCallCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/communication-logs" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommunicationLogs /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/inventory" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaInventory /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/production" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaProduction /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/deliveries" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaDeliveries /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/ambassadors" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaAmbassadors /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/wholesale-platform" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaWholesalePlatform /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/finance" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaFinance /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/cluster" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaClusterDashboard /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/unified-upload" element={<ProtectedRoute><Layout><GrabbaLayout><UnifiedUploadCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/delivery-runs" element={<ProtectedRoute><Layout><GrabbaLayout><MultiBrandDelivery /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/ai-insights" element={<ProtectedRoute><Layout><GrabbaLayout><AIInsights /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/store-master/:id" element={<ProtectedRoute><Layout><GrabbaLayout><StoreMasterProfile /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/brand/:brand" element={<ProtectedRoute><Layout><GrabbaLayout><BrandCRM /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/brand/:brand/communications" element={<ProtectedRoute><Layout><GrabbaLayout><BrandCommunications /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/command-penthouse" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommandPenthouse /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/*" element={<ProtectedRoute><Layout><GrabbaLayout><BrandPlaceholder /></GrabbaLayout></Layout></ProtectedRoute>} />
+              {/* Grabba routes are now defined below with role-based access control */}
               
               {/* HotMama Routes */}
               <Route path="/hotmama/*" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
@@ -2204,53 +2182,53 @@ const App = () => (
                 }
               />
               {/* ═══════════════════════════════════════════════════════════════════════════ */}
-              {/* GRABBA EMPIRE — 8-Floor Skyscraper + Penthouse Routes                        */}
+              {/* GRABBA EMPIRE — 8-Floor Skyscraper + Penthouse Routes (Role Protected)       */}
               {/* ═══════════════════════════════════════════════════════════════════════════ */}
               
-              {/* 👑 PENTHOUSE — Command Center */}
-              <Route path="/grabba/command-penthouse" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommandPenthouse /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/cluster" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaClusterDashboard /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/ai-insights" element={<ProtectedRoute><Layout><GrabbaLayout><AIInsights /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/autopilot-console" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaAutopilotConsole /></GrabbaLayout></Layout></ProtectedRoute>} />
+              {/* 👑 PENTHOUSE — Command Center (Admin only, Manager read-only) */}
+              <Route path="/grabba/command-penthouse" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'accountant']} showLocked><Layout><GrabbaLayout><GrabbaCommandPenthouse /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/cluster" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee']} showLocked><Layout><GrabbaLayout><GrabbaClusterDashboard /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/ai-insights" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee']} showLocked><Layout><GrabbaLayout><AIInsights /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/autopilot-console" element={<ProtectedRoute><RequireRole allowedRoles={['admin']} showLocked><Layout><GrabbaLayout><GrabbaAutopilotConsole /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
               
               {/* 🏢 FLOOR 1 — CRM & Store Control */}
-              <Route path="/grabba/crm" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCRM /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/store-master/:id" element={<ProtectedRoute><Layout><GrabbaLayout><StoreMasterProfile /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/brand/:brand" element={<ProtectedRoute><Layout><GrabbaLayout><BrandCRM /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/crm" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'driver', 'csr', 'ambassador', 'accountant']}><Layout><GrabbaLayout><GrabbaCRM /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/store-master/:id" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'driver', 'csr']}><Layout><GrabbaLayout><StoreMasterProfile /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/brand/:brand" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'csr']}><Layout><GrabbaLayout><BrandCRM /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
               
               {/* 📞 FLOOR 2 — Communication Center */}
-              <Route path="/grabba/communication" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommunication /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/text-center" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaTextCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/email-center" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaEmailCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/call-center" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCallCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/communication-logs" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaCommunicationLogs /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/brand/:brand/communications" element={<ProtectedRoute><Layout><GrabbaLayout><BrandCommunications /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/communication" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'csr', 'driver']}><Layout><GrabbaLayout><GrabbaCommunication /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/text-center" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'csr']}><Layout><GrabbaLayout><GrabbaTextCenter /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/email-center" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'csr']}><Layout><GrabbaLayout><GrabbaEmailCenter /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/call-center" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'csr']}><Layout><GrabbaLayout><GrabbaCallCenter /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/communication-logs" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'csr']}><Layout><GrabbaLayout><GrabbaCommunicationLogs /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/brand/:brand/communications" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'csr']}><Layout><GrabbaLayout><BrandCommunications /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
               
               {/* 📦 FLOOR 3 — Inventory Engine */}
-              <Route path="/grabba/inventory" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaInventory /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/inventory" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'warehouse', 'driver', 'csr', 'accountant']}><Layout><GrabbaLayout><GrabbaInventory /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
               
               {/* 🚚 FLOOR 4 — Delivery & Drivers */}
-              <Route path="/grabba/deliveries" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaDeliveries /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/delivery-runs" element={<ProtectedRoute><Layout><GrabbaLayout><MultiBrandDelivery /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/deliveries" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'driver', 'biker', 'warehouse', 'csr']}><Layout><GrabbaLayout><GrabbaDeliveries /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/delivery-runs" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'driver', 'biker']}><Layout><GrabbaLayout><MultiBrandDelivery /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
               
               {/* 💰 FLOOR 5 — Finance & Orders */}
-              <Route path="/grabba/finance" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaFinance /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/finance" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'accountant', 'store', 'wholesale', 'wholesaler', 'warehouse', 'customer', 'csr']}><Layout><GrabbaLayout><GrabbaFinance /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
               
               {/* 🏭 FLOOR 6 — Production & Machinery */}
-              <Route path="/grabba/production" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaProduction /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/production" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'warehouse', 'accountant']}><Layout><GrabbaLayout><GrabbaProduction /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
               
               {/* 🌎 FLOOR 7 — Wholesale Marketplace */}
-              <Route path="/grabba/wholesale-platform" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaWholesalePlatform /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/upload-center" element={<ProtectedRoute><Layout><GrabbaLayout><UnifiedUploadCenter /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/wholesale-platform" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'wholesale', 'wholesaler', 'warehouse', 'csr', 'accountant']}><Layout><GrabbaLayout><GrabbaWholesalePlatform /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/upload-center" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'wholesale', 'wholesaler']}><Layout><GrabbaLayout><UnifiedUploadCenter /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
               
               {/* 👥 FLOOR 8 — Ambassadors & Reps */}
-              <Route path="/grabba/ambassadors" element={<ProtectedRoute><Layout><GrabbaLayout><GrabbaAmbassadors /></GrabbaLayout></Layout></ProtectedRoute>} />
+              <Route path="/grabba/ambassadors" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee', 'ambassador', 'csr', 'accountant']}><Layout><GrabbaLayout><GrabbaAmbassadors /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
               
-              {/* 🤖 AI OPERATIONS FLOOR */}
-              <Route path="/grabba/ai" element={<ProtectedRoute><Layout><GrabbaLayout><AIOperationsDashboard /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/ai/tasks" element={<ProtectedRoute><Layout><GrabbaLayout><AITasks /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/ai/predict" element={<ProtectedRoute><Layout><GrabbaLayout><AIPredictions /></GrabbaLayout></Layout></ProtectedRoute>} />
-              <Route path="/grabba/ai/alerts" element={<ProtectedRoute><Layout><GrabbaLayout><AIAlerts /></GrabbaLayout></Layout></ProtectedRoute>} />
+              {/* 🤖 AI OPERATIONS FLOOR (Admin full, Employee read-only) */}
+              <Route path="/grabba/ai" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee']} showLocked><Layout><GrabbaLayout><AIOperationsDashboard /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/ai/tasks" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee']} showLocked><Layout><GrabbaLayout><AITasks /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/ai/predict" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee']} showLocked><Layout><GrabbaLayout><AIPredictions /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
+              <Route path="/grabba/ai/alerts" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee']} showLocked><Layout><GrabbaLayout><AIAlerts /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
 
               <Route
                 path="/scalati/*"

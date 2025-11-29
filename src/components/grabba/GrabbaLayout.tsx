@@ -2,34 +2,41 @@ import { ReactNode } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { GrabbaBrandProvider } from '@/contexts/GrabbaBrandContext';
 import { GRABBA_PENTHOUSE, GRABBA_FLOORS, getFloorByRoute } from '@/config/grabbaSkyscraper';
+import { useFloorPermissions } from '@/hooks/useFloorPermissions';
+import { useReadOnly } from '@/components/security/RequireRole';
 import { cn } from '@/lib/utils';
-import { Crown, ChevronRight, Building } from 'lucide-react';
+import { Crown, ChevronRight, Building, Lock, Eye } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GRABBA LAYOUT WRAPPER
 // Wraps all Grabba pages with unified brand context + floor breadcrumb
+// Now includes role-based permission indicators
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface GrabbaLayoutProps {
   children: ReactNode;
 }
 
-// Floor indicator breadcrumb component
+// Floor indicator breadcrumb component with permission awareness
 function FloorBreadcrumb() {
   const location = useLocation();
   const currentFloor = getFloorByRoute(location.pathname);
+  const { getFloorAccess, loading } = useFloorPermissions();
+  const isReadOnly = useReadOnly();
   
-  if (!currentFloor) return null;
+  if (!currentFloor || loading) return null;
   
   const isPenthouse = currentFloor.id === 'penthouse';
   const floorIndex = GRABBA_FLOORS.findIndex(f => f.id === currentFloor.id);
   const FloorIcon = currentFloor.icon;
+  const access = getFloorAccess(currentFloor.id);
 
   return (
     <TooltipProvider>
@@ -74,6 +81,21 @@ function FloorBreadcrumb() {
             <p className="text-xs text-muted-foreground mt-1">{currentFloor.description}</p>
           </TooltipContent>
         </Tooltip>
+
+        {/* Permission indicator */}
+        {(isReadOnly || access.permission === 'read') && (
+          <Badge variant="outline" className="ml-auto text-xs flex items-center gap-1 bg-amber-500/10 text-amber-600 border-amber-500/30">
+            <Eye className="h-3 w-3" />
+            Read Only
+          </Badge>
+        )}
+        
+        {!access.canCreate && !isReadOnly && access.permission === 'full' && (
+          <Badge variant="outline" className="ml-auto text-xs flex items-center gap-1">
+            <Lock className="h-3 w-3" />
+            Limited Access
+          </Badge>
+        )}
       </div>
     </TooltipProvider>
   );
