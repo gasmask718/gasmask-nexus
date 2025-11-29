@@ -1,11 +1,12 @@
 import { ReactNode, useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { GrabbaBrandProvider, useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { GRABBA_PENTHOUSE, GRABBA_FLOORS, getFloorByRoute } from '@/config/grabbaSkyscraper';
 import { useFloorPermissions } from '@/hooks/useFloorPermissions';
 import { useReadOnly } from '@/components/security/RequireRole';
+import { useUserRole } from '@/hooks/useUserRole';
 import { cn } from '@/lib/utils';
-import { Crown, ChevronRight, Building, Lock, Eye, Activity } from 'lucide-react';
+import { Crown, ChevronRight, Building, Lock, Eye, Activity, Mic } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -13,10 +14,12 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { LiveTicker } from '@/components/activity/LiveTicker';
 import { ActivityTray } from '@/components/activity/ActivityTray';
 import { ActivityFeedPanel } from '@/components/activity/ActivityFeedPanel';
 import { AutomationIndicator } from '@/components/automation';
+import { VoiceOverlay } from '@/components/voice';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GRABBA LAYOUT WRAPPER
@@ -110,14 +113,35 @@ function FloorBreadcrumb() {
   );
 }
 
+// Roles that can use voice commands
+const VOICE_ENABLED_ROLES = ['admin', 'employee', 'csr', 'warehouse', 'driver', 'biker'];
+
 function GrabbaLayoutContent({ children }: GrabbaLayoutProps) {
   const [feedOpen, setFeedOpen] = useState(false);
+  const [voiceOverlayOpen, setVoiceOverlayOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const currentFloor = getFloorByRoute(location.pathname);
   const { selectedBrand } = useGrabbaBrand();
+  const { role } = useUserRole();
+
+  const canUseVoice = VOICE_ENABLED_ROLES.includes(role || '');
+
+  const handleVoiceCommand = (text: string) => {
+    if (!text.trim()) return;
+    
+    // If already on command console, the component will handle the command
+    // Otherwise navigate with the command as a param
+    if (location.pathname === '/grabba/command-console') {
+      // Dispatch a custom event that the console can listen to
+      window.dispatchEvent(new CustomEvent('grabba-voice-command', { detail: text }));
+    } else {
+      navigate(`/grabba/command-console?voiceCommand=${encodeURIComponent(text)}`);
+    }
+  };
 
   return (
-    <div className="min-h-full">
+    <div className="min-h-full relative">
       {/* Live Activity Ticker */}
       <LiveTicker
         brand={selectedBrand}
@@ -127,6 +151,27 @@ function GrabbaLayoutContent({ children }: GrabbaLayoutProps) {
       
       <FloorBreadcrumb />
       {children}
+      
+      {/* Global Voice Mic Button (top-right) */}
+      {canUseVoice && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="fixed top-20 right-4 z-40 h-10 w-10 rounded-full shadow-lg bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                onClick={() => setVoiceOverlayOpen(true)}
+              >
+                <Mic className="h-5 w-5 text-primary" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              Voice Command
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
       
       {/* Floating Activity Tray */}
       <ActivityTray
@@ -140,6 +185,13 @@ function GrabbaLayoutContent({ children }: GrabbaLayoutProps) {
         onClose={() => setFeedOpen(false)}
         defaultFloor={currentFloor?.id}
         defaultBrand={selectedBrand}
+      />
+
+      {/* Voice Overlay */}
+      <VoiceOverlay
+        isOpen={voiceOverlayOpen}
+        onClose={() => setVoiceOverlayOpen(false)}
+        onCommand={handleVoiceCommand}
       />
     </div>
   );
