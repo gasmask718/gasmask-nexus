@@ -334,7 +334,7 @@ export default function GrabbaDeliveries() {
                   <CardTitle>Today's Routes</CardTitle>
                   <CardDescription>Active delivery and collection routes</CardDescription>
                 </div>
-                <Button size="sm" className="gap-2">
+                <Button size="sm" className="gap-2" onClick={() => setCreateRouteOpen(true)}>
                   <Plus className="h-4 w-4" /> Create Route
                 </Button>
               </CardHeader>
@@ -343,7 +343,7 @@ export default function GrabbaDeliveries() {
                   <div className="text-center py-8">
                     <Route className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
                     <p className="text-muted-foreground">No routes scheduled for today</p>
-                    <Button variant="outline" className="mt-4">Create First Route</Button>
+                    <Button variant="outline" className="mt-4" onClick={() => setCreateRouteOpen(true)}>Create First Route</Button>
                   </div>
                 ) : (
                   <div className="space-y-4 max-h-[600px] overflow-y-auto">
@@ -838,6 +838,27 @@ export default function GrabbaDeliveries() {
         onConfirm={async () => {
           if (selectedDriver) await deleteDriverMutation.mutateAsync(selectedDriver.id);
         }}
+      />
+      
+      {/* Create Route Modal */}
+      <EntityModal
+        open={createRouteOpen}
+        onOpenChange={setCreateRouteOpen}
+        title="Create New Route"
+        fields={routeFields}
+        onSubmit={async (data) => {
+          const { error } = await supabase
+            .from('driver_routes')
+            .insert({ 
+              driver_id: data.driver_id, 
+              route_date: data.route_date || new Date().toISOString().split('T')[0],
+              status: 'pending' 
+            } as any);
+          if (error) throw error;
+          queryClient.invalidateQueries({ queryKey: ['grabba-routes-today'] });
+          toast.success('Route created successfully');
+        }}
+        mode="create"
       />
     </div>
   );
