@@ -4,7 +4,10 @@ import {
   LayoutDashboard, Brain, Shield, Phone, Mail, Target, Award,
   Home, ShoppingCart, Wallet, UserCircle, ClipboardList, Briefcase,
   Globe, Zap, PieChart, Database, Cog, Bell, Calculator, Store,
-  Bike, Car, Star, Heart, TrendingUp, Activity, Calendar, type LucideIcon
+  Bike, Car, Star, Heart, TrendingUp, Activity, Calendar, 
+  CheckSquare, Clipboard, Rocket, Gift, CreditCard, Receipt,
+  Banknote, LineChart, Bot, Cpu, Eye, Megaphone, UserPlus,
+  type LucideIcon
 } from 'lucide-react';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -12,7 +15,7 @@ import {
 // Single source of truth for all navigation across the entire platform
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// Role Types - includes legacy 'store_owner' for backward compatibility
+// Role Types
 export type OSRole = 
   | 'ceo' 
   | 'admin' 
@@ -20,7 +23,7 @@ export type OSRole =
   | 'driver' 
   | 'biker' 
   | 'store' 
-  | 'store_owner'  // Legacy alias for 'store'
+  | 'store_owner'
   | 'wholesaler' 
   | 'ambassador' 
   | 'production' 
@@ -60,7 +63,7 @@ export interface OSFloor {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 👑 PENTHOUSE — CEO / FOUNDER COMMAND CENTER
+// 👑 PENTHOUSE — COMMAND CENTER
 // ═══════════════════════════════════════════════════════════════════════════════
 export const PENTHOUSE: OSFloor = {
   id: 'penthouse',
@@ -81,23 +84,24 @@ export const PENTHOUSE: OSFloor = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🏢 FLOOR 1 — CRM
+// 🏢 FLOOR 1 — CRM & STORE MASTER
 // ═══════════════════════════════════════════════════════════════════════════════
 export const FLOOR_1_CRM: OSFloor = {
   id: 'floor-1-crm',
-  name: 'Floor 1: CRM',
+  name: 'Floor 1: CRM & Store Master',
   icon: Building2,
   emoji: '🏢',
   description: 'Customer relationships, stores, contacts, and sales pipeline',
   roles: ['ceo', 'admin', 'va', 'ambassador'],
   items: [
     { id: 'crm-hub', label: 'CRM Hub', path: '/grabba/crm', icon: Building2, roles: ['ceo', 'admin', 'va'] },
-    { id: 'stores', label: 'Stores', path: '/stores', icon: Store, roles: ['ceo', 'admin', 'va', 'driver'] },
+    { id: 'store-master', label: 'Store Master', path: '/stores', icon: Store, roles: ['ceo', 'admin', 'va', 'driver'] },
     { id: 'crm-contacts', label: 'Contacts', path: '/crm/contacts', icon: Users, roles: ['ceo', 'admin', 'va'] },
     { id: 'crm-customers', label: 'Customers', path: '/crm/customers', icon: UserCircle, roles: ['ceo', 'admin', 'va'] },
     { id: 'companies', label: 'Companies', path: '/companies', icon: Briefcase, roles: ['ceo', 'admin', 'va'] },
     { id: 'sales-prospects', label: 'Sales Prospects', path: '/sales/prospects', icon: Target, roles: ['ceo', 'admin', 'va'] },
     { id: 'sales-report', label: 'Sales Report', path: '/sales/report', icon: BarChart3, roles: ['ceo', 'admin', 'va'] },
+    { id: 'store-performance', label: 'Store Performance', path: '/store-performance', icon: TrendingUp, roles: ['ceo', 'admin', 'va'] },
   ],
 };
 
@@ -109,15 +113,17 @@ export const FLOOR_2_OPERATIONS: OSFloor = {
   name: 'Floor 2: Operations',
   icon: MessageSquare,
   emoji: '📞',
-  description: 'Communications, automations, and operational workflows',
+  description: 'Communications, call center, tasks, and workforce management',
   roles: ['ceo', 'admin', 'va'],
   items: [
     { id: 'communication-hub', label: 'Communication Hub', path: '/grabba/communication', icon: MessageSquare, roles: ['ceo', 'admin', 'va'] },
     { id: 'text-center', label: 'Text Center', path: '/grabba/text-center', icon: Phone, roles: ['ceo', 'admin', 'va'] },
     { id: 'email-center', label: 'Email Center', path: '/grabba/email-center', icon: Mail, roles: ['ceo', 'admin', 'va'] },
     { id: 'call-center', label: 'Call Center', path: '/grabba/call-center', icon: Phone, roles: ['ceo', 'admin', 'va'] },
+    { id: 'task-center', label: 'Task Center', path: '/tasks', icon: CheckSquare, roles: ['ceo', 'admin', 'va'] },
     { id: 'automation', label: 'Automation', path: '/grabba/autopilot', icon: Zap, roles: ['ceo', 'admin'] },
     { id: 'daily-briefing', label: 'Daily Briefing', path: '/grabba/daily-briefing', icon: Calendar, roles: ['ceo', 'admin', 'va'] },
+    { id: 'workforce-tasks', label: 'Workforce Tasks', path: '/workforce/tasks', icon: Clipboard, roles: ['ceo', 'admin', 'va'] },
   ],
 };
 
@@ -129,34 +135,38 @@ export const FLOOR_3_INVENTORY: OSFloor = {
   name: 'Floor 3: Inventory',
   icon: Package,
   emoji: '📦',
-  description: 'Manufacturing, inventory tracking, and stock management',
+  description: 'Grabba inventory, tube counts, stock overview',
   roles: ['ceo', 'admin', 'va', 'production'],
   items: [
-    { id: 'production', label: 'Production', path: '/grabba/production', icon: Factory, roles: ['ceo', 'admin', 'va', 'production'] },
-    { id: 'inventory', label: 'Inventory', path: '/grabba/inventory', icon: Package, roles: ['ceo', 'admin', 'va', 'production'] },
+    { id: 'grabba-inventory', label: 'Grabba Inventory', path: '/grabba/inventory', icon: Package, roles: ['ceo', 'admin', 'va', 'production'] },
+    { id: 'tube-counts', label: 'Tube Counts', path: '/grabba/production', icon: Factory, roles: ['ceo', 'admin', 'va', 'production'] },
+    { id: 'stock-overview', label: 'Stock Overview', path: '/inventory/stock', icon: Boxes, roles: ['ceo', 'admin', 'va'] },
     { id: 'products', label: 'Products', path: '/products', icon: Boxes, roles: ['ceo', 'admin', 'va'] },
-    { id: 'warehouse', label: 'Warehouse Brain', path: '/os/warehouse', icon: Factory, roles: ['ceo', 'admin'] },
+    { id: 'warehouse-brain', label: 'Warehouse Brain', path: '/os/warehouse', icon: Factory, roles: ['ceo', 'admin'] },
     { id: 'procurement', label: 'Procurement', path: '/os/procurement', icon: Database, roles: ['ceo', 'admin'] },
+    { id: 'low-stock-alerts', label: 'Low Stock Alerts', path: '/inventory/alerts', icon: Bell, badge: 'Live', roles: ['ceo', 'admin', 'va'] },
   ],
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🚴 FLOOR 4 — DELIVERY / ROUTING
+// 🚴 FLOOR 4 — DELIVERY & ROUTING
 // ═══════════════════════════════════════════════════════════════════════════════
 export const FLOOR_4_DELIVERY: OSFloor = {
   id: 'floor-4-delivery',
-  name: 'Floor 4: Delivery / Routing',
+  name: 'Floor 4: Delivery & Routing',
   icon: Truck,
   emoji: '🚴',
-  description: 'Delivery operations, routes, drivers, and bikers',
+  description: 'Drivers, bikers, route plans, and delivery operations',
   roles: ['ceo', 'admin', 'va', 'driver', 'biker'],
   items: [
     { id: 'deliveries', label: 'Deliveries', path: '/grabba/deliveries', icon: Truck, roles: ['ceo', 'admin', 'va'] },
-    { id: 'routes', label: 'Routes', path: '/routes', icon: Map, roles: ['ceo', 'admin', 'va', 'driver'] },
+    { id: 'driver-management', label: 'Driver Management', path: '/driver', icon: Car, roles: ['ceo', 'admin', 'va'] },
+    { id: 'biker-management', label: 'Biker Management', path: '/biker', icon: Bike, roles: ['ceo', 'admin', 'va'] },
+    { id: 'routes', label: 'Route Plans', path: '/routes', icon: Map, roles: ['ceo', 'admin', 'va', 'driver'] },
     { id: 'route-optimizer', label: 'Route Optimizer', path: '/route-optimizer', icon: Target, roles: ['ceo', 'admin', 'va'] },
     { id: 'live-map', label: 'Live Map', path: '/operations/live-map', icon: Globe, roles: ['ceo', 'admin', 'va'] },
-    { id: 'driver-management', label: 'Driver Management', path: '/driver', icon: Car, roles: ['ceo', 'admin', 'va'] },
-    { id: 'biker-payouts', label: 'Biker Payouts', path: '/biker-payouts', icon: Bike, roles: ['ceo', 'admin', 'va'] },
+    { id: 'biker-payouts', label: 'Biker Payouts', path: '/biker-payouts', icon: Wallet, roles: ['ceo', 'admin', 'va'] },
+    { id: 'driver-payouts', label: 'Driver Payouts', path: '/driver-payouts', icon: Wallet, roles: ['ceo', 'admin', 'va'] },
   ],
 };
 
@@ -168,13 +178,17 @@ export const FLOOR_5_MARKETPLACE: OSFloor = {
   name: 'Floor 5: Marketplace',
   icon: ShoppingCart,
   emoji: '🏬',
-  description: 'Wholesale operations, marketplace, and fulfillment',
+  description: 'Marketplace admin, product catalog, orders, shipping',
   roles: ['ceo', 'admin', 'va', 'wholesaler'],
   items: [
+    { id: 'marketplace-admin', label: 'Marketplace Admin', path: '/portal/marketplace-admin', icon: Cog, roles: ['ceo', 'admin'] },
+    { id: 'product-catalog', label: 'Product Catalog', path: '/marketplace/products', icon: Boxes, roles: ['ceo', 'admin', 'va'] },
+    { id: 'marketplace-orders', label: 'Orders', path: '/marketplace/orders', icon: ClipboardList, roles: ['ceo', 'admin', 'va'] },
+    { id: 'shipping-center', label: 'Shipping Center', path: '/marketplace/shipping', icon: Package, roles: ['ceo', 'admin', 'va'] },
     { id: 'wholesale-platform', label: 'Wholesale Platform', path: '/grabba/wholesale-platform', icon: Boxes, roles: ['ceo', 'admin', 'va'] },
-    { id: 'marketplace', label: 'Marketplace', path: '/wholesale/marketplace', icon: ShoppingCart, roles: ['ceo', 'admin', 'va', 'wholesaler'] },
+    { id: 'shop-front', label: 'Shop Front', path: '/shop', icon: ShoppingCart, roles: ['ceo', 'admin', 'va'] },
     { id: 'fulfillment', label: 'Fulfillment', path: '/wholesale/fulfillment', icon: Package, roles: ['ceo', 'admin', 'va'] },
-    { id: 'marketplace-shop', label: 'Shop Front', path: '/shop', icon: ShoppingCart, roles: ['ceo', 'admin', 'va'] },
+    { id: 'national-wholesale', label: 'National Wholesale', path: '/portal/national-wholesale', icon: Globe, roles: ['ceo', 'admin'] },
   ],
 };
 
@@ -186,12 +200,16 @@ export const FLOOR_6_AMBASSADORS: OSFloor = {
   name: 'Floor 6: Ambassadors',
   icon: Users,
   emoji: '🤝',
-  description: 'Ambassador network, commissions, and referrals',
+  description: 'Ambassador CRM, commissions, signup center',
   roles: ['ceo', 'admin', 'va', 'ambassador'],
   items: [
-    { id: 'ambassadors', label: 'Ambassadors', path: '/grabba/ambassadors', icon: Users, roles: ['ceo', 'admin', 'va'] },
+    { id: 'ambassador-crm', label: 'Ambassador CRM', path: '/grabba/ambassadors', icon: Users, roles: ['ceo', 'admin', 'va'] },
+    { id: 'ambassador-commissions', label: 'Commissions', path: '/ambassador-commissions', icon: DollarSign, roles: ['ceo', 'admin', 'va'] },
+    { id: 'ambassador-signup', label: 'Signup Center', path: '/ambassador-signup', icon: UserPlus, roles: ['ceo', 'admin', 'va'] },
     { id: 'ambassador-regions', label: 'Ambassador Regions', path: '/ambassador-regions', icon: Map, roles: ['ceo', 'admin', 'va'] },
     { id: 'ambassador-payouts', label: 'Ambassador Payouts', path: '/ambassador-payouts', icon: Wallet, roles: ['ceo', 'admin', 'va'] },
+    { id: 'ambassador-leaderboard', label: 'Leaderboard', path: '/ambassador-leaderboard', icon: Award, roles: ['ceo', 'admin', 'va'] },
+    { id: 'referral-tracking', label: 'Referral Tracking', path: '/referral-tracking', icon: Target, roles: ['ceo', 'admin', 'va'] },
   ],
 };
 
@@ -203,15 +221,17 @@ export const FLOOR_7_ACCOUNTING: OSFloor = {
   name: 'Floor 7: Accounting',
   icon: DollarSign,
   emoji: '💰',
-  description: 'Billing, invoices, payouts, and financial analytics',
+  description: 'Business ledger, personal finance, payroll',
   roles: ['ceo', 'admin', 'va', 'accountant'],
   items: [
-    { id: 'finance-hub', label: 'Finance Hub', path: '/grabba/finance', icon: DollarSign, roles: ['ceo', 'admin', 'va', 'accountant'] },
-    { id: 'billing', label: 'Billing Center', path: '/billing-center', icon: FileText, roles: ['ceo', 'admin', 'va', 'accountant'] },
+    { id: 'business-ledger', label: 'Business Ledger', path: '/grabba/finance', icon: Receipt, roles: ['ceo', 'admin', 'va', 'accountant'] },
+    { id: 'personal-finance', label: 'Personal Finance', path: '/grabba/personal-finance', icon: Wallet, roles: ['ceo', 'admin'] },
+    { id: 'payroll', label: 'Payroll', path: '/payroll', icon: Banknote, roles: ['ceo', 'admin', 'accountant'] },
+    { id: 'billing-center', label: 'Billing Center', path: '/billing-center', icon: CreditCard, roles: ['ceo', 'admin', 'va', 'accountant'] },
     { id: 'invoices', label: 'Invoices', path: '/billing/invoices', icon: FileText, roles: ['ceo', 'admin', 'va', 'accountant'] },
-    { id: 'unpaid-accounts', label: 'Unpaid Accounts', path: '/unpaid-accounts', icon: Bell, roles: ['ceo', 'admin', 'va'] },
-    { id: 'payroll', label: 'Payroll', path: '/payroll', icon: Calculator, roles: ['ceo', 'admin', 'accountant'] },
-    { id: 'economic-analytics', label: 'Economic Analytics', path: '/economic-analytics', icon: TrendingUp, roles: ['ceo', 'admin'] },
+    { id: 'unpaid-accounts', label: 'Unpaid Accounts', path: '/unpaid-accounts', icon: Bell, badge: 'Alert', roles: ['ceo', 'admin', 'va'] },
+    { id: 'economic-analytics', label: 'Economic Analytics', path: '/economic-analytics', icon: LineChart, roles: ['ceo', 'admin'] },
+    { id: 'financial-advisor', label: 'Financial Advisor', path: '/grabba/advisor-penthouse', icon: Brain, roles: ['ceo', 'admin'] },
   ],
 };
 
@@ -223,24 +243,24 @@ export const FLOOR_8_INTELLIGENCE: OSFloor = {
   name: 'Floor 8: Intelligence / AI',
   icon: Brain,
   emoji: '🤖',
-  description: 'AI workers, automations, playbooks, analytics, and intelligence',
+  description: 'AI copilot, AI workforce, insights',
   roles: ['ceo', 'admin', 'va'],
   items: [
-    { id: 'ai-workforce', label: 'AI Workforce', path: '/ai/workforce', icon: Brain, roles: ['ceo', 'admin', 'va'] },
-    { id: 'ai-operations', label: 'AI Operations', path: '/grabba/ai', icon: Activity, roles: ['ceo', 'admin'] },
+    { id: 'ai-copilot', label: 'AI Copilot', path: '/grabba/ai', icon: Bot, roles: ['ceo', 'admin', 'va'] },
+    { id: 'ai-workforce', label: 'AI Workforce', path: '/ai/workforce', icon: Cpu, roles: ['ceo', 'admin', 'va'] },
+    { id: 'ai-insights', label: 'AI Insights', path: '/grabba/ai-insights', icon: Eye, roles: ['ceo', 'admin'] },
     { id: 'ai-playbooks', label: 'AI Playbooks', path: '/grabba/ai-playbooks', icon: ClipboardList, roles: ['ceo', 'admin'] },
     { id: 'ai-routines', label: 'AI Routines', path: '/grabba/ai-routines', icon: Cog, roles: ['ceo', 'admin'] },
     { id: 'risk-radar', label: 'Risk Radar', path: '/grabba/risk-radar', icon: Shield, roles: ['ceo', 'admin'] },
     { id: 'analytics', label: 'Analytics', path: '/analytics', icon: BarChart3, roles: ['ceo', 'admin', 'va'] },
-    { id: 'store-performance', label: 'Store Performance', path: '/store-performance', icon: TrendingUp, roles: ['ceo', 'admin', 'va'] },
-    { id: 'expansion', label: 'Expansion', path: '/expansion', icon: Globe, roles: ['ceo', 'admin'] },
+    { id: 'expansion', label: 'Expansion', path: '/expansion', icon: Rocket, roles: ['ceo', 'admin'] },
     { id: 'territories', label: 'Territories', path: '/territories', icon: Map, roles: ['ceo', 'admin', 'va'] },
     { id: 'leaderboard', label: 'Leaderboard', path: '/leaderboard', icon: Award, roles: ['ceo', 'admin', 'va'] },
   ],
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 📋 HR & WORKFORCE
+// 📋 HR & WORKFORCE FLOOR
 // ═══════════════════════════════════════════════════════════════════════════════
 export const FLOOR_HR: OSFloor = {
   id: 'floor-hr',
@@ -250,16 +270,17 @@ export const FLOOR_HR: OSFloor = {
   description: 'Employees, hiring, onboarding, and HR management',
   roles: ['ceo', 'admin'],
   items: [
-    { id: 'hr', label: 'HR Dashboard', path: '/hr', icon: Briefcase, roles: ['ceo', 'admin'] },
+    { id: 'hr-dashboard', label: 'HR Dashboard', path: '/hr', icon: Briefcase, roles: ['ceo', 'admin'] },
     { id: 'employees', label: 'Employees', path: '/hr/employees', icon: Users, roles: ['ceo', 'admin'] },
     { id: 'applicants', label: 'Applicants', path: '/hr/applicants', icon: UserCircle, roles: ['ceo', 'admin'] },
     { id: 'interviews', label: 'Interviews', path: '/hr/interviews', icon: Calendar, roles: ['ceo', 'admin'] },
     { id: 'hr-payroll', label: 'HR Payroll', path: '/hr/payroll', icon: DollarSign, roles: ['ceo', 'admin'] },
+    { id: 'onboarding', label: 'Onboarding', path: '/hr/onboarding', icon: Rocket, roles: ['ceo', 'admin'] },
   ],
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MAIN OS FLOORS (Ordered Array)
+// MAIN OS FLOORS ARRAY
 // ═══════════════════════════════════════════════════════════════════════════════
 export const OS_FLOORS: OSFloor[] = [
   PENTHOUSE,
@@ -282,11 +303,13 @@ export const SECTION_MARKETPLACE_ADMIN: OSFloor = {
   name: 'Marketplace Admin',
   icon: ShoppingCart,
   emoji: '🛒',
-  description: 'B2C marketplace, customers, orders, and fulfillment',
-  roles: ['ceo', 'admin', 'va'],
+  description: 'Marketplace management and administration',
+  roles: ['ceo', 'admin'],
   items: [
-    { id: 'marketplace-admin', label: 'Marketplace Admin', path: '/portal/marketplace-admin', icon: Cog, roles: ['ceo', 'admin'] },
-    { id: 'national-wholesale', label: 'National Wholesale', path: '/portal/national-wholesale', icon: Globe, roles: ['ceo', 'admin'] },
+    { id: 'mp-admin-dashboard', label: 'Admin Dashboard', path: '/portal/marketplace-admin', icon: Cog, roles: ['ceo', 'admin'] },
+    { id: 'mp-national-wholesale', label: 'National Wholesale', path: '/portal/national-wholesale', icon: Globe, roles: ['ceo', 'admin'] },
+    { id: 'mp-order-management', label: 'Order Management', path: '/marketplace/orders', icon: ClipboardList, roles: ['ceo', 'admin'] },
+    { id: 'mp-promotions', label: 'Promotions', path: '/marketplace/promotions', icon: Gift, roles: ['ceo', 'admin'] },
   ],
 };
 
@@ -295,13 +318,14 @@ export const SECTION_ACCOUNTING: OSFloor = {
   name: 'Accounting OS',
   icon: Calculator,
   emoji: '💳',
-  description: 'Financial dashboards, personal finance, and accounting tools',
+  description: 'Financial dashboards and accounting tools',
   roles: ['ceo', 'admin', 'accountant'],
   items: [
-    { id: 'financial-dashboard', label: 'Financial Dashboard', path: '/grabba/financial-dashboard', icon: DollarSign, roles: ['ceo', 'admin', 'accountant'] },
-    { id: 'personal-finance', label: 'Personal Finance', path: '/grabba/personal-finance', icon: Wallet, roles: ['ceo', 'admin'] },
-    { id: 'payroll-manager', label: 'Payroll Manager', path: '/grabba/payroll-manager', icon: Calculator, roles: ['ceo', 'admin', 'accountant'] },
-    { id: 'advisor-penthouse-2', label: 'Financial Advisor', path: '/grabba/advisor-penthouse', icon: Brain, roles: ['ceo', 'admin'] },
+    { id: 'acc-financial-dashboard', label: 'Financial Dashboard', path: '/grabba/financial-dashboard', icon: DollarSign, roles: ['ceo', 'admin', 'accountant'] },
+    { id: 'acc-personal-finance', label: 'Personal Finance', path: '/grabba/personal-finance', icon: Wallet, roles: ['ceo', 'admin'] },
+    { id: 'acc-payroll-manager', label: 'Payroll Manager', path: '/grabba/payroll-manager', icon: Calculator, roles: ['ceo', 'admin', 'accountant'] },
+    { id: 'acc-financial-advisor', label: 'Financial Advisor', path: '/grabba/advisor-penthouse', icon: Brain, roles: ['ceo', 'admin'] },
+    { id: 'acc-expense-tracker', label: 'Expense Tracker', path: '/accounting/expenses', icon: Receipt, roles: ['ceo', 'admin', 'accountant'] },
   ],
 };
 
@@ -313,9 +337,10 @@ export const SECTION_GLOBAL: OSFloor = {
   description: 'Holdings, assets, and global administration',
   roles: ['ceo', 'admin'],
   items: [
-    { id: 'holdings-overview', label: 'Holdings Overview', path: '/holdings', icon: Building2, roles: ['ceo', 'admin'] },
-    { id: 'holdings-assets', label: 'Holdings Assets', path: '/holdings/assets', icon: Boxes, roles: ['ceo', 'admin'] },
-    { id: 'brand-dashboard', label: 'Brand Dashboard', path: '/brand-dashboard', icon: Star, roles: ['ceo', 'admin'] },
+    { id: 'global-holdings', label: 'Holdings Overview', path: '/holdings', icon: Building2, roles: ['ceo', 'admin'] },
+    { id: 'global-assets', label: 'Holdings Assets', path: '/holdings/assets', icon: Boxes, roles: ['ceo', 'admin'] },
+    { id: 'global-brand-dashboard', label: 'Brand Dashboard', path: '/brand-dashboard', icon: Star, roles: ['ceo', 'admin'] },
+    { id: 'global-translations', label: 'Translations', path: '/translations', icon: Globe, roles: ['ceo', 'admin'] },
   ],
 };
 
@@ -331,13 +356,14 @@ export const SECTION_REAL_ESTATE: OSFloor = {
     { id: 're-leads', label: 'RE Leads', path: '/real-estate/leads', icon: Target, roles: ['ceo', 'admin'] },
     { id: 're-pipeline', label: 'RE Pipeline', path: '/real-estate/pipeline', icon: TrendingUp, roles: ['ceo', 'admin'] },
     { id: 're-investors', label: 'Investors', path: '/real-estate/investors', icon: Users, roles: ['ceo', 'admin'] },
+    { id: 're-properties', label: 'Properties', path: '/real-estate/properties', icon: Building2, roles: ['ceo', 'admin'] },
   ],
 };
 
 export const SECTION_POD: OSFloor = {
   id: 'section-pod',
   name: 'Print on Demand',
-  icon: Boxes,
+  icon: Megaphone,
   emoji: '🎨',
   description: 'POD designs, mockups, and scaling',
   roles: ['ceo', 'admin'],
@@ -346,6 +372,7 @@ export const SECTION_POD: OSFloor = {
     { id: 'pod-designs', label: 'Designs', path: '/pod/designs', icon: Star, roles: ['ceo', 'admin'] },
     { id: 'pod-mockups', label: 'Mockups', path: '/pod/mockups', icon: Package, roles: ['ceo', 'admin'] },
     { id: 'pod-analytics', label: 'POD Analytics', path: '/pod/analytics', icon: BarChart3, roles: ['ceo', 'admin'] },
+    { id: 'pod-orders', label: 'POD Orders', path: '/pod/orders', icon: ClipboardList, roles: ['ceo', 'admin'] },
   ],
 };
 
@@ -371,12 +398,12 @@ export interface PortalConfig {
 }
 
 export const PORTALS: PortalConfig[] = [
-  { id: 'driver-portal', role: 'driver', label: 'Driver Portal', path: '/portal/driver', icon: Car, color: 'hsl(210, 100%, 50%)', description: 'Routes, deliveries, earnings' },
-  { id: 'biker-portal', role: 'biker', label: 'Biker Portal', path: '/portal/biker', icon: Bike, color: 'hsl(180, 100%, 40%)', description: 'Pickups, dropoffs, checks' },
-  { id: 'ambassador-portal', role: 'ambassador', label: 'Ambassador Portal', path: '/portal/ambassador', icon: Star, color: 'hsl(150, 100%, 40%)', description: 'Referrals, commissions, stores' },
+  { id: 'customer-portal', role: 'customer', label: 'Customer Portal', path: '/portal/customer', icon: Heart, color: 'hsl(340, 100%, 50%)', description: 'Orders, rewards, support' },
   { id: 'store-portal', role: 'store', label: 'Store Buyer Portal', path: '/portal/store', icon: Store, color: 'hsl(270, 100%, 50%)', description: 'Orders, products, invoices' },
   { id: 'wholesaler-portal', role: 'wholesaler', label: 'Wholesaler Seller Portal', path: '/portal/wholesaler', icon: Boxes, color: 'hsl(30, 100%, 50%)', description: 'Products, orders, payouts' },
-  { id: 'customer-portal', role: 'customer', label: 'Customer Account Portal', path: '/portal/customer', icon: Heart, color: 'hsl(340, 100%, 50%)', description: 'Orders, rewards, support' },
+  { id: 'ambassador-portal', role: 'ambassador', label: 'Ambassador Portal', path: '/portal/ambassador', icon: Star, color: 'hsl(150, 100%, 40%)', description: 'Referrals, commissions, stores' },
+  { id: 'driver-portal', role: 'driver', label: 'Driver Portal', path: '/portal/driver', icon: Car, color: 'hsl(210, 100%, 50%)', description: 'Routes, deliveries, earnings' },
+  { id: 'biker-portal', role: 'biker', label: 'Biker Portal', path: '/portal/biker', icon: Bike, color: 'hsl(180, 100%, 40%)', description: 'Pickups, dropoffs, checks' },
   { id: 'production-portal', role: 'production', label: 'Production Portal', path: '/portal/production', icon: Factory, color: 'hsl(45, 100%, 50%)', description: 'Daily counts, inventory, tools' },
   { id: 'va-portal', role: 'va', label: 'VA Portal', path: '/portal/va', icon: UserCircle, color: 'hsl(200, 100%, 50%)', description: 'CRM, tasks, communications' },
   { id: 'national-wholesale-portal', role: 'wholesaler', label: 'National Wholesale Portal', path: '/portal/national-wholesale', icon: Globe, color: 'hsl(220, 100%, 50%)', description: 'Nationwide distribution' },
@@ -395,7 +422,6 @@ export const ALL_FLOORS: OSFloor[] = [
 // UTILITY FUNCTIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// Get navigation items for a specific role
 export function getNavForRole(role: OSRole): OSFloor[] {
   return OS_FLOORS
     .filter(floor => floor.roles.includes(role))
@@ -406,20 +432,16 @@ export function getNavForRole(role: OSRole): OSFloor[] {
     .filter(floor => floor.items.length > 0);
 }
 
-// Get portal config for a role
 export function getPortalForRole(role: OSRole): PortalConfig | undefined {
   return PORTALS.find(p => p.role === role);
 }
 
-// Get redirect path for a role
 export function getRoleRedirectPath(role: OSRole): string {
-  // Normalize store_owner to store
   const normalizedRole = role === 'store_owner' ? 'store' : role;
   const portal = getPortalForRole(normalizedRole);
   return portal?.path || '/portal/home';
 }
 
-// Check if a role can access a path
 export function canAccessPath(role: OSRole, path: string): boolean {
   for (const floor of ALL_FLOORS) {
     for (const item of floor.items) {
@@ -431,7 +453,6 @@ export function canAccessPath(role: OSRole, path: string): boolean {
   return false;
 }
 
-// Get all paths a role can access
 export function getAllPathsForRole(role: OSRole): string[] {
   const paths: string[] = [];
   for (const floor of ALL_FLOORS) {
@@ -444,24 +465,20 @@ export function getAllPathsForRole(role: OSRole): string[] {
   return paths;
 }
 
-// Get floor by path
 export function getFloorByPath(path: string): OSFloor | undefined {
   return ALL_FLOORS.find(floor => 
     floor.items.some(item => item.path === path || path.startsWith(item.path + '/'))
   );
 }
 
-// Check if user is admin/ceo
 export function isAdminRole(role: OSRole): boolean {
   return role === 'admin' || role === 'ceo' || role === 'va';
 }
 
-// Check if user is a field role
 export function isFieldRole(role: OSRole): boolean {
   return role === 'driver' || role === 'biker';
 }
 
-// Check if user is a portal role (external user)
 export function isPortalRole(role: OSRole): boolean {
   return ['store', 'wholesaler', 'ambassador', 'customer', 'production'].includes(role);
 }
