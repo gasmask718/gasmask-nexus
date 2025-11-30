@@ -365,14 +365,14 @@ const App = () => (
               <Route path="/hotmama/*" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
               
               {/* Finance & Real Estate Routes */}
-              <Route path="/finance" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
-              <Route path="/finance/funding" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              <Route path="/finance" element={<ProtectedRoute><Layout><FundingDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/finance/funding" element={<ProtectedRoute><Layout><FundingDashboard /></Layout></ProtectedRoute>} />
               <Route path="/finance/funding-requests" element={<ProtectedRoute><Layout><FundingRequests /></Layout></ProtectedRoute>} />
-              <Route path="/finance/grants" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
-              <Route path="/finance/credit-repair" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
-              <Route path="/finance/chexsystems" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
-              <Route path="/finance/investment" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
-              <Route path="/finance/trading" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              <Route path="/finance/grants" element={<ProtectedRoute><Layout><GrantsDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/finance/credit-repair" element={<ProtectedRoute><Layout><FundingDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/finance/chexsystems" element={<ProtectedRoute><Layout><FundingDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/finance/investment" element={<ProtectedRoute><Layout><WealthEngineDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/finance/trading" element={<ProtectedRoute><Layout><WealthEngineDashboard /></Layout></ProtectedRoute>} />
               <Route path="/finance/economic-analytics" element={<ProtectedRoute><Layout><EconomicAnalytics /></Layout></ProtectedRoute>} />
               <Route path="/finance/revenue-brain" element={<ProtectedRoute><Layout><RevenueBrain /></Layout></ProtectedRoute>} />
               <Route path="/finance/opportunity-radar" element={<ProtectedRoute><Layout><OpportunityRadar /></Layout></ProtectedRoute>} />
@@ -2278,70 +2278,20 @@ const App = () => (
               <Route path="/grabba/ai/predict" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee']} showLocked><Layout><GrabbaLayout><AIPredictions /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
               <Route path="/grabba/ai/alerts" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'employee']} showLocked><Layout><GrabbaLayout><AIAlerts /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>} />
 
-              <Route
-                path="/scalati/*"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <BrandPlaceholder />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Dynasty OS Brand Routes - Floor 2: Service & Experience */}
-              <Route
-                path="/toptier/*"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <BrandPlaceholder />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/unforgettable/*"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <BrandPlaceholder />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/iclean/*"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <BrandPlaceholder />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Dynasty OS Brand Routes - Floor 3: Platforms & Digital */}
-              <Route
-                path="/playboxxx/*"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <BrandPlaceholder />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/specialneeds/*"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <BrandPlaceholder />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
+              {/* Legacy brand routes - redirect to new /os/ paths */}
+              <Route path="/scalati/*" element={<ProtectedRoute><Layout><BrandPlaceholder /></Layout></ProtectedRoute>} />
+              
+              {/* Dynasty OS Brand Routes - Redirect legacy paths to new /os/ routes */}
+              <Route path="/toptier" element={<ProtectedRoute><Layout><TopTierDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/toptier/*" element={<ProtectedRoute><Layout><TopTierDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/unforgettable" element={<ProtectedRoute><Layout><UnforgettableDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/unforgettable/*" element={<ProtectedRoute><Layout><UnforgettableDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/iclean" element={<ProtectedRoute><Layout><ICleanDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/iclean/*" element={<ProtectedRoute><Layout><ICleanDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/playboxxx" element={<ProtectedRoute><Layout><PlayboxxxDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/playboxxx/*" element={<ProtectedRoute><Layout><PlayboxxxDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/specialneeds" element={<ProtectedRoute><Layout><SpecialNeedsDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/specialneeds/*" element={<ProtectedRoute><Layout><SpecialNeedsDashboard /></Layout></ProtectedRoute>} />
 
               {/* Dynasty OS Brand Routes - Floor 4: Finance & Acquisition */}
               <Route
@@ -2430,12 +2380,12 @@ const App = () => (
               />
 
               {/* OS PROCUREMENT CENTER */}
-              <Route path="/os/procurement" element={<ProtectedRoute><ProcurementDashboard /></ProtectedRoute>} />
-              <Route path="/os/procurement/dashboard" element={<ProtectedRoute><ProcurementDashboard /></ProtectedRoute>} />
-              <Route path="/os/procurement/suppliers" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
-              <Route path="/os/procurement/suppliers/:id" element={<ProtectedRoute><SupplierDetailPage /></ProtectedRoute>} />
-              <Route path="/os/procurement/purchase-orders" element={<ProtectedRoute><PurchaseOrdersPage /></ProtectedRoute>} />
-              <Route path="/os/procurement/purchase-orders/new" element={<ProtectedRoute><NewPurchaseOrderPage /></ProtectedRoute>} />
+              <Route path="/os/procurement" element={<ProtectedRoute><Layout><ProcurementDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/os/procurement/dashboard" element={<ProtectedRoute><Layout><ProcurementDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/os/procurement/suppliers" element={<ProtectedRoute><Layout><SuppliersPage /></Layout></ProtectedRoute>} />
+              <Route path="/os/procurement/suppliers/:id" element={<ProtectedRoute><Layout><SupplierDetailPage /></Layout></ProtectedRoute>} />
+              <Route path="/os/procurement/purchase-orders" element={<ProtectedRoute><Layout><PurchaseOrdersPage /></Layout></ProtectedRoute>} />
+              <Route path="/os/procurement/purchase-orders/new" element={<ProtectedRoute><Layout><NewPurchaseOrderPage /></Layout></ProtectedRoute>} />
 
               {/* OS WAREHOUSE & LOGISTICS */}
               <Route path="/os/warehouse" element={<ProtectedRoute><Layout><WarehouseDashboard /></Layout></ProtectedRoute>} />
