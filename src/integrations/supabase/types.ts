@@ -424,6 +424,62 @@ export type Database = {
           },
         ]
       }
+      ai_approval_queue: {
+        Row: {
+          action_description: string
+          ai_worker_id: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          payload: Json | null
+          request_type: string
+          requested_by: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          severity: string | null
+          status: string | null
+        }
+        Insert: {
+          action_description: string
+          ai_worker_id?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          payload?: Json | null
+          request_type: string
+          requested_by?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string | null
+          status?: string | null
+        }
+        Update: {
+          action_description?: string
+          ai_worker_id?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          payload?: Json | null
+          request_type?: string
+          requested_by?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_approval_queue_ai_worker_id_fkey"
+            columns: ["ai_worker_id"]
+            isOneToOne: false
+            referencedRelation: "ai_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_command_logs: {
         Row: {
           affected_entity_ids: string[] | null
@@ -1458,6 +1514,7 @@ export type Database = {
       ambassadors: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: string
           is_active: boolean
           tier: string
@@ -1468,6 +1525,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_active?: boolean
           tier?: string
@@ -1478,6 +1536,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_active?: boolean
           tier?: string
@@ -5397,6 +5456,7 @@ export type Database = {
         Row: {
           created_at: string | null
           default_city: string | null
+          deleted_at: string | null
           id: string
           insurance_verified: boolean | null
           license_number: string | null
@@ -5410,6 +5470,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           default_city?: string | null
+          deleted_at?: string | null
           id?: string
           insurance_verified?: boolean | null
           license_number?: string | null
@@ -5423,6 +5484,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           default_city?: string | null
+          deleted_at?: string | null
           id?: string
           insurance_verified?: boolean | null
           license_number?: string | null
@@ -12491,6 +12553,45 @@ export type Database = {
           },
         ]
       }
+      schema_history: {
+        Row: {
+          change_description: string | null
+          change_type: string
+          executed_at: string | null
+          executed_by: string | null
+          id: string
+          is_reversible: boolean | null
+          rollback_sql: string | null
+          sql_executed: string | null
+          table_name: string
+          version_number: number
+        }
+        Insert: {
+          change_description?: string | null
+          change_type: string
+          executed_at?: string | null
+          executed_by?: string | null
+          id?: string
+          is_reversible?: boolean | null
+          rollback_sql?: string | null
+          sql_executed?: string | null
+          table_name: string
+          version_number?: number
+        }
+        Update: {
+          change_description?: string | null
+          change_type?: string
+          executed_at?: string | null
+          executed_by?: string | null
+          id?: string
+          is_reversible?: boolean | null
+          rollback_sql?: string | null
+          sql_executed?: string | null
+          table_name?: string
+          version_number?: number
+        }
+        Relationships: []
+      }
       seller_profiles: {
         Row: {
           best_time_to_contact: string | null
@@ -13524,6 +13625,7 @@ export type Database = {
           connected_group_id: string | null
           created_at: string | null
           created_by: string | null
+          deleted_at: string | null
           email: string | null
           health_score: number | null
           id: string
@@ -13572,6 +13674,7 @@ export type Database = {
           connected_group_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           email?: string | null
           health_score?: number | null
           id?: string
@@ -13620,6 +13723,7 @@ export type Database = {
           connected_group_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           email?: string | null
           health_score?: number | null
           id?: string
@@ -15905,6 +16009,7 @@ export type Database = {
           company_id: string | null
           contact_name: string | null
           created_at: string | null
+          deleted_at: string | null
           email: string | null
           id: string
           name: string
@@ -15915,6 +16020,7 @@ export type Database = {
           company_id?: string | null
           contact_name?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           email?: string | null
           id?: string
           name: string
@@ -15925,6 +16031,7 @@ export type Database = {
           company_id?: string | null
           contact_name?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           email?: string | null
           id?: string
           name?: string
@@ -16119,6 +16226,10 @@ export type Database = {
         Args: { p_action: string; p_details?: Json }
         Returns: string
       }
+      process_ai_approval: {
+        Args: { p_approved: boolean; p_notes?: string; p_request_id: string }
+        Returns: boolean
+      }
       process_automation_event: {
         Args: {
           p_brand?: string
@@ -16130,8 +16241,22 @@ export type Database = {
         }
         Returns: undefined
       }
+      request_ai_approval: {
+        Args: {
+          p_action_description: string
+          p_ai_worker_id?: string
+          p_payload?: Json
+          p_request_type: string
+          p_severity?: string
+        }
+        Returns: string
+      }
       restore_deleted: {
         Args: { _record_id: string; _table_name: string }
+        Returns: undefined
+      }
+      restore_soft_deleted: {
+        Args: { p_id: string; p_table: string }
         Returns: undefined
       }
       soft_delete: {
@@ -16139,6 +16264,10 @@ export type Database = {
         Returns: undefined
       }
       soft_delete_contact: { Args: { contact_id: string }; Returns: undefined }
+      soft_delete_record: {
+        Args: { p_id: string; p_table: string }
+        Returns: undefined
+      }
       update_relationship_status: { Args: never; Returns: undefined }
     }
     Enums: {
