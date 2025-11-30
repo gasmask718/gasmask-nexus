@@ -36,6 +36,7 @@ const Layout = ({ children }: LayoutProps) => {
   const [openFloors, setOpenFloors] = useState<string[]>([
     ...OS_FLOORS.map(f => f.id),
     ...ADDITIONAL_SECTIONS.map(s => s.id),
+    'call-center', 'communication', 'grabba-os', 'warehouse', 'store-portal', 'wholesaler-portal'
   ]);
   
   const currentPath = location.pathname;
@@ -154,12 +155,45 @@ const Layout = ({ children }: LayoutProps) => {
     </Link>
   );
 
+  const renderExtraSection = (sectionId: string, title: string, links: { path: string; label: string }[]) => {
+    const isOpen = openFloors.includes(sectionId);
+    return (
+      <div className="pt-2 border-t border-border/50">
+        <button
+          onClick={() => toggleFloor(sectionId)}
+          className="w-full flex items-center gap-2 px-3 py-1 text-[10px] font-semibold uppercase text-muted-foreground/60 tracking-wider hover:bg-muted/30 rounded"
+        >
+          <span className="flex-1 text-left">{title}</span>
+          {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+        </button>
+        {isOpen && (
+          <div className="ml-4 space-y-0.5 mt-1">
+            {links.map(link => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={cn(
+                  "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
+                  isPathActive(link.path)
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                )}
+              >
+                <span className="truncate">{link.label}</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const NavigationContent = () => (
     <div className="space-y-2">
       {/* OS FLOORS */}
       <div>
         <div className="px-3 py-1 text-[10px] font-semibold uppercase text-muted-foreground/60 tracking-wider">
-          OS Floors
+          OS Floors ({OS_FLOORS.length})
         </div>
         {OS_FLOORS.map(renderFloorSection)}
       </div>
@@ -167,7 +201,7 @@ const Layout = ({ children }: LayoutProps) => {
       {/* ADMIN SECTIONS */}
       <div className="pt-2 border-t border-border/50">
         <div className="px-3 py-1 text-[10px] font-semibold uppercase text-muted-foreground/60 tracking-wider">
-          Admin Systems
+          Admin Systems ({ADDITIONAL_SECTIONS.length})
         </div>
         {ADDITIONAL_SECTIONS.map(renderFloorSection)}
       </div>
@@ -175,12 +209,75 @@ const Layout = ({ children }: LayoutProps) => {
       {/* ROLE PORTALS */}
       <div className="pt-2 border-t border-border/50">
         <div className="px-3 py-1 text-[10px] font-semibold uppercase text-muted-foreground/60 tracking-wider">
-          Role Portals
+          Role Portals ({PORTALS.length})
         </div>
         <div className="ml-4 space-y-0.5">
           {PORTALS.map(renderPortal)}
         </div>
       </div>
+
+      {/* CALL CENTER OS */}
+      {renderExtraSection('call-center', 'Call Center OS', [
+        { path: '/callcenter', label: 'Dashboard' },
+        { path: '/callcenter/dialer', label: 'Dialer' },
+        { path: '/callcenter/logs', label: 'Call Logs' },
+        { path: '/callcenter/ai-agents', label: 'AI Agents' },
+        { path: '/callcenter/analytics', label: 'Analytics' },
+        { path: '/callcenter/messages', label: 'Messages' },
+        { path: '/callcenter/emails', label: 'Emails' },
+      ])}
+
+      {/* COMMUNICATION HUB */}
+      {renderExtraSection('communication', 'Communication Hub', [
+        { path: '/communication', label: 'Overview' },
+        { path: '/communication/sms', label: 'SMS Center' },
+        { path: '/communication/email', label: 'Email Center' },
+        { path: '/communication/calls', label: 'Calls' },
+        { path: '/communication/campaigns', label: 'Campaigns' },
+        { path: '/communication/analytics', label: 'Analytics' },
+        { path: '/communication/logs', label: 'Logs' },
+      ])}
+
+      {/* GRABBA OS */}
+      {renderExtraSection('grabba-os', 'Grabba OS', [
+        { path: '/grabba/command-penthouse', label: 'Command Penthouse' },
+        { path: '/grabba/cluster-dashboard', label: 'Cluster Dashboard' },
+        { path: '/grabba/ai-operations', label: 'AI Operations' },
+        { path: '/grabba/autopilot', label: 'Autopilot Console' },
+        { path: '/grabba/unified-upload', label: 'Unified Upload' },
+        { path: '/grabba/multi-brand-delivery', label: 'Multi-Brand Delivery' },
+        { path: '/grabba/brand-crm', label: 'Brand CRM' },
+        { path: '/grabba/brand-communications', label: 'Brand Communications' },
+      ])}
+
+      {/* WAREHOUSE & PROCUREMENT */}
+      {renderExtraSection('warehouse', 'Warehouse & Procurement', [
+        { path: '/os/warehouse', label: 'Warehouse Dashboard' },
+        { path: '/os/procurement', label: 'Procurement Dashboard' },
+        { path: '/os/procurement/suppliers', label: 'Suppliers' },
+        { path: '/os/procurement/orders', label: 'Purchase Orders' },
+      ])}
+
+      {/* STORE PORTAL PAGES */}
+      {renderExtraSection('store-portal', 'Store Portal Pages', [
+        { path: '/portal/store', label: 'Dashboard' },
+        { path: '/portal/store/products', label: 'Products' },
+        { path: '/portal/store/orders', label: 'Orders' },
+        { path: '/portal/store/invoices', label: 'Invoices' },
+        { path: '/portal/store/cart', label: 'Cart' },
+        { path: '/portal/store/team', label: 'Team' },
+        { path: '/portal/store/messages', label: 'Messages' },
+      ])}
+
+      {/* WHOLESALER PORTAL PAGES */}
+      {renderExtraSection('wholesaler-portal', 'Wholesaler Portal Pages', [
+        { path: '/portal/wholesaler', label: 'Dashboard' },
+        { path: '/portal/wholesaler/products', label: 'Products' },
+        { path: '/portal/wholesaler/orders', label: 'Orders' },
+        { path: '/portal/wholesaler/finance', label: 'Finance' },
+        { path: '/portal/wholesaler/team', label: 'Team' },
+        { path: '/portal/wholesaler/messages', label: 'Messages' },
+      ])}
     </div>
   );
 
