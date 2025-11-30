@@ -61,8 +61,9 @@ import WealthEngineDashboard from './pages/os/wealth/WealthEngineDashboard';
 import BettingDashboard from './pages/os/betting/BettingDashboard';
 import BikerDashboard from './pages/os/biker/BikerDashboard';
 import ModuleDiagnosticsPage from './pages/ModuleDiagnosticsPage';
-// Initialize Dynasty OS Module System
-import '@/modules';
+// Initialize Dynasty OS Module System - Auto-registers all modules
+import ModuleRouter from '@/components/modules/ModuleRouter';
+import './modules';
 import CommunicationInsights from "./pages/CommunicationInsights";
 import RouteOptimizer from "./pages/RouteOptimizer";
 import RouteOpsCenter from "./pages/RouteOpsCenter";
