@@ -19,15 +19,17 @@ import {
 
 const BUSINESSES = [
   { id: 'all', name: 'All Businesses' },
-  { id: 'gasmask', name: 'GasMask / Grabba Cluster' },
-  { id: 'toptier', name: 'TopTier Experience' },
+  { id: 'gasmask', name: 'GasMask' },
+  { id: 'grabba', name: 'Grabba / Hot Mama / Scalatti' },
+  { id: 'toptier', name: 'Top Tier Experience' },
   { id: 'unforgettable', name: 'Unforgettable Times' },
-  { id: 'playboxxx', name: 'Playboxxx' },
-  { id: 'iclean', name: 'iClean WeClean' },
+  { id: 'playboxxx', name: 'PlayBoxxx' },
   { id: 'funding', name: 'Funding Company' },
+  { id: 'iclean', name: 'iClean WeClean' },
+  { id: 'reselling', name: 'Prime Source Depot' },
+  { id: 'investments', name: 'Real Estate + Investments' },
   { id: 'grants', name: 'Grant Company' },
   { id: 'wealth', name: 'Wealth Engine' },
-  { id: 'realestate', name: 'Real Estate Holdings' },
   { id: 'betting', name: 'Sports Betting AI' },
 ];
 
