@@ -16013,6 +16013,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      soft_delete_contact: { Args: { contact_id: string }; Returns: undefined }
       update_relationship_status: { Args: never; Returns: undefined }
     }
     Enums: {
