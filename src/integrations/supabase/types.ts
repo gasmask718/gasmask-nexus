@@ -10063,6 +10063,208 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          address_snapshot: Json | null
+          affiliate_id: string | null
+          ambassador_id: string | null
+          amount_paid: number
+          assigned_to: string | null
+          balance_due: number
+          biker_id: string | null
+          brand_key: string
+          business_id: string | null
+          cancel_reason: string | null
+          canceled_at: string | null
+          channel: Database["public"]["Enums"]["order_channel"]
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_company: string | null
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_notes: string | null
+          customer_phone: string | null
+          customer_type: string | null
+          deleted_at: string | null
+          detail_ref: Json | null
+          discount_amount: number
+          driver_id: string | null
+          due_at: string | null
+          external_ref: string | null
+          fulfillment_type: Database["public"]["Enums"]["fulfillment_type"]
+          id: string
+          internal_notes: string | null
+          order_status: Database["public"]["Enums"]["order_status"]
+          order_type: Database["public"]["Enums"]["order_type"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          placed_at: string
+          scheduled_at: string | null
+          service_fee_amount: number
+          shipping_amount: number
+          short_code: string | null
+          source_campaign: string | null
+          source_note: string | null
+          store_id: string | null
+          subtotal_amount: number
+          tags: string[] | null
+          tax_amount: number
+          total_amount: number
+          updated_at: string
+          updated_by: string | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          address_snapshot?: Json | null
+          affiliate_id?: string | null
+          ambassador_id?: string | null
+          amount_paid?: number
+          assigned_to?: string | null
+          balance_due?: number
+          biker_id?: string | null
+          brand_key: string
+          business_id?: string | null
+          cancel_reason?: string | null
+          canceled_at?: string | null
+          channel?: Database["public"]["Enums"]["order_channel"]
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_company?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_notes?: string | null
+          customer_phone?: string | null
+          customer_type?: string | null
+          deleted_at?: string | null
+          detail_ref?: Json | null
+          discount_amount?: number
+          driver_id?: string | null
+          due_at?: string | null
+          external_ref?: string | null
+          fulfillment_type?: Database["public"]["Enums"]["fulfillment_type"]
+          id?: string
+          internal_notes?: string | null
+          order_status?: Database["public"]["Enums"]["order_status"]
+          order_type?: Database["public"]["Enums"]["order_type"]
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          placed_at?: string
+          scheduled_at?: string | null
+          service_fee_amount?: number
+          shipping_amount?: number
+          short_code?: string | null
+          source_campaign?: string | null
+          source_note?: string | null
+          store_id?: string | null
+          subtotal_amount?: number
+          tags?: string[] | null
+          tax_amount?: number
+          total_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          address_snapshot?: Json | null
+          affiliate_id?: string | null
+          ambassador_id?: string | null
+          amount_paid?: number
+          assigned_to?: string | null
+          balance_due?: number
+          biker_id?: string | null
+          brand_key?: string
+          business_id?: string | null
+          cancel_reason?: string | null
+          canceled_at?: string | null
+          channel?: Database["public"]["Enums"]["order_channel"]
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_company?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_notes?: string | null
+          customer_phone?: string | null
+          customer_type?: string | null
+          deleted_at?: string | null
+          detail_ref?: Json | null
+          discount_amount?: number
+          driver_id?: string | null
+          due_at?: string | null
+          external_ref?: string | null
+          fulfillment_type?: Database["public"]["Enums"]["fulfillment_type"]
+          id?: string
+          internal_notes?: string | null
+          order_status?: Database["public"]["Enums"]["order_status"]
+          order_type?: Database["public"]["Enums"]["order_type"]
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          placed_at?: string
+          scheduled_at?: string | null
+          service_fee_amount?: number
+          shipping_amount?: number
+          short_code?: string | null
+          source_campaign?: string | null
+          source_note?: string | null
+          store_id?: string | null
+          subtotal_amount?: number
+          tags?: string[] | null
+          tax_amount?: number
+          total_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_activity_logs: {
         Row: {
           activity_type: string
