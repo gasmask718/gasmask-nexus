@@ -5612,6 +5612,33 @@ export type Database = {
           },
         ]
       }
+      dynasty_checkpoints: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          notes: string | null
+          owner_id: string
+          payload: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          notes?: string | null
+          owner_id: string
+          payload: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          notes?: string | null
+          owner_id?: string
+          payload?: Json
+        }
+        Relationships: []
+      }
       esign_documents: {
         Row: {
           acquisition_id: string | null
