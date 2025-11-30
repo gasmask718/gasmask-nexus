@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusiness } from '@/contexts/BusinessContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { BusinessSwitcher } from '@/components/business/BusinessSwitcher';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -399,7 +400,8 @@ const DYNASTY_NAVIGATION = {
 };
 
 const Layout = ({ children }: LayoutProps) => {
-  const { signOut, userRole } = useAuth();
+  const { signOut } = useAuth();
+  const { role, isAdmin } = useUserRole(); // Single source of truth for role
   const { currentBusiness, loading: businessLoading } = useBusiness();
   const location = useLocation();
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
@@ -428,7 +430,7 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   useEffect(() => {
-    if (userRole === 'admin') {
+    if (isAdmin()) {
       const fetchUnreadCount = async () => {
         const { count } = await supabase
           .from('executive_reports')
@@ -459,7 +461,7 @@ const Layout = ({ children }: LayoutProps) => {
         supabase.removeChannel(channel);
       };
     }
-  }, [userRole]);
+  }, [role]);
 
   if (businessLoading) {
     return (
