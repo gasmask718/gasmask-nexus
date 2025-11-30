@@ -97,7 +97,7 @@ import CompanyProfile from '@/pages/CompanyProfile';
 import UnpaidAccounts from '@/pages/UnpaidAccounts';
 import DriverDebtCollection from '@/pages/DriverDebtCollection';
 import BrandDashboard from '@/pages/BrandDashboard';
-import { OwnerDashboard } from '@/pages/owner';
+import { OwnerDashboard, OwnerAIAdvisorPage, OwnerClusterDashboard, OwnerAutopilotConsole, OwnerAICommandConsole, OwnerRiskRadar, OwnerDailyBriefing, OwnerHoldingsOverview } from '@/pages/owner';
 
 // Call Center
 import CallCenterDashboard from '@/pages/callcenter/CallCenterDashboard';
@@ -649,6 +649,46 @@ export default function AppRoutes() {
         <Route path="/owner" element={
           <RequireRole allowedRoles={['admin']} showLocked>
             <OwnerDashboard />
+          </RequireRole>
+        } />
+        <Route path="/os/owner" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerDashboard />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/ai-advisor" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerAIAdvisorPage />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/cluster" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerClusterDashboard />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/autopilot" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerAutopilotConsole />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/ai-command" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerAICommandConsole />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/risk-radar" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerRiskRadar />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/briefing" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerDailyBriefing />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/holdings" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerHoldingsOverview />
           </RequireRole>
         } />
 
