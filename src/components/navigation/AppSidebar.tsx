@@ -11,6 +11,7 @@ import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   OS_FLOORS, 
+  ADDITIONAL_SECTIONS,
   PORTALS, 
   DYNASTY_BRANDS,
   getNavForRole, 
@@ -100,6 +101,7 @@ export default function AppSidebar({ className }: AppSidebarProps) {
       {/* Navigation */}
       <ScrollArea className="flex-1">
         <nav className="p-2 space-y-1">
+          {/* Main OS Floors */}
           {navFloors.map((floor) => (
             <FloorNavSection
               key={floor.id}
@@ -111,7 +113,28 @@ export default function AppSidebar({ className }: AppSidebarProps) {
             />
           ))}
 
-          {/* Portals Section for Admin */}
+          {/* Additional Sections for Admin */}
+          {isAdmin && (
+            <>
+              {!collapsed && (
+                <Separator className="my-4" />
+              )}
+              {ADDITIONAL_SECTIONS.filter(section => 
+                section.roles.includes(userRole)
+              ).map((section) => (
+                <FloorNavSection
+                  key={section.id}
+                  floor={section}
+                  collapsed={collapsed}
+                  isOpen={openFloors.includes(section.id)}
+                  onToggle={() => toggleFloor(section.id)}
+                  isPathActive={isPathActive}
+                />
+              ))}
+            </>
+          )}
+
+          {/* Role Portals Section for Admin */}
           {isAdmin && !collapsed && (
             <>
               <Separator className="my-4" />

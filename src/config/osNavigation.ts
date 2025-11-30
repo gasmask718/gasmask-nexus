@@ -272,7 +272,95 @@ export const FLOOR_HR: OSFloor = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// COMPLETE OS STRUCTURE
+// 🛒 MARKETPLACE SECTION (Admin view of Marketplace)
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_MARKETPLACE: OSFloor = {
+  id: 'section-marketplace',
+  name: 'Marketplace Admin',
+  icon: ShoppingCart,
+  emoji: '🛒',
+  description: 'B2C marketplace, customers, orders, and fulfillment',
+  roles: ['ceo', 'admin', 'va'],
+  items: [
+    { id: 'marketplace-shop', label: 'Shop Front', path: '/shop', icon: ShoppingCart, roles: ['ceo', 'admin', 'va'] },
+    { id: 'marketplace-admin', label: 'Marketplace Admin', path: '/portal/marketplace-admin', icon: Cog, roles: ['ceo', 'admin'] },
+    { id: 'national-wholesale', label: 'National Wholesale', path: '/portal/national-wholesale', icon: Globe, roles: ['ceo', 'admin'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 💳 ACCOUNTING & PERSONAL FINANCE
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_ACCOUNTING: OSFloor = {
+  id: 'section-accounting',
+  name: 'Accounting OS',
+  icon: Calculator,
+  emoji: '💳',
+  description: 'Financial dashboards, personal finance, and accounting tools',
+  roles: ['ceo', 'admin', 'accountant'],
+  items: [
+    { id: 'financial-dashboard', label: 'Financial Dashboard', path: '/grabba/financial-dashboard', icon: DollarSign, roles: ['ceo', 'admin', 'accountant'] },
+    { id: 'personal-finance', label: 'Personal Finance', path: '/grabba/personal-finance', icon: Wallet, roles: ['ceo', 'admin'] },
+    { id: 'payroll-manager', label: 'Payroll Manager', path: '/grabba/payroll-manager', icon: Calculator, roles: ['ceo', 'admin', 'accountant'] },
+    { id: 'advisor-penthouse', label: 'Financial Advisor', path: '/grabba/advisor-penthouse', icon: Brain, roles: ['ceo', 'admin'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🌍 GLOBAL HOLDINGS & TOOLS
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_GLOBAL: OSFloor = {
+  id: 'section-global',
+  name: 'Global Tools',
+  icon: Globe,
+  emoji: '🌍',
+  description: 'Holdings, assets, and global administration',
+  roles: ['ceo', 'admin'],
+  items: [
+    { id: 'holdings-overview', label: 'Holdings Overview', path: '/holdings', icon: Building2, roles: ['ceo', 'admin'] },
+    { id: 'holdings-assets', label: 'Holdings Assets', path: '/holdings/assets', icon: Boxes, roles: ['ceo', 'admin'] },
+    { id: 'brand-dashboard', label: 'Brand Dashboard', path: '/brand-dashboard', icon: Star, roles: ['ceo', 'admin'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🏠 REAL ESTATE OS
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_REAL_ESTATE: OSFloor = {
+  id: 'section-real-estate',
+  name: 'Real Estate OS',
+  icon: Home,
+  emoji: '🏠',
+  description: 'Real estate leads, pipeline, and investments',
+  roles: ['ceo', 'admin'],
+  items: [
+    { id: 're-dashboard', label: 'RE Dashboard', path: '/real-estate', icon: Home, roles: ['ceo', 'admin'] },
+    { id: 're-leads', label: 'RE Leads', path: '/real-estate/leads', icon: Target, roles: ['ceo', 'admin'] },
+    { id: 're-pipeline', label: 'RE Pipeline', path: '/real-estate/pipeline', icon: TrendingUp, roles: ['ceo', 'admin'] },
+    { id: 're-investors', label: 'Investors', path: '/real-estate/investors', icon: Users, roles: ['ceo', 'admin'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🎨 POD (Print on Demand)
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_POD: OSFloor = {
+  id: 'section-pod',
+  name: 'Print on Demand',
+  icon: Boxes,
+  emoji: '🎨',
+  description: 'POD designs, mockups, and scaling',
+  roles: ['ceo', 'admin'],
+  items: [
+    { id: 'pod-overview', label: 'POD Overview', path: '/pod', icon: Boxes, roles: ['ceo', 'admin'] },
+    { id: 'pod-designs', label: 'Designs', path: '/pod/designs', icon: Star, roles: ['ceo', 'admin'] },
+    { id: 'pod-mockups', label: 'Mockups', path: '/pod/mockups', icon: Package, roles: ['ceo', 'admin'] },
+    { id: 'pod-analytics', label: 'POD Analytics', path: '/pod/analytics', icon: BarChart3, roles: ['ceo', 'admin'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMPLETE OS STRUCTURE (Main Floors)
 // ═══════════════════════════════════════════════════════════════════════════════
 export const OS_FLOORS: OSFloor[] = [
   PENTHOUSE,
@@ -286,6 +374,21 @@ export const OS_FLOORS: OSFloor[] = [
   FLOOR_8_INTELLIGENCE,
   FLOOR_AMBASSADORS,
   FLOOR_HR,
+];
+
+// Additional system sections (shown below main OS floors)
+export const ADDITIONAL_SECTIONS: OSFloor[] = [
+  SECTION_MARKETPLACE,
+  SECTION_ACCOUNTING,
+  SECTION_GLOBAL,
+  SECTION_REAL_ESTATE,
+  SECTION_POD,
+];
+
+// Combined floors for full admin view
+export const ALL_FLOORS: OSFloor[] = [
+  ...OS_FLOORS,
+  ...ADDITIONAL_SECTIONS,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
