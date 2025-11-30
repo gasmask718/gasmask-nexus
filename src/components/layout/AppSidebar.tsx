@@ -90,33 +90,33 @@ export default function AppSidebar() {
   return (
     <div className="w-72 bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border h-screen">
       {/* Header */}
-      <div className="px-4 py-4 border-b border-sidebar-border">
-        <h1 className="text-lg font-bold">Dynasty OS</h1>
-        <p className="text-xs text-sidebar-foreground/60">Full System Recovery Mode</p>
+      <div className="px-4 py-4 border-b border-sidebar-border bg-gradient-to-r from-purple-900/20 to-transparent">
+        <h1 className="text-lg font-bold">🔥 Grabba OS</h1>
+        <p className="text-xs text-sidebar-foreground/60">Dynasty Command Center</p>
       </div>
 
       <ScrollArea className="flex-1">
         <div className="p-2">
-          {/* OS FLOORS - All 10 floors */}
+          {/* PENTHOUSE + FLOORS 1-8 */}
           <div className="mb-4">
             <div className="px-3 py-2 text-xs font-semibold uppercase text-sidebar-foreground/50 tracking-wider">
-              OS Floors ({OS_FLOORS.length})
+              👑 Penthouse + Floors 1-8
             </div>
             {OS_FLOORS.map(renderFloorSection)}
           </div>
 
-          {/* ADMIN SECTIONS - All 5 sections */}
+          {/* GRABBA SYSTEMS & DEPARTMENTS */}
           <div className="mb-4 pt-2 border-t border-sidebar-border">
             <div className="px-3 py-2 text-xs font-semibold uppercase text-sidebar-foreground/50 tracking-wider">
-              Admin Systems ({ADDITIONAL_SECTIONS.length})
+              🏢 Departments & Systems
             </div>
             {ADDITIONAL_SECTIONS.map(renderFloorSection)}
           </div>
 
-          {/* ROLE PORTALS - All 10 portals */}
+          {/* ROLE PORTALS */}
           <div className="pt-2 border-t border-sidebar-border">
             <div className="px-3 py-2 text-xs font-semibold uppercase text-sidebar-foreground/50 tracking-wider">
-              Role Portals ({PORTALS.length})
+              🚪 Role Portals
             </div>
             <div className="ml-4 space-y-0.5">
               {PORTALS.map(renderPortal)}
