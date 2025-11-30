@@ -569,11 +569,133 @@ export const SECTION_HOLDINGS: OSFloor = {
   ],
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// 📁 LEGACY SYSTEMS (Auto-Recovered)
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_LEGACY_SYSTEMS: OSFloor = {
+  id: 'section-legacy-systems',
+  name: 'Legacy Systems (Recovered)',
+  icon: Database,
+  emoji: '📁',
+  description: 'Auto-recovered legacy pages and systems',
+  roles: ['ceo', 'admin', 'va'],
+  items: [
+    // Old Communications
+    { id: 'legacy-comms-main', label: 'Communications Main', path: '/communications', icon: MessageSquare, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-comms-ai', label: 'Communications AI', path: '/communications-ai', icon: Bot, roles: ['ceo', 'admin'] },
+    { id: 'legacy-comms-auto', label: 'Communication Automation', path: '/communication-automation', icon: Zap, roles: ['ceo', 'admin'] },
+    { id: 'legacy-comms-insights', label: 'Communication Insights', path: '/communication-insights', icon: Eye, roles: ['ceo', 'admin'] },
+    { id: 'legacy-comms-overview', label: 'Comms Center Overview', path: '/communications-center', icon: LayoutDashboard, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-comms-logs', label: 'Comms Center Logs', path: '/communications-center/logs', icon: FileText, roles: ['ceo', 'admin', 'va'] },
+    // Old Wholesale / Billing
+    { id: 'legacy-wholesale', label: 'Wholesale Hub', path: '/wholesale', icon: Boxes, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-wholesale-mp', label: 'Wholesale Marketplace', path: '/wholesale-marketplace', icon: ShoppingCart, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-wholesale-fulfillment', label: 'Wholesale Fulfillment', path: '/wholesale/fulfillment', icon: Package, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-billing', label: 'Billing Dashboard', path: '/billing', icon: CreditCard, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-billing-center', label: 'Billing Center', path: '/billing-center', icon: Receipt, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-billing-invoices', label: 'Billing Invoices', path: '/billing/invoices', icon: FileText, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-unpaid', label: 'Unpaid Accounts', path: '/unpaid-accounts', icon: Bell, roles: ['ceo', 'admin', 'va'] },
+    // Old Drivers/Bikers
+    { id: 'legacy-driver', label: 'Driver Management', path: '/driver', icon: Car, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-driver-debt', label: 'Driver Debt Collection', path: '/driver-debt-collection', icon: DollarSign, roles: ['ceo', 'admin'] },
+    { id: 'legacy-biker-payouts', label: 'Biker Payouts', path: '/biker-payouts', icon: Wallet, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-delivery-capacity', label: 'Delivery Capacity', path: '/delivery-capacity', icon: Truck, roles: ['ceo', 'admin', 'va'] },
+    // Old Analytics / Reports
+    { id: 'legacy-analytics', label: 'Analytics', path: '/analytics', icon: BarChart3, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-economic', label: 'Economic Analytics', path: '/economic-analytics', icon: LineChart, roles: ['ceo', 'admin'] },
+    { id: 'legacy-exec-reports', label: 'Executive Reports', path: '/executive-reports', icon: PieChart, roles: ['ceo', 'admin'] },
+    { id: 'legacy-revenue-brain', label: 'Revenue Brain', path: '/revenue-brain', icon: Brain, roles: ['ceo', 'admin'] },
+    // Old Marketing / Ambassadors  
+    { id: 'legacy-ambassadors', label: 'Ambassadors', path: '/ambassadors', icon: Users, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-ambassador-pay', label: 'Ambassador Payouts', path: '/ambassador-payouts', icon: Wallet, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-ambassador-regions', label: 'Ambassador Regions', path: '/ambassador-regions', icon: Map, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-influencers', label: 'Influencers', path: '/influencers', icon: Star, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-influencer-campaigns', label: 'Influencer Campaigns', path: '/influencer-campaigns', icon: Megaphone, roles: ['ceo', 'admin', 'va'] },
+    // Old Misc Tools
+    { id: 'legacy-batch-import', label: 'Batch Import', path: '/batch-import', icon: Database, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-automation', label: 'Automation Settings', path: '/automation-settings', icon: Cog, roles: ['ceo', 'admin'] },
+    { id: 'legacy-training', label: 'Training', path: '/training', icon: Rocket, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-missions', label: 'Missions', path: '/missions', icon: Target, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-missions-hq', label: 'Missions HQ', path: '/missions-hq', icon: Crown, roles: ['ceo', 'admin'] },
+    { id: 'legacy-opportunity', label: 'Opportunity Radar', path: '/opportunity-radar', icon: Eye, roles: ['ceo', 'admin'] },
+    { id: 'legacy-rewards', label: 'Rewards', path: '/rewards', icon: Gift, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-subscriptions', label: 'Subscriptions', path: '/subscriptions', icon: CreditCard, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-templates', label: 'Templates', path: '/templates', icon: FileText, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-reminders', label: 'Reminders', path: '/reminders', icon: Bell, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-team', label: 'Team', path: '/team', icon: Users, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-worker-home', label: 'Worker Home', path: '/worker-home', icon: Home, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-my-route', label: 'My Route', path: '/my-route', icon: Map, roles: ['driver', 'biker', 'va'] },
+    { id: 'legacy-my-hr', label: 'My HR', path: '/my-hr', icon: UserCircle, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-wallet', label: 'Wallet', path: '/wallet', icon: Wallet, roles: ['ceo', 'admin', 'va'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🏠 REAL ESTATE EXTENDED
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_REAL_ESTATE_EXTENDED: OSFloor = {
+  id: 'section-real-estate-ext',
+  name: 'Real Estate Extended',
+  icon: Home,
+  emoji: '🏡',
+  description: 'Extended real estate tools and deal management',
+  roles: ['ceo', 'admin'],
+  items: [
+    { id: 're-closings', label: 'Closings', path: '/real-estate/closings', icon: CheckSquare, roles: ['ceo', 'admin'] },
+    { id: 're-expansion', label: 'RE Expansion', path: '/real-estate/expansion', icon: TrendingUp, roles: ['ceo', 'admin'] },
+    { id: 're-subscriptions', label: 'RE Subscriptions', path: '/real-estate/subscriptions', icon: CreditCard, roles: ['ceo', 'admin'] },
+    { id: 're-partners', label: 'RE Partners', path: '/real-estate/partners', icon: Users, roles: ['ceo', 'admin'] },
+    { id: 're-pl', label: 'RE P&L', path: '/real-estate/pl', icon: DollarSign, roles: ['ceo', 'admin'] },
+    { id: 're-deal-sheets', label: 'Deal Sheets Generator', path: '/real-estate/deal-sheets', icon: FileText, roles: ['ceo', 'admin'] },
+    { id: 're-investor-blast', label: 'Investor Blast', path: '/real-estate/investor-blast', icon: Megaphone, roles: ['ceo', 'admin'] },
+    { id: 're-offer-analyzer', label: 'Offer Analyzer', path: '/real-estate/offer-analyzer', icon: Calculator, roles: ['ceo', 'admin'] },
+    { id: 're-fee-optimizer', label: 'Assignment Fee Optimizer', path: '/real-estate/fee-optimizer', icon: Target, roles: ['ceo', 'admin'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🔧 EXPANSION & TERRITORY TOOLS
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_EXPANSION: OSFloor = {
+  id: 'section-expansion',
+  name: 'Expansion & Territories',
+  icon: Globe,
+  emoji: '🌎',
+  description: 'Market expansion and territory management',
+  roles: ['ceo', 'admin'],
+  items: [
+    { id: 'exp-main', label: 'Expansion', path: '/expansion', icon: Rocket, roles: ['ceo', 'admin'] },
+    { id: 'exp-regions', label: 'Expansion Regions', path: '/expansion/regions', icon: Map, roles: ['ceo', 'admin'] },
+    { id: 'exp-heatmap', label: 'Expansion Heatmap', path: '/expansion/heatmap', icon: Activity, roles: ['ceo', 'admin'] },
+    { id: 'exp-territories', label: 'Territories', path: '/territories', icon: Globe, roles: ['ceo', 'admin', 'va'] },
+    { id: 'exp-live-map', label: 'Live Map', path: '/operations/live-map', icon: Map, roles: ['ceo', 'admin', 'va'] },
+    { id: 'exp-leaderboard', label: 'Leaderboard', path: '/leaderboard', icon: Award, roles: ['ceo', 'admin', 'va'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🛣️ ROUTE OPERATIONS CENTER
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_ROUTE_OPS: OSFloor = {
+  id: 'section-route-ops',
+  name: 'Route Operations',
+  icon: Map,
+  emoji: '🛣️',
+  description: 'Route planning, optimization and operations',
+  roles: ['ceo', 'admin', 'va', 'driver'],
+  items: [
+    { id: 'routes-main', label: 'Routes', path: '/routes', icon: Map, roles: ['ceo', 'admin', 'va', 'driver'] },
+    { id: 'route-optimizer', label: 'Route Optimizer', path: '/route-optimizer', icon: Target, roles: ['ceo', 'admin', 'va'] },
+    { id: 'route-ops-center', label: 'Route Ops Center', path: '/route-ops-center', icon: LayoutDashboard, roles: ['ceo', 'admin', 'va'] },
+  ],
+};
+
 export const ADDITIONAL_SECTIONS: OSFloor[] = [
   SECTION_MARKETPLACE_ADMIN,
   SECTION_ACCOUNTING,
   SECTION_GLOBAL,
   SECTION_REAL_ESTATE,
+  SECTION_REAL_ESTATE_EXTENDED,
   SECTION_POD,
   SECTION_CALL_CENTER,
   SECTION_COMMUNICATION,
@@ -584,6 +706,9 @@ export const ADDITIONAL_SECTIONS: OSFloor[] = [
   SECTION_AI_TOOLS,
   SECTION_VA_CENTER,
   SECTION_HOLDINGS,
+  SECTION_LEGACY_SYSTEMS,
+  SECTION_EXPANSION,
+  SECTION_ROUTE_OPS,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
