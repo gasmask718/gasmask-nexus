@@ -130,4 +130,47 @@ export function filterNavItems<T extends { path?: string; floorId?: string }>(
   });
 }
 
+/**
+ * Admin-only route paths that require special protection
+ * Part of Dynasty OS Security Protocol
+ */
+export const ADMIN_ONLY_PATHS = [
+  '/system',
+  '/os/admin',
+  '/penthouse',
+  '/settings/security',
+  '/settings/users',
+  '/audit-logs',
+  '/diagnostics',
+];
+
+/**
+ * Check if a path requires admin access
+ */
+export function isAdminOnlyPath(path: string): boolean {
+  return ADMIN_ONLY_PATHS.some((adminPath) => 
+    path.startsWith(adminPath)
+  );
+}
+
+/**
+ * Elevated access paths (admin, employee, accountant)
+ */
+export const ELEVATED_ACCESS_PATHS = [
+  '/finance',
+  '/reports',
+  '/analytics',
+  '/hr',
+  '/payroll',
+];
+
+/**
+ * Check if a path requires elevated access
+ */
+export function isElevatedPath(path: string): boolean {
+  return ELEVATED_ACCESS_PATHS.some((elevatedPath) => 
+    path.startsWith(elevatedPath)
+  );
+}
+
 export default SecureNavigation;

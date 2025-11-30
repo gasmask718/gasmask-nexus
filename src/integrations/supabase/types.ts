@@ -16082,6 +16082,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      restore_deleted: {
+        Args: { _record_id: string; _table_name: string }
+        Returns: undefined
+      }
+      soft_delete: {
+        Args: { _record_id: string; _table_name: string }
+        Returns: undefined
+      }
       soft_delete_contact: { Args: { contact_id: string }; Returns: undefined }
       update_relationship_status: { Args: never; Returns: undefined }
     }
