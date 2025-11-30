@@ -4181,6 +4181,7 @@ export type Database = {
           business_id: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           email: string | null
           id: string
           last_contact_date: string | null
@@ -4204,6 +4205,7 @@ export type Database = {
           business_id?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           email?: string | null
           id?: string
           last_contact_date?: string | null
@@ -4227,6 +4229,7 @@ export type Database = {
           business_id?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           email?: string | null
           id?: string
           last_contact_date?: string | null
