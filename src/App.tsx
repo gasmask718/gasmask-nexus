@@ -48,6 +48,7 @@ import Subscriptions from './pages/Subscriptions';
 import DeliveryCapacity from './pages/DeliveryCapacity';
 import CommunicationAutomation from './pages/CommunicationAutomation';
 import CommunicationsAI from './pages/CommunicationsAI';
+import { ProcurementDashboard, SuppliersPage, SupplierDetailPage, PurchaseOrdersPage, NewPurchaseOrderPage } from './pages/os/procurement';
 import CommunicationInsights from "./pages/CommunicationInsights";
 import RouteOptimizer from "./pages/RouteOptimizer";
 import RouteOpsCenter from "./pages/RouteOpsCenter";
@@ -2412,6 +2413,14 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+
+              {/* OS PROCUREMENT CENTER */}
+              <Route path="/os/procurement" element={<ProtectedRoute><ProcurementDashboard /></ProtectedRoute>} />
+              <Route path="/os/procurement/dashboard" element={<ProtectedRoute><ProcurementDashboard /></ProtectedRoute>} />
+              <Route path="/os/procurement/suppliers" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
+              <Route path="/os/procurement/suppliers/:id" element={<ProtectedRoute><SupplierDetailPage /></ProtectedRoute>} />
+              <Route path="/os/procurement/purchase-orders" element={<ProtectedRoute><PurchaseOrdersPage /></ProtectedRoute>} />
+              <Route path="/os/procurement/purchase-orders/new" element={<ProtectedRoute><NewPurchaseOrderPage /></ProtectedRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
