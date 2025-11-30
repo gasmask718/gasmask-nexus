@@ -6,6 +6,7 @@ import { BusinessSwitcher } from '@/components/business/BusinessSwitcher';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { SendMessageModal } from '@/components/communication/SendMessageModal';
+import SystemCheckpointBar from '@/components/system/SystemCheckpointBar';
 import '@/theme/departmentStyles.css';
 import { useLocation, Link } from 'react-router-dom';
 import { 
@@ -673,6 +674,9 @@ const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* 🔐 Dynasty OS Auto-Saver / Reset strip (admin-only) */}
+      <SystemCheckpointBar />
+      
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="flex h-14 items-center px-4 gap-4">
