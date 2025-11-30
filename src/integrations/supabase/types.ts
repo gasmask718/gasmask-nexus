@@ -15838,6 +15838,13 @@ export type Database = {
         | "realestate_worker"
       brand_type: "GasMask" | "HotMama" | "GrabbaRUs" | "HotScalati"
       credit_terms_type: "COD" | "NET7" | "NET14" | "NET30"
+      fulfillment_type:
+        | "delivery"
+        | "pickup"
+        | "shipping"
+        | "on_site_service"
+        | "virtual"
+        | "digital"
       inventory_level: "empty" | "quarter" | "half" | "threeQuarters" | "full"
       lead_source:
         | "probate"
@@ -15853,6 +15860,32 @@ export type Database = {
         | "direct_mail"
         | "cold_call"
       loyalty_level_type: "Bronze" | "Silver" | "Gold" | "VIP"
+      order_channel:
+        | "web"
+        | "mobile"
+        | "admin"
+        | "call_center"
+        | "text"
+        | "api"
+        | "affiliate"
+        | "store_portal"
+        | "wholesaler_portal"
+        | "other"
+      order_status:
+        | "draft"
+        | "pending"
+        | "confirmed"
+        | "in_progress"
+        | "completed"
+        | "canceled"
+        | "refunded"
+      order_type:
+        | "product"
+        | "service"
+        | "booking"
+        | "subscription"
+        | "application"
+        | "other"
       org_role:
         | "owner"
         | "manager"
@@ -15862,6 +15895,7 @@ export type Database = {
         | "support_staff"
         | "back_office"
       payment_method: "cash" | "zelle" | "cashapp" | "venmo" | "other"
+      payment_status: "unpaid" | "partial" | "paid" | "refunded" | "chargeback"
       property_type:
         | "single_family"
         | "multi_family"
@@ -16083,6 +16117,14 @@ export const Constants = {
       ],
       brand_type: ["GasMask", "HotMama", "GrabbaRUs", "HotScalati"],
       credit_terms_type: ["COD", "NET7", "NET14", "NET30"],
+      fulfillment_type: [
+        "delivery",
+        "pickup",
+        "shipping",
+        "on_site_service",
+        "virtual",
+        "digital",
+      ],
       inventory_level: ["empty", "quarter", "half", "threeQuarters", "full"],
       lead_source: [
         "probate",
@@ -16099,6 +16141,35 @@ export const Constants = {
         "cold_call",
       ],
       loyalty_level_type: ["Bronze", "Silver", "Gold", "VIP"],
+      order_channel: [
+        "web",
+        "mobile",
+        "admin",
+        "call_center",
+        "text",
+        "api",
+        "affiliate",
+        "store_portal",
+        "wholesaler_portal",
+        "other",
+      ],
+      order_status: [
+        "draft",
+        "pending",
+        "confirmed",
+        "in_progress",
+        "completed",
+        "canceled",
+        "refunded",
+      ],
+      order_type: [
+        "product",
+        "service",
+        "booking",
+        "subscription",
+        "application",
+        "other",
+      ],
       org_role: [
         "owner",
         "manager",
@@ -16109,6 +16180,7 @@ export const Constants = {
         "back_office",
       ],
       payment_method: ["cash", "zelle", "cashapp", "venmo", "other"],
+      payment_status: ["unpaid", "partial", "paid", "refunded", "chargeback"],
       property_type: [
         "single_family",
         "multi_family",
