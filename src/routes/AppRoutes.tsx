@@ -637,8 +637,12 @@ export default function AppRoutes() {
         <Route path="/scalati/*" element={<BrandPlaceholder />} />
         <Route path="/ecommerce/*" element={<BrandPlaceholder />} />
 
-        {/* Module Diagnostics */}
-        <Route path="/system/modules" element={<ModuleDiagnosticsPage />} />
+        {/* Module Diagnostics - Admin Only */}
+        <Route path="/system/modules" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <ModuleDiagnosticsPage />
+          </RequireRole>
+        } />
 
         {/* AI Workforce */}
         <Route path="/ai/workforce" element={<AIWorkforce />} />
