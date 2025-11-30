@@ -50,6 +50,16 @@ import CommunicationAutomation from './pages/CommunicationAutomation';
 import CommunicationsAI from './pages/CommunicationsAI';
 import { ProcurementDashboard, SuppliersPage, SupplierDetailPage, PurchaseOrdersPage, NewPurchaseOrderPage } from './pages/os/procurement';
 import { WarehouseDashboard } from './pages/os/warehouse';
+import TopTierDashboard from './pages/os/toptier/TopTierDashboard';
+import UnforgettableDashboard from './pages/os/unforgettable/UnforgettableDashboard';
+import ICleanDashboard from './pages/os/iclean/ICleanDashboard';
+import PlayboxxxDashboard from './pages/os/playboxxx/PlayboxxxDashboard';
+import SpecialNeedsDashboard from './pages/os/specialneeds/SpecialNeedsDashboard';
+import FundingDashboard from './pages/os/funding/FundingDashboard';
+import GrantsDashboard from './pages/os/grants/GrantsDashboard';
+import WealthEngineDashboard from './pages/os/wealth/WealthEngineDashboard';
+import BettingDashboard from './pages/os/betting/BettingDashboard';
+import BikerDashboard from './pages/os/biker/BikerDashboard';
 import CommunicationInsights from "./pages/CommunicationInsights";
 import RouteOptimizer from "./pages/RouteOptimizer";
 import RouteOpsCenter from "./pages/RouteOpsCenter";
@@ -2428,7 +2438,41 @@ const App = () => (
               <Route path="/os/procurement/purchase-orders/new" element={<ProtectedRoute><NewPurchaseOrderPage /></ProtectedRoute>} />
 
               {/* OS WAREHOUSE & LOGISTICS */}
-              <Route path="/os/warehouse" element={<ProtectedRoute><WarehouseDashboard /></ProtectedRoute>} />
+              <Route path="/os/warehouse" element={<ProtectedRoute><Layout><WarehouseDashboard /></Layout></ProtectedRoute>} />
+
+              {/* ═══════════════════════════════════════════════════════════════════════════ */}
+              {/* DYNASTY BUSINESS UNITS OS ROUTES                                            */}
+              {/* ═══════════════════════════════════════════════════════════════════════════ */}
+              
+              {/* TopTier Experience OS */}
+              <Route path="/os/toptier" element={<ProtectedRoute><Layout><TopTierDashboard /></Layout></ProtectedRoute>} />
+              
+              {/* Unforgettable Times USA OS */}
+              <Route path="/os/unforgettable" element={<ProtectedRoute><Layout><UnforgettableDashboard /></Layout></ProtectedRoute>} />
+              
+              {/* iClean WeClean OS */}
+              <Route path="/os/iclean" element={<ProtectedRoute><Layout><ICleanDashboard /></Layout></ProtectedRoute>} />
+              
+              {/* PlayBoxxx OS */}
+              <Route path="/os/playboxxx" element={<ProtectedRoute><Layout><PlayboxxxDashboard /></Layout></ProtectedRoute>} />
+              
+              {/* Special Needs App OS */}
+              <Route path="/os/special-needs" element={<ProtectedRoute><Layout><SpecialNeedsDashboard /></Layout></ProtectedRoute>} />
+              
+              {/* Funding Company OS */}
+              <Route path="/os/funding" element={<ProtectedRoute><Layout><FundingDashboard /></Layout></ProtectedRoute>} />
+              
+              {/* Grant Company OS */}
+              <Route path="/os/grants" element={<ProtectedRoute><Layout><GrantsDashboard /></Layout></ProtectedRoute>} />
+              
+              {/* Wealth Engine OS */}
+              <Route path="/os/wealth-engine" element={<ProtectedRoute><Layout><WealthEngineDashboard /></Layout></ProtectedRoute>} />
+              
+              {/* Sports Betting AI OS */}
+              <Route path="/os/sports-betting" element={<ProtectedRoute><Layout><BettingDashboard /></Layout></ProtectedRoute>} />
+              
+              {/* Bikers / Store Checkers OS */}
+              <Route path="/biker/home" element={<ProtectedRoute><Layout><BikerDashboard /></Layout></ProtectedRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
