@@ -34,16 +34,16 @@ interface BusinessUnit {
 }
 
 const businessUnits: BusinessUnit[] = [
-  { id: 'gasmask', name: 'GasMask OS', icon: Flame, revenue: '$128,450', change: '+12%', changeType: 'positive', status: 'healthy', path: '/gasmask/driver', color: 'red' },
-  { id: 'hotmama', name: 'HotMama', icon: Heart, revenue: '$24,980', change: '+8%', changeType: 'positive', status: 'watch', path: '/brand/hotmama', color: 'rose' },
-  { id: 'scalati', name: 'Hot Scalati', icon: Sparkles, revenue: '$18,200', change: '+15%', changeType: 'positive', status: 'healthy', path: '/brand/scalati', color: 'orange' },
-  { id: 'grabba-r-us', name: 'Grabba R Us', icon: ShoppingBag, revenue: '$22,100', change: '+5%', changeType: 'positive', status: 'healthy', path: '/brand/grabba-r-us', color: 'green' },
-  { id: 'toptier', name: 'TopTier Experience', icon: Car, revenue: '$58,320', change: '+22%', changeType: 'positive', status: 'healthy', path: '/os/toptier', color: 'blue' },
-  { id: 'unforgettable', name: 'Unforgettable Times', icon: PartyPopper, revenue: '$32,740', change: '-3%', changeType: 'negative', status: 'watch', path: '/os/unforgettable', color: 'purple' },
-  { id: 'iclean', name: 'iClean WeClean', icon: Home, revenue: '$21,560', change: '+7%', changeType: 'positive', status: 'healthy', path: '/os/iclean', color: 'cyan' },
-  { id: 'funding', name: 'Funding Company', icon: CreditCard, revenue: '$39,200', change: '+18%', changeType: 'positive', status: 'watch', path: '/os/funding', color: 'emerald' },
-  { id: 'grants', name: 'Grant Company', icon: Trophy, revenue: '$18,400', change: '+10%', changeType: 'positive', status: 'healthy', path: '/os/grants', color: 'yellow' },
-  { id: 'playboxxx', name: 'PlayBoxxx', icon: Gamepad2, revenue: '$76,910', change: '+25%', changeType: 'positive', status: 'healthy', path: '/os/playboxxx', color: 'pink' },
+  { id: 'gasmask', name: 'GasMask OS', icon: Flame, revenue: '$128,450', change: '+12%', changeType: 'positive', status: 'healthy', path: '/os/owner/business/gasmask', color: 'red' },
+  { id: 'hotmama', name: 'HotMama', icon: Heart, revenue: '$24,980', change: '+8%', changeType: 'positive', status: 'watch', path: '/os/owner/business/hotmama', color: 'rose' },
+  { id: 'scalati', name: 'Hot Scalati', icon: Sparkles, revenue: '$18,200', change: '+15%', changeType: 'positive', status: 'healthy', path: '/os/owner/business/scalati', color: 'orange' },
+  { id: 'grabba-r-us', name: 'Grabba R Us', icon: ShoppingBag, revenue: '$22,100', change: '+5%', changeType: 'positive', status: 'healthy', path: '/os/owner/business/grabba-r-us', color: 'green' },
+  { id: 'toptier', name: 'TopTier Experience', icon: Car, revenue: '$58,320', change: '+22%', changeType: 'positive', status: 'healthy', path: '/os/owner/business/toptier', color: 'blue' },
+  { id: 'unforgettable', name: 'Unforgettable Times', icon: PartyPopper, revenue: '$32,740', change: '-3%', changeType: 'negative', status: 'watch', path: '/os/owner/business/unforgettable', color: 'purple' },
+  { id: 'iclean', name: 'iClean WeClean', icon: Home, revenue: '$21,560', change: '+7%', changeType: 'positive', status: 'healthy', path: '/os/owner/business/iclean', color: 'cyan' },
+  { id: 'funding', name: 'Funding Company', icon: CreditCard, revenue: '$39,200', change: '+18%', changeType: 'positive', status: 'watch', path: '/os/owner/business/funding', color: 'emerald' },
+  { id: 'grants', name: 'Grant Company', icon: Trophy, revenue: '$18,400', change: '+10%', changeType: 'positive', status: 'healthy', path: '/os/owner/business/grants', color: 'yellow' },
+  { id: 'playboxxx', name: 'PlayBoxxx', icon: Gamepad2, revenue: '$76,910', change: '+25%', changeType: 'positive', status: 'healthy', path: '/os/owner/business/playboxxx', color: 'pink' },
 ];
 
 const statusColors = {

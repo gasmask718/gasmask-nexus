@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,8 @@ import {
   Settings,
   Bot,
 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const automations = [
   {
@@ -142,10 +145,22 @@ export default function OwnerAutopilotConsole() {
           <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing}>
             <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
           </Button>
-          <Button variant="outline" className="gap-2">
-            <Settings className="h-4 w-4" />
-            Settings
-          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Settings className="h-4 w-4" />
+                Settings
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Coming Soon: Autopilot Settings</DialogTitle>
+                <DialogDescription>
+                  This panel will let you configure advanced automation behavior, thresholds, and alerts for Dynasty OS.
+                </DialogDescription>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -218,6 +233,7 @@ export default function OwnerAutopilotConsole() {
 }
 
 function AutomationRow({ automation }: { automation: typeof automations[0] }) {
+  const navigate = useNavigate();
   const statusConfig = {
     Active: { color: 'text-emerald-400', bg: 'bg-emerald-500/20', icon: CheckCircle2 },
     Degraded: { color: 'text-amber-400', bg: 'bg-amber-500/20', icon: AlertTriangle },
@@ -249,7 +265,7 @@ function AutomationRow({ automation }: { automation: typeof automations[0] }) {
         <Badge variant="outline" className={cn(config.bg, config.color, "border-transparent")}>
           {automation.status}
         </Badge>
-        <Button variant="ghost" size="sm" className="gap-1">
+        <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate(`/os/owner/autopilot/${automation.id}`)}>
           <FileText className="h-3 w-3" />
           Logs
         </Button>

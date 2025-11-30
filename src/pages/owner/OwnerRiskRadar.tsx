@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -242,6 +243,7 @@ export default function OwnerRiskRadar() {
 }
 
 function RiskCard({ risk }: { risk: typeof risks[0] }) {
+  const navigate = useNavigate();
   const severityConfig = {
     critical: { color: 'text-red-400', bg: 'bg-red-500/20', border: 'border-red-500/30' },
     high: { color: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-500/30' },
@@ -260,7 +262,10 @@ function RiskCard({ risk }: { risk: typeof risks[0] }) {
   const TypeIcon = typeIcons[risk.type as keyof typeof typeIcons];
 
   return (
-    <div className={cn("p-4 rounded-xl border transition-colors hover:bg-muted/30", config.border)}>
+    <div 
+      className={cn("p-4 rounded-xl border transition-colors hover:bg-muted/30 cursor-pointer", config.border)}
+      onClick={() => navigate(`/os/owner/risk/risk-${risk.id}`)}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className={cn("p-2 rounded-lg", config.bg)}>
@@ -280,8 +285,8 @@ function RiskCard({ risk }: { risk: typeof risks[0] }) {
             </div>
           </div>
         </div>
-        <Button variant="outline" size="sm" className="gap-1 shrink-0">
-          {risk.action}
+        <Button variant="outline" size="sm" className="gap-1 shrink-0" onClick={(e) => { e.stopPropagation(); navigate(`/os/owner/risk/risk-${risk.id}`); }}>
+          View Details
           <ChevronRight className="h-3 w-3" />
         </Button>
       </div>
