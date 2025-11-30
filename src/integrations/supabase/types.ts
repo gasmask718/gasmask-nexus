@@ -1590,6 +1590,39 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          acted_at: string | null
+          acted_by: string | null
+          action: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          acted_at?: string | null
+          acted_by?: string | null
+          action: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          acted_at?: string | null
+          acted_by?: string | null
+          action?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
