@@ -154,21 +154,29 @@ export function formatTubesAsBoxes(tubes: number) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 👑 PENTHOUSE — Master Command Center
+// 👑 PENTHOUSE — Dynasty Owner Dashboard (Global Command)
 // ═══════════════════════════════════════════════════════════════════════════════
 export const GRABBA_PENTHOUSE: GrabbaFloor = {
   id: 'penthouse',
-  name: 'Command Penthouse',
+  name: 'Dynasty Owner Dashboard',
   icon: Crown,
-  path: '/grabba/command-penthouse',
-  description: 'Master control for all Grabba brands - KPIs, alerts, intelligence',
+  path: '/os/owner',
+  description: 'Empire-wide command center for the Dynasty Owner',
   emoji: '👑'
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🏢 8-FLOOR STRUCTURE
+// 🏢 GRABBA FLOORS (including Grabba Command Penthouse)
 // ═══════════════════════════════════════════════════════════════════════════════
 export const GRABBA_FLOORS: GrabbaFloor[] = [
+  {
+    id: 'grabba-command',
+    name: 'Grabba Command Penthouse',
+    icon: Crown,
+    path: '/grabba/command-penthouse',
+    description: 'Grabba-specific command center - KPIs, alerts, and intelligence for all Grabba brands.',
+    emoji: '🔥'
+  },
   {
     id: 'floor-1-crm',
     name: 'CRM & Store Control',
@@ -350,6 +358,9 @@ export const getGrabbaNavItems = () => {
 
 export const FLOOR_ROUTE_MAP: Record<string, string[]> = {
   'penthouse': [
+    '/os/owner',
+  ],
+  'grabba-command': [
     '/grabba/command-penthouse',
     '/grabba/cluster',
     '/grabba/ai-insights',
@@ -408,9 +419,14 @@ export const FLOOR_ROUTE_MAP: Record<string, string[]> = {
 
 // Helper to find which floor a route belongs to
 export const getFloorByRoute = (path: string): GrabbaFloor | undefined => {
-  // Check penthouse first
-  if (path === '/grabba/command-penthouse') {
+  // Check penthouse first (Dynasty Owner Dashboard)
+  if (path === '/os/owner') {
     return GRABBA_PENTHOUSE;
+  }
+  
+  // Check Grabba Command Penthouse
+  if (path === '/grabba/command-penthouse') {
+    return GRABBA_FLOORS.find(f => f.id === 'grabba-command');
   }
   
   // Check each floor's routes
