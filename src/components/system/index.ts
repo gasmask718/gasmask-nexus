@@ -8,3 +8,4 @@ export { ClickableStatCard } from './ClickableStatCard';
 export { ValidatedFormField } from './ValidatedFormField';
 export { CleanerBotStatus } from './CleanerBotStatus';
 export { InsightPanel, getDefaultActions, getInsightMeta, type InsightType, type InsightRecord, type InsightAction } from './InsightPanel';
+export { EmpireHealthMonitor } from './EmpireHealthMonitor';

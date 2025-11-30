@@ -1721,6 +1721,36 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_trail: {
+        Row: {
+          after: Json | null
+          before: Json | null
+          created_at: string | null
+          event: string | null
+          id: string
+          module: string | null
+          user_id: string | null
+        }
+        Insert: {
+          after?: Json | null
+          before?: Json | null
+          created_at?: string | null
+          event?: string | null
+          id?: string
+          module?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          after?: Json | null
+          before?: Json | null
+          created_at?: string | null
+          event?: string | null
+          id?: string
+          module?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       automated_notifications: {
         Row: {
           created_at: string
@@ -14331,6 +14361,135 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      universal_activity: {
+        Row: {
+          action: string
+          business_id: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          business_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          business_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      universal_ledger: {
+        Row: {
+          amount: number | null
+          business_id: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          order_id: string | null
+          type: string
+        }
+        Insert: {
+          amount?: number | null
+          business_id?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number | null
+          business_id?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      universal_messages: {
+        Row: {
+          business_id: string | null
+          content: string | null
+          created_at: string | null
+          id: string
+          message_type: string | null
+          metadata: Json | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          message_type?: string | null
+          metadata?: Json | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          message_type?: string | null
+          metadata?: Json | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      universal_orders: {
+        Row: {
+          amount: number
+          business_id: string
+          channel: string
+          created_at: string | null
+          customer_id: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          business_id: string
+          channel: string
+          created_at?: string | null
+          customer_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          business_id?: string
+          channel?: string
+          created_at?: string | null
+          customer_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       unmatched_messages: {
         Row: {

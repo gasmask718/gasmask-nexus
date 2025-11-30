@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { SendMessageModal } from '@/components/communication/SendMessageModal';
 import SystemCheckpointBar from '@/components/system/SystemCheckpointBar';
+import { EmpireHealthMonitor } from '@/components/system/EmpireHealthMonitor';
 import { exportEmpireDataToExcel, exportOsBlueprintToJson } from '@/services/exportService';
 import '@/theme/departmentStyles.css';
 import { useLocation, Link } from 'react-router-dom';
@@ -718,6 +719,7 @@ const Layout = ({ children }: LayoutProps) => {
               <Package className="h-4 w-4 text-primary" />
             </div>
             <h1 className="text-lg font-bold hidden sm:block">🏛️ Dynasty OS</h1>
+            <EmpireHealthMonitor />
           </div>
 
           <div className="ml-auto flex items-center gap-2">
