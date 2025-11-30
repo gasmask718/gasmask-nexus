@@ -14178,6 +14178,7 @@ export type Database = {
           created_by: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          role_name: string | null
           user_id: string
         }
         Insert: {
@@ -14185,6 +14186,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           role: Database["public"]["Enums"]["app_role"]
+          role_name?: string | null
           user_id: string
         }
         Update: {
@@ -14192,6 +14194,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          role_name?: string | null
           user_id?: string
         }
         Relationships: [
@@ -14201,6 +14204,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_role_name_fkey"
+            columns: ["role_name"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["name"]
           },
         ]
       }
