@@ -136,6 +136,8 @@ import JoinOrg from "./pages/portal/JoinOrg";
 import ProductionPortal from "./pages/portal/ProductionPortal";
 import VAPortal from "./pages/portal/VAPortal";
 import CustomerPortal from "./pages/portal/CustomerPortal";
+import NationalWholesale from "./pages/portal/NationalWholesale";
+import MarketplaceAdmin from "./pages/portal/MarketplaceAdmin";
 import Shop from "./pages/Shop";
 import Cart from "./pages/Cart";
 import MessagesPage from "./pages/Messages";
@@ -1415,6 +1417,8 @@ const App = () => (
               <Route path="/portal/production" element={<ProtectedRoute><ProductionPortal /></ProtectedRoute>} />
               <Route path="/portal/va" element={<ProtectedRoute><VAPortal /></ProtectedRoute>} />
               <Route path="/portal/customer" element={<ProtectedRoute><CustomerPortal /></ProtectedRoute>} />
+              <Route path="/portal/national-wholesale" element={<ProtectedRoute><Layout><NationalWholesale /></Layout></ProtectedRoute>} />
+              <Route path="/portal/marketplace-admin" element={<ProtectedRoute><Layout><MarketplaceAdmin /></Layout></ProtectedRoute>} />
               <Route path="/portal/invoices" element={<ProtectedRoute><PortalInvoices /></ProtectedRoute>} />
               <Route path="/portal/invoices/:id" element={<ProtectedRoute><PortalInvoiceDetail /></ProtectedRoute>} />
               <Route path="/portal/wholesale" element={<ProtectedRoute><PortalWholesale /></ProtectedRoute>} />
