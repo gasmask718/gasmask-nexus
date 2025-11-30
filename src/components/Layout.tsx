@@ -7,7 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { SendMessageModal } from '@/components/communication/SendMessageModal';
 import '@/theme/departmentStyles.css';
 import { useLocation, Link } from 'react-router-dom';
-import { OS_FLOORS, ADDITIONAL_SECTIONS, PORTALS, type OSFloor, type PortalConfig } from '@/config/osNavigation';
 import { 
   LogOut,
   Menu,
@@ -15,6 +14,87 @@ import {
   Package,
   ChevronDown,
   ChevronRight,
+  Crown,
+  Building2,
+  Phone,
+  Boxes,
+  Truck,
+  DollarSign,
+  Factory,
+  Store,
+  Users,
+  Brain,
+  Flame,
+  Heart,
+  Sparkles,
+  ShoppingBag,
+  Car,
+  PartyPopper,
+  Home,
+  Briefcase,
+  CreditCard,
+  TrendingUp,
+  Building,
+  Calculator,
+  PhoneCall,
+  MessageSquare,
+  Mail,
+  Radio,
+  ShoppingCart,
+  Globe,
+  Palette,
+  MapPin,
+  Bike,
+  UserCheck,
+  Headphones,
+  Bot,
+  Trophy,
+  UserCog,
+  ClipboardList,
+  Award,
+  LayoutDashboard,
+  Wallet,
+  BarChart3,
+  Settings,
+  FileText,
+  Target,
+  Zap,
+  Activity,
+  AlertTriangle,
+  Calendar,
+  Database,
+  Map,
+  Route,
+  Bell,
+  Clock,
+  Send,
+  Search,
+  Filter,
+  Download,
+  Upload,
+  Layers,
+  PieChart,
+  LineChart,
+  List,
+  Grid,
+  Eye,
+  Edit,
+  Trash,
+  Plus,
+  Minus,
+  Check,
+  X,
+  Info,
+  HelpCircle,
+  Lock,
+  Unlock,
+  Shield,
+  Key,
+  User,
+  UserPlus,
+  UserMinus,
+  Accessibility,
+  Star,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
@@ -25,6 +105,299 @@ interface LayoutProps {
   children: ReactNode;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// DYNASTY OS NAVIGATION STRUCTURE - FULLY RESTORED
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const DYNASTY_NAVIGATION = {
+  penthouse: {
+    id: 'penthouse',
+    name: '👑 Penthouse — Command Center',
+    items: [
+      { path: '/grabba/command-penthouse', label: 'Command Penthouse', icon: Crown },
+      { path: '/grabba/advisor-penthouse', label: 'AI Advisor', icon: Brain },
+      { path: '/grabba/cluster-dashboard', label: 'Cluster Dashboard', icon: LayoutDashboard },
+      { path: '/grabba/autopilot', label: 'Autopilot Console', icon: Zap },
+      { path: '/grabba/ai-command', label: 'AI Command Console', icon: Bot },
+      { path: '/grabba/risk-radar', label: 'Risk Radar', icon: AlertTriangle },
+      { path: '/grabba/daily-briefing', label: 'Daily Briefing', icon: Calendar },
+      { path: '/holdings', label: 'Holdings Overview', icon: Building },
+    ],
+  },
+  grabbaSkyscraper: [
+    {
+      id: 'floor-1',
+      name: '🏢 Floor 1 — CRM / Store Master',
+      items: [
+        { path: '/stores', label: 'Store Directory', icon: Store },
+        { path: '/grabba/store-master', label: 'Store Master Profile', icon: Database },
+        { path: '/grabba/crm', label: 'Grabba CRM', icon: Users },
+        { path: '/grabba/brand-crm', label: 'Brand CRM', icon: Target },
+        { path: '/crm', label: 'Global CRM', icon: UserCheck },
+        { path: '/crm/contacts', label: 'CRM Contacts', icon: User },
+        { path: '/crm/customers', label: 'CRM Customers', icon: Users },
+        { path: '/crm/follow-ups', label: 'Follow-Ups', icon: Clock },
+      ],
+    },
+    {
+      id: 'floor-2',
+      name: '📞 Floor 2 — Communication Hub',
+      items: [
+        { path: '/grabba/communication', label: 'Communication Center', icon: Radio },
+        { path: '/grabba/call-center', label: 'Call Center', icon: PhoneCall },
+        { path: '/grabba/text-center', label: 'Text Center', icon: MessageSquare },
+        { path: '/grabba/email-center', label: 'Email Center', icon: Mail },
+        { path: '/grabba/communication-logs', label: 'Communication Logs', icon: FileText },
+        { path: '/communication', label: 'Communication Overview', icon: Radio },
+        { path: '/communication/campaigns', label: 'Campaigns', icon: Target },
+        { path: '/communication/analytics', label: 'Comm Analytics', icon: BarChart3 },
+      ],
+    },
+    {
+      id: 'floor-3',
+      name: '📦 Floor 3 — Inventory Engine',
+      items: [
+        { path: '/grabba/inventory', label: 'Inventory Dashboard', icon: Boxes },
+        { path: '/products', label: 'Products', icon: Package },
+        { path: '/os/warehouse', label: 'Warehouse', icon: Building2 },
+        { path: '/os/procurement', label: 'Procurement', icon: ShoppingCart },
+        { path: '/os/procurement/suppliers', label: 'Suppliers', icon: Truck },
+        { path: '/os/procurement/orders', label: 'Purchase Orders', icon: FileText },
+      ],
+    },
+    {
+      id: 'floor-4',
+      name: '🚚 Floor 4 — Delivery & Routing',
+      items: [
+        { path: '/grabba/deliveries', label: 'Deliveries Dashboard', icon: Truck },
+        { path: '/grabba/multi-brand-delivery', label: 'Multi-Brand Delivery', icon: Layers },
+        { path: '/grabba/routes', label: 'Route Manager', icon: Route },
+        { path: '/routes', label: 'All Routes', icon: Map },
+        { path: '/route-optimizer', label: 'Route Optimizer', icon: Zap },
+        { path: '/route-ops-center', label: 'Route Ops Center', icon: Target },
+        { path: '/live-map', label: 'Live Map', icon: MapPin },
+        { path: '/delivery-capacity', label: 'Delivery Capacity', icon: BarChart3 },
+      ],
+    },
+    {
+      id: 'floor-5',
+      name: '💰 Floor 5 — Finance & Orders',
+      items: [
+        { path: '/grabba/finance', label: 'Financial Dashboard', icon: DollarSign },
+        { path: '/grabba/financial-dashboard', label: 'Finance Overview', icon: PieChart },
+        { path: '/billing-center', label: 'Billing Center', icon: CreditCard },
+        { path: '/billing/invoices', label: 'Invoices', icon: FileText },
+        { path: '/wholesale-fulfillment', label: 'Wholesale Fulfillment', icon: Package },
+        { path: '/unpaid-accounts', label: 'Unpaid Accounts', icon: AlertTriangle },
+        { path: '/payroll', label: 'Payroll', icon: Wallet },
+        { path: '/grabba/payroll-manager', label: 'Payroll Manager', icon: Calculator },
+      ],
+    },
+    {
+      id: 'floor-6',
+      name: '🏭 Floor 6 — Production',
+      items: [
+        { path: '/grabba/production', label: 'Production Dashboard', icon: Factory },
+        { path: '/portal/production', label: 'Production Portal', icon: Settings },
+      ],
+    },
+    {
+      id: 'floor-7',
+      name: '🛒 Floor 7 — Wholesale Platform',
+      items: [
+        { path: '/grabba/wholesale', label: 'Wholesale Platform', icon: ShoppingCart },
+        { path: '/wholesale', label: 'Wholesale Directory', icon: Store },
+        { path: '/wholesale-marketplace', label: 'Wholesale Marketplace', icon: Globe },
+        { path: '/portal/national-wholesale', label: 'National Wholesale', icon: Building },
+        { path: '/portal/marketplace-admin', label: 'Marketplace Admin', icon: Settings },
+      ],
+    },
+    {
+      id: 'floor-8',
+      name: '🎖️ Floor 8 — Ambassadors & Reps',
+      items: [
+        { path: '/grabba/ambassadors', label: 'Ambassador Dashboard', icon: Award },
+        { path: '/ambassadors', label: 'All Ambassadors', icon: Users },
+        { path: '/ambassador-regions', label: 'Ambassador Regions', icon: Map },
+        { path: '/ambassador-payouts', label: 'Ambassador Payouts', icon: DollarSign },
+        { path: '/influencers', label: 'Influencers', icon: Star },
+        { path: '/influencer-campaigns', label: 'Influencer Campaigns', icon: Target },
+      ],
+    },
+    {
+      id: 'floor-9',
+      name: '🤖 Floor 9 — AI Operations',
+      items: [
+        { path: '/grabba/ai-operations', label: 'AI Operations Hub', icon: Brain },
+        { path: '/grabba/ai-playbooks', label: 'AI Playbooks', icon: FileText },
+        { path: '/grabba/ai-routines', label: 'AI Routines', icon: Clock },
+        { path: '/grabba/ai-tasks', label: 'AI Tasks', icon: ClipboardList },
+        { path: '/grabba/ai-predictions', label: 'AI Predictions', icon: TrendingUp },
+        { path: '/grabba/ai-alerts', label: 'AI Alerts', icon: Bell },
+        { path: '/grabba/follow-up-settings', label: 'Follow-Up Settings', icon: Settings },
+        { path: '/grabba/instinct-log', label: 'Instinct Log', icon: Activity },
+        { path: '/grabba/action-queue', label: 'Action Queue', icon: List },
+        { path: '/grabba/results', label: 'Results', icon: BarChart3 },
+      ],
+    },
+  ],
+  grabbaBrands: {
+    id: 'grabba-brands',
+    name: '🔴 Grabba Product Brands',
+    items: [
+      { path: '/gasmask/driver', label: '🔴 GasMask OS', icon: Flame },
+      { path: '/brand/hotmama', label: '🟠 HotMama OS', icon: Heart },
+      { path: '/brand/scalati', label: '🟡 Hot Scalati OS', icon: Sparkles },
+      { path: '/brand/grabba-r-us', label: '🟢 Grabba R Us OS', icon: ShoppingBag },
+      { path: '/brand-dashboard', label: 'Brand Dashboard', icon: LayoutDashboard },
+    ],
+  },
+  dynastyBusiness: {
+    id: 'dynasty-business',
+    name: '🌐 Dynasty Business Units',
+    items: [
+      { path: '/os/toptier', label: '🚗 TopTier Experience OS', icon: Car },
+      { path: '/os/unforgettable', label: '🎉 Unforgettable Times USA OS', icon: PartyPopper },
+      { path: '/os/iclean', label: '🧹 iClean WeClean OS', icon: Home },
+      { path: '/os/playboxxx', label: '🎮 PlayBoxxx OS', icon: Sparkles },
+      { path: '/os/special-needs', label: '♿ Special Needs App OS', icon: Accessibility },
+    ],
+  },
+  financeAcquisition: {
+    id: 'finance-acquisition',
+    name: '💰 Finance & Acquisition',
+    items: [
+      { path: '/os/funding', label: '💳 Funding Company OS', icon: CreditCard },
+      { path: '/os/grants', label: '🏆 Grant Company OS', icon: Trophy },
+      { path: '/os/wealth-engine', label: '📈 Wealth Engine OS', icon: TrendingUp },
+      { path: '/real-estate', label: '🏠 Real Estate OS', icon: Building },
+      { path: '/real-estate/leads', label: 'RE Leads', icon: Target },
+      { path: '/real-estate/pipeline', label: 'RE Pipeline', icon: Activity },
+      { path: '/real-estate/investors', label: 'RE Investors', icon: Users },
+      { path: '/real-estate/closings', label: 'RE Closings', icon: Check },
+      { path: '/economic-analytics', label: '📊 Accounting OS', icon: Calculator },
+      { path: '/grabba/personal-finance', label: 'Personal Finance', icon: Wallet },
+    ],
+  },
+  communicationSystems: {
+    id: 'communication-systems',
+    name: '📡 Communication Systems',
+    items: [
+      { path: '/callcenter', label: '📞 AI Call Center OS', icon: PhoneCall },
+      { path: '/callcenter/dialer', label: 'Dialer', icon: Phone },
+      { path: '/callcenter/logs', label: 'Call Logs', icon: FileText },
+      { path: '/callcenter/ai-agents', label: 'AI Agents', icon: Bot },
+      { path: '/callcenter/analytics', label: 'Call Analytics', icon: BarChart3 },
+      { path: '/text-center', label: '💬 AI Text Center OS', icon: MessageSquare },
+      { path: '/callcenter/messages', label: 'Messages', icon: MessageSquare },
+      { path: '/email-center', label: '📧 Email Center OS', icon: Mail },
+      { path: '/callcenter/emails', label: 'Emails', icon: Mail },
+      { path: '/communications', label: '📻 Communication Hub', icon: Radio },
+      { path: '/communications-ai', label: 'Communications AI', icon: Brain },
+      { path: '/communication-automation', label: 'Comm Automation', icon: Zap },
+      { path: '/communication-insights', label: 'Comm Insights', icon: Eye },
+    ],
+  },
+  marketplaces: {
+    id: 'marketplaces',
+    name: '🛍️ Marketplaces & E-Commerce',
+    items: [
+      { path: '/shop', label: '🛒 Marketplace OS', icon: ShoppingCart },
+      { path: '/portal/national-wholesale', label: '🌎 National Wholesale OS', icon: Globe },
+      { path: '/pod', label: '🎨 POD Design OS', icon: Palette },
+      { path: '/pod/designs', label: 'POD Designs', icon: Layers },
+      { path: '/pod/generator', label: 'POD Generator', icon: Sparkles },
+      { path: '/pod/mockups', label: 'POD Mockups', icon: Eye },
+      { path: '/pod/analytics', label: 'POD Analytics', icon: BarChart3 },
+    ],
+  },
+  logistics: {
+    id: 'logistics',
+    name: '🚛 Delivery & Logistics',
+    items: [
+      { path: '/driver', label: '🚗 Drivers OS', icon: Car },
+      { path: '/driver/home', label: 'Driver Home', icon: Home },
+      { path: '/my-route', label: 'My Route', icon: Route },
+      { path: '/biker/home', label: '🚴 Bikers OS', icon: Bike },
+      { path: '/biker-payouts', label: 'Biker Payouts', icon: DollarSign },
+      { path: '/driver-debt-collection', label: 'Driver Debt Collection', icon: AlertTriangle },
+    ],
+  },
+  crmCustomerService: {
+    id: 'crm-customer-service',
+    name: '👥 CRM & Customer Service',
+    items: [
+      { path: '/crm', label: '📋 Global CRM OS', icon: UserCheck },
+      { path: '/crm/data', label: 'CRM Data', icon: Database },
+      { path: '/crm/data/export', label: 'CRM Export', icon: Download },
+      { path: '/crm/data/import', label: 'CRM Import', icon: Upload },
+      { path: '/crm/backup', label: 'CRM Backup', icon: Shield },
+      { path: '/communications-center', label: '🎧 Customer Service OS', icon: Headphones },
+      { path: '/communications-center/logs', label: 'Service Logs', icon: FileText },
+    ],
+  },
+  aiSystems: {
+    id: 'ai-systems',
+    name: '🧠 AI & Automation',
+    items: [
+      { path: '/ai/workforce', label: '🤖 AI Workforce Automation OS', icon: Bot },
+      { path: '/ai-ceo', label: 'AI CEO Control Room', icon: Crown },
+      { path: '/dynasty-automations', label: 'Dynasty Automations', icon: Zap },
+      { path: '/automation-settings', label: 'Automation Settings', icon: Settings },
+      { path: '/meta-ai', label: 'Meta AI', icon: Brain },
+      { path: '/os/sports-betting', label: '🏆 Sports Betting AI OS', icon: Trophy },
+    ],
+  },
+  systemsHR: {
+    id: 'systems-hr',
+    name: '⚙️ Systems & HR',
+    items: [
+      { path: '/hr', label: '👔 HR OS', icon: Briefcase },
+      { path: '/hr/applicants', label: 'HR Applicants', icon: UserPlus },
+      { path: '/hr/employees', label: 'HR Employees', icon: Users },
+      { path: '/hr/interviews', label: 'HR Interviews', icon: Calendar },
+      { path: '/hr/documents', label: 'HR Documents', icon: FileText },
+      { path: '/hr/onboarding', label: 'HR Onboarding', icon: Check },
+      { path: '/hr/payroll', label: 'HR Payroll', icon: Wallet },
+      { path: '/my-hr', label: 'My HR', icon: User },
+      { path: '/va-performance', label: '📊 VA OS', icon: Activity },
+      { path: '/va-ranking', label: 'VA Ranking', icon: Award },
+      { path: '/va-task-center', label: 'VA Task Center', icon: ClipboardList },
+      { path: '/portal/va', label: 'VA Portal', icon: User },
+      { path: '/portal/ambassador', label: '🎖️ Ambassador OS', icon: Award },
+    ],
+  },
+  globalDashboard: {
+    id: 'global-dashboard',
+    name: '🌍 Global Dynasty Dashboard',
+    items: [
+      { path: '/', label: 'Main Dashboard', icon: LayoutDashboard },
+      { path: '/analytics', label: 'Analytics', icon: BarChart3 },
+      { path: '/executive-reports', label: 'Executive Reports', icon: FileText },
+      { path: '/revenue-brain', label: 'Revenue Brain', icon: Brain },
+      { path: '/opportunity-radar', label: 'Opportunity Radar', icon: Target },
+      { path: '/missions-hq', label: 'Missions HQ', icon: Zap },
+      { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+      { path: '/team', label: 'Team', icon: Users },
+      { path: '/companies', label: 'Companies', icon: Building2 },
+      { path: '/territories', label: 'Territories', icon: Map },
+      { path: '/expansion', label: 'Expansion', icon: TrendingUp },
+    ],
+  },
+  portals: [
+    { path: '/portal/driver', label: '🚗 Driver Portal', icon: Car },
+    { path: '/portal/biker', label: '🚴 Biker Portal', icon: Bike },
+    { path: '/portal/ambassador', label: '🎖️ Ambassador Portal', icon: Award },
+    { path: '/portal/store', label: '🏪 Store Portal', icon: Store },
+    { path: '/portal/wholesaler', label: '📦 Wholesaler Portal', icon: Package },
+    { path: '/portal/production', label: '🏭 Production Portal', icon: Factory },
+    { path: '/portal/va', label: '💼 VA Portal', icon: Briefcase },
+    { path: '/portal/customer', label: '👤 Customer Portal', icon: User },
+    { path: '/portal/national-wholesale', label: '🌎 National Wholesale Portal', icon: Globe },
+    { path: '/portal/marketplace-admin', label: '⚙️ Marketplace Admin Portal', icon: Settings },
+  ],
+};
+
 const Layout = ({ children }: LayoutProps) => {
   const { signOut, userRole } = useAuth();
   const { currentBusiness, loading: businessLoading } = useBusiness();
@@ -32,11 +405,13 @@ const Layout = ({ children }: LayoutProps) => {
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
   
-  // Force all floors open by default for full visibility
-  const [openFloors, setOpenFloors] = useState<string[]>([
-    ...OS_FLOORS.map(f => f.id),
-    ...ADDITIONAL_SECTIONS.map(s => s.id),
-    'call-center', 'communication', 'grabba-os', 'warehouse', 'store-portal', 'wholesaler-portal'
+  // All sections open by default
+  const [openSections, setOpenSections] = useState<string[]>([
+    'penthouse',
+    'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
+    'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
+    'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
+    'global-dashboard', 'portals'
   ]);
   
   const currentPath = location.pathname;
@@ -46,9 +421,9 @@ const Layout = ({ children }: LayoutProps) => {
     return currentPath === path || currentPath.startsWith(path + '/');
   };
 
-  const toggleFloor = (id: string) => {
-    setOpenFloors(prev =>
-      prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
+  const toggleSection = (id: string) => {
+    setOpenSections(prev =>
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
     );
   };
 
@@ -97,25 +472,24 @@ const Layout = ({ children }: LayoutProps) => {
     );
   }
 
-  const renderFloorSection = (floor: OSFloor) => {
-    const isOpen = openFloors.includes(floor.id);
+  const renderSection = (id: string, name: string, items: Array<{ path: string; label: string; icon: any }>) => {
+    const isOpen = openSections.includes(id);
     
     return (
-      <div key={floor.id} className="mb-1">
+      <div key={id} className="mb-1">
         <button
-          onClick={() => toggleFloor(floor.id)}
+          onClick={() => toggleSection(id)}
           className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-foreground/80 hover:bg-muted/50 rounded-md transition-colors"
         >
-          <span className="text-base">{floor.emoji}</span>
-          <span className="flex-1 text-left truncate text-xs">{floor.name}</span>
+          <span className="flex-1 text-left truncate text-xs">{name}</span>
           {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         </button>
         
         {isOpen && (
           <div className="ml-4 mt-0.5 space-y-0.5">
-            {floor.items.map(item => (
+            {items.map(item => (
               <Link
-                key={item.id}
+                key={item.path}
                 to={item.path}
                 className={cn(
                   "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
@@ -126,60 +500,6 @@ const Layout = ({ children }: LayoutProps) => {
               >
                 <item.icon className="h-3 w-3 shrink-0" />
                 <span className="truncate">{item.label}</span>
-                {item.badge && (
-                  <span className="ml-auto text-[10px] px-1 py-0.5 rounded bg-primary/20 text-primary">
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderPortal = (portal: PortalConfig) => (
-    <Link
-      key={portal.id}
-      to={portal.path}
-      className={cn(
-        "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
-        isPathActive(portal.path)
-          ? "bg-primary/10 text-primary font-medium"
-          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-      )}
-    >
-      <portal.icon className="h-3 w-3 shrink-0" />
-      <span className="truncate">{portal.label}</span>
-    </Link>
-  );
-
-  const renderExtraSection = (sectionId: string, title: string, links: { path: string; label: string }[]) => {
-    const isOpen = openFloors.includes(sectionId);
-    return (
-      <div className="pt-2 border-t border-border/50">
-        <button
-          onClick={() => toggleFloor(sectionId)}
-          className="w-full flex items-center gap-2 px-3 py-1 text-[10px] font-semibold uppercase text-muted-foreground/60 tracking-wider hover:bg-muted/30 rounded"
-        >
-          <span className="flex-1 text-left">{title}</span>
-          {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-        </button>
-        {isOpen && (
-          <div className="ml-4 space-y-0.5 mt-1">
-            {links.map(link => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={cn(
-                  "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
-                  isPathActive(link.path)
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                )}
-              >
-                <span className="truncate">{link.label}</span>
               </Link>
             ))}
           </div>
@@ -190,94 +510,162 @@ const Layout = ({ children }: LayoutProps) => {
 
   const NavigationContent = () => (
     <div className="space-y-2">
-      {/* OS FLOORS */}
-      <div>
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-muted-foreground/60 tracking-wider">
-          OS Floors ({OS_FLOORS.length})
-        </div>
-        {OS_FLOORS.map(renderFloorSection)}
-      </div>
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 👑 PENTHOUSE — COMMAND CENTER */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {renderSection(
+        DYNASTY_NAVIGATION.penthouse.id,
+        DYNASTY_NAVIGATION.penthouse.name,
+        DYNASTY_NAVIGATION.penthouse.items
+      )}
 
-      {/* ADMIN SECTIONS */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🏢 GRABBA SKYSCRAPER — FLOORS 1-9 */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="pt-2 border-t border-border/50">
         <div className="px-3 py-1 text-[10px] font-semibold uppercase text-muted-foreground/60 tracking-wider">
-          Admin Systems ({ADDITIONAL_SECTIONS.length})
+          🏢 Grabba Skyscraper (Floors 1-9)
         </div>
-        {ADDITIONAL_SECTIONS.map(renderFloorSection)}
+        {DYNASTY_NAVIGATION.grabbaSkyscraper.map(floor => 
+          renderSection(floor.id, floor.name, floor.items)
+        )}
       </div>
 
-      {/* ROLE PORTALS */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🔴 GRABBA PRODUCT BRANDS */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.grabbaBrands.id,
+          DYNASTY_NAVIGATION.grabbaBrands.name,
+          DYNASTY_NAVIGATION.grabbaBrands.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🌐 DYNASTY BUSINESS UNITS */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.dynastyBusiness.id,
+          DYNASTY_NAVIGATION.dynastyBusiness.name,
+          DYNASTY_NAVIGATION.dynastyBusiness.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 💰 FINANCE & ACQUISITION */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.financeAcquisition.id,
+          DYNASTY_NAVIGATION.financeAcquisition.name,
+          DYNASTY_NAVIGATION.financeAcquisition.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 📡 COMMUNICATION SYSTEMS */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.communicationSystems.id,
+          DYNASTY_NAVIGATION.communicationSystems.name,
+          DYNASTY_NAVIGATION.communicationSystems.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🛍️ MARKETPLACES & E-COMMERCE */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.marketplaces.id,
+          DYNASTY_NAVIGATION.marketplaces.name,
+          DYNASTY_NAVIGATION.marketplaces.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🚛 DELIVERY & LOGISTICS */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.logistics.id,
+          DYNASTY_NAVIGATION.logistics.name,
+          DYNASTY_NAVIGATION.logistics.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 👥 CRM & CUSTOMER SERVICE */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.crmCustomerService.id,
+          DYNASTY_NAVIGATION.crmCustomerService.name,
+          DYNASTY_NAVIGATION.crmCustomerService.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🧠 AI & AUTOMATION */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.aiSystems.id,
+          DYNASTY_NAVIGATION.aiSystems.name,
+          DYNASTY_NAVIGATION.aiSystems.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* ⚙️ SYSTEMS & HR */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.systemsHR.id,
+          DYNASTY_NAVIGATION.systemsHR.name,
+          DYNASTY_NAVIGATION.systemsHR.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🌍 GLOBAL DYNASTY DASHBOARD */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.globalDashboard.id,
+          DYNASTY_NAVIGATION.globalDashboard.name,
+          DYNASTY_NAVIGATION.globalDashboard.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🚪 ROLE PORTALS */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="pt-2 border-t border-border/50">
         <div className="px-3 py-1 text-[10px] font-semibold uppercase text-muted-foreground/60 tracking-wider">
-          Role Portals ({PORTALS.length})
+          🚪 Role Portals
         </div>
-        <div className="ml-4 space-y-0.5">
-          {PORTALS.map(renderPortal)}
+        <div className="ml-4 space-y-0.5 mt-1">
+          {DYNASTY_NAVIGATION.portals.map(portal => (
+            <Link
+              key={portal.path}
+              to={portal.path}
+              className={cn(
+                "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
+                isPathActive(portal.path)
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              )}
+            >
+              <portal.icon className="h-3 w-3 shrink-0" />
+              <span className="truncate">{portal.label}</span>
+            </Link>
+          ))}
         </div>
       </div>
-
-      {/* CALL CENTER OS */}
-      {renderExtraSection('call-center', 'Call Center OS', [
-        { path: '/callcenter', label: 'Dashboard' },
-        { path: '/callcenter/dialer', label: 'Dialer' },
-        { path: '/callcenter/logs', label: 'Call Logs' },
-        { path: '/callcenter/ai-agents', label: 'AI Agents' },
-        { path: '/callcenter/analytics', label: 'Analytics' },
-        { path: '/callcenter/messages', label: 'Messages' },
-        { path: '/callcenter/emails', label: 'Emails' },
-      ])}
-
-      {/* COMMUNICATION HUB */}
-      {renderExtraSection('communication', 'Communication Hub', [
-        { path: '/communication', label: 'Overview' },
-        { path: '/communication/sms', label: 'SMS Center' },
-        { path: '/communication/email', label: 'Email Center' },
-        { path: '/communication/calls', label: 'Calls' },
-        { path: '/communication/campaigns', label: 'Campaigns' },
-        { path: '/communication/analytics', label: 'Analytics' },
-        { path: '/communication/logs', label: 'Logs' },
-      ])}
-
-      {/* GRABBA OS */}
-      {renderExtraSection('grabba-os', 'Grabba OS', [
-        { path: '/grabba/command-penthouse', label: 'Command Penthouse' },
-        { path: '/grabba/cluster-dashboard', label: 'Cluster Dashboard' },
-        { path: '/grabba/ai-operations', label: 'AI Operations' },
-        { path: '/grabba/autopilot', label: 'Autopilot Console' },
-        { path: '/grabba/unified-upload', label: 'Unified Upload' },
-        { path: '/grabba/multi-brand-delivery', label: 'Multi-Brand Delivery' },
-        { path: '/grabba/brand-crm', label: 'Brand CRM' },
-        { path: '/grabba/brand-communications', label: 'Brand Communications' },
-      ])}
-
-      {/* WAREHOUSE & PROCUREMENT */}
-      {renderExtraSection('warehouse', 'Warehouse & Procurement', [
-        { path: '/os/warehouse', label: 'Warehouse Dashboard' },
-        { path: '/os/procurement', label: 'Procurement Dashboard' },
-        { path: '/os/procurement/suppliers', label: 'Suppliers' },
-        { path: '/os/procurement/orders', label: 'Purchase Orders' },
-      ])}
-
-      {/* STORE PORTAL PAGES */}
-      {renderExtraSection('store-portal', 'Store Portal Pages', [
-        { path: '/portal/store', label: 'Dashboard' },
-        { path: '/portal/store/products', label: 'Products' },
-        { path: '/portal/store/orders', label: 'Orders' },
-        { path: '/portal/store/invoices', label: 'Invoices' },
-        { path: '/portal/store/cart', label: 'Cart' },
-        { path: '/portal/store/team', label: 'Team' },
-        { path: '/portal/store/messages', label: 'Messages' },
-      ])}
-
-      {/* WHOLESALER PORTAL PAGES */}
-      {renderExtraSection('wholesaler-portal', 'Wholesaler Portal Pages', [
-        { path: '/portal/wholesaler', label: 'Dashboard' },
-        { path: '/portal/wholesaler/products', label: 'Products' },
-        { path: '/portal/wholesaler/orders', label: 'Orders' },
-        { path: '/portal/wholesaler/finance', label: 'Finance' },
-        { path: '/portal/wholesaler/team', label: 'Team' },
-        { path: '/portal/wholesaler/messages', label: 'Messages' },
-      ])}
     </div>
   );
 
@@ -295,8 +683,8 @@ const Layout = ({ children }: LayoutProps) => {
             <SheetContent side="left" className="w-72 p-0">
               <div className="flex flex-col h-full overflow-hidden py-4">
                 <div className="px-4 mb-4 flex-shrink-0 space-y-2">
-                  <h2 className="text-lg font-bold text-primary">Dynasty OS</h2>
-                  <p className="text-xs text-muted-foreground">Fortune 500 Navigation</p>
+                  <h2 className="text-lg font-bold text-primary">🏛️ Dynasty OS</h2>
+                  <p className="text-xs text-muted-foreground">Empire Command Center</p>
                   {!businessLoading && currentBusiness && (
                     <BusinessSwitcher />
                   )}
@@ -322,7 +710,7 @@ const Layout = ({ children }: LayoutProps) => {
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
               <Package className="h-4 w-4 text-primary" />
             </div>
-            <h1 className="text-lg font-bold hidden sm:block">Dynasty OS</h1>
+            <h1 className="text-lg font-bold hidden sm:block">🏛️ Dynasty OS</h1>
           </div>
 
           <div className="ml-auto flex items-center gap-2">
@@ -353,8 +741,8 @@ const Layout = ({ children }: LayoutProps) => {
         {/* Sidebar - Desktop */}
         <aside className="hidden md:flex w-72 flex-col border-r border-border/50 bg-card/50 h-[calc(100vh-3.5rem)] overflow-hidden">
           <div className="p-3 border-b border-border/50">
-            <h2 className="text-sm font-bold mb-1">Dynasty OS</h2>
-            <p className="text-xs text-muted-foreground mb-2">Fortune 500 Navigation</p>
+            <h2 className="text-sm font-bold mb-1">🏛️ Dynasty OS</h2>
+            <p className="text-xs text-muted-foreground mb-2">Empire Command Center</p>
             {!businessLoading && currentBusiness && (
               <BusinessSwitcher />
             )}
