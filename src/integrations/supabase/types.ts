@@ -3755,6 +3755,36 @@ export type Database = {
         }
         Relationships: []
       }
+      cloud_checkpoints: {
+        Row: {
+          checkpoint_type: string
+          created_at: string
+          id: string
+          label: string | null
+          notes: string | null
+          owner_id: string
+          snapshot_data: Json
+        }
+        Insert: {
+          checkpoint_type?: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          notes?: string | null
+          owner_id: string
+          snapshot_data?: Json
+        }
+        Update: {
+          checkpoint_type?: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          notes?: string | null
+          owner_id?: string
+          snapshot_data?: Json
+        }
+        Relationships: []
+      }
       communication_events: {
         Row: {
           channel: string | null

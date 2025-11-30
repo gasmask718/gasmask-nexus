@@ -6,10 +6,11 @@ import type { Json } from '@/integrations/supabase/types';
 export interface CloudCheckpointRecord {
   id: string;
   owner_id: string;
-  label: string;
-  notes?: string | null;
+  checkpoint_type: string;
+  label: string | null;
+  notes: string | null;
+  snapshot_data: Json;
   created_at: string;
-  payload: Json;
 }
 
 export async function saveCheckpointToCloud(
@@ -18,12 +19,13 @@ export async function saveCheckpointToCloud(
 ): Promise<CloudCheckpointRecord | null> {
   try {
     const { data, error } = await supabase
-      .from('dynasty_checkpoints')
+      .from('cloud_checkpoints')
       .insert([{
         owner_id: ownerId,
-        label: checkpoint.label,
+        checkpoint_type: checkpoint.label?.includes('Auto') ? 'auto' : 'manual',
+        label: checkpoint.label ?? null,
         notes: checkpoint.notes ?? null,
-        payload: JSON.parse(JSON.stringify(checkpoint.diagnostics)) as Json,
+        snapshot_data: JSON.parse(JSON.stringify(checkpoint.diagnostics)) as Json,
       }])
       .select()
       .single();
@@ -45,7 +47,7 @@ export async function fetchCloudCheckpoints(
   ownerId: string
 ): Promise<CloudCheckpointRecord[]> {
   const { data, error } = await supabase
-    .from('dynasty_checkpoints')
+    .from('cloud_checkpoints')
     .select('*')
     .eq('owner_id', ownerId)
     .order('created_at', { ascending: false })
@@ -61,7 +63,7 @@ export async function fetchCloudCheckpoints(
 
 export async function deleteCloudCheckpoint(id: string): Promise<boolean> {
   const { error } = await supabase
-    .from('dynasty_checkpoints')
+    .from('cloud_checkpoints')
     .delete()
     .eq('id', id);
 
