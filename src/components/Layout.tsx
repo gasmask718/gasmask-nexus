@@ -116,9 +116,9 @@ interface LayoutProps {
 const DYNASTY_NAVIGATION = {
   penthouse: {
     id: 'penthouse',
-    name: '👑 Penthouse — Command Center',
+    name: '👑 Dynasty Owner Penthouse',
     items: [
-      { path: '/grabba/command-penthouse', label: 'Command Penthouse', icon: Crown },
+      { path: '/os/owner', label: 'Dynasty Owner Dashboard', icon: Crown },
       { path: '/grabba/advisor-penthouse', label: 'AI Advisor', icon: Brain },
       { path: '/grabba/cluster-dashboard', label: 'Cluster Dashboard', icon: LayoutDashboard },
       { path: '/grabba/autopilot', label: 'Autopilot Console', icon: Zap },
@@ -129,6 +129,15 @@ const DYNASTY_NAVIGATION = {
     ],
   },
   grabbaSkyscraper: [
+    {
+      id: 'grabba-command',
+      name: '🔥 Grabba Command Penthouse',
+      items: [
+        { path: '/grabba/command-penthouse', label: 'Grabba Command Center', icon: Flame },
+        { path: '/grabba/ai-insights', label: 'Grabba AI Insights', icon: Brain },
+        { path: '/grabba/cluster', label: 'Grabba Cluster View', icon: LayoutDashboard },
+      ],
+    },
     {
       id: 'floor-1',
       name: '🏢 Floor 1 — CRM / Store Master',
