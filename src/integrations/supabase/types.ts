@@ -4187,6 +4187,7 @@ export type Database = {
           name: string
           notes: string | null
           organization: string | null
+          owner_id: string | null
           phone: string | null
           relationship_score: number | null
           relationship_status: string
@@ -4209,6 +4210,7 @@ export type Database = {
           name: string
           notes?: string | null
           organization?: string | null
+          owner_id?: string | null
           phone?: string | null
           relationship_score?: number | null
           relationship_status?: string
@@ -4231,6 +4233,7 @@ export type Database = {
           name?: string
           notes?: string | null
           organization?: string | null
+          owner_id?: string | null
           phone?: string | null
           relationship_score?: number | null
           relationship_status?: string
