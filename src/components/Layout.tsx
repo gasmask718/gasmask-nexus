@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { SendMessageModal } from '@/components/communication/SendMessageModal';
 import SystemCheckpointBar from '@/components/system/SystemCheckpointBar';
+import { exportEmpireDataToExcel, exportOsBlueprintToJson } from '@/services/exportService';
 import '@/theme/departmentStyles.css';
 import { useLocation, Link } from 'react-router-dom';
 import { 
@@ -720,6 +721,29 @@ const Layout = ({ children }: LayoutProps) => {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
+            {/* Export Buttons - Admin Only */}
+            {isAdmin && (
+              <div className="hidden lg:flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportEmpireDataToExcel({})}
+                  className="border-emerald-500/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20 text-xs"
+                >
+                  <Download className="h-3 w-3 mr-1" />
+                  Export Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportOsBlueprintToJson()}
+                  className="border-amber-500/40 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20 text-xs"
+                >
+                  <FileText className="h-3 w-3 mr-1" />
+                  OS Blueprint
+                </Button>
+              </div>
+            )}
             <Button
               variant="outline"
               size="sm"
