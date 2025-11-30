@@ -376,12 +376,214 @@ export const SECTION_POD: OSFloor = {
   ],
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// 📞 CALL CENTER OS
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_CALL_CENTER: OSFloor = {
+  id: 'section-call-center',
+  name: 'Call Center OS',
+  icon: Phone,
+  emoji: '📞',
+  description: 'Call center operations, dialers, and AI agents',
+  roles: ['ceo', 'admin', 'va', 'csr'],
+  items: [
+    { id: 'cc-dashboard', label: 'Dashboard', path: '/callcenter', icon: LayoutDashboard, roles: ['ceo', 'admin', 'va', 'csr'] },
+    { id: 'cc-dialer', label: 'Dialer', path: '/callcenter/dialer', icon: Phone, roles: ['ceo', 'admin', 'va', 'csr'] },
+    { id: 'cc-logs', label: 'Call Logs', path: '/callcenter/logs', icon: FileText, roles: ['ceo', 'admin', 'va', 'csr'] },
+    { id: 'cc-ai-agents', label: 'AI Agents', path: '/callcenter/ai-agents', icon: Bot, roles: ['ceo', 'admin'] },
+    { id: 'cc-analytics', label: 'Analytics', path: '/callcenter/analytics', icon: BarChart3, roles: ['ceo', 'admin', 'va'] },
+    { id: 'cc-live', label: 'Live Monitoring', path: '/callcenter/live', icon: Activity, roles: ['ceo', 'admin'] },
+    { id: 'cc-numbers', label: 'Phone Numbers', path: '/callcenter/numbers', icon: Phone, roles: ['ceo', 'admin'] },
+    { id: 'cc-messages', label: 'Messages', path: '/callcenter/messages', icon: MessageSquare, roles: ['ceo', 'admin', 'va', 'csr'] },
+    { id: 'cc-emails', label: 'Emails', path: '/callcenter/emails', icon: Mail, roles: ['ceo', 'admin', 'va', 'csr'] },
+    { id: 'cc-settings', label: 'Settings', path: '/callcenter/settings', icon: Settings, roles: ['ceo', 'admin'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 💬 COMMUNICATION HUB
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_COMMUNICATION: OSFloor = {
+  id: 'section-communication',
+  name: 'Communication Hub',
+  icon: MessageSquare,
+  emoji: '💬',
+  description: 'Multi-channel communication center',
+  roles: ['ceo', 'admin', 'va'],
+  items: [
+    { id: 'comm-overview', label: 'Overview', path: '/communication', icon: LayoutDashboard, roles: ['ceo', 'admin', 'va'] },
+    { id: 'comm-sms', label: 'SMS Center', path: '/communication/sms', icon: MessageSquare, roles: ['ceo', 'admin', 'va'] },
+    { id: 'comm-email', label: 'Email Center', path: '/communication/email', icon: Mail, roles: ['ceo', 'admin', 'va'] },
+    { id: 'comm-calls', label: 'Calls', path: '/communication/calls', icon: Phone, roles: ['ceo', 'admin', 'va'] },
+    { id: 'comm-campaigns', label: 'Campaigns', path: '/communication/campaigns', icon: Megaphone, roles: ['ceo', 'admin', 'va'] },
+    { id: 'comm-ai-agents', label: 'AI Agents', path: '/communication/ai-agents', icon: Bot, roles: ['ceo', 'admin'] },
+    { id: 'comm-logs', label: 'Logs', path: '/communication/logs', icon: FileText, roles: ['ceo', 'admin', 'va'] },
+    { id: 'comm-analytics', label: 'Analytics', path: '/communication/analytics', icon: BarChart3, roles: ['ceo', 'admin', 'va'] },
+    { id: 'comm-settings', label: 'Settings', path: '/communication/settings', icon: Settings, roles: ['ceo', 'admin'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🔥 GRABBA OS (Extended)
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_GRABBA_OS: OSFloor = {
+  id: 'section-grabba-os',
+  name: 'Grabba OS',
+  icon: Zap,
+  emoji: '🔥',
+  description: 'Grabba brand management and operations',
+  roles: ['ceo', 'admin', 'va'],
+  items: [
+    { id: 'grabba-penthouse', label: 'Command Penthouse', path: '/grabba/command-penthouse', icon: Crown, roles: ['ceo', 'admin'] },
+    { id: 'grabba-cluster', label: 'Cluster Dashboard', path: '/grabba/cluster-dashboard', icon: LayoutDashboard, roles: ['ceo', 'admin', 'va'] },
+    { id: 'grabba-ai-ops', label: 'AI Operations', path: '/grabba/ai-operations', icon: Brain, roles: ['ceo', 'admin'] },
+    { id: 'grabba-autopilot', label: 'Autopilot Console', path: '/grabba/autopilot', icon: Zap, roles: ['ceo', 'admin'] },
+    { id: 'grabba-upload', label: 'Unified Upload', path: '/grabba/unified-upload', icon: Database, roles: ['ceo', 'admin', 'va'] },
+    { id: 'grabba-delivery', label: 'Multi-Brand Delivery', path: '/grabba/multi-brand-delivery', icon: Truck, roles: ['ceo', 'admin', 'va'] },
+    { id: 'grabba-command', label: 'Command Console', path: '/grabba/command-console', icon: Cpu, roles: ['ceo', 'admin'] },
+    { id: 'grabba-results', label: 'Results', path: '/grabba/results', icon: BarChart3, roles: ['ceo', 'admin', 'va'] },
+    { id: 'grabba-actions', label: 'Action Queue', path: '/grabba/action-queue', icon: ClipboardList, roles: ['ceo', 'admin', 'va'] },
+    { id: 'grabba-drilldown', label: 'Drilldown', path: '/grabba/drilldown', icon: Target, roles: ['ceo', 'admin'] },
+    { id: 'grabba-briefing', label: 'Daily Briefing', path: '/grabba/daily-briefing', icon: Calendar, roles: ['ceo', 'admin', 'va'] },
+    { id: 'grabba-instinct', label: 'Instinct Log', path: '/grabba/instinct-log', icon: Eye, roles: ['ceo', 'admin'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 📦 WAREHOUSE & PROCUREMENT
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_WAREHOUSE: OSFloor = {
+  id: 'section-warehouse',
+  name: 'Warehouse & Procurement',
+  icon: Factory,
+  emoji: '🏭',
+  description: 'Warehouse operations and procurement management',
+  roles: ['ceo', 'admin', 'va'],
+  items: [
+    { id: 'warehouse-dash', label: 'Warehouse Dashboard', path: '/os/warehouse', icon: Factory, roles: ['ceo', 'admin', 'va'] },
+    { id: 'procurement-dash', label: 'Procurement Dashboard', path: '/os/procurement', icon: Database, roles: ['ceo', 'admin', 'va'] },
+    { id: 'procurement-suppliers', label: 'Suppliers', path: '/os/procurement/suppliers', icon: Users, roles: ['ceo', 'admin', 'va'] },
+    { id: 'procurement-orders', label: 'Purchase Orders', path: '/os/procurement/orders', icon: ClipboardList, roles: ['ceo', 'admin', 'va'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🛍️ LEGACY CRM SYSTEMS
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_LEGACY_CRM: OSFloor = {
+  id: 'section-legacy-crm',
+  name: 'CRM Legacy Systems',
+  icon: Building2,
+  emoji: '🗂️',
+  description: 'Legacy CRM pages and tools',
+  roles: ['ceo', 'admin', 'va'],
+  items: [
+    { id: 'legacy-crm-main', label: 'CRM Main', path: '/crm', icon: Building2, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-crm-follow', label: 'Follow-Ups', path: '/crm/follow-ups', icon: Bell, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-crm-data', label: 'CRM Data', path: '/crm/data', icon: Database, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-crm-export', label: 'Data Export', path: '/crm/data/export', icon: FileText, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-crm-import', label: 'Data Import', path: '/crm/data/import', icon: Database, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-crm-backup', label: 'Backup Settings', path: '/crm/backup-settings', icon: Settings, roles: ['ceo', 'admin'] },
+    { id: 'legacy-text', label: 'Text Center', path: '/text-center', icon: MessageSquare, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-email', label: 'Email Center', path: '/email-center', icon: Mail, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-call', label: 'Call Center', path: '/call-center', icon: Phone, roles: ['ceo', 'admin', 'va'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 💼 FUNDING & LOANS
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_FUNDING: OSFloor = {
+  id: 'section-funding',
+  name: 'Funding & Loans',
+  icon: Banknote,
+  emoji: '💼',
+  description: 'Funding requests and loan management',
+  roles: ['ceo', 'admin'],
+  items: [
+    { id: 'funding-requests', label: 'Funding Requests', path: '/funding/requests', icon: Banknote, roles: ['ceo', 'admin'] },
+    { id: 'loan-products', label: 'Loan Products', path: '/loans/products', icon: CreditCard, roles: ['ceo', 'admin'] },
+    { id: 'lender-directory', label: 'Lender Directory', path: '/loans/lenders', icon: Users, roles: ['ceo', 'admin'] },
+    { id: 'loan-calculators', label: 'Loan Calculators', path: '/loans/calculators', icon: Calculator, roles: ['ceo', 'admin'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🤖 AI TOOLS COLLECTION
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_AI_TOOLS: OSFloor = {
+  id: 'section-ai-tools',
+  name: 'AI Tools',
+  icon: Bot,
+  emoji: '🤖',
+  description: 'AI-powered tools and automation',
+  roles: ['ceo', 'admin', 'va'],
+  items: [
+    { id: 'ai-ceo-room', label: 'CEO Control Room', path: '/ai/ceo-control', icon: Crown, roles: ['ceo', 'admin'] },
+    { id: 'ai-workforce', label: 'AI Workforce', path: '/ai/workforce', icon: Users, roles: ['ceo', 'admin', 'va'] },
+    { id: 'ai-command', label: 'AI Command Console', path: '/grabba/ai-command', icon: Cpu, roles: ['ceo', 'admin'] },
+    { id: 'ai-playbooks', label: 'AI Playbooks', path: '/grabba/ai-playbooks', icon: ClipboardList, roles: ['ceo', 'admin'] },
+    { id: 'ai-routines', label: 'AI Routines', path: '/grabba/ai-routines', icon: Cog, roles: ['ceo', 'admin'] },
+    { id: 'ai-risk', label: 'Risk Radar', path: '/grabba/risk-radar', icon: Shield, roles: ['ceo', 'admin'] },
+    { id: 'ai-followup', label: 'Follow-Up Settings', path: '/grabba/follow-up-settings', icon: Settings, roles: ['ceo', 'admin'] },
+    { id: 'ai-dynasty', label: 'Dynasty Automations', path: '/automations/dynasty', icon: Zap, roles: ['ceo', 'admin'] },
+    { id: 'ai-meta', label: 'Meta AI', path: '/ai/meta', icon: Brain, roles: ['ceo', 'admin'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 📊 VA PERFORMANCE CENTER
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_VA_CENTER: OSFloor = {
+  id: 'section-va-center',
+  name: 'VA Performance Center',
+  icon: UserCircle,
+  emoji: '📊',
+  description: 'Virtual assistant performance and management',
+  roles: ['ceo', 'admin', 'va'],
+  items: [
+    { id: 'va-performance', label: 'VA Performance', path: '/va/performance', icon: BarChart3, roles: ['ceo', 'admin', 'va'] },
+    { id: 'va-ranking', label: 'VA Ranking', path: '/va/ranking', icon: Award, roles: ['ceo', 'admin', 'va'] },
+    { id: 'va-tasks', label: 'VA Task Center', path: '/va/tasks', icon: CheckSquare, roles: ['ceo', 'admin', 'va'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🏢 HOLDINGS & ASSETS
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_HOLDINGS: OSFloor = {
+  id: 'section-holdings',
+  name: 'Holdings & Assets',
+  icon: Building2,
+  emoji: '🏢',
+  description: 'Holdings management and asset tracking',
+  roles: ['ceo', 'admin'],
+  items: [
+    { id: 'holdings-overview', label: 'Holdings Overview', path: '/holdings', icon: Building2, roles: ['ceo', 'admin'] },
+    { id: 'holdings-assets', label: 'Assets', path: '/holdings/assets', icon: Boxes, roles: ['ceo', 'admin'] },
+    { id: 'holdings-airbnb', label: 'Airbnb Properties', path: '/holdings/airbnb', icon: Home, roles: ['ceo', 'admin'] },
+    { id: 'holdings-tenants', label: 'Tenants', path: '/holdings/tenants', icon: Users, roles: ['ceo', 'admin'] },
+    { id: 'holdings-loans', label: 'Loans', path: '/holdings/loans', icon: Banknote, roles: ['ceo', 'admin'] },
+    { id: 'holdings-expenses', label: 'Expenses', path: '/holdings/expenses', icon: Receipt, roles: ['ceo', 'admin'] },
+    { id: 'holdings-strategy', label: 'Strategy', path: '/holdings/strategy', icon: Target, roles: ['ceo', 'admin'] },
+  ],
+};
+
 export const ADDITIONAL_SECTIONS: OSFloor[] = [
   SECTION_MARKETPLACE_ADMIN,
   SECTION_ACCOUNTING,
   SECTION_GLOBAL,
   SECTION_REAL_ESTATE,
   SECTION_POD,
+  SECTION_CALL_CENTER,
+  SECTION_COMMUNICATION,
+  SECTION_GRABBA_OS,
+  SECTION_WAREHOUSE,
+  SECTION_LEGACY_CRM,
+  SECTION_FUNDING,
+  SECTION_AI_TOOLS,
+  SECTION_VA_CENTER,
+  SECTION_HOLDINGS,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
