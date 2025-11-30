@@ -17,8 +17,8 @@ import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useAuth } from '@/contexts/AuthContext';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DYNASTY OS — COMPLETE EMPIRE NAVIGATION (RESTORED)
-// Penthouse + Floors 1-8 + ALL Business Units
+// DYNASTY OS — COMPLETE EMPIRE NAVIGATION (FULLY RESTORED)
+// Penthouse + Floors 1-8 + ALL Business Units + ALL OS Systems
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function AppSidebar() {
@@ -29,10 +29,7 @@ export default function AppSidebar() {
   
   // All sections open by default
   const [openSections, setOpenSections] = useState<string[]>([
-    'penthouse',
-    'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8',
-    'product-companies', 'service-experience', 'platforms-digital', 'finance-acquisition',
-    'ecommerce', 'systems', 'departments', 'portals'
+    'penthouse', 'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9'
   ]);
 
   const userRole = profileData?.profile?.primary_role || 'admin';
@@ -157,11 +154,11 @@ export default function AppSidebar() {
           </div>
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* 🏢 FLOORS 1-8 — Grabba Empire Skyscraper */}
+          {/* 🏢 FLOORS 1-9 — Grabba Empire Skyscraper */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
           <div className="mb-4 pt-2 border-t border-sidebar-border">
             <div className="px-3 py-2 text-xs font-semibold uppercase text-sidebar-foreground/50 tracking-wider">
-              🏢 Grabba Skyscraper (Floors 1-8)
+              🏢 Grabba Skyscraper (Floors 1-9)
             </div>
             
             {/* Floor 1 - CRM & Store Master */}
@@ -248,32 +245,22 @@ export default function AppSidebar() {
               { path: '/ambassador-payouts', label: 'Ambassador Payouts', emoji: '💵' },
               { path: '/ambassador-leaderboard', label: 'Leaderboard', emoji: '🏆' },
             ])}
+
+            {/* Floor 9 - AI Operations */}
+            {renderSection('floor-9', 'Floor 9: AI Operations', '🤖', [
+              { path: '/grabba/ai', label: 'AI Copilot', emoji: '🤖' },
+              { path: '/ai/workforce', label: 'AI Workforce', emoji: '👾' },
+              { path: '/grabba/ai-insights', label: 'AI Insights', emoji: '💡' },
+              { path: '/grabba/ai-playbooks', label: 'AI Playbooks', emoji: '📋' },
+              { path: '/grabba/ai-routines', label: 'AI Routines', emoji: '🔄' },
+              { path: '/grabba/risk-radar', label: 'Risk Radar', emoji: '🛡️' },
+              { path: '/grabba/autopilot', label: 'Autopilot Console', emoji: '✈️' },
+              { path: '/grabba/command-console', label: 'Command Console', emoji: '🎮' },
+            ])}
           </div>
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* 🤖 AI & INTELLIGENCE */}
-          {/* ═══════════════════════════════════════════════════════════════════ */}
-          {isAdmin && (
-            <div className="mb-4 pt-2 border-t border-sidebar-border">
-              <div className="px-3 py-2 text-xs font-semibold uppercase text-sidebar-foreground/50 tracking-wider">
-                🤖 AI & Intelligence
-              </div>
-              {renderSection('ai-intelligence', 'AI Operations', '🧠', [
-                { path: '/grabba/ai', label: 'AI Copilot', emoji: '🤖' },
-                { path: '/ai/workforce', label: 'AI Workforce', emoji: '👾' },
-                { path: '/grabba/ai-insights', label: 'AI Insights', emoji: '💡' },
-                { path: '/grabba/ai-playbooks', label: 'AI Playbooks', emoji: '📋' },
-                { path: '/grabba/ai-routines', label: 'AI Routines', emoji: '🔄' },
-                { path: '/grabba/risk-radar', label: 'Risk Radar', emoji: '🛡️' },
-                { path: '/analytics', label: 'Analytics', emoji: '📊' },
-                { path: '/territories', label: 'Territories', emoji: '🗺️' },
-                { path: '/leaderboard', label: 'Leaderboard', emoji: '🏆' },
-              ])}
-            </div>
-          )}
-
-          {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* 🔴 GRABBA PRODUCT COMPANIES */}
+          {/* 🔴 GRABBA PRODUCT BRANDS */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {isAdmin && (
             <div className="mb-4 pt-2 border-t border-sidebar-border">
@@ -281,28 +268,24 @@ export default function AppSidebar() {
                 🔴 Grabba Product Brands
               </div>
               
-              {/* GasMask OS */}
               {renderSection('gasmask-os', 'GasMask OS', '🔴', [
                 { path: '/grabba/brand/gasmask', label: 'GasMask Dashboard', emoji: '📊' },
                 { path: '/gasmask/stores', label: 'GasMask Stores', emoji: '🏪' },
                 { path: '/gasmask/inventory', label: 'GasMask Inventory', emoji: '📦' },
               ], "text-red-400 hover:bg-red-500/10")}
 
-              {/* HotMama OS */}
               {renderSection('hotmama-os', 'HotMama OS', '🟣', [
                 { path: '/grabba/brand/hotmama', label: 'HotMama Dashboard', emoji: '📊' },
                 { path: '/hotmama/stores', label: 'HotMama Stores', emoji: '🏪' },
                 { path: '/hotmama/inventory', label: 'HotMama Inventory', emoji: '📦' },
               ], "text-rose-400 hover:bg-rose-500/10")}
 
-              {/* Scalati OS */}
               {renderSection('scalati-os', 'Hot Scalati OS', '🟠', [
                 { path: '/grabba/brand/scalati', label: 'Scalati Dashboard', emoji: '📊' },
                 { path: '/scalati/stores', label: 'Scalati Stores', emoji: '🏪' },
                 { path: '/scalati/inventory', label: 'Scalati Inventory', emoji: '📦' },
               ], "text-orange-400 hover:bg-orange-500/10")}
 
-              {/* Grabba R Us OS */}
               {renderSection('grabba-rus-os', 'Grabba R Us OS', '🟪', [
                 { path: '/grabba/brand/grabba', label: 'Grabba Dashboard', emoji: '📊' },
                 { path: '/grabba/stores', label: 'Grabba Stores', emoji: '🏪' },
@@ -312,7 +295,7 @@ export default function AppSidebar() {
           )}
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* 🌐 EXTERNAL DYNASTY BRANDS */}
+          {/* 🌐 DYNASTY BUSINESS UNITS */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {isAdmin && (
             <div className="mb-4 pt-2 border-t border-sidebar-border">
@@ -320,18 +303,16 @@ export default function AppSidebar() {
                 🌐 Dynasty Business Units
               </div>
 
-              {/* TopTier Experience */}
-              {renderSection('toptier-os', 'TopTier Experience', '💎', [
+              {renderSection('toptier-os', 'TopTier Experience OS', '💎', [
                 { path: '/toptier', label: 'TopTier Dashboard', emoji: '📊' },
                 { path: '/toptier/bookings', label: 'Bookings', emoji: '📅' },
-                { path: '/toptier/drivers', label: 'TopTier Drivers', emoji: '🚗' },
+                { path: '/toptier/drivers', label: 'TopTier Fleet', emoji: '🚗' },
                 { path: '/toptier/vehicles', label: 'Vehicles', emoji: '🚙' },
                 { path: '/toptier/zones', label: 'Zones', emoji: '📍' },
                 { path: '/toptier/gifts', label: 'Gifts & Roses', emoji: '🌹' },
               ], "text-blue-400 hover:bg-blue-500/10")}
 
-              {/* Unforgettable Times */}
-              {renderSection('unforgettable-os', 'Unforgettable Times', '⭐', [
+              {renderSection('unforgettable-os', 'Unforgettable Times OS', '⭐', [
                 { path: '/unforgettable', label: 'Dashboard', emoji: '📊' },
                 { path: '/unforgettable/halls', label: 'Event Halls', emoji: '🏛️' },
                 { path: '/unforgettable/vendors', label: 'Vendors', emoji: '👥' },
@@ -340,8 +321,7 @@ export default function AppSidebar() {
                 { path: '/unforgettable/ai-builder', label: 'AI Party Builder', emoji: '🤖' },
               ], "text-yellow-400 hover:bg-yellow-500/10")}
 
-              {/* iClean WeClean */}
-              {renderSection('iclean-os', 'iClean WeClean', '🧹', [
+              {renderSection('iclean-os', 'iClean WeClean OS', '🧹', [
                 { path: '/iclean', label: 'Dashboard', emoji: '📊' },
                 { path: '/iclean/jobs', label: 'Jobs', emoji: '📋' },
                 { path: '/iclean/staff', label: 'Staff/Vendors', emoji: '👥' },
@@ -350,8 +330,7 @@ export default function AppSidebar() {
                 { path: '/iclean/billing', label: 'Billing', emoji: '💳' },
               ], "text-cyan-400 hover:bg-cyan-500/10")}
 
-              {/* Playboxxx */}
-              {renderSection('playboxxx-os', 'Playboxxx', '🎀', [
+              {renderSection('playboxxx-os', 'Playboxxx OS', '🎀', [
                 { path: '/playboxxx', label: 'Platform Overview', emoji: '📊' },
                 { path: '/playboxxx/models', label: 'Models', emoji: '👤' },
                 { path: '/playboxxx/subscriptions', label: 'Subscriptions', emoji: '💎' },
@@ -360,8 +339,7 @@ export default function AppSidebar() {
                 { path: '/playboxxx/analytics', label: 'Analytics', emoji: '📈' },
               ], "text-pink-400 hover:bg-pink-500/10")}
 
-              {/* Special Needs App */}
-              {renderSection('specialneeds-os', 'Special Needs App', '💜', [
+              {renderSection('specialneeds-os', 'Special Needs App OS', '💜', [
                 { path: '/specialneeds', label: 'Dashboard', emoji: '📊' },
                 { path: '/specialneeds/providers', label: 'Providers', emoji: '👥' },
                 { path: '/specialneeds/families', label: 'Families', emoji: '🏠' },
@@ -380,28 +358,28 @@ export default function AppSidebar() {
                 💰 Finance & Acquisition
               </div>
               
-              {/* Funding Company */}
-              {renderSection('funding-os', 'Funding Company', '💵', [
+              {renderSection('funding-os', 'Funding Company OS', '💵', [
                 { path: '/finance', label: 'Finance Overview', emoji: '📊' },
                 { path: '/finance/funding', label: 'Funding Pipeline', emoji: '📈' },
                 { path: '/finance/funding-requests', label: 'Funding Requests', emoji: '📝' },
-                { path: '/finance/credit-repair', label: 'Credit Repair', emoji: '💳' },
+                { path: '/finance/credit-repair', label: 'Credit & Deletion', emoji: '💳' },
               ], "text-green-400 hover:bg-green-500/10")}
 
-              {/* Grant Company */}
-              {renderSection('grants-os', 'Grant Company', '🎓', [
+              {renderSection('grants-os', 'Grant Company OS', '🎓', [
                 { path: '/finance/grants', label: 'Grant Cases', emoji: '📋' },
+                { path: '/finance/grants/approved', label: 'Approved Grants', emoji: '✅' },
+                { path: '/finance/grants/pending', label: 'Pending Grants', emoji: '⏳' },
               ], "text-emerald-400 hover:bg-emerald-500/10")}
 
-              {/* Investment / Wealth Engine */}
-              {renderSection('investment-os', 'Investment & Wealth', '📈', [
+              {renderSection('wealth-os', 'Wealth Engine OS', '📈', [
                 { path: '/finance/investment', label: 'Dynasty Investment', emoji: '💎' },
                 { path: '/finance/trading', label: 'Trading Bots', emoji: '🤖' },
+                { path: '/finance/stocks', label: 'Stocks Portfolio', emoji: '📊' },
+                { path: '/finance/crypto', label: 'Crypto Portfolio', emoji: '🪙' },
                 { path: '/economic-analytics', label: 'Economic Analytics', emoji: '📊' },
                 { path: '/finance/revenue-brain', label: 'Revenue Brain', emoji: '🧠' },
               ], "text-amber-400 hover:bg-amber-500/10")}
 
-              {/* Real Estate */}
               {renderSection('realestate-os', 'Real Estate OS', '🏠', [
                 { path: '/realestate', label: 'Real Estate HQ', emoji: '🏢' },
                 { path: '/realestate/leads', label: 'Lead Intelligence', emoji: '🎯' },
@@ -412,11 +390,66 @@ export default function AppSidebar() {
                 { path: '/holdings/overview', label: 'Holdings Overview', emoji: '🏘️' },
                 { path: '/holdings/airbnb', label: 'Airbnb Properties', emoji: '🛏️' },
               ], "text-teal-400 hover:bg-teal-500/10")}
+
+              {renderSection('accounting-os', 'Accounting OS', '💳', [
+                { path: '/grabba/finance', label: 'Business Ledger', emoji: '📒' },
+                { path: '/grabba/personal-finance', label: 'Personal Finance', emoji: '👤' },
+                { path: '/grabba/financial-dashboard', label: 'Financial Dashboard', emoji: '📊' },
+                { path: '/grabba/payroll-manager', label: 'Payroll Manager', emoji: '💵' },
+                { path: '/economic-analytics', label: 'Economic Analytics', emoji: '📈' },
+              ], "text-lime-400 hover:bg-lime-500/10")}
             </div>
           )}
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* 🛒 E-COMMERCE & POD */}
+          {/* 📡 COMMUNICATION SYSTEMS */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {isAdmin && (
+            <div className="mb-4 pt-2 border-t border-sidebar-border">
+              <div className="px-3 py-2 text-xs font-semibold uppercase text-sidebar-foreground/50 tracking-wider">
+                📡 Communication Systems
+              </div>
+
+              {renderSection('callcenter-os', 'AI Call Center OS', '📞', [
+                { path: '/callcenter', label: 'Call Center Dashboard', emoji: '📊' },
+                { path: '/callcenter/dialer', label: 'Cloud Dialer', emoji: '📞' },
+                { path: '/callcenter/ai-agents', label: 'AI Agents', emoji: '🤖' },
+                { path: '/callcenter/logs', label: 'Call Logs', emoji: '📝' },
+                { path: '/callcenter/live', label: 'Live Monitoring', emoji: '📡' },
+                { path: '/callcenter/analytics', label: 'Analytics', emoji: '📈' },
+                { path: '/callcenter/numbers', label: 'Phone Numbers', emoji: '📱' },
+                { path: '/callcenter/settings', label: 'Settings', emoji: '⚙️' },
+              ], "text-blue-400 hover:bg-blue-500/10")}
+
+              {renderSection('textcenter-os', 'AI Text Center OS', '💬', [
+                { path: '/grabba/text-center', label: 'Text Center', emoji: '📱' },
+                { path: '/communication/sms', label: 'SMS Hub', emoji: '💬' },
+                { path: '/callcenter/messages', label: 'Messages', emoji: '✉️' },
+                { path: '/communication/campaigns', label: 'SMS Campaigns', emoji: '📢' },
+              ], "text-green-400 hover:bg-green-500/10")}
+
+              {renderSection('emailcenter-os', 'Email Center OS', '📧', [
+                { path: '/grabba/email-center', label: 'Email Center', emoji: '📧' },
+                { path: '/communication/email', label: 'Email Hub', emoji: '✉️' },
+                { path: '/callcenter/emails', label: 'Email Logs', emoji: '📝' },
+                { path: '/communication/campaigns', label: 'Email Campaigns', emoji: '📢' },
+              ], "text-purple-400 hover:bg-purple-500/10")}
+
+              {renderSection('communication-os', 'Communication Hub OS', '📡', [
+                { path: '/communication', label: 'Communication Overview', emoji: '📊' },
+                { path: '/communication/calls', label: 'Calls', emoji: '📞' },
+                { path: '/communication/sms', label: 'SMS', emoji: '💬' },
+                { path: '/communication/email', label: 'Email', emoji: '📧' },
+                { path: '/communication/ai-agents', label: 'AI Agents', emoji: '🤖' },
+                { path: '/communication/logs', label: 'All Logs', emoji: '📝' },
+                { path: '/communication/analytics', label: 'Analytics', emoji: '📈' },
+                { path: '/communication/settings', label: 'Settings', emoji: '⚙️' },
+              ])}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* 🛒 E-COMMERCE & MARKETPLACES */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {isAdmin && (
             <div className="mb-4 pt-2 border-t border-sidebar-border">
@@ -424,29 +457,118 @@ export default function AppSidebar() {
                 🛒 E-Commerce & Marketplaces
               </div>
               
-              {/* E-Commerce Hub */}
-              {renderSection('ecommerce-os', 'E-Commerce Hub', '🛍️', [
-                { path: '/ecommerce', label: 'Dashboard', emoji: '📊' },
-                { path: '/ecommerce/products', label: 'Product Sync', emoji: '🔄' },
-                { path: '/ecommerce/orders', label: 'Orders', emoji: '📦' },
-                { path: '/shop', label: 'Shop Front', emoji: '🏪' },
-              ], "text-indigo-400 hover:bg-indigo-500/10")}
-
-              {/* POD Department */}
-              {renderSection('pod-os', 'POD Department', '🎨', [
-                { path: '/pod', label: 'POD Dashboard', emoji: '📊' },
-                { path: '/pod/designs', label: 'Designs', emoji: '🎨' },
-                { path: '/pod/products', label: 'POD Products', emoji: '👕' },
-                { path: '/pod/orders', label: 'POD Orders', emoji: '📦' },
-              ], "text-fuchsia-400 hover:bg-fuchsia-500/10")}
-
-              {/* Marketplace Admin */}
-              {renderSection('marketplace-os', 'Marketplace Admin', '🛒', [
+              {renderSection('marketplace-os', 'Marketplace OS', '🛍️', [
                 { path: '/portal/marketplace-admin', label: 'Marketplace Admin', emoji: '⚙️' },
                 { path: '/marketplace/products', label: 'Product Catalog', emoji: '📦' },
                 { path: '/marketplace/orders', label: 'Marketplace Orders', emoji: '🧾' },
                 { path: '/marketplace/shipping', label: 'Shipping Center', emoji: '📬' },
+                { path: '/shop', label: 'Shop Front', emoji: '🏪' },
+              ], "text-indigo-400 hover:bg-indigo-500/10")}
+
+              {renderSection('wholesale-os', 'National Wholesale OS', '📦', [
+                { path: '/portal/national-wholesale', label: 'National Wholesale', emoji: '🌎' },
+                { path: '/grabba/wholesale-platform', label: 'Wholesale Platform', emoji: '🏬' },
+                { path: '/wholesale', label: 'Wholesale Orders', emoji: '📦' },
+                { path: '/wholesale/fulfillment', label: 'Fulfillment', emoji: '📤' },
               ], "text-sky-400 hover:bg-sky-500/10")}
+
+              {renderSection('pod-os', 'POD Design System OS', '🎨', [
+                { path: '/pod', label: 'POD Dashboard', emoji: '📊' },
+                { path: '/pod/designs', label: 'Designs Library', emoji: '🎨' },
+                { path: '/pod/generator', label: 'AI Design Generator', emoji: '🤖' },
+                { path: '/pod/mockups', label: 'Mockup Generator', emoji: '👕' },
+                { path: '/pod/uploads', label: 'Marketplace Uploads', emoji: '⬆️' },
+                { path: '/pod/analytics', label: 'Sales Analytics', emoji: '📈' },
+                { path: '/pod/winners', label: 'Scaling Engine', emoji: '🏆' },
+              ], "text-fuchsia-400 hover:bg-fuchsia-500/10")}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* 🚴 DELIVERY & LOGISTICS */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {isAdmin && (
+            <div className="mb-4 pt-2 border-t border-sidebar-border">
+              <div className="px-3 py-2 text-xs font-semibold uppercase text-sidebar-foreground/50 tracking-wider">
+                🚴 Delivery & Logistics
+              </div>
+
+              {renderSection('delivery-os', 'Delivery & Routing OS', '🚚', [
+                { path: '/grabba/deliveries', label: 'Deliveries', emoji: '📬' },
+                { path: '/routes', label: 'Route Plans', emoji: '🗺️' },
+                { path: '/route-optimizer', label: 'Route Optimizer', emoji: '⚡' },
+                { path: '/operations/live-map', label: 'Live Map', emoji: '📍' },
+                { path: '/grabba/multi-brand-delivery', label: 'Multi-Brand Delivery', emoji: '🚛' },
+              ])}
+
+              {renderSection('drivers-os', 'Drivers / TopTier Fleet OS', '🚗', [
+                { path: '/driver', label: 'Driver Management', emoji: '🚗' },
+                { path: '/toptier/drivers', label: 'TopTier Fleet', emoji: '🚙' },
+                { path: '/driver-payouts', label: 'Driver Payouts', emoji: '💰' },
+                { path: '/driver-debt-collection', label: 'Driver Collections', emoji: '📥' },
+              ], "text-blue-400 hover:bg-blue-500/10")}
+
+              {renderSection('bikers-os', 'Store Checkers OS (Bikers)', '🚴', [
+                { path: '/biker', label: 'Biker Management', emoji: '🚴' },
+                { path: '/biker-payouts', label: 'Biker Payouts', emoji: '💵' },
+                { path: '/my-route', label: 'My Route', emoji: '🗺️' },
+              ], "text-green-400 hover:bg-green-500/10")}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* 👥 CRM & CUSTOMER SERVICE */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {isAdmin && (
+            <div className="mb-4 pt-2 border-t border-sidebar-border">
+              <div className="px-3 py-2 text-xs font-semibold uppercase text-sidebar-foreground/50 tracking-wider">
+                👥 CRM & Customer Service
+              </div>
+
+              {renderSection('crm-global-os', 'Global CRM OS', '👥', [
+                { path: '/crm', label: 'CRM Dashboard', emoji: '📊' },
+                { path: '/crm/contacts', label: 'Contacts', emoji: '👤' },
+                { path: '/crm/customers', label: 'Customers', emoji: '🧑‍💼' },
+                { path: '/crm/follow-ups', label: 'Follow-Ups', emoji: '📞' },
+                { path: '/crm/data', label: 'Data Management', emoji: '📊' },
+                { path: '/crm/data/export', label: 'Data Export', emoji: '📤' },
+                { path: '/crm/data/import', label: 'Data Import', emoji: '📥' },
+              ])}
+
+              {renderSection('customerservice-os', 'Customer Service OS', '🎧', [
+                { path: '/crm', label: 'Support Dashboard', emoji: '📊' },
+                { path: '/notifications', label: 'Notifications', emoji: '🔔' },
+                { path: '/reminders', label: 'Reminders', emoji: '⏰' },
+                { path: '/messages', label: 'Messages', emoji: '💬' },
+              ])}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* 🤖 AI & AUTOMATION */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {isAdmin && (
+            <div className="mb-4 pt-2 border-t border-sidebar-border">
+              <div className="px-3 py-2 text-xs font-semibold uppercase text-sidebar-foreground/50 tracking-wider">
+                🤖 AI & Automation
+              </div>
+
+              {renderSection('ai-workforce-os', 'AI Workforce Automation OS', '👾', [
+                { path: '/ai/workforce', label: 'AI Workforce', emoji: '👾' },
+                { path: '/grabba/ai', label: 'AI Copilot', emoji: '🤖' },
+                { path: '/grabba/ai-playbooks', label: 'AI Playbooks', emoji: '📋' },
+                { path: '/grabba/ai-routines', label: 'AI Routines', emoji: '🔄' },
+                { path: '/grabba/autopilot', label: 'Autopilot Console', emoji: '✈️' },
+                { path: '/grabba/command-console', label: 'Command Console', emoji: '🎮' },
+                { path: '/grabba/ai-insights', label: 'AI Insights', emoji: '💡' },
+              ], "text-purple-400 hover:bg-purple-500/10")}
+
+              {renderSection('betting-ai-os', 'Sports Betting AI OS', '🎰', [
+                { path: '/betting/dashboard', label: 'Betting Dashboard', emoji: '📊' },
+                { path: '/betting/predictions', label: 'AI Predictions', emoji: '🤖' },
+                { path: '/betting/analytics', label: 'Betting Analytics', emoji: '📈' },
+                { path: '/betting/hedge', label: 'Hedge Fund AI', emoji: '💹' },
+              ], "text-lime-400 hover:bg-lime-500/10")}
             </div>
           )}
 
@@ -456,21 +578,10 @@ export default function AppSidebar() {
           {isAdmin && (
             <div className="mb-4 pt-2 border-t border-sidebar-border">
               <div className="px-3 py-2 text-xs font-semibold uppercase text-sidebar-foreground/50 tracking-wider">
-                ⚙️ Systems & Operations
+                ⚙️ Systems & HR
               </div>
-              
-              {/* Communications Center */}
-              {renderSection('comm-center', 'Communications Center', '📡', [
-                { path: '/communications-center', label: 'Communications Center', emoji: '📡' },
-                { path: '/text-center', label: 'Text Center', emoji: '📱' },
-                { path: '/email-center', label: 'Email Center', emoji: '📧' },
-                { path: '/communication', label: 'Legacy Comms', emoji: '💬' },
-                { path: '/communication-automation', label: 'Automation', emoji: '🤖' },
-                { path: '/communications-ai', label: 'Communications AI', emoji: '🧠' },
-              ])}
 
-              {/* HR Department */}
-              {renderSection('hr-os', 'HR & Workforce', '👔', [
+              {renderSection('hr-os', 'HR & Workforce OS', '👔', [
                 { path: '/hr', label: 'HR Management', emoji: '👥' },
                 { path: '/hr/applicants', label: 'Applicants', emoji: '📝' },
                 { path: '/hr/employees', label: 'Employees', emoji: '👤' },
@@ -480,48 +591,41 @@ export default function AppSidebar() {
                 { path: '/my-hr', label: 'My HR Portal', emoji: '👤' },
               ])}
 
-              {/* Customer Service */}
-              {renderSection('customer-service', 'Customer Service', '🎧', [
-                { path: '/crm', label: 'Global CRM', emoji: '👥' },
-                { path: '/crm/data', label: 'Data Management', emoji: '📊' },
-                { path: '/notifications', label: 'Notifications', emoji: '🔔' },
-              ])}
-
-              {/* VA & Admin Tools */}
-              {renderSection('va-tools', 'VA & Admin Tools', '👩‍💼', [
+              {renderSection('va-os', 'VA OS', '👩‍💼', [
                 { path: '/va-task-center', label: 'VA Task Center', emoji: '📋' },
                 { path: '/va-performance', label: 'VA Performance', emoji: '📊' },
                 { path: '/va-ranking', label: 'VA Ranking', emoji: '🏆' },
                 { path: '/batch-import', label: 'Batch Import', emoji: '📤' },
-                { path: '/audit-logs', label: 'Audit Logs', emoji: '📜' },
-                { path: '/integrations', label: 'Integrations', emoji: '🔌' },
+                { path: '/automation-settings', label: 'Automation Settings', emoji: '⚙️' },
+              ])}
+
+              {renderSection('ambassador-os', 'Ambassador OS', '🤝', [
+                { path: '/grabba/ambassadors', label: 'Ambassador CRM', emoji: '👥' },
+                { path: '/ambassador-commissions', label: 'Commissions', emoji: '💰' },
+                { path: '/ambassador-regions', label: 'Regions', emoji: '🗺️' },
+                { path: '/ambassador-payouts', label: 'Payouts', emoji: '💵' },
+                { path: '/ambassador-leaderboard', label: 'Leaderboard', emoji: '🏆' },
               ])}
             </div>
           )}
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* 🎰 SPORTS BETTING AI */}
+          {/* 🌍 GLOBAL DYNASTY */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {isAdmin && (
             <div className="mb-4 pt-2 border-t border-sidebar-border">
-              {renderSection('betting-ai', 'Sports Betting AI', '🎰', [
-                { path: '/betting/dashboard', label: 'Betting Dashboard', emoji: '📊' },
-                { path: '/betting/predictions', label: 'AI Predictions', emoji: '🤖' },
-                { path: '/betting/analytics', label: 'Betting Analytics', emoji: '📈' },
-              ], "text-lime-400 hover:bg-lime-500/10")}
-            </div>
-          )}
+              <div className="px-3 py-2 text-xs font-semibold uppercase text-sidebar-foreground/50 tracking-wider">
+                🌍 Global Dynasty
+              </div>
 
-          {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* 🌍 GLOBAL DYNASTY DASHBOARD */}
-          {/* ═══════════════════════════════════════════════════════════════════ */}
-          {isAdmin && (
-            <div className="mb-4 pt-2 border-t border-sidebar-border">
               {renderSection('dynasty-global', 'Global Dynasty Dashboard', '🌍', [
                 { path: '/dynasty/global', label: 'Global Overview', emoji: '🌐' },
                 { path: '/dynasty/metrics', label: 'Empire Metrics', emoji: '📊' },
-                { path: '/dynasty/expansion', label: 'Expansion', emoji: '🚀' },
-              ], "text-gold-400 hover:bg-yellow-500/10")}
+                { path: '/expansion', label: 'Expansion', emoji: '🚀' },
+                { path: '/territories', label: 'Territories', emoji: '🗺️' },
+                { path: '/leaderboard', label: 'Leaderboard', emoji: '🏆' },
+                { path: '/analytics', label: 'Analytics', emoji: '📈' },
+              ], "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-400")}
             </div>
           )}
 
@@ -560,6 +664,12 @@ export default function AppSidebar() {
               <Link to="/portal/customer" className={cn("flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors", isPathActive('/portal/customer') ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40")}>
                 <span>🧑 Customer Portal</span>
               </Link>
+              <Link to="/portal/national-wholesale" className={cn("flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors", isPathActive('/portal/national-wholesale') ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40")}>
+                <span>🌎 National Wholesale Portal</span>
+              </Link>
+              <Link to="/portal/marketplace-admin" className={cn("flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors", isPathActive('/portal/marketplace-admin') ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40")}>
+                <span>🛒 Marketplace Admin Portal</span>
+              </Link>
             </div>
           </div>
 
@@ -572,42 +682,35 @@ export default function AppSidebar() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center">
-                <User className="h-4 w-4 text-sidebar-foreground" />
+                <User className="h-4 w-4" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">
-                  {profileData?.profile?.full_name || user?.email || 'User'}
-                </p>
-                <p className="text-xs text-sidebar-foreground/60 capitalize">{userRole}</p>
+                <p className="text-sm font-medium truncate">{profileData?.profile?.full_name || 'User'}</p>
+                <p className="text-xs text-sidebar-foreground/60 truncate capitalize">{userRole}</p>
               </div>
             </div>
             <div className="flex gap-1">
-              <Link to="/settings" className="flex-1">
-                <Button variant="ghost" size="sm" className="w-full text-xs">
-                  <Settings className="h-3 w-3 mr-1" />
-                  Settings
-                </Button>
-              </Link>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex-1 text-xs text-destructive hover:text-destructive"
-                onClick={() => signOut()}
-              >
-                <LogOut className="h-3 w-3 mr-1" />
-                Logout
+              <Button variant="ghost" size="sm" asChild className="flex-1 text-xs">
+                <Link to="/settings">
+                  <Settings className="h-3 w-3 mr-1" /> Settings
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => signOut()} className="flex-1 text-xs">
+                <LogOut className="h-3 w-3 mr-1" /> Logout
               </Button>
             </div>
           </div>
         ) : (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-full text-destructive hover:text-destructive"
-            onClick={() => signOut()}
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
+          <div className="flex flex-col items-center gap-2">
+            <Button variant="ghost" size="icon" asChild>
+              <Link to="/settings">
+                <Settings className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => signOut()}>
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         )}
       </div>
     </div>
