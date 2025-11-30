@@ -11649,6 +11649,35 @@ export type Database = {
           },
         ]
       }
+      role_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          permission: string
+          role_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          permission: string
+          role_name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          permission?: string
+          role_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_role_name_fkey"
+            columns: ["role_name"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
       roles: {
         Row: {
           created_at: string | null
