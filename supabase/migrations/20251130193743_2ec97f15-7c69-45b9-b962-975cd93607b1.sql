@@ -1,0 +1,1 @@
+CREATE INDEX idx_crm_contacts_business_active ON public.crm_contacts(business_id) WHERE deleted_at IS NULL;
