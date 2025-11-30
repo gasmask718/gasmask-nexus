@@ -97,6 +97,7 @@ import CompanyProfile from '@/pages/CompanyProfile';
 import UnpaidAccounts from '@/pages/UnpaidAccounts';
 import DriverDebtCollection from '@/pages/DriverDebtCollection';
 import BrandDashboard from '@/pages/BrandDashboard';
+import { OwnerDashboard } from '@/pages/owner';
 
 // Call Center
 import CallCenterDashboard from '@/pages/callcenter/CallCenterDashboard';
@@ -641,6 +642,13 @@ export default function AppRoutes() {
         <Route path="/system/modules" element={
           <RequireRole allowedRoles={['admin']} showLocked>
             <ModuleDiagnosticsPage />
+          </RequireRole>
+        } />
+
+        {/* Owner Dashboard - Admin Only */}
+        <Route path="/owner" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerDashboard />
           </RequireRole>
         } />
 
