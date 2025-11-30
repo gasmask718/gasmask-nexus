@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -130,6 +131,7 @@ export default function OwnerClusterDashboard() {
 }
 
 function ClusterCard({ cluster }: { cluster: typeof clusters[0] }) {
+  const navigate = useNavigate();
   const colorVariants = {
     emerald: {
       bg: 'from-emerald-950/50 to-emerald-900/20',
@@ -229,7 +231,7 @@ function ClusterCard({ cluster }: { cluster: typeof clusters[0] }) {
         </div>
 
         {/* Action */}
-        <Button variant="outline" className="w-full gap-2" disabled>
+        <Button variant="outline" className="w-full gap-2" onClick={() => navigate(`/os/owner/cluster/${cluster.id}`)}>
           View Cluster
           <ChevronRight className="h-4 w-4" />
         </Button>

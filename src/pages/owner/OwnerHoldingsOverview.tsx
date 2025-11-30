@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,11 +25,11 @@ const realEstateHoldings = {
   monthlyIncome: 12500,
   appreciation: 8.5,
   properties: [
-    { name: 'Rental Property #1', value: 320000, equity: 120000, income: 2800, status: 'Occupied' },
-    { name: 'Rental Property #2', value: 285000, equity: 95000, income: 2400, status: 'Occupied' },
-    { name: 'Rental Property #3', value: 375000, equity: 135000, income: 3200, status: 'Occupied' },
-    { name: 'Airbnb Unit #1', value: 180000, equity: 60000, income: 2800, status: 'Active' },
-    { name: 'Commercial Space', value: 520000, equity: 40000, income: 1300, status: 'Leased' },
+    { id: 'prop-1', name: 'Rental Property #1', value: 320000, equity: 120000, income: 2800, status: 'Occupied' },
+    { id: 'prop-2', name: 'Rental Property #2', value: 285000, equity: 95000, income: 2400, status: 'Occupied' },
+    { id: 'prop-3', name: 'Rental Property #3', value: 375000, equity: 135000, income: 3200, status: 'Occupied' },
+    { id: 'prop-4', name: 'Airbnb Unit #1', value: 180000, equity: 60000, income: 2800, status: 'Active' },
+    { id: 'prop-5', name: 'Commercial Space', value: 520000, equity: 40000, income: 1300, status: 'Leased' },
   ],
 };
 
@@ -39,9 +40,9 @@ const financialHoldings = {
   stocksValue: 143000,
   monthlyChange: 4.2,
   allocations: [
-    { name: 'Index Funds', value: 85000, percentage: 46, trend: +3.2 },
-    { name: 'Individual Stocks', value: 58000, percentage: 31, trend: +5.8 },
-    { name: 'Crypto (BTC/ETH)', value: 42000, percentage: 23, trend: -2.1 },
+    { id: 'index-funds', name: 'Index Funds', value: 85000, percentage: 46, trend: +3.2 },
+    { id: 'individual-stocks', name: 'Individual Stocks', value: 58000, percentage: 31, trend: +5.8 },
+    { id: 'crypto', name: 'Crypto (BTC/ETH)', value: 42000, percentage: 23, trend: -2.1 },
   ],
 };
 
@@ -52,6 +53,7 @@ const incomingCapital = {
 };
 
 export default function OwnerHoldingsOverview() {
+  const navigate = useNavigate();
   const totalNetWorth = 
     realEstateHoldings.totalEquity + 
     financialHoldings.portfolioValue + 
@@ -145,8 +147,12 @@ export default function OwnerHoldingsOverview() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {realEstateHoldings.properties.map((property, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
+              {realEstateHoldings.properties.map((property) => (
+                <div 
+                  key={property.id} 
+                  className="flex items-center justify-between p-3 rounded-lg border bg-card/50 cursor-pointer hover:bg-muted/30 transition-colors"
+                  onClick={() => navigate(`/os/owner/holdings/property/${property.id}`)}
+                >
                   <div>
                     <p className="text-sm font-medium">{property.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -187,8 +193,12 @@ export default function OwnerHoldingsOverview() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {financialHoldings.allocations.map((allocation, idx) => (
-              <div key={idx} className="space-y-2">
+            {financialHoldings.allocations.map((allocation) => (
+              <div 
+                key={allocation.id} 
+                className="space-y-2 cursor-pointer hover:bg-muted/30 p-2 rounded-lg transition-colors -mx-2"
+                onClick={() => navigate(`/os/owner/holdings/financial/${allocation.id}`)}
+              >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{allocation.name}</span>
                   <div className="flex items-center gap-2">
