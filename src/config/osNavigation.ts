@@ -81,11 +81,11 @@ export const PENTHOUSE: OSFloor = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🏢 FLOOR 1 — SALES & CRM
+// 🏢 FLOOR 1 — CRM
 // ═══════════════════════════════════════════════════════════════════════════════
-export const FLOOR_1_SALES: OSFloor = {
-  id: 'floor-1-sales',
-  name: 'Sales & CRM',
+export const FLOOR_1_CRM: OSFloor = {
+  id: 'floor-1-crm',
+  name: 'Floor 1: CRM',
   icon: Building2,
   emoji: '🏢',
   description: 'Customer relationships, stores, contacts, and sales pipeline',
@@ -102,11 +102,11 @@ export const FLOOR_1_SALES: OSFloor = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 📞 FLOOR 2 — OPERATIONS & COMMUNICATION
+// 📞 FLOOR 2 — OPERATIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 export const FLOOR_2_OPERATIONS: OSFloor = {
   id: 'floor-2-operations',
-  name: 'Operations',
+  name: 'Floor 2: Operations',
   icon: MessageSquare,
   emoji: '📞',
   description: 'Communications, automations, and operational workflows',
@@ -122,30 +122,30 @@ export const FLOOR_2_OPERATIONS: OSFloor = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🏬 FLOOR 3 — WHOLESALE & MARKETPLACE
+// 📦 FLOOR 3 — INVENTORY
 // ═══════════════════════════════════════════════════════════════════════════════
-export const FLOOR_3_WHOLESALE: OSFloor = {
-  id: 'floor-3-wholesale',
-  name: 'Wholesale & Marketplace',
-  icon: Boxes,
-  emoji: '🏬',
-  description: 'Wholesale operations, marketplace, and fulfillment',
-  roles: ['ceo', 'admin', 'va', 'wholesaler'],
+export const FLOOR_3_INVENTORY: OSFloor = {
+  id: 'floor-3-inventory',
+  name: 'Floor 3: Inventory',
+  icon: Package,
+  emoji: '📦',
+  description: 'Manufacturing, inventory tracking, and stock management',
+  roles: ['ceo', 'admin', 'va', 'production'],
   items: [
-    { id: 'wholesale-platform', label: 'Wholesale Platform', path: '/grabba/wholesale-platform', icon: Boxes, roles: ['ceo', 'admin', 'va'] },
-    { id: 'marketplace', label: 'Marketplace', path: '/wholesale/marketplace', icon: ShoppingCart, roles: ['ceo', 'admin', 'va', 'wholesaler'] },
-    { id: 'fulfillment', label: 'Fulfillment', path: '/wholesale/fulfillment', icon: Package, roles: ['ceo', 'admin', 'va'] },
-    { id: 'procurement', label: 'Procurement', path: '/os/procurement', icon: Database, roles: ['ceo', 'admin'] },
+    { id: 'production', label: 'Production', path: '/grabba/production', icon: Factory, roles: ['ceo', 'admin', 'va', 'production'] },
+    { id: 'inventory', label: 'Inventory', path: '/grabba/inventory', icon: Package, roles: ['ceo', 'admin', 'va', 'production'] },
+    { id: 'products', label: 'Products', path: '/products', icon: Boxes, roles: ['ceo', 'admin', 'va'] },
     { id: 'warehouse', label: 'Warehouse Brain', path: '/os/warehouse', icon: Factory, roles: ['ceo', 'admin'] },
+    { id: 'procurement', label: 'Procurement', path: '/os/procurement', icon: Database, roles: ['ceo', 'admin'] },
   ],
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🚴 FLOOR 4 — DRIVERS & BIKERS
+// 🚴 FLOOR 4 — DELIVERY / ROUTING
 // ═══════════════════════════════════════════════════════════════════════════════
 export const FLOOR_4_DELIVERY: OSFloor = {
   id: 'floor-4-delivery',
-  name: 'Drivers & Bikers',
+  name: 'Floor 4: Delivery / Routing',
   icon: Truck,
   emoji: '🚴',
   description: 'Delivery operations, routes, drivers, and bikers',
@@ -161,28 +161,46 @@ export const FLOOR_4_DELIVERY: OSFloor = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🏭 FLOOR 5 — PRODUCTION & INVENTORY
+// 🏬 FLOOR 5 — MARKETPLACE
 // ═══════════════════════════════════════════════════════════════════════════════
-export const FLOOR_5_PRODUCTION: OSFloor = {
-  id: 'floor-5-production',
-  name: 'Production & Inventory',
-  icon: Factory,
-  emoji: '🏭',
-  description: 'Manufacturing, inventory tracking, and stock management',
-  roles: ['ceo', 'admin', 'va', 'production'],
+export const FLOOR_5_MARKETPLACE: OSFloor = {
+  id: 'floor-5-marketplace',
+  name: 'Floor 5: Marketplace',
+  icon: ShoppingCart,
+  emoji: '🏬',
+  description: 'Wholesale operations, marketplace, and fulfillment',
+  roles: ['ceo', 'admin', 'va', 'wholesaler'],
   items: [
-    { id: 'production', label: 'Production', path: '/grabba/production', icon: Factory, roles: ['ceo', 'admin', 'va', 'production'] },
-    { id: 'inventory', label: 'Inventory', path: '/grabba/inventory', icon: Package, roles: ['ceo', 'admin', 'va', 'production'] },
-    { id: 'products', label: 'Products', path: '/products', icon: Boxes, roles: ['ceo', 'admin', 'va'] },
+    { id: 'wholesale-platform', label: 'Wholesale Platform', path: '/grabba/wholesale-platform', icon: Boxes, roles: ['ceo', 'admin', 'va'] },
+    { id: 'marketplace', label: 'Marketplace', path: '/wholesale/marketplace', icon: ShoppingCart, roles: ['ceo', 'admin', 'va', 'wholesaler'] },
+    { id: 'fulfillment', label: 'Fulfillment', path: '/wholesale/fulfillment', icon: Package, roles: ['ceo', 'admin', 'va'] },
+    { id: 'marketplace-shop', label: 'Shop Front', path: '/shop', icon: ShoppingCart, roles: ['ceo', 'admin', 'va'] },
   ],
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 💰 FLOOR 6 — FINANCE & ACCOUNTING
+// 🤝 FLOOR 6 — AMBASSADORS
 // ═══════════════════════════════════════════════════════════════════════════════
-export const FLOOR_6_FINANCE: OSFloor = {
-  id: 'floor-6-finance',
-  name: 'Finance & Accounting',
+export const FLOOR_6_AMBASSADORS: OSFloor = {
+  id: 'floor-6-ambassadors',
+  name: 'Floor 6: Ambassadors',
+  icon: Users,
+  emoji: '🤝',
+  description: 'Ambassador network, commissions, and referrals',
+  roles: ['ceo', 'admin', 'va', 'ambassador'],
+  items: [
+    { id: 'ambassadors', label: 'Ambassadors', path: '/grabba/ambassadors', icon: Users, roles: ['ceo', 'admin', 'va'] },
+    { id: 'ambassador-regions', label: 'Ambassador Regions', path: '/ambassador-regions', icon: Map, roles: ['ceo', 'admin', 'va'] },
+    { id: 'ambassador-payouts', label: 'Ambassador Payouts', path: '/ambassador-payouts', icon: Wallet, roles: ['ceo', 'admin', 'va'] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 💰 FLOOR 7 — ACCOUNTING
+// ═══════════════════════════════════════════════════════════════════════════════
+export const FLOOR_7_ACCOUNTING: OSFloor = {
+  id: 'floor-7-accounting',
+  name: 'Floor 7: Accounting',
   icon: DollarSign,
   emoji: '💰',
   description: 'Billing, invoices, payouts, and financial analytics',
@@ -198,14 +216,14 @@ export const FLOOR_6_FINANCE: OSFloor = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🤖 FLOOR 7 — AI WORKFORCE
+// 🤖 FLOOR 8 — INTELLIGENCE / AI
 // ═══════════════════════════════════════════════════════════════════════════════
-export const FLOOR_7_AI: OSFloor = {
-  id: 'floor-7-ai',
-  name: 'AI Workforce',
+export const FLOOR_8_INTELLIGENCE: OSFloor = {
+  id: 'floor-8-intelligence',
+  name: 'Floor 8: Intelligence / AI',
   icon: Brain,
   emoji: '🤖',
-  description: 'AI workers, automations, playbooks, and intelligence',
+  description: 'AI workers, automations, playbooks, analytics, and intelligence',
   roles: ['ceo', 'admin', 'va'],
   items: [
     { id: 'ai-workforce', label: 'AI Workforce', path: '/ai/workforce', icon: Brain, roles: ['ceo', 'admin', 'va'] },
@@ -213,20 +231,6 @@ export const FLOOR_7_AI: OSFloor = {
     { id: 'ai-playbooks', label: 'AI Playbooks', path: '/grabba/ai-playbooks', icon: ClipboardList, roles: ['ceo', 'admin'] },
     { id: 'ai-routines', label: 'AI Routines', path: '/grabba/ai-routines', icon: Cog, roles: ['ceo', 'admin'] },
     { id: 'risk-radar', label: 'Risk Radar', path: '/grabba/risk-radar', icon: Shield, roles: ['ceo', 'admin'] },
-  ],
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// 📊 FLOOR 8 — INTELLIGENCE & INSIGHTS
-// ═══════════════════════════════════════════════════════════════════════════════
-export const FLOOR_8_INTELLIGENCE: OSFloor = {
-  id: 'floor-8-intelligence',
-  name: 'Intelligence & Insights',
-  icon: BarChart3,
-  emoji: '📊',
-  description: 'Analytics, reports, expansion, and business intelligence',
-  roles: ['ceo', 'admin', 'va'],
-  items: [
     { id: 'analytics', label: 'Analytics', path: '/analytics', icon: BarChart3, roles: ['ceo', 'admin', 'va'] },
     { id: 'store-performance', label: 'Store Performance', path: '/store-performance', icon: TrendingUp, roles: ['ceo', 'admin', 'va'] },
     { id: 'expansion', label: 'Expansion', path: '/expansion', icon: Globe, roles: ['ceo', 'admin'] },
@@ -236,28 +240,11 @@ export const FLOOR_8_INTELLIGENCE: OSFloor = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🤝 AMBASSADORS FLOOR
-// ═══════════════════════════════════════════════════════════════════════════════
-export const FLOOR_AMBASSADORS: OSFloor = {
-  id: 'floor-ambassadors',
-  name: 'Ambassadors',
-  icon: Users,
-  emoji: '🤝',
-  description: 'Ambassador network, commissions, and referrals',
-  roles: ['ceo', 'admin', 'va', 'ambassador'],
-  items: [
-    { id: 'ambassadors', label: 'Ambassadors', path: '/grabba/ambassadors', icon: Users, roles: ['ceo', 'admin', 'va'] },
-    { id: 'ambassador-regions', label: 'Ambassador Regions', path: '/ambassador-regions', icon: Map, roles: ['ceo', 'admin', 'va'] },
-    { id: 'ambassador-payouts', label: 'Ambassador Payouts', path: '/ambassador-payouts', icon: Wallet, roles: ['ceo', 'admin', 'va'] },
-  ],
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// 📋 HR FLOOR
+// 📋 HR & WORKFORCE
 // ═══════════════════════════════════════════════════════════════════════════════
 export const FLOOR_HR: OSFloor = {
   id: 'floor-hr',
-  name: 'Human Resources',
+  name: 'HR & Workforce',
   icon: Briefcase,
   emoji: '📋',
   description: 'Employees, hiring, onboarding, and HR management',
@@ -272,25 +259,37 @@ export const FLOOR_HR: OSFloor = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🛒 MARKETPLACE SECTION (Admin view of Marketplace)
+// MAIN OS FLOORS (Ordered Array)
 // ═══════════════════════════════════════════════════════════════════════════════
-export const SECTION_MARKETPLACE: OSFloor = {
-  id: 'section-marketplace',
+export const OS_FLOORS: OSFloor[] = [
+  PENTHOUSE,
+  FLOOR_1_CRM,
+  FLOOR_2_OPERATIONS,
+  FLOOR_3_INVENTORY,
+  FLOOR_4_DELIVERY,
+  FLOOR_5_MARKETPLACE,
+  FLOOR_6_AMBASSADORS,
+  FLOOR_7_ACCOUNTING,
+  FLOOR_8_INTELLIGENCE,
+  FLOOR_HR,
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ADDITIONAL SECTIONS (Admin Tools)
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_MARKETPLACE_ADMIN: OSFloor = {
+  id: 'section-marketplace-admin',
   name: 'Marketplace Admin',
   icon: ShoppingCart,
   emoji: '🛒',
   description: 'B2C marketplace, customers, orders, and fulfillment',
   roles: ['ceo', 'admin', 'va'],
   items: [
-    { id: 'marketplace-shop', label: 'Shop Front', path: '/shop', icon: ShoppingCart, roles: ['ceo', 'admin', 'va'] },
     { id: 'marketplace-admin', label: 'Marketplace Admin', path: '/portal/marketplace-admin', icon: Cog, roles: ['ceo', 'admin'] },
     { id: 'national-wholesale', label: 'National Wholesale', path: '/portal/national-wholesale', icon: Globe, roles: ['ceo', 'admin'] },
   ],
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 💳 ACCOUNTING & PERSONAL FINANCE
-// ═══════════════════════════════════════════════════════════════════════════════
 export const SECTION_ACCOUNTING: OSFloor = {
   id: 'section-accounting',
   name: 'Accounting OS',
@@ -302,13 +301,10 @@ export const SECTION_ACCOUNTING: OSFloor = {
     { id: 'financial-dashboard', label: 'Financial Dashboard', path: '/grabba/financial-dashboard', icon: DollarSign, roles: ['ceo', 'admin', 'accountant'] },
     { id: 'personal-finance', label: 'Personal Finance', path: '/grabba/personal-finance', icon: Wallet, roles: ['ceo', 'admin'] },
     { id: 'payroll-manager', label: 'Payroll Manager', path: '/grabba/payroll-manager', icon: Calculator, roles: ['ceo', 'admin', 'accountant'] },
-    { id: 'advisor-penthouse', label: 'Financial Advisor', path: '/grabba/advisor-penthouse', icon: Brain, roles: ['ceo', 'admin'] },
+    { id: 'advisor-penthouse-2', label: 'Financial Advisor', path: '/grabba/advisor-penthouse', icon: Brain, roles: ['ceo', 'admin'] },
   ],
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 🌍 GLOBAL HOLDINGS & TOOLS
-// ═══════════════════════════════════════════════════════════════════════════════
 export const SECTION_GLOBAL: OSFloor = {
   id: 'section-global',
   name: 'Global Tools',
@@ -323,9 +319,6 @@ export const SECTION_GLOBAL: OSFloor = {
   ],
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 🏠 REAL ESTATE OS
-// ═══════════════════════════════════════════════════════════════════════════════
 export const SECTION_REAL_ESTATE: OSFloor = {
   id: 'section-real-estate',
   name: 'Real Estate OS',
@@ -341,9 +334,6 @@ export const SECTION_REAL_ESTATE: OSFloor = {
   ],
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 🎨 POD (Print on Demand)
-// ═══════════════════════════════════════════════════════════════════════════════
 export const SECTION_POD: OSFloor = {
   id: 'section-pod',
   name: 'Print on Demand',
@@ -359,36 +349,12 @@ export const SECTION_POD: OSFloor = {
   ],
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// COMPLETE OS STRUCTURE (Main Floors)
-// ═══════════════════════════════════════════════════════════════════════════════
-export const OS_FLOORS: OSFloor[] = [
-  PENTHOUSE,
-  FLOOR_1_SALES,
-  FLOOR_2_OPERATIONS,
-  FLOOR_3_WHOLESALE,
-  FLOOR_4_DELIVERY,
-  FLOOR_5_PRODUCTION,
-  FLOOR_6_FINANCE,
-  FLOOR_7_AI,
-  FLOOR_8_INTELLIGENCE,
-  FLOOR_AMBASSADORS,
-  FLOOR_HR,
-];
-
-// Additional system sections (shown below main OS floors)
 export const ADDITIONAL_SECTIONS: OSFloor[] = [
-  SECTION_MARKETPLACE,
+  SECTION_MARKETPLACE_ADMIN,
   SECTION_ACCOUNTING,
   SECTION_GLOBAL,
   SECTION_REAL_ESTATE,
   SECTION_POD,
-];
-
-// Combined floors for full admin view
-export const ALL_FLOORS: OSFloor[] = [
-  ...OS_FLOORS,
-  ...ADDITIONAL_SECTIONS,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -407,14 +373,22 @@ export interface PortalConfig {
 export const PORTALS: PortalConfig[] = [
   { id: 'driver-portal', role: 'driver', label: 'Driver Portal', path: '/portal/driver', icon: Car, color: 'hsl(210, 100%, 50%)', description: 'Routes, deliveries, earnings' },
   { id: 'biker-portal', role: 'biker', label: 'Biker Portal', path: '/portal/biker', icon: Bike, color: 'hsl(180, 100%, 40%)', description: 'Pickups, dropoffs, checks' },
-  { id: 'store-portal', role: 'store', label: 'Store Portal', path: '/portal/store', icon: Store, color: 'hsl(270, 100%, 50%)', description: 'Orders, products, invoices' },
-  { id: 'wholesaler-portal', role: 'wholesaler', label: 'Wholesaler Portal', path: '/portal/wholesaler', icon: Boxes, color: 'hsl(30, 100%, 50%)', description: 'Products, orders, payouts' },
   { id: 'ambassador-portal', role: 'ambassador', label: 'Ambassador Portal', path: '/portal/ambassador', icon: Star, color: 'hsl(150, 100%, 40%)', description: 'Referrals, commissions, stores' },
+  { id: 'store-portal', role: 'store', label: 'Store Buyer Portal', path: '/portal/store', icon: Store, color: 'hsl(270, 100%, 50%)', description: 'Orders, products, invoices' },
+  { id: 'wholesaler-portal', role: 'wholesaler', label: 'Wholesaler Seller Portal', path: '/portal/wholesaler', icon: Boxes, color: 'hsl(30, 100%, 50%)', description: 'Products, orders, payouts' },
+  { id: 'customer-portal', role: 'customer', label: 'Customer Account Portal', path: '/portal/customer', icon: Heart, color: 'hsl(340, 100%, 50%)', description: 'Orders, rewards, support' },
   { id: 'production-portal', role: 'production', label: 'Production Portal', path: '/portal/production', icon: Factory, color: 'hsl(45, 100%, 50%)', description: 'Daily counts, inventory, tools' },
   { id: 'va-portal', role: 'va', label: 'VA Portal', path: '/portal/va', icon: UserCircle, color: 'hsl(200, 100%, 50%)', description: 'CRM, tasks, communications' },
-  { id: 'customer-portal', role: 'customer', label: 'Customer Portal', path: '/portal/customer', icon: Heart, color: 'hsl(340, 100%, 50%)', description: 'Orders, rewards, support' },
-  { id: 'admin-portal', role: 'admin', label: 'Admin Dashboard', path: '/', icon: Shield, color: 'hsl(0, 0%, 50%)', description: 'Full system access' },
-  { id: 'ceo-portal', role: 'ceo', label: 'CEO Command', path: '/grabba/command-penthouse', icon: Crown, color: 'hsl(45, 100%, 50%)', description: 'Empire control center' },
+  { id: 'national-wholesale-portal', role: 'wholesaler', label: 'National Wholesale Portal', path: '/portal/national-wholesale', icon: Globe, color: 'hsl(220, 100%, 50%)', description: 'Nationwide distribution' },
+  { id: 'marketplace-admin-portal', role: 'admin', label: 'Marketplace Admin Portal', path: '/portal/marketplace-admin', icon: Cog, color: 'hsl(0, 0%, 50%)', description: 'Marketplace management' },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMBINED NAVIGATION ARRAY
+// ═══════════════════════════════════════════════════════════════════════════════
+export const ALL_FLOORS: OSFloor[] = [
+  ...OS_FLOORS,
+  ...ADDITIONAL_SECTIONS,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -447,7 +421,7 @@ export function getRoleRedirectPath(role: OSRole): string {
 
 // Check if a role can access a path
 export function canAccessPath(role: OSRole, path: string): boolean {
-  for (const floor of OS_FLOORS) {
+  for (const floor of ALL_FLOORS) {
     for (const item of floor.items) {
       if (item.path === path && item.roles.includes(role)) {
         return true;
@@ -460,7 +434,7 @@ export function canAccessPath(role: OSRole, path: string): boolean {
 // Get all paths a role can access
 export function getAllPathsForRole(role: OSRole): string[] {
   const paths: string[] = [];
-  for (const floor of OS_FLOORS) {
+  for (const floor of ALL_FLOORS) {
     for (const item of floor.items) {
       if (item.roles.includes(role)) {
         paths.push(item.path);
@@ -472,7 +446,7 @@ export function getAllPathsForRole(role: OSRole): string[] {
 
 // Get floor by path
 export function getFloorByPath(path: string): OSFloor | undefined {
-  return OS_FLOORS.find(floor => 
+  return ALL_FLOORS.find(floor => 
     floor.items.some(item => item.path === path || path.startsWith(item.path + '/'))
   );
 }
