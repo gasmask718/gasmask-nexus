@@ -60,6 +60,9 @@ import GrantsDashboard from './pages/os/grants/GrantsDashboard';
 import WealthEngineDashboard from './pages/os/wealth/WealthEngineDashboard';
 import BettingDashboard from './pages/os/betting/BettingDashboard';
 import BikerDashboard from './pages/os/biker/BikerDashboard';
+import ModuleDiagnosticsPage from './pages/ModuleDiagnosticsPage';
+// Initialize Dynasty OS Module System
+import '@/modules';
 import CommunicationInsights from "./pages/CommunicationInsights";
 import RouteOptimizer from "./pages/RouteOptimizer";
 import RouteOpsCenter from "./pages/RouteOpsCenter";
@@ -2423,6 +2426,9 @@ const App = () => (
               
               {/* Bikers / Store Checkers OS */}
               <Route path="/biker/home" element={<ProtectedRoute><Layout><BikerDashboard /></Layout></ProtectedRoute>} />
+              
+              {/* Module Diagnostics Page */}
+              <Route path="/system/modules" element={<ProtectedRoute><Layout><ModuleDiagnosticsPage /></Layout></ProtectedRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
