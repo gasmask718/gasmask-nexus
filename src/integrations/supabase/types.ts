@@ -16061,6 +16061,20 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      get_audit_summary: {
+        Args: { p_limit?: number }
+        Returns: {
+          action: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          metadata: Json
+          role_type: Database["public"]["Enums"]["app_role"]
+          user_email: string
+          user_name: string
+        }[]
+      }
       get_user_businesses: {
         Args: { user_id: string }
         Returns: {
@@ -16099,6 +16113,10 @@ export type Database = {
           p_entity_type?: string
           p_metadata?: Json
         }
+        Returns: string
+      }
+      log_security_event: {
+        Args: { p_action: string; p_details?: Json }
         Returns: string
       }
       process_automation_event: {
