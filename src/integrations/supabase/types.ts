@@ -13932,6 +13932,36 @@ export type Database = {
           },
         ]
       }
+      system_checkpoints: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          diagnostics: Json | null
+          id: string
+          label: string
+          notes: string | null
+          version: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          diagnostics?: Json | null
+          id?: string
+          label: string
+          notes?: string | null
+          version?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          diagnostics?: Json | null
+          id?: string
+          label?: string
+          notes?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
       term_sheets: {
         Row: {
           accepted_at: string | null
@@ -15993,6 +16023,10 @@ export type Database = {
         Args: { _brand: string; _user_id: string }
         Returns: boolean
       }
+      can_access_own_or_admin: {
+        Args: { _owner_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_manage_org: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
@@ -16022,6 +16056,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_elevated_user: { Args: { _user_id: string }; Returns: boolean }
       is_org_member: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
