@@ -1,6 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getRoleRedirectPath as getRedirectFromNav, type OSRole } from '@/config/osNavigation';
 
-export type PrimaryRole = 'admin' | 'va' | 'driver' | 'biker' | 'ambassador' | 'wholesaler' | 'store_owner' | 'production' | 'customer';
+// Re-export types aligned with osNavigation
+export type PrimaryRole = OSRole;
 export type PreferredLanguage = 'en' | 'es' | 'ar' | 'fr';
 
 export interface UserProfile {
@@ -17,41 +19,53 @@ export interface UserProfile {
   updated_at: string;
 }
 
-export function getRoleRedirectPath(primaryRole: PrimaryRole): string {
-  switch (primaryRole) {
-    case 'admin':
-    case 'va':
-      return '/';
-    case 'driver':
-      return '/portal/driver';
-    case 'biker':
-      return '/portal/biker';
-    case 'ambassador':
-      return '/portal/ambassador';
-    case 'wholesaler':
-      return '/portal/wholesaler';
-    case 'store_owner':
-      return '/portal/store';
-    case 'production':
-      return '/portal/production';
-    case 'customer':
-      return '/portal/customer';
-    default:
-      return '/portal/home';
-  }
+/**
+ * Get redirect path based on role - delegates to centralized osNavigation config
+ * Kept for backward compatibility
+ */
+export function getRoleRedirectPath(primaryRole: PrimaryRole | string): string {
+  // Handle legacy role names
+  const normalizedRole = normalizeRole(primaryRole);
+  return getRedirectFromNav(normalizedRole);
+}
+
+/**
+ * Normalize legacy role names to current OSRole type
+ */
+function normalizeRole(role: string): OSRole {
+  const roleMap: Record<string, OSRole> = {
+    'admin': 'admin',
+    'va': 'va',
+    'driver': 'driver',
+    'biker': 'biker',
+    'ambassador': 'ambassador',
+    'wholesaler': 'wholesaler',
+    'store_owner': 'store',
+    'store': 'store',
+    'production': 'production',
+    'customer': 'customer',
+    'ceo': 'ceo',
+    'accountant': 'accountant',
+    'csr': 'csr',
+  };
+  return roleMap[role] || 'customer';
 }
 
 export function getRoleDisplayName(role: PrimaryRole): string {
-  const names: Record<PrimaryRole, string> = {
+  const names: Partial<Record<PrimaryRole, string>> = {
     admin: 'Administrator',
+    ceo: 'CEO',
     va: 'Virtual Assistant',
     driver: 'Driver',
     biker: 'Store Checker',
     ambassador: 'Ambassador',
     wholesaler: 'Wholesaler',
+    store: 'Store Owner',
     store_owner: 'Store Owner',
     production: 'Production Staff',
-    customer: 'Customer'
+    customer: 'Customer',
+    accountant: 'Accountant',
+    csr: 'Customer Service',
   };
   return names[role] || role;
 }
