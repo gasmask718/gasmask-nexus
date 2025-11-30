@@ -49,6 +49,7 @@ import DeliveryCapacity from './pages/DeliveryCapacity';
 import CommunicationAutomation from './pages/CommunicationAutomation';
 import CommunicationsAI from './pages/CommunicationsAI';
 import { ProcurementDashboard, SuppliersPage, SupplierDetailPage, PurchaseOrdersPage, NewPurchaseOrderPage } from './pages/os/procurement';
+import { WarehouseDashboard } from './pages/os/warehouse';
 import CommunicationInsights from "./pages/CommunicationInsights";
 import RouteOptimizer from "./pages/RouteOptimizer";
 import RouteOpsCenter from "./pages/RouteOpsCenter";
@@ -2421,6 +2422,9 @@ const App = () => (
               <Route path="/os/procurement/suppliers/:id" element={<ProtectedRoute><SupplierDetailPage /></ProtectedRoute>} />
               <Route path="/os/procurement/purchase-orders" element={<ProtectedRoute><PurchaseOrdersPage /></ProtectedRoute>} />
               <Route path="/os/procurement/purchase-orders/new" element={<ProtectedRoute><NewPurchaseOrderPage /></ProtectedRoute>} />
+
+              {/* OS WAREHOUSE & LOGISTICS */}
+              <Route path="/os/warehouse" element={<ProtectedRoute><WarehouseDashboard /></ProtectedRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
