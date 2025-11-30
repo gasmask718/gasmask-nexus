@@ -11032,6 +11032,62 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_orders: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          estimated_arrival: string | null
+          id: string
+          notes: string | null
+          products: Json
+          shipping_cost: number | null
+          status: string | null
+          supplier_id: string | null
+          total_cost: number | null
+          tracking_number: string | null
+          updated_at: string
+          warehouse_location: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          estimated_arrival?: string | null
+          id?: string
+          notes?: string | null
+          products?: Json
+          shipping_cost?: number | null
+          status?: string | null
+          supplier_id?: string | null
+          total_cost?: number | null
+          tracking_number?: string | null
+          updated_at?: string
+          warehouse_location?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          estimated_arrival?: string | null
+          id?: string
+          notes?: string | null
+          products?: Json
+          shipping_cost?: number | null
+          status?: string | null
+          supplier_id?: string | null
+          total_cost?: number | null
+          tracking_number?: string | null
+          updated_at?: string
+          warehouse_location?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       real_estate_notifications: {
         Row: {
           action_url: string | null
@@ -11343,6 +11399,42 @@ export type Database = {
           weekly_day?: string | null
           weekly_enabled?: boolean | null
           weekly_time?: string | null
+        }
+        Relationships: []
+      }
+      restock_forecast: {
+        Row: {
+          created_at: string
+          current_units: number | null
+          daily_sales_rate: number | null
+          id: string
+          priority: string | null
+          product_id: string | null
+          product_name: string
+          projected_out_date: string | null
+          recommended_reorder_units: number | null
+        }
+        Insert: {
+          created_at?: string
+          current_units?: number | null
+          daily_sales_rate?: number | null
+          id?: string
+          priority?: string | null
+          product_id?: string | null
+          product_name: string
+          projected_out_date?: string | null
+          recommended_reorder_units?: number | null
+        }
+        Update: {
+          created_at?: string
+          current_units?: number | null
+          daily_sales_rate?: number | null
+          id?: string
+          priority?: string | null
+          product_id?: string | null
+          product_name?: string
+          projected_out_date?: string | null
+          recommended_reorder_units?: number | null
         }
         Relationships: []
       }
@@ -13212,6 +13304,154 @@ export type Database = {
             columns: ["wholesaler_id"]
             isOneToOne: true
             referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_products: {
+        Row: {
+          bulk_cost: number | null
+          category: string | null
+          created_at: string
+          id: string
+          moq: number | null
+          name: string
+          processing_time_days: number | null
+          product_photos: string[] | null
+          shipping_dimensions: Json | null
+          shipping_weight: number | null
+          sku: string | null
+          supplier_id: string | null
+          unit_cost: number | null
+        }
+        Insert: {
+          bulk_cost?: number | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          moq?: number | null
+          name: string
+          processing_time_days?: number | null
+          product_photos?: string[] | null
+          shipping_dimensions?: Json | null
+          shipping_weight?: number | null
+          sku?: string | null
+          supplier_id?: string | null
+          unit_cost?: number | null
+        }
+        Update: {
+          bulk_cost?: number | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          moq?: number | null
+          name?: string
+          processing_time_days?: number | null
+          product_photos?: string[] | null
+          shipping_dimensions?: Json | null
+          shipping_weight?: number | null
+          sku?: string | null
+          supplier_id?: string | null
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_products_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          country: string | null
+          created_at: string
+          id: string
+          lead_time_days: number | null
+          name: string
+          notes: string | null
+          payment_terms: string | null
+          reliability_score: number | null
+          shipping_methods: Json | null
+          status: string | null
+          total_spend: number | null
+          wechat: string | null
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          lead_time_days?: number | null
+          name: string
+          notes?: string | null
+          payment_terms?: string | null
+          reliability_score?: number | null
+          shipping_methods?: Json | null
+          status?: string | null
+          total_spend?: number | null
+          wechat?: string | null
+        }
+        Update: {
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          lead_time_days?: number | null
+          name?: string
+          notes?: string | null
+          payment_terms?: string | null
+          reliability_score?: number | null
+          shipping_methods?: Json | null
+          status?: string | null
+          total_spend?: number | null
+          wechat?: string | null
+        }
+        Relationships: []
+      }
+      supply_chain_inflow: {
+        Row: {
+          cost_per_unit: number | null
+          id: string
+          po_id: string | null
+          product_name: string
+          received_at: string
+          receiving_notes: string | null
+          units_in: number | null
+        }
+        Insert: {
+          cost_per_unit?: number | null
+          id?: string
+          po_id?: string | null
+          product_name: string
+          received_at?: string
+          receiving_notes?: string | null
+          units_in?: number | null
+        }
+        Update: {
+          cost_per_unit?: number | null
+          id?: string
+          po_id?: string | null
+          product_name?: string
+          received_at?: string
+          receiving_notes?: string | null
+          units_in?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supply_chain_inflow_po_id_fkey"
+            columns: ["po_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
             referencedColumns: ["id"]
           },
         ]
