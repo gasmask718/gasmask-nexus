@@ -2,35 +2,32 @@
 import { departmentRegistry } from '@/modules/RegisterDepartments';
 
 export interface NavigationSnapshot {
-  routes: Array<{
+  generatedAt: string;
+  routes: {
     path: string;
-    requiresAuth: boolean;
-  }>;
-  sidebarItems: Array<{
+    method?: string;
+  }[];
+  sidebar: {
     label: string;
     path: string;
-    icon?: string;
-  }>;
-  timestamp: string;
+    moduleId?: string;
+  }[];
 }
 
-/**
- * Captures the current navigation state from the department registry
- */
 export function getNavigationSnapshot(): NavigationSnapshot {
   const routes = departmentRegistry.getAllRoutes();
   const sidebarItems = departmentRegistry.getSidebarItems();
 
   return {
+    generatedAt: new Date().toISOString(),
     routes: routes.map(r => ({
       path: r.path,
-      requiresAuth: r.requiresAuth ?? false,
+      method: 'GET',
     })),
-    sidebarItems: sidebarItems.map(s => ({
-      label: s.label,
-      path: s.path,
-      icon: typeof s.icon === 'function' ? s.icon.displayName || 'icon' : undefined,
+    sidebar: sidebarItems.map(item => ({
+      label: item.label,
+      path: item.path,
+      moduleId: (item as any).moduleId,
     })),
-    timestamp: new Date().toISOString(),
   };
 }
