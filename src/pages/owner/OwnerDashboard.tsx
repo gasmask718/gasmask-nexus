@@ -175,7 +175,7 @@ const OwnerDashboard: React.FC = () => {
 
   const handleExportExcel = async () => {
     try {
-      const blob = await exportAllToExcel();
+      const blob = await exportFullOSToExcel();
       if (blob) {
         const timestamp = new Date().toISOString().split('T')[0];
         const url = URL.createObjectURL(blob);
