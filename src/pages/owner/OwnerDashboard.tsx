@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { exportOsBlueprintToJson } from '@/services/exportService';
+import { exportAllToExcel } from '@/services/excelExportService';
 import {
   Activity,
   AlertTriangle,
@@ -172,6 +173,29 @@ const OwnerDashboard: React.FC = () => {
     }
   };
 
+  const handleExportExcel = async () => {
+    try {
+      const blob = await exportAllToExcel();
+      if (blob) {
+        const timestamp = new Date().toISOString().split('T')[0];
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Dynasty_OS_Full_Export_${timestamp}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success('Excel export complete');
+      } else {
+        toast.error('No data available for export');
+      }
+    } catch (error) {
+      console.error('Excel export failed:', error);
+      toast.error('Failed to export to Excel');
+    }
+  };
+
   // Show loading state while role is being determined
   if (roleLoading) {
     return (
@@ -218,9 +242,13 @@ const OwnerDashboard: React.FC = () => {
             <Brain className="h-4 w-4" />
             AI Summary
           </Button>
-          <Button size="sm" className="gap-2" onClick={handleExportSnapshot}>
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportSnapshot}>
             <Download className="h-4 w-4" />
-            Export Snapshot
+            JSON Snapshot
+          </Button>
+          <Button size="sm" className="gap-2" onClick={handleExportExcel}>
+            <Download className="h-4 w-4" />
+            Excel Export
           </Button>
         </div>
       </div>

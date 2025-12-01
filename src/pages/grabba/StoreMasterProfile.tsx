@@ -21,7 +21,8 @@ import { getExtractedProfile } from '@/services/profileExtractionService';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function StoreMasterProfile() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params.id || params.storeId; // Support both route params
   const navigate = useNavigate();
   const { selectedBrand } = useGrabbaBrand();
 
