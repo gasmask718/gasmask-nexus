@@ -256,6 +256,7 @@ import GrabbaCommunicationLogs from '@/pages/grabba/GrabbaCommunicationLogs';
 import GrabbaAutopilotConsole from '@/pages/grabba/GrabbaAutopilotConsole';
 import GrabbaAutopilotDashboard from '@/pages/grabba/GrabbaAutopilotDashboard';
 import GrabbaCommandConsole from '@/pages/grabba/GrabbaCommandConsole';
+import GrabbaAICommandConsole from '@/pages/grabba/GrabbaAICommandConsole';
 import ResultsPage from '@/pages/grabba/ResultsPage';
 import ActionQueuePage from '@/pages/grabba/ActionQueuePage';
 import GrabbaRoutesPage from '@/pages/grabba/RoutesPage';
@@ -875,21 +876,21 @@ export default function AppRoutes() {
       <Route path="/grabba/analytics" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee']} showLocked>
-            <Layout><GrabbaClusterAnalytics /></Layout>
+            <Layout><GrabbaLayout><GrabbaClusterAnalytics /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/grabba/analytics/neighborhoods" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee']} showLocked>
-            <Layout><GrabbaNeighborhoodPerformance /></Layout>
+            <Layout><GrabbaLayout><GrabbaNeighborhoodPerformance /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/grabba/communications" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee']} showLocked>
-            <Layout><GrabbaClusterCommunications /></Layout>
+            <Layout><GrabbaLayout><GrabbaClusterCommunications /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
@@ -928,6 +929,13 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+      <Route path="/grabba/ai-command-console" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee']} showLocked>
+            <Layout><GrabbaAICommandConsole /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
       <Route path="/grabba/results" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'csr', 'driver', 'warehouse', 'accountant']}>
@@ -952,7 +960,7 @@ export default function AppRoutes() {
       <Route path="/grabba/drilldown/:type" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'csr', 'driver', 'warehouse', 'accountant']}>
-            <Layout><DrillDownPage /></Layout>
+            <Layout><GrabbaLayout><DrillDownPage /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
@@ -1008,6 +1016,13 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
       <Route path="/grabba/store-master/:id" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee', 'driver', 'csr']}>
+            <Layout><GrabbaLayout><StoreMasterProfile /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/store/:id" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'driver', 'csr']}>
             <Layout><GrabbaLayout><StoreMasterProfile /></GrabbaLayout></Layout>

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// GRABBA COMMAND CONSOLE PAGE — Natural Language Task Engine
+// GRABBA COMMAND CONSOLE PAGE — Structured Query Engine (shortcuts, filters)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
