@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { exportOsBlueprintToJson } from '@/services/exportService';
-import { exportAllToExcel } from '@/services/excelExportService';
+import { exportFullOSToExcel } from '@/services/excelExportService';
 import {
   Activity,
   AlertTriangle,
