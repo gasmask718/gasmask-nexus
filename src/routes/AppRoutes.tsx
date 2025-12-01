@@ -486,6 +486,7 @@ export default function AppRoutes() {
         <Route path="/routes" element={<RoutesPage />} />
         <Route path="/routes/optimizer" element={<RouteOptimizer />} />
         <Route path="/routes/ops-center" element={<RouteOpsCenter />} />
+        <Route path="/route-ops-center" element={<RouteOpsCenter />} />
         <Route path="/routes/:id" element={<RouteDetail />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="/wholesale" element={<Wholesale />} />
@@ -864,21 +865,21 @@ export default function AppRoutes() {
       <Route path="/grabba/analytics" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee']} showLocked>
-            <GrabbaClusterAnalytics />
+            <Layout><GrabbaClusterAnalytics /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/grabba/analytics/neighborhoods" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee']} showLocked>
-            <GrabbaNeighborhoodPerformance />
+            <Layout><GrabbaNeighborhoodPerformance /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/grabba/communications" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee']} showLocked>
-            <GrabbaClusterCommunications />
+            <Layout><GrabbaClusterCommunications /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
