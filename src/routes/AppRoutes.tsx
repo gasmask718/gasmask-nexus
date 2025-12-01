@@ -97,7 +97,7 @@ import CompanyProfile from '@/pages/CompanyProfile';
 import UnpaidAccounts from '@/pages/UnpaidAccounts';
 import DriverDebtCollection from '@/pages/DriverDebtCollection';
 import BrandDashboard from '@/pages/BrandDashboard';
-import { OwnerDashboard, OwnerAIAdvisorPage, OwnerClusterDashboard, OwnerAutopilotConsole, OwnerAICommandConsole, OwnerRiskRadar, OwnerDailyBriefing, OwnerHoldingsOverview, OwnerClusterDetailPage, OwnerAutomationDetailPage, OwnerRiskDetailPage, OwnerBusinessDetailPage, OwnerPropertyDetailPage, OwnerFinancialHoldingDetailPage, OwnerAlertDetailPage } from '@/pages/owner';
+import { OwnerDashboard, OwnerAIAdvisorPage, OwnerClusterDashboard, OwnerAutopilotConsole, OwnerAICommandConsole, OwnerRiskRadar, OwnerDailyBriefing, OwnerHoldingsOverview, OwnerClusterDetailPage, OwnerAutomationDetailPage, OwnerRiskDetailPage, OwnerBusinessDetailPage, OwnerPropertyDetailPage, OwnerFinancialHoldingDetailPage, OwnerAlertDetailPage, OwnerAutoTradingDetailPage, OwnerCryptoDetailPage, OwnerSportsDetailPage, OwnerVoiceAI, OwnerReports, OwnerVARouting, OwnerAlertCenter } from '@/pages/owner';
 
 // Call Center
 import CallCenterDashboard from '@/pages/callcenter/CallCenterDashboard';
@@ -726,6 +726,41 @@ export default function AppRoutes() {
         <Route path="/os/owner/alert/:alertId" element={
           <RequireRole allowedRoles={['admin']} showLocked>
             <OwnerAlertDetailPage />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/holdings/auto-trading" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerAutoTradingDetailPage />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/holdings/crypto" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerCryptoDetailPage />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/holdings/sports" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerSportsDetailPage />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/voice-ai" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerVoiceAI />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/reports" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerReports />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/va-routing" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerVARouting />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/alert-center" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerAlertCenter />
           </RequireRole>
         } />
 

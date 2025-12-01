@@ -43,23 +43,63 @@ export default function OwnerAICommandConsole() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [history, setHistory] = useState(commandHistory);
 
+  const generateMockCommandResponse = (cmd: string): string => {
+    const c = cmd.toLowerCase();
+
+    if (c.includes('gasmask') || c.includes('grabba') || c.includes('tobacco'))
+      return "GasMask/Grabba Operations Summary: 5 stores flagged for low inventory. 3 dormant ambassadors need reactivation. Brooklyn delivery routes showing 12% inefficiency - recommend route optimization. Weekly revenue up 8% vs last week.";
+
+    if (c.includes('toptier') || c.includes('black truck') || c.includes('experience'))
+      return "TopTier Strategy: Weekend bookings at 78% capacity. Recommend: Raise base price by $15 for premium slots. Bundle roses + champagne for +$85 AOV. 2 new drivers needed for NJ expansion. 3 bookings missing payment confirmation.";
+
+    if (c.includes('playbox') || c.includes('creator') || c.includes('adult'))
+      return "PlayBoxxx Focus: 12 active creators, 3 pending onboarding. Top performer: @luxe_lifestyle at $4,200 MTD. 2 payout reviews pending approval. Celebration product line showing 34% growth. Compliance: all clear.";
+
+    if (c.includes('funding') || c.includes('loan') || c.includes('underwriting'))
+      return "Funding Company Pipeline: 12 active files, 4 in underwriting (2 over 48hr SLA). Expected fees: $45,000. Action needed: Escalate SLA breaches to senior underwriter. 3 files ready for closing this week.";
+
+    if (c.includes('grant') || c.includes('application'))
+      return "Grants Status: 8 active applications across clients. 3 approaching deadline (next 7 days). 2 in final review stage. Success rate this quarter: 67%. Recommendation: Follow up on dormant applications.";
+
+    if (c.includes('sports') || c.includes('betting') || c.includes('bankroll'))
+      return "Sports AI Report: Bankroll at $15,400. Win rate: 58% (last 30 days). Today's high-confidence plays: 2 identified. Recommendation: Stick to unit sizing, avoid parlays. Hedge calculator suggests 12% allocation to tonight's main event.";
+
+    if (c.includes('real estate') || c.includes('property') || c.includes('holding'))
+      return "Real Estate Holdings: 8 properties, $450K equity. Monthly cash flow: $12,500. 1 property under renovation (expected completion: 6 weeks). Airbnb occupancy: 82%. No immediate action required.";
+
+    if (c.includes('ambassador') || c.includes('referral'))
+      return "Ambassador Network: 40 active, 12 dormant. Top performer: Marcus T. (14 referrals this week). Total referrals this month: 85 (+12% vs last month). Action: Send re-engagement campaign to dormant ambassadors.";
+
+    if (c.includes('driver') || c.includes('delivery') || c.includes('route'))
+      return "Driver Operations: 50 active drivers. On-time rate: 94%. 3 routes need optimization (Queens, Brooklyn East, Bronx South). 2 drivers approaching overtime threshold. Fleet utilization: 87%.";
+
+    if (c.includes('summary') || c.includes('performance') || c.includes('yesterday'))
+      return "Empire Performance Summary: Total revenue +11% WoW. Top performer: TopTier Experience (+18%). Needs attention: Funding Company (SLA issues). Quick wins: 1) Raise TopTier weekend prices 2) Activate dormant ambassadors 3) Clear underwriting backlog.";
+
+    if (c.includes('risk') || c.includes('alert') || c.includes('warning'))
+      return "Active Risks: 1 Critical (Funding SLA breach), 2 Warnings (TopTier payments, PlayBoxxx payouts). Operational health: 87%. Recommendation: Address critical item within 2 hours.";
+
+    return "Command processed. Analysis complete across all empire data. Key metrics are stable. No immediate action required. For specific insights, try: 'Show me TopTier performance' or 'What needs my attention today?'";
+  };
+
   const handleSubmit = () => {
     if (!command.trim()) return;
     
     setIsProcessing(true);
     
-    // Simulate AI response
+    // Generate smart AI response
     setTimeout(() => {
+      const aiResponse = generateMockCommandResponse(command);
       const newEntry = {
         id: Date.now().toString(),
         command: command,
-        response: "This is a placeholder response. The AI command engine will analyze your request across all empire data and provide actionable insights. Full AI integration coming soon.",
+        response: aiResponse,
         timestamp: 'Just now',
       };
       setHistory([newEntry, ...history]);
       setCommand('');
       setIsProcessing(false);
-    }, 2000);
+    }, 1500);
   };
 
   return (
