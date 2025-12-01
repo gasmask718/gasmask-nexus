@@ -55,3 +55,6 @@ verify_jwt = false
 
 [functions.warehouse-brain-engine]
 verify_jwt = false
+
+[functions.extract-store-profile]
+verify_jwt = false

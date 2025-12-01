@@ -150,7 +150,17 @@ export default function GrabbaClusterCommunications() {
                   <TableBody>
                     {recentCampaigns.map(campaign => {
                       const brandConfig = GRABBA_BRAND_CONFIG[campaign.brand as keyof typeof GRABBA_BRAND_CONFIG];
-                      return (
+  // Handle clicking campaign rows
+  const handleRowClick = (campaignId: string) => {
+    const campaign = recentCampaigns.find(c => c.id === campaignId);
+    if (campaign) {
+      toast.info(`Campaign: ${campaign.name}`, {
+        description: `${campaign.type.toUpperCase()} • ${campaign.sent} sent • ${campaign.opens} opens • Status: ${campaign.status}`
+      });
+    }
+  };
+
+  return (
                         <TableRow 
                           key={campaign.id} 
                           className="cursor-pointer hover:bg-muted/50"

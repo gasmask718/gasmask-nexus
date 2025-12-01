@@ -13,6 +13,8 @@ import { GRABBA_BRAND_CONFIG, GrabbaBrand } from '@/config/grabbaBrands';
 import { useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { BrandBadgesRow } from '@/components/grabba/BrandFilterBar';
 import { AIExtractedProfileCard } from '@/components/grabba/AIExtractedProfileCard';
+import { StoreProfileSections } from './components/StoreProfileSections';
+import { getExtractedProfile } from '@/services/profileExtractionService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
@@ -76,6 +78,13 @@ export default function StoreMasterProfile() {
         .limit(10);
       return data || [];
     }
+  });
+
+  // Fetch extracted AI profile
+  const { data: aiProfile } = useQuery({
+    queryKey: ['extracted-profile', id],
+    queryFn: () => getExtractedProfile(id || ''),
+    enabled: !!id
   });
 
   if (isLoading) {
@@ -307,12 +316,21 @@ export default function StoreMasterProfile() {
         </CardContent>
       </Card>
 
-      {/* AI Extracted Profile */}
+      {/* AI Extraction Card */}
       <AIExtractedProfileCard 
         storeId={id || ''} 
         storeName={storeMaster.store_name}
         notes={storeMaster.notes}
       />
+
+      {/* AI Profile Sections - Three Key Areas */}
+      {aiProfile && (
+        <StoreProfileSections 
+          profile={aiProfile}
+          recentOrders={orders}
+          totalSpent={totalSpent}
+        />
+      )}
 
       {/* Recent Orders */}
       <Card>
