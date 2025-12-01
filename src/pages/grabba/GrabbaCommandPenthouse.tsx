@@ -294,23 +294,35 @@ const LiveDeliveryActivity = () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 const AIAlertsSummary = () => {
   const { data, isLoading } = useQuery({
-    queryKey: ['grabba-ai-alerts'],
+    queryKey: ['grabba-ai-alerts-brand-scoped'],
     queryFn: async () => {
+      // Filter alerts to only Grabba brands
+      const grabbaBrands = ['gasmask', 'hotmama', 'hot_mama', 'scalati', 'hot_scalati', 'grabba', 'grabba_r_us', 'GasMask', 'HotMama', 'Hot Scalati', 'Grabba R Us'];
+      
       const [recommendationsRes, queueRes] = await Promise.all([
         supabase.from('ai_recommendations')
           .select('*')
           .eq('status', 'pending')
           .order('created_at', { ascending: false })
-          .limit(10),
+          .limit(30),
         supabase.from('ai_communication_queue')
           .select('*')
           .eq('status', 'pending')
           .order('urgency', { ascending: false })
-          .limit(10)
+          .limit(30)
       ]);
       
-      const recommendations = recommendationsRes.data || [];
-      const queue = queueRes.data || [];
+      // Filter to only include Grabba-related alerts
+      const recommendations = (recommendationsRes.data || []).filter((r: any) => {
+        const category = (r.category || '').toLowerCase();
+        const title = (r.title || '').toLowerCase();
+        const desc = (r.description || '').toLowerCase();
+        // Include if it mentions a Grabba brand or is in store/inventory/delivery categories
+        return grabbaBrands.some(b => title.includes(b.toLowerCase()) || desc.includes(b.toLowerCase())) ||
+               ['store', 'inventory', 'delivery', 'driver', 'wholesale', 'ambassador'].includes(category);
+      }).slice(0, 10);
+      
+      const queue = (queueRes.data || []).slice(0, 10);
       
       const criticalCount = recommendations.filter((r: any) => r.severity === 'critical').length;
       const warningCount = recommendations.filter((r: any) => r.severity === 'warning').length;

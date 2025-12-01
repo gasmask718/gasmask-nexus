@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { GRABBA_BRAND_CONFIG, GrabbaBrand } from '@/config/grabbaBrands';
 import { useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { BrandBadgesRow } from '@/components/grabba/BrandFilterBar';
+import { AIExtractedProfileCard } from '@/components/grabba/AIExtractedProfileCard';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
@@ -305,6 +306,13 @@ export default function StoreMasterProfile() {
           )}
         </CardContent>
       </Card>
+
+      {/* AI Extracted Profile */}
+      <AIExtractedProfileCard 
+        storeId={id || ''} 
+        storeName={storeMaster.store_name}
+        notes={storeMaster.notes}
+      />
 
       {/* Recent Orders */}
       <Card>

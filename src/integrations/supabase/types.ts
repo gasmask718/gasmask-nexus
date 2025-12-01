@@ -12960,6 +12960,51 @@ export type Database = {
           },
         ]
       }
+      store_extracted_profiles: {
+        Row: {
+          created_at: string
+          extraction_confidence: number | null
+          id: string
+          last_extracted_at: string | null
+          operational_profile: Json | null
+          opportunities: Json | null
+          personal_profile: Json | null
+          raw_snapshot_hash: string | null
+          red_flags: Json | null
+          source_notes_count: number | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          extraction_confidence?: number | null
+          id?: string
+          last_extracted_at?: string | null
+          operational_profile?: Json | null
+          opportunities?: Json | null
+          personal_profile?: Json | null
+          raw_snapshot_hash?: string | null
+          red_flags?: Json | null
+          source_notes_count?: number | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          extraction_confidence?: number | null
+          id?: string
+          last_extracted_at?: string | null
+          operational_profile?: Json | null
+          opportunities?: Json | null
+          personal_profile?: Json | null
+          raw_snapshot_hash?: string | null
+          red_flags?: Json | null
+          source_notes_count?: number | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       store_master: {
         Row: {
           address: string
