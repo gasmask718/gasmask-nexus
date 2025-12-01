@@ -26,3 +26,7 @@ export { default as OwnerVoiceAI } from "./OwnerVoiceAI";
 export { default as OwnerReports } from "./OwnerReports";
 export { default as OwnerVARouting } from "./OwnerVARouting";
 export { default as OwnerAlertCenter } from "./OwnerAlertCenter";
+
+// New Pages
+export { default as OwnerExecutiveReports } from "./OwnerExecutiveReports";
+export { default as OwnerBroadcastCenter } from "./OwnerBroadcastCenter";

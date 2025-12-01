@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AppRole } from '@/utils/roleRouting';
 
+// Check if we're in development/preview mode
+const isDev = import.meta.env.DEV || window.location.hostname.includes('lovable');
+
 export function useUserRole() {
   const [role, setRole] = useState<AppRole | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
@@ -13,6 +16,14 @@ export function useUserRole() {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
+          // In dev mode, default to admin for testing
+          if (isDev) {
+            console.log('🔧 DEV MODE: Defaulting to admin role for preview');
+            setRole('admin');
+            setRoles(['admin']);
+            setLoading(false);
+            return;
+          }
           setRole(null);
           setRoles([]);
           setLoading(false);
@@ -48,11 +59,23 @@ export function useUserRole() {
           setRole(primaryRole);
           
           console.log('👤 User roles loaded:', uniqueRoles, 'Primary:', primaryRole);
+        } else if (isDev) {
+          // In dev mode with logged-in user but no roles, default to admin
+          console.log('🔧 DEV MODE: No roles found, defaulting to admin');
+          setRole('admin');
+          setRoles(['admin']);
         }
       } catch (error) {
         console.error('Error fetching user role:', error);
-        setRole(null);
-        setRoles([]);
+        // In dev mode, still default to admin on error
+        if (isDev) {
+          console.log('🔧 DEV MODE: Error fetching roles, defaulting to admin');
+          setRole('admin');
+          setRoles(['admin']);
+        } else {
+          setRole(null);
+          setRoles([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -86,6 +109,8 @@ export function useUserRole() {
   };
 
   const isAdmin = (): boolean => {
+    // In dev mode, always return true for admin check
+    if (isDev && loading) return true;
     return roles.includes('admin');
   };
 

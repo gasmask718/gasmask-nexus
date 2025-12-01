@@ -97,7 +97,7 @@ import CompanyProfile from '@/pages/CompanyProfile';
 import UnpaidAccounts from '@/pages/UnpaidAccounts';
 import DriverDebtCollection from '@/pages/DriverDebtCollection';
 import BrandDashboard from '@/pages/BrandDashboard';
-import { OwnerDashboard, OwnerAIAdvisorPage, OwnerClusterDashboard, OwnerAutopilotConsole, OwnerAICommandConsole, OwnerRiskRadar, OwnerDailyBriefing, OwnerHoldingsOverview, OwnerClusterDetailPage, OwnerAutomationDetailPage, OwnerRiskDetailPage, OwnerBusinessDetailPage, OwnerPropertyDetailPage, OwnerFinancialHoldingDetailPage, OwnerAlertDetailPage, OwnerAutoTradingDetailPage, OwnerCryptoDetailPage, OwnerSportsDetailPage, OwnerVoiceAI, OwnerReports, OwnerVARouting, OwnerAlertCenter } from '@/pages/owner';
+import { OwnerDashboard, OwnerAIAdvisorPage, OwnerClusterDashboard, OwnerAutopilotConsole, OwnerAICommandConsole, OwnerRiskRadar, OwnerDailyBriefing, OwnerHoldingsOverview, OwnerClusterDetailPage, OwnerAutomationDetailPage, OwnerRiskDetailPage, OwnerBusinessDetailPage, OwnerPropertyDetailPage, OwnerFinancialHoldingDetailPage, OwnerAlertDetailPage, OwnerAutoTradingDetailPage, OwnerCryptoDetailPage, OwnerSportsDetailPage, OwnerVoiceAI, OwnerReports, OwnerVARouting, OwnerAlertCenter, OwnerExecutiveReports, OwnerBroadcastCenter } from '@/pages/owner';
 
 // Call Center
 import CallCenterDashboard from '@/pages/callcenter/CallCenterDashboard';
@@ -765,6 +765,16 @@ export default function AppRoutes() {
         <Route path="/os/owner/alert-center" element={
           <RequireRole allowedRoles={['admin']} showLocked>
             <OwnerAlertCenter />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/executive-reports" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerExecutiveReports />
+          </RequireRole>
+        } />
+        <Route path="/os/owner/broadcast" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerBroadcastCenter />
           </RequireRole>
         } />
 
