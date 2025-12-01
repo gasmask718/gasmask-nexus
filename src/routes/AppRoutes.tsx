@@ -275,6 +275,9 @@ import PersonalFinance from '@/pages/grabba/PersonalFinance';
 import PayrollManager from '@/pages/grabba/PayrollManager';
 import AdvisorPenthouse from '@/pages/grabba/AdvisorPenthouse';
 import InstinctLog from '@/pages/grabba/InstinctLog';
+import GrabbaNeighborhoodPerformance from '@/pages/grabba/GrabbaNeighborhoodPerformance';
+import GrabbaClusterCommunications from '@/pages/grabba/GrabbaClusterCommunications';
+import GrabbaClusterAnalytics from '@/pages/grabba/GrabbaClusterAnalytics';
 
 // AI
 import AIWorkforce from '@/pages/ai/Workforce';
@@ -855,6 +858,34 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee']} showLocked>
             <Layout><GrabbaLayout><GrabbaClusterDashboard /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/analytics" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee']} showLocked>
+            <GrabbaClusterAnalytics />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/analytics/neighborhoods" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee']} showLocked>
+            <GrabbaNeighborhoodPerformance />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/communications" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee']} showLocked>
+            <GrabbaClusterCommunications />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/unified-upload" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee']} showLocked>
+            <Layout><GrabbaLayout><UnifiedUploadCenter /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />

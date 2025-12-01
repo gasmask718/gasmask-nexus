@@ -149,7 +149,7 @@ export default function GrabbaClusterDashboard() {
             <Button
               variant="outline"
               className="h-auto py-6 flex-col gap-2"
-              onClick={() => navigate('/grabba/delivery-runs')}
+              onClick={() => navigate('/grabba/deliveries')}
             >
               <Truck className="w-8 h-8" />
               <div>
@@ -191,6 +191,18 @@ export default function GrabbaClusterDashboard() {
               <div>
                 <div className="font-medium">AI Insights</div>
                 <div className="text-xs text-muted-foreground">Smart analytics</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="h-auto py-6 flex-col gap-2"
+              onClick={() => navigate('/grabba/analytics/neighborhoods')}
+            >
+              <Building className="w-8 h-8" />
+              <div>
+                <div className="font-medium">Neighborhoods</div>
+                <div className="text-xs text-muted-foreground">Store performance by area</div>
               </div>
             </Button>
           </div>
