@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { exportOsBlueprintToJson } from '@/services/exportService';
 import {
   Activity,
   AlertTriangle,
@@ -24,6 +27,7 @@ import {
   LineChart,
   Factory,
   Sparkles,
+  Download,
 } from 'lucide-react';
 
 // Import new polished components
@@ -54,10 +58,10 @@ const workforceSummary = [
 ];
 
 const alerts = [
-  { type: 'Critical', system: 'Funding Company', message: '1 large file in underwriting over SLA', time: '1h ago' },
-  { type: 'Warning', system: 'TopTier Experience', message: '3 bookings missing payment confirmation', time: '3h ago' },
-  { type: 'Warning', system: 'PlayBoxxx', message: '2 creator payout reviews pending', time: '5h ago' },
-  { type: 'Info', system: 'GasMask / Grabba', message: '5 stores flagged for low inventory', time: 'Today' },
+  { id: 'alert-1', type: 'Critical', system: 'Funding Company', message: '1 large file in underwriting over SLA', time: '1h ago' },
+  { id: 'alert-2', type: 'Warning', system: 'TopTier Experience', message: '3 bookings missing payment confirmation', time: '3h ago' },
+  { id: 'alert-3', type: 'Warning', system: 'PlayBoxxx', message: '2 creator payout reviews pending', time: '5h ago' },
+  { id: 'alert-4', type: 'Info', system: 'GasMask / Grabba', message: '5 stores flagged for low inventory', time: 'Today' },
 ];
 
 const activityFeed = [
@@ -150,12 +154,23 @@ function AccessDenied({ role }: { role: string | null }) {
 const OwnerDashboard: React.FC = () => {
   const { role, isAdmin } = useUserRole();
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Simulate initial data load
     const timer = setTimeout(() => setLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
+
+  const handleExportSnapshot = async () => {
+    try {
+      await exportOsBlueprintToJson();
+      toast.success('Snapshot exported successfully');
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to export snapshot');
+    }
+  };
 
   if (!isAdmin()) {
     return <AccessDenied role={role} />;
@@ -185,12 +200,12 @@ const OwnerDashboard: React.FC = () => {
             <Crown className="h-3 w-3 mr-1" />
             DYNASTY OWNER
           </Badge>
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate('/os/owner/ai-advisor')}>
             <Brain className="h-4 w-4" />
             AI Summary
           </Button>
-          <Button size="sm" className="gap-2">
-            <LineChart className="h-4 w-4" />
+          <Button size="sm" className="gap-2" onClick={handleExportSnapshot}>
+            <Download className="h-4 w-4" />
             Export Snapshot
           </Button>
         </div>
@@ -411,8 +426,12 @@ const OwnerDashboard: React.FC = () => {
           <CardContent>
             <ScrollArea className="h-[220px] pr-4">
               <div className="space-y-2">
-                {alerts.map((alert, idx) => (
-                  <div key={idx} className="flex flex-col gap-1.5 rounded-xl border bg-card/70 px-4 py-3">
+                {alerts.map((alert) => (
+                  <div 
+                    key={alert.id} 
+                    className="flex flex-col gap-1.5 rounded-xl border bg-card/70 px-4 py-3 cursor-pointer hover:bg-card/90 transition-colors"
+                    onClick={() => navigate(`/os/owner/alert/${alert.id}`)}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Badge
@@ -431,6 +450,9 @@ const OwnerDashboard: React.FC = () => {
                       <span className="text-[10px] text-muted-foreground">{alert.time}</span>
                     </div>
                     <p className="text-xs text-foreground">{alert.message}</p>
+                    <Button variant="ghost" size="sm" className="w-fit text-xs mt-1 h-6 px-2">
+                      Review →
+                    </Button>
                   </div>
                 ))}
               </div>

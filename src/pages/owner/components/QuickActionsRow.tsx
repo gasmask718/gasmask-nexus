@@ -25,14 +25,14 @@ interface QuickAction {
 }
 
 const quickActions: QuickAction[] = [
-  { id: 'broadcast', label: 'Send Broadcast', icon: Send, path: '/grabba/communication', variant: 'default' },
+  { id: 'broadcast', label: 'Send Broadcast', icon: Send, path: '/os/owner/ai-command', variant: 'default' },
   { id: 'assign-va', label: 'Assign VA', icon: UserPlus, path: '/va-task-center', variant: 'secondary' },
   { id: 'crm-leads', label: 'Check Leads', icon: Target, path: '/crm', variant: 'secondary', badge: '12 new' },
   { id: 'route-ops', label: 'Route Ops', icon: Route, path: '/route-ops-center', variant: 'secondary' },
-  { id: 'alerts', label: 'View Alerts', icon: Bell, path: '/grabba/ai-alerts', variant: 'outline', badge: '7' },
+  { id: 'alerts', label: 'View Alerts', icon: Bell, path: '/os/owner/risk-radar', variant: 'outline', badge: '7' },
   { id: 'reports', label: 'Reports', icon: FileText, path: '/executive-reports', variant: 'outline' },
   { id: 'call-center', label: 'Call Center', icon: Phone, path: '/callcenter', variant: 'outline' },
-  { id: 'email-blast', label: 'Email Blast', icon: Mail, path: '/grabba/email-center', variant: 'outline' },
+  { id: 'email-blast', label: 'Email Blast', icon: Mail, path: '/communications', variant: 'outline' },
 ];
 
 export function QuickActionsRow() {

@@ -14,3 +14,4 @@ export { default as OwnerRiskDetailPage } from "./OwnerRiskDetailPage";
 export { default as OwnerBusinessDetailPage } from "./OwnerBusinessDetailPage";
 export { default as OwnerPropertyDetailPage } from "./OwnerPropertyDetailPage";
 export { default as OwnerFinancialHoldingDetailPage } from "./OwnerFinancialHoldingDetailPage";
+export { default as OwnerAlertDetailPage } from "./OwnerAlertDetailPage";
