@@ -15,7 +15,7 @@ import {
   Wrench
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { exportAndDownload } from '@/services/excelExportService';
+import { exportFullOSToExcel } from '@/services/excelExportService';
 import { exportOsBlueprintToJson } from '@/services/exportService';
 
 interface FooterAction {
@@ -49,14 +49,24 @@ export function OwnerToolsFooter() {
     });
     
     try {
-      const success = await exportAndDownload('all');
-      if (success) {
+      const blob = await exportFullOSToExcel();
+      if (blob) {
+        const timestamp = new Date().toISOString().split('T')[0];
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Dynasty_OS_Full_Export_${timestamp}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
         toast.success('Excel export complete', {
           description: 'Your file has been downloaded.',
         });
       } else {
-        toast.warning('Export completed with warnings', {
-          description: 'Some data may be missing. Check console for details.',
+        toast.warning('No data available for export', {
+          description: 'Check if tables have data.',
         });
       }
     } catch (error) {
