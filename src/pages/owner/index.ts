@@ -15,3 +15,14 @@ export { default as OwnerBusinessDetailPage } from "./OwnerBusinessDetailPage";
 export { default as OwnerPropertyDetailPage } from "./OwnerPropertyDetailPage";
 export { default as OwnerFinancialHoldingDetailPage } from "./OwnerFinancialHoldingDetailPage";
 export { default as OwnerAlertDetailPage } from "./OwnerAlertDetailPage";
+
+// Holdings Detail Pages
+export { default as OwnerAutoTradingDetailPage } from "./OwnerAutoTradingDetailPage";
+export { default as OwnerCryptoDetailPage } from "./OwnerCryptoDetailPage";
+export { default as OwnerSportsDetailPage } from "./OwnerSportsDetailPage";
+
+// Additional Owner Pages
+export { default as OwnerVoiceAI } from "./OwnerVoiceAI";
+export { default as OwnerReports } from "./OwnerReports";
+export { default as OwnerVARouting } from "./OwnerVARouting";
+export { default as OwnerAlertCenter } from "./OwnerAlertCenter";

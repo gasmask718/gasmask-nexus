@@ -16,6 +16,10 @@ import {
   LineChart,
   ArrowUpRight,
   Landmark,
+  Bot,
+  Coins,
+  Trophy,
+  ChevronRight,
 } from 'lucide-react';
 
 const realEstateHoldings = {
@@ -50,6 +54,36 @@ const incomingCapital = {
   fundingPipeline: 125000,
   grantsPending: 45000,
   accountsReceivable: 32000,
+};
+
+const autoTradingAI = {
+  id: 'auto-trading',
+  totalEquity: 28500,
+  monthlyROI: 7.2,
+  winRate: 62,
+  activeBots: 3,
+};
+
+const cryptoHoldings = {
+  id: 'crypto',
+  btcBalance: 0.45,
+  ethBalance: 2.8,
+  btcValue: 19500,
+  ethValue: 5200,
+  totalValue: 24700,
+  avgEntry: { btc: 38000, eth: 1650 },
+};
+
+const sportsBettingAI = {
+  id: 'sports-betting',
+  bankroll: 15400,
+  winRate: 58,
+  monthlyROI: 12.5,
+  lastBets: [
+    { game: 'NFL: Chiefs vs Ravens', result: 'W', amount: 200 },
+    { game: 'NBA: Lakers vs Celtics', result: 'L', amount: 150 },
+    { game: 'UFC: Main Event', result: 'W', amount: 300 },
+  ],
 };
 
 export default function OwnerHoldingsOverview() {
@@ -260,6 +294,129 @@ export default function OwnerHoldingsOverview() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Advanced Holdings Section */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Auto-Trading AI */}
+        <Card 
+          className="rounded-xl border-cyan-500/30 cursor-pointer hover:bg-muted/30 transition-colors"
+          onClick={() => navigate('/os/owner/holdings/auto-trading')}
+        >
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bot className="h-4 w-4 text-cyan-400" />
+                <CardTitle className="text-base">Auto-Trading AI</CardTitle>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Total Equity</span>
+              <span className="font-bold">${autoTradingAI.totalEquity.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Monthly ROI</span>
+              <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                +{autoTradingAI.monthlyROI}%
+              </Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Win Rate</span>
+              <span className="text-sm">{autoTradingAI.winRate}%</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Active Bots</span>
+              <span className="text-sm">{autoTradingAI.activeBots}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Crypto Holdings */}
+        <Card 
+          className="rounded-xl border-orange-500/30 cursor-pointer hover:bg-muted/30 transition-colors"
+          onClick={() => navigate('/os/owner/holdings/crypto')}
+        >
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Coins className="h-4 w-4 text-orange-400" />
+                <CardTitle className="text-base">Crypto Holdings</CardTitle>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Total Value</span>
+              <span className="font-bold">${cryptoHoldings.totalValue.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">BTC</span>
+              <span className="text-sm">{cryptoHoldings.btcBalance} BTC (${(cryptoHoldings.btcValue / 1000).toFixed(1)}K)</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">ETH</span>
+              <span className="text-sm">{cryptoHoldings.ethBalance} ETH (${(cryptoHoldings.ethValue / 1000).toFixed(1)}K)</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Avg Entry (BTC)</span>
+              <span className="text-sm">${cryptoHoldings.avgEntry.btc.toLocaleString()}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Sports Betting AI */}
+        <Card 
+          className="rounded-xl border-green-500/30 cursor-pointer hover:bg-muted/30 transition-colors"
+          onClick={() => navigate('/os/owner/holdings/sports')}
+        >
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-green-400" />
+                <CardTitle className="text-base">Sports Betting AI</CardTitle>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Bankroll</span>
+              <span className="font-bold">${sportsBettingAI.bankroll.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Win Rate</span>
+              <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                {sportsBettingAI.winRate}%
+              </Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Monthly ROI</span>
+              <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                +{sportsBettingAI.monthlyROI}%
+              </Badge>
+            </div>
+            <div className="space-y-1 mt-2">
+              <span className="text-xs text-muted-foreground">Recent Bets:</span>
+              {sportsBettingAI.lastBets.map((bet, idx) => (
+                <div key={idx} className="flex justify-between text-xs">
+                  <span className="truncate max-w-[150px]">{bet.game}</span>
+                  <Badge variant="outline" className={cn(
+                    "text-[10px]",
+                    bet.result === 'W' 
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      : 'bg-red-500/20 text-red-400 border-red-500/30'
+                  )}>
+                    {bet.result} ${bet.amount}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
