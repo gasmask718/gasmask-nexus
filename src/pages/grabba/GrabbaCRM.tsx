@@ -379,7 +379,7 @@ export default function GrabbaCRM() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navigate(`/stores/${store.id}`)}>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navigate(`/grabba/store-master/${store.id}`)}>
                       <ExternalLink className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>

@@ -4,12 +4,27 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export type AIScope = 'owner' | 'grabba' | 'global';
+export type AIContext = 
+  | 'owner' 
+  | 'grabba' 
+  | 'sports' 
+  | 'funding' 
+  | 'grants' 
+  | 'toptier' 
+  | 'iclean' 
+  | 'playboxxx'
+  | 'unforgettable'
+  | 'procurement'
+  | 'warehouse'
+  | 'global';
 
 export interface AICommandPayload {
-  scope: AIScope;
+  scope: AIContext;
   command: string;
   context?: Record<string, any>;
+  userId?: string | null;
+  organizationId?: string | null;
+  businessId?: string | null;
 }
 
 export interface AICommandResult {
@@ -203,4 +218,42 @@ export async function runGrabbaCommand(command: string, context?: Record<string,
  */
 export async function runOwnerCommand(command: string, context?: Record<string, any>) {
   return runOsAiCommand({ scope: 'owner', command, context });
+}
+
+/**
+ * Quick helpers for specific business contexts
+ */
+export async function runSportsCommand(command: string, context?: Record<string, any>) {
+  return runOsAiCommand({ scope: 'sports', command, context });
+}
+
+export async function runFundingCommand(command: string, context?: Record<string, any>) {
+  return runOsAiCommand({ scope: 'funding', command, context });
+}
+
+export async function runGrantsCommand(command: string, context?: Record<string, any>) {
+  return runOsAiCommand({ scope: 'grants', command, context });
+}
+
+export async function runTopTierCommand(command: string, context?: Record<string, any>) {
+  return runOsAiCommand({ scope: 'toptier', command, context });
+}
+
+export async function runICleanCommand(command: string, context?: Record<string, any>) {
+  return runOsAiCommand({ scope: 'iclean', command, context });
+}
+
+export async function runPlayboxxxCommand(command: string, context?: Record<string, any>) {
+  return runOsAiCommand({ scope: 'playboxxx', command, context });
+}
+
+export async function runUnforgettableCommand(command: string, context?: Record<string, any>) {
+  return runOsAiCommand({ scope: 'unforgettable', command, context });
+}
+
+/**
+ * Generic command runner for any context
+ */
+export async function runAICommand(payload: AICommandPayload): Promise<AICommandResult> {
+  return runOsAiCommand(payload);
 }

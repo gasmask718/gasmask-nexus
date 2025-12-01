@@ -166,7 +166,7 @@ export default function GrabbaClusterAnalytics() {
                       <TableRow 
                         key={store.id}
                         className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => navigate(`/stores/${store.id}`)}
+                        onClick={() => navigate(`/grabba/store-master/${store.id}`)}
                       >
                         <TableCell>
                           <Badge variant={i < 3 ? 'default' : 'outline'}>#{i + 1}</Badge>

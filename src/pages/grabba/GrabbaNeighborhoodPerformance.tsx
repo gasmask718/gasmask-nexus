@@ -140,7 +140,7 @@ function NeighborhoodRow({ neighborhood }: { neighborhood: typeof neighborhoodDa
                     <TableRow 
                       key={store.id} 
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => navigate(`/stores/${store.id}`)}
+                      onClick={() => navigate(`/grabba/store-master/${store.id}`)}
                     >
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
@@ -158,7 +158,7 @@ function NeighborhoodRow({ neighborhood }: { neighborhood: typeof neighborhoodDa
                       <TableCell>
                         <Button variant="ghost" size="sm" onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/stores/${store.id}`);
+                          navigate(`/grabba/store-master/${store.id}`);
                         }}>
                           View
                         </Button>
