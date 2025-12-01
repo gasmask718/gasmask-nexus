@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
 const AIAlerts = () => {
+  const navigate = useNavigate();
   const { data: alerts, isLoading: alertsLoading, refetch } = useAIAlerts();
   const { data: recommendations } = useAIRecommendations();
   
@@ -65,7 +67,38 @@ const AIAlerts = () => {
   };
 
   const handleInvestigate = (alertId: string) => {
-    toast.info('Opening investigation details...');
+    const alert = alerts?.find(a => a.id === alertId);
+    if (!alert) {
+      toast.error('Alert not found');
+      return;
+    }
+
+    // Show detailed alert info
+    toast.info(`Alert Details: ${alert.title}`, {
+      description: alert.description,
+      duration: 8000,
+    });
+
+    // If alert has a linked entity, navigate to it
+    if (alert.entityId && alert.entityType) {
+      const entityRoutes: Record<string, string> = {
+        'store': `/grabba/store-master/${alert.entityId}`,
+        'wholesaler': `/wholesaler/${alert.entityId}`,
+        'driver': `/drivers/${alert.entityId}`,
+        'ambassador': `/ambassadors/${alert.entityId}`,
+      };
+      
+      const route = entityRoutes[alert.entityType];
+      if (route) {
+        toast.success(`View ${alert.entityType} details`, {
+          description: 'Click to navigate',
+          action: {
+            label: 'Open',
+            onClick: () => navigate(route),
+          },
+        });
+      }
+    }
   };
 
   return (

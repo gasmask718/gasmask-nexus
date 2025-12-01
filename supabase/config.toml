@@ -58,3 +58,6 @@ verify_jwt = false
 
 [functions.extract-store-profile]
 verify_jwt = false
+
+[functions.dynasty-ai-command]
+verify_jwt = false
