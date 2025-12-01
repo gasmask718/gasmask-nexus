@@ -152,13 +152,13 @@ function AccessDenied({ role }: { role: string | null }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const OwnerDashboard: React.FC = () => {
-  const { role, isAdmin } = useUserRole();
-  const [loading, setLoading] = useState(true);
+  const { role, isAdmin, loading: roleLoading } = useUserRole();
+  const [dataLoading, setDataLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     // Simulate initial data load
-    const timer = setTimeout(() => setLoading(false), 800);
+    const timer = setTimeout(() => setDataLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -172,9 +172,23 @@ const OwnerDashboard: React.FC = () => {
     }
   };
 
+  // Show loading state while role is being determined
+  if (roleLoading) {
+    return (
+      <div className="flex h-full items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
+          <p className="text-muted-foreground">Loading Owner Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAdmin()) {
     return <AccessDenied role={role} />;
   }
+
+  const loading = dataLoading;
 
   return (
     <div className="space-y-6 p-4 md:p-6 lg:p-8">
