@@ -15,7 +15,7 @@ import { StoreContactsSection } from '@/components/store/StoreContactsSection';
 import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import { CustomerMemoryCoreV2 } from '@/components/grabba/CustomerMemoryCoreV2';
 import { StoreAIFuturePanel } from '@/components/grabba/StoreAIFuturePanel';
-
+import { StorePersonalMemoryPanel } from '@/components/grabba/StorePersonalMemoryPanel';
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -246,10 +246,13 @@ export default function StoreMasterProfile() {
           <StoreContactsSection storeId={id || ''} storeName={storeMaster.store_name} />
         </div>
 
-        {/* Center Panel - AI Future View + Customer Memory Core V2 */}
+        {/* Center Panel - AI Future View + Personal Memory + Customer Memory Core V2 */}
         <div className="lg:col-span-6 space-y-6">
-          {/* AI Future View Panel (V3) */}
+          {/* V3 - AI Future View Panel */}
           <StoreAIFuturePanel storeId={id || ''} />
+          
+          {/* V4 - Personal Memory Panel */}
+          <StorePersonalMemoryPanel storeId={id || ''} />
           
           {/* Customer Memory Core V2 */}
           <CustomerMemoryCoreV2
