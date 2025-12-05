@@ -14,6 +14,7 @@ import { useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { StoreContactsSection } from '@/components/store/StoreContactsSection';
 import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import { CustomerMemoryCoreV2 } from '@/components/grabba/CustomerMemoryCoreV2';
+import { StoreAIFuturePanel } from '@/components/grabba/StoreAIFuturePanel';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
@@ -245,8 +246,12 @@ export default function StoreMasterProfile() {
           <StoreContactsSection storeId={id || ''} storeName={storeMaster.store_name} />
         </div>
 
-        {/* Center Panel - Customer Memory Core V2 */}
-        <div className="lg:col-span-6">
+        {/* Center Panel - AI Future View + Customer Memory Core V2 */}
+        <div className="lg:col-span-6 space-y-6">
+          {/* AI Future View Panel (V3) */}
+          <StoreAIFuturePanel storeId={id || ''} />
+          
+          {/* Customer Memory Core V2 */}
           <CustomerMemoryCoreV2
             store={storeMaster}
             contacts={contacts}

@@ -61,3 +61,6 @@ verify_jwt = false
 
 [functions.dynasty-ai-command]
 verify_jwt = false
+
+[functions.ai-store-insights]
+verify_jwt = false
