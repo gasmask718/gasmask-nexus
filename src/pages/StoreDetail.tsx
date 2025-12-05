@@ -21,6 +21,7 @@ import { AIRelationshipHealth } from "@/components/communication/AIRelationshipH
 import { RouteIntelligence } from "@/components/store/RouteIntelligence";
 import { Activity } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { StoreContactsSection } from '@/components/store/StoreContactsSection';
 import {
   MapPin, 
   Phone, 
@@ -418,6 +419,9 @@ const StoreDetail = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Store Contacts Section */}
+          <StoreContactsSection storeId={id || ''} storeName={store.name} />
 
           {/* Communication Stats & AI */}
           <div className="grid gap-6 md:grid-cols-2">

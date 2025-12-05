@@ -15,6 +15,7 @@ import { BrandBadgesRow } from '@/components/grabba/BrandFilterBar';
 import { AIExtractedProfileCard } from '@/components/grabba/AIExtractedProfileCard';
 import { StoreProfileSections } from './components/StoreProfileSections';
 import { getExtractedProfile } from '@/services/profileExtractionService';
+import { StoreContactsSection } from '@/components/store/StoreContactsSection';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
@@ -192,6 +193,9 @@ export default function StoreMasterProfile() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Store Contacts */}
+      <StoreContactsSection storeId={id || ''} storeName={storeMaster.store_name} />
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
