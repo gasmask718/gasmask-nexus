@@ -13,7 +13,7 @@ import { GRABBA_BRAND_CONFIG } from '@/config/grabbaBrands';
 import { useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { StoreContactsSection } from '@/components/store/StoreContactsSection';
 import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
-import { CustomerMemoryCore } from '@/components/grabba/CustomerMemoryCore';
+import { CustomerMemoryCoreV2 } from '@/components/grabba/CustomerMemoryCoreV2';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
@@ -121,6 +121,30 @@ export default function StoreMasterProfile() {
     enabled: !!id,
   });
 
+  // Visit logs for this store (filtered from interactions where type = visit)
+  const { data: visits = [] } = useQuery({
+    queryKey: ['store-visits', id],
+    queryFn: async () => {
+      if (!id) return [];
+      const { data, error } = await supabase
+        .from('contact_interactions')
+        .select('*')
+        .eq('store_id', id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.error('Error loading store visits', error);
+        return [];
+      }
+      // Filter visits client-side to avoid deep type instantiation
+      return (data || []).filter((d: any) => 
+        d.interaction_type === 'visit' || d.type === 'visit'
+      ).slice(0, 50);
+    },
+    enabled: !!id,
+  });
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-96">Loading...</div>;
   }
@@ -221,12 +245,13 @@ export default function StoreMasterProfile() {
           <StoreContactsSection storeId={id || ''} storeName={storeMaster.store_name} />
         </div>
 
-        {/* Center Panel - Customer Memory Core */}
+        {/* Center Panel - Customer Memory Core V2 */}
         <div className="lg:col-span-6">
-          <CustomerMemoryCore
+          <CustomerMemoryCoreV2
             store={storeMaster}
             contacts={contacts}
             interactions={interactions}
+            visits={visits}
           />
         </div>
 
