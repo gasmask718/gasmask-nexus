@@ -217,7 +217,7 @@ export default function StoreMasterProfile() {
       {/* Recent Interactions */}
       <RecentStoreInteractions
         storeId={id || ''}
-        onLogInteraction={() => setShowLogModal(true)}
+        onLogInteraction={(_resolvedId) => setShowLogModal(true)}
       />
 
       {/* Quick Stats */}

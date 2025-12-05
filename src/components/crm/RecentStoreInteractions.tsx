@@ -3,9 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, MessageSquare, Mail, Users, ArrowUpRight, ArrowDownLeft, Plus, Clock, AlertCircle } from 'lucide-react';
+import { Phone, MessageSquare, Mail, Users, ArrowUpRight, ArrowDownLeft, Plus, Clock, AlertCircle, Link2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
+import { toast } from 'sonner';
 
 const CHANNEL_ICONS: Record<string, typeof Phone> = {
   CALL: Phone,
@@ -17,48 +19,57 @@ const CHANNEL_ICONS: Record<string, typeof Phone> = {
 };
 
 interface RecentStoreInteractionsProps {
-  storeId: string; // This should be store_master.id
-  onLogInteraction: () => void;
+  storeId: string; // Can be either stores.id or store_master.id
+  onLogInteraction: (storeMasterId: string) => void;
   onViewAll?: () => void;
 }
 
 export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }: RecentStoreInteractionsProps) {
-  // Validate that storeId exists in store_master
-  const { data: validStore, isLoading: validating } = useQuery({
-    queryKey: ['validate-store-for-interactions', storeId],
-    queryFn: async () => {
-      if (!storeId) return null;
-      const { data, error } = await supabase
-        .from('store_master')
-        .select('id')
-        .eq('id', storeId)
-        .single();
-      if (error) return null;
-      return data;
-    },
-    enabled: !!storeId,
-  });
-
-  const isValidStoreId = !!validStore;
+  const { 
+    storeMasterId, 
+    isLoading: resolving, 
+    needsCreation, 
+    legacyStore,
+    createStoreMaster,
+    isCreating 
+  } = useStoreMasterResolver(storeId);
 
   const { data: interactions, isLoading } = useQuery({
-    queryKey: ['store-interactions', storeId],
+    queryKey: ['store-interactions', storeMasterId],
     queryFn: async () => {
+      if (!storeMasterId) return [];
       const { data, error } = await supabase
         .from('contact_interactions')
         .select(`
           *,
           contact:store_contacts(id, name)
         `)
-        .eq('store_id', storeId)
+        .eq('store_id', storeMasterId)
         .order('created_at', { ascending: false })
         .limit(5);
 
       if (error) throw error;
       return data;
     },
-    enabled: !!storeId && isValidStoreId,
+    enabled: !!storeMasterId,
   });
+
+  const handleCreateStoreMaster = async () => {
+    try {
+      const created = await createStoreMaster();
+      toast.success('Store Master record created');
+      // Automatically open the interaction modal with the new ID
+      onLogInteraction(created.id);
+    } catch (error: any) {
+      toast.error('Failed to create store master: ' + error.message);
+    }
+  };
+
+  const handleLogInteraction = () => {
+    if (storeMasterId) {
+      onLogInteraction(storeMasterId);
+    }
+  };
 
   return (
     <Card>
@@ -73,27 +84,45 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
               <span>
                 <Button 
                   size="sm" 
-                  onClick={onLogInteraction}
-                  disabled={!isValidStoreId || validating}
+                  onClick={handleLogInteraction}
+                  disabled={!storeMasterId || resolving}
                 >
                   <Plus className="h-4 w-4 mr-1" /> Log Interaction
                 </Button>
               </span>
             </TooltipTrigger>
-            {!isValidStoreId && !validating && (
+            {!storeMasterId && !resolving && (
               <TooltipContent>
-                <p>Store not found in store_master table</p>
+                <p>Link this store to Store Master first</p>
               </TooltipContent>
             )}
           </Tooltip>
         </TooltipProvider>
       </CardHeader>
       <CardContent>
-        {validating || isLoading ? (
+        {resolving || isLoading ? (
           <div className="flex items-center justify-center py-4">
             <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : !isValidStoreId ? (
+        ) : needsCreation ? (
+          <div className="text-center py-6 space-y-4">
+            <AlertCircle className="h-10 w-10 mx-auto text-yellow-500" />
+            <div>
+              <p className="text-sm font-medium">Link to Store Master</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Create a Store Master record to log interactions
+              </p>
+            </div>
+            <Button 
+              size="sm" 
+              onClick={handleCreateStoreMaster}
+              disabled={isCreating}
+            >
+              <Link2 className="h-4 w-4 mr-2" />
+              {isCreating ? 'Creating...' : `Create Store Master for "${legacyStore?.name}"`}
+            </Button>
+          </div>
+        ) : !storeMasterId ? (
           <div className="text-center py-6 text-muted-foreground">
             <AlertCircle className="h-10 w-10 mx-auto mb-2 opacity-50 text-yellow-500" />
             <p className="text-sm">Store not linked to store_master</p>
