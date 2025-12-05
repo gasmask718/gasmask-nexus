@@ -3,8 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, MessageSquare, Mail, Users, ArrowUpRight, ArrowDownLeft, Plus, Clock } from 'lucide-react';
+import { Phone, MessageSquare, Mail, Users, ArrowUpRight, ArrowDownLeft, Plus, Clock, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const CHANNEL_ICONS: Record<string, typeof Phone> = {
   CALL: Phone,
@@ -16,12 +17,30 @@ const CHANNEL_ICONS: Record<string, typeof Phone> = {
 };
 
 interface RecentStoreInteractionsProps {
-  storeId: string;
+  storeId: string; // This should be store_master.id
   onLogInteraction: () => void;
   onViewAll?: () => void;
 }
 
 export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }: RecentStoreInteractionsProps) {
+  // Validate that storeId exists in store_master
+  const { data: validStore, isLoading: validating } = useQuery({
+    queryKey: ['validate-store-for-interactions', storeId],
+    queryFn: async () => {
+      if (!storeId) return null;
+      const { data, error } = await supabase
+        .from('store_master')
+        .select('id')
+        .eq('id', storeId)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!storeId,
+  });
+
+  const isValidStoreId = !!validStore;
+
   const { data: interactions, isLoading } = useQuery({
     queryKey: ['store-interactions', storeId],
     queryFn: async () => {
@@ -38,7 +57,7 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
       if (error) throw error;
       return data;
     },
-    enabled: !!storeId,
+    enabled: !!storeId && isValidStoreId,
   });
 
   return (
@@ -48,14 +67,37 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
           <Clock className="h-5 w-5 text-muted-foreground" />
           Recent Interactions
         </CardTitle>
-        <Button size="sm" onClick={onLogInteraction}>
-          <Plus className="h-4 w-4 mr-1" /> Log Interaction
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button 
+                  size="sm" 
+                  onClick={onLogInteraction}
+                  disabled={!isValidStoreId || validating}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Log Interaction
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {!isValidStoreId && !validating && (
+              <TooltipContent>
+                <p>Store not found in store_master table</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {validating || isLoading ? (
           <div className="flex items-center justify-center py-4">
             <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : !isValidStoreId ? (
+          <div className="text-center py-6 text-muted-foreground">
+            <AlertCircle className="h-10 w-10 mx-auto mb-2 opacity-50 text-yellow-500" />
+            <p className="text-sm">Store not linked to store_master</p>
+            <p className="text-xs mt-1">Interactions require a valid store_master record</p>
           </div>
         ) : interactions && interactions.length > 0 ? (
           <div className="space-y-3">

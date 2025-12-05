@@ -222,7 +222,7 @@ export default function ContactProfile() {
         onClose={() => setShowLogModal(false)}
         contactId={id}
         contactName={contactData.name}
-        storeId={contactData.store_id}
+        storeMasterId={contactData.store_id}
         storeName={storeName}
       />
     </div>

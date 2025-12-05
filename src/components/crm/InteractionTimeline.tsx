@@ -36,7 +36,7 @@ const SENTIMENT_COLORS: Record<string, string> = {
 
 interface InteractionTimelineProps {
   contactId?: string;
-  storeId?: string;
+  storeId?: string; // Must be store_master.id for proper FK relationship
   onLogInteraction: () => void;
   limit?: number;
   showFilters?: boolean;

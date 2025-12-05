@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,7 @@ interface LogInteractionModalProps {
   onClose: () => void;
   contactId?: string;
   contactName?: string;
-  storeId?: string;
+  storeMasterId?: string; // Must be store_master.id
   storeName?: string;
   storeContacts?: Array<{ id: string; name: string }>;
 }
@@ -53,7 +53,7 @@ export function LogInteractionModal({
   onClose,
   contactId,
   contactName,
-  storeId,
+  storeMasterId,
   storeName,
   storeContacts,
 }: LogInteractionModalProps) {
@@ -68,11 +68,32 @@ export function LogInteractionModal({
   const [nextAction, setNextAction] = useState('');
   const [followUpAt, setFollowUpAt] = useState('');
 
+  // Validate storeMasterId exists in store_master table
+  const { data: validatedStore } = useQuery({
+    queryKey: ['validate-store-master', storeMasterId],
+    queryFn: async () => {
+      if (!storeMasterId) return null;
+      const { data, error } = await supabase
+        .from('store_master')
+        .select('id, store_name')
+        .eq('id', storeMasterId)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!storeMasterId,
+  });
+
+  const isValidStore = !storeMasterId || !!validatedStore;
+
   const createInteraction = useMutation({
     mutationFn: async () => {
+      // Only use store_id if it's a valid store_master.id
+      const validStoreId = validatedStore?.id || null;
+      
       const { error } = await supabase.from('contact_interactions').insert({
         contact_id: selectedContactId || contactId,
-        store_id: storeId || null,
+        store_id: validStoreId,
         channel,
         direction,
         subject,
@@ -88,6 +109,7 @@ export function LogInteractionModal({
       toast.success('Interaction logged successfully');
       queryClient.invalidateQueries({ queryKey: ['contact-interactions'] });
       queryClient.invalidateQueries({ queryKey: ['store-interactions'] });
+      queryClient.invalidateQueries({ queryKey: ['store-master'] });
       resetForm();
       onClose();
     },

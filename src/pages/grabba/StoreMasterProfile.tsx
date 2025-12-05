@@ -418,7 +418,7 @@ export default function StoreMasterProfile() {
       <LogInteractionModal
         isOpen={showLogModal}
         onClose={() => setShowLogModal(false)}
-        storeId={id}
+        storeMasterId={id}
         storeName={storeMaster.store_name}
         storeContacts={storeContacts || []}
       />
