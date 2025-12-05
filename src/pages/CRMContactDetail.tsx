@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
@@ -8,10 +9,13 @@ import { ArrowLeft, Phone, Mail, MessageSquare } from 'lucide-react';
 import { CommunicationTimelineCRM } from '@/components/crm/CommunicationTimelineCRM';
 import { CustomerSimpleTimeline } from '@/components/crm/CustomerSimpleTimeline';
 import { CustomerNotesSimpleEditor } from '@/components/crm/CustomerNotesSimpleEditor';
+import { InteractionTimeline } from '@/components/crm/InteractionTimeline';
+import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 
 const CRMContactDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [showLogModal, setShowLogModal] = useState(false);
 
   const { data: contact, isLoading } = useQuery({
     queryKey: ['crm-contact-detail', id],
