@@ -4270,6 +4270,72 @@ export type Database = {
           },
         ]
       }
+      contact_interactions: {
+        Row: {
+          channel: string
+          contact_id: string
+          created_at: string | null
+          created_by_user_id: string | null
+          direction: string
+          follow_up_at: string | null
+          id: string
+          next_action: string | null
+          outcome: string | null
+          sentiment: string | null
+          store_id: string | null
+          subject: string
+          summary: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          channel: string
+          contact_id: string
+          created_at?: string | null
+          created_by_user_id?: string | null
+          direction: string
+          follow_up_at?: string | null
+          id?: string
+          next_action?: string | null
+          outcome?: string | null
+          sentiment?: string | null
+          store_id?: string | null
+          subject: string
+          summary?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          channel?: string
+          contact_id?: string
+          created_at?: string | null
+          created_by_user_id?: string | null
+          direction?: string
+          follow_up_at?: string | null
+          id?: string
+          next_action?: string | null
+          outcome?: string | null
+          sentiment?: string | null
+          store_id?: string | null
+          subject?: string
+          summary?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_interactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "store_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_interactions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_backup_settings: {
         Row: {
           auto_export_enabled: boolean | null

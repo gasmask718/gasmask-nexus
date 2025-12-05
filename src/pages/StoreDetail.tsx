@@ -22,6 +22,8 @@ import { RouteIntelligence } from "@/components/store/RouteIntelligence";
 import { Activity } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from '@/components/store/StoreContactsSection';
+import { RecentStoreInteractions } from '@/components/crm/RecentStoreInteractions';
+import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import {
   MapPin, 
   Phone, 
@@ -108,8 +110,23 @@ const StoreDetail = () => {
   const [visitModalOpen, setVisitModalOpen] = useState(false);
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
   const [bulkCommModalOpen, setBulkCommModalOpen] = useState(false);
+  const [interactionModalOpen, setInteractionModalOpen] = useState(false);
   const [timelineRefresh, setTimelineRefresh] = useState(0);
   const [geocoding, setGeocoding] = useState(false);
+
+  // Fetch store contacts for interaction modal
+  const { data: storeContacts } = useQuery({
+    queryKey: ['store-contacts-for-interaction', id],
+    queryFn: async () => {
+      if (!id) return [];
+      const { data } = await supabase
+        .from('store_contacts')
+        .select('id, name')
+        .eq('store_id', id);
+      return data || [];
+    },
+    enabled: !!id,
+  });
 
   const { data: routeInsight } = useQuery({
     queryKey: ['route-insight', id],
@@ -422,6 +439,12 @@ const StoreDetail = () => {
 
           {/* Store Contacts Section */}
           <StoreContactsSection storeId={id || ''} storeName={store.name} />
+
+          {/* Recent Interactions */}
+          <RecentStoreInteractions
+            storeId={id || ''}
+            onLogInteraction={() => setInteractionModalOpen(true)}
+          />
 
           {/* Communication Stats & AI */}
           <div className="grid gap-6 md:grid-cols-2">
@@ -835,6 +858,15 @@ const StoreDetail = () => {
           </Card>
         </div>
       </div>
+
+      {/* Log Interaction Modal */}
+      <LogInteractionModal
+        isOpen={interactionModalOpen}
+        onClose={() => setInteractionModalOpen(false)}
+        storeId={id}
+        storeName={store.name}
+        storeContacts={storeContacts || []}
+      />
     </div>
   );
 };

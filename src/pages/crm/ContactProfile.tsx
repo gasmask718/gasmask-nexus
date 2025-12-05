@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +9,8 @@ import {
   ArrowLeft, User, Phone, MessageSquare, Mail, Store, Star, Building2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { InteractionTimeline } from '@/components/crm/InteractionTimeline';
+import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 
 const ROLE_LABELS: Record<string, string> = {
   OWNER: 'Owner',
@@ -24,6 +27,7 @@ const ROLE_LABELS: Record<string, string> = {
 export default function ContactProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [showLogModal, setShowLogModal] = useState(false);
 
   // Fetch contact with all linked stores
   const { data: contactData, isLoading } = useQuery({
@@ -205,22 +209,22 @@ export default function ContactProfile() {
         </Card>
       </div>
 
-      {/* Communication History Placeholder */}
-      <Card className="glass-card border-border/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
-            Communication History
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>Communication history coming soon</p>
-            <p className="text-sm mt-1">Track calls, texts, and visits with this contact</p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Interaction Timeline */}
+      <InteractionTimeline
+        contactId={id}
+        storeId={contactData.store_id}
+        onLogInteraction={() => setShowLogModal(true)}
+      />
+
+      {/* Log Interaction Modal */}
+      <LogInteractionModal
+        isOpen={showLogModal}
+        onClose={() => setShowLogModal(false)}
+        contactId={id}
+        contactName={contactData.name}
+        storeId={contactData.store_id}
+        storeName={storeName}
+      />
     </div>
   );
 }

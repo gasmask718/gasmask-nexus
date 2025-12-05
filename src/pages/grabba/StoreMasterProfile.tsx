@@ -1,4 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +17,8 @@ import { AIExtractedProfileCard } from '@/components/grabba/AIExtractedProfileCa
 import { StoreProfileSections } from './components/StoreProfileSections';
 import { getExtractedProfile } from '@/services/profileExtractionService';
 import { StoreContactsSection } from '@/components/store/StoreContactsSection';
+import { RecentStoreInteractions } from '@/components/crm/RecentStoreInteractions';
+import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
@@ -26,6 +29,20 @@ export default function StoreMasterProfile() {
   const id = params.id || params.storeId; // Support both route params
   const navigate = useNavigate();
   const { selectedBrand } = useGrabbaBrand();
+  const [showLogModal, setShowLogModal] = useState(false);
+
+  // Fetch store contacts for the modal
+  const { data: storeContacts } = useQuery({
+    queryKey: ['store-contacts-for-modal', id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('store_contacts')
+        .select('id, name')
+        .eq('store_id', id);
+      return data || [];
+    },
+    enabled: !!id,
+  });
 
   const { data: storeMaster, isLoading } = useQuery({
     queryKey: ['store-master', id],
@@ -196,6 +213,12 @@ export default function StoreMasterProfile() {
 
       {/* Store Contacts */}
       <StoreContactsSection storeId={id || ''} storeName={storeMaster.store_name} />
+
+      {/* Recent Interactions */}
+      <RecentStoreInteractions
+        storeId={id || ''}
+        onLogInteraction={() => setShowLogModal(true)}
+      />
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -390,6 +413,15 @@ export default function StoreMasterProfile() {
           View Inventory
         </Button>
       </div>
+
+      {/* Log Interaction Modal */}
+      <LogInteractionModal
+        isOpen={showLogModal}
+        onClose={() => setShowLogModal(false)}
+        storeId={id}
+        storeName={storeMaster.store_name}
+        storeContacts={storeContacts || []}
+      />
     </div>
   );
 }
