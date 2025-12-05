@@ -12910,9 +12910,12 @@ export type Database = {
         Row: {
           can_receive_sms: boolean | null
           created_at: string | null
+          email: string | null
           id: string
+          influence_level: string | null
           is_primary: boolean | null
           name: string
+          notes: string | null
           phone: string | null
           role: string | null
           store_id: string
@@ -12920,9 +12923,12 @@ export type Database = {
         Insert: {
           can_receive_sms?: boolean | null
           created_at?: string | null
+          email?: string | null
           id?: string
+          influence_level?: string | null
           is_primary?: boolean | null
           name: string
+          notes?: string | null
           phone?: string | null
           role?: string | null
           store_id: string
@@ -12930,9 +12936,12 @@ export type Database = {
         Update: {
           can_receive_sms?: boolean | null
           created_at?: string | null
+          email?: string | null
           id?: string
+          influence_level?: string | null
           is_primary?: boolean | null
           name?: string
+          notes?: string | null
           phone?: string | null
           role?: string | null
           store_id?: string
@@ -13075,12 +13084,25 @@ export type Database = {
         Row: {
           address: string
           city: string
+          communication_preference: string | null
+          country_of_origin: string | null
           created_at: string | null
           email: string | null
+          expansion_notes: string | null
+          expected_open_dates: string[] | null
+          frustration_triggers: string[] | null
+          has_expansion: boolean | null
           id: string
+          influence_level: string | null
+          languages: string[] | null
+          loyalty_triggers: string[] | null
+          new_store_addresses: string[] | null
+          nickname: string | null
           notes: string | null
           owner_name: string | null
+          personality_notes: string | null
           phone: string | null
+          risk_score: string | null
           state: string
           store_name: string
           store_type: string | null
@@ -13090,12 +13112,25 @@ export type Database = {
         Insert: {
           address: string
           city: string
+          communication_preference?: string | null
+          country_of_origin?: string | null
           created_at?: string | null
           email?: string | null
+          expansion_notes?: string | null
+          expected_open_dates?: string[] | null
+          frustration_triggers?: string[] | null
+          has_expansion?: boolean | null
           id?: string
+          influence_level?: string | null
+          languages?: string[] | null
+          loyalty_triggers?: string[] | null
+          new_store_addresses?: string[] | null
+          nickname?: string | null
           notes?: string | null
           owner_name?: string | null
+          personality_notes?: string | null
           phone?: string | null
+          risk_score?: string | null
           state: string
           store_name: string
           store_type?: string | null
@@ -13105,12 +13140,25 @@ export type Database = {
         Update: {
           address?: string
           city?: string
+          communication_preference?: string | null
+          country_of_origin?: string | null
           created_at?: string | null
           email?: string | null
+          expansion_notes?: string | null
+          expected_open_dates?: string[] | null
+          frustration_triggers?: string[] | null
+          has_expansion?: boolean | null
           id?: string
+          influence_level?: string | null
+          languages?: string[] | null
+          loyalty_triggers?: string[] | null
+          new_store_addresses?: string[] | null
+          nickname?: string | null
           notes?: string | null
           owner_name?: string | null
+          personality_notes?: string | null
           phone?: string | null
+          risk_score?: string | null
           state?: string
           store_name?: string
           store_type?: string | null
