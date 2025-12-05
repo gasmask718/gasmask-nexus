@@ -280,6 +280,7 @@ import InstinctLog from '@/pages/grabba/InstinctLog';
 import GrabbaNeighborhoodPerformance from '@/pages/grabba/GrabbaNeighborhoodPerformance';
 import GrabbaClusterCommunications from '@/pages/grabba/GrabbaClusterCommunications';
 import GrabbaClusterAnalytics from '@/pages/grabba/GrabbaClusterAnalytics';
+import MemoryBackfill from '@/pages/grabba/MemoryBackfill';
 
 // AI
 import AIWorkforce from '@/pages/ai/Workforce';
@@ -1035,6 +1036,13 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
             <Layout><GrabbaLayout><BrandCRM /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/memory-backfill" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin']}>
+            <Layout><GrabbaLayout><MemoryBackfill /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />

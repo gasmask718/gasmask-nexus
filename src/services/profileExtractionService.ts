@@ -307,3 +307,29 @@ export async function getExtractedProfile(storeId: string): Promise<ExtractedPro
     return null;
   }
 }
+
+/**
+ * V5 - Run full AI memory extraction for a store
+ * Gathers ALL historical data and extracts comprehensive profile
+ */
+export async function runMemoryExtractionV5(storeId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase.functions.invoke('extract-store-memory-v5', {
+      body: { store_id: storeId }
+    });
+
+    if (error) {
+      console.error('[V5 Extraction] Edge function error:', error);
+      return { success: false, error: error.message };
+    }
+
+    if (data?.error) {
+      return { success: false, error: data.error };
+    }
+
+    return { success: true };
+  } catch (e: any) {
+    console.error('[V5 Extraction] Error:', e);
+    return { success: false, error: e.message };
+  }
+}

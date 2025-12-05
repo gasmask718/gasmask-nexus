@@ -1,15 +1,21 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Heart, AlertTriangle, Sparkles, RefreshCw } from 'lucide-react';
+import { User, Heart, AlertTriangle, Sparkles, RefreshCw, Brain } from 'lucide-react';
+import { runMemoryExtractionV5 } from '@/services/profileExtractionService';
+import { toast } from 'sonner';
 
 interface StorePersonalMemoryPanelProps {
   storeId: string;
 }
 
 export function StorePersonalMemoryPanel({ storeId }: StorePersonalMemoryPanelProps) {
+  const [isExtracting, setIsExtracting] = useState(false);
+  const queryClient = useQueryClient();
+
   const { data: profile, isLoading, refetch } = useQuery({
     queryKey: ['store-extracted-profile', storeId],
     queryFn: async () => {
@@ -30,6 +36,23 @@ export function StorePersonalMemoryPanel({ storeId }: StorePersonalMemoryPanelPr
   const redFlags = (profile?.red_flags as string[]) || [];
   const opportunities = (profile?.opportunities as string[]) || [];
 
+  const handleRunExtraction = async () => {
+    setIsExtracting(true);
+    toast.info('Running AI Memory Extraction...');
+    
+    const result = await runMemoryExtractionV5(storeId);
+    
+    if (result.success) {
+      toast.success('AI Memory Extraction complete!');
+      queryClient.invalidateQueries({ queryKey: ['store-extracted-profile', storeId] });
+      refetch();
+    } else {
+      toast.error(result.error || 'Extraction failed');
+    }
+    
+    setIsExtracting(false);
+  };
+
   return (
     <Card className="w-full border-primary/20">
       <CardHeader className="pb-3">
@@ -43,10 +66,21 @@ export function StorePersonalMemoryPanel({ storeId }: StorePersonalMemoryPanelPr
               Extracted human details, relationship insights, and communication preferences
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={handleRunExtraction} 
+              disabled={isExtracting}
+            >
+              <Brain className={`h-4 w-4 mr-2 ${isExtracting ? 'animate-pulse' : ''}`} />
+              {isExtracting ? 'Extracting...' : 'Run V5 Extraction'}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
