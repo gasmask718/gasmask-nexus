@@ -64,3 +64,6 @@ verify_jwt = false
 
 [functions.ai-store-insights]
 verify_jwt = false
+
+[functions.extract-store-memory-v5]
+verify_jwt = false
