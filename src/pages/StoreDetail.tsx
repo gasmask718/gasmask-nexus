@@ -859,11 +859,11 @@ const StoreDetail = () => {
         </div>
       </div>
 
-      {/* Log Interaction Modal */}
+      {/* Log Interaction Modal - Note: For stores from 'stores' table, we need store_master.id */}
       <LogInteractionModal
         isOpen={interactionModalOpen}
         onClose={() => setInteractionModalOpen(false)}
-        storeId={id}
+        storeMasterId={id}
         storeName={store.name}
         storeContacts={storeContacts || []}
       />
