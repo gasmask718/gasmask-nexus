@@ -111,6 +111,7 @@ const StoreDetail = () => {
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
   const [bulkCommModalOpen, setBulkCommModalOpen] = useState(false);
   const [interactionModalOpen, setInteractionModalOpen] = useState(false);
+  const [resolvedStoreMasterId, setResolvedStoreMasterId] = useState<string | null>(null);
   const [timelineRefresh, setTimelineRefresh] = useState(0);
   const [geocoding, setGeocoding] = useState(false);
 
@@ -443,7 +444,10 @@ const StoreDetail = () => {
           {/* Recent Interactions */}
           <RecentStoreInteractions
             storeId={id || ''}
-            onLogInteraction={() => setInteractionModalOpen(true)}
+            onLogInteraction={(resolvedId) => {
+              setResolvedStoreMasterId(resolvedId);
+              setInteractionModalOpen(true);
+            }}
           />
 
           {/* Communication Stats & AI */}
@@ -859,11 +863,14 @@ const StoreDetail = () => {
         </div>
       </div>
 
-      {/* Log Interaction Modal - Note: For stores from 'stores' table, we need store_master.id */}
+      {/* Log Interaction Modal - Uses resolved store_master.id */}
       <LogInteractionModal
         isOpen={interactionModalOpen}
-        onClose={() => setInteractionModalOpen(false)}
-        storeMasterId={id}
+        onClose={() => {
+          setInteractionModalOpen(false);
+          setResolvedStoreMasterId(null);
+        }}
+        storeMasterId={resolvedStoreMasterId || undefined}
         storeName={store.name}
         storeContacts={storeContacts || []}
       />
