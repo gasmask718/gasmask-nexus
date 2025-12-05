@@ -80,6 +80,47 @@ export default function StoreMasterProfile() {
     }
   });
 
+  // Contacts for this store (multiple family members / managers / workers)
+  const { data: contacts = [] } = useQuery({
+    queryKey: ['store-contacts', id],
+    queryFn: async () => {
+      if (!id) return [];
+      const { data, error } = await supabase
+        .from('store_contacts')
+        .select('*')
+        .eq('store_id', id)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading store contacts', error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
+  // Interactions for this store (visits, new store talks, wholesale talks, etc.)
+  const { data: interactions = [] } = useQuery({
+    queryKey: ['store-interactions', id],
+    queryFn: async () => {
+      if (!id) return [];
+      const { data, error } = await supabase
+        .from('contact_interactions')
+        .select('*')
+        .eq('store_id', id)
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (error) {
+        console.error('Error loading store interactions', error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-96">Loading...</div>;
   }
@@ -182,7 +223,11 @@ export default function StoreMasterProfile() {
 
         {/* Center Panel - Customer Memory Core */}
         <div className="lg:col-span-6">
-          <CustomerMemoryCore storeId={id || ''} storeMaster={storeMaster} />
+          <CustomerMemoryCore
+            store={storeMaster}
+            contacts={contacts}
+            interactions={interactions}
+          />
         </div>
 
         {/* Right Panel - Actions, Orders, Payments */}
