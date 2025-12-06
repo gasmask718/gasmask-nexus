@@ -145,7 +145,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/stores', label: 'Store Directory', icon: Store },
         { path: '/grabba/store-master', label: 'Store Master Profile', icon: Database },
         { path: '/grabba/crm', label: 'Grabba CRM', icon: Users },
-        { path: '/grabba/brand-crm', label: 'Brand CRM', icon: Target },
+        { path: '/grabba/brand/grabba', label: 'Brand CRM', icon: Target },
         { path: '/crm', label: 'Global CRM', icon: UserCheck },
         { path: '/crm/contacts', label: 'CRM Contacts', icon: User },
         { path: '/crm/customers', label: 'CRM Customers', icon: Users },
