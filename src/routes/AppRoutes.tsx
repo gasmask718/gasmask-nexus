@@ -239,6 +239,7 @@ import UnifiedUploadCenter from '@/pages/grabba/UnifiedUploadCenter';
 import MultiBrandDelivery from '@/pages/grabba/MultiBrandDelivery';
 import StoreMasterProfile from '@/pages/grabba/StoreMasterProfile';
 import BrandCRM from '@/pages/grabba/BrandCRM';
+import BrandSelector from '@/pages/grabba/BrandSelector';
 import BrandCommunications from '@/pages/grabba/BrandCommunications';
 import AIInsights from '@/pages/grabba/AIInsights';
 import GrabbaCRM from '@/pages/grabba/GrabbaCRM';
@@ -1043,6 +1044,20 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'driver', 'csr']}>
             <Layout><GrabbaLayout><GrabbaCRM /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/brand" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
+            <Layout><GrabbaLayout><BrandSelector /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/brand-crm" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
+            <Layout><GrabbaLayout><BrandSelector /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
