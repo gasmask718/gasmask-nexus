@@ -8,12 +8,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Search, Phone, Mail, MessageSquare, Plus, TrendingUp, Store, DollarSign, 
   Package, ChevronRight, Building2, Loader2, RefreshCw, Brain, Users, 
-  FileText, Bell, BarChart3, Lightbulb, AlertTriangle, Heart, Target
+  FileText, Bell, BarChart3, Lightbulb, AlertTriangle, Heart, Target,
+  Edit, Star
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { GRABBA_BRAND_CONFIG, GrabbaBrand } from '@/config/grabbaBrands';
 import { useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { useBrandCRMAutoCreate } from '@/hooks/useBrandCRMAutoCreate';
+import { AddContactModal } from '@/components/grabba/AddContactModal';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BRAND CRM — Individual brand view with guaranteed non-blank rendering
@@ -24,6 +26,7 @@ export default function BrandCRM() {
   const navigate = useNavigate();
   const { selectedBrand, setSelectedBrand } = useGrabbaBrand();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAddContact, setShowAddContact] = useState(false);
   
   // Map URL param to brand config
   const brandKey = brand as GrabbaBrand;
@@ -33,6 +36,7 @@ export default function BrandCRM() {
   const {
     accounts,
     contacts,
+    contactsByRole,
     orders,
     insights,
     stats,
@@ -99,12 +103,22 @@ export default function BrandCRM() {
             <Building2 className="w-4 h-4 mr-2" />
             Back to Floor 1
           </Button>
-          <Button className={brandConfig.pill}>
+          <Button className={brandConfig.pill} onClick={() => setShowAddContact(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Add Contact
           </Button>
         </div>
       </div>
+
+      {/* Add Contact Modal */}
+      <AddContactModal
+        open={showAddContact}
+        onOpenChange={setShowAddContact}
+        brandKey={brandKey}
+        brandLabel={brandConfig.label}
+        brandColor={brandConfig.primary}
+        accounts={accounts}
+      />
 
       {/* ═══════════════════════════════════════════════════════════════════════════
           PERSONAL INSIGHTS — ALWAYS VISIBLE (First Section)
@@ -403,38 +417,63 @@ export default function BrandCRM() {
                 </Card>
               ))}
             </div>
-          ) : contacts.length > 0 ? (
-            contacts.map((contact) => (
-              <Card key={contact.id}>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold">{contact.contact_name}</h3>
-                      <div className="text-sm text-muted-foreground mt-1">
-                        {contact.contact_phone || 'No phone'} • {contact.contact_email || 'No email'}
-                      </div>
-                      {contact.tags && contact.tags.length > 0 && (
-                        <div className="flex gap-2 mt-2">
-                          {contact.tags.map((tag: string, i: number) => (
-                            <Badge key={i} variant="outline">{tag}</Badge>
-                          ))}
+          ) : Object.keys(contactsByRole).length > 0 ? (
+            Object.entries(contactsByRole).map(([role, roleContacts]) => (
+              <div key={role} className="space-y-2">
+                <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  {role}s ({(roleContacts as any[]).length})
+                </h3>
+                {(roleContacts as any[]).map((contact: any) => (
+                  <Card key={contact.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="pt-4 pb-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold">{contact.contact_name}</h4>
+                            {contact.is_primary_contact && (
+                              <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                            )}
+                            <Badge variant="secondary" className="text-xs">{role}</Badge>
+                            {contact.additional_roles?.map((r: string, i: number) => (
+                              <Badge key={i} variant="outline" className="text-xs">{r}</Badge>
+                            ))}
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {contact.contact_phone || 'No phone'} • {contact.contact_email || 'No email'}
+                          </div>
+                          {contact.linkedStores?.length > 0 && (
+                            <div className="flex gap-1 mt-2 flex-wrap">
+                              <Store className="w-3 h-3 text-muted-foreground mt-0.5" />
+                              {contact.linkedStores.slice(0, 3).map((s: any, i: number) => (
+                                <Badge key={i} variant="outline" className="text-xs">{s.store_name}</Badge>
+                              ))}
+                              {contact.linkedStores.length > 3 && (
+                                <span className="text-xs text-muted-foreground">+{contact.linkedStores.length - 3} more</span>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline"><Phone className="w-4 h-4" /></Button>
-                      <Button size="sm" variant="outline"><MessageSquare className="w-4 h-4" /></Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost"><Phone className="w-4 h-4" /></Button>
+                          <Button size="sm" variant="ghost"><MessageSquare className="w-4 h-4" /></Button>
+                          <Button size="sm" variant="ghost"><Edit className="w-4 h-4" /></Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             ))
           ) : (
             <Card className="border-dashed">
               <CardContent className="py-12 text-center">
                 <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">No contacts yet for {brandConfig.label}</p>
-                <p className="text-sm text-muted-foreground mt-2">Contacts will appear as you add them</p>
+                <Button onClick={() => setShowAddContact(true)} className="mt-4" variant="outline">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add First Contact
+                </Button>
               </CardContent>
             </Card>
           )}
