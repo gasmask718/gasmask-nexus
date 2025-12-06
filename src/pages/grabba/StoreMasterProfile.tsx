@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   Phone, Mail, MapPin, DollarSign, Package, 
-  ChevronRight, MessageSquare, ArrowLeft, Store, Truck, AlertCircle
+  ChevronRight, MessageSquare, ArrowLeft, Store, Truck, AlertCircle, Loader2
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +16,7 @@ import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import { CustomerMemoryCoreV2 } from '@/components/grabba/CustomerMemoryCoreV2';
 import { StoreAIFuturePanel } from '@/components/grabba/StoreAIFuturePanel';
 import { StorePersonalMemoryPanel } from '@/components/grabba/StorePersonalMemoryPanel';
+import { useStoreMasterAutoCreate } from '@/hooks/useStoreMasterAutoCreate';
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -40,19 +41,17 @@ export default function StoreMasterProfile() {
     enabled: !!id,
   });
 
-  const { data: storeMaster, isLoading } = useQuery({
-    queryKey: ['store-master', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('store_master')
-        .select('*, store_brand_accounts(*)')
-        .eq('id', id)
-        .single();
-      
-      if (error) throw error;
-      return data;
-    }
-  });
+  // Self-healing: auto-create store_master if missing
+  const { 
+    storeMaster, 
+    isLoading, 
+    isCreating, 
+    legacyStore,
+    debug 
+  } = useStoreMasterAutoCreate(id);
+  
+  // Log debug info for troubleshooting
+  console.log('[StoreMasterProfile] Debug:', { id, ...debug });
 
   const { data: brandAccounts } = useQuery({
     queryKey: ['brand-accounts', id],
@@ -146,8 +145,15 @@ export default function StoreMasterProfile() {
     enabled: !!id,
   });
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-96">Loading...</div>;
+  if (isLoading || isCreating) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">
+          {isCreating ? 'Creating Store Master record...' : 'Loading store profile...'}
+        </p>
+      </div>
+    );
   }
 
   if (!storeMaster) {
@@ -156,10 +162,12 @@ export default function StoreMasterProfile() {
         <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg mb-4 inline-block">
           <p className="text-destructive flex items-center gap-2">
             <AlertCircle className="h-5 w-5" />
-            Store Master record missing — link this customer to a store to enable full profile features.
+            Store not found — this ID doesn't match any store in the system.
           </p>
         </div>
-        <br />
+        <p className="text-sm text-muted-foreground mb-4">
+          ID: {id}
+        </p>
         <Button onClick={() => navigate('/grabba/crm')}>Back to CRM</Button>
       </div>
     );

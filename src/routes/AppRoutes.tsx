@@ -1018,6 +1018,13 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+      <Route path="/grabba/crm/:id" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee', 'driver', 'csr']}>
+            <Layout><GrabbaLayout><StoreMasterProfile /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
       <Route path="/grabba/store-master/:id" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'driver', 'csr']}>
@@ -1029,6 +1036,13 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'driver', 'csr']}>
             <Layout><GrabbaLayout><StoreMasterProfile /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/store-master" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee', 'driver', 'csr']}>
+            <Layout><GrabbaLayout><GrabbaCRM /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
