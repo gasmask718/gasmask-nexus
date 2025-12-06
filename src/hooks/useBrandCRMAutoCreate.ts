@@ -12,17 +12,22 @@ interface BrandInsights {
   relationshipSummary: string;
 }
 
-interface BrandCRMData {
-  accounts: any[];
-  contacts: any[];
-  orders: any[];
-  insights: BrandInsights;
-  stats: {
-    totalStores: number;
-    totalContacts: number;
-    totalRevenue: number;
-    totalOrders: number;
-  };
+interface ContactWithLinks {
+  id: string;
+  contact_name: string;
+  contact_phone: string | null;
+  contact_email: string | null;
+  primary_role: string;
+  additional_roles: string[];
+  notes: string | null;
+  is_primary_contact: boolean;
+  tags: string[];
+  created_at: string;
+  linkedStores: Array<{
+    store_master_id: string;
+    store_name: string;
+    city: string;
+  }>;
 }
 
 // Default insights for empty states
@@ -73,23 +78,62 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
     enabled: !!brandLabel
   });
 
-  // Fetch brand contacts
-  const { data: contacts, isLoading: contactsLoading } = useQuery({
+  // Fetch brand contacts with store links
+  const { data: contacts, isLoading: contactsLoading, refetch: refetchContacts } = useQuery({
     queryKey: ['brand-crm-contacts', brandKey],
-    queryFn: async () => {
+    queryFn: async (): Promise<ContactWithLinks[]> => {
       if (!brandLabel) return [];
       
-      const { data, error } = await supabase
+      // Fetch contacts
+      const { data: contactsData, error: contactsError } = await supabase
         .from('brand_crm_contacts')
         .select('*')
-        .eq('brand', brandLabel as any);
+        .eq('brand', brandLabel as any)
+        .order('is_primary_contact', { ascending: false })
+        .order('primary_role')
+        .order('contact_name');
       
-      if (error) {
-        console.error('[BrandCRM] Error fetching contacts:', error);
+      if (contactsError) {
+        console.error('[BrandCRM] Error fetching contacts:', contactsError);
         return [];
       }
-      
-      return data || [];
+
+      if (!contactsData || contactsData.length === 0) return [];
+
+      // Fetch store links for all contacts
+      const contactIds = contactsData.map(c => c.id);
+      const { data: linksData } = await supabase
+        .from('brand_contact_store_links')
+        .select('contact_id, store_master_id, store_master:store_master_id(store_name, city)')
+        .in('contact_id', contactIds);
+
+      // Map links to contacts
+      const linksMap = new Map<string, Array<{ store_master_id: string; store_name: string; city: string }>>();
+      (linksData || []).forEach((link: any) => {
+        if (!linksMap.has(link.contact_id)) {
+          linksMap.set(link.contact_id, []);
+        }
+        linksMap.get(link.contact_id)!.push({
+          store_master_id: link.store_master_id,
+          store_name: link.store_master?.store_name || 'Unknown',
+          city: link.store_master?.city || ''
+        });
+      });
+
+      // Combine contacts with their store links
+      return contactsData.map(contact => ({
+        id: contact.id,
+        contact_name: contact.contact_name,
+        contact_phone: contact.contact_phone,
+        contact_email: contact.contact_email,
+        primary_role: contact.primary_role || 'other',
+        additional_roles: contact.additional_roles || [],
+        notes: contact.notes,
+        is_primary_contact: contact.is_primary_contact || false,
+        tags: contact.tags || [],
+        created_at: contact.created_at || '',
+        linkedStores: linksMap.get(contact.id) || []
+      }));
     },
     enabled: !!brandLabel
   });
@@ -123,7 +167,6 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
     queryFn: async (): Promise<BrandInsights> => {
       if (!brandKey) return DEFAULT_INSIGHTS;
       
-      // Try to fetch existing insights from ai_recommendations or similar
       const { data: aiData } = await supabase
         .from('ai_recommendations')
         .select('*')
@@ -151,7 +194,7 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
     enabled: !!brandKey
   });
 
-  // Auto-link mutation: Find store_master records and create brand accounts
+  // Auto-link mutation
   const autoLinkMutation = useMutation({
     mutationFn: async () => {
       if (!brandLabel || !brandKey) {
@@ -161,7 +204,6 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
       console.log(`[BrandCRM] Starting auto-link for ${brandLabel}...`);
       console.log('[BrandCRM] Brand CRM Auto-Healed - starting process');
 
-      // Get existing brand accounts to avoid duplicates
       const { data: existingAccounts } = await supabase
         .from('store_brand_accounts')
         .select('store_master_id')
@@ -169,7 +211,6 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
 
       const existingStoreIds = new Set(existingAccounts?.map(a => a.store_master_id) || []);
 
-      // Get all store_master records that don't have an account for this brand
       const { data: storeMasters, error: smError } = await supabase
         .from('store_master')
         .select('id, store_name')
@@ -177,10 +218,9 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
 
       if (smError) throw smError;
 
-      // Create brand accounts for stores without them
       const newAccounts = (storeMasters || [])
         .filter(sm => !existingStoreIds.has(sm.id))
-        .slice(0, 50) // Limit batch size
+        .slice(0, 50)
         .map(sm => ({
           store_master_id: sm.id,
           brand: brandLabel,
@@ -201,19 +241,12 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
         }
 
         console.log(`[BrandCRM] Brand Master Created - ${newAccounts.length} accounts for ${brandLabel}`);
-        console.log(`[BrandCRM] Brand Master Linked - All stores connected`);
-      } else {
-        console.log(`[BrandCRM] No new accounts to create for ${brandLabel}`);
       }
-
-      // Generate default insights if none exist
-      console.log('[BrandCRM] Insights Generated - Default placeholders ready');
 
       return { created: newAccounts.length };
     },
-    onSuccess: (result) => {
+    onSuccess: () => {
       console.log('[BrandCRM] Auto-heal complete, refreshing data...');
-      // Invalidate all brand CRM queries to trigger soft reload
       queryClient.invalidateQueries({ queryKey: ['brand-crm-accounts', brandKey] });
       queryClient.invalidateQueries({ queryKey: ['brand-crm-contacts', brandKey] });
       queryClient.invalidateQueries({ queryKey: ['brand-crm-orders', brandKey] });
@@ -221,7 +254,18 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
     }
   });
 
-  // Calculate stats with safe fallbacks
+  // Group contacts by role
+  const contactsByRole = (contacts || []).reduce((acc, contact) => {
+    const role = contact.primary_role || 'other';
+    const roleKey = role.charAt(0).toUpperCase() + role.slice(1).replace(/_/g, ' ');
+    if (!acc[roleKey]) {
+      acc[roleKey] = [];
+    }
+    acc[roleKey].push(contact);
+    return acc;
+  }, {} as Record<string, ContactWithLinks[]>);
+
+  // Safe fallbacks
   const safeAccounts = accounts || [];
   const safeContacts = contacts || [];
   const safeOrders = orders || [];
@@ -239,9 +283,9 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
   const hasData = safeAccounts.length > 0 || safeContacts.length > 0;
 
   return {
-    // Always return arrays, never null/undefined
     accounts: safeAccounts,
     contacts: safeContacts,
+    contactsByRole,
     orders: safeOrders,
     insights: safeInsights,
     stats,
@@ -249,6 +293,9 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
     isBuilding,
     hasData,
     autoLink: autoLinkMutation.mutateAsync,
-    refetch: refetchAccounts
+    refetch: () => {
+      refetchAccounts();
+      refetchContacts();
+    }
   };
 }

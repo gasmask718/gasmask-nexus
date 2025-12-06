@@ -2215,39 +2215,90 @@ export type Database = {
           },
         ]
       }
+      brand_contact_store_links: {
+        Row: {
+          brand: string
+          contact_id: string
+          created_at: string | null
+          id: string
+          store_master_id: string
+        }
+        Insert: {
+          brand: string
+          contact_id: string
+          created_at?: string | null
+          id?: string
+          store_master_id: string
+        }
+        Update: {
+          brand?: string
+          contact_id?: string
+          created_at?: string | null
+          id?: string
+          store_master_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_contact_store_links_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "brand_crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_contact_store_links_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_crm_contacts: {
         Row: {
+          additional_roles: string[] | null
           brand: Database["public"]["Enums"]["brand_type"]
           contact_email: string | null
           contact_name: string
           contact_phone: string | null
           created_at: string | null
           id: string
+          is_primary_contact: boolean | null
           last_contacted: string | null
+          notes: string | null
+          primary_role: string | null
           store_brand_account_id: string
           tags: string[] | null
           updated_at: string | null
         }
         Insert: {
+          additional_roles?: string[] | null
           brand: Database["public"]["Enums"]["brand_type"]
           contact_email?: string | null
           contact_name: string
           contact_phone?: string | null
           created_at?: string | null
           id?: string
+          is_primary_contact?: boolean | null
           last_contacted?: string | null
+          notes?: string | null
+          primary_role?: string | null
           store_brand_account_id: string
           tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
+          additional_roles?: string[] | null
           brand?: Database["public"]["Enums"]["brand_type"]
           contact_email?: string | null
           contact_name?: string
           contact_phone?: string | null
           created_at?: string | null
           id?: string
+          is_primary_contact?: boolean | null
           last_contacted?: string | null
+          notes?: string | null
+          primary_role?: string | null
           store_brand_account_id?: string
           tags?: string[] | null
           updated_at?: string | null
@@ -4724,6 +4775,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      custom_contact_roles: {
+        Row: {
+          brand: string | null
+          color: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          role_name: string
+        }
+        Insert: {
+          brand?: string | null
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          role_name: string
+        }
+        Update: {
+          brand?: string | null
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          role_name?: string
+        }
+        Relationships: []
       }
       customer_balance: {
         Row: {
@@ -16614,6 +16692,15 @@ export type Database = {
         | "customer"
         | "pod_worker"
         | "realestate_worker"
+      brand_contact_role:
+        | "owner"
+        | "manager"
+        | "buyer"
+        | "assistant"
+        | "accounting"
+        | "marketing"
+        | "decision_maker"
+        | "other"
       brand_type: "GasMask" | "HotMama" | "GrabbaRUs" | "HotScalati"
       credit_terms_type: "COD" | "NET7" | "NET14" | "NET30"
       fulfillment_type:
@@ -16892,6 +16979,16 @@ export const Constants = {
         "customer",
         "pod_worker",
         "realestate_worker",
+      ],
+      brand_contact_role: [
+        "owner",
+        "manager",
+        "buyer",
+        "assistant",
+        "accounting",
+        "marketing",
+        "decision_maker",
+        "other",
       ],
       brand_type: ["GasMask", "HotMama", "GrabbaRUs", "HotScalati"],
       credit_terms_type: ["COD", "NET7", "NET14", "NET30"],
