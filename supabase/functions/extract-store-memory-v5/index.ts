@@ -206,6 +206,98 @@ Be concise but comprehensive. Extract real insights from the data provided.`;
       throw new Error(`Database error: ${upsertError.message}`);
     }
 
+    // Also update store_master with key extracted fields
+    const storeMasterUpdates: Record<string, any> = {};
+    
+    // Extract country from background if mentioned
+    const background = extracted.personal_profile?.background || '';
+    const countryPatterns = [
+      /from\s+(yemen|yemeni|dominican|dominican republic|puerto rico|jamaica|haiti|mexico|india|bangladesh|pakistan|egypt)/i,
+      /(yemeni|dominican|jamaican|haitian|mexican|indian|bangladeshi|pakistani|egyptian)\s+(owner|family|background)/i
+    ];
+    for (const pattern of countryPatterns) {
+      const match = background.match(pattern);
+      if (match) {
+        storeMasterUpdates.country_of_origin = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+        break;
+      }
+    }
+    
+    // Update owner name if extracted
+    if (extracted.personal_profile?.family_details) {
+      const ownerMatch = extracted.personal_profile.family_details.match(/owner:?\s*([A-Za-z]+(?:\s+[A-Za-z]+)?)/i);
+      if (ownerMatch) {
+        storeMasterUpdates.owner_name = ownerMatch[1];
+      }
+    }
+    
+    // Update personality notes
+    if (extracted.personal_profile?.communication_style) {
+      storeMasterUpdates.communication_preference = extracted.personal_profile.communication_style;
+    }
+    
+    if (extracted.personal_profile?.relationship_notes || extracted.behavior_summary) {
+      storeMasterUpdates.personality_notes = extracted.behavior_summary || extracted.personal_profile?.relationship_notes;
+    }
+    
+    // Update loyalty/frustration triggers
+    if (extracted.personal_profile?.loyalty_triggers) {
+      storeMasterUpdates.loyalty_triggers = Array.isArray(extracted.personal_profile.loyalty_triggers) 
+        ? extracted.personal_profile.loyalty_triggers 
+        : [extracted.personal_profile.loyalty_triggers];
+    }
+    
+    if (extracted.personal_profile?.frustration_triggers) {
+      storeMasterUpdates.frustration_triggers = Array.isArray(extracted.personal_profile.frustration_triggers)
+        ? extracted.personal_profile.frustration_triggers
+        : [extracted.personal_profile.frustration_triggers];
+    }
+    
+    // Check for expansion opportunities
+    const hasExpansion = extracted.opportunities?.some((opp: string) => 
+      /expansion|new store|new location|second store|opening/i.test(opp)
+    );
+    if (hasExpansion) {
+      storeMasterUpdates.has_expansion = true;
+      const expansionNotes = extracted.opportunities.filter((opp: string) =>
+        /expansion|new store|new location|second store|opening/i.test(opp)
+      ).join('; ');
+      storeMasterUpdates.expansion_notes = expansionNotes;
+    }
+    
+    // Update influence level based on opportunities
+    const hasWholesale = extracted.opportunities?.some((opp: string) => 
+      /wholesale|ambassador|referral|influence/i.test(opp)
+    );
+    if (hasWholesale) {
+      storeMasterUpdates.influence_level = 'high';
+    }
+    
+    // Calculate risk score from red flags
+    const redFlagCount = (extracted.red_flags || []).length;
+    if (redFlagCount >= 3) {
+      storeMasterUpdates.risk_score = 'high';
+    } else if (redFlagCount >= 1) {
+      storeMasterUpdates.risk_score = 'medium';
+    } else {
+      storeMasterUpdates.risk_score = 'low';
+    }
+    
+    storeMasterUpdates.updated_at = new Date().toISOString();
+
+    if (Object.keys(storeMasterUpdates).length > 1) {
+      const { error: smUpdateError } = await supabase
+        .from("store_master")
+        .update(storeMasterUpdates)
+        .eq("id", store_id);
+      
+      if (smUpdateError) {
+        console.warn('[V5 Extractor] store_master update warning:', smUpdateError);
+      } else {
+        console.log('[V5 Extractor] store_master updated with:', Object.keys(storeMasterUpdates));
+      }
+    }
+
     console.log('[V5 Extractor] Profile saved successfully');
 
     return new Response(

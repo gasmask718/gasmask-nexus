@@ -341,7 +341,7 @@ export default function StoreMasterProfile() {
                 Recent Transactions
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               {payments && payments.length > 0 ? (
                 <div className="space-y-2">
                   {payments.slice(0, 3).map((payment: any) => (
@@ -356,11 +356,26 @@ export default function StoreMasterProfile() {
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-4">No payments recorded</p>
               )}
+              
+              {/* View Store Master Memory Button - Always visible */}
+              <Button 
+                variant="outline" 
+                className="w-full mt-2 border-primary/30 hover:bg-primary/10"
+                onClick={() => {
+                  const memoryPanel = document.getElementById('store-memory-panel');
+                  memoryPanel?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                View Store Master Memory
+              </Button>
             </CardContent>
           </Card>
 
           {/* ===== PERSONAL MEMORY & BACKGROUND (ALWAYS VISIBLE) ===== */}
-          <StorePersonalMemoryPanel storeId={id || ''} />
+          <div id="store-memory-panel">
+            <StorePersonalMemoryPanel storeId={id || ''} />
+          </div>
         </div>
       </div>
 

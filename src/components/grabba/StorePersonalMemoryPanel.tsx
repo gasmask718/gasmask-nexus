@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Heart, AlertTriangle, Sparkles, RefreshCw, Brain } from 'lucide-react';
+import { User, Heart, AlertTriangle, Sparkles, RefreshCw, Brain, Globe, TrendingUp, Calendar } from 'lucide-react';
 import { runMemoryExtractionV5 } from '@/services/profileExtractionService';
 import { toast } from 'sonner';
 
@@ -16,6 +16,7 @@ export function StorePersonalMemoryPanel({ storeId }: StorePersonalMemoryPanelPr
   const [isExtracting, setIsExtracting] = useState(false);
   const queryClient = useQueryClient();
 
+  // Fetch extracted profile
   const { data: profile, isLoading, refetch } = useQuery({
     queryKey: ['store-extracted-profile', storeId],
     queryFn: async () => {
@@ -26,6 +27,22 @@ export function StorePersonalMemoryPanel({ storeId }: StorePersonalMemoryPanelPr
         .maybeSingle();
       
       if (error) throw error;
+      return data;
+    },
+    enabled: !!storeId,
+  });
+
+  // Also fetch store_master for additional fields
+  const { data: storeMaster } = useQuery({
+    queryKey: ['store-master-memory', storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('store_master')
+        .select('country_of_origin, personality_notes, communication_preference, has_expansion, expansion_notes, influence_level, loyalty_triggers, frustration_triggers, risk_score, nickname, languages')
+        .eq('id', storeId)
+        .maybeSingle();
+      
+      if (error) return null;
       return data;
     },
     enabled: !!storeId,
@@ -45,6 +62,8 @@ export function StorePersonalMemoryPanel({ storeId }: StorePersonalMemoryPanelPr
     if (result.success) {
       toast.success('AI Memory Extraction complete!');
       queryClient.invalidateQueries({ queryKey: ['store-extracted-profile', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['store-master-memory', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['store-master-auto', storeId] });
       refetch();
     } else {
       toast.error(result.error || 'Extraction failed');
@@ -52,6 +71,14 @@ export function StorePersonalMemoryPanel({ storeId }: StorePersonalMemoryPanelPr
     
     setIsExtracting(false);
   };
+  
+  // Merge data from both sources
+  const hasStoreMasterData = storeMaster && (
+    storeMaster.country_of_origin || 
+    storeMaster.personality_notes || 
+    storeMaster.has_expansion ||
+    storeMaster.influence_level
+  );
 
   return (
     <Card className="w-full border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
@@ -89,7 +116,41 @@ export function StorePersonalMemoryPanel({ storeId }: StorePersonalMemoryPanelPr
           <div className="text-muted-foreground text-center py-4">Loading personal insights...</div>
         )}
 
-        {!isLoading && !profile && (
+        {/* Store Master Quick Facts - Always show if data exists */}
+        {hasStoreMasterData && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            {storeMaster?.country_of_origin && (
+              <div className="text-center">
+                <Globe className="h-4 w-4 mx-auto text-primary mb-1" />
+                <div className="text-xs text-muted-foreground">Origin</div>
+                <div className="text-sm font-medium">{storeMaster.country_of_origin}</div>
+              </div>
+            )}
+            {storeMaster?.influence_level && (
+              <div className="text-center">
+                <TrendingUp className="h-4 w-4 mx-auto text-green-500 mb-1" />
+                <div className="text-xs text-muted-foreground">Influence</div>
+                <div className="text-sm font-medium capitalize">{storeMaster.influence_level}</div>
+              </div>
+            )}
+            {storeMaster?.risk_score && (
+              <div className="text-center">
+                <AlertTriangle className={`h-4 w-4 mx-auto mb-1 ${storeMaster.risk_score === 'high' ? 'text-red-500' : storeMaster.risk_score === 'medium' ? 'text-yellow-500' : 'text-green-500'}`} />
+                <div className="text-xs text-muted-foreground">Risk</div>
+                <div className="text-sm font-medium capitalize">{storeMaster.risk_score}</div>
+              </div>
+            )}
+            {storeMaster?.has_expansion && (
+              <div className="text-center">
+                <Sparkles className="h-4 w-4 mx-auto text-purple-500 mb-1" />
+                <div className="text-xs text-muted-foreground">Expansion</div>
+                <div className="text-sm font-medium text-purple-400">Yes</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!isLoading && !profile && !hasStoreMasterData && (
           <div className="space-y-4">
             <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground bg-muted/40">
               <p className="font-medium mb-2">No AI memory has been generated yet for this store.</p>
