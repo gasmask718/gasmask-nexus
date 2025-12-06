@@ -145,30 +145,60 @@ export default function StoreMasterProfile() {
     enabled: !!id,
   });
 
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // LOADING STATE: Show "Rebuilding profile..." instead of 404
+  // ═══════════════════════════════════════════════════════════════════════════════
   if (isLoading || isCreating) {
     return (
       <div className="flex flex-col items-center justify-center h-96 gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">
-          {isCreating ? 'Creating Store Master record...' : 'Loading store profile...'}
-        </p>
+        <div className="text-center">
+          <p className="text-lg font-medium text-foreground">
+            {isCreating ? 'Creating Store Master record...' : 'Loading store profile...'}
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            {isCreating 
+              ? 'Setting up your store profile with default values...' 
+              : 'Retrieving store data from the system...'}
+          </p>
+        </div>
+        {/* Debug info in development */}
+        <div className="text-xs text-muted-foreground/50 mt-4">
+          ID: {id} | Status: {isCreating ? 'Creating' : 'Loading'}
+        </div>
       </div>
     );
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // REBUILDING STATE: If storeMaster is still null, show rebuilding UI (never 404)
+  // ═══════════════════════════════════════════════════════════════════════════════
   if (!storeMaster) {
     return (
-      <div className="text-center p-8">
-        <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg mb-4 inline-block">
-          <p className="text-destructive flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            Store not found — this ID doesn't match any store in the system.
+      <div className="flex flex-col items-center justify-center h-96 gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="text-center">
+          <p className="text-lg font-medium text-foreground">Rebuilding profile...</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            This store profile is being created. Please wait...
           </p>
         </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          ID: {id}
-        </p>
-        <Button onClick={() => navigate('/grabba/crm')}>Back to CRM</Button>
+        <div className="flex gap-2 mt-4">
+          <Button variant="outline" onClick={() => navigate('/grabba/crm')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to CRM
+          </Button>
+          <Button onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        </div>
+        {/* Debug info */}
+        <div className="text-xs text-muted-foreground/50 mt-4 p-4 bg-muted/30 rounded-lg">
+          <p>Debug Info:</p>
+          <pre className="text-left mt-2">
+            {JSON.stringify(debug, null, 2)}
+          </pre>
+        </div>
       </div>
     );
   }
