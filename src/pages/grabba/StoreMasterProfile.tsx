@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   Phone, Mail, MapPin, DollarSign, Package, 
-  ChevronRight, MessageSquare, ArrowLeft, Store, Truck
+  ChevronRight, MessageSquare, ArrowLeft, Store, Truck, AlertCircle
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +16,7 @@ import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import { CustomerMemoryCoreV2 } from '@/components/grabba/CustomerMemoryCoreV2';
 import { StoreAIFuturePanel } from '@/components/grabba/StoreAIFuturePanel';
 import { StorePersonalMemoryPanel } from '@/components/grabba/StorePersonalMemoryPanel';
+import { ImportantPersonalDetailsPanel } from '@/components/grabba/ImportantPersonalDetailsPanel';
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -153,7 +154,13 @@ export default function StoreMasterProfile() {
   if (!storeMaster) {
     return (
       <div className="text-center p-8">
-        <p className="text-muted-foreground mb-4">Store not found</p>
+        <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg mb-4 inline-block">
+          <p className="text-destructive flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            Store Master record missing — link this customer to a store to enable full profile features.
+          </p>
+        </div>
+        <br />
         <Button onClick={() => navigate('/grabba/crm')}>Back to CRM</Button>
       </div>
     );
@@ -166,15 +173,17 @@ export default function StoreMasterProfile() {
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb & Header */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* TOP HEADER — Store Name ALWAYS at top, from store_master.name              */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/grabba/crm')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3 flex-wrap">
-            <Store className="h-6 w-6 text-green-500" />
-            <h1 className="text-2xl font-bold">{storeMaster.store_name}</h1>
+            <Store className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold tracking-tight">{storeMaster.store_name}</h1>
             {activeBrands.length > 0 && (
               <div className="flex gap-1">
                 {activeBrands.map(brand => {
@@ -186,7 +195,12 @@ export default function StoreMasterProfile() {
               </div>
             )}
           </div>
-          <p className="text-muted-foreground mt-1">Floor 1 CRM — Store Master Profile</p>
+          <p className="text-muted-foreground mt-1">
+            Floor 1 CRM — Store Master Profile
+            {(storeMaster as any).owner_name && (
+              <span className="ml-2">• Owner: {(storeMaster as any).owner_name}</span>
+            )}
+          </p>
         </div>
       </div>
 
@@ -246,10 +260,16 @@ export default function StoreMasterProfile() {
           <StoreContactsSection storeId={id || ''} storeName={storeMaster.store_name} />
         </div>
 
-        {/* Center Panel - AI Future View + Personal Memory + Customer Memory Core V2 */}
+        {/* Center Panel - V3 AI Future + Important Personal Details + V4 Memory + V2 Core */}
         <div className="lg:col-span-6 space-y-6">
           {/* V3 - AI Future View Panel */}
           <StoreAIFuturePanel storeId={id || ''} />
+          
+          {/* V6 - Important Personal Details Panel (under AI Future, always visible) */}
+          <ImportantPersonalDetailsPanel 
+            storeId={id || ''} 
+            storeMaster={storeMaster as any}
+          />
           
           {/* V4 - Personal Memory Panel */}
           <StorePersonalMemoryPanel storeId={id || ''} />
