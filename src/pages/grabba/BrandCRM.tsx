@@ -4,13 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Phone, Mail, MessageSquare, Plus, TrendingUp, Store, DollarSign, Package, ChevronRight, Building2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useState } from 'react';
+import { Search, Phone, Mail, MessageSquare, Plus, TrendingUp, Store, DollarSign, Package, ChevronRight, Building2, Loader2, RefreshCw } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { GRABBA_BRAND_CONFIG, GrabbaBrand } from '@/config/grabbaBrands';
 import { useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { BrandFilterBar } from '@/components/grabba/BrandFilterBar';
+import { useBrandCRMAutoCreate } from '@/hooks/useBrandCRMAutoCreate';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BRAND CRM — Individual brand view within Floor 1
@@ -26,61 +25,46 @@ export default function BrandCRM() {
   const brandKey = brand as GrabbaBrand;
   const brandConfig = GRABBA_BRAND_CONFIG[brandKey];
 
-  const { data: accounts, isLoading } = useQuery({
-    queryKey: ['brand-accounts', brand],
-    queryFn: async () => {
-      if (!brand || !brandConfig) return [];
-      
-      const { data, error } = await supabase
-        .from('store_brand_accounts')
-        .select('*, store_master(*)')
-        .eq('brand', brandConfig.label as any);
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!brandConfig
-  });
+  // Use self-healing CRM hook
+  const {
+    accounts,
+    contacts,
+    orders,
+    stats,
+    isLoading,
+    isBuilding,
+    hasData,
+    autoLink,
+    refetch
+  } = useBrandCRMAutoCreate(brandKey);
 
-  const { data: contacts } = useQuery({
-    queryKey: ['brand-contacts', brand],
-    queryFn: async () => {
-      if (!brand || !brandConfig) return [];
-      
-      const { data, error } = await supabase
-        .from('brand_crm_contacts')
-        .select('*')
-        .eq('brand', brandConfig.label as any);
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!brandConfig
-  });
-
-  // Get orders for this brand
-  const { data: orders } = useQuery({
-    queryKey: ['brand-orders', brand],
-    queryFn: async () => {
-      if (!brand) return [];
-      
-      const { data } = await supabase
-        .from('wholesale_orders')
-        .select('*, companies(name), stores(name)')
-        .eq('brand', brand)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      
-      return data || [];
-    },
-    enabled: !!brand
-  });
+  // Auto-trigger linking on first load if no data
+  const [autoLinkAttempted, setAutoLinkAttempted] = useState(false);
+  
+  useEffect(() => {
+    if (!isLoading && !hasData && !autoLinkAttempted && brandConfig) {
+      setAutoLinkAttempted(true);
+      console.log(`[BrandCRM] No data found, attempting auto-link for ${brandConfig.label}...`);
+      autoLink().catch(console.error);
+    }
+  }, [isLoading, hasData, autoLinkAttempted, brandConfig, autoLink]);
 
   if (!brandConfig) {
     return (
       <div className="p-8 text-center">
         <p className="text-muted-foreground mb-4">Brand not found</p>
         <Button onClick={() => navigate('/grabba/crm')}>Back to CRM</Button>
+      </div>
+    );
+  }
+
+  // Building state UI
+  if (isBuilding) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <Loader2 className="h-12 w-12 animate-spin" style={{ color: brandConfig.primary }} />
+        <h2 className="text-xl font-semibold">Building {brandConfig.label} CRM...</h2>
+        <p className="text-muted-foreground">Linking stores and creating brand accounts</p>
       </div>
     );
   }
@@ -110,6 +94,9 @@ export default function BrandCRM() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button onClick={() => refetch()} variant="outline" size="icon">
+            <RefreshCw className="w-4 h-4" />
+          </Button>
           <Button onClick={() => navigate('/grabba/crm')} variant="outline">
             <Building2 className="w-4 h-4 mr-2" />
             Back to Floor 1
@@ -243,8 +230,16 @@ export default function BrandCRM() {
               </Card>
             ))
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No stores found for {brandConfig.label}
+            <div className="text-center py-12 space-y-4">
+              <p className="text-muted-foreground">No stores found for {brandConfig.label}</p>
+              <Button 
+                onClick={() => autoLink()} 
+                variant="outline"
+                className="gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Build CRM Links
+              </Button>
             </div>
           )}
         </TabsContent>
