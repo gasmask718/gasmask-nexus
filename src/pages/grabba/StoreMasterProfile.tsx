@@ -16,7 +16,6 @@ import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import { CustomerMemoryCoreV2 } from '@/components/grabba/CustomerMemoryCoreV2';
 import { StoreAIFuturePanel } from '@/components/grabba/StoreAIFuturePanel';
 import { StorePersonalMemoryPanel } from '@/components/grabba/StorePersonalMemoryPanel';
-import { ImportantPersonalDetailsPanel } from '@/components/grabba/ImportantPersonalDetailsPanel';
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -260,19 +259,10 @@ export default function StoreMasterProfile() {
           <StoreContactsSection storeId={id || ''} storeName={storeMaster.store_name} />
         </div>
 
-        {/* Center Panel - V3 AI Future + Important Personal Details + V4 Memory + V2 Core */}
+        {/* Center Panel - V3 AI Future + V4 Memory + V2 Core */}
         <div className="lg:col-span-6 space-y-6">
           {/* V3 - AI Future View Panel */}
           <StoreAIFuturePanel storeId={id || ''} />
-          
-          {/* V6 - Important Personal Details Panel (under AI Future, always visible) */}
-          <ImportantPersonalDetailsPanel 
-            storeId={id || ''} 
-            storeMaster={storeMaster as any}
-          />
-          
-          {/* V4 - Personal Memory Panel */}
-          <StorePersonalMemoryPanel storeId={id || ''} />
           
           {/* Customer Memory Core V2 */}
           <CustomerMemoryCoreV2
@@ -340,7 +330,7 @@ export default function StoreMasterProfile() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <DollarSign className="h-4 w-4" />
-                Recent Payments
+                Recent Transactions
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -358,6 +348,22 @@ export default function StoreMasterProfile() {
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-4">No payments recorded</p>
               )}
+            </CardContent>
+          </Card>
+
+          {/* ===== PERSONAL MEMORY & BACKGROUND (ALWAYS VISIBLE) ===== */}
+          <Card className="border-2 border-primary/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-primary" />
+                Personal Memory & Background
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                High-signal human details so we remember this store personally — people, history, country, new store leads, and wholesale opportunities pulled from all notes.
+              </p>
+              <StorePersonalMemoryPanel storeId={id || ''} />
             </CardContent>
           </Card>
         </div>
