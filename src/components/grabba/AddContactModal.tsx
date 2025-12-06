@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useState, useEffect, useMemo } from 'react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,10 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, X, Plus, User, Phone, Mail, Store, Tag, FileText } from 'lucide-react';
+import { Loader2, X, Plus, User, Phone, Mail, Store, Briefcase, FileText, Search, MessageCircle, Sparkles, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { cn } from '@/lib/utils';
 
 interface AddContactModalProps {
   open: boolean;
@@ -23,14 +24,21 @@ interface AddContactModalProps {
 }
 
 const DEFAULT_ROLES = [
-  { name: 'Owner', color: '#EF4444' },
-  { name: 'Manager', color: '#3B82F6' },
-  { name: 'Buyer', color: '#10B981' },
-  { name: 'Assistant', color: '#8B5CF6' },
-  { name: 'Accounting', color: '#F59E0B' },
-  { name: 'Marketing', color: '#EC4899' },
-  { name: 'Decision Maker', color: '#6366F1' },
-  { name: 'Other', color: '#6B7280' },
+  { name: 'Owner', color: 'hsl(0, 100%, 50%)' },
+  { name: 'Manager', color: 'hsl(210, 100%, 50%)' },
+  { name: 'Buyer', color: 'hsl(142, 76%, 36%)' },
+  { name: 'Assistant', color: 'hsl(270, 100%, 60%)' },
+  { name: 'Accounting', color: 'hsl(38, 92%, 50%)' },
+  { name: 'Marketing', color: 'hsl(330, 100%, 60%)' },
+  { name: 'Decision Maker', color: 'hsl(240, 100%, 60%)' },
+  { name: 'Other', color: 'hsl(0, 0%, 50%)' },
+];
+
+const COMMUNICATION_METHODS = [
+  { value: 'call', label: 'Call', icon: Phone },
+  { value: 'text', label: 'Text', icon: MessageCircle },
+  { value: 'email', label: 'Email', icon: Mail },
+  { value: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
 ];
 
 export function AddContactModal({ 
@@ -46,19 +54,48 @@ export function AddContactModal({
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customRoleInput, setCustomRoleInput] = useState('');
+  const [showCustomRoleInput, setShowCustomRoleInput] = useState(false);
   const [availableRoles, setAvailableRoles] = useState(DEFAULT_ROLES);
+  const [storeSearch, setStoreSearch] = useState('');
   
   // Form state
   const [formData, setFormData] = useState({
     contactName: '',
     phone: '',
     email: '',
-    primaryRole: 'Other',
+    position: '',
+    preferredComm: 'call',
+    primaryRole: '',
     additionalRoles: [] as string[],
     linkedStores: [] as string[],
     notes: '',
     isPrimaryContact: false,
   });
+
+  // Generate initials from name
+  const initials = useMemo(() => {
+    const parts = formData.contactName.trim().split(' ').filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0]?.[0]?.toUpperCase() || '?';
+  }, [formData.contactName]);
+
+  // Filter stores by search
+  const filteredStores = useMemo(() => {
+    if (!storeSearch.trim()) return accounts;
+    const query = storeSearch.toLowerCase();
+    return accounts.filter(a => 
+      a.store_master?.store_name?.toLowerCase().includes(query) ||
+      a.store_master?.city?.toLowerCase().includes(query) ||
+      a.store_master?.state?.toLowerCase().includes(query)
+    );
+  }, [accounts, storeSearch]);
+
+  // Check if form is valid
+  const isFormValid = useMemo(() => {
+    return formData.contactName.trim().length > 0 && formData.primaryRole.length > 0;
+  }, [formData.contactName, formData.primaryRole]);
 
   // Fetch custom roles on mount
   useEffect(() => {
@@ -69,8 +106,7 @@ export function AddContactModal({
         .or(`brand.is.null,brand.eq.${brandLabel}`);
       
       if (data && data.length > 0) {
-        const customRoles = data.map(r => ({ name: r.role_name, color: r.color || '#6B7280' }));
-        // Merge with defaults, avoiding duplicates
+        const customRoles = data.map(r => ({ name: r.role_name, color: r.color || 'hsl(0, 0%, 50%)' }));
         const allRoles = [...DEFAULT_ROLES];
         customRoles.forEach(cr => {
           if (!allRoles.find(r => r.name.toLowerCase() === cr.name.toLowerCase())) {
@@ -91,13 +127,17 @@ export function AddContactModal({
       contactName: '',
       phone: '',
       email: '',
-      primaryRole: 'Other',
+      position: '',
+      preferredComm: 'call',
+      primaryRole: '',
       additionalRoles: [],
       linkedStores: [],
       notes: '',
       isPrimaryContact: false,
     });
     setCustomRoleInput('');
+    setShowCustomRoleInput(false);
+    setStoreSearch('');
   };
 
   const handleAddCustomRole = async () => {
@@ -109,14 +149,16 @@ export function AddContactModal({
       return;
     }
 
-    // Add to database
     const { error } = await supabase
       .from('custom_contact_roles')
       .insert({ role_name: newRoleName, brand: brandLabel });
 
     if (!error) {
-      setAvailableRoles([...availableRoles, { name: newRoleName, color: '#6B7280' }]);
+      const newRole = { name: newRoleName, color: 'hsl(0, 0%, 50%)' };
+      setAvailableRoles([...availableRoles, newRole]);
+      setFormData(prev => ({ ...prev, additionalRoles: [...prev.additionalRoles, newRoleName] }));
       setCustomRoleInput('');
+      setShowCustomRoleInput(false);
       toast({ title: `Added role: ${newRoleName}` });
     }
   };
@@ -142,8 +184,8 @@ export function AddContactModal({
   };
 
   const handleSubmit = async () => {
-    if (!formData.contactName.trim()) {
-      toast({ title: 'Contact name is required', variant: 'destructive' });
+    if (!isFormValid) {
+      toast({ title: 'Please fill required fields', variant: 'destructive' });
       return;
     }
 
@@ -152,27 +194,22 @@ export function AddContactModal({
     try {
       console.log('[AddContact] Starting contact creation...');
       
-      // Get or create a store_brand_account to link to
       let storeBrandAccountId: string | null = null;
       
       if (formData.linkedStores.length > 0) {
-        // Use the first linked store's brand account
         const linkedAccount = accounts.find(a => a.store_master_id === formData.linkedStores[0]);
         if (linkedAccount) {
           storeBrandAccountId = linkedAccount.id;
         }
       }
       
-      // If no linked store, create or find a default account
       if (!storeBrandAccountId && accounts.length > 0) {
         storeBrandAccountId = accounts[0].id;
       }
 
-      // Auto-heal: If no accounts exist, try to create one
       if (!storeBrandAccountId) {
         console.log('[AddContact] No store_brand_account found, attempting auto-heal...');
         
-        // Get any store_master record
         const { data: anyStore } = await supabase
           .from('store_master')
           .select('id')
@@ -180,7 +217,6 @@ export function AddContactModal({
           .single();
         
         if (anyStore) {
-          // Use type assertion to handle strict typing
           const insertData = {
             store_master_id: anyStore.id,
             brand: brandLabel as 'GasMask' | 'GrabbaRUs' | 'HotMama' | 'HotScalati',
@@ -210,7 +246,6 @@ export function AddContactModal({
         throw new Error('No store_brand_account available. Please add stores first.');
       }
 
-      // Create the contact
       const { data: contact, error: contactError } = await supabase
         .from('brand_crm_contacts')
         .insert({
@@ -235,7 +270,6 @@ export function AddContactModal({
 
       console.log('[AddContact] Contact created:', contact?.id);
 
-      // Create store links
       if (contact?.id && formData.linkedStores.length > 0) {
         const storeLinks = formData.linkedStores.map(storeId => ({
           contact_id: contact.id,
@@ -249,16 +283,16 @@ export function AddContactModal({
 
         if (linksError) {
           console.error('[AddContact] Store links creation failed:', linksError);
-          // Don't throw - contact was created successfully
         } else {
           console.log('[AddContact] Created', storeLinks.length, 'store links');
         }
       }
 
-      // Success
-      toast({ title: `Contact "${formData.contactName}" added successfully` });
+      toast({ 
+        title: 'Contact added and linked successfully.',
+        description: `${formData.contactName} has been added to ${brandLabel}.`
+      });
       
-      // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['brand-crm-contacts', brandKey] });
       queryClient.invalidateQueries({ queryKey: ['brand-contact-store-links', brandKey] });
       
@@ -278,241 +312,396 @@ export function AddContactModal({
   };
 
   const getRoleColor = (roleName: string) => {
-    return availableRoles.find(r => r.name === roleName)?.color || '#6B7280';
+    return availableRoles.find(r => r.name === roleName)?.color || 'hsl(0, 0%, 50%)';
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" style={{ color: brandColor }} />
-            Add Contact to {brandLabel}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-hidden p-0 gap-0 bg-card border-border/50 shadow-2xl">
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-border/50 bg-gradient-to-r from-card to-secondary/30">
+          <div className="flex items-center gap-2">
+            <div 
+              className="w-2 h-8 rounded-full" 
+              style={{ backgroundColor: brandColor }}
+            />
+            <div>
+              <h2 className="text-xl font-semibold text-foreground">Add Brand Contact</h2>
+              <p className="text-sm text-muted-foreground">Create a new contact for {brandLabel}</p>
+            </div>
+          </div>
+        </div>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-6 py-4">
-            {/* Basic Info */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contactName" className="flex items-center gap-1">
-                    <User className="w-3 h-3" /> Contact Name *
-                  </Label>
+        <ScrollArea className="flex-1 max-h-[calc(92vh-180px)]">
+          <div className="p-6 space-y-6">
+            
+            {/* SECTION 1: Identity Header */}
+            <div className="bg-secondary/30 rounded-xl p-5 border border-border/30">
+              <div className="flex items-start gap-4">
+                {/* Avatar */}
+                <div 
+                  className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold shrink-0 transition-all duration-300"
+                  style={{ 
+                    backgroundColor: formData.contactName ? brandColor : 'hsl(var(--muted))',
+                    color: formData.contactName ? 'white' : 'hsl(var(--muted-foreground))'
+                  }}
+                >
+                  {formData.contactName ? initials : <User className="w-6 h-6" />}
+                </div>
+                
+                {/* Name Input */}
+                <div className="flex-1 space-y-2">
                   <Input
-                    id="contactName"
-                    placeholder="John Doe"
+                    placeholder="Contact's full name"
                     value={formData.contactName}
                     onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
+                    className="text-lg h-12 bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="flex items-center gap-1">
-                    <Phone className="w-3 h-3" /> Phone
-                  </Label>
-                  <Input
-                    id="phone"
-                    placeholder="+1 (555) 123-4567"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  />
+                  <p className="text-xs text-muted-foreground pl-1">Contact's full name (required)</p>
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email" className="flex items-center gap-1">
-                  <Mail className="w-3 h-3" /> Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="john@store.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
             </div>
 
-            {/* Primary Role */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1">
-                <Tag className="w-3 h-3" /> Primary Role
-              </Label>
-              <Select 
-                value={formData.primaryRole} 
-                onValueChange={(val) => setFormData({ 
-                  ...formData, 
-                  primaryRole: val,
-                  additionalRoles: formData.additionalRoles.filter(r => r !== val)
-                })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableRoles.map((role) => (
-                    <SelectItem key={role.name} value={role.name}>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: role.color }} 
-                        />
-                        {role.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Additional Roles */}
-            <div className="space-y-2">
-              <Label>Additional Roles</Label>
-              <div className="flex flex-wrap gap-2">
-                {availableRoles
-                  .filter(r => r.name !== formData.primaryRole)
-                  .map((role) => (
-                    <Badge
-                      key={role.name}
-                      variant={formData.additionalRoles.includes(role.name) ? 'default' : 'outline'}
-                      className="cursor-pointer transition-colors"
-                      style={formData.additionalRoles.includes(role.name) ? { 
-                        backgroundColor: role.color, 
-                        color: 'white',
-                        borderColor: role.color 
-                      } : {}}
-                      onClick={() => toggleAdditionalRole(role.name)}
-                    >
-                      {role.name}
-                    </Badge>
-                  ))}
+            {/* SECTION 2: Communication Details */}
+            <div className="bg-secondary/30 rounded-xl p-5 border border-border/30">
+              <div className="flex items-center gap-2 mb-4">
+                <Phone className="w-4 h-4 text-primary" />
+                <h3 className="font-medium text-foreground">Communication Details</h3>
               </div>
               
-              {/* Add Custom Role */}
-              <div className="flex gap-2 mt-2">
-                <Input
-                  placeholder="Add custom role..."
-                  value={customRoleInput}
-                  onChange={(e) => setCustomRoleInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddCustomRole()}
-                  className="flex-1"
-                />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={handleAddCustomRole}
-                  disabled={!customRoleInput.trim()}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Linked Stores */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1">
-                <Store className="w-3 h-3" /> Linked Stores
-              </Label>
-              {accounts.length > 0 ? (
-                <div className="border rounded-lg max-h-40 overflow-y-auto">
-                  {accounts.map((account) => (
-                    <div 
-                      key={account.id}
-                      className="flex items-center gap-3 p-2 hover:bg-muted/50 border-b last:border-b-0"
-                    >
-                      <Checkbox
-                        id={`store-${account.id}`}
-                        checked={formData.linkedStores.includes(account.store_master_id)}
-                        onCheckedChange={() => toggleLinkedStore(account.store_master_id)}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Left Column */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">Phone Number</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="+1 (555) 123-4567"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        className="pl-10 bg-background/50 border-border/50"
                       />
-                      <label 
-                        htmlFor={`store-${account.id}`}
-                        className="flex-1 cursor-pointer text-sm"
-                      >
-                        {account.store_master?.store_name || 'Unknown Store'}
-                        <span className="text-muted-foreground ml-2">
-                          {account.store_master?.city}
-                        </span>
-                      </label>
                     </div>
-                  ))}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">Email Address</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="email"
+                        placeholder="contact@store.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="pl-10 bg-background/50 border-border/50"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">Position / Title</Label>
+                    <div className="relative">
+                      <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="e.g. Store Manager"
+                        value={formData.position}
+                        onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                        className="pl-10 bg-background/50 border-border/50"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">Preferred Communication</Label>
+                    <Select 
+                      value={formData.preferredComm} 
+                      onValueChange={(val) => setFormData({ ...formData, preferredComm: val })}
+                    >
+                      <SelectTrigger className="bg-background/50 border-border/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COMMUNICATION_METHODS.map((method) => (
+                          <SelectItem key={method.value} value={method.value}>
+                            <div className="flex items-center gap-2">
+                              <method.icon className="w-4 h-4" />
+                              {method.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 3: Roles & Responsibilities */}
+            <div className="bg-secondary/30 rounded-xl p-5 border border-border/30">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <h3 className="font-medium text-foreground">Roles & Responsibilities</h3>
+              </div>
+              
+              {/* Primary Role */}
+              <div className="space-y-3 mb-5">
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">Primary Role (Required)</Label>
+                <Select 
+                  value={formData.primaryRole} 
+                  onValueChange={(val) => setFormData({ 
+                    ...formData, 
+                    primaryRole: val,
+                    additionalRoles: formData.additionalRoles.filter(r => r !== val)
+                  })}
+                >
+                  <SelectTrigger className="bg-background/50 border-border/50 h-11">
+                    <SelectValue placeholder="Select primary role..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableRoles.map((role) => (
+                      <SelectItem key={role.name} value={role.name}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: role.color }} 
+                          />
+                          {role.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Additional Roles */}
+              <div className="space-y-3">
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">Additional Roles</Label>
+                <div className="flex flex-wrap gap-2">
+                  {availableRoles
+                    .filter(r => r.name !== formData.primaryRole)
+                    .map((role) => {
+                      const isSelected = formData.additionalRoles.includes(role.name);
+                      return (
+                        <button
+                          key={role.name}
+                          type="button"
+                          onClick={() => toggleAdditionalRole(role.name)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-1.5",
+                            "border hover:scale-105 active:scale-95",
+                            isSelected 
+                              ? "border-transparent text-white shadow-md" 
+                              : "border-border/50 bg-background/50 text-muted-foreground hover:text-foreground hover:border-border"
+                          )}
+                          style={isSelected ? { backgroundColor: role.color } : {}}
+                        >
+                          {isSelected && <Check className="w-3 h-3" />}
+                          {role.name}
+                        </button>
+                      );
+                    })}
+                </div>
+                
+                {/* Add Custom Role */}
+                {showCustomRoleInput ? (
+                  <div className="flex gap-2 mt-3">
+                    <Input
+                      placeholder="Enter custom role name..."
+                      value={customRoleInput}
+                      onChange={(e) => setCustomRoleInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddCustomRole()}
+                      className="flex-1 bg-background/50 border-border/50"
+                      autoFocus
+                    />
+                    <Button 
+                      type="button" 
+                      variant="default" 
+                      size="sm"
+                      onClick={handleAddCustomRole}
+                      disabled={!customRoleInput.trim()}
+                    >
+                      Add
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => { setShowCustomRoleInput(false); setCustomRoleInput(''); }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomRoleInput(true)}
+                    className="mt-2 text-sm text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add Custom Role
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* SECTION 4: Linked Stores */}
+            <div className="bg-secondary/30 rounded-xl p-5 border border-border/30">
+              <div className="flex items-center gap-2 mb-4">
+                <Store className="w-4 h-4 text-primary" />
+                <h3 className="font-medium text-foreground">Linked Stores</h3>
+              </div>
+              
+              {/* Search */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search stores by name, city, or state..."
+                  value={storeSearch}
+                  onChange={(e) => setStoreSearch(e.target.value)}
+                  className="pl-10 bg-background/50 border-border/50"
+                />
+              </div>
+
+              {/* Selected Stores Pills */}
+              {formData.linkedStores.length > 0 && (
+                <div className="mb-3 p-3 bg-background/30 rounded-lg border border-border/20">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Linked to:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.linkedStores.map((storeId) => {
+                      const store = accounts.find(a => a.store_master_id === storeId);
+                      return (
+                        <Badge 
+                          key={storeId} 
+                          variant="secondary" 
+                          className="gap-1.5 py-1 px-3 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors"
+                        >
+                          <Store className="w-3 h-3" />
+                          {store?.store_master?.store_name || 'Store'}
+                          <button
+                            type="button"
+                            onClick={() => toggleLinkedStore(storeId)}
+                            className="ml-1 hover:text-destructive transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Store List */}
+              {accounts.length > 0 ? (
+                <div className="border border-border/30 rounded-lg overflow-hidden bg-background/30">
+                  <ScrollArea className="max-h-40">
+                    {filteredStores.map((account) => {
+                      const isSelected = formData.linkedStores.includes(account.store_master_id);
+                      return (
+                        <div 
+                          key={account.id}
+                          onClick={() => toggleLinkedStore(account.store_master_id)}
+                          className={cn(
+                            "flex items-center gap-3 p-3 cursor-pointer transition-colors border-b border-border/20 last:border-b-0",
+                            isSelected ? "bg-primary/5" : "hover:bg-muted/50"
+                          )}
+                        >
+                          <Checkbox
+                            checked={isSelected}
+                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {account.store_master?.store_name || 'Unknown Store'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {account.store_master?.city}{account.store_master?.state ? `, ${account.store_master.state}` : ''}
+                            </p>
+                          </div>
+                          {isSelected && (
+                            <Check className="w-4 h-4 text-primary shrink-0" />
+                          )}
+                        </div>
+                      );
+                    })}
+                    {filteredStores.length === 0 && (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        No stores match your search
+                      </div>
+                    )}
+                  </ScrollArea>
                 </div>
               ) : (
-                <div className="text-sm text-muted-foreground p-4 border rounded-lg text-center">
+                <div className="text-sm text-muted-foreground p-6 border border-dashed border-border/50 rounded-lg text-center">
+                  <Store className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
                   No stores available. Build CRM links first.
                 </div>
               )}
-              
-              {formData.linkedStores.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {formData.linkedStores.map((storeId) => {
-                    const store = accounts.find(a => a.store_master_id === storeId);
-                    return (
-                      <Badge key={storeId} variant="secondary" className="gap-1">
-                        {store?.store_master?.store_name || 'Store'}
-                        <X 
-                          className="w-3 h-3 cursor-pointer" 
-                          onClick={() => toggleLinkedStore(storeId)} 
-                        />
-                      </Badge>
-                    );
-                  })}
-                </div>
-              )}
             </div>
 
-            {/* Notes */}
-            <div className="space-y-2">
-              <Label htmlFor="notes" className="flex items-center gap-1">
-                <FileText className="w-3 h-3" /> Notes
-              </Label>
+            {/* SECTION 5: Internal Notes */}
+            <div className="bg-secondary/30 rounded-xl p-5 border border-border/30">
+              <div className="flex items-center gap-2 mb-4">
+                <FileText className="w-4 h-4 text-primary" />
+                <h3 className="font-medium text-foreground">Internal Notes</h3>
+              </div>
+              
               <Textarea
-                id="notes"
-                placeholder="Additional notes about this contact..."
+                placeholder="Important details, relationship notes, or special instructions…"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={3}
+                rows={4}
+                className="bg-background/50 border-border/50 resize-none font-light text-muted-foreground placeholder:text-muted-foreground/50 leading-relaxed"
               />
             </div>
 
             {/* Primary Contact Toggle */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 px-1">
               <Checkbox
                 id="isPrimary"
                 checked={formData.isPrimaryContact}
                 onCheckedChange={(checked) => setFormData({ ...formData, isPrimaryContact: !!checked })}
+                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
               />
-              <Label htmlFor="isPrimary" className="cursor-pointer">
-                Mark as primary contact for {brandLabel}
-              </Label>
+              <label htmlFor="isPrimary" className="text-sm cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+                Set as primary contact for this brand
+              </label>
             </div>
           </div>
         </ScrollArea>
 
-        <DialogFooter className="pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-border/50 bg-card flex items-center justify-between">
+          <Button 
+            type="button" 
+            variant="ghost" 
+            onClick={() => { resetForm(); onOpenChange(false); }}
+            disabled={isSubmitting}
+            className="text-muted-foreground hover:text-foreground"
+          >
             Cancel
           </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={isSubmitting || !formData.contactName.trim()}
-            style={{ backgroundColor: brandColor }}
+          
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!isFormValid || isSubmitting}
+            className="min-w-[140px] bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving…
               </>
             ) : (
-              <>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Contact
-              </>
+              'Save Contact'
             )}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
