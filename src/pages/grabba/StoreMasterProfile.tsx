@@ -352,20 +352,7 @@ export default function StoreMasterProfile() {
           </Card>
 
           {/* ===== PERSONAL MEMORY & BACKGROUND (ALWAYS VISIBLE) ===== */}
-          <Card className="border-2 border-primary/30">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-primary" />
-                Personal Memory & Background
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                High-signal human details so we remember this store personally — people, history, country, new store leads, and wholesale opportunities pulled from all notes.
-              </p>
-              <StorePersonalMemoryPanel storeId={id || ''} />
-            </CardContent>
-          </Card>
+          <StorePersonalMemoryPanel storeId={id || ''} />
         </div>
       </div>
 

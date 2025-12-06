@@ -54,16 +54,16 @@ export function StorePersonalMemoryPanel({ storeId }: StorePersonalMemoryPanelPr
   };
 
   return (
-    <Card className="w-full border-primary/20">
+    <Card className="w-full border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
-              Personal Memory Panel
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Brain className="h-5 w-5 text-primary" />
+              Personal Memory & Background
             </CardTitle>
             <CardDescription>
-              Extracted human details, relationship insights, and communication preferences
+              High-signal human details — people, history, country, new store leads, and wholesale opportunities
             </CardDescription>
           </div>
           <div className="flex gap-2">
@@ -90,9 +90,20 @@ export function StorePersonalMemoryPanel({ storeId }: StorePersonalMemoryPanelPr
         )}
 
         {!isLoading && !profile && (
-          <div className="text-center py-6">
-            <p className="text-muted-foreground mb-3">No personal memory extracted yet.</p>
-            <p className="text-sm text-muted-foreground">Run the AI extractor to populate this panel.</p>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground bg-muted/40">
+              <p className="font-medium mb-2">No AI memory has been generated yet for this store.</p>
+              <p className="mb-2">Once we run the extractor on past notes, this area will show:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Key people & relationship details</li>
+                <li>Country / background context</li>
+                <li>New store / expansion opportunities</li>
+                <li>Wholesale / ambassador potential</li>
+              </ul>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Click "Run V5 Extraction" above to auto-extract from all prior notes and interactions.
+            </div>
           </div>
         )}
 
