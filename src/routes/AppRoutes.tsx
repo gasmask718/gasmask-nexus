@@ -39,6 +39,7 @@ import RevenueBrain from '@/pages/RevenueBrain';
 import OpportunityRadar from '@/pages/OpportunityRadar';
 import MissionsHQ from '@/pages/MissionsHQ';
 import Communications from '@/pages/Communications';
+import CommunicationCenter from '@/pages/communication/CommunicationCenter';
 import Templates from '@/pages/Templates';
 import Reminders from '@/pages/Reminders';
 import InfluencerDetail from '@/pages/InfluencerDetail';
@@ -540,6 +541,9 @@ export default function AppRoutes() {
         <Route path="/billing/center" element={<BillingCenter />} />
         <Route path="/billing/invoices" element={<BillingInvoices />} />
         <Route path="/billing/invoices/new" element={<BillingInvoiceNew />} />
+
+        {/* Communication Center */}
+        <Route path="/communication-center" element={<CommunicationCenter />} />
 
         {/* CRM - Global CRM is now the main entry point */}
         <Route path="/crm" element={<GlobalCRM />} />
