@@ -13835,6 +13835,56 @@ export type Database = {
           },
         ]
       }
+      store_voice_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          duration_seconds: number | null
+          file_url: string
+          id: string
+          sentiment: string | null
+          status: string
+          store_id: string
+          summary: string | null
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          file_url: string
+          id?: string
+          sentiment?: string | null
+          status?: string
+          store_id: string
+          summary?: string | null
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          file_url?: string
+          id?: string
+          sentiment?: string | null
+          status?: string
+          store_id?: string
+          summary?: string | null
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_voice_notes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_wallet: {
         Row: {
           balance: number

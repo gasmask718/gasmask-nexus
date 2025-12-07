@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Brain, AlertTriangle, TrendingUp, User, Package, Clock } from "lucide-react";
+import { PersonalInsightDrilldown } from "./PersonalInsightDrilldown";
 
 interface PersonalProfile {
   personal_rapport_notes?: string | null;
@@ -39,9 +41,15 @@ interface ExtractedProfile {
 
 interface PersonalIntelligencePanelProps {
   profile: ExtractedProfile | null | undefined;
+  storeId?: string;
 }
 
-export function PersonalIntelligencePanel({ profile }: PersonalIntelligencePanelProps) {
+export function PersonalIntelligencePanel({ profile, storeId }: PersonalIntelligencePanelProps) {
+  const [selectedInsight, setSelectedInsight] = useState<{
+    text: string;
+    category: "red_flag" | "opportunity" | "pattern";
+  } | null>(null);
+
   const hasData = profile && (
     profile.personal_profile?.personal_rapport_notes ||
     profile.operational_profile?.typical_order_pattern ||
@@ -50,6 +58,15 @@ export function PersonalIntelligencePanel({ profile }: PersonalIntelligencePanel
   );
 
   return (
+    <>
+      <PersonalInsightDrilldown
+        open={!!selectedInsight}
+        onClose={() => setSelectedInsight(null)}
+        storeId={storeId || ""}
+        insightText={selectedInsight?.text || ""}
+        category={selectedInsight?.category || "pattern"}
+        profileSummary={profile?.personal_profile?.personal_rapport_notes || ""}
+      />
     <Card className="border-2 border-yellow-500/40 bg-yellow-500/5">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
@@ -147,7 +164,13 @@ export function PersonalIntelligencePanel({ profile }: PersonalIntelligencePanel
                 </div>
                 <ul className="pl-6 text-sm list-disc space-y-1 text-red-500">
                   {profile.red_flags.notes.map((note, i) => (
-                    <li key={i}>{note}</li>
+                    <li
+                      key={i}
+                      className="cursor-pointer hover:underline hover:text-red-600"
+                      onClick={() => setSelectedInsight({ text: note, category: "red_flag" })}
+                    >
+                      {note}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -162,7 +185,13 @@ export function PersonalIntelligencePanel({ profile }: PersonalIntelligencePanel
                 </div>
                 <ul className="pl-6 text-sm list-disc space-y-1 text-green-600">
                   {profile.opportunities.notes.map((note, i) => (
-                    <li key={i}>{note}</li>
+                    <li
+                      key={i}
+                      className="cursor-pointer hover:underline hover:text-green-700"
+                      onClick={() => setSelectedInsight({ text: note, category: "opportunity" })}
+                    >
+                      {note}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -183,5 +212,6 @@ export function PersonalIntelligencePanel({ profile }: PersonalIntelligencePanel
         )}
       </CardContent>
     </Card>
+    </>
   );
 }
