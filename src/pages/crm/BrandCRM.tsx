@@ -13,12 +13,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { 
   Store, Users, Plus, Search, MapPin, Phone, 
   CheckCircle2, XCircle, ArrowLeft, Building2, 
-  BarChart3, Sticker, Eye
+  BarChart3, Sticker, Eye, ClipboardList, Calculator, RefreshCw
 } from "lucide-react";
 import { useBoroughs } from "@/hooks/useBoroughs";
 import { useCustomerRoles } from "@/hooks/useCustomerRoles";
 import { FullContactForm } from "@/components/crm/FullContactForm";
 import { AddStoreModal } from "@/components/crm/AddStoreModal";
+import { useBrandCRMV3 } from "@/hooks/useBrandCRMV3";
+import { BrandAISummary } from "@/components/crm/BrandAISummary";
+import { BrandTasksPanel } from "@/components/crm/BrandTasksPanel";
+import { SuggestedVisitsWidget } from "@/components/crm/SuggestedVisitsWidget";
 
 export default function BrandCRM() {
   const { brandId } = useParams<{ brandId: string }>();
@@ -32,6 +36,24 @@ export default function BrandCRM() {
 
   const { data: boroughs = [] } = useBoroughs();
   const { data: roles = [] } = useCustomerRoles();
+
+  // V3: AI Insights, Scores, and Tasks
+  const {
+    storeScores,
+    tasks,
+    insight,
+    openTasksCount,
+    getStoreScore,
+    calculateScores,
+    isCalculating,
+    addTask,
+    isAddingTask,
+    updateTaskStatus,
+    generateInsights,
+    isGeneratingInsights,
+    generateSmartTasks,
+    isGeneratingTasks,
+  } = useBrandCRMV3(brandId);
 
   // Fail-safe: redirect to Global CRM if no brandId
   useEffect(() => {
@@ -208,6 +230,14 @@ export default function BrandCRM() {
               <div className="text-3xl font-bold">{contacts.length}</div>
               <div className="text-sm text-white/80">Contacts</div>
             </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold">{stickerCompliance}%</div>
+              <div className="text-sm text-white/80">Stickers</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold">{openTasksCount}</div>
+              <div className="text-sm text-white/80">Open Tasks</div>
+            </div>
             <div className="flex gap-2">
               <Button 
                 variant="secondary" 
@@ -230,6 +260,22 @@ export default function BrandCRM() {
         </div>
       </div>
 
+      {/* V3: AI Summary Panel */}
+      <BrandAISummary
+        insight={insight}
+        onGenerate={() => generateInsights({
+          brandName: brand.name,
+          totalStores: stores.length,
+          stickerCompliance,
+          doorStickers: stores.filter((s: any) => s.sticker_on_door).length,
+          insideStickers: stores.filter((s: any) => s.sticker_inside_store).length,
+          openTasks: openTasksCount,
+          totalContacts: contacts.length,
+          storesByBoro: storesByBoro.reduce((acc, b) => ({ ...acc, [b.boro]: b.count }), {}),
+        })}
+        isGenerating={isGeneratingInsights}
+      />
+
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
@@ -240,6 +286,10 @@ export default function BrandCRM() {
           <TabsTrigger value="contacts" className="gap-2">
             <Users className="h-4 w-4" />
             Contacts ({contacts.length})
+          </TabsTrigger>
+          <TabsTrigger value="tasks" className="gap-2">
+            <ClipboardList className="h-4 w-4" />
+            Tasks ({openTasksCount})
           </TabsTrigger>
           <TabsTrigger value="insights" className="gap-2">
             <BarChart3 className="h-4 w-4" />
@@ -254,6 +304,15 @@ export default function BrandCRM() {
               <div className="flex items-center justify-between">
                 <CardTitle>Brand Stores</CardTitle>
                 <div className="flex items-center gap-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => calculateScores(stores)}
+                    disabled={isCalculating}
+                  >
+                    {isCalculating ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Calculator className="h-4 w-4 mr-2" />}
+                    Score Stores
+                  </Button>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -421,6 +480,32 @@ export default function BrandCRM() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Tasks Tab - V3 */}
+        <TabsContent value="tasks" className="space-y-4">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <BrandTasksPanel
+                tasks={tasks}
+                stores={stores.map((s: any) => ({ id: s.id, store_name: s.store_name }))}
+                contacts={contacts.map((c: any) => ({ id: c.id, full_name: c.full_name }))}
+                onAddTask={addTask}
+                onUpdateStatus={updateTaskStatus}
+                onGenerateSmartTasks={() => generateSmartTasks({
+                  brandName: brand.name,
+                  lowScoreStores: storeScores.filter(s => s.score < 50).slice(0, 5),
+                  missingStickerStores: stores.filter((s: any) => !s.sticker_on_door).slice(0, 5),
+                  contactsNeedingFollowUp: contacts.filter((c: any) => c.notes?.toLowerCase().includes('follow')).slice(0, 5),
+                })}
+                isGenerating={isGeneratingTasks}
+                isAdding={isAddingTask}
+              />
+            </div>
+            <div>
+              <SuggestedVisitsWidget stores={stores} storeScores={storeScores} />
+            </div>
+          </div>
         </TabsContent>
 
         {/* Insights Tab */}

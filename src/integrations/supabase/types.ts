@@ -2374,6 +2374,38 @@ export type Database = {
           },
         ]
       }
+      brand_insights_cache: {
+        Row: {
+          ai_summary: string | null
+          ai_top_actions: string | null
+          business_id: string
+          calculated_at: string
+          id: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          ai_top_actions?: string | null
+          business_id: string
+          calculated_at?: string
+          id?: string
+        }
+        Update: {
+          ai_summary?: string | null
+          ai_top_actions?: string | null
+          business_id?: string
+          calculated_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_insights_cache_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_inventory_movements: {
         Row: {
           brand: Database["public"]["Enums"]["brand_type"]
@@ -2408,6 +2440,56 @@ export type Database = {
             columns: ["store_brand_account_id"]
             isOneToOne: false
             referencedRelation: "store_brand_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_tasks: {
+        Row: {
+          business_id: string
+          completed_at: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          status: string
+          store_id: string | null
+          title: string
+        }
+        Insert: {
+          business_id: string
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string
+          store_id?: string | null
+          title: string
+        }
+        Update: {
+          business_id?: string
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string
+          store_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_tasks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -14061,6 +14143,47 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: true
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_scores: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          last_calculated_at: string
+          priority_label: string
+          reason_summary: string | null
+          score: number
+          store_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          last_calculated_at?: string
+          priority_label?: string
+          reason_summary?: string | null
+          score?: number
+          store_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          last_calculated_at?: string
+          priority_label?: string
+          reason_summary?: string | null
+          score?: number
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_scores_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
