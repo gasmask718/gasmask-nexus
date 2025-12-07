@@ -441,7 +441,7 @@ const GlobalCRM = () => {
                       key={`brand-${brand.id}`} 
                       className="p-6 hover:shadow-lg transition-all cursor-pointer group border-t-4"
                       style={{ borderTopColor: brand.color || 'hsl(var(--primary))' }}
-                      onClick={() => navigate(`/grabba/brand/${brand.name.toLowerCase().replace(/\s+/g, '-')}`)}
+                      onClick={() => navigate(`/crm/brand/${brand.id}`)}
                     >
                       <div className="flex items-start justify-between mb-4">
                         {brand.logo_url ? (
@@ -481,7 +481,7 @@ const GlobalCRM = () => {
                         className="w-full mt-4"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/grabba/brand/${brand.name.toLowerCase().replace(/\s+/g, '-')}`);
+                          navigate(`/crm/brand/${brand.id}`);
                         }}
                       >
                         Open Brand CRM
