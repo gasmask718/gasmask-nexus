@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Phone, Mail, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MessageSquare, UserCog } from 'lucide-react';
 import { CommunicationTimelineCRM } from '@/components/crm/CommunicationTimelineCRM';
 import { CustomerSimpleTimeline } from '@/components/crm/CustomerSimpleTimeline';
 import { CustomerNotesSimpleEditor } from '@/components/crm/CustomerNotesSimpleEditor';
@@ -25,7 +25,7 @@ const CRMContactDetail = () => {
       
       const { data, error } = await supabase
         .from('crm_contacts')
-        .select('*')
+        .select('*, role:customer_roles(id, role_name), borough:boroughs(id, name)')
         .eq('id', id)
         .single();
       if (error) throw error;
@@ -56,7 +56,15 @@ const CRMContactDetail = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">{contact.name}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold">{contact.name}</h1>
+            {contact.role?.role_name && (
+              <Badge variant="secondary" className="text-sm">
+                <UserCog className="h-3 w-3 mr-1" />
+                {contact.role.role_name}
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground capitalize">{contact.type}</p>
         </div>
         {getStatusBadge(contact.relationship_status)}

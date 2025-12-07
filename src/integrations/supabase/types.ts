@@ -4528,6 +4528,7 @@ export type Database = {
           phone: string | null
           relationship_score: number | null
           relationship_status: string
+          role_id: string | null
           tags: string[] | null
           type: string
           updated_at: string
@@ -4558,6 +4559,7 @@ export type Database = {
           phone?: string | null
           relationship_score?: number | null
           relationship_status?: string
+          role_id?: string | null
           tags?: string[] | null
           type: string
           updated_at?: string
@@ -4588,6 +4590,7 @@ export type Database = {
           phone?: string | null
           relationship_score?: number | null
           relationship_status?: string
+          role_id?: string | null
           tags?: string[] | null
           type?: string
           updated_at?: string
@@ -4619,6 +4622,13 @@ export type Database = {
             columns: ["neighborhood_id"]
             isOneToOne: false
             referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "customer_roles"
             referencedColumns: ["id"]
           },
         ]

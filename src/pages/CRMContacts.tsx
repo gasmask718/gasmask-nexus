@@ -26,6 +26,7 @@ const CRMContacts = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [boroughFilter, setBoroughFilter] = useState<string>('all');
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [selectedContact, setSelectedContact] = useState<any>(null);
 
@@ -42,7 +43,7 @@ const CRMContacts = () => {
       
       const { data, error } = await supabase
         .from('crm_contacts')
-        .select('*, borough:boroughs(id, name)')
+        .select('*, borough:boroughs(id, name), role:customer_roles(id, role_name)')
         .eq('business_id', selectedBusiness.id)
         .order('last_contact_date', { ascending: false, nullsFirst: false});
       if (error) throw error;
@@ -86,8 +87,9 @@ const CRMContacts = () => {
     
     const matchesType = typeFilter === 'all' || contact.type === typeFilter;
     const matchesStatus = statusFilter === 'all' || contact.relationship_status === statusFilter;
+    const matchesBorough = boroughFilter === 'all' || contact.borough_id === boroughFilter;
 
-    return matchesSearch && matchesType && matchesStatus;
+    return matchesSearch && matchesType && matchesStatus && matchesBorough;
   });
 
   const getStatusBadge = (status: string) => {
@@ -154,7 +156,6 @@ const CRMContacts = () => {
         </div>
       </div>
 
-      {/* Filters */}
       <Card className="p-4">
         <CustomerSimpleFilters
           searchTerm={searchTerm}
@@ -163,6 +164,8 @@ const CRMContacts = () => {
           onTypeChange={setTypeFilter}
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
+          boroughFilter={boroughFilter}
+          onBoroughChange={setBoroughFilter}
         />
       </Card>
 
@@ -191,7 +194,14 @@ const CRMContacts = () => {
                   {getTypeIcon(contact.type)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium">{contact.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{contact.name}</p>
+                    {contact.role?.role_name && (
+                      <Badge variant="secondary" className="text-xs">
+                        {contact.role.role_name}
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground truncate">
                     {contact.organization && `${contact.organization} · `}
                     {contact.email || contact.phone || 'No contact info'}
