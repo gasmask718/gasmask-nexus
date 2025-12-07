@@ -13374,6 +13374,8 @@ export type Database = {
       store_master: {
         Row: {
           address: string
+          borough_id: string | null
+          brand_id: string | null
           city: string
           communication_preference: string | null
           country_of_origin: string | null
@@ -13395,6 +13397,10 @@ export type Database = {
           phone: string | null
           risk_score: string | null
           state: string
+          sticker_in_store: boolean | null
+          sticker_notes: string | null
+          sticker_on_door: boolean | null
+          sticker_with_phone: boolean | null
           store_name: string
           store_type: string | null
           updated_at: string | null
@@ -13402,6 +13408,8 @@ export type Database = {
         }
         Insert: {
           address: string
+          borough_id?: string | null
+          brand_id?: string | null
           city: string
           communication_preference?: string | null
           country_of_origin?: string | null
@@ -13423,6 +13431,10 @@ export type Database = {
           phone?: string | null
           risk_score?: string | null
           state: string
+          sticker_in_store?: boolean | null
+          sticker_notes?: string | null
+          sticker_on_door?: boolean | null
+          sticker_with_phone?: boolean | null
           store_name: string
           store_type?: string | null
           updated_at?: string | null
@@ -13430,6 +13442,8 @@ export type Database = {
         }
         Update: {
           address?: string
+          borough_id?: string | null
+          brand_id?: string | null
           city?: string
           communication_preference?: string | null
           country_of_origin?: string | null
@@ -13451,12 +13465,70 @@ export type Database = {
           phone?: string | null
           risk_score?: string | null
           state?: string
+          sticker_in_store?: boolean | null
+          sticker_notes?: string | null
+          sticker_on_door?: boolean | null
+          sticker_with_phone?: boolean | null
           store_name?: string
           store_type?: string | null
           updated_at?: string | null
           zip?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "store_master_borough_id_fkey"
+            columns: ["borough_id"]
+            isOneToOne: false
+            referencedRelation: "boroughs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_master_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          note_text: string
+          store_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note_text: string
+          store_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note_text?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_notes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       store_order_items: {
         Row: {
@@ -13887,6 +13959,48 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: true
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_status_history: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          event_type: string
+          id: string
+          store_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_type: string
+          id?: string
+          store_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_type?: string
+          id?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_status_history_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_status_history_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
             referencedColumns: ["id"]
           },
         ]
