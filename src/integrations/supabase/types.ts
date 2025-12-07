@@ -489,12 +489,15 @@ export type Database = {
           duration_seconds: number | null
           follow_up_created: boolean | null
           id: string
+          language: string | null
           outcome: string | null
           phone_number: string | null
           script_id: string | null
           store_id: string | null
+          tone_used: string | null
           transcription: string | null
           voice_id: string | null
+          voice_profile_id: string | null
         }
         Insert: {
           ai_summary?: string | null
@@ -504,12 +507,15 @@ export type Database = {
           duration_seconds?: number | null
           follow_up_created?: boolean | null
           id?: string
+          language?: string | null
           outcome?: string | null
           phone_number?: string | null
           script_id?: string | null
           store_id?: string | null
+          tone_used?: string | null
           transcription?: string | null
           voice_id?: string | null
+          voice_profile_id?: string | null
         }
         Update: {
           ai_summary?: string | null
@@ -519,12 +525,15 @@ export type Database = {
           duration_seconds?: number | null
           follow_up_created?: boolean | null
           id?: string
+          language?: string | null
           outcome?: string | null
           phone_number?: string | null
           script_id?: string | null
           store_id?: string | null
+          tone_used?: string | null
           transcription?: string | null
           voice_id?: string | null
+          voice_profile_id?: string | null
         }
         Relationships: [
           {
@@ -539,6 +548,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_logs_voice_profile_id_fkey"
+            columns: ["voice_profile_id"]
+            isOneToOne: false
+            referencedRelation: "voice_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -16437,6 +16453,59 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_profiles: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_founder_voice: boolean | null
+          language: string | null
+          name: string
+          provider: string
+          tone_presets: Json | null
+          updated_at: string
+          voice_model_id: string | null
+          voice_type: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_founder_voice?: boolean | null
+          language?: string | null
+          name: string
+          provider?: string
+          tone_presets?: Json | null
+          updated_at?: string
+          voice_model_id?: string | null
+          voice_type: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_founder_voice?: boolean | null
+          language?: string | null
+          name?: string
+          provider?: string
+          tone_presets?: Json | null
+          updated_at?: string
+          voice_model_id?: string | null
+          voice_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_profiles_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
