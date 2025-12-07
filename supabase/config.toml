@@ -67,3 +67,9 @@ verify_jwt = false
 
 [functions.extract-store-memory-v5]
 verify_jwt = false
+
+[functions.store-voice-notes-transcribe]
+verify_jwt = false
+
+[functions.explain-customer-insight]
+verify_jwt = false

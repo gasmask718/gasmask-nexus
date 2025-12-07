@@ -17,8 +17,10 @@ import { CustomerMemoryCoreV2 } from '@/components/grabba/CustomerMemoryCoreV2';
 import { StoreAIFuturePanel } from '@/components/grabba/StoreAIFuturePanel';
 import { StorePersonalMemoryPanel } from '@/components/grabba/StorePersonalMemoryPanel';
 import { PersonalIntelligencePanel } from '@/components/grabba/PersonalIntelligencePanel';
+import { VoiceNotesCard } from '@/components/grabba/VoiceNotesCard';
 import { useStoreMasterAutoCreate } from '@/hooks/useStoreMasterAutoCreate';
 import { getExtractedProfile } from '@/services/profileExtractionService';
+import { getStoreRelationshipScore, RelationshipScore } from '@/services/crmInsightsService';
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -154,6 +156,13 @@ export default function StoreMasterProfile() {
     enabled: !!id,
   });
 
+  // V9: Relationship Score
+  const { data: relationshipScore } = useQuery({
+    queryKey: ['relationship-score', id],
+    queryFn: () => getStoreRelationshipScore(id || ''),
+    enabled: !!id,
+  });
+
   // ═══════════════════════════════════════════════════════════════════════════════
   // LOADING STATE: Show "Rebuilding profile..." instead of 404
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -240,6 +249,11 @@ export default function StoreMasterProfile() {
                 })}
               </div>
             )}
+            {relationshipScore && (
+              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${relationshipScore.color}`}>
+                {relationshipScore.tier} ({relationshipScore.score})
+              </span>
+            )}
           </div>
           <p className="text-muted-foreground mt-1">
             Floor 1 CRM — Store Master Profile
@@ -319,8 +333,11 @@ export default function StoreMasterProfile() {
             visits={visits}
           />
 
+          {/* V7: Voice Notes Card */}
+          <VoiceNotesCard storeId={id || ''} />
+
           {/* ===== PERSONAL INTELLIGENCE PANEL — DIRECTLY UNDER MEMORY CORE ===== */}
-          <PersonalIntelligencePanel profile={aiProfile} />
+          <PersonalIntelligencePanel profile={aiProfile} storeId={id || ''} />
 
           {/* ===== PERSONAL MEMORY & BACKGROUND (ALWAYS VISIBLE - CENTER COLUMN) ===== */}
           <div id="store-memory-panel">
