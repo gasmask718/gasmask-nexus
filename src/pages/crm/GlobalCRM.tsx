@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
@@ -7,18 +7,23 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Switch } from '@/components/ui/switch';
 import { 
   Building2, Users, Search, Plus, Settings, MapPin, 
-  UserCog, Phone, Edit, Archive, Eye, Store, Trash2, Check, X
+  UserCog, Phone, Edit, Archive, Eye, Store, Trash2, Check, X,
+  ChevronDown, RefreshCw, RotateCcw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { FullContactForm } from '@/components/crm/FullContactForm';
 import { useBoroughs, useAddBorough } from '@/hooks/useBoroughs';
+import { useNeighborhoods, useAddNeighborhood } from '@/hooks/useNeighborhoods';
 import { useCustomerRoles, useAddCustomerRole } from '@/hooks/useCustomerRoles';
 import { toast } from 'sonner';
 import CRMLayout from './CRMLayout';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Brand {
   id: string;
@@ -34,9 +39,12 @@ const GlobalCRM = () => {
   const [activeTab, setActiveTab] = useState('brands');
   const [searchTerm, setSearchTerm] = useState('');
   const [boroughFilter, setBoroughFilter] = useState('all');
+  const [neighborhoodFilter, setNeighborhoodFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
   const [brandFilter, setBrandFilter] = useState('all');
   const [showAddContact, setShowAddContact] = useState(false);
+  const [showEditContact, setShowEditContact] = useState(false);
+  const [editingContact, setEditingContact] = useState<any>(null);
   
   // Admin settings state
   const [newBoroughName, setNewBoroughName] = useState('');
@@ -44,10 +52,25 @@ const GlobalCRM = () => {
   const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
   const [editBrandName, setEditBrandName] = useState('');
   const [editBrandColor, setEditBrandColor] = useState('');
+  const [showAddBusiness, setShowAddBusiness] = useState(false);
+  const [newBusinessName, setNewBusinessName] = useState('');
+  const [newBusinessColor, setNewBusinessColor] = useState('#6366f1');
+  const [newBusinessLogo, setNewBusinessLogo] = useState('');
+  
+  // Settings panel states
+  const [businessesOpen, setBusinessesOpen] = useState(true);
+  const [rolesOpen, setRolesOpen] = useState(true);
+  const [geographyOpen, setGeographyOpen] = useState(true);
+  
+  // Neighborhood management
+  const [newNeighborhoodName, setNewNeighborhoodName] = useState('');
+  const [newNeighborhoodBoro, setNewNeighborhoodBoro] = useState('');
 
   const { data: boroughs = [] } = useBoroughs();
+  const { data: neighborhoods = [] } = useNeighborhoods();
   const { data: roles = [] } = useCustomerRoles();
   const addBorough = useAddBorough();
+  const addNeighborhood = useAddNeighborhood();
   const addRole = useAddCustomerRole();
 
   // Fetch all brands (from brands table)
@@ -127,13 +150,14 @@ const GlobalCRM = () => {
 
   // Fetch all contacts across all brands
   const { data: allContacts = [], isLoading: contactsLoading } = useQuery({
-    queryKey: ['global-all-contacts', searchTerm, boroughFilter, roleFilter, brandFilter],
+    queryKey: ['global-all-contacts', searchTerm, boroughFilter, neighborhoodFilter, roleFilter, brandFilter],
     queryFn: async () => {
       let query = supabase
         .from('crm_contacts')
         .select(`
           *,
           borough:boroughs(id, name),
+          neighborhood:neighborhoods(id, name),
           role:customer_roles(id, role_name),
           business:businesses(id, name)
         `)
@@ -147,6 +171,10 @@ const GlobalCRM = () => {
       
       if (boroughFilter !== 'all') {
         query = query.eq('borough_id', boroughFilter);
+      }
+
+      if (neighborhoodFilter !== 'all') {
+        query = query.eq('neighborhood_id', neighborhoodFilter);
       }
       
       if (roleFilter !== 'all') {
@@ -220,10 +248,53 @@ const GlobalCRM = () => {
     });
   };
 
+  const handleAddNeighborhood = () => {
+    if (!newNeighborhoodName.trim() || !newNeighborhoodBoro) return;
+    addNeighborhood.mutate(
+      { name: newNeighborhoodName.trim(), boroughId: newNeighborhoodBoro },
+      {
+        onSuccess: () => {
+          setNewNeighborhoodName('');
+          setNewNeighborhoodBoro('');
+        },
+      }
+    );
+  };
+
   const handleAddRole = () => {
     if (!newRoleName.trim()) return;
     addRole.mutate(newRoleName.trim(), {
       onSuccess: () => setNewRoleName(''),
+    });
+  };
+
+  // Add brand mutation
+  const addBrandMutation = useMutation({
+    mutationFn: async ({ name, color, logoUrl }: { name: string; color: string; logoUrl?: string }) => {
+      const { error } = await supabase
+        .from('brands')
+        .insert({ name, color, logo_url: logoUrl || null, active: true });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['global-brands'] });
+      toast.success('Brand added');
+      setShowAddBusiness(false);
+      setNewBusinessName('');
+      setNewBusinessColor('#6366f1');
+      setNewBusinessLogo('');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const handleAddBusiness = () => {
+    if (!newBusinessName.trim()) return;
+    addBrandMutation.mutate({
+      name: newBusinessName.trim(),
+      color: newBusinessColor,
+      logoUrl: newBusinessLogo || undefined,
     });
   };
 
@@ -241,6 +312,27 @@ const GlobalCRM = () => {
       color: editBrandColor,
     });
   };
+
+  const handleEditContact = (contact: any) => {
+    setEditingContact(contact);
+    setShowEditContact(true);
+  };
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setBoroughFilter('all');
+    setNeighborhoodFilter('all');
+    setRoleFilter('all');
+    setBrandFilter('all');
+  };
+
+  const hasActiveFilters = searchTerm || boroughFilter !== 'all' || neighborhoodFilter !== 'all' || roleFilter !== 'all' || brandFilter !== 'all';
+
+  // Filter neighborhoods by selected borough
+  const filteredNeighborhoods = useMemo(() => {
+    if (boroughFilter === 'all') return neighborhoods;
+    return neighborhoods.filter(n => n.borough_id === boroughFilter);
+  }, [neighborhoods, boroughFilter]);
 
   const filteredBrands = brands.filter(b => 
     b.active !== false && (!searchTerm || b.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -455,9 +547,21 @@ const GlobalCRM = () => {
 
           {/* All Contacts Tab */}
           <TabsContent value="contacts" className="mt-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold">Global Contacts</h2>
+                <p className="text-sm text-muted-foreground">Cross-brand directory</p>
+              </div>
+              <Button onClick={() => setShowAddContact(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Contact
+              </Button>
+            </div>
+
             {/* Filters */}
             <Card className="p-4 mb-4">
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3 items-center">
                 <div className="flex-1 min-w-[200px]">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -469,13 +573,13 @@ const GlobalCRM = () => {
                     />
                   </div>
                 </div>
-                <Select value={boroughFilter} onValueChange={setBoroughFilter}>
+                <Select value={brandFilter} onValueChange={setBrandFilter}>
                   <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Borough" />
+                    <SelectValue placeholder="Business" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Boroughs</SelectItem>
-                    {boroughs.map((b) => (
+                    <SelectItem value="all">All Businesses</SelectItem>
+                    {businesses.map((b) => (
                       <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -491,17 +595,34 @@ const GlobalCRM = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={brandFilter} onValueChange={setBrandFilter}>
+                <Select value={boroughFilter} onValueChange={(v) => { setBoroughFilter(v); setNeighborhoodFilter('all'); }}>
                   <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Business" />
+                    <SelectValue placeholder="Borough" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Businesses</SelectItem>
-                    {businesses.map((b) => (
+                    <SelectItem value="all">All Boroughs</SelectItem>
+                    {boroughs.map((b) => (
                       <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                <Select value={neighborhoodFilter} onValueChange={setNeighborhoodFilter}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Neighborhood" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Neighborhoods</SelectItem>
+                    {filteredNeighborhoods.map((n) => (
+                      <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={resetFilters} className="text-muted-foreground">
+                    <RotateCcw className="mr-1 h-3 w-3" />
+                    Reset Filters
+                  </Button>
+                )}
               </div>
             </Card>
 
@@ -512,10 +633,11 @@ const GlobalCRM = () => {
                   <thead className="bg-muted/50">
                     <tr>
                       <th className="px-4 py-3 text-left text-sm font-medium">Name</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Role</th>
                       <th className="px-4 py-3 text-left text-sm font-medium">Business</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Role</th>
                       <th className="px-4 py-3 text-left text-sm font-medium">Phone</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Borough</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Address</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Borough → Neighborhood</th>
                       <th className="px-4 py-3 text-left text-sm font-medium">Notes</th>
                       <th className="px-4 py-3 text-left text-sm font-medium">Updated</th>
                       <th className="px-4 py-3 text-right text-sm font-medium">Actions</th>
@@ -524,28 +646,31 @@ const GlobalCRM = () => {
                   <tbody className="divide-y divide-border">
                     {contactsLoading ? (
                       <tr>
-                        <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                        <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                           Loading contacts...
                         </td>
                       </tr>
                     ) : allContacts.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
-                          No contacts found. Add your first contact to get started.
+                        <td colSpan={9} className="px-4 py-12 text-center">
+                          <Users className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                          <p className="text-muted-foreground">No contacts found.</p>
+                          <Button variant="link" onClick={() => setShowAddContact(true)} className="mt-2">
+                            Add your first contact
+                          </Button>
                         </td>
                       </tr>
                     ) : (
                       allContacts.map((contact: any) => (
-                        <tr key={contact.id} className="hover:bg-muted/30">
+                        <tr 
+                          key={contact.id} 
+                          className="hover:bg-muted/30 cursor-pointer"
+                          onClick={() => handleEditContact(contact)}
+                        >
                           <td className="px-4 py-3">
                             <div className="font-medium">{contact.name}</div>
                             {contact.email && (
                               <div className="text-xs text-muted-foreground">{contact.email}</div>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            {contact.role?.role_name && (
-                              <Badge variant="secondary">{contact.role.role_name}</Badge>
                             )}
                           </td>
                           <td className="px-4 py-3">
@@ -554,30 +679,45 @@ const GlobalCRM = () => {
                             )}
                           </td>
                           <td className="px-4 py-3">
+                            {contact.role?.role_name && (
+                              <Badge variant="secondary">{contact.role.role_name}</Badge>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
                             {contact.phone && (
-                              <a href={`tel:${contact.phone}`} className="flex items-center gap-1 text-sm hover:underline">
+                              <a 
+                                href={`tel:${contact.phone}`} 
+                                className="flex items-center gap-1 text-sm hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <Phone className="h-3 w-3" />
                                 {contact.phone}
                               </a>
                             )}
                           </td>
                           <td className="px-4 py-3">
-                            <div className="text-sm">
-                              {contact.borough?.name || '-'}
+                            <div className="text-sm text-muted-foreground truncate max-w-[150px]">
+                              {contact.address || '-'}
                             </div>
                           </td>
                           <td className="px-4 py-3">
-                            <div className="text-sm text-muted-foreground truncate max-w-[200px]">
-                              {contact.notes?.substring(0, 25) || '-'}
+                            <div className="text-sm">
+                              {contact.borough?.name || '-'}
+                              {contact.neighborhood?.name && ` → ${contact.neighborhood.name}`}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-sm text-muted-foreground truncate max-w-[150px]">
+                              {contact.notes?.substring(0, 30) || '-'}
                             </div>
                           </td>
                           <td className="px-4 py-3 text-sm text-muted-foreground">
                             {contact.updated_at 
-                              ? new Date(contact.updated_at).toLocaleDateString() 
+                              ? formatDistanceToNow(new Date(contact.updated_at), { addSuffix: true })
                               : '-'}
                           </td>
                           <td className="px-4 py-3">
-                            <div className="flex items-center justify-end gap-1">
+                            <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
@@ -586,11 +726,13 @@ const GlobalCRM = () => {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8"
+                                onClick={() => handleEditContact(contact)}
+                              >
                                 <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                                <Archive className="h-4 w-4" />
                               </Button>
                             </div>
                           </td>
@@ -604,139 +746,308 @@ const GlobalCRM = () => {
           </TabsContent>
 
           {/* Admin Settings Tab */}
-          <TabsContent value="settings" className="mt-6">
-            <div className="grid gap-6 lg:grid-cols-3">
-              {/* Manage Businesses/Brands */}
-              <Card className="p-6">
-                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-primary" />
-                  Manage Brands
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Edit brand names, colors, and status.
-                </p>
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {brands.filter(b => b.active !== false).map((brand) => (
-                    <div key={brand.id} className="flex items-center justify-between p-3 rounded-lg border">
-                      {editingBrandId === brand.id ? (
-                        <div className="flex items-center gap-2 flex-1">
+          <TabsContent value="settings" className="mt-6 space-y-6">
+            {/* Section 1: Manage Businesses */}
+            <Collapsible open={businessesOpen} onOpenChange={setBusinessesOpen}>
+              <Card>
+                <CollapsibleTrigger className="w-full">
+                  <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-primary" />
+                      Manage Businesses
+                    </h3>
+                    <ChevronDown className={`h-5 w-5 transition-transform ${businessesOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="p-4 pt-0 border-t">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Add, edit, or deactivate brands/businesses in the OS Dynasty ecosystem.
+                    </p>
+                    <div className="flex justify-end mb-4">
+                      <Button onClick={() => setShowAddBusiness(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Business
+                      </Button>
+                    </div>
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {brands.filter(b => b.active !== false).map((brand) => (
+                        <div key={brand.id} className="flex items-center justify-between p-3 rounded-lg border">
+                          {editingBrandId === brand.id ? (
+                            <div className="flex items-center gap-2 flex-1">
+                              <Input
+                                value={editBrandName}
+                                onChange={(e) => setEditBrandName(e.target.value)}
+                                className="h-8 flex-1"
+                                placeholder="Business name"
+                              />
+                              <input
+                                type="color"
+                                value={editBrandColor}
+                                onChange={(e) => setEditBrandColor(e.target.value)}
+                                className="h-8 w-8 rounded cursor-pointer border"
+                              />
+                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleSaveBrand}>
+                                <Check className="h-4 w-4 text-green-500" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingBrandId(null)}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-3">
+                                {brand.logo_url ? (
+                                  <img src={brand.logo_url} alt={brand.name} className="w-8 h-8 rounded object-contain" />
+                                ) : (
+                                  <div 
+                                    className="w-8 h-8 rounded flex items-center justify-center text-white text-sm font-bold"
+                                    style={{ backgroundColor: brand.color || '#6366f1' }}
+                                  >
+                                    {brand.name.charAt(0)}
+                                  </div>
+                                )}
+                                <span className="font-medium">{brand.name}</span>
+                                <div 
+                                  className="w-3 h-3 rounded-full border" 
+                                  style={{ backgroundColor: brand.color || '#6366f1' }}
+                                  title={brand.color || 'Default color'}
+                                />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button 
+                                  size="icon" 
+                                  variant="ghost" 
+                                  className="h-8 w-8"
+                                  onClick={() => handleEditBrand(brand)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  size="icon" 
+                                  variant="ghost" 
+                                  className="h-8 w-8 text-destructive"
+                                  onClick={() => deleteBrandMutation.mutate(brand.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+
+            {/* Section 2: Manage Roles */}
+            <Collapsible open={rolesOpen} onOpenChange={setRolesOpen}>
+              <Card>
+                <CollapsibleTrigger className="w-full">
+                  <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <UserCog className="h-5 w-5 text-primary" />
+                      Manage Roles
+                    </h3>
+                    <ChevronDown className={`h-5 w-5 transition-transform ${rolesOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="p-4 pt-0 border-t">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Universal contact roles used across all Brand CRMs.
+                    </p>
+                    <div className="flex gap-2 mb-4">
+                      <Input
+                        placeholder="New role name..."
+                        value={newRoleName}
+                        onChange={(e) => setNewRoleName(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddRole()}
+                      />
+                      <Button onClick={handleAddRole} disabled={addRole.isPending}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 max-h-[300px] overflow-y-auto">
+                      {roles.map((role) => (
+                        <div key={role.id} className="flex items-center justify-between p-2 rounded-lg border text-sm">
+                          <div className="flex items-center gap-2">
+                            <UserCog className="h-4 w-4 text-muted-foreground" />
+                            <span>{role.role_name}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+
+            {/* Section 3: Geography Management */}
+            <Collapsible open={geographyOpen} onOpenChange={setGeographyOpen}>
+              <Card>
+                <CollapsibleTrigger className="w-full">
+                  <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-primary" />
+                      Manage Geography
+                    </h3>
+                    <ChevronDown className={`h-5 w-5 transition-transform ${geographyOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="p-4 pt-0 border-t">
+                    <div className="grid gap-6 md:grid-cols-2">
+                      {/* Boroughs */}
+                      <div>
+                        <h4 className="font-medium mb-3">Boroughs</h4>
+                        <div className="flex gap-2 mb-4">
                           <Input
-                            value={editBrandName}
-                            onChange={(e) => setEditBrandName(e.target.value)}
-                            className="h-8"
+                            placeholder="New borough name..."
+                            value={newBoroughName}
+                            onChange={(e) => setNewBoroughName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddBorough()}
                           />
-                          <input
-                            type="color"
-                            value={editBrandColor}
-                            onChange={(e) => setEditBrandColor(e.target.value)}
-                            className="h-8 w-8 rounded cursor-pointer"
-                          />
-                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleSaveBrand}>
-                            <Check className="h-4 w-4 text-green-500" />
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingBrandId(null)}>
-                            <X className="h-4 w-4" />
+                          <Button onClick={handleAddBorough} disabled={addBorough.isPending}>
+                            <Plus className="h-4 w-4" />
                           </Button>
                         </div>
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-4 h-4 rounded-full" 
-                              style={{ backgroundColor: brand.color || '#6366f1' }}
-                            />
-                            <span className="text-sm">{brand.name}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button 
-                              size="icon" 
-                              variant="ghost" 
-                              className="h-7 w-7"
-                              onClick={() => handleEditBrand(brand)}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Button 
-                              size="icon" 
-                              variant="ghost" 
-                              className="h-7 w-7 text-muted-foreground"
-                              onClick={() => deleteBrandMutation.mutate(brand.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </Card>
-
-              {/* Manage Roles */}
-              <Card className="p-6">
-                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                  <UserCog className="h-5 w-5 text-primary" />
-                  Manage Roles
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Add or manage universal contact roles.
-                </p>
-                <div className="flex gap-2 mb-4">
-                  <Input
-                    placeholder="New role name..."
-                    value={newRoleName}
-                    onChange={(e) => setNewRoleName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddRole()}
-                  />
-                  <Button onClick={handleAddRole} disabled={addRole.isPending}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="space-y-2 max-h-[350px] overflow-y-auto">
-                  {roles.map((role) => (
-                    <div key={role.id} className="flex items-center gap-2 p-2 rounded-lg border text-sm">
-                      <UserCog className="h-4 w-4 text-muted-foreground" />
-                      <span>{role.role_name}</span>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-
-              {/* Manage Geography */}
-              <Card className="p-6">
-                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  Manage Geography
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Add boroughs. Neighborhoods are added via contact forms.
-                </p>
-                <div className="flex gap-2 mb-4">
-                  <Input
-                    placeholder="New borough name..."
-                    value={newBoroughName}
-                    onChange={(e) => setNewBoroughName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddBorough()}
-                  />
-                  <Button onClick={handleAddBorough} disabled={addBorough.isPending}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="space-y-2 max-h-[350px] overflow-y-auto">
-                  {boroughs.map((borough) => (
-                    <div key={borough.id} className="flex items-center justify-between p-2 rounded-lg border text-sm">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span>{borough.name}</span>
+                        <div className="space-y-2 max-h-[250px] overflow-y-auto">
+                          {boroughs.map((borough) => (
+                            <div key={borough.id} className="flex items-center justify-between p-2 rounded-lg border text-sm">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                <span>{borough.name}</span>
+                              </div>
+                              <Badge variant="outline">Borough</Badge>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <Badge variant="outline">Borough</Badge>
+
+                      {/* Neighborhoods */}
+                      <div>
+                        <h4 className="font-medium mb-3">Neighborhoods</h4>
+                        <div className="flex flex-col gap-2 mb-4">
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="New neighborhood name..."
+                              value={newNeighborhoodName}
+                              onChange={(e) => setNewNeighborhoodName(e.target.value)}
+                              className="flex-1"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Select value={newNeighborhoodBoro} onValueChange={setNewNeighborhoodBoro}>
+                              <SelectTrigger className="flex-1">
+                                <SelectValue placeholder="Select borough..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {boroughs.map((b) => (
+                                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button 
+                              onClick={handleAddNeighborhood} 
+                              disabled={addNeighborhood.isPending || !newNeighborhoodName || !newNeighborhoodBoro}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="space-y-2 max-h-[250px] overflow-y-auto">
+                          {neighborhoods.map((neighborhood) => (
+                            <div key={neighborhood.id} className="flex items-center justify-between p-2 rounded-lg border text-sm">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-3 w-3 text-muted-foreground" />
+                                <span>{neighborhood.name}</span>
+                              </div>
+                              <Badge variant="secondary">{neighborhood.borough?.name || 'No Borough'}</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                </CollapsibleContent>
               </Card>
-            </div>
+            </Collapsible>
           </TabsContent>
         </Tabs>
+
+        {/* Add Business Modal */}
+        <Dialog open={showAddBusiness} onOpenChange={setShowAddBusiness}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Business</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="businessName">Business Name</Label>
+                <Input
+                  id="businessName"
+                  value={newBusinessName}
+                  onChange={(e) => setNewBusinessName(e.target.value)}
+                  placeholder="e.g., GasMask, HotMama..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="businessColor">Brand Color</Label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    id="businessColor"
+                    value={newBusinessColor}
+                    onChange={(e) => setNewBusinessColor(e.target.value)}
+                    className="h-10 w-20 rounded cursor-pointer border"
+                  />
+                  <Input
+                    value={newBusinessColor}
+                    onChange={(e) => setNewBusinessColor(e.target.value)}
+                    placeholder="#6366f1"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="businessLogo">Logo URL (optional)</Label>
+                <Input
+                  id="businessLogo"
+                  value={newBusinessLogo}
+                  onChange={(e) => setNewBusinessLogo(e.target.value)}
+                  placeholder="https://example.com/logo.png"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button onClick={handleAddBusiness} disabled={addBrandMutation.isPending || !newBusinessName.trim()}>
+                Add Business
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Contact Modal */}
+        <Dialog open={showEditContact} onOpenChange={setShowEditContact}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Contact: {editingContact?.name}</DialogTitle>
+            </DialogHeader>
+            <FullContactForm 
+              onSuccess={() => {
+                setShowEditContact(false);
+                setEditingContact(null);
+                queryClient.invalidateQueries({ queryKey: ['global-all-contacts'] });
+              }} 
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </CRMLayout>
   );
