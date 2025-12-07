@@ -18,10 +18,6 @@ export const GlobalBusinessSelector = () => {
     fetchBusinesses();
   }, [fetchBusinesses]);
 
-  useEffect(() => {
-    ensureBusinessSelected();
-  }, [businesses, ensureBusinessSelected]);
-
   if (loading) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">

@@ -49,17 +49,33 @@ export const useBusinessStore = create<BusinessState>()(
 
       ensureBusinessSelected: () => {
         const { businesses, selectedBusiness } = get();
+        // Auto-select first business if none selected and businesses exist
         if (!selectedBusiness && businesses.length > 0) {
           set({ selectedBusiness: businesses[0] });
+        }
+        // Also verify current selection still exists in list
+        if (selectedBusiness && businesses.length > 0) {
+          const stillExists = businesses.find(b => b.id === selectedBusiness.id);
+          if (!stillExists) {
+            set({ selectedBusiness: businesses[0] });
+          }
         }
       },
 
       fetchBusinesses: async () => {
+        const { initialized, loading } = get();
+        
+        // Prevent duplicate fetches
+        if (initialized && !loading) {
+          get().ensureBusinessSelected();
+          return;
+        }
+        
         set({ loading: true });
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) {
-            set({ loading: false, initialized: true });
+            set({ loading: false, initialized: true, businesses: [] });
             return;
           }
 
@@ -81,13 +97,19 @@ export const useBusinessStore = create<BusinessState>()(
 
           set({ businesses: businessList });
 
-          // Auto-select first business if none selected
+          // Auto-select business immediately after fetching
           const { selectedBusiness } = get();
-          if (!selectedBusiness && businessList.length > 0) {
-            // Check if previously selected business still exists
-            const savedId = localStorage.getItem('selectedBusinessId');
-            const savedBusiness = savedId ? businessList.find(b => b.id === savedId) : null;
-            set({ selectedBusiness: savedBusiness || businessList[0] });
+          if (businessList.length > 0) {
+            if (!selectedBusiness) {
+              // No business selected, pick first one
+              set({ selectedBusiness: businessList[0] });
+            } else {
+              // Verify selected business still exists
+              const stillExists = businessList.find(b => b.id === selectedBusiness.id);
+              if (!stillExists) {
+                set({ selectedBusiness: businessList[0] });
+              }
+            }
           }
         } catch (error) {
           console.error('Error fetching businesses:', error);
