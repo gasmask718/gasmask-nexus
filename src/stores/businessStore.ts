@@ -73,26 +73,24 @@ export const useBusinessStore = create<BusinessState>()(
         
         set({ loading: true });
         try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) {
-            set({ loading: false, initialized: true, businesses: [] });
-            return;
-          }
-
+          // Fetch all active businesses directly - no user membership required
           const { data, error } = await supabase
-            .rpc('get_user_businesses', { user_id: user.id });
+            .from('businesses')
+            .select('*')
+            .eq('is_active', true)
+            .order('name');
 
           if (error) throw error;
 
           const businessList = (data || []).map((b: any) => ({
-            id: b.business_id,
-            name: b.business_name,
-            slug: b.business_slug,
+            id: b.id,
+            name: b.name,
+            slug: b.slug,
             logo_url: b.logo_url,
-            member_role: b.member_role,
-            subscription_tier: 'free',
-            theme_config: {},
-            settings: {}
+            member_role: 'member',
+            subscription_tier: b.subscription_tier || 'free',
+            theme_config: b.theme_config || {},
+            settings: b.settings || {}
           })) as Business[];
 
           set({ businesses: businessList });
@@ -113,6 +111,8 @@ export const useBusinessStore = create<BusinessState>()(
           }
         } catch (error) {
           console.error('Error fetching businesses:', error);
+          // Even on error, set empty list and stop loading
+          set({ businesses: [] });
         } finally {
           set({ loading: false, initialized: true });
         }
