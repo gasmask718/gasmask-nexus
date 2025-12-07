@@ -5,20 +5,22 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Search, Phone, Mail, MessageSquare, Plus, TrendingUp, Store, DollarSign, 
   Package, ChevronRight, Building2, Loader2, RefreshCw, Brain, Users, 
   FileText, Bell, BarChart3, Lightbulb, AlertTriangle, Heart, Target,
-  Edit, Star
+  Edit, Star, ChevronDown
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { GRABBA_BRAND_CONFIG, GrabbaBrand } from '@/config/grabbaBrands';
 import { useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { useBrandCRMAutoCreate } from '@/hooks/useBrandCRMAutoCreate';
 import { AddContactModal } from '@/components/grabba/AddContactModal';
+import { useBusinessStore } from '@/stores/businessStore';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// BRAND CRM — Individual brand view with guaranteed non-blank rendering
+// BRAND CRM — Individual brand view with dynamic brand switching
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function BrandCRM() {
@@ -28,9 +30,17 @@ export default function BrandCRM() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddContact, setShowAddContact] = useState(false);
   
-  // Map URL param to brand config
-  const brandKey = brand as GrabbaBrand;
-  const brandConfig = GRABBA_BRAND_CONFIG[brandKey];
+  // Get businesses from store for dynamic loading
+  const { businesses, loading: businessesLoading, fetchBusinesses } = useBusinessStore();
+  
+  // Fetch businesses on mount
+  useEffect(() => {
+    fetchBusinesses();
+  }, [fetchBusinesses]);
+  
+  // Map URL param to brand config - use URL param or context selected brand
+  const brandKey = (brand as GrabbaBrand) || selectedBrand;
+  const brandConfig = GRABBA_BRAND_CONFIG[brandKey as GrabbaBrand];
 
   // Use self-healing CRM hook - guaranteed to return safe data
   const {
@@ -45,7 +55,7 @@ export default function BrandCRM() {
     hasData,
     autoLink,
     refetch
-  } = useBrandCRMAutoCreate(brandKey);
+  } = useBrandCRMAutoCreate(brandKey as GrabbaBrand);
 
   // Auto-trigger linking on first load if no data
   const [autoLinkAttempted, setAutoLinkAttempted] = useState(false);
@@ -58,7 +68,56 @@ export default function BrandCRM() {
     }
   }, [isLoading, hasData, autoLinkAttempted, brandConfig, autoLink]);
 
+  // Reset autoLinkAttempted when brand changes
+  useEffect(() => {
+    setAutoLinkAttempted(false);
+  }, [brandKey]);
+
+  // Handle brand switching
+  const handleBrandChange = (newBrand: string) => {
+    setSelectedBrand(newBrand as GrabbaBrand);
+    navigate(`/grabba/brand/${newBrand}`);
+  };
+
+  // Show loading if businesses are still loading
+  if (businessesLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Get available brand IDs from the config
+  const availableBrandIds = Object.keys(GRABBA_BRAND_CONFIG) as GrabbaBrand[];
+
+  // If no brand config found and no brands available
+  if (!brandConfig && availableBrandIds.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <Building2 className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+        <h2 className="text-xl font-semibold mb-2">No Brands Available</h2>
+        <p className="text-muted-foreground mb-4">Add a business to begin using Brand CRM.</p>
+        <Button onClick={() => navigate('/grabba/crm')}>Back to CRM</Button>
+      </div>
+    );
+  }
+
+  // If brand not found, redirect to first available brand
   if (!brandConfig) {
+    const firstBrand = availableBrandIds[0];
+    if (firstBrand) {
+      navigate(`/grabba/brand/${firstBrand}`);
+      return null;
+    }
     return (
       <div className="p-8 text-center">
         <p className="text-muted-foreground mb-4">Brand not found</p>
@@ -76,6 +135,45 @@ export default function BrandCRM() {
 
   return (
     <div className="space-y-6">
+      {/* Brand Selector - Always Visible at Top */}
+      <Card className="border-2 border-dashed" style={{ borderColor: `${brandConfig.primary}40` }}>
+        <CardContent className="py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Building2 className="w-5 h-5 text-muted-foreground" />
+              <span className="font-medium">Active Brand:</span>
+              <Select value={brandKey} onValueChange={handleBrandChange}>
+                <SelectTrigger className="w-[200px]" style={{ borderColor: brandConfig.primary }}>
+                  <SelectValue>
+                    <div className="flex items-center gap-2">
+                      <span>{brandConfig.icon}</span>
+                      <span>{brandConfig.label}</span>
+                    </div>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {availableBrandIds.map((id) => {
+                    const config = GRABBA_BRAND_CONFIG[id];
+                    return (
+                      <SelectItem key={id} value={id}>
+                        <div className="flex items-center gap-2">
+                          <span>{config.icon}</span>
+                          <span>{config.label}</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>{availableBrandIds.length} brands available</span>
+              <ChevronDown className="w-4 h-4" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
