@@ -50,7 +50,7 @@ const GlobalCRM = () => {
   const addBorough = useAddBorough();
   const addRole = useAddCustomerRole();
 
-  // Fetch all brands
+  // Fetch all brands (from brands table)
   const { data: brands = [], isLoading: brandsLoading } = useQuery({
     queryKey: ['global-brands'],
     queryFn: async () => {
@@ -60,6 +60,19 @@ const GlobalCRM = () => {
         .order('name');
       if (error) throw error;
       return data as Brand[];
+    },
+  });
+
+  // Fetch all businesses (from businesses table - for Global CRM Home)
+  const { data: allBusinesses = [], isLoading: businessesLoading } = useQuery({
+    queryKey: ['global-businesses-all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return data || [];
     },
   });
 
@@ -78,19 +91,34 @@ const GlobalCRM = () => {
       const { data: contacts } = await supabase
         .from('brand_crm_contacts')
         .select('brand');
+
+      // Get business contact counts from crm_contacts
+      const { data: businessContacts } = await supabase
+        .from('crm_contacts')
+        .select('business_id')
+        .is('deleted_at', null);
       
-      // Aggregate store counts
+      // Aggregate store counts by brand name
       storeCounts?.forEach((s: any) => {
         const brand = s.brand;
         if (!stats[brand]) stats[brand] = { storeCount: 0, contactCount: 0 };
         stats[brand].storeCount++;
       });
       
-      // Aggregate contact counts
+      // Aggregate contact counts by brand name
       contacts?.forEach((c: any) => {
         const brand = c.brand;
         if (!stats[brand]) stats[brand] = { storeCount: 0, contactCount: 0 };
         stats[brand].contactCount++;
+      });
+
+      // Aggregate contact counts by business_id
+      businessContacts?.forEach((c: any) => {
+        const businessId = c.business_id;
+        if (businessId) {
+          if (!stats[businessId]) stats[businessId] = { storeCount: 0, contactCount: 0 };
+          stats[businessId].contactCount++;
+        }
       });
       
       return stats;
@@ -267,56 +295,77 @@ const GlobalCRM = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Brand Directory Tab */}
+          {/* Brand Directory Tab - Global CRM Home */}
           <TabsContent value="brands" className="mt-6">
-            <div className="mb-4">
-              <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search brands..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="relative max-w-md flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search businesses..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Button onClick={() => setActiveTab('settings')} variant="outline" className="ml-4">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Business
+                </Button>
               </div>
             </div>
 
-            {brandsLoading ? (
+            {/* Loading State */}
+            {(brandsLoading || businessesLoading) ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {[1,2,3,4].map(i => (
+                {[1,2,3,4,5,6].map(i => (
                   <Card key={i} className="p-6 animate-pulse">
                     <div className="h-20 bg-muted rounded" />
                   </Card>
                 ))}
               </div>
-            ) : filteredBrands.length === 0 ? (
+            ) : (filteredBrands.length === 0 && allBusinesses.length === 0) ? (
+              /* Empty State - No businesses found */
               <Card className="p-12 text-center">
-                <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Brands Found</h3>
-                <p className="text-muted-foreground mb-4">Add brands to get started with the OS Dynasty ecosystem.</p>
-                <Button onClick={() => setActiveTab('settings')}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Brand
+                <Building2 className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No Businesses Found</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  No businesses have been added to the Global CRM.<br />
+                  Add your first business to begin.
+                </p>
+                <Button onClick={() => setActiveTab('settings')} size="lg">
+                  <Plus className="mr-2 h-5 w-5" />
+                  Add Business
                 </Button>
               </Card>
             ) : (
+              /* Brand Cards Grid */
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {/* Show brands from brands table */}
                 {filteredBrands.map((brand) => {
                   const stats = brandStats[brand.name] || { storeCount: 0, contactCount: 0 };
                   return (
                     <Card 
-                      key={brand.id} 
-                      className="p-6 hover:shadow-lg transition-shadow cursor-pointer group"
-                      style={{ borderTopColor: brand.color || '#6366f1', borderTopWidth: '4px' }}
-                      onClick={() => navigate(`/brand-crm/${brand.name.toLowerCase().replace(/\s+/g, '-')}`)}
+                      key={`brand-${brand.id}`} 
+                      className="p-6 hover:shadow-lg transition-all cursor-pointer group border-t-4"
+                      style={{ borderTopColor: brand.color || 'hsl(var(--primary))' }}
+                      onClick={() => navigate(`/grabba/brand/${brand.name.toLowerCase().replace(/\s+/g, '-')}`)}
                     >
                       <div className="flex items-start justify-between mb-4">
-                        <div 
-                          className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg"
-                          style={{ backgroundColor: brand.color || '#6366f1' }}
-                        >
-                          {brand.name.charAt(0)}
-                        </div>
+                        {brand.logo_url ? (
+                          <img 
+                            src={brand.logo_url} 
+                            alt={brand.name} 
+                            className="w-12 h-12 rounded-lg object-contain"
+                          />
+                        ) : (
+                          <div 
+                            className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg"
+                            style={{ backgroundColor: brand.color || 'hsl(var(--primary))' }}
+                          >
+                            {brand.name.charAt(0)}
+                          </div>
+                        )}
                         {brand.active === false && (
                           <Badge variant="secondary">Inactive</Badge>
                         )}
@@ -340,7 +389,7 @@ const GlobalCRM = () => {
                         className="w-full mt-4"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/brand-crm/${brand.name.toLowerCase().replace(/\s+/g, '-')}`);
+                          navigate(`/grabba/brand/${brand.name.toLowerCase().replace(/\s+/g, '-')}`);
                         }}
                       >
                         Open Brand CRM
@@ -348,6 +397,58 @@ const GlobalCRM = () => {
                     </Card>
                   );
                 })}
+                
+                {/* Show businesses from businesses table (if different from brands) */}
+                {allBusinesses
+                  .filter(biz => 
+                    !searchTerm || biz.name?.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .filter(biz => 
+                    !filteredBrands.some(b => b.name.toLowerCase() === biz.name?.toLowerCase())
+                  )
+                  .map((business) => {
+                    const stats = brandStats[business.id] || { storeCount: 0, contactCount: 0 };
+                    return (
+                      <Card 
+                        key={`biz-${business.id}`} 
+                        className="p-6 hover:shadow-lg transition-all cursor-pointer group border-t-4 border-t-primary/50"
+                        onClick={() => navigate(`/crm/brand/${business.id}`)}
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div 
+                            className="w-12 h-12 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-lg bg-primary/80"
+                          >
+                            {business.name?.charAt(0) || 'B'}
+                          </div>
+                          <Badge variant="outline">Business</Badge>
+                        </div>
+                        <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors">
+                          {business.name}
+                        </h3>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Store className="h-4 w-4" />
+                            {stats.storeCount} stores
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Users className="h-4 w-4" />
+                            {stats.contactCount} contacts
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full mt-4"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/crm/brand/${business.id}`);
+                          }}
+                        >
+                          Open Business CRM
+                        </Button>
+                      </Card>
+                    );
+                  })}
               </div>
             )}
           </TabsContent>

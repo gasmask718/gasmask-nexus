@@ -86,6 +86,8 @@ import CRMContactDetail from '@/pages/CRMContactDetail';
 import CRMCustomers from '@/pages/CRMCustomers';
 import ContactProfile from '@/pages/crm/ContactProfile';
 import GlobalCRM from '@/pages/crm/GlobalCRM';
+import CRMBrandPage from '@/pages/crm/BrandCRM';
+import CRMBrandStoreProfile from '@/pages/crm/BrandStoreProfile';
 import CRMCustomerNew from '@/pages/CRMCustomerNew';
 import CRMCustomerDetail from '@/pages/CRMCustomerDetail';
 import CRMCustomerImport from '@/pages/CRMCustomerImport';
@@ -541,6 +543,8 @@ export default function AppRoutes() {
         {/* CRM */}
         <Route path="/crm" element={<CRM />} />
         <Route path="/crm/global" element={<GlobalCRM />} />
+        <Route path="/crm/brand/:brandId" element={<CRMBrandPage />} />
+        <Route path="/crm/brand/:brandId/store/:storeId" element={<CRMBrandStoreProfile />} />
         <Route path="/crm/customers" element={<CRMCustomers />} />
         <Route path="/crm/customers/new" element={<CRMCustomerNew />} />
         <Route path="/crm/customers/import" element={<CRMCustomerImport />} />
