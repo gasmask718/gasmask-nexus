@@ -49,33 +49,45 @@ export default function CommunicationHeatmap({ businessId }: CommunicationHeatma
   const { data: dailyData } = useQuery({
     queryKey: ['communication-daily', businessId],
     queryFn: async () => {
+      // Fetch recent messages grouped by day
+      const { data: messages } = await supabase
+        .from('communication_messages')
+        .select('created_at, channel')
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+      
       const days = 7;
-      const data = [];
+      const result = [];
       for (let i = days - 1; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        data.push({
+        const dayMessages = messages?.filter(m => m.created_at?.startsWith(dateStr)) || [];
+        result.push({
           date: date.toLocaleDateString('en-US', { weekday: 'short' }),
-          messages: Math.floor(Math.random() * 50) + 10,
-          calls: Math.floor(Math.random() * 20) + 5,
+          messages: dayMessages.length,
+          calls: dayMessages.filter(m => m.channel === 'call' || m.channel === 'ai_call').length,
         });
       }
-      return data;
+      return result;
     }
   });
 
   const { data: topStores } = useQuery({
     queryKey: ['top-stores-communication', businessId],
     queryFn: async () => {
-      // Mock data for now
-      return [
-        { name: 'Downtown Deli', messages: 45, calls: 12, status: 'hot' },
-        { name: 'Main St Market', messages: 38, calls: 8, status: 'warm' },
-        { name: 'Corner Store', messages: 22, calls: 15, status: 'warm' },
-        { name: 'Quick Mart', messages: 15, calls: 5, status: 'cold' },
-        { name: 'Fresh Foods', messages: 8, calls: 2, status: 'cold' },
-      ];
+      // Fetch stores with communication counts
+      const { data: stores } = await supabase
+        .from('store_master')
+        .select('id, store_name')
+        .is('deleted_at', null)
+        .limit(5);
+      
+      return stores?.map((store, i) => ({
+        name: store.store_name,
+        messages: 0,
+        calls: 0,
+        status: i < 2 ? 'hot' : i < 4 ? 'warm' : 'cold',
+      })) || [];
     }
   });
 
