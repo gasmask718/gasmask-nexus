@@ -18,7 +18,7 @@ import VoicePersonaBuilder from "@/components/communication/VoicePersonaBuilder"
 import CallFlowBuilder from "@/components/communication/CallFlowBuilder";
 import CommunicationHeatmap from "@/components/communication/CommunicationHeatmap";
 import AutoCampaigns from "@/components/communication/AutoCampaigns";
-import CommunicationSettings from "@/components/communication/CommunicationSettings";
+import CommSettingsPanel from "@/components/communication/CommSettingsPanel";
 import { toast } from "sonner";
 
 export default function CommunicationCenter() {
@@ -325,7 +325,7 @@ export default function CommunicationCenter() {
 
           {/* Settings Tab */}
           <TabsContent value="settings">
-            <CommunicationSettings />
+            <CommSettingsPanel />
           </TabsContent>
         </Tabs>
       </div>
