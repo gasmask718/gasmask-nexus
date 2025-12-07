@@ -540,8 +540,9 @@ export default function AppRoutes() {
         <Route path="/billing/invoices" element={<BillingInvoices />} />
         <Route path="/billing/invoices/new" element={<BillingInvoiceNew />} />
 
-        {/* CRM */}
-        <Route path="/crm" element={<CRM />} />
+        {/* CRM - Global CRM is now the main entry point */}
+        <Route path="/crm" element={<GlobalCRM />} />
+        <Route path="/crm/dashboard" element={<CRM />} />
         <Route path="/crm/global" element={<GlobalCRM />} />
         <Route path="/crm/brand/:brandId" element={<CRMBrandPage />} />
         <Route path="/crm/brand/:brandId/store/:storeId" element={<CRMBrandStoreProfile />} />
