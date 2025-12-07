@@ -309,6 +309,11 @@ export default function StoreMasterProfile() {
             interactions={interactions}
             visits={visits}
           />
+
+          {/* ===== PERSONAL MEMORY & BACKGROUND (ALWAYS VISIBLE - CENTER COLUMN) ===== */}
+          <div id="store-memory-panel">
+            <StorePersonalMemoryPanel storeId={id || ''} />
+          </div>
         </div>
 
         {/* Right Panel - Actions, Orders, Payments */}
@@ -402,10 +407,6 @@ export default function StoreMasterProfile() {
             </CardContent>
           </Card>
 
-          {/* ===== PERSONAL MEMORY & BACKGROUND (ALWAYS VISIBLE) ===== */}
-          <div id="store-memory-panel">
-            <StorePersonalMemoryPanel storeId={id || ''} />
-          </div>
         </div>
       </div>
 
