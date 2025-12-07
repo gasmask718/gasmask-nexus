@@ -400,7 +400,7 @@ const GlobalCRM = () => {
                     className="pl-10"
                   />
                 </div>
-                <Button onClick={() => setActiveTab('settings')} variant="outline" className="ml-4">
+                <Button onClick={() => navigate('/crm/add-business')} variant="outline" className="ml-4">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Business
                 </Button>
@@ -425,7 +425,7 @@ const GlobalCRM = () => {
                   No businesses have been added to the Global CRM.<br />
                   Add your first business to begin.
                 </p>
-                <Button onClick={() => setActiveTab('settings')} size="lg">
+                <Button onClick={() => navigate('/crm/add-business')} size="lg">
                   <Plus className="mr-2 h-5 w-5" />
                   Add Business
                 </Button>

@@ -2694,75 +2694,177 @@ export type Database = {
       }
       businesses: {
         Row: {
+          accent_color: string | null
           address: string | null
+          address_line2: string | null
           billing_email: string | null
+          borough_id: string | null
+          brand_banner_url: string | null
+          brand_type: string | null
+          business_model: string | null
+          category: string | null
           city: string | null
           created_at: string | null
           email: string | null
           id: string
           industry: string | null
+          internal_notes: string | null
           is_active: boolean | null
           logo_url: string | null
+          long_description: string | null
           name: string
+          neighborhood_id: string | null
+          opening_date: string | null
+          operating_region: string | null
           phone: string | null
+          primary_color: string | null
+          require_brand_stores: boolean | null
+          secondary_color: string | null
+          secondary_phone: string | null
           settings: Json | null
+          short_description: string | null
           slug: string
+          social_facebook: string | null
+          social_instagram: string | null
+          social_tiktok: string | null
+          social_twitter: string | null
+          social_youtube: string | null
           state: string | null
           subscription_status: string | null
           subscription_tier: string | null
+          tagline: string | null
           theme_config: Json | null
           trial_ends_at: string | null
           updated_at: string | null
+          use_affiliates: boolean | null
+          use_ai_companion: boolean | null
+          use_crm: boolean | null
+          use_inventory: boolean | null
+          use_route_planner: boolean | null
+          use_store_master: boolean | null
           website: string | null
           zip_code: string | null
         }
         Insert: {
+          accent_color?: string | null
           address?: string | null
+          address_line2?: string | null
           billing_email?: string | null
+          borough_id?: string | null
+          brand_banner_url?: string | null
+          brand_type?: string | null
+          business_model?: string | null
+          category?: string | null
           city?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
           industry?: string | null
+          internal_notes?: string | null
           is_active?: boolean | null
           logo_url?: string | null
+          long_description?: string | null
           name: string
+          neighborhood_id?: string | null
+          opening_date?: string | null
+          operating_region?: string | null
           phone?: string | null
+          primary_color?: string | null
+          require_brand_stores?: boolean | null
+          secondary_color?: string | null
+          secondary_phone?: string | null
           settings?: Json | null
+          short_description?: string | null
           slug: string
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_tiktok?: string | null
+          social_twitter?: string | null
+          social_youtube?: string | null
           state?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          tagline?: string | null
           theme_config?: Json | null
           trial_ends_at?: string | null
           updated_at?: string | null
+          use_affiliates?: boolean | null
+          use_ai_companion?: boolean | null
+          use_crm?: boolean | null
+          use_inventory?: boolean | null
+          use_route_planner?: boolean | null
+          use_store_master?: boolean | null
           website?: string | null
           zip_code?: string | null
         }
         Update: {
+          accent_color?: string | null
           address?: string | null
+          address_line2?: string | null
           billing_email?: string | null
+          borough_id?: string | null
+          brand_banner_url?: string | null
+          brand_type?: string | null
+          business_model?: string | null
+          category?: string | null
           city?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
           industry?: string | null
+          internal_notes?: string | null
           is_active?: boolean | null
           logo_url?: string | null
+          long_description?: string | null
           name?: string
+          neighborhood_id?: string | null
+          opening_date?: string | null
+          operating_region?: string | null
           phone?: string | null
+          primary_color?: string | null
+          require_brand_stores?: boolean | null
+          secondary_color?: string | null
+          secondary_phone?: string | null
           settings?: Json | null
+          short_description?: string | null
           slug?: string
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_tiktok?: string | null
+          social_twitter?: string | null
+          social_youtube?: string | null
           state?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          tagline?: string | null
           theme_config?: Json | null
           trial_ends_at?: string | null
           updated_at?: string | null
+          use_affiliates?: boolean | null
+          use_ai_companion?: boolean | null
+          use_crm?: boolean | null
+          use_inventory?: boolean | null
+          use_route_planner?: boolean | null
+          use_store_master?: boolean | null
           website?: string | null
           zip_code?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "businesses_borough_id_fkey"
+            columns: ["borough_id"]
+            isOneToOne: false
+            referencedRelation: "boroughs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "businesses_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       call_center_ai_agents: {
         Row: {
