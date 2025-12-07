@@ -4576,6 +4576,79 @@ export type Database = {
           },
         ]
       }
+      communication_escalations: {
+        Row: {
+          ai_notes: string | null
+          assigned_department: string | null
+          assigned_to: string | null
+          business_id: string | null
+          contact_id: string | null
+          created_at: string
+          escalation_type: string
+          id: string
+          message_id: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          store_id: string | null
+        }
+        Insert: {
+          ai_notes?: string | null
+          assigned_department?: string | null
+          assigned_to?: string | null
+          business_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          escalation_type: string
+          id?: string
+          message_id?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          store_id?: string | null
+        }
+        Update: {
+          ai_notes?: string | null
+          assigned_department?: string | null
+          assigned_to?: string | null
+          business_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          escalation_type?: string
+          id?: string
+          message_id?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_escalations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_escalations_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "communication_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_escalations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_events: {
         Row: {
           channel: string | null
@@ -5156,6 +5229,57 @@ export type Database = {
           },
           {
             foreignKeyName: "contact_interactions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_routing: {
+        Row: {
+          assigned_to: string | null
+          business_id: string | null
+          contact_id: string | null
+          created_at: string
+          department: string
+          id: string
+          is_active: boolean | null
+          reason: string | null
+          store_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          business_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          department: string
+          id?: string
+          is_active?: boolean | null
+          reason?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          business_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          department?: string
+          id?: string
+          is_active?: boolean | null
+          reason?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_routing_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_routing_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "store_master"
@@ -6836,6 +6960,69 @@ export type Database = {
           payload?: Json
         }
         Relationships: []
+      }
+      engagement_scores: {
+        Row: {
+          ai_notes: string | null
+          avg_response_time_hours: number | null
+          business_id: string | null
+          id: string
+          last_contact: string | null
+          last_inbound: string | null
+          last_outbound: string | null
+          response_rate: number | null
+          score: number
+          sentiment_trend: string | null
+          store_id: string | null
+          total_messages: number | null
+          updated_at: string
+        }
+        Insert: {
+          ai_notes?: string | null
+          avg_response_time_hours?: number | null
+          business_id?: string | null
+          id?: string
+          last_contact?: string | null
+          last_inbound?: string | null
+          last_outbound?: string | null
+          response_rate?: number | null
+          score?: number
+          sentiment_trend?: string | null
+          store_id?: string | null
+          total_messages?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ai_notes?: string | null
+          avg_response_time_hours?: number | null
+          business_id?: string | null
+          id?: string
+          last_contact?: string | null
+          last_inbound?: string | null
+          last_outbound?: string | null
+          response_rate?: number | null
+          score?: number
+          sentiment_trend?: string | null
+          store_id?: string | null
+          total_messages?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engagement_scores_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       esign_documents: {
         Row: {
@@ -12168,6 +12355,67 @@ export type Database = {
           },
         ]
       }
+      proactive_outreach_log: {
+        Row: {
+          business_id: string | null
+          channel: string | null
+          created_at: string
+          id: string
+          message_sent: string | null
+          persona_id: string | null
+          sent_at: string | null
+          status: string | null
+          store_id: string | null
+          trigger_reason: string
+        }
+        Insert: {
+          business_id?: string | null
+          channel?: string | null
+          created_at?: string
+          id?: string
+          message_sent?: string | null
+          persona_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          store_id?: string | null
+          trigger_reason: string
+        }
+        Update: {
+          business_id?: string | null
+          channel?: string | null
+          created_at?: string
+          id?: string
+          message_sent?: string | null
+          persona_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          store_id?: string | null
+          trigger_reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proactive_outreach_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proactive_outreach_log_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "voice_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proactive_outreach_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_batches: {
         Row: {
           boxes_produced: number | null
@@ -13746,6 +13994,54 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sentiment_analysis: {
+        Row: {
+          ai_summary: string | null
+          business_id: string | null
+          created_at: string
+          id: string
+          keywords: Json | null
+          message_id: string | null
+          score: number
+          sentiment: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          keywords?: Json | null
+          message_id?: string | null
+          score: number
+          sentiment: string
+        }
+        Update: {
+          ai_summary?: string | null
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          keywords?: Json | null
+          message_id?: string | null
+          score?: number
+          sentiment?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sentiment_analysis_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sentiment_analysis_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "communication_messages"
             referencedColumns: ["id"]
           },
         ]

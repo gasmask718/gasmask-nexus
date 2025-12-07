@@ -7,10 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   MessageSquare, Phone, Bot, Bell, Zap, BarChart3, 
-  Send, ArrowLeft, RefreshCw, Settings, User, GitBranch
+  Send, ArrowLeft, RefreshCw, Settings, User, GitBranch,
+  AlertTriangle, Activity, Users, Sparkles
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCommunicationCenter } from "@/hooks/useCommunicationCenter";
+import { useCommunicationIntelligence } from "@/hooks/useCommunicationIntelligence";
 import { UnifiedInbox } from "@/components/communication/UnifiedInbox";
 import { ManualCallingPanel } from "@/components/communication/ManualCallingPanel";
 import { CommunicationAlerts } from "@/components/communication/CommunicationAlerts";
@@ -19,6 +21,10 @@ import CallFlowBuilder from "@/components/communication/CallFlowBuilder";
 import CommunicationHeatmap from "@/components/communication/CommunicationHeatmap";
 import AutoCampaigns from "@/components/communication/AutoCampaigns";
 import CommSettingsPanel from "@/components/communication/CommSettingsPanel";
+import EscalationsPanel from "@/components/communication/EscalationsPanel";
+import EngagementScoresPanel from "@/components/communication/EngagementScoresPanel";
+import DepartmentRoutingPanel from "@/components/communication/DepartmentRoutingPanel";
+import ProactiveOutreachPanel from "@/components/communication/ProactiveOutreachPanel";
 import { toast } from "sonner";
 
 export default function CommunicationCenter() {
@@ -80,6 +86,8 @@ export default function CommunicationCenter() {
     resolveAlert,
     stats,
   } = useCommunicationCenter(businessIdFilter);
+
+  const { escalations, engagementScores } = useCommunicationIntelligence(businessIdFilter);
 
   const handleSuggestReply = async () => {
     if (!selectedMessage) return;
@@ -230,6 +238,27 @@ export default function CommunicationCenter() {
               <Phone className="h-4 w-4" />
               Dialer
             </TabsTrigger>
+            <TabsTrigger value="escalations" className="gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Escalations
+              {escalations.length > 0 && (
+                <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                  {escalations.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="engagement" className="gap-2">
+              <Activity className="h-4 w-4" />
+              Engagement
+            </TabsTrigger>
+            <TabsTrigger value="routing" className="gap-2">
+              <Users className="h-4 w-4" />
+              Routing
+            </TabsTrigger>
+            <TabsTrigger value="outreach" className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              AI Outreach
+            </TabsTrigger>
             <TabsTrigger value="campaigns" className="gap-2">
               <Zap className="h-4 w-4" />
               Campaigns
@@ -242,15 +271,6 @@ export default function CommunicationCenter() {
               <GitBranch className="h-4 w-4" />
               Call Flows
             </TabsTrigger>
-            <TabsTrigger value="alerts" className="gap-2">
-              <Bell className="h-4 w-4" />
-              Alerts
-              {stats.unresolvedAlerts > 0 && (
-                <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                  {stats.unresolvedAlerts}
-                </Badge>
-              )}
-            </TabsTrigger>
             <TabsTrigger value="analytics" className="gap-2">
               <BarChart3 className="h-4 w-4" />
               Heatmap
@@ -261,7 +281,6 @@ export default function CommunicationCenter() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Inbox Tab */}
           <TabsContent value="inbox">
             <UnifiedInbox
               messages={messages}
@@ -281,7 +300,6 @@ export default function CommunicationCenter() {
             />
           </TabsContent>
 
-          {/* Calling Tab */}
           <TabsContent value="calling">
             <ManualCallingPanel
               stores={stores}
@@ -292,38 +310,38 @@ export default function CommunicationCenter() {
             />
           </TabsContent>
 
-          {/* Campaigns Tab */}
+          <TabsContent value="escalations">
+            <EscalationsPanel businessId={businessIdFilter} />
+          </TabsContent>
+
+          <TabsContent value="engagement">
+            <EngagementScoresPanel businessId={businessIdFilter} />
+          </TabsContent>
+
+          <TabsContent value="routing">
+            <DepartmentRoutingPanel businessId={businessIdFilter} />
+          </TabsContent>
+
+          <TabsContent value="outreach">
+            <ProactiveOutreachPanel businessId={businessIdFilter} />
+          </TabsContent>
+
           <TabsContent value="campaigns">
             <AutoCampaigns businessId={businessIdFilter} />
           </TabsContent>
 
-          {/* Voice Personas Tab */}
           <TabsContent value="personas">
             <VoicePersonaBuilder businessId={businessIdFilter} />
           </TabsContent>
 
-          {/* Call Flows Tab */}
           <TabsContent value="flows">
             <CallFlowBuilder businessId={businessIdFilter} />
           </TabsContent>
 
-          {/* Alerts Tab */}
-          <TabsContent value="alerts">
-            <CommunicationAlerts
-              alerts={alerts}
-              onResolve={resolveAlert}
-              onViewDetails={(alert) => {
-                toast.info(`Viewing alert: ${alert.message}`);
-              }}
-            />
-          </TabsContent>
-
-          {/* Analytics/Heatmap Tab */}
           <TabsContent value="analytics">
             <CommunicationHeatmap businessId={businessIdFilter} />
           </TabsContent>
 
-          {/* Settings Tab */}
           <TabsContent value="settings">
             <CommSettingsPanel />
           </TabsContent>
