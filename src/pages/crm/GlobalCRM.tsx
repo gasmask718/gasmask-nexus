@@ -1034,12 +1034,16 @@ const GlobalCRM = () => {
         </Dialog>
 
         {/* Edit Contact Modal */}
-        <Dialog open={showEditContact} onOpenChange={setShowEditContact}>
+        <Dialog open={showEditContact} onOpenChange={(open) => {
+          setShowEditContact(open);
+          if (!open) setEditingContact(null);
+        }}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Contact: {editingContact?.name}</DialogTitle>
             </DialogHeader>
             <FullContactForm 
+              editingContact={editingContact}
               onSuccess={() => {
                 setShowEditContact(false);
                 setEditingContact(null);
