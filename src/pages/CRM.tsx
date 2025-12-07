@@ -26,6 +26,7 @@ import { seedDemoData } from '@/utils/seedDemoData';
 import CRMLayout from './crm/CRMLayout';
 import { QuickAddContactForm } from '@/components/crm/QuickAddContactForm';
 import { GlobalBusinessSelector } from '@/components/crm/GlobalBusinessSelector';
+import { RelationshipHealthWidget } from '@/components/crm/RelationshipHealthWidget';
 import {
   Dialog,
   DialogContent,
@@ -264,7 +265,7 @@ const CRM = () => {
       </AlertDialog>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -304,6 +305,9 @@ const CRM = () => {
             <Calendar className="h-8 w-8 text-primary" />
           </div>
         </Card>
+
+        {/* V9: Relationship Health Widget */}
+        <RelationshipHealthWidget />
       </div>
 
       {/* Contacts by Type */}

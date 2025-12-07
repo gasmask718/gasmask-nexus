@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,8 +11,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { 
   Users, Search, Phone, Mail, MapPin, Star, ExternalLink, MessageSquare, 
   Package, Building2, Store, Truck, Award, DollarSign, FileText, ChevronRight,
-  Filter, X, Edit, Trash2
+  Filter, X, Edit, Trash2, Heart
 } from "lucide-react";
+import { getRelationshipScoresForStores, RelationshipScore } from "@/services/crmInsightsService";
 import { useNavigate, Link } from "react-router-dom";
 import { GRABBA_BRAND_IDS, GRABBA_BRAND_CONFIG, getBrandConfig, type GrabbaBrand } from "@/config/grabbaSkyscraper";
 import { BrandFilterBar, BrandBadgesRow } from "@/components/grabba/BrandFilterBar";
@@ -328,15 +329,25 @@ export default function GrabbaCRM() {
     );
   };
 
+  // V9: Fetch relationship scores for all stores
+  const storeIds = useMemo(() => stores?.map((s: any) => s.id) || [], [stores]);
+  
+  const { data: relationshipScores } = useQuery({
+    queryKey: ["relationship-scores-batch", storeIds],
+    queryFn: () => getRelationshipScoresForStores(storeIds),
+    enabled: storeIds.length > 0,
+  });
+
   const StoreCard = ({ store }: { store: any }) => {
     const storeBrands = brandActivity?.[store.id] || [];
+    const relScore = relationshipScores?.[store.id];
     
     return (
       <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-green-500/30 transition-all hover:shadow-lg">
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <Store className="h-4 w-4 text-green-500" />
                 <Link 
                   to={`/stores/${store.id}`}
@@ -344,6 +355,12 @@ export default function GrabbaCRM() {
                 >
                   {store.name}
                 </Link>
+                {/* V9: Relationship Score Badge */}
+                {relScore && (
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${relScore.color}`}>
+                    {relScore.tier} ({relScore.score})
+                  </span>
+                )}
               </div>
               
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
