@@ -50,14 +50,28 @@ const CRMContacts = () => {
     enabled: !!selectedBusiness?.id,
   });
 
-  // Show loading state
-  if (loading || isLoading) {
+  // Show loading state with skeleton - only show on initial load
+  if (loading && !selectedBusiness) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading contacts...</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+            <div className="h-4 w-64 bg-muted animate-pulse rounded mt-2" />
+          </div>
+          <div className="flex gap-2">
+            <div className="h-10 w-48 bg-muted animate-pulse rounded" />
+            <div className="h-10 w-24 bg-muted animate-pulse rounded" />
+          </div>
         </div>
+        <Card className="p-4">
+          <div className="h-10 w-full bg-muted animate-pulse rounded" />
+        </Card>
+        <Card className="p-6">
+          {[1,2,3].map(i => (
+            <div key={i} className="h-20 bg-muted animate-pulse rounded mb-3" />
+          ))}
+        </Card>
       </div>
     );
   }

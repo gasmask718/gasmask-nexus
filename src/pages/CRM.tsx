@@ -118,34 +118,51 @@ const CRM = () => {
     }
   };
 
-  // Show loading state
-  if (loading) {
+  // Show loading state with skeleton
+  if (loading && !selectedBusiness) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading CRM...</p>
+      <CRMLayout title="CRM Command Center">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="h-8 w-64 bg-muted animate-pulse rounded" />
+              <div className="h-4 w-96 bg-muted animate-pulse rounded mt-2" />
+            </div>
+            <div className="flex gap-2">
+              <div className="h-10 w-48 bg-muted animate-pulse rounded" />
+              <div className="h-10 w-24 bg-muted animate-pulse rounded" />
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-4">
+            {[1,2,3,4].map(i => (
+              <Card key={i} className="p-4">
+                <div className="h-16 bg-muted animate-pulse rounded" />
+              </Card>
+            ))}
+          </div>
         </div>
-      </div>
+      </CRMLayout>
     );
   }
 
   // Show empty state if no businesses exist at all
-  if (businesses.length === 0) {
+  if (!loading && businesses.length === 0) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Card className="p-8 text-center max-w-md">
-          <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">No Businesses Found</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Create your first business to start using CRM features.
-          </p>
-          <Button onClick={() => navigate('/settings/business')}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add New Business
-          </Button>
-        </Card>
-      </div>
+      <CRMLayout title="CRM Command Center">
+        <div className="flex items-center justify-center h-96">
+          <Card className="p-8 text-center max-w-md">
+            <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">No Businesses Found</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Add at least one business to load CRM data.
+            </p>
+            <Button onClick={() => navigate('/settings/business')}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add New Business
+            </Button>
+          </Card>
+        </div>
+      </CRMLayout>
     );
   }
 
