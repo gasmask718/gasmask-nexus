@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   MessageSquare, Phone, Bot, Bell, Zap, BarChart3, 
   Send, ArrowLeft, RefreshCw, Settings, User, GitBranch,
-  AlertTriangle, Activity, Users, Sparkles, Headphones, Tag, Brain
+  AlertTriangle, Activity, Users, Sparkles, Headphones, Tag, Brain, Shield
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCommunicationCenter } from "@/hooks/useCommunicationCenter";
@@ -29,6 +29,7 @@ import ProactiveOutreachPanel from "@/components/communication/ProactiveOutreach
 import { OperatorViewPanel } from "@/components/communication/OperatorViewPanel";
 import { CallReasonsPanel } from "@/components/communication/CallReasonsPanel";
 import { PredictionsTab } from "@/components/communication/PredictionsTab";
+import { AIAgentsTab } from "@/components/communication/AIAgentsTab";
 import { toast } from "sonner";
 
 export default function CommunicationCenter() {
@@ -303,6 +304,10 @@ export default function CommunicationCenter() {
               <Brain className="h-4 w-4" />
               Predictions
             </TabsTrigger>
+            <TabsTrigger value="ai-agents" className="gap-2">
+              <Shield className="h-4 w-4" />
+              AI Agents
+            </TabsTrigger>
             <TabsTrigger value="settings" className="gap-2">
               <Settings className="h-4 w-4" />
               Settings
@@ -380,6 +385,10 @@ export default function CommunicationCenter() {
 
           <TabsContent value="predictions">
             <PredictionsTab businessId={businessIdFilter} />
+          </TabsContent>
+
+          <TabsContent value="ai-agents">
+            <AIAgentsTab />
           </TabsContent>
 
           <TabsContent value="settings">
