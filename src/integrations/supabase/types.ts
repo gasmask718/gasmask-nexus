@@ -424,6 +424,297 @@ export type Database = {
           },
         ]
       }
+      agent_assignments: {
+        Row: {
+          agent_id: string
+          ai_notes: string | null
+          business_id: string | null
+          completed_at: string | null
+          contact_id: string | null
+          created_at: string
+          id: string
+          message_id: string | null
+          priority: string | null
+          result: Json | null
+          started_at: string | null
+          status: string
+          store_id: string | null
+          task_type: string
+        }
+        Insert: {
+          agent_id: string
+          ai_notes?: string | null
+          business_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          priority?: string | null
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          store_id?: string | null
+          task_type: string
+        }
+        Update: {
+          agent_id?: string
+          ai_notes?: string | null
+          business_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          priority?: string | null
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          store_id?: string | null
+          task_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_assignments_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_assignments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_assignments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_handoff_logs: {
+        Row: {
+          accepted: boolean | null
+          assignment_id: string | null
+          context: Json | null
+          created_at: string
+          from_agent_id: string
+          id: string
+          reason: string
+          to_agent_id: string
+        }
+        Insert: {
+          accepted?: boolean | null
+          assignment_id?: string | null
+          context?: Json | null
+          created_at?: string
+          from_agent_id: string
+          id?: string
+          reason: string
+          to_agent_id: string
+        }
+        Update: {
+          accepted?: boolean | null
+          assignment_id?: string | null
+          context?: Json | null
+          created_at?: string
+          from_agent_id?: string
+          id?: string
+          reason?: string
+          to_agent_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_handoff_logs_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "agent_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_handoff_logs_from_agent_id_fkey"
+            columns: ["from_agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_handoff_logs_to_agent_id_fkey"
+            columns: ["to_agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_store_memory: {
+        Row: {
+          agent_id: string
+          confidence: number | null
+          created_at: string
+          id: string
+          memory_type: string
+          memory_value: Json
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          memory_type: string
+          memory_value?: Json
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          memory_type?: string
+          memory_value?: Json
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_store_memory_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_store_memory_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_supervision_logs: {
+        Row: {
+          agent_id: string
+          assignment_id: string | null
+          corrected_action: Json | null
+          created_at: string
+          decision: string
+          id: string
+          notes: string | null
+          original_action: Json | null
+          supervisor_id: string
+        }
+        Insert: {
+          agent_id: string
+          assignment_id?: string | null
+          corrected_action?: Json | null
+          created_at?: string
+          decision: string
+          id?: string
+          notes?: string | null
+          original_action?: Json | null
+          supervisor_id: string
+        }
+        Update: {
+          agent_id?: string
+          assignment_id?: string | null
+          corrected_action?: Json | null
+          created_at?: string
+          decision?: string
+          id?: string
+          notes?: string | null
+          original_action?: Json | null
+          supervisor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_supervision_logs_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_supervision_logs_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "agent_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_supervision_logs_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_agents: {
+        Row: {
+          active: boolean | null
+          business_id: string | null
+          capabilities: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          persona_id: string | null
+          role: string
+          success_rate: number | null
+          tasks_completed: number | null
+        }
+        Insert: {
+          active?: boolean | null
+          business_id?: string | null
+          capabilities?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          persona_id?: string | null
+          role: string
+          success_rate?: number | null
+          tasks_completed?: number | null
+        }
+        Update: {
+          active?: boolean | null
+          business_id?: string | null
+          capabilities?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          persona_id?: string | null
+          role?: string
+          success_rate?: number | null
+          tasks_completed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_agents_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_agents_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "voice_personas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_approval_queue: {
         Row: {
           action_description: string
