@@ -480,6 +480,69 @@ export type Database = {
           },
         ]
       }
+      ai_call_logs: {
+        Row: {
+          ai_summary: string | null
+          business_id: string | null
+          contact_id: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          follow_up_created: boolean | null
+          id: string
+          outcome: string | null
+          phone_number: string | null
+          script_id: string | null
+          store_id: string | null
+          transcription: string | null
+          voice_id: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          business_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          follow_up_created?: boolean | null
+          id?: string
+          outcome?: string | null
+          phone_number?: string | null
+          script_id?: string | null
+          store_id?: string | null
+          transcription?: string | null
+          voice_id?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          business_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          follow_up_created?: boolean | null
+          id?: string
+          outcome?: string | null
+          phone_number?: string | null
+          script_id?: string | null
+          store_id?: string | null
+          transcription?: string | null
+          voice_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_call_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_command_logs: {
         Row: {
           affected_entity_ids: string[] | null
@@ -1112,6 +1175,53 @@ export type Database = {
           wholesalers_health_avg?: number | null
         }
         Relationships: []
+      }
+      ai_text_sequences: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          created_by: string | null
+          goal: string | null
+          id: string
+          is_active: boolean | null
+          steps: Json | null
+          target_filter: Json | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          goal?: string | null
+          id?: string
+          is_active?: boolean | null
+          steps?: Json | null
+          target_filter?: Json | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          goal?: string | null
+          id?: string
+          is_active?: boolean | null
+          steps?: Json | null
+          target_filter?: Json | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_text_sequences_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_work_tasks: {
         Row: {
@@ -3588,6 +3698,62 @@ export type Database = {
           },
         ]
       }
+      call_scripts: {
+        Row: {
+          branching_logic: Json | null
+          business_id: string | null
+          closing: string | null
+          created_at: string | null
+          greeting: string | null
+          id: string
+          is_active: boolean | null
+          language: string | null
+          purpose: string | null
+          questions: Json | null
+          title: string
+          updated_at: string | null
+          voice_type: string | null
+        }
+        Insert: {
+          branching_logic?: Json | null
+          business_id?: string | null
+          closing?: string | null
+          created_at?: string | null
+          greeting?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string | null
+          purpose?: string | null
+          questions?: Json | null
+          title: string
+          updated_at?: string | null
+          voice_type?: string | null
+        }
+        Update: {
+          branching_logic?: Json | null
+          business_id?: string | null
+          closing?: string | null
+          created_at?: string | null
+          greeting?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string | null
+          purpose?: string | null
+          questions?: Json | null
+          title?: string
+          updated_at?: string | null
+          voice_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_scripts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_messages: {
         Row: {
           campaign_id: string
@@ -4173,6 +4339,63 @@ export type Database = {
         }
         Relationships: []
       }
+      communication_alerts: {
+        Row: {
+          alert_type: string
+          business_id: string | null
+          contact_id: string | null
+          created_at: string | null
+          id: string
+          is_resolved: boolean | null
+          message: string
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string | null
+          store_id: string | null
+        }
+        Insert: {
+          alert_type: string
+          business_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          message: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          alert_type?: string
+          business_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          message?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_alerts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_alerts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_events: {
         Row: {
           channel: string | null
@@ -4369,6 +4592,131 @@ export type Database = {
             columns: ["wholesaler_id"]
             isOneToOne: false
             referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_messages: {
+        Row: {
+          ai_generated: boolean | null
+          business_id: string | null
+          channel: string
+          contact_id: string | null
+          content: string | null
+          created_at: string | null
+          direction: string
+          id: string
+          metadata: Json | null
+          phone_number: string | null
+          sentiment: string | null
+          status: string | null
+          store_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          business_id?: string | null
+          channel: string
+          contact_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          direction: string
+          id?: string
+          metadata?: Json | null
+          phone_number?: string | null
+          sentiment?: string | null
+          status?: string | null
+          store_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_generated?: boolean | null
+          business_id?: string | null
+          channel?: string
+          contact_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          direction?: string
+          id?: string
+          metadata?: Json | null
+          phone_number?: string | null
+          sentiment?: string | null
+          status?: string | null
+          store_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_messages_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_messages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_sequences: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          ends_at: string | null
+          goal: string | null
+          id: string
+          is_active: boolean | null
+          starts_at: string | null
+          steps: Json | null
+          target_stores: string[] | null
+          title: string
+          tone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          goal?: string | null
+          id?: string
+          is_active?: boolean | null
+          starts_at?: string | null
+          steps?: Json | null
+          target_stores?: string[] | null
+          title: string
+          tone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          goal?: string | null
+          id?: string
+          is_active?: boolean | null
+          starts_at?: string | null
+          steps?: Json | null
+          target_stores?: string[] | null
+          title?: string
+          tone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_sequences_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
