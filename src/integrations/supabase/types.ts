@@ -2286,6 +2286,10 @@ export type Database = {
       brand_crm_contacts: {
         Row: {
           additional_roles: string[] | null
+          address_city: string | null
+          address_state: string | null
+          address_street: string | null
+          address_zip: string | null
           brand: Database["public"]["Enums"]["brand_type"]
           contact_email: string | null
           contact_name: string
@@ -2302,6 +2306,10 @@ export type Database = {
         }
         Insert: {
           additional_roles?: string[] | null
+          address_city?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
           brand: Database["public"]["Enums"]["brand_type"]
           contact_email?: string | null
           contact_name: string
@@ -2318,6 +2326,10 @@ export type Database = {
         }
         Update: {
           additional_roles?: string[] | null
+          address_city?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
           brand?: Database["public"]["Enums"]["brand_type"]
           contact_email?: string | null
           contact_name?: string
@@ -4757,6 +4769,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crm_personal_notes: {
+        Row: {
+          content: string | null
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_personal_notes_history: {
+        Row: {
+          content: string | null
+          edited_at: string
+          edited_by: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          content?: string | null
+          edited_at?: string
+          edited_by?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          content?: string | null
+          edited_at?: string
+          edited_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+        }
+        Relationships: []
       }
       crm_snapshots: {
         Row: {
