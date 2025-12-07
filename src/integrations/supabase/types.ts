@@ -4503,6 +4503,10 @@ export type Database = {
       }
       crm_contacts: {
         Row: {
+          address_city: string | null
+          address_state: string | null
+          address_street: string | null
+          address_zip: string | null
           ai_keywords: string[] | null
           ai_last_summary: string | null
           ai_next_action: string | null
@@ -4517,6 +4521,7 @@ export type Database = {
           id: string
           last_contact_date: string | null
           name: string
+          neighborhood_id: string | null
           notes: string | null
           organization: string | null
           owner_id: string | null
@@ -4528,6 +4533,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address_city?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
           ai_keywords?: string[] | null
           ai_last_summary?: string | null
           ai_next_action?: string | null
@@ -4542,6 +4551,7 @@ export type Database = {
           id?: string
           last_contact_date?: string | null
           name: string
+          neighborhood_id?: string | null
           notes?: string | null
           organization?: string | null
           owner_id?: string | null
@@ -4553,6 +4563,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address_city?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
           ai_keywords?: string[] | null
           ai_last_summary?: string | null
           ai_next_action?: string | null
@@ -4567,6 +4581,7 @@ export type Database = {
           id?: string
           last_contact_date?: string | null
           name?: string
+          neighborhood_id?: string | null
           notes?: string | null
           organization?: string | null
           owner_id?: string | null
@@ -4597,6 +4612,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
             referencedColumns: ["id"]
           },
         ]
