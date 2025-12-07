@@ -487,10 +487,13 @@ export type Database = {
           contact_id: string | null
           created_at: string | null
           duration_seconds: number | null
+          flow_id: string | null
+          flow_path: Json | null
           follow_up_created: boolean | null
           id: string
           language: string | null
           outcome: string | null
+          persona_id: string | null
           phone_number: string | null
           script_id: string | null
           store_id: string | null
@@ -505,10 +508,13 @@ export type Database = {
           contact_id?: string | null
           created_at?: string | null
           duration_seconds?: number | null
+          flow_id?: string | null
+          flow_path?: Json | null
           follow_up_created?: boolean | null
           id?: string
           language?: string | null
           outcome?: string | null
+          persona_id?: string | null
           phone_number?: string | null
           script_id?: string | null
           store_id?: string | null
@@ -523,10 +529,13 @@ export type Database = {
           contact_id?: string | null
           created_at?: string | null
           duration_seconds?: number | null
+          flow_id?: string | null
+          flow_path?: Json | null
           follow_up_created?: boolean | null
           id?: string
           language?: string | null
           outcome?: string | null
+          persona_id?: string | null
           phone_number?: string | null
           script_id?: string | null
           store_id?: string | null
@@ -541,6 +550,20 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_logs_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "call_flows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_logs_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "voice_personas"
             referencedColumns: ["id"]
           },
           {
@@ -3644,6 +3667,147 @@ export type Database = {
             columns: ["call_log_id"]
             isOneToOne: false
             referencedRelation: "call_center_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_flow_edges: {
+        Row: {
+          condition_label: string | null
+          condition_type: string | null
+          created_at: string
+          flow_id: string
+          from_node_id: string
+          id: string
+          to_node_id: string
+        }
+        Insert: {
+          condition_label?: string | null
+          condition_type?: string | null
+          created_at?: string
+          flow_id: string
+          from_node_id: string
+          id?: string
+          to_node_id: string
+        }
+        Update: {
+          condition_label?: string | null
+          condition_type?: string | null
+          created_at?: string
+          flow_id?: string
+          from_node_id?: string
+          id?: string
+          to_node_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_flow_edges_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "call_flows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_flow_edges_from_node_id_fkey"
+            columns: ["from_node_id"]
+            isOneToOne: false
+            referencedRelation: "call_flow_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_flow_edges_to_node_id_fkey"
+            columns: ["to_node_id"]
+            isOneToOne: false
+            referencedRelation: "call_flow_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_flow_nodes: {
+        Row: {
+          content: string | null
+          created_at: string
+          expected_input: string | null
+          flow_id: string
+          id: string
+          metadata: Json | null
+          node_type: string
+          order_index: number | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          expected_input?: string | null
+          flow_id: string
+          id?: string
+          metadata?: Json | null
+          node_type: string
+          order_index?: number | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          expected_input?: string | null
+          flow_id?: string
+          id?: string
+          metadata?: Json | null
+          node_type?: string
+          order_index?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_flow_nodes_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "call_flows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_flows: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          persona_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          persona_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          persona_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_flows_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_flows_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "voice_personas"
             referencedColumns: ["id"]
           },
         ]
@@ -16453,6 +16617,66 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_personas: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean | null
+          language: string | null
+          name: string
+          tone: string | null
+          updated_at: string
+          use_for_ai_calls: boolean | null
+          use_for_ai_texts: boolean | null
+          voice_profile_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          language?: string | null
+          name: string
+          tone?: string | null
+          updated_at?: string
+          use_for_ai_calls?: boolean | null
+          use_for_ai_texts?: boolean | null
+          voice_profile_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          language?: string | null
+          name?: string
+          tone?: string | null
+          updated_at?: string
+          use_for_ai_calls?: boolean | null
+          use_for_ai_texts?: boolean | null
+          voice_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_personas_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_personas_voice_profile_id_fkey"
+            columns: ["voice_profile_id"]
+            isOneToOne: false
+            referencedRelation: "voice_profiles"
             referencedColumns: ["id"]
           },
         ]
