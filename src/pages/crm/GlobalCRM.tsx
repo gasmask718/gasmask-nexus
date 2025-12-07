@@ -1,21 +1,23 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Building2, Users, Search, Plus, Settings, MapPin, 
-  UserCog, Phone, Mail, Edit, Archive, Eye, Store
+  UserCog, Phone, Edit, Archive, Eye, Store, Trash2, Check, X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { FullContactForm } from '@/components/crm/FullContactForm';
-import { useBoroughs } from '@/hooks/useBoroughs';
-import { useCustomerRoles } from '@/hooks/useCustomerRoles';
+import { useBoroughs, useAddBorough } from '@/hooks/useBoroughs';
+import { useCustomerRoles, useAddCustomerRole } from '@/hooks/useCustomerRoles';
+import { toast } from 'sonner';
 import CRMLayout from './CRMLayout';
 
 interface Brand {
@@ -35,9 +37,18 @@ const GlobalCRM = () => {
   const [roleFilter, setRoleFilter] = useState('all');
   const [brandFilter, setBrandFilter] = useState('all');
   const [showAddContact, setShowAddContact] = useState(false);
+  
+  // Admin settings state
+  const [newBoroughName, setNewBoroughName] = useState('');
+  const [newRoleName, setNewRoleName] = useState('');
+  const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
+  const [editBrandName, setEditBrandName] = useState('');
+  const [editBrandColor, setEditBrandColor] = useState('');
 
   const { data: boroughs = [] } = useBoroughs();
   const { data: roles = [] } = useCustomerRoles();
+  const addBorough = useAddBorough();
+  const addRole = useAddCustomerRole();
 
   // Fetch all brands
   const { data: brands = [], isLoading: brandsLoading } = useQuery({
@@ -98,6 +109,7 @@ const GlobalCRM = () => {
           role:customer_roles(id, role_name),
           business:businesses(id, name)
         `)
+        .is('deleted_at', null)
         .order('updated_at', { ascending: false })
         .limit(100);
       
@@ -113,19 +125,97 @@ const GlobalCRM = () => {
         query = query.eq('role_id', roleFilter);
       }
 
+      if (brandFilter !== 'all') {
+        query = query.eq('business_id', brandFilter);
+      }
+
       const { data, error } = await query;
       if (error) throw error;
       return data;
     },
   });
 
-  const getBrandColor = (brandName: string) => {
-    const brand = brands.find(b => b.name.toLowerCase() === brandName.toLowerCase());
-    return brand?.color || '#6366f1';
+  // Fetch businesses for dropdown
+  const { data: businesses = [] } = useQuery({
+    queryKey: ['global-businesses'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('id, name')
+        .order('name');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Update brand mutation
+  const updateBrandMutation = useMutation({
+    mutationFn: async ({ id, name, color }: { id: string; name: string; color: string }) => {
+      const { error } = await supabase
+        .from('brands')
+        .update({ name, color })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['global-brands'] });
+      toast.success('Brand updated');
+      setEditingBrandId(null);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // Delete brand mutation
+  const deleteBrandMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('brands')
+        .update({ active: false })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['global-brands'] });
+      toast.success('Brand deactivated');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const handleAddBorough = () => {
+    if (!newBoroughName.trim()) return;
+    addBorough.mutate(newBoroughName.trim(), {
+      onSuccess: () => setNewBoroughName(''),
+    });
+  };
+
+  const handleAddRole = () => {
+    if (!newRoleName.trim()) return;
+    addRole.mutate(newRoleName.trim(), {
+      onSuccess: () => setNewRoleName(''),
+    });
+  };
+
+  const handleEditBrand = (brand: Brand) => {
+    setEditingBrandId(brand.id);
+    setEditBrandName(brand.name);
+    setEditBrandColor(brand.color || '#6366f1');
+  };
+
+  const handleSaveBrand = () => {
+    if (!editingBrandId || !editBrandName.trim()) return;
+    updateBrandMutation.mutate({
+      id: editingBrandId,
+      name: editBrandName.trim(),
+      color: editBrandColor,
+    });
   };
 
   const filteredBrands = brands.filter(b => 
-    !searchTerm || b.name.toLowerCase().includes(searchTerm.toLowerCase())
+    b.active !== false && (!searchTerm || b.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -157,10 +247,6 @@ const GlobalCRM = () => {
                 }} />
               </DialogContent>
             </Dialog>
-            <Button variant="outline" onClick={() => navigate('/settings')}>
-              <Settings className="mr-2 h-4 w-4" />
-              Admin Settings
-            </Button>
           </div>
         </div>
 
@@ -175,13 +261,9 @@ const GlobalCRM = () => {
               <Users className="h-4 w-4" />
               All Contacts
             </TabsTrigger>
-            <TabsTrigger value="geography" className="gap-2">
-              <MapPin className="h-4 w-4" />
-              Geography
-            </TabsTrigger>
-            <TabsTrigger value="roles" className="gap-2">
-              <UserCog className="h-4 w-4" />
-              Roles
+            <TabsTrigger value="settings" className="gap-2">
+              <Settings className="h-4 w-4" />
+              Admin Settings
             </TabsTrigger>
           </TabsList>
 
@@ -212,7 +294,7 @@ const GlobalCRM = () => {
                 <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Brands Found</h3>
                 <p className="text-muted-foreground mb-4">Add brands to get started with the OS Dynasty ecosystem.</p>
-                <Button onClick={() => navigate('/settings')}>
+                <Button onClick={() => setActiveTab('settings')}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add Brand
                 </Button>
@@ -279,7 +361,7 @@ const GlobalCRM = () => {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search name, phone, store..."
+                      placeholder="Search name, phone, email..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10"
@@ -310,11 +392,11 @@ const GlobalCRM = () => {
                 </Select>
                 <Select value={brandFilter} onValueChange={setBrandFilter}>
                   <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Brand" />
+                    <SelectValue placeholder="Business" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Brands</SelectItem>
-                    {brands.map((b) => (
+                    <SelectItem value="all">All Businesses</SelectItem>
+                    {businesses.map((b) => (
                       <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -330,7 +412,7 @@ const GlobalCRM = () => {
                     <tr>
                       <th className="px-4 py-3 text-left text-sm font-medium">Name</th>
                       <th className="px-4 py-3 text-left text-sm font-medium">Role</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Brand</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Business</th>
                       <th className="px-4 py-3 text-left text-sm font-medium">Phone</th>
                       <th className="px-4 py-3 text-left text-sm font-medium">Borough</th>
                       <th className="px-4 py-3 text-left text-sm font-medium">Notes</th>
@@ -385,7 +467,7 @@ const GlobalCRM = () => {
                           </td>
                           <td className="px-4 py-3">
                             <div className="text-sm text-muted-foreground truncate max-w-[200px]">
-                              {contact.notes || '-'}
+                              {contact.notes?.substring(0, 25) || '-'}
                             </div>
                           </td>
                           <td className="px-4 py-3 text-sm text-muted-foreground">
@@ -420,59 +502,138 @@ const GlobalCRM = () => {
             </Card>
           </TabsContent>
 
-          {/* Geography Tab */}
-          <TabsContent value="geography" className="mt-6">
-            <div className="grid gap-6 md:grid-cols-2">
+          {/* Admin Settings Tab */}
+          <TabsContent value="settings" className="mt-6">
+            <div className="grid gap-6 lg:grid-cols-3">
+              {/* Manage Businesses/Brands */}
               <Card className="p-6">
                 <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  Boroughs
+                  <Building2 className="h-5 w-5 text-primary" />
+                  Manage Brands
                 </h3>
-                <div className="space-y-2">
-                  {boroughs.map((borough) => (
-                    <div key={borough.id} className="flex items-center justify-between p-3 rounded-lg border">
-                      <span>{borough.name}</span>
-                      <Badge variant="outline">Borough</Badge>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Edit brand names, colors, and status.
+                </p>
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {brands.filter(b => b.active !== false).map((brand) => (
+                    <div key={brand.id} className="flex items-center justify-between p-3 rounded-lg border">
+                      {editingBrandId === brand.id ? (
+                        <div className="flex items-center gap-2 flex-1">
+                          <Input
+                            value={editBrandName}
+                            onChange={(e) => setEditBrandName(e.target.value)}
+                            className="h-8"
+                          />
+                          <input
+                            type="color"
+                            value={editBrandColor}
+                            onChange={(e) => setEditBrandColor(e.target.value)}
+                            className="h-8 w-8 rounded cursor-pointer"
+                          />
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleSaveBrand}>
+                            <Check className="h-4 w-4 text-green-500" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingBrandId(null)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-4 h-4 rounded-full" 
+                              style={{ backgroundColor: brand.color || '#6366f1' }}
+                            />
+                            <span className="text-sm">{brand.name}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-7 w-7"
+                              onClick={() => handleEditBrand(brand)}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-7 w-7 text-muted-foreground"
+                              onClick={() => deleteBrandMutation.mutate(brand.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
               </Card>
 
+              {/* Manage Roles */}
               <Card className="p-6">
                 <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-primary" />
-                  Neighborhoods
+                  <UserCog className="h-5 w-5 text-primary" />
+                  Manage Roles
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Neighborhoods are added via the contact form when you select a borough.
+                  Add or manage universal contact roles.
                 </p>
-                <Button variant="outline" onClick={() => setShowAddContact(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add via Contact Form
-                </Button>
+                <div className="flex gap-2 mb-4">
+                  <Input
+                    placeholder="New role name..."
+                    value={newRoleName}
+                    onChange={(e) => setNewRoleName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddRole()}
+                  />
+                  <Button onClick={handleAddRole} disabled={addRole.isPending}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="space-y-2 max-h-[350px] overflow-y-auto">
+                  {roles.map((role) => (
+                    <div key={role.id} className="flex items-center gap-2 p-2 rounded-lg border text-sm">
+                      <UserCog className="h-4 w-4 text-muted-foreground" />
+                      <span>{role.role_name}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Manage Geography */}
+              <Card className="p-6">
+                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  Manage Geography
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Add boroughs. Neighborhoods are added via contact forms.
+                </p>
+                <div className="flex gap-2 mb-4">
+                  <Input
+                    placeholder="New borough name..."
+                    value={newBoroughName}
+                    onChange={(e) => setNewBoroughName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddBorough()}
+                  />
+                  <Button onClick={handleAddBorough} disabled={addBorough.isPending}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="space-y-2 max-h-[350px] overflow-y-auto">
+                  {boroughs.map((borough) => (
+                    <div key={borough.id} className="flex items-center justify-between p-2 rounded-lg border text-sm">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span>{borough.name}</span>
+                      </div>
+                      <Badge variant="outline">Borough</Badge>
+                    </div>
+                  ))}
+                </div>
               </Card>
             </div>
-          </TabsContent>
-
-          {/* Roles Tab */}
-          <TabsContent value="roles" className="mt-6">
-            <Card className="p-6">
-              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                <UserCog className="h-5 w-5 text-primary" />
-                Universal Contact Roles
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                These roles are shared across all brands and populate every contact dropdown.
-              </p>
-              <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {roles.map((role) => (
-                  <div key={role.id} className="flex items-center gap-2 p-3 rounded-lg border">
-                    <UserCog className="h-4 w-4 text-muted-foreground" />
-                    <span>{role.role_name}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
