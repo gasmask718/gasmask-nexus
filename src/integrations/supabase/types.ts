@@ -658,12 +658,52 @@ export type Database = {
           },
         ]
       }
+      agent_tone_corrections: {
+        Row: {
+          agent_id: string | null
+          corrected_tone: string | null
+          created_at: string
+          id: string
+          message_id: string | null
+          previous_tone: string | null
+          reason: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          corrected_tone?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          previous_tone?: string | null
+          reason?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          corrected_tone?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          previous_tone?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_tone_corrections_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_agents: {
         Row: {
           active: boolean | null
           business_id: string | null
           capabilities: Json | null
           created_at: string
+          default_language_profile_id: string | null
+          default_personality_profile_id: string | null
           description: string | null
           id: string
           name: string
@@ -677,6 +717,8 @@ export type Database = {
           business_id?: string | null
           capabilities?: Json | null
           created_at?: string
+          default_language_profile_id?: string | null
+          default_personality_profile_id?: string | null
           description?: string | null
           id?: string
           name: string
@@ -690,6 +732,8 @@ export type Database = {
           business_id?: string | null
           capabilities?: Json | null
           created_at?: string
+          default_language_profile_id?: string | null
+          default_personality_profile_id?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -704,6 +748,20 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_agents_default_language_profile_id_fkey"
+            columns: ["default_language_profile_id"]
+            isOneToOne: false
+            referencedRelation: "language_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_agents_default_personality_profile_id_fkey"
+            columns: ["default_personality_profile_id"]
+            isOneToOne: false
+            referencedRelation: "personality_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -3365,6 +3423,9 @@ export type Database = {
           category: string | null
           city: string | null
           created_at: string | null
+          default_dialect: string | null
+          default_language: string | null
+          default_personality: string | null
           email: string | null
           id: string
           industry: string | null
@@ -3417,6 +3478,9 @@ export type Database = {
           category?: string | null
           city?: string | null
           created_at?: string | null
+          default_dialect?: string | null
+          default_language?: string | null
+          default_personality?: string | null
           email?: string | null
           id?: string
           industry?: string | null
@@ -3469,6 +3533,9 @@ export type Database = {
           category?: string | null
           city?: string | null
           created_at?: string | null
+          default_dialect?: string | null
+          default_language?: string | null
+          default_personality?: string | null
           email?: string | null
           id?: string
           industry?: string | null
@@ -6013,11 +6080,15 @@ export type Database = {
           business_type: string | null
           city: string | null
           created_at: string | null
+          dialect_preference: string | null
           email: string | null
+          formality_level: string | null
           id: string
+          language_preference: string | null
           last_order_date: string | null
           name: string
           notes: string | null
+          personality_profile_id: string | null
           phone: string | null
           relationship_status: string | null
           state: string | null
@@ -6030,11 +6101,15 @@ export type Database = {
           business_type?: string | null
           city?: string | null
           created_at?: string | null
+          dialect_preference?: string | null
           email?: string | null
+          formality_level?: string | null
           id?: string
+          language_preference?: string | null
           last_order_date?: string | null
           name: string
           notes?: string | null
+          personality_profile_id?: string | null
           phone?: string | null
           relationship_status?: string | null
           state?: string | null
@@ -6047,11 +6122,15 @@ export type Database = {
           business_type?: string | null
           city?: string | null
           created_at?: string | null
+          dialect_preference?: string | null
           email?: string | null
+          formality_level?: string | null
           id?: string
+          language_preference?: string | null
           last_order_date?: string | null
           name?: string
           notes?: string | null
+          personality_profile_id?: string | null
           phone?: string | null
           relationship_status?: string | null
           state?: string | null
@@ -6059,7 +6138,15 @@ export type Database = {
           updated_at?: string | null
           zip?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "crm_customers_personality_profile_id_fkey"
+            columns: ["personality_profile_id"]
+            isOneToOne: false
+            referencedRelation: "personality_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_exports: {
         Row: {
@@ -10463,6 +10550,36 @@ export type Database = {
         }
         Relationships: []
       }
+      language_profiles: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          dialect_code: string
+          id: string
+          is_default: boolean | null
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          dialect_code: string
+          id?: string
+          is_default?: boolean | null
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          dialect_code?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
       lead_scores: {
         Row: {
           ai_reasoning: string | null
@@ -11393,6 +11510,36 @@ export type Database = {
           started_at?: string | null
           status?: string
           target_count?: number
+        }
+        Relationships: []
+      }
+      message_language_detection: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          detected_dialect: string | null
+          detected_formality: string | null
+          detected_language: string | null
+          id: string
+          message_id: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          detected_dialect?: string | null
+          detected_formality?: string | null
+          detected_language?: string | null
+          id?: string
+          message_id?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          detected_dialect?: string | null
+          detected_formality?: string | null
+          detected_language?: string | null
+          id?: string
+          message_id?: string | null
         }
         Relationships: []
       }
@@ -12668,6 +12815,60 @@ export type Database = {
         }
         Relationships: []
       }
+      personality_profiles: {
+        Row: {
+          base_tone: string
+          business_id: string | null
+          created_at: string
+          description: string | null
+          emoji_style: string | null
+          formality: string
+          id: string
+          language_profile_id: string | null
+          name: string
+          slang_level: string | null
+        }
+        Insert: {
+          base_tone?: string
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          emoji_style?: string | null
+          formality?: string
+          id?: string
+          language_profile_id?: string | null
+          name: string
+          slang_level?: string | null
+        }
+        Update: {
+          base_tone?: string
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          emoji_style?: string | null
+          formality?: string
+          id?: string
+          language_profile_id?: string | null
+          name?: string
+          slang_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personality_profiles_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personality_profiles_language_profile_id_fkey"
+            columns: ["language_profile_id"]
+            isOneToOne: false
+            referencedRelation: "language_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pod_ai_logs: {
         Row: {
           action: string
@@ -13803,6 +14004,44 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      region_communication_styles: {
+        Row: {
+          boro: string | null
+          created_at: string
+          default_formality: string | null
+          id: string
+          neighborhood: string | null
+          notes: string | null
+          recommended_personality_id: string | null
+        }
+        Insert: {
+          boro?: string | null
+          created_at?: string
+          default_formality?: string | null
+          id?: string
+          neighborhood?: string | null
+          notes?: string | null
+          recommended_personality_id?: string | null
+        }
+        Update: {
+          boro?: string | null
+          created_at?: string
+          default_formality?: string | null
+          id?: string
+          neighborhood?: string | null
+          notes?: string | null
+          recommended_personality_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "region_communication_styles_recommended_personality_id_fkey"
+            columns: ["recommended_personality_id"]
+            isOneToOne: false
+            referencedRelation: "personality_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -15175,21 +15414,27 @@ export type Database = {
           communication_preference: string | null
           country_of_origin: string | null
           created_at: string | null
+          dialect_preference: string | null
           email: string | null
           expansion_notes: string | null
           expected_open_dates: string[] | null
+          formality_level: string | null
           frustration_triggers: string[] | null
           has_expansion: boolean | null
           id: string
           influence_level: string | null
+          language_preference: string | null
           languages: string[] | null
           loyalty_triggers: string[] | null
           new_store_addresses: string[] | null
           nickname: string | null
           notes: string | null
+          notes_for_tone: string | null
           owner_name: string | null
           personality_notes: string | null
+          personality_profile_id: string | null
           phone: string | null
+          preferred_channel: string | null
           risk_score: string | null
           state: string
           sticker_in_store: boolean | null
@@ -15209,21 +15454,27 @@ export type Database = {
           communication_preference?: string | null
           country_of_origin?: string | null
           created_at?: string | null
+          dialect_preference?: string | null
           email?: string | null
           expansion_notes?: string | null
           expected_open_dates?: string[] | null
+          formality_level?: string | null
           frustration_triggers?: string[] | null
           has_expansion?: boolean | null
           id?: string
           influence_level?: string | null
+          language_preference?: string | null
           languages?: string[] | null
           loyalty_triggers?: string[] | null
           new_store_addresses?: string[] | null
           nickname?: string | null
           notes?: string | null
+          notes_for_tone?: string | null
           owner_name?: string | null
           personality_notes?: string | null
+          personality_profile_id?: string | null
           phone?: string | null
+          preferred_channel?: string | null
           risk_score?: string | null
           state: string
           sticker_in_store?: boolean | null
@@ -15243,21 +15494,27 @@ export type Database = {
           communication_preference?: string | null
           country_of_origin?: string | null
           created_at?: string | null
+          dialect_preference?: string | null
           email?: string | null
           expansion_notes?: string | null
           expected_open_dates?: string[] | null
+          formality_level?: string | null
           frustration_triggers?: string[] | null
           has_expansion?: boolean | null
           id?: string
           influence_level?: string | null
+          language_preference?: string | null
           languages?: string[] | null
           loyalty_triggers?: string[] | null
           new_store_addresses?: string[] | null
           nickname?: string | null
           notes?: string | null
+          notes_for_tone?: string | null
           owner_name?: string | null
           personality_notes?: string | null
+          personality_profile_id?: string | null
           phone?: string | null
+          preferred_channel?: string | null
           risk_score?: string | null
           state?: string
           sticker_in_store?: boolean | null
@@ -15282,6 +15539,13 @@ export type Database = {
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_master_personality_profile_id_fkey"
+            columns: ["personality_profile_id"]
+            isOneToOne: false
+            referencedRelation: "personality_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -17712,6 +17976,7 @@ export type Database = {
           id: string
           is_default: boolean | null
           language: string | null
+          language_profile_id: string | null
           name: string
           tone: string | null
           updated_at: string
@@ -17726,6 +17991,7 @@ export type Database = {
           id?: string
           is_default?: boolean | null
           language?: string | null
+          language_profile_id?: string | null
           name: string
           tone?: string | null
           updated_at?: string
@@ -17740,6 +18006,7 @@ export type Database = {
           id?: string
           is_default?: boolean | null
           language?: string | null
+          language_profile_id?: string | null
           name?: string
           tone?: string | null
           updated_at?: string
@@ -17753,6 +18020,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_personas_language_profile_id_fkey"
+            columns: ["language_profile_id"]
+            isOneToOne: false
+            referencedRelation: "language_profiles"
             referencedColumns: ["id"]
           },
           {
