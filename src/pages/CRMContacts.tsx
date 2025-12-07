@@ -9,13 +9,14 @@ import { Plus, Phone, Mail, Building2, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { CustomerSimpleFilters } from '@/components/crm/CustomerSimpleFilters';
 import { CustomerSnapshotCard } from '@/components/crm/CustomerSnapshotCard';
-import { QuickAddContactForm } from '@/components/crm/QuickAddContactForm';
+import { FullContactForm } from '@/components/crm/FullContactForm';
 import { GlobalBusinessSelector } from '@/components/crm/GlobalBusinessSelector';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from '@/components/ui/dialog';
 
@@ -132,25 +133,24 @@ const CRMContacts = () => {
           <GlobalBusinessSelector />
           <Dialog open={showQuickAdd} onOpenChange={setShowQuickAdd}>
             <DialogTrigger asChild>
-              <Button variant="outline">
+              <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Quick Add
+                Add Contact
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Quick Add Contact</DialogTitle>
+                <DialogTitle>Add New Contact</DialogTitle>
+                <DialogDescription>
+                  Fill in the contact details including address and location information.
+                </DialogDescription>
               </DialogHeader>
-              <QuickAddContactForm onSuccess={() => {
+              <FullContactForm onSuccess={() => {
                 setShowQuickAdd(false);
                 refetch();
               }} />
             </DialogContent>
           </Dialog>
-          <Button onClick={() => navigate('/crm/contacts/new')}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Contact
-          </Button>
         </div>
       </div>
 
