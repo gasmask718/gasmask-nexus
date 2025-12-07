@@ -2215,6 +2215,35 @@ export type Database = {
           },
         ]
       }
+      boroughs: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boroughs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_contact_store_links: {
         Row: {
           brand: string
@@ -4447,6 +4476,7 @@ export type Database = {
           ai_next_action: string | null
           ai_priority: number | null
           ai_sentiment: string | null
+          borough_id: string | null
           business_id: string | null
           created_at: string
           created_by: string | null
@@ -4471,6 +4501,7 @@ export type Database = {
           ai_next_action?: string | null
           ai_priority?: number | null
           ai_sentiment?: string | null
+          borough_id?: string | null
           business_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -4495,6 +4526,7 @@ export type Database = {
           ai_next_action?: string | null
           ai_priority?: number | null
           ai_sentiment?: string | null
+          borough_id?: string | null
           business_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -4514,6 +4546,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "crm_contacts_borough_id_fkey"
+            columns: ["borough_id"]
+            isOneToOne: false
+            referencedRelation: "boroughs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "crm_contacts_business_id_fkey"
             columns: ["business_id"]

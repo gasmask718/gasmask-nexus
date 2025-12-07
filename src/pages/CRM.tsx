@@ -1,17 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useBusiness } from '@/contexts/BusinessContext';
+import { useBusinessStore } from '@/stores/businessStore';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Users, Phone, Mail, MessageSquare, AlertTriangle, 
-  TrendingUp, Calendar, Plus, Search, Database 
+  TrendingUp, Calendar, Plus, Search, Database, Building2 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +25,7 @@ import {
 import { seedDemoData } from '@/utils/seedDemoData';
 import CRMLayout from './crm/CRMLayout';
 import { QuickAddContactForm } from '@/components/crm/QuickAddContactForm';
+import { GlobalBusinessSelector } from '@/components/crm/GlobalBusinessSelector';
 import {
   Dialog,
   DialogContent,
@@ -35,22 +36,31 @@ import {
 
 const CRM = () => {
   const navigate = useNavigate();
-  const { currentBusiness, loading } = useBusiness();
+  const { selectedBusiness, loading, fetchBusinesses, ensureBusinessSelected, businesses } = useBusinessStore();
   const { role } = useUserRole();
   const [showDemoDialog, setShowDemoDialog] = useState(false);
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
 
+  // Initialize business on mount
+  useEffect(() => {
+    fetchBusinesses();
+  }, [fetchBusinesses]);
+
+  // Ensure business is selected
+  useEffect(() => {
+    ensureBusinessSelected();
+  }, [ensureBusinessSelected]);
+
   const handleLoadDemoData = async () => {
-    if (!currentBusiness?.id) return;
+    if (!selectedBusiness?.id) return;
     
     setLoadingDemo(true);
-    const success = await seedDemoData(currentBusiness.id);
+    const success = await seedDemoData(selectedBusiness.id);
     setLoadingDemo(false);
     setShowDemoDialog(false);
     
     if (success) {
-      // Refresh all queries
       window.location.reload();
     }
   };
@@ -67,41 +77,45 @@ const CRM = () => {
     );
   }
 
-  // Show message if no business selected
-  if (!currentBusiness) {
+  // Show empty state if no businesses exist at all
+  if (businesses.length === 0) {
     return (
       <div className="flex items-center justify-center h-96">
         <Card className="p-8 text-center max-w-md">
-          <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">No Business Selected</h3>
-          <p className="text-sm text-muted-foreground">
-            Please select a business to access CRM features.
+          <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-semibold mb-2">No Businesses Found</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Create your first business to start using CRM features.
           </p>
+          <Button onClick={() => navigate('/settings/business')}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Business
+          </Button>
         </Card>
       </div>
     );
   }
 
-  const { data: contacts } = useQuery({
-    queryKey: ['crm-contacts', currentBusiness?.id],
+  const { data: contacts, refetch: refetchContacts } = useQuery({
+    queryKey: ['crm-contacts', selectedBusiness?.id],
     queryFn: async () => {
-      if (!currentBusiness?.id) return [];
+      if (!selectedBusiness?.id) return [];
       
       const { data, error } = await supabase
         .from('crm_contacts')
         .select('*')
-        .eq('business_id', currentBusiness.id)
+        .eq('business_id', selectedBusiness.id)
         .order('last_contact_date', { ascending: false, nullsFirst: false });
       if (error) throw error;
       return data;
     },
-    enabled: !!currentBusiness?.id,
+    enabled: !!selectedBusiness?.id,
   });
 
   const { data: recentLogs } = useQuery({
-    queryKey: ['recent-communication-logs', currentBusiness?.id],
+    queryKey: ['recent-communication-logs', selectedBusiness?.id],
     queryFn: async () => {
-      if (!currentBusiness?.id) return [];
+      if (!selectedBusiness?.id) return [];
       
       const { data, error } = await supabase
         .from('communication_logs')
@@ -111,24 +125,24 @@ const CRM = () => {
           store:stores(name),
           created_by_profile:profiles!communication_logs_created_by_fkey(name)
         `)
-        .eq('business_id', currentBusiness.id)
+        .eq('business_id', selectedBusiness.id)
         .order('created_at', { ascending: false })
         .limit(10);
       if (error) throw error;
       return data;
     },
-    enabled: !!currentBusiness?.id,
+    enabled: !!selectedBusiness?.id,
   });
 
   const { data: followUps } = useQuery({
-    queryKey: ['follow-ups-pending', currentBusiness?.id],
+    queryKey: ['follow-ups-pending', selectedBusiness?.id],
     queryFn: async () => {
-      if (!currentBusiness?.id) return [];
+      if (!selectedBusiness?.id) return [];
       
       const { data, error } = await supabase
         .from('communication_logs')
         .select('*, contact:crm_contacts(name), store:stores(name)')
-        .eq('business_id', currentBusiness.id)
+        .eq('business_id', selectedBusiness.id)
         .eq('follow_up_required', true)
         .gte('follow_up_date', new Date().toISOString())
         .order('follow_up_date', { ascending: true })
@@ -136,7 +150,7 @@ const CRM = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!currentBusiness?.id,
+    enabled: !!selectedBusiness?.id,
   });
 
   const totalContacts = contacts?.length || 0;
@@ -170,13 +184,16 @@ const CRM = () => {
     <CRMLayout title="CRM Command Center">
       <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">CRM Command Center</h1>
-          <p className="text-muted-foreground mt-1">
-            Unified communication and relationship management
-          </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">CRM Command Center</h1>
+            <p className="text-muted-foreground mt-1">
+              Unified communication and relationship management
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          <GlobalBusinessSelector />
           {role === 'admin' && (
             <Button 
               variant="outline" 
@@ -204,7 +221,7 @@ const CRM = () => {
               </DialogHeader>
               <QuickAddContactForm onSuccess={() => {
                 setShowQuickAdd(false);
-                window.location.reload();
+                refetchContacts();
               }} />
             </DialogContent>
           </Dialog>
@@ -221,7 +238,7 @@ const CRM = () => {
             <AlertDialogTitle>Load Demo Data?</AlertDialogTitle>
             <AlertDialogDescription>
               This will create sample contacts, communication logs, phone numbers, AI agents, and call logs for testing purposes. 
-              This data will be isolated to your current business: <strong>{currentBusiness?.name}</strong>
+              This data will be isolated to your current business: <strong>{selectedBusiness?.name}</strong>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
