@@ -1,20 +1,24 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   MessageSquare, Phone, Bot, Bell, Zap, BarChart3, 
-  Send, ArrowLeft, RefreshCw, Settings
+  Send, ArrowLeft, RefreshCw, Settings, User, GitBranch
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCommunicationCenter } from "@/hooks/useCommunicationCenter";
 import { UnifiedInbox } from "@/components/communication/UnifiedInbox";
 import { ManualCallingPanel } from "@/components/communication/ManualCallingPanel";
 import { CommunicationAlerts } from "@/components/communication/CommunicationAlerts";
+import VoicePersonaBuilder from "@/components/communication/VoicePersonaBuilder";
+import CallFlowBuilder from "@/components/communication/CallFlowBuilder";
+import CommunicationHeatmap from "@/components/communication/CommunicationHeatmap";
+import AutoCampaigns from "@/components/communication/AutoCampaigns";
+import CommunicationSettings from "@/components/communication/CommunicationSettings";
 import { toast } from "sonner";
 
 export default function CommunicationCenter() {
@@ -217,18 +221,26 @@ export default function CommunicationCenter() {
       {/* Main Content */}
       <div className="container py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="inbox" className="gap-2">
               <MessageSquare className="h-4 w-4" />
               Inbox
             </TabsTrigger>
             <TabsTrigger value="calling" className="gap-2">
               <Phone className="h-4 w-4" />
-              Calling
+              Dialer
             </TabsTrigger>
-            <TabsTrigger value="ai-sequences" className="gap-2">
+            <TabsTrigger value="campaigns" className="gap-2">
               <Zap className="h-4 w-4" />
-              AI Sequences
+              Campaigns
+            </TabsTrigger>
+            <TabsTrigger value="personas" className="gap-2">
+              <User className="h-4 w-4" />
+              Personas
+            </TabsTrigger>
+            <TabsTrigger value="flows" className="gap-2">
+              <GitBranch className="h-4 w-4" />
+              Call Flows
             </TabsTrigger>
             <TabsTrigger value="alerts" className="gap-2">
               <Bell className="h-4 w-4" />
@@ -241,7 +253,11 @@ export default function CommunicationCenter() {
             </TabsTrigger>
             <TabsTrigger value="analytics" className="gap-2">
               <BarChart3 className="h-4 w-4" />
-              Analytics
+              Heatmap
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2">
+              <Settings className="h-4 w-4" />
+              Settings
             </TabsTrigger>
           </TabsList>
 
@@ -276,30 +292,19 @@ export default function CommunicationCenter() {
             />
           </TabsContent>
 
-          {/* AI Sequences Tab */}
-          <TabsContent value="ai-sequences">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-primary" />
-                  AI Communication Sequences
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Bot className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">AI Sequence Builder</h3>
-                  <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                    Create automated multi-step communication campaigns with AI-generated 
-                    messages tailored to your brand voice.
-                  </p>
-                  <Button>
-                    <Zap className="h-4 w-4 mr-2" />
-                    Create New Sequence
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Campaigns Tab */}
+          <TabsContent value="campaigns">
+            <AutoCampaigns businessId={businessIdFilter} />
+          </TabsContent>
+
+          {/* Voice Personas Tab */}
+          <TabsContent value="personas">
+            <VoicePersonaBuilder businessId={businessIdFilter} />
+          </TabsContent>
+
+          {/* Call Flows Tab */}
+          <TabsContent value="flows">
+            <CallFlowBuilder businessId={businessIdFilter} />
           </TabsContent>
 
           {/* Alerts Tab */}
@@ -313,49 +318,14 @@ export default function CommunicationCenter() {
             />
           </TabsContent>
 
-          {/* Analytics Tab */}
+          {/* Analytics/Heatmap Tab */}
           <TabsContent value="analytics">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Total Messages
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{messages.length}</div>
-                  <p className="text-sm text-muted-foreground">All time</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    AI Engagement
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">
-                    {messages.length > 0 
-                      ? Math.round((stats.aiGeneratedCount / messages.length) * 100) 
-                      : 0}%
-                  </div>
-                  <p className="text-sm text-muted-foreground">AI-generated messages</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Active Sequences
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">
-                    {sequences.filter((s: any) => s.is_active).length}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Running campaigns</p>
-                </CardContent>
-              </Card>
-            </div>
+            <CommunicationHeatmap businessId={businessIdFilter} />
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings">
+            <CommunicationSettings />
           </TabsContent>
         </Tabs>
       </div>
