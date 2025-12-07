@@ -5245,6 +5245,44 @@ export type Database = {
           },
         ]
       }
+      communication_trend_snapshots: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          data: Json | null
+          forecast_period: string | null
+          id: string
+          trend_summary: string | null
+          trend_type: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          data?: Json | null
+          forecast_period?: string | null
+          id?: string
+          trend_summary?: string | null
+          trend_type: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          data?: Json | null
+          forecast_period?: string | null
+          id?: string
+          trend_summary?: string | null
+          trend_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_trend_snapshots_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           boro: string | null
@@ -12522,6 +12560,258 @@ export type Database = {
             columns: ["design_id"]
             isOneToOne: false
             referencedRelation: "pod_designs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      predictive_actions: {
+        Row: {
+          action_type: string
+          ai_reason: string | null
+          business_id: string | null
+          created_at: string
+          executed: boolean
+          executed_at: string | null
+          id: string
+          predicted_intent: string | null
+          priority: string
+          recommended_content: string | null
+          store_id: string | null
+        }
+        Insert: {
+          action_type: string
+          ai_reason?: string | null
+          business_id?: string | null
+          created_at?: string
+          executed?: boolean
+          executed_at?: string | null
+          id?: string
+          predicted_intent?: string | null
+          priority?: string
+          recommended_content?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          ai_reason?: string | null
+          business_id?: string | null
+          created_at?: string
+          executed?: boolean
+          executed_at?: string | null
+          id?: string
+          predicted_intent?: string | null
+          priority?: string
+          recommended_content?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictive_actions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictive_actions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      predictive_autopilot_log: {
+        Row: {
+          action_id: string | null
+          action_taken: string
+          ai_reasoning: string | null
+          business_id: string | null
+          created_at: string
+          id: string
+          result: string | null
+          store_id: string | null
+        }
+        Insert: {
+          action_id?: string | null
+          action_taken: string
+          ai_reasoning?: string | null
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          result?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          action_id?: string | null
+          action_taken?: string
+          ai_reasoning?: string | null
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          result?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictive_autopilot_log_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "predictive_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictive_autopilot_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictive_autopilot_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      predictive_autopilot_settings: {
+        Row: {
+          auto_recovery_enabled: boolean
+          auto_upsell_enabled: boolean
+          business_id: string | null
+          churn_threshold: number
+          created_at: string
+          enabled: boolean
+          id: string
+          opportunity_threshold: number
+          updated_at: string
+        }
+        Insert: {
+          auto_recovery_enabled?: boolean
+          auto_upsell_enabled?: boolean
+          business_id?: string | null
+          churn_threshold?: number
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          opportunity_threshold?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_recovery_enabled?: boolean
+          auto_upsell_enabled?: boolean
+          business_id?: string | null
+          churn_threshold?: number
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          opportunity_threshold?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictive_autopilot_settings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      predictive_opportunity_scores: {
+        Row: {
+          ai_summary: string | null
+          business_id: string | null
+          created_at: string
+          id: string
+          opportunity_factors: Json | null
+          opportunity_score: number
+          predicted_product_interest: string | null
+          store_id: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          opportunity_factors?: Json | null
+          opportunity_score?: number
+          predicted_product_interest?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          opportunity_factors?: Json | null
+          opportunity_score?: number
+          predicted_product_interest?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictive_opportunity_scores_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictive_opportunity_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      predictive_risk_scores: {
+        Row: {
+          ai_summary: string | null
+          business_id: string | null
+          churn_risk: number
+          created_at: string
+          id: string
+          predicted_timeframe: string | null
+          risk_factors: Json | null
+          store_id: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          business_id?: string | null
+          churn_risk?: number
+          created_at?: string
+          id?: string
+          predicted_timeframe?: string | null
+          risk_factors?: Json | null
+          store_id?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          business_id?: string | null
+          churn_risk?: number
+          created_at?: string
+          id?: string
+          predicted_timeframe?: string | null
+          risk_factors?: Json | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictive_risk_scores_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictive_risk_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
             referencedColumns: ["id"]
           },
         ]
