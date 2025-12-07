@@ -2290,6 +2290,7 @@ export type Database = {
           address_state: string | null
           address_street: string | null
           address_zip: string | null
+          borough_id: string | null
           brand: Database["public"]["Enums"]["brand_type"]
           contact_email: string | null
           contact_name: string
@@ -2298,6 +2299,7 @@ export type Database = {
           id: string
           is_primary_contact: boolean | null
           last_contacted: string | null
+          neighborhood_id: string | null
           notes: string | null
           primary_role: string | null
           store_brand_account_id: string
@@ -2310,6 +2312,7 @@ export type Database = {
           address_state?: string | null
           address_street?: string | null
           address_zip?: string | null
+          borough_id?: string | null
           brand: Database["public"]["Enums"]["brand_type"]
           contact_email?: string | null
           contact_name: string
@@ -2318,6 +2321,7 @@ export type Database = {
           id?: string
           is_primary_contact?: boolean | null
           last_contacted?: string | null
+          neighborhood_id?: string | null
           notes?: string | null
           primary_role?: string | null
           store_brand_account_id: string
@@ -2330,6 +2334,7 @@ export type Database = {
           address_state?: string | null
           address_street?: string | null
           address_zip?: string | null
+          borough_id?: string | null
           brand?: Database["public"]["Enums"]["brand_type"]
           contact_email?: string | null
           contact_name?: string
@@ -2338,6 +2343,7 @@ export type Database = {
           id?: string
           is_primary_contact?: boolean | null
           last_contacted?: string | null
+          neighborhood_id?: string | null
           notes?: string | null
           primary_role?: string | null
           store_brand_account_id?: string
@@ -2345,6 +2351,20 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "brand_crm_contacts_borough_id_fkey"
+            columns: ["borough_id"]
+            isOneToOne: false
+            referencedRelation: "boroughs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_crm_contacts_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "brand_crm_contacts_store_brand_account_id_fkey"
             columns: ["store_brand_account_id"]
@@ -10237,6 +10257,38 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      neighborhoods: {
+        Row: {
+          borough_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          borough_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          borough_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "neighborhoods_borough_id_fkey"
+            columns: ["borough_id"]
+            isOneToOne: false
+            referencedRelation: "boroughs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       networth_snapshots: {
         Row: {

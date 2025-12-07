@@ -17,6 +17,7 @@ import { GRABBA_BRAND_CONFIG, GrabbaBrand } from '@/config/grabbaBrands';
 import { useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { useBrandCRMAutoCreate } from '@/hooks/useBrandCRMAutoCreate';
 import { AddContactModal } from '@/components/grabba/AddContactModal';
+import { AdvancedContactModal } from '@/components/crm/AdvancedContactModal';
 import { useBusinessStore } from '@/stores/businessStore';
 import { PersonalNotesEditor } from '@/components/crm/PersonalNotesEditor';
 
@@ -31,6 +32,8 @@ export default function BrandCRM() {
   const { selectedBrand, setSelectedBrand } = useGrabbaBrand();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddContact, setShowAddContact] = useState(false);
+  const [showAdvancedModal, setShowAdvancedModal] = useState(false);
+  const [editingContact, setEditingContact] = useState<any>(null);
   
   // Get businesses from store for dynamic loading
   const { businesses, loading: businessesLoading, fetchBusinesses } = useBusinessStore();
@@ -203,14 +206,28 @@ export default function BrandCRM() {
             <Building2 className="w-4 h-4 mr-2" />
             Back to Floor 1
           </Button>
-          <Button className={brandConfig.pill} onClick={() => setShowAddContact(true)}>
+          <Button className={brandConfig.pill} onClick={() => {
+            setEditingContact(null);
+            setShowAdvancedModal(true);
+          }}>
             <Plus className="w-4 h-4 mr-2" />
             Add Contact
           </Button>
         </div>
       </div>
 
-      {/* Add Contact Modal */}
+      {/* Advanced Contact Modal - Two-Column Layout with Borough/Neighborhood */}
+      <AdvancedContactModal
+        open={showAdvancedModal}
+        onOpenChange={setShowAdvancedModal}
+        brandKey={brandKey}
+        brandLabel={brandConfig.label}
+        brandColor={brandConfig.primary}
+        accounts={accounts}
+        editingContact={editingContact}
+      />
+
+      {/* Legacy Add Contact Modal (kept for backward compatibility) */}
       <AddContactModal
         open={showAddContact}
         onOpenChange={setShowAddContact}
