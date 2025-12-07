@@ -7,6 +7,7 @@ import {
   Phone, Mail, MapPin, DollarSign, Package, 
   ChevronRight, MessageSquare, ArrowLeft, Store, Truck, AlertCircle, Loader2
 } from 'lucide-react';
+import { StickerStatusCard } from '@/components/store/StickerStatusCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { GRABBA_BRAND_CONFIG } from '@/config/grabbaBrands';
@@ -312,9 +313,18 @@ export default function StoreMasterProfile() {
               <div className={`text-2xl font-bold ${unpaidBalance > 0 ? 'text-red-500' : 'text-green-500'}`}>
                 ${unpaidBalance.toLocaleString()}
               </div>
-              <div className="text-xs text-muted-foreground">Unpaid Balance</div>
+          <div className="text-xs text-muted-foreground">Unpaid Balance</div>
             </CardContent>
           </Card>
+
+          {/* Sticker Status Card */}
+          <StickerStatusCard
+            storeId={id || ''}
+            stickerOnDoor={(storeMaster as any).sticker_on_door}
+            stickerInStore={(storeMaster as any).sticker_in_store}
+            stickerWithPhone={(storeMaster as any).sticker_with_phone}
+            stickerNotes={(storeMaster as any).sticker_notes}
+          />
 
           {/* Store Contacts */}
           <StoreContactsSection storeId={id || ''} storeName={storeMaster.store_name} />

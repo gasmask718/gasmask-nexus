@@ -11,6 +11,7 @@ import { CustomerSimpleTimeline } from '@/components/crm/CustomerSimpleTimeline'
 import { CustomerNotesSimpleEditor } from '@/components/crm/CustomerNotesSimpleEditor';
 import { InteractionTimeline } from '@/components/crm/InteractionTimeline';
 import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
+import { PersonalNotesCard } from '@/components/crm/PersonalNotesCard';
 
 const CRMContactDetail = () => {
   const { id } = useParams();
@@ -124,6 +125,9 @@ const CRMContactDetail = () => {
             contactId={id!} 
             initialNotes={contact.notes}
           />
+          
+          {/* Personal Notes from Interactions */}
+          <PersonalNotesCard contactId={id} />
           
           <Card className="p-6">
             <h2 className="font-semibold mb-4">Communication Timeline</h2>

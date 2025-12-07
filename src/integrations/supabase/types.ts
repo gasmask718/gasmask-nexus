@@ -5307,6 +5307,24 @@ export type Database = {
           },
         ]
       }
+      customer_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role_name?: string
+        }
+        Relationships: []
+      }
       daily_missions: {
         Row: {
           created_at: string | null

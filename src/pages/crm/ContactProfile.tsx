@@ -11,6 +11,7 @@ import {
 import { toast } from 'sonner';
 import { InteractionTimeline } from '@/components/crm/InteractionTimeline';
 import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
+import { PersonalNotesCard } from '@/components/crm/PersonalNotesCard';
 
 const ROLE_LABELS: Record<string, string> = {
   OWNER: 'Owner',
@@ -208,6 +209,9 @@ export default function ContactProfile() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Personal Notes Card */}
+      <PersonalNotesCard contactId={id} storeId={contactData.store_id} />
 
       {/* Interaction Timeline */}
       <InteractionTimeline
