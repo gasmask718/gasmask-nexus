@@ -582,6 +582,144 @@ export type Database = {
           },
         ]
       }
+      ai_call_sessions: {
+        Row: {
+          ai_notes: string | null
+          assigned_agent_id: string | null
+          business_id: string | null
+          call_id: string | null
+          call_summary: string | null
+          contact_id: string | null
+          created_at: string
+          current_node_id: string | null
+          flow_id: string | null
+          handoff_state: string
+          id: string
+          persona_id: string | null
+          sentiment_trend: string | null
+          status: string
+          store_id: string | null
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_notes?: string | null
+          assigned_agent_id?: string | null
+          business_id?: string | null
+          call_id?: string | null
+          call_summary?: string | null
+          contact_id?: string | null
+          created_at?: string
+          current_node_id?: string | null
+          flow_id?: string | null
+          handoff_state?: string
+          id?: string
+          persona_id?: string | null
+          sentiment_trend?: string | null
+          status?: string
+          store_id?: string | null
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_notes?: string | null
+          assigned_agent_id?: string | null
+          business_id?: string | null
+          call_id?: string | null
+          call_summary?: string | null
+          contact_id?: string | null
+          created_at?: string
+          current_node_id?: string | null
+          flow_id?: string | null
+          handoff_state?: string
+          id?: string
+          persona_id?: string | null
+          sentiment_trend?: string | null
+          status?: string
+          store_id?: string | null
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_call_sessions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_sessions_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_sessions_current_node_id_fkey"
+            columns: ["current_node_id"]
+            isOneToOne: false
+            referencedRelation: "call_flow_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_sessions_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "call_flows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_sessions_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "voice_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_sessions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_call_tone_events: {
+        Row: {
+          created_at: string
+          id: string
+          new_tone: string
+          old_tone: string | null
+          reason: string | null
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_tone: string
+          old_tone?: string | null
+          reason?: string | null
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_tone?: string
+          old_tone?: string | null
+          reason?: string | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_call_tone_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_command_logs: {
         Row: {
           affected_entity_ids: string[] | null
@@ -3874,6 +4012,74 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_reasons: {
+        Row: {
+          business_id: string | null
+          call_id: string | null
+          confidence: number | null
+          contact_id: string | null
+          created_at: string
+          id: string
+          reason: string
+          secondary_reasons: string[] | null
+          session_id: string | null
+          store_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          call_id?: string | null
+          confidence?: number | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          reason: string
+          secondary_reasons?: string[] | null
+          session_id?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          call_id?: string | null
+          confidence?: number | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          secondary_reasons?: string[] | null
+          session_id?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_reasons_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_reasons_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_reasons_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_reasons_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
             referencedColumns: ["id"]
           },
         ]

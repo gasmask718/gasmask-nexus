@@ -8,11 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   MessageSquare, Phone, Bot, Bell, Zap, BarChart3, 
   Send, ArrowLeft, RefreshCw, Settings, User, GitBranch,
-  AlertTriangle, Activity, Users, Sparkles
+  AlertTriangle, Activity, Users, Sparkles, Headphones, Tag
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCommunicationCenter } from "@/hooks/useCommunicationCenter";
 import { useCommunicationIntelligence } from "@/hooks/useCommunicationIntelligence";
+import { useLiveCallSessions } from "@/hooks/useLiveCallSessions";
 import { UnifiedInbox } from "@/components/communication/UnifiedInbox";
 import { ManualCallingPanel } from "@/components/communication/ManualCallingPanel";
 import { CommunicationAlerts } from "@/components/communication/CommunicationAlerts";
@@ -25,6 +26,8 @@ import EscalationsPanel from "@/components/communication/EscalationsPanel";
 import EngagementScoresPanel from "@/components/communication/EngagementScoresPanel";
 import DepartmentRoutingPanel from "@/components/communication/DepartmentRoutingPanel";
 import ProactiveOutreachPanel from "@/components/communication/ProactiveOutreachPanel";
+import { OperatorViewPanel } from "@/components/communication/OperatorViewPanel";
+import { CallReasonsPanel } from "@/components/communication/CallReasonsPanel";
 import { toast } from "sonner";
 
 export default function CommunicationCenter() {
@@ -88,6 +91,7 @@ export default function CommunicationCenter() {
   } = useCommunicationCenter(businessIdFilter);
 
   const { escalations, engagementScores } = useCommunicationIntelligence(businessIdFilter);
+  const { stats: liveCallStats } = useLiveCallSessions(businessIdFilter);
 
   const handleSuggestReply = async () => {
     if (!selectedMessage) return;
@@ -217,6 +221,12 @@ export default function CommunicationCenter() {
               <Bot className="h-4 w-4 text-purple-500" />
               <span className="text-sm">{stats.aiGeneratedCount} AI Generated</span>
             </div>
+            {liveCallStats.totalActive > 0 && (
+              <Badge className="bg-green-500 text-white animate-pulse">
+                <Headphones className="h-3 w-3 mr-1" />
+                {liveCallStats.totalActive} Live Calls
+              </Badge>
+            )}
             {stats.unresolvedAlerts > 0 && (
               <Badge variant="destructive" className="ml-auto">
                 {stats.unresolvedAlerts} Alerts
@@ -237,6 +247,15 @@ export default function CommunicationCenter() {
             <TabsTrigger value="calling" className="gap-2">
               <Phone className="h-4 w-4" />
               Dialer
+            </TabsTrigger>
+            <TabsTrigger value="live-calls" className="gap-2">
+              <Headphones className="h-4 w-4" />
+              Live Calls
+              {liveCallStats.totalActive > 0 && (
+                <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-green-500 text-white">
+                  {liveCallStats.totalActive}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="escalations" className="gap-2">
               <AlertTriangle className="h-4 w-4" />
@@ -275,6 +294,10 @@ export default function CommunicationCenter() {
               <BarChart3 className="h-4 w-4" />
               Heatmap
             </TabsTrigger>
+            <TabsTrigger value="call-reasons" className="gap-2">
+              <Tag className="h-4 w-4" />
+              Call Reasons
+            </TabsTrigger>
             <TabsTrigger value="settings" className="gap-2">
               <Settings className="h-4 w-4" />
               Settings
@@ -310,6 +333,10 @@ export default function CommunicationCenter() {
             />
           </TabsContent>
 
+          <TabsContent value="live-calls">
+            <OperatorViewPanel businessId={businessIdFilter} />
+          </TabsContent>
+
           <TabsContent value="escalations">
             <EscalationsPanel businessId={businessIdFilter} />
           </TabsContent>
@@ -340,6 +367,10 @@ export default function CommunicationCenter() {
 
           <TabsContent value="analytics">
             <CommunicationHeatmap businessId={businessIdFilter} />
+          </TabsContent>
+
+          <TabsContent value="call-reasons">
+            <CallReasonsPanel businessId={businessIdFilter} />
           </TabsContent>
 
           <TabsContent value="settings">
