@@ -1,17 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useBusiness } from '@/contexts/BusinessContext';
+import { useBusinessStore } from '@/stores/businessStore';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Plus, Phone, Mail, Building2 } from 'lucide-react';
+import { Search, Plus, Phone, Mail, Building2, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { CustomerSimpleFilters } from '@/components/crm/CustomerSimpleFilters';
 import { CustomerSnapshotCard } from '@/components/crm/CustomerSnapshotCard';
 import { QuickAddContactForm } from '@/components/crm/QuickAddContactForm';
+import { GlobalBusinessSelector } from '@/components/crm/GlobalBusinessSelector';
 import {
   Dialog,
   DialogContent,
@@ -22,12 +23,22 @@ import {
 
 const CRMContacts = () => {
   const navigate = useNavigate();
-  const { currentBusiness, loading } = useBusiness();
+  const { selectedBusiness, loading, fetchBusinesses, ensureBusinessSelected } = useBusinessStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [selectedContact, setSelectedContact] = useState<any>(null);
+
+  // Initialize business on mount
+  useEffect(() => {
+    fetchBusinesses();
+  }, [fetchBusinesses]);
+
+  // Ensure business is selected
+  useEffect(() => {
+    ensureBusinessSelected();
+  }, [ensureBusinessSelected]);
 
   // Show loading state
   if (loading) {
@@ -41,35 +52,20 @@ const CRMContacts = () => {
     );
   }
 
-  // Show message if no business selected
-  if (!currentBusiness) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Card className="p-8 text-center max-w-md">
-          <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">No Business Selected</h3>
-          <p className="text-sm text-muted-foreground">
-            Please select a business to view contacts.
-          </p>
-        </Card>
-      </div>
-    );
-  }
-
-  const { data: contacts, isLoading } = useQuery({
-    queryKey: ['crm-contacts-list', currentBusiness?.id],
+  const { data: contacts, isLoading, refetch } = useQuery({
+    queryKey: ['crm-contacts-list', selectedBusiness?.id],
     queryFn: async () => {
-      if (!currentBusiness?.id) return [];
+      if (!selectedBusiness?.id) return [];
       
       const { data, error } = await supabase
         .from('crm_contacts')
-        .select('*')
-        .eq('business_id', currentBusiness.id)
+        .select('*, borough:boroughs(id, name)')
+        .eq('business_id', selectedBusiness.id)
         .order('last_contact_date', { ascending: false, nullsFirst: false});
       if (error) throw error;
       return data;
     },
-    enabled: !!currentBusiness?.id,
+    enabled: !!selectedBusiness?.id,
   });
 
   const filteredContacts = contacts?.filter((contact) => {
@@ -124,13 +120,16 @@ const CRMContacts = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">CRM Contacts</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage all your business relationships
-          </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">CRM Contacts</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage all your business relationships
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          <GlobalBusinessSelector />
           <Dialog open={showQuickAdd} onOpenChange={setShowQuickAdd}>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -144,7 +143,7 @@ const CRMContacts = () => {
               </DialogHeader>
               <QuickAddContactForm onSuccess={() => {
                 setShowQuickAdd(false);
-                window.location.reload();
+                refetch();
               }} />
             </DialogContent>
           </Dialog>
@@ -218,9 +217,16 @@ const CRMContacts = () => {
             </div>
           ))}
           {(!filteredContacts || filteredContacts.length === 0) && (
-            <p className="text-center py-12 text-muted-foreground">
-              No contacts found. Create your first contact to get started.
-            </p>
+            <div className="text-center py-12">
+              <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground mb-4">
+                No contacts found. Create your first contact to get started.
+              </p>
+              <Button onClick={() => setShowQuickAdd(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Contact
+              </Button>
+            </div>
           )}
         </div>
       </Card>
