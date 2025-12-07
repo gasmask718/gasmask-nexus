@@ -33,6 +33,13 @@ export default function BrandCRM() {
   const { data: boroughs = [] } = useBoroughs();
   const { data: roles = [] } = useCustomerRoles();
 
+  // Fail-safe: redirect to Global CRM if no brandId
+  useEffect(() => {
+    if (!brandId) {
+      navigate('/crm');
+    }
+  }, [brandId, navigate]);
+
   // Fetch brand/business details - try businesses table first, then brands table
   const { data: brand, isLoading: brandLoading } = useQuery({
     queryKey: ["brand", brandId],
@@ -71,17 +78,21 @@ export default function BrandCRM() {
   const { data: stores = [], refetch: refetchStores } = useQuery({
     queryKey: ["brand-stores", brandId],
     queryFn: async () => {
+      if (!brandId) return [];
+      
+      // Query stores by brand_id or business_id
       const { data, error } = await supabase
         .from("store_master")
         .select(`
           *,
           borough:boroughs(id, boro_name)
         `)
-        .eq("brand_id", brandId)
+        .or(`brand_id.eq.${brandId},business_id.eq.${brandId}`)
         .is("deleted_at", null)
         .order("store_name");
+      
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!brandId,
   });
