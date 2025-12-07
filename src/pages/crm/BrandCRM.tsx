@@ -33,17 +33,36 @@ export default function BrandCRM() {
   const { data: boroughs = [] } = useBoroughs();
   const { data: roles = [] } = useCustomerRoles();
 
-  // Fetch brand details
+  // Fetch brand/business details - try businesses table first, then brands table
   const { data: brand, isLoading: brandLoading } = useQuery({
     queryKey: ["brand", brandId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First try businesses table
+      const { data: businessData, error: businessError } = await supabase
+        .from("businesses")
+        .select("*")
+        .eq("id", brandId)
+        .single();
+      
+      if (businessData) {
+        return {
+          id: businessData.id,
+          name: businessData.name,
+          color: businessData.primary_color,
+          logo_url: businessData.logo_url,
+          active: businessData.is_active
+        };
+      }
+      
+      // Fallback to brands table
+      const { data: brandData, error: brandError } = await supabase
         .from("brands")
         .select("*")
         .eq("id", brandId)
         .single();
-      if (error) throw error;
-      return data;
+      
+      if (brandError) throw brandError;
+      return brandData;
     },
     enabled: !!brandId,
   });
