@@ -18,11 +18,11 @@ export const brandThemes: Record<string, BrandTheme> = {
   },
   hotmama: {
     name: "HotMama",
-    primary: "#B76E79",
-    primaryRgb: "183, 110, 121",
-    accent: "#FFD700",
-    accentRgb: "255, 215, 0",
-    gradient: "linear-gradient(135deg, #B76E79, #FFD700)"
+    primary: "#FF4F9D",
+    primaryRgb: "255, 79, 157",
+    accent: "#FFC2D6",
+    accentRgb: "255, 194, 214",
+    gradient: "linear-gradient(135deg, #FF4F9D, #FFC2D6)"
   },
   grabba: {
     name: "Grabba R Us",

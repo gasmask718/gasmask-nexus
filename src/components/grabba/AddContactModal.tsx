@@ -70,6 +70,10 @@ export function AddContactModal({
     linkedStores: [] as string[],
     notes: '',
     isPrimaryContact: false,
+    addressStreet: '',
+    addressCity: '',
+    addressState: '',
+    addressZip: '',
   });
 
   // Generate initials from name
@@ -134,6 +138,10 @@ export function AddContactModal({
       linkedStores: [],
       notes: '',
       isPrimaryContact: false,
+      addressStreet: '',
+      addressCity: '',
+      addressState: '',
+      addressZip: '',
     });
     setCustomRoleInput('');
     setShowCustomRoleInput(false);
@@ -259,6 +267,10 @@ export function AddContactModal({
           notes: formData.notes.trim() || null,
           is_primary_contact: formData.isPrimaryContact,
           tags: [formData.primaryRole, ...formData.additionalRoles],
+          address_street: formData.addressStreet.trim() || null,
+          address_city: formData.addressCity.trim() || null,
+          address_state: formData.addressState.trim() || null,
+          address_zip: formData.addressZip.trim() || null,
         })
         .select('id')
         .single();
@@ -435,6 +447,56 @@ export function AddContactModal({
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 2.5: Address Information */}
+            <div className="bg-secondary/30 rounded-xl p-5 border border-border/30">
+              <div className="flex items-center gap-2 mb-4">
+                <Store className="w-4 h-4 text-primary" />
+                <h3 className="font-medium text-foreground">Address Information</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">Street Address</Label>
+                  <Input
+                    placeholder="123 Main Street"
+                    value={formData.addressStreet}
+                    onChange={(e) => setFormData({ ...formData, addressStreet: e.target.value })}
+                    className="bg-background/50 border-border/50"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">City</Label>
+                    <Input
+                      placeholder="New York"
+                      value={formData.addressCity}
+                      onChange={(e) => setFormData({ ...formData, addressCity: e.target.value })}
+                      className="bg-background/50 border-border/50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">State</Label>
+                    <Input
+                      placeholder="NY"
+                      value={formData.addressState}
+                      onChange={(e) => setFormData({ ...formData, addressState: e.target.value })}
+                      className="bg-background/50 border-border/50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">ZIP Code</Label>
+                    <Input
+                      placeholder="10001"
+                      value={formData.addressZip}
+                      onChange={(e) => setFormData({ ...formData, addressZip: e.target.value })}
+                      className="bg-background/50 border-border/50"
+                    />
                   </div>
                 </div>
               </div>

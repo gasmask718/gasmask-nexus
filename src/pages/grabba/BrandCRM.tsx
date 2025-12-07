@@ -10,7 +10,7 @@ import {
   Search, Phone, Mail, MessageSquare, Plus, TrendingUp, Store, DollarSign, 
   Package, ChevronRight, Building2, Loader2, RefreshCw, Brain, Users, 
   FileText, Bell, BarChart3, Lightbulb, AlertTriangle, Heart, Target,
-  Edit, Star, ChevronDown
+  Edit, Star, ChevronDown, MapPin
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { GRABBA_BRAND_CONFIG, GrabbaBrand } from '@/config/grabbaBrands';
@@ -18,10 +18,12 @@ import { useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { useBrandCRMAutoCreate } from '@/hooks/useBrandCRMAutoCreate';
 import { AddContactModal } from '@/components/grabba/AddContactModal';
 import { useBusinessStore } from '@/stores/businessStore';
+import { PersonalNotesEditor } from '@/components/crm/PersonalNotesEditor';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BRAND CRM — Individual brand view with dynamic brand switching
 // ═══════════════════════════════════════════════════════════════════════════════
+
 
 export default function BrandCRM() {
   const { brand } = useParams<{ brand: string }>();
@@ -331,18 +333,13 @@ export default function BrandCRM() {
             </div>
           </div>
 
-          {/* Personal Notes */}
-          <div className="mt-4 p-4 rounded-lg border border-dashed">
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="w-4 h-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Personal Notes</span>
-            </div>
-            {isLoading ? (
-              <Skeleton className="h-8 w-full" />
-            ) : (
-              <p className="text-sm text-muted-foreground italic">{insights.personalNotes}</p>
-            )}
-          </div>
+          {/* Personal Notes - Autosaving with History */}
+          <PersonalNotesEditor 
+            entityType="brand" 
+            entityId={brandKey} 
+            brandColor={brandConfig.primary}
+            className="mt-4"
+          />
         </CardContent>
       </Card>
 
