@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Plus, MapPin, User, Building2, Home, Loader2, CheckCircle, AlertCircle, Sparkles, Map } from 'lucide-react';
+import { Plus, MapPin, User, Building2, Home, Loader2, CheckCircle, AlertCircle, Sparkles, Map, UserCog } from 'lucide-react';
+import { RoleSelector } from './RoleSelector';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 
@@ -149,6 +150,7 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
     email: '',
     phone: '',
     type: 'lead',
+    roleId: '',
     organization: '',
     addressStreet: '',
     addressCity: '',
@@ -270,6 +272,7 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
         email: editingContact.email || '',
         phone: editingContact.phone || '',
         type: editingContact.type || 'lead',
+        roleId: editingContact.role_id || '',
         organization: editingContact.organization || '',
         addressStreet: editingContact.address_street || '',
         addressCity: editingContact.address_city || '',
@@ -364,6 +367,7 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
         email: formData.email.trim() || null,
         phone: formData.phone.trim() || null,
         type: formData.type,
+        role_id: formData.roleId || null,
         organization: formData.organization.trim() || null,
         address_street: formData.addressStreet.trim() || null,
         address_city: formData.addressCity.trim() || null,
@@ -405,6 +409,7 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
         email: '',
         phone: '',
         type: 'lead',
+        roleId: '',
         organization: '',
         addressStreet: '',
         addressCity: '',
@@ -511,6 +516,19 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
               value={formData.organization}
               onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
               placeholder="Company or store name"
+            />
+          </div>
+
+          {/* Primary Role with Add New */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <UserCog className="w-3.5 h-3.5 text-muted-foreground" />
+              Primary Role
+            </Label>
+            <RoleSelector
+              value={formData.roleId}
+              onValueChange={(roleId) => setFormData({ ...formData, roleId })}
+              placeholder="Select role..."
             />
           </div>
         </div>

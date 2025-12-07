@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/use-toast';
 import { Plus } from 'lucide-react';
 import { BoroughSelector } from './BoroughSelector';
+import { RoleSelector } from './RoleSelector';
 
 interface QuickAddContactFormProps {
   onSuccess?: () => void;
@@ -21,6 +22,7 @@ export const QuickAddContactForm = ({ onSuccess }: QuickAddContactFormProps) => 
     email: '',
     phone: '',
     type: 'lead' as string,
+    role_id: '' as string,
     borough_id: '' as string,
   });
 
@@ -36,6 +38,7 @@ export const QuickAddContactForm = ({ onSuccess }: QuickAddContactFormProps) => 
         email: formData.email || null,
         phone: formData.phone || null,
         type: formData.type,
+        role_id: formData.role_id || null,
         borough_id: formData.borough_id || null,
         relationship_status: 'active',
         last_contact_date: new Date().toISOString(),
@@ -48,7 +51,7 @@ export const QuickAddContactForm = ({ onSuccess }: QuickAddContactFormProps) => 
         description: `${formData.name} has been added to your CRM.`,
       });
 
-      setFormData({ name: '', email: '', phone: '', type: 'lead', borough_id: '' });
+      setFormData({ name: '', email: '', phone: '', type: 'lead', role_id: '', borough_id: '' });
       onSuccess?.();
     } catch (error: any) {
       toast({
@@ -118,6 +121,15 @@ export const QuickAddContactForm = ({ onSuccess }: QuickAddContactFormProps) => 
         onChange={(value) => setFormData({ ...formData, borough_id: value })}
         businessId={selectedBusiness?.id}
       />
+
+      <div className="space-y-2">
+        <Label>Primary Role</Label>
+        <RoleSelector
+          value={formData.role_id}
+          onValueChange={(value) => setFormData({ ...formData, role_id: value })}
+          placeholder="Select role..."
+        />
+      </div>
 
       <Button type="submit" className="w-full" disabled={loading}>
         <Plus className="mr-2 h-4 w-4" />

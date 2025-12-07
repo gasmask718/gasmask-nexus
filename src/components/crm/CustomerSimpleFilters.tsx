@@ -1,6 +1,7 @@
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search } from 'lucide-react';
+import { useBoroughs } from '@/hooks/useBoroughs';
 
 interface CustomerSimpleFiltersProps {
   searchTerm: string;
@@ -9,6 +10,8 @@ interface CustomerSimpleFiltersProps {
   onTypeChange: (value: string) => void;
   statusFilter: string;
   onStatusChange: (value: string) => void;
+  boroughFilter?: string;
+  onBoroughChange?: (value: string) => void;
 }
 
 export const CustomerSimpleFilters = ({
@@ -18,7 +21,11 @@ export const CustomerSimpleFilters = ({
   onTypeChange,
   statusFilter,
   onStatusChange,
+  boroughFilter = 'all',
+  onBoroughChange,
 }: CustomerSimpleFiltersProps) => {
+  const { data: boroughs = [] } = useBoroughs();
+
   return (
     <div className="flex flex-wrap gap-3">
       <div className="flex-1 min-w-[200px]">
@@ -60,6 +67,22 @@ export const CustomerSimpleFilters = ({
           <SelectItem value="lost">Lost</SelectItem>
         </SelectContent>
       </Select>
+
+      {onBoroughChange && (
+        <Select value={boroughFilter} onValueChange={onBoroughChange}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Borough" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Boroughs</SelectItem>
+            {boroughs.map((borough) => (
+              <SelectItem key={borough.id} value={borough.id}>
+                {borough.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
     </div>
   );
 };
