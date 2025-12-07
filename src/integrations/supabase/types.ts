@@ -125,6 +125,58 @@ export type Database = {
           },
         ]
       }
+      active_speaker_log: {
+        Row: {
+          agent_id: string | null
+          ended_at: string | null
+          id: string
+          participant_id: string | null
+          participant_type: string
+          session_id: string
+          started_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          ended_at?: string | null
+          id?: string
+          participant_id?: string | null
+          participant_type: string
+          session_id: string
+          started_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          ended_at?: string | null
+          id?: string
+          participant_id?: string | null
+          participant_type?: string
+          session_id?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "active_speaker_log_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "active_speaker_log_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "call_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "active_speaker_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisor_action_log: {
         Row: {
           action_label: string
@@ -944,10 +996,13 @@ export type Database = {
           flow_id: string | null
           handoff_state: string
           id: string
+          is_multi_party: boolean | null
           persona_id: string | null
+          primary_agent_id: string | null
           sentiment_trend: string | null
           status: string
           store_id: string | null
+          switchboard_agent_id: string | null
           transcript: string | null
           updated_at: string
         }
@@ -963,10 +1018,13 @@ export type Database = {
           flow_id?: string | null
           handoff_state?: string
           id?: string
+          is_multi_party?: boolean | null
           persona_id?: string | null
+          primary_agent_id?: string | null
           sentiment_trend?: string | null
           status?: string
           store_id?: string | null
+          switchboard_agent_id?: string | null
           transcript?: string | null
           updated_at?: string
         }
@@ -982,10 +1040,13 @@ export type Database = {
           flow_id?: string | null
           handoff_state?: string
           id?: string
+          is_multi_party?: boolean | null
           persona_id?: string | null
+          primary_agent_id?: string | null
           sentiment_trend?: string | null
           status?: string
           store_id?: string | null
+          switchboard_agent_id?: string | null
           transcript?: string | null
           updated_at?: string
         }
@@ -1026,10 +1087,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ai_call_sessions_primary_agent_id_fkey"
+            columns: ["primary_agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ai_call_sessions_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_sessions_switchboard_agent_id_fkey"
+            columns: ["switchboard_agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
             referencedColumns: ["id"]
           },
         ]
@@ -4374,6 +4449,57 @@ export type Database = {
           },
         ]
       }
+      call_participants: {
+        Row: {
+          agent_id: string | null
+          contact_id: string | null
+          id: string
+          joined_at: string
+          left_at: string | null
+          participant_type: string
+          role: string
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          contact_id?: string | null
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          participant_type: string
+          role?: string
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          contact_id?: string | null
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          participant_type?: string
+          role?: string
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_participants_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_reasons: {
         Row: {
           business_id: string | null
@@ -4438,6 +4564,53 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_routing_rules: {
+        Row: {
+          action: Json
+          business_id: string | null
+          condition: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          priority: number | null
+          updated_at: string
+        }
+        Insert: {
+          action?: Json
+          business_id?: string | null
+          condition?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          priority?: number | null
+          updated_at?: string
+        }
+        Update: {
+          action?: Json
+          business_id?: string | null
+          condition?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          priority?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_routing_rules_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -18366,6 +18539,55 @@ export type Database = {
           zoning?: string | null
         }
         Relationships: []
+      }
+      whisper_coaching_events: {
+        Row: {
+          agent_id: string
+          created_at: string
+          human_participant_id: string
+          id: string
+          session_id: string
+          suggestion: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          human_participant_id: string
+          id?: string
+          session_id: string
+          suggestion: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          human_participant_id?: string
+          id?: string
+          session_id?: string
+          suggestion?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whisper_coaching_events_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whisper_coaching_events_human_participant_id_fkey"
+            columns: ["human_participant_id"]
+            isOneToOne: false
+            referencedRelation: "call_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whisper_coaching_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wholesale_ai_sourcing: {
         Row: {
