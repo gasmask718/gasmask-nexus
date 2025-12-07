@@ -5,9 +5,7 @@ import { useBusinessStore } from '@/stores/businessStore';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Plus, Phone, Mail, Building2, UserPlus } from 'lucide-react';
+import { Plus, Phone, Mail, Building2, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { CustomerSimpleFilters } from '@/components/crm/CustomerSimpleFilters';
 import { CustomerSnapshotCard } from '@/components/crm/CustomerSnapshotCard';
@@ -40,18 +38,7 @@ const CRMContacts = () => {
     ensureBusinessSelected();
   }, [ensureBusinessSelected]);
 
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading contacts...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // ALL HOOKS MUST BE BEFORE ANY CONDITIONAL RETURNS
   const { data: contacts, isLoading, refetch } = useQuery({
     queryKey: ['crm-contacts-list', selectedBusiness?.id],
     queryFn: async () => {
@@ -67,6 +54,18 @@ const CRMContacts = () => {
     },
     enabled: !!selectedBusiness?.id,
   });
+
+  // Show loading state
+  if (loading || isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading contacts...</p>
+        </div>
+      </div>
+    );
+  }
 
   const filteredContacts = contacts?.filter((contact) => {
     const matchesSearch =
@@ -108,14 +107,6 @@ const CRMContacts = () => {
       default: return <Mail className="h-4 w-4" />;
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

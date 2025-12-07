@@ -52,50 +52,7 @@ const CRM = () => {
     ensureBusinessSelected();
   }, [ensureBusinessSelected]);
 
-  const handleLoadDemoData = async () => {
-    if (!selectedBusiness?.id) return;
-    
-    setLoadingDemo(true);
-    const success = await seedDemoData(selectedBusiness.id);
-    setLoadingDemo(false);
-    setShowDemoDialog(false);
-    
-    if (success) {
-      window.location.reload();
-    }
-  };
-
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading CRM...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show empty state if no businesses exist at all
-  if (businesses.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Card className="p-8 text-center max-w-md">
-          <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">No Businesses Found</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Create your first business to start using CRM features.
-          </p>
-          <Button onClick={() => navigate('/settings/business')}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add New Business
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
+  // ALL HOOKS MUST BE BEFORE ANY CONDITIONAL RETURNS
   const { data: contacts, refetch: refetchContacts } = useQuery({
     queryKey: ['crm-contacts', selectedBusiness?.id],
     queryFn: async () => {
@@ -152,6 +109,50 @@ const CRM = () => {
     },
     enabled: !!selectedBusiness?.id,
   });
+
+  const handleLoadDemoData = async () => {
+    if (!selectedBusiness?.id) return;
+    
+    setLoadingDemo(true);
+    const success = await seedDemoData(selectedBusiness.id);
+    setLoadingDemo(false);
+    setShowDemoDialog(false);
+    
+    if (success) {
+      window.location.reload();
+    }
+  };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading CRM...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no businesses exist at all
+  if (businesses.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Card className="p-8 text-center max-w-md">
+          <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-semibold mb-2">No Businesses Found</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Create your first business to start using CRM features.
+          </p>
+          <Button onClick={() => navigate('/settings/business')}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Business
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   const totalContacts = contacts?.length || 0;
   const activeContacts = contacts?.filter(c => c.relationship_status === 'active').length || 0;
