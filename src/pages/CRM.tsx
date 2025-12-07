@@ -36,21 +36,16 @@ import {
 
 const CRM = () => {
   const navigate = useNavigate();
-  const { selectedBusiness, loading, fetchBusinesses, ensureBusinessSelected, businesses } = useBusinessStore();
+  const { selectedBusiness, loading, fetchBusinesses, businesses } = useBusinessStore();
   const { role } = useUserRole();
   const [showDemoDialog, setShowDemoDialog] = useState(false);
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
 
-  // Initialize business on mount
+  // Initialize business on mount - fetchBusinesses now auto-selects first business
   useEffect(() => {
     fetchBusinesses();
   }, [fetchBusinesses]);
-
-  // Ensure business is selected
-  useEffect(() => {
-    ensureBusinessSelected();
-  }, [ensureBusinessSelected]);
 
   // ALL HOOKS MUST BE BEFORE ANY CONDITIONAL RETURNS
   const { data: contacts, refetch: refetchContacts } = useQuery({

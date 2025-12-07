@@ -21,22 +21,17 @@ import {
 
 const CRMContacts = () => {
   const navigate = useNavigate();
-  const { selectedBusiness, loading, fetchBusinesses, ensureBusinessSelected } = useBusinessStore();
+  const { selectedBusiness, loading, fetchBusinesses } = useBusinessStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [selectedContact, setSelectedContact] = useState<any>(null);
 
-  // Initialize business on mount
+  // Initialize business on mount - fetchBusinesses now auto-selects first business
   useEffect(() => {
     fetchBusinesses();
   }, [fetchBusinesses]);
-
-  // Ensure business is selected
-  useEffect(() => {
-    ensureBusinessSelected();
-  }, [ensureBusinessSelected]);
 
   // ALL HOOKS MUST BE BEFORE ANY CONDITIONAL RETURNS
   const { data: contacts, isLoading, refetch } = useQuery({
