@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Users, Phone, Mail, MessageSquare, AlertTriangle, 
-  TrendingUp, Calendar, Plus, Search, Database, Building2 
+  TrendingUp, Calendar, Plus, Search, Database, Building2, Globe
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -218,6 +218,10 @@ const CRM = () => {
               Load Demo Data
             </Button>
           )}
+          <Button variant="outline" onClick={() => navigate('/crm/global')}>
+            <Globe className="mr-2 h-4 w-4" />
+            Global CRM
+          </Button>
           <Button variant="outline" onClick={() => navigate('/crm/contacts')}>
             <Users className="mr-2 h-4 w-4" />
             All Contacts

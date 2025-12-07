@@ -2414,6 +2414,7 @@ export type Database = {
       }
       brands: {
         Row: {
+          active: boolean | null
           color: string | null
           created_at: string | null
           id: string
@@ -2421,6 +2422,7 @@ export type Database = {
           name: string
         }
         Insert: {
+          active?: boolean | null
           color?: string | null
           created_at?: string | null
           id?: string
@@ -2428,6 +2430,7 @@ export type Database = {
           name: string
         }
         Update: {
+          active?: boolean | null
           color?: string | null
           created_at?: string | null
           id?: string
