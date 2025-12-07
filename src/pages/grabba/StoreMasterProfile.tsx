@@ -16,7 +16,9 @@ import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import { CustomerMemoryCoreV2 } from '@/components/grabba/CustomerMemoryCoreV2';
 import { StoreAIFuturePanel } from '@/components/grabba/StoreAIFuturePanel';
 import { StorePersonalMemoryPanel } from '@/components/grabba/StorePersonalMemoryPanel';
+import { PersonalIntelligencePanel } from '@/components/grabba/PersonalIntelligencePanel';
 import { useStoreMasterAutoCreate } from '@/hooks/useStoreMasterAutoCreate';
+import { getExtractedProfile } from '@/services/profileExtractionService';
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -142,6 +144,13 @@ export default function StoreMasterProfile() {
         d.interaction_type === 'visit' || d.type === 'visit'
       ).slice(0, 50);
     },
+    enabled: !!id,
+  });
+
+  // AI Extracted Profile for Personal Intelligence Panel
+  const { data: aiProfile } = useQuery({
+    queryKey: ['extracted-profile', id],
+    queryFn: () => getExtractedProfile(id || ''),
     enabled: !!id,
   });
 
@@ -309,6 +318,9 @@ export default function StoreMasterProfile() {
             interactions={interactions}
             visits={visits}
           />
+
+          {/* ===== PERSONAL INTELLIGENCE PANEL — DIRECTLY UNDER MEMORY CORE ===== */}
+          <PersonalIntelligencePanel profile={aiProfile} />
 
           {/* ===== PERSONAL MEMORY & BACKGROUND (ALWAYS VISIBLE - CENTER COLUMN) ===== */}
           <div id="store-memory-panel">
