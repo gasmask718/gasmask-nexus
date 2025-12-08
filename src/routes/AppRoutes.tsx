@@ -137,6 +137,8 @@ import VoiceMatrixPage from '@/pages/communication/voicematrix/VoiceMatrixPage';
 import CommSettingsPage from '@/pages/communication/settings/SettingsPage';
 import ManualCallPage from '@/pages/communication/manual/ManualCallPage';
 import ManualTextPage from '@/pages/communication/manual/ManualTextPage';
+import AIAutoDialerPage from '@/pages/communication/ai/AIAutoDialerPage';
+import AIAutoTextPage from '@/pages/communication/ai/AIAutoTextPage';
 // Legacy Communication imports (kept for other routes)
 import CommunicationOverview from '@/pages/communication/CommunicationOverview';
 import CommunicationCampaigns from '@/pages/communication/CommunicationCampaigns';
@@ -814,6 +816,8 @@ export default function AppRoutes() {
           <Route path="dialer" element={<DialerPage />} />
           <Route path="manual-calls" element={<ManualCallPage />} />
           <Route path="manual-text" element={<ManualTextPage />} />
+          <Route path="ai-auto-dialer" element={<AIAutoDialerPage />} />
+          <Route path="ai-auto-text" element={<AIAutoTextPage />} />
           <Route path="live" element={<LiveCallsPage />} />
           <Route path="escalations" element={<EscalationsPage />} />
           <Route path="engagement" element={<EngagementPage />} />
