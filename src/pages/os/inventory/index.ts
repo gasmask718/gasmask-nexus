@@ -8,3 +8,5 @@ export { default as SupplierDetailPage } from './SupplierDetailPage';
 export { default as PurchaseOrdersPage } from './PurchaseOrdersPage';
 export { default as NewPurchaseOrderPage } from './NewPurchaseOrderPage';
 export { default as PurchaseOrderDetailPage } from './PurchaseOrderDetailPage';
+export { default as StockLevelsPage } from './StockLevelsPage';
+export { default as MovementsPage } from './MovementsPage';
