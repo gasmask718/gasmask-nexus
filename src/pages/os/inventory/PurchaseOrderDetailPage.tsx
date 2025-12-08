@@ -133,9 +133,11 @@ export default function PurchaseOrderDetailPage() {
     mutationFn: async ({ itemId, qty }: { itemId: string; qty: number }) => {
       const item = poItems?.find((i) => i.id === itemId);
       if (!item) throw new Error('Item not found');
+      if (!item.product_id) throw new Error('Item has no product linked');
 
       const newReceivedQty = (item.quantity_received || 0) + qty;
 
+      // Update PO item received quantity
       const { error } = await supabase
         .from('purchase_order_items')
         .update({
@@ -146,16 +148,35 @@ export default function PurchaseOrderDetailPage() {
 
       if (error) throw error;
 
-      // TODO (Inventory Levels V2):
-      // - When receiving, increment inventory_levels for given product + warehouse
-      // - Log movement record: type='PO_RECEIPT'
+      // Apply inventory movement - increment stock at warehouse
+      const warehouseId = po?.target_warehouse_id;
+      if (warehouseId && item.product_id) {
+        const { applyInventoryMovement } = await import('@/lib/inventory/applyInventoryMovement');
+        const result = await applyInventoryMovement({
+          product_id: item.product_id,
+          warehouse_id: warehouseId,
+          quantity_change: qty,
+          movement_type: 'PO_RECEIPT',
+          reason: `Received from PO ${po?.id?.slice(0, 8).toUpperCase()}`,
+          reference_type: 'purchase_order',
+          reference_id: po?.id,
+        });
+
+        if (!result.success) {
+          console.error('Failed to update inventory:', result.error);
+          // Don't throw - PO item was updated, just log the inventory error
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-order-items', poId] });
+      queryClient.invalidateQueries({ queryKey: ['inventory-stock'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-levels'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory-movements'] });
       setReceiveModalOpen(false);
       setReceiveItemId(null);
       setReceiveQuantity('');
-      toast.success('Items received');
+      toast.success('Items received and stock updated');
 
       // Check if all items are fully received
       const allReceived = poItems?.every(
