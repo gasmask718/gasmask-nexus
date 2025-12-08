@@ -3,3 +3,8 @@ export { default as ProductsPage } from './ProductsPage';
 export { default as ProductDetailPage } from './ProductDetailPage';
 export { default as WarehousesPage } from './WarehousesPage';
 export { default as WarehouseDetailPage } from './WarehouseDetailPage';
+export { default as SuppliersPage } from './SuppliersPage';
+export { default as SupplierDetailPage } from './SupplierDetailPage';
+export { default as PurchaseOrdersPage } from './PurchaseOrdersPage';
+export { default as NewPurchaseOrderPage } from './NewPurchaseOrderPage';
+export { default as PurchaseOrderDetailPage } from './PurchaseOrderDetailPage';
