@@ -881,6 +881,107 @@ export type Database = {
           },
         ]
       }
+      ai_call_campaigns: {
+        Row: {
+          answered_calls: number | null
+          auto_followup_text: boolean | null
+          business_id: string | null
+          completed_at: string | null
+          completed_calls: number | null
+          conversion_count: number | null
+          created_at: string
+          description: string | null
+          dynamic_persona_switching: boolean | null
+          failed_calls: number | null
+          flow_id: string | null
+          followup_template: string | null
+          id: string
+          max_concurrent_calls: number | null
+          name: string
+          persona_id: string | null
+          prediction_snapshot: Json | null
+          priority_mode: string | null
+          retry_window_hours: number | null
+          scheduled_at: string | null
+          sentiment_adaptation: boolean | null
+          sequence_steps: Json | null
+          started_at: string | null
+          status: string | null
+          target_segment: string | null
+          total_targets: number | null
+          updated_at: string
+          voicemail_count: number | null
+        }
+        Insert: {
+          answered_calls?: number | null
+          auto_followup_text?: boolean | null
+          business_id?: string | null
+          completed_at?: string | null
+          completed_calls?: number | null
+          conversion_count?: number | null
+          created_at?: string
+          description?: string | null
+          dynamic_persona_switching?: boolean | null
+          failed_calls?: number | null
+          flow_id?: string | null
+          followup_template?: string | null
+          id?: string
+          max_concurrent_calls?: number | null
+          name: string
+          persona_id?: string | null
+          prediction_snapshot?: Json | null
+          priority_mode?: string | null
+          retry_window_hours?: number | null
+          scheduled_at?: string | null
+          sentiment_adaptation?: boolean | null
+          sequence_steps?: Json | null
+          started_at?: string | null
+          status?: string | null
+          target_segment?: string | null
+          total_targets?: number | null
+          updated_at?: string
+          voicemail_count?: number | null
+        }
+        Update: {
+          answered_calls?: number | null
+          auto_followup_text?: boolean | null
+          business_id?: string | null
+          completed_at?: string | null
+          completed_calls?: number | null
+          conversion_count?: number | null
+          created_at?: string
+          description?: string | null
+          dynamic_persona_switching?: boolean | null
+          failed_calls?: number | null
+          flow_id?: string | null
+          followup_template?: string | null
+          id?: string
+          max_concurrent_calls?: number | null
+          name?: string
+          persona_id?: string | null
+          prediction_snapshot?: Json | null
+          priority_mode?: string | null
+          retry_window_hours?: number | null
+          scheduled_at?: string | null
+          sentiment_adaptation?: boolean | null
+          sequence_steps?: Json | null
+          started_at?: string | null
+          status?: string | null
+          target_segment?: string | null
+          total_targets?: number | null
+          updated_at?: string
+          voicemail_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_call_campaigns_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_call_logs: {
         Row: {
           ai_summary: string | null
@@ -4449,6 +4550,51 @@ export type Database = {
           },
         ]
       }
+      call_optimization_stats: {
+        Row: {
+          answer_rate: number | null
+          average_call_duration: number | null
+          best_persona: string | null
+          best_script: string | null
+          best_time_to_call: string | null
+          campaign_id: string | null
+          churn_prevention_score: number | null
+          conversion_rate: number | null
+          created_at: string
+          id: string
+          updated_at: string
+          voicemail_rate: number | null
+        }
+        Insert: {
+          answer_rate?: number | null
+          average_call_duration?: number | null
+          best_persona?: string | null
+          best_script?: string | null
+          best_time_to_call?: string | null
+          campaign_id?: string | null
+          churn_prevention_score?: number | null
+          conversion_rate?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          voicemail_rate?: number | null
+        }
+        Update: {
+          answer_rate?: number | null
+          average_call_duration?: number | null
+          best_persona?: string | null
+          best_script?: string | null
+          best_time_to_call?: string | null
+          campaign_id?: string | null
+          churn_prevention_score?: number | null
+          conversion_rate?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          voicemail_rate?: number | null
+        }
+        Relationships: []
+      }
       call_participants: {
         Row: {
           agent_id: string | null
@@ -4496,6 +4642,59 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_priority_queue: {
+        Row: {
+          ai_prediction: Json | null
+          campaign_id: string | null
+          created_at: string
+          id: string
+          last_order_date: string | null
+          opportunity_score: number | null
+          priority_score: number | null
+          reason: string | null
+          risk_score: number | null
+          status: string | null
+          store_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_prediction?: Json | null
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          last_order_date?: string | null
+          opportunity_score?: number | null
+          priority_score?: number | null
+          reason?: string | null
+          risk_score?: number | null
+          status?: string | null
+          store_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_prediction?: Json | null
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          last_order_date?: string | null
+          opportunity_score?: number | null
+          priority_score?: number | null
+          reason?: string | null
+          risk_score?: number | null
+          status?: string | null
+          store_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_priority_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
