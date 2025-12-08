@@ -10,3 +10,4 @@ export { default as NewPurchaseOrderPage } from './NewPurchaseOrderPage';
 export { default as PurchaseOrderDetailPage } from './PurchaseOrderDetailPage';
 export { default as StockLevelsPage } from './StockLevelsPage';
 export { default as MovementsPage } from './MovementsPage';
+export { default as ProcurementPage } from './ProcurementPage';

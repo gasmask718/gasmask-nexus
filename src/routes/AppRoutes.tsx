@@ -254,7 +254,7 @@ import PodLayout from '@/pages/pod/PodLayout';
 // OS Modules
 import { ProcurementDashboard, SuppliersPage as ProcurementSuppliersPage, SupplierDetailPage as ProcurementSupplierDetailPage, PurchaseOrdersPage as ProcurementPurchaseOrdersPage, NewPurchaseOrderPage as ProcurementNewPurchaseOrderPage } from '@/pages/os/procurement';
 import { WarehouseDashboard } from '@/pages/os/warehouse';
-import { InventoryDashboard, ProductsPage, ProductDetailPage, WarehousesPage, WarehouseDetailPage, SuppliersPage as InventorySuppliersPage, SupplierDetailPage as InventorySupplierDetailPage, PurchaseOrdersPage as InventoryPurchaseOrdersPage, NewPurchaseOrderPage as InventoryNewPurchaseOrderPage, PurchaseOrderDetailPage, StockLevelsPage, MovementsPage } from '@/pages/os/inventory';
+import { InventoryDashboard, ProductsPage, ProductDetailPage, WarehousesPage, WarehouseDetailPage, SuppliersPage as InventorySuppliersPage, SupplierDetailPage as InventorySupplierDetailPage, PurchaseOrdersPage as InventoryPurchaseOrdersPage, NewPurchaseOrderPage as InventoryNewPurchaseOrderPage, PurchaseOrderDetailPage, StockLevelsPage, MovementsPage, ProcurementPage } from '@/pages/os/inventory';
 import TopTierDashboard from '@/pages/os/toptier/TopTierDashboard';
 import UnforgettableDashboard from '@/pages/os/unforgettable/UnforgettableDashboard';
 import ICleanDashboard from '@/pages/os/iclean/ICleanDashboard';
