@@ -15161,6 +15161,156 @@ export type Database = {
           },
         ]
       }
+      product_deal_recommendations: {
+        Row: {
+          business_id: string | null
+          campaign_id: string | null
+          created_at: string | null
+          created_by_engine: string | null
+          deal_type: string | null
+          expires_at: string | null
+          id: string
+          notes: string | null
+          product_id: string | null
+          related_product_ids: string[] | null
+          suggested_bundle_price: number | null
+          suggested_discount_pct: number | null
+          suggested_min_qty: number | null
+          synced_to_campaign: boolean | null
+          target_segment: string | null
+          vertical_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          campaign_id?: string | null
+          created_at?: string | null
+          created_by_engine?: string | null
+          deal_type?: string | null
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          related_product_ids?: string[] | null
+          suggested_bundle_price?: number | null
+          suggested_discount_pct?: number | null
+          suggested_min_qty?: number | null
+          synced_to_campaign?: boolean | null
+          target_segment?: string | null
+          vertical_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          campaign_id?: string | null
+          created_at?: string | null
+          created_by_engine?: string | null
+          deal_type?: string | null
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          related_product_ids?: string[] | null
+          suggested_bundle_price?: number | null
+          suggested_discount_pct?: number | null
+          suggested_min_qty?: number | null
+          synced_to_campaign?: boolean | null
+          target_segment?: string | null
+          vertical_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_deal_recommendations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_deal_recommendations_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_revenue_metrics: {
+        Row: {
+          avg_order_quantity: number | null
+          business_id: string | null
+          created_at: string | null
+          ghost_score: number | null
+          hero_score: number | null
+          id: string
+          product_id: string
+          snapshot_date: string
+          tags: string[] | null
+          total_revenue_30d: number | null
+          total_revenue_90d: number | null
+          trend_30d: number | null
+          trend_90d: number | null
+          unique_stores_30d: number | null
+          unique_stores_90d: number | null
+          units_sold_30d: number | null
+          units_sold_90d: number | null
+          vertical_id: string | null
+        }
+        Insert: {
+          avg_order_quantity?: number | null
+          business_id?: string | null
+          created_at?: string | null
+          ghost_score?: number | null
+          hero_score?: number | null
+          id?: string
+          product_id: string
+          snapshot_date: string
+          tags?: string[] | null
+          total_revenue_30d?: number | null
+          total_revenue_90d?: number | null
+          trend_30d?: number | null
+          trend_90d?: number | null
+          unique_stores_30d?: number | null
+          unique_stores_90d?: number | null
+          units_sold_30d?: number | null
+          units_sold_90d?: number | null
+          vertical_id?: string | null
+        }
+        Update: {
+          avg_order_quantity?: number | null
+          business_id?: string | null
+          created_at?: string | null
+          ghost_score?: number | null
+          hero_score?: number | null
+          id?: string
+          product_id?: string
+          snapshot_date?: string
+          tags?: string[] | null
+          total_revenue_30d?: number | null
+          total_revenue_90d?: number | null
+          trend_30d?: number | null
+          trend_90d?: number | null
+          unique_stores_30d?: number | null
+          unique_stores_90d?: number | null
+          units_sold_30d?: number | null
+          units_sold_90d?: number | null
+          vertical_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_revenue_metrics_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_revenue_metrics_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_batches: {
         Row: {
           boxes_produced: number | null
@@ -17738,6 +17888,79 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_product_predictions: {
+        Row: {
+          business_id: string | null
+          buy_prob_30d: number | null
+          buy_prob_7d: number | null
+          created_at: string | null
+          expected_quantity: number | null
+          id: string
+          is_experiment_candidate: boolean | null
+          is_primary_sku: boolean | null
+          last_order_at: string | null
+          product_id: string
+          snapshot_date: string
+          store_id: string | null
+          tags: string[] | null
+          vertical_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          buy_prob_30d?: number | null
+          buy_prob_7d?: number | null
+          created_at?: string | null
+          expected_quantity?: number | null
+          id?: string
+          is_experiment_candidate?: boolean | null
+          is_primary_sku?: boolean | null
+          last_order_at?: string | null
+          product_id: string
+          snapshot_date: string
+          store_id?: string | null
+          tags?: string[] | null
+          vertical_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          buy_prob_30d?: number | null
+          buy_prob_7d?: number | null
+          created_at?: string | null
+          expected_quantity?: number | null
+          id?: string
+          is_experiment_candidate?: boolean | null
+          is_primary_sku?: boolean | null
+          last_order_at?: string | null
+          product_id?: string
+          snapshot_date?: string
+          store_id?: string | null
+          tags?: string[] | null
+          vertical_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_product_predictions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_product_predictions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_product_predictions_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
             referencedColumns: ["id"]
           },
         ]
