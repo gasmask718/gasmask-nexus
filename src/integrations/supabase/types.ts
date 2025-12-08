@@ -16330,6 +16330,70 @@ export type Database = {
           },
         ]
       }
+      reorder_policies: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          days_of_cover: number | null
+          id: string
+          max_reorder_qty: number | null
+          min_reorder_qty: number | null
+          product_id: string | null
+          reorder_multiple: number | null
+          updated_at: string | null
+          use_auto_calculation: boolean | null
+          warehouse_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          days_of_cover?: number | null
+          id?: string
+          max_reorder_qty?: number | null
+          min_reorder_qty?: number | null
+          product_id?: string | null
+          reorder_multiple?: number | null
+          updated_at?: string | null
+          use_auto_calculation?: boolean | null
+          warehouse_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          days_of_cover?: number | null
+          id?: string
+          max_reorder_qty?: number | null
+          min_reorder_qty?: number | null
+          product_id?: string | null
+          reorder_multiple?: number | null
+          updated_at?: string | null
+          use_auto_calculation?: boolean | null
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reorder_policies_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reorder_policies_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reorder_policies_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_schedule_settings: {
         Row: {
           created_at: string | null
