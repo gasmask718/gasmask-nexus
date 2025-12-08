@@ -20,7 +20,8 @@ import { ReplenishmentAI } from "@/components/store/ReplenishmentAI";
 import { AIRelationshipHealth } from "@/components/communication/AIRelationshipHealth";
 import { RouteIntelligence } from "@/components/store/RouteIntelligence";
 import { StoreCallIntelligenceTab } from "@/components/store/StoreCallIntelligenceTab";
-import { Activity, Headphones } from "lucide-react";
+import { StoreRevenueIntelligenceTab } from "@/components/revenue/StoreRevenueIntelligenceTab";
+import { Activity, Headphones, Flame } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from '@/components/store/StoreContactsSection';
 import { RecentStoreInteractions } from '@/components/crm/RecentStoreInteractions';
@@ -584,6 +585,10 @@ const StoreDetail = () => {
               <TabsTrigger value="route-coverage">
                 <MapPin className="h-4 w-4 mr-2" />
                 Coverage
+              </TabsTrigger>
+              <TabsTrigger value="revenue">
+                <Flame className="h-4 w-4 mr-2" />
+                Revenue
               </TabsTrigger>
               <TabsTrigger value="history">
                 <Clock className="h-4 w-4 mr-2" />

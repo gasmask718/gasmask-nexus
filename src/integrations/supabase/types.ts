@@ -17871,6 +17871,192 @@ export type Database = {
         }
         Relationships: []
       }
+      store_revenue_recommendations: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          created_from_engine: string | null
+          expires_at: string | null
+          followup_id: string | null
+          id: string
+          notes: string | null
+          priority: number | null
+          reason: string | null
+          recommended_action: string | null
+          recommended_brand: string | null
+          recommended_offer: Json | null
+          score_snapshot_id: string | null
+          store_id: string | null
+          synced_to_followup: boolean | null
+          vertical_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          created_from_engine?: string | null
+          expires_at?: string | null
+          followup_id?: string | null
+          id?: string
+          notes?: string | null
+          priority?: number | null
+          reason?: string | null
+          recommended_action?: string | null
+          recommended_brand?: string | null
+          recommended_offer?: Json | null
+          score_snapshot_id?: string | null
+          store_id?: string | null
+          synced_to_followup?: boolean | null
+          vertical_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          created_from_engine?: string | null
+          expires_at?: string | null
+          followup_id?: string | null
+          id?: string
+          notes?: string | null
+          priority?: number | null
+          reason?: string | null
+          recommended_action?: string | null
+          recommended_brand?: string | null
+          recommended_offer?: Json | null
+          score_snapshot_id?: string | null
+          store_id?: string | null
+          synced_to_followup?: boolean | null
+          vertical_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_revenue_recommendations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_revenue_recommendations_score_snapshot_id_fkey"
+            columns: ["score_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "store_revenue_scores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_revenue_recommendations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_revenue_recommendations_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_revenue_scores: {
+        Row: {
+          avg_order_value: number | null
+          business_id: string | null
+          churn_risk: number | null
+          communication_score: number | null
+          created_at: string | null
+          deal_activity_score: number | null
+          follow_up_intensity: number | null
+          heat_score: number | null
+          id: string
+          last_order_at: string | null
+          order_count_30d: number | null
+          order_count_90d: number | null
+          order_prob_7d: number | null
+          predicted_next_order_at: string | null
+          restock_window_end: string | null
+          restock_window_start: string | null
+          revenue_30d: number | null
+          revenue_90d: number | null
+          sentiment_score: number | null
+          snapshot_date: string
+          store_id: string | null
+          tags: string[] | null
+          vertical_id: string | null
+        }
+        Insert: {
+          avg_order_value?: number | null
+          business_id?: string | null
+          churn_risk?: number | null
+          communication_score?: number | null
+          created_at?: string | null
+          deal_activity_score?: number | null
+          follow_up_intensity?: number | null
+          heat_score?: number | null
+          id?: string
+          last_order_at?: string | null
+          order_count_30d?: number | null
+          order_count_90d?: number | null
+          order_prob_7d?: number | null
+          predicted_next_order_at?: string | null
+          restock_window_end?: string | null
+          restock_window_start?: string | null
+          revenue_30d?: number | null
+          revenue_90d?: number | null
+          sentiment_score?: number | null
+          snapshot_date: string
+          store_id?: string | null
+          tags?: string[] | null
+          vertical_id?: string | null
+        }
+        Update: {
+          avg_order_value?: number | null
+          business_id?: string | null
+          churn_risk?: number | null
+          communication_score?: number | null
+          created_at?: string | null
+          deal_activity_score?: number | null
+          follow_up_intensity?: number | null
+          heat_score?: number | null
+          id?: string
+          last_order_at?: string | null
+          order_count_30d?: number | null
+          order_count_90d?: number | null
+          order_prob_7d?: number | null
+          predicted_next_order_at?: string | null
+          restock_window_end?: string | null
+          restock_window_start?: string | null
+          revenue_30d?: number | null
+          revenue_90d?: number | null
+          sentiment_score?: number | null
+          snapshot_date?: string
+          store_id?: string | null
+          tags?: string[] | null
+          vertical_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_revenue_scores_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_revenue_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_revenue_scores_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_rewards: {
         Row: {
           created_at: string
