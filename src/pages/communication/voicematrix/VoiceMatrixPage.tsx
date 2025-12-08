@@ -2,7 +2,7 @@ import { VoiceOrchestrationTab } from "@/components/communication/VoiceOrchestra
 
 export default function VoiceMatrixPage() {
   return (
-    <div className="p-6">
+    <div className="w-full min-h-full space-y-6">
       <VoiceOrchestrationTab />
     </div>
   );

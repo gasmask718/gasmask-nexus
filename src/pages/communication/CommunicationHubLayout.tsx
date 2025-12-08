@@ -32,9 +32,9 @@ export default function CommunicationHubLayout() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
       {/* Sidebar */}
-      <aside className="w-64 border-r bg-card flex flex-col">
+      <aside className="w-64 min-w-64 max-w-64 h-full border-r bg-card flex flex-col">
         <div className="p-4 border-b">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate("/crm")}>
@@ -71,8 +71,10 @@ export default function CommunicationHubLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <Outlet />
+      <main className="flex-1 h-full overflow-y-auto overflow-x-hidden">
+        <div className="w-full min-h-full p-6">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
