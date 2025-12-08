@@ -144,6 +144,7 @@ import OutboundEnginePage from '@/pages/communication/ai/OutboundEnginePage';
 import AutonomousDirectorPage from '@/pages/communication/ai/AutonomousDirectorPage';
 import VoiceLibraryPage from '@/pages/communication/voice/VoiceLibraryPage';
 import DealsSalesPage from '@/pages/communication/deals/DealsSalesPage';
+import FollowUpManagerPage from '@/pages/communication/followups/FollowUpManagerPage';
 // Legacy Communication imports (kept for other routes)
 import CommunicationOverview from '@/pages/communication/CommunicationOverview';
 import CommunicationCampaigns from '@/pages/communication/CommunicationCampaigns';
@@ -843,6 +844,7 @@ export default function AppRoutes() {
           <Route path="voice-matrix" element={<VoiceMatrixPage />} />
           <Route path="settings" element={<CommSettingsPage />} />
           <Route path="phone-numbers" element={<PhoneNumbersSettingsPage />} />
+          <Route path="follow-ups" element={<FollowUpManagerPage />} />
         </Route>
 
         <Route path="/messages" element={<MessagesPage />} />
