@@ -173,15 +173,16 @@ export default function AppSidebar({ className }: AppSidebarProps) {
             ])}
 
             {renderSection('floor-2', 'Floor 2: Communication', '📞', [
-              { path: '/grabba/communication', label: 'Communication Hub', emoji: '💬' },
-              { path: '/grabba/text-center', label: 'Text Center', emoji: '📱' },
-              { path: '/grabba/email-center', label: 'Email Center', emoji: '📧' },
-              { path: '/grabba/call-center', label: 'Call Center', emoji: '☎️' },
-              { path: '/call-center/dashboard', label: 'Call Center Cloud', emoji: '☁️' },
-              { path: '/grabba/communication-logs', label: 'Communication Logs', emoji: '📝' },
-              { path: '/grabba/autopilot', label: 'AI Auto-Calling', emoji: '🤖' },
-              { path: '/tasks', label: 'Task Center', emoji: '✅' },
-              { path: '/grabba/daily-briefing', label: 'Daily Briefing', emoji: '📅' },
+              { path: '/communication', label: 'Command Center', emoji: '🎛️' },
+              { path: '/communication/inbox', label: 'Inbox', emoji: '📥' },
+              { path: '/communication/dialer', label: 'Dialer', emoji: '📱' },
+              { path: '/communication/live', label: 'Live Calls', emoji: '📞' },
+              { path: '/communication/campaigns', label: 'Campaigns', emoji: '🚀' },
+              { path: '/communication/agents', label: 'AI Agents', emoji: '🤖' },
+              { path: '/communication/predictions', label: 'Predictions', emoji: '🧠' },
+              { path: '/communication/voice-matrix', label: 'Voice Matrix', emoji: '🔊' },
+              { path: '/communication/heatmap', label: 'Heatmap', emoji: '🔥' },
+              { path: '/communication/settings', label: 'Settings', emoji: '⚙️' },
             ])}
 
             {renderSection('floor-3', 'Floor 3: Inventory', '📦', [
