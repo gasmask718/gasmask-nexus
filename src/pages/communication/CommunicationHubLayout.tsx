@@ -9,15 +9,15 @@ import {
   Sparkles, Zap, User, GitBranch, BarChart3, Tag, Brain, Shield, 
   Languages, Radio, Settings, ArrowLeft, ChevronLeft, ChevronRight,
   Search, Plus, PhoneCall, MessageCircle, PhoneOutgoing, MessageSquarePlus,
-  Volume2
+  Volume2, DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { path: "inbox", label: "Inbox", icon: MessageSquare, badge: 12 },
   { path: "outbound-engine", label: "Outbound Engine", icon: Zap, badge: undefined },
+  { path: "deals", label: "Deals & Sales", icon: DollarSign },
   { path: "autonomous-director", label: "Autonomous Director", icon: Brain },
-  { path: "voice-library", label: "Voice Library", icon: Volume2 },
   { path: "dialer", label: "Dialer (AI)", icon: Phone },
   { path: "manual-calls", label: "Manual Calls", icon: PhoneOutgoing },
   { path: "manual-text", label: "Manual Text", icon: MessageSquarePlus },

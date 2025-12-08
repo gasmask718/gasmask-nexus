@@ -7734,6 +7734,106 @@ export type Database = {
           },
         ]
       }
+      deals: {
+        Row: {
+          business_id: string
+          campaign_id: string | null
+          channel: string
+          closed_at: string | null
+          created_at: string | null
+          currency: string | null
+          delivery_date: string | null
+          delivery_window: string | null
+          discount_amount: number | null
+          discount_percent: number | null
+          expected_value: number | null
+          final_value: number | null
+          id: string
+          intent_type: string
+          items: Json | null
+          notes: string | null
+          probability: number | null
+          risk_level: string | null
+          sentiment: number | null
+          stage: string
+          status: string
+          store_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          campaign_id?: string | null
+          channel?: string
+          closed_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          delivery_date?: string | null
+          delivery_window?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          expected_value?: number | null
+          final_value?: number | null
+          id?: string
+          intent_type?: string
+          items?: Json | null
+          notes?: string | null
+          probability?: number | null
+          risk_level?: string | null
+          sentiment?: number | null
+          stage?: string
+          status?: string
+          store_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          campaign_id?: string | null
+          channel?: string
+          closed_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          delivery_date?: string | null
+          delivery_window?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          expected_value?: number | null
+          final_value?: number | null
+          id?: string
+          intent_type?: string
+          items?: Json | null
+          notes?: string | null
+          probability?: number | null
+          risk_level?: string | null
+          sentiment?: number | null
+          stage?: string
+          status?: string
+          store_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dedupe_suggestions: {
         Row: {
           created_at: string
@@ -7914,6 +8014,67 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispatch_triggers: {
+        Row: {
+          assigned_driver_id: string | null
+          business_id: string
+          created_at: string | null
+          deal_id: string | null
+          id: string
+          last_updated: string | null
+          payload: Json | null
+          status: string
+          store_id: string
+          type: string
+        }
+        Insert: {
+          assigned_driver_id?: string | null
+          business_id: string
+          created_at?: string | null
+          deal_id?: string | null
+          id?: string
+          last_updated?: string | null
+          payload?: Json | null
+          status?: string
+          store_id: string
+          type?: string
+        }
+        Update: {
+          assigned_driver_id?: string | null
+          business_id?: string
+          created_at?: string | null
+          deal_id?: string | null
+          id?: string
+          last_updated?: string | null
+          payload?: Json | null
+          status?: string
+          store_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_triggers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_triggers_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_triggers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
             referencedColumns: ["id"]
           },
         ]
@@ -12583,6 +12744,70 @@ export type Database = {
         }
         Relationships: []
       }
+      negotiation_sessions: {
+        Row: {
+          ai_agent_id: string | null
+          channel: string
+          deal_id: string
+          ended_at: string | null
+          human_agent_id: string | null
+          id: string
+          result: string | null
+          session_type: string
+          started_at: string | null
+          summary: Json | null
+          transcript_path: string | null
+        }
+        Insert: {
+          ai_agent_id?: string | null
+          channel: string
+          deal_id: string
+          ended_at?: string | null
+          human_agent_id?: string | null
+          id?: string
+          result?: string | null
+          session_type: string
+          started_at?: string | null
+          summary?: Json | null
+          transcript_path?: string | null
+        }
+        Update: {
+          ai_agent_id?: string | null
+          channel?: string
+          deal_id?: string
+          ended_at?: string | null
+          human_agent_id?: string | null
+          id?: string
+          result?: string | null
+          session_type?: string
+          started_at?: string | null
+          summary?: Json | null
+          transcript_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "negotiation_sessions_ai_agent_id_fkey"
+            columns: ["ai_agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "negotiation_sessions_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "negotiation_sessions_human_agent_id_fkey"
+            columns: ["human_agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       neighborhoods: {
         Row: {
           borough_id: string
@@ -13605,6 +13830,61 @@ export type Database = {
           status?: string | null
         }
         Relationships: []
+      }
+      pending_orders: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          deal_id: string
+          id: string
+          items: Json
+          status: string
+          store_id: string
+          total: number
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          deal_id: string
+          id?: string
+          items?: Json
+          status?: string
+          store_id: string
+          total?: number
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          deal_id?: string
+          id?: string
+          items?: Json
+          status?: string
+          store_id?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_orders_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_orders_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       permissions_matrix: {
         Row: {
@@ -14952,6 +15232,80 @@ export type Database = {
           },
         ]
       }
+      refund_tickets: {
+        Row: {
+          ai_suggestion: string | null
+          amount: number
+          approver_id: string | null
+          business_id: string
+          created_at: string | null
+          created_by: string
+          deal_id: string | null
+          id: string
+          reason: string
+          resolved_at: string | null
+          status: string
+          store_id: string
+        }
+        Insert: {
+          ai_suggestion?: string | null
+          amount?: number
+          approver_id?: string | null
+          business_id: string
+          created_at?: string | null
+          created_by?: string
+          deal_id?: string | null
+          id?: string
+          reason: string
+          resolved_at?: string | null
+          status?: string
+          store_id: string
+        }
+        Update: {
+          ai_suggestion?: string | null
+          amount?: number
+          approver_id?: string | null
+          business_id?: string
+          created_at?: string | null
+          created_by?: string
+          deal_id?: string | null
+          id?: string
+          reason?: string
+          resolved_at?: string | null
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_tickets_approver_id_fkey"
+            columns: ["approver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_tickets_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_tickets_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_tickets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       region_communication_styles: {
         Row: {
           boro: string | null
@@ -15762,6 +16116,59 @@ export type Database = {
             columns: ["converted_store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_rules: {
+        Row: {
+          allow_ai_refunds: boolean | null
+          allow_ai_refunds_up_to: number | null
+          auto_dispatch_enabled: boolean | null
+          business_id: string
+          config: Json | null
+          created_at: string | null
+          escalate_high_risk_stores: boolean | null
+          id: string
+          max_discount_percent: number | null
+          max_discount_without_approval: number | null
+          max_order_value_without_approval: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          allow_ai_refunds?: boolean | null
+          allow_ai_refunds_up_to?: number | null
+          auto_dispatch_enabled?: boolean | null
+          business_id: string
+          config?: Json | null
+          created_at?: string | null
+          escalate_high_risk_stores?: boolean | null
+          id?: string
+          max_discount_percent?: number | null
+          max_discount_without_approval?: number | null
+          max_order_value_without_approval?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          allow_ai_refunds?: boolean | null
+          allow_ai_refunds_up_to?: number | null
+          auto_dispatch_enabled?: boolean | null
+          business_id?: string
+          config?: Json | null
+          created_at?: string | null
+          escalate_high_risk_stores?: boolean | null
+          id?: string
+          max_discount_percent?: number | null
+          max_discount_without_approval?: number | null
+          max_order_value_without_approval?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_rules_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
