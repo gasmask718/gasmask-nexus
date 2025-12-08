@@ -9,15 +9,19 @@ import {
   MessageSquare, 
   TrendingUp, 
   TrendingDown,
-  User,
   Bot,
   DollarSign,
   Calendar,
-  MoreHorizontal
+  MoreHorizontal,
+  Shield
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
+import { VerticalSelector } from '../verticals/VerticalSelector';
+import { VerticalBadge } from '../verticals/VerticalBadge';
+import { useVerticals } from '@/hooks/useVerticals';
+import { type VerticalSlug } from '@/config/verticals';
 
 const STAGES = [
   { key: 'contacted', label: 'Contacted', color: 'bg-gray-500' },
@@ -37,22 +41,35 @@ const riskColors: Record<string, string> = {
 
 export default function DealsPipelinePanel() {
   const [businessFilter, setBusinessFilter] = useState<string>('all');
+  const [verticalFilter, setVerticalFilter] = useState<VerticalSlug | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
+  
+  const { data: verticals } = useVerticals();
+
+  // Get vertical ID from slug for filtering
+  const verticalId = verticalFilter 
+    ? verticals?.find(v => v.slug === verticalFilter)?.id 
+    : null;
 
   const { data: deals, isLoading } = useQuery({
-    queryKey: ['deals-pipeline', businessFilter],
+    queryKey: ['deals-pipeline', businessFilter, verticalId],
     queryFn: async () => {
       let query = supabase
         .from('deals')
         .select(`
           *,
           store:store_master(id, store_name),
-          business:businesses(id, name)
+          business:businesses(id, name),
+          vertical:brand_verticals(id, name, slug)
         `)
         .order('updated_at', { ascending: false });
       
       if (businessFilter !== 'all') {
         query = query.eq('business_id', businessFilter);
+      }
+      
+      if (verticalId) {
+        query = query.eq('vertical_id', verticalId);
       }
       
       const { data, error } = await query;
@@ -85,7 +102,16 @@ export default function DealsPipelinePanel() {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Shield className="h-4 w-4 text-muted-foreground" />
+          <VerticalSelector
+            value={verticalFilter}
+            onChange={setVerticalFilter}
+            className="w-[200px]"
+          />
+        </div>
+        
         <Select value={businessFilter} onValueChange={setBusinessFilter}>
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="All Businesses" />
@@ -98,7 +124,7 @@ export default function DealsPipelinePanel() {
           </SelectContent>
         </Select>
 
-        <div className="flex gap-1 border rounded-lg p-1">
+        <div className="flex gap-1 border rounded-lg p-1 ml-auto">
           <Button 
             variant={viewMode === 'kanban' ? 'secondary' : 'ghost'} 
             size="sm"
@@ -161,6 +187,11 @@ function DealCard({ deal }: { deal: any }) {
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Vertical Badge */}
+        {deal.vertical && (
+          <VerticalBadge verticalSlug={deal.vertical.slug} size="sm" />
+        )}
 
         <div className="flex items-center gap-2">
           {deal.channel === 'call' ? (

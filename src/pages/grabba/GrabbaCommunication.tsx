@@ -21,6 +21,7 @@ import { TableRowActions } from "@/components/crud/TableRowActions";
 import { DataTablePagination } from "@/components/crud/DataTablePagination";
 import { useCrudOperations } from "@/hooks/useCrudOperations";
 import { communicationLogFields } from "@/config/entityFieldConfigs";
+import { CampaignBuilder } from "@/components/communication/campaigns";
 
 export default function GrabbaCommunication() {
   const [searchParams] = useSearchParams();
@@ -380,60 +381,11 @@ export default function GrabbaCommunication() {
           </TabsContent>
 
           <TabsContent value="campaigns">
-            <Card className="bg-card/50 backdrop-blur border-border/50">
-              <CardHeader>
-                <CardTitle>Campaign Builder</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Campaign Name</label>
-                    <Input placeholder="e.g. Restock Reminder - December" className="mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Channel</label>
-                    <Select>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select channel" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="sms">SMS</SelectItem>
-                        <SelectItem value="email">Email</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-foreground">Template</label>
-                  <Select>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select a template" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="welcome">First Order Welcome</SelectItem>
-                      <SelectItem value="restock">Restock Reminder</SelectItem>
-                      <SelectItem value="payment">Payment Reminder</SelectItem>
-                      <SelectItem value="new_flavor">New Flavor Notification</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-foreground">Recipients</label>
-                  <p className="text-sm text-muted-foreground">Upload CSV or select from CRM segment</p>
-                  <div className="flex gap-4 mt-2">
-                    <Button variant="outline">Upload CSV</Button>
-                    <Button variant="outline">Select from CRM</Button>
-                  </div>
-                </div>
-
-                <Button className="w-full gap-2">
-                  <Send className="h-4 w-4" />
-                  Preview & Send Campaign
-                </Button>
-              </CardContent>
-            </Card>
+            <CampaignBuilder 
+              onCampaignCreate={(campaign) => {
+                console.log('Campaign created:', campaign);
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="templates">
