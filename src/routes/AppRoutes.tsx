@@ -661,6 +661,7 @@ export default function AppRoutes() {
         <Route path="/os/inventory/purchase-orders/:poId" element={<PurchaseOrderDetailPage />} />
         <Route path="/os/inventory/stock" element={<StockLevelsPage />} />
         <Route path="/os/inventory/movements" element={<MovementsPage />} />
+        <Route path="/os/inventory/procurement" element={<ProcurementPage />} />
 
         {/* Dynasty OS Business Units */}
         <Route path="/os/toptier" element={<TopTierDashboard />} />
