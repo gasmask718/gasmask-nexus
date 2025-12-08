@@ -1472,6 +1472,65 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_director_reports: {
+        Row: {
+          actual_revenue: number | null
+          business_id: string | null
+          campaigns_created: number | null
+          campaigns_optimized: number | null
+          campaigns_paused: number | null
+          created_at: string
+          id: string
+          predicted_revenue: number | null
+          recommendations: Json | null
+          report_date: string
+          scripts_updated: number | null
+          stores_shifted: number | null
+          summary: string | null
+          voices_assigned: number | null
+        }
+        Insert: {
+          actual_revenue?: number | null
+          business_id?: string | null
+          campaigns_created?: number | null
+          campaigns_optimized?: number | null
+          campaigns_paused?: number | null
+          created_at?: string
+          id?: string
+          predicted_revenue?: number | null
+          recommendations?: Json | null
+          report_date?: string
+          scripts_updated?: number | null
+          stores_shifted?: number | null
+          summary?: string | null
+          voices_assigned?: number | null
+        }
+        Update: {
+          actual_revenue?: number | null
+          business_id?: string | null
+          campaigns_created?: number | null
+          campaigns_optimized?: number | null
+          campaigns_paused?: number | null
+          created_at?: string
+          id?: string
+          predicted_revenue?: number | null
+          recommendations?: Json | null
+          report_date?: string
+          scripts_updated?: number | null
+          stores_shifted?: number | null
+          summary?: string | null
+          voices_assigned?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_director_reports_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_follow_up_log: {
         Row: {
           action_category: string | null
@@ -1642,6 +1701,56 @@ export type Database = {
           success?: boolean
         }
         Relationships: []
+      }
+      ai_outbound_director_tasks: {
+        Row: {
+          business_id: string | null
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          payload: Json | null
+          priority: string | null
+          result: Json | null
+          started_at: string | null
+          status: string
+          task_type: string
+        }
+        Insert: {
+          business_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload?: Json | null
+          priority?: string | null
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          task_type: string
+        }
+        Update: {
+          business_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload?: Json | null
+          priority?: string | null
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          task_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_outbound_director_tasks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_playbooks: {
         Row: {
@@ -13323,6 +13432,50 @@ export type Database = {
           },
         ]
       }
+      outbound_revenue_forecasts: {
+        Row: {
+          business_id: string | null
+          confidence_score: number | null
+          created_at: string
+          factors: Json | null
+          forecast_date: string
+          id: string
+          period: string
+          predicted_orders: number | null
+          predicted_revenue: number | null
+        }
+        Insert: {
+          business_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          factors?: Json | null
+          forecast_date: string
+          id?: string
+          period: string
+          predicted_orders?: number | null
+          predicted_revenue?: number | null
+        }
+        Update: {
+          business_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          factors?: Json | null
+          forecast_date?: string
+          id?: string
+          period?: string
+          predicted_orders?: number | null
+          predicted_revenue?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outbound_revenue_forecasts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payouts: {
         Row: {
           assignment_fee: number
@@ -18878,6 +19031,44 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_recordings: {
+        Row: {
+          created_at: string
+          duration: number | null
+          file_path: string
+          id: string
+          processed: boolean | null
+          processing_status: string | null
+          voice_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration?: number | null
+          file_path: string
+          id?: string
+          processed?: boolean | null
+          processing_status?: string | null
+          voice_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          duration?: number | null
+          file_path?: string
+          id?: string
+          processed?: boolean | null
+          processing_status?: string | null
+          voice_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_recordings_voice_profile_id_fkey"
+            columns: ["voice_profile_id"]
+            isOneToOne: false
+            referencedRelation: "voice_profiles"
             referencedColumns: ["id"]
           },
         ]
