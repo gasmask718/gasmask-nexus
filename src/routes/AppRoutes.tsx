@@ -143,6 +143,7 @@ import AIAutoTextPage from '@/pages/communication/ai/AIAutoTextPage';
 import OutboundEnginePage from '@/pages/communication/ai/OutboundEnginePage';
 import AutonomousDirectorPage from '@/pages/communication/ai/AutonomousDirectorPage';
 import VoiceLibraryPage from '@/pages/communication/voice/VoiceLibraryPage';
+import DealsSalesPage from '@/pages/communication/deals/DealsSalesPage';
 // Legacy Communication imports (kept for other routes)
 import CommunicationOverview from '@/pages/communication/CommunicationOverview';
 import CommunicationCampaigns from '@/pages/communication/CommunicationCampaigns';
@@ -825,6 +826,7 @@ export default function AppRoutes() {
           <Route path="outbound-engine" element={<OutboundEnginePage />} />
           <Route path="autonomous-director" element={<AutonomousDirectorPage />} />
           <Route path="voice-library" element={<VoiceLibraryPage />} />
+          <Route path="deals" element={<DealsSalesPage />} />
           <Route path="live" element={<LiveCallsPage />} />
           <Route path="escalations" element={<EscalationsPage />} />
           <Route path="engagement" element={<EngagementPage />} />
