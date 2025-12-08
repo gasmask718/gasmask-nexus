@@ -39,7 +39,6 @@ import RevenueBrain from '@/pages/RevenueBrain';
 import OpportunityRadar from '@/pages/OpportunityRadar';
 import MissionsHQ from '@/pages/MissionsHQ';
 import Communications from '@/pages/Communications';
-import CommunicationCenter from '@/pages/communication/CommunicationCenter';
 import Templates from '@/pages/Templates';
 import Reminders from '@/pages/Reminders';
 import InfluencerDetail from '@/pages/InfluencerDetail';
@@ -117,7 +116,27 @@ import CallCenterAnalytics from '@/pages/callcenter/CallCenterAnalytics';
 import Messages from '@/pages/callcenter/Messages';
 import Emails from '@/pages/callcenter/Emails';
 
-// Communication Center
+// Communication Center - Modular V2-V8 Pages
+import CommunicationHubLayout from '@/pages/communication/CommunicationHubLayout';
+import InboxPage from '@/pages/communication/inbox/InboxPage';
+import DialerPage from '@/pages/communication/dialer/DialerPage';
+import LiveCallsPage from '@/pages/communication/live/LiveCallsPage';
+import EscalationsPage from '@/pages/communication/escalations/EscalationsPage';
+import EngagementPage from '@/pages/communication/engagement/EngagementPage';
+import RoutingPage from '@/pages/communication/routing/RoutingPage';
+import OutreachPage from '@/pages/communication/outreach/OutreachPage';
+import CampaignsPage from '@/pages/communication/campaigns/CampaignsPage';
+import PersonasPage from '@/pages/communication/personas/PersonasPage';
+import CallFlowsPage from '@/pages/communication/callflows/CallFlowsPage';
+import HeatmapPage from '@/pages/communication/heatmap/HeatmapPage';
+import CallReasonsPage from '@/pages/communication/callreasons/CallReasonsPage';
+import PredictionsPage from '@/pages/communication/predictions/PredictionsPage';
+import AgentsPage from '@/pages/communication/agents/AgentsPage';
+import LanguagePage from '@/pages/communication/language/LanguagePage';
+import VoiceMatrixPage from '@/pages/communication/voicematrix/VoiceMatrixPage';
+import CommSettingsPage from '@/pages/communication/settings/SettingsPage';
+
+// Legacy Communication imports (kept for other routes)
 import CommunicationOverview from '@/pages/communication/CommunicationOverview';
 import CommunicationCampaigns from '@/pages/communication/CommunicationCampaigns';
 import CommunicationCampaignNew from '@/pages/communication/CommunicationCampaignNew';
@@ -435,9 +454,9 @@ export default function AppRoutes() {
         <Route path="/communication-insights" element={<CommunicationInsights />} />
         <Route path="/dynasty-automations" element={<DynastyAutomations />} />
 
-        {/* Communications Center - All redirect to unified V7 Communication Center */}
-        <Route path="/communications-center" element={<CommunicationCenter />} />
-        <Route path="/communications-center/*" element={<CommunicationCenter />} />
+        {/* Communications Center - All redirect to unified V8 Communication Hub */}
+        <Route path="/communications-center" element={<CommunicationHubLayout />} />
+        <Route path="/communications-center/*" element={<CommunicationHubLayout />} />
 
         {/* Call Center */}
         <Route path="/call-center" element={<CallCenterDashboard />} />
@@ -540,8 +559,8 @@ export default function AppRoutes() {
         <Route path="/billing/invoices" element={<BillingInvoices />} />
         <Route path="/billing/invoices/new" element={<BillingInvoiceNew />} />
 
-        {/* Communication Center */}
-        <Route path="/communication-center" element={<CommunicationCenter />} />
+        {/* Communication Center - Redirect to modular hub */}
+        <Route path="/communication-center" element={<CommunicationHubLayout />} />
 
         {/* CRM - Global CRM is now the main entry point */}
         <Route path="/crm" element={<GlobalCRM />} />
@@ -563,9 +582,27 @@ export default function AppRoutes() {
         <Route path="/crm/data/import" element={<CRMDataImport />} />
         <Route path="/crm/data/backup" element={<CRMBackupSettings />} />
 
-        {/* Communication - All routes now redirect to unified Communication Center V7 */}
-        <Route path="/communication" element={<CommunicationCenter />} />
-        <Route path="/communication/*" element={<CommunicationCenter />} />
+        {/* Communication Center - Modular V2-V8 with nested routes */}
+        <Route path="/communication" element={<CommunicationHubLayout />}>
+          <Route index element={<InboxPage />} />
+          <Route path="inbox" element={<InboxPage />} />
+          <Route path="dialer" element={<DialerPage />} />
+          <Route path="live" element={<LiveCallsPage />} />
+          <Route path="escalations" element={<EscalationsPage />} />
+          <Route path="engagement" element={<EngagementPage />} />
+          <Route path="routing" element={<RoutingPage />} />
+          <Route path="outreach" element={<OutreachPage />} />
+          <Route path="campaigns" element={<CampaignsPage />} />
+          <Route path="personas" element={<PersonasPage />} />
+          <Route path="call-flows" element={<CallFlowsPage />} />
+          <Route path="heatmap" element={<HeatmapPage />} />
+          <Route path="call-reasons" element={<CallReasonsPage />} />
+          <Route path="predictions" element={<PredictionsPage />} />
+          <Route path="agents" element={<AgentsPage />} />
+          <Route path="language" element={<LanguagePage />} />
+          <Route path="voice-matrix" element={<VoiceMatrixPage />} />
+          <Route path="settings" element={<CommSettingsPage />} />
+        </Route>
 
         {/* Companies */}
         <Route path="/companies" element={<Companies />} />
@@ -892,7 +929,7 @@ export default function AppRoutes() {
       <Route path="/grabba/communications" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee']} showLocked>
-            <Layout><GrabbaLayout><CommunicationCenter /></GrabbaLayout></Layout>
+            <Layout><CommunicationHubLayout /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
@@ -1074,46 +1111,46 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      {/* Floor 2 — Communication Center V7 (Unified) */}
-      <Route path="/grabba/communication" element={
+      {/* Floor 2 — Communication Center V8 (Modular with nested routes) */}
+      <Route path="/grabba/communication/*" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'csr', 'driver']}>
-            <Layout><GrabbaLayout><CommunicationCenter /></GrabbaLayout></Layout>
+            <Layout><CommunicationHubLayout /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/grabba/text-center" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><GrabbaLayout><CommunicationCenter /></GrabbaLayout></Layout>
+            <Layout><CommunicationHubLayout /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/grabba/email-center" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><GrabbaLayout><CommunicationCenter /></GrabbaLayout></Layout>
+            <Layout><CommunicationHubLayout /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/grabba/call-center" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><GrabbaLayout><CommunicationCenter /></GrabbaLayout></Layout>
+            <Layout><CommunicationHubLayout /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/grabba/communication-logs" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><GrabbaLayout><CommunicationCenter /></GrabbaLayout></Layout>
+            <Layout><CommunicationHubLayout /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/grabba/brand/:brand/communications" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><GrabbaLayout><CommunicationCenter /></GrabbaLayout></Layout>
+            <Layout><CommunicationHubLayout /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
