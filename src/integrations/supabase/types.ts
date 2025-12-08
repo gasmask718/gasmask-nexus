@@ -4018,6 +4018,115 @@ export type Database = {
           },
         ]
       }
+      call_analytics: {
+        Row: {
+          ai_metadata: Json | null
+          business_id: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          id: string
+          key_moments: Json | null
+          manual_call_id: string | null
+          next_steps: string[] | null
+          objections: string[] | null
+          promises: string[] | null
+          recording_id: string | null
+          sentiment: string | null
+          sentiment_score: number | null
+          session_id: string | null
+          store_id: string | null
+          summary: string | null
+          tags: string[] | null
+          transcript: string | null
+          vertical_id: string | null
+        }
+        Insert: {
+          ai_metadata?: Json | null
+          business_id?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          key_moments?: Json | null
+          manual_call_id?: string | null
+          next_steps?: string[] | null
+          objections?: string[] | null
+          promises?: string[] | null
+          recording_id?: string | null
+          sentiment?: string | null
+          sentiment_score?: number | null
+          session_id?: string | null
+          store_id?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          transcript?: string | null
+          vertical_id?: string | null
+        }
+        Update: {
+          ai_metadata?: Json | null
+          business_id?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          key_moments?: Json | null
+          manual_call_id?: string | null
+          next_steps?: string[] | null
+          objections?: string[] | null
+          promises?: string[] | null
+          recording_id?: string | null
+          sentiment?: string | null
+          sentiment_score?: number | null
+          session_id?: string | null
+          store_id?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          transcript?: string | null
+          vertical_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_analytics_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_analytics_manual_call_id_fkey"
+            columns: ["manual_call_id"]
+            isOneToOne: false
+            referencedRelation: "manual_call_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_analytics_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "call_recordings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_analytics_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_analytics_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_analytics_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_center_ai_agents: {
         Row: {
           allowed_actions: Json | null
@@ -5058,6 +5167,125 @@ export type Database = {
           },
         ]
       }
+      call_quality_scores: {
+        Row: {
+          analytics_id: string | null
+          business_id: string | null
+          clarity_score: number | null
+          closing_score: number | null
+          coaching_tips: string[] | null
+          compliance_score: number | null
+          created_at: string | null
+          empathy_score: number | null
+          greeting_score: number | null
+          id: string
+          is_ai: boolean | null
+          issues: string[] | null
+          manual_call_id: string | null
+          offer_delivery_score: number | null
+          overall_score: number | null
+          recording_id: string | null
+          session_id: string | null
+          store_id: string | null
+          strengths: string[] | null
+          vertical_id: string | null
+        }
+        Insert: {
+          analytics_id?: string | null
+          business_id?: string | null
+          clarity_score?: number | null
+          closing_score?: number | null
+          coaching_tips?: string[] | null
+          compliance_score?: number | null
+          created_at?: string | null
+          empathy_score?: number | null
+          greeting_score?: number | null
+          id?: string
+          is_ai?: boolean | null
+          issues?: string[] | null
+          manual_call_id?: string | null
+          offer_delivery_score?: number | null
+          overall_score?: number | null
+          recording_id?: string | null
+          session_id?: string | null
+          store_id?: string | null
+          strengths?: string[] | null
+          vertical_id?: string | null
+        }
+        Update: {
+          analytics_id?: string | null
+          business_id?: string | null
+          clarity_score?: number | null
+          closing_score?: number | null
+          coaching_tips?: string[] | null
+          compliance_score?: number | null
+          created_at?: string | null
+          empathy_score?: number | null
+          greeting_score?: number | null
+          id?: string
+          is_ai?: boolean | null
+          issues?: string[] | null
+          manual_call_id?: string | null
+          offer_delivery_score?: number | null
+          overall_score?: number | null
+          recording_id?: string | null
+          session_id?: string | null
+          store_id?: string | null
+          strengths?: string[] | null
+          vertical_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_quality_scores_analytics_id_fkey"
+            columns: ["analytics_id"]
+            isOneToOne: false
+            referencedRelation: "call_analytics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_quality_scores_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_quality_scores_manual_call_id_fkey"
+            columns: ["manual_call_id"]
+            isOneToOne: false
+            referencedRelation: "manual_call_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_quality_scores_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "call_recordings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_quality_scores_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_quality_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_quality_scores_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_reasons: {
         Row: {
           business_id: string | null
@@ -5122,6 +5350,102 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_recordings: {
+        Row: {
+          business_id: string | null
+          channels: string | null
+          completed_at: string | null
+          created_at: string | null
+          has_transcript: boolean | null
+          id: string
+          language: string | null
+          manual_call_id: string | null
+          provider: string | null
+          provider_call_sid: string | null
+          recording_duration: number | null
+          recording_url: string | null
+          session_id: string | null
+          started_at: string | null
+          store_id: string | null
+          transcript_path: string | null
+          vertical_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          channels?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          has_transcript?: boolean | null
+          id?: string
+          language?: string | null
+          manual_call_id?: string | null
+          provider?: string | null
+          provider_call_sid?: string | null
+          recording_duration?: number | null
+          recording_url?: string | null
+          session_id?: string | null
+          started_at?: string | null
+          store_id?: string | null
+          transcript_path?: string | null
+          vertical_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          channels?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          has_transcript?: boolean | null
+          id?: string
+          language?: string | null
+          manual_call_id?: string | null
+          provider?: string | null
+          provider_call_sid?: string | null
+          recording_duration?: number | null
+          recording_url?: string | null
+          session_id?: string | null
+          started_at?: string | null
+          store_id?: string | null
+          transcript_path?: string | null
+          vertical_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_recordings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_recordings_manual_call_id_fkey"
+            columns: ["manual_call_id"]
+            isOneToOne: false
+            referencedRelation: "manual_call_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_recordings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_recordings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_recordings_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
             referencedColumns: ["id"]
           },
         ]
@@ -12302,6 +12626,82 @@ export type Database = {
             columns: ["office_id"]
             isOneToOne: false
             referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manual_call_logs: {
+        Row: {
+          business_id: string | null
+          caller_id: string | null
+          contact_id: string | null
+          created_at: string | null
+          direction: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          notes: string | null
+          outcome: string | null
+          phone_number: string | null
+          started_at: string | null
+          status: string | null
+          store_id: string | null
+          vertical_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          caller_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          direction?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          outcome?: string | null
+          phone_number?: string | null
+          started_at?: string | null
+          status?: string | null
+          store_id?: string | null
+          vertical_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          caller_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          direction?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          outcome?: string | null
+          phone_number?: string | null
+          started_at?: string | null
+          status?: string | null
+          store_id?: string | null
+          vertical_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_call_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_call_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_call_logs_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
             referencedColumns: ["id"]
           },
         ]

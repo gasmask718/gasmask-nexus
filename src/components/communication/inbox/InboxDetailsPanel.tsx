@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { UnifiedInboxItem } from "@/hooks/useUnifiedInbox";
 import { useNavigate } from "react-router-dom";
+import { CallIntelligencePanel } from "@/components/communication/intelligence";
 
 interface InboxDetailsPanelProps {
   item: UnifiedInboxItem | null;
