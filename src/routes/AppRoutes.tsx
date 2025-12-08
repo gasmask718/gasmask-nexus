@@ -254,6 +254,7 @@ import PodLayout from '@/pages/pod/PodLayout';
 // OS Modules
 import { ProcurementDashboard, SuppliersPage, SupplierDetailPage, PurchaseOrdersPage, NewPurchaseOrderPage } from '@/pages/os/procurement';
 import { WarehouseDashboard } from '@/pages/os/warehouse';
+import { InventoryDashboard, ProductsPage, ProductDetailPage } from '@/pages/os/inventory';
 import TopTierDashboard from '@/pages/os/toptier/TopTierDashboard';
 import UnforgettableDashboard from '@/pages/os/unforgettable/UnforgettableDashboard';
 import ICleanDashboard from '@/pages/os/iclean/ICleanDashboard';
@@ -645,6 +646,12 @@ export default function AppRoutes() {
         <Route path="/os/procurement/purchase-orders" element={<PurchaseOrdersPage />} />
         <Route path="/os/procurement/purchase-orders/new" element={<NewPurchaseOrderPage />} />
         <Route path="/os/warehouse" element={<WarehouseDashboard />} />
+
+        {/* OS Inventory */}
+        <Route path="/os/inventory" element={<InventoryDashboard />} />
+        <Route path="/os/inventory/dashboard" element={<InventoryDashboard />} />
+        <Route path="/os/inventory/products" element={<ProductsPage />} />
+        <Route path="/os/inventory/products/:productId" element={<ProductDetailPage />} />
 
         {/* Dynasty OS Business Units */}
         <Route path="/os/toptier" element={<TopTierDashboard />} />

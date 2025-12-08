@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// PRODUCTS PAGE — Full Product Catalog Management
+// PRODUCTS PAGE — Full Product Catalog Management (V1)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
@@ -8,8 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -19,19 +17,18 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Package,
   Plus,
@@ -41,29 +38,31 @@ import {
   Star,
   TrendingDown,
   Barcode,
-  DollarSign,
+  MoreHorizontal,
+  Eye,
+  Edit,
+  Download,
+  Loader2,
 } from 'lucide-react';
-import { useProducts, useCreateProduct, Product } from '@/services/inventory';
+import { useProducts, Product } from '@/services/inventory';
+import ProductFormModal from '@/components/inventory/ProductFormModal';
+
+type StatusFilter = 'all' | 'active' | 'inactive';
 
 export default function ProductsPage() {
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [editProductId, setEditProductId] = useState<string | null>(null);
+
   const { data: products, isLoading } = useProducts({ search: search || undefined });
-  const createProduct = useCreateProduct();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [form, setForm] = useState<Partial<Product>>({
-    name: '',
-    sku: '',
-    barcode: '',
-    type: 'standard',
-    category: '',
-    unit_type: 'unit',
-    cost: 0,
-    wholesale_price: 0,
-    suggested_retail_price: 0,
-    case_size: 1,
-    reorder_point: 0,
-    safety_stock: 0,
-    is_active: true,
+
+  // Filter products by status
+  const filteredProducts = products?.filter(product => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'active') return product.is_active;
+    if (statusFilter === 'inactive') return !product.is_active;
+    return true;
   });
 
   const formatCurrency = (amount: number | null) => {
@@ -75,28 +74,19 @@ export default function ProductsPage() {
     }).format(amount);
   };
 
-  const handleCreate = async () => {
-    try {
-      await createProduct.mutateAsync(form);
-      setIsDialogOpen(false);
-      setForm({
-        name: '',
-        sku: '',
-        barcode: '',
-        type: 'standard',
-        category: '',
-        unit_type: 'unit',
-        cost: 0,
-        wholesale_price: 0,
-        suggested_retail_price: 0,
-        case_size: 1,
-        reorder_point: 0,
-        safety_stock: 0,
-        is_active: true,
-      });
-    } catch (error) {
-      // Error handled by hook
-    }
+  const handleOpenCreate = () => {
+    setEditProductId(null);
+    setIsFormModalOpen(true);
+  };
+
+  const handleOpenEdit = (productId: string) => {
+    setEditProductId(productId);
+    setIsFormModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsFormModalOpen(false);
+    setEditProductId(null);
   };
 
   return (
@@ -105,7 +95,7 @@ export default function ProductsPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link to="/os/warehouse">
+            <Link to="/os/inventory">
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
@@ -114,174 +104,51 @@ export default function ProductsPage() {
               <Package className="h-8 w-8 text-primary" />
               Products
             </h1>
-            <p className="text-muted-foreground">Manage your product catalog</p>
+            <p className="text-muted-foreground">Manage SKUs across all brands and warehouses.</p>
           </div>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add New Product</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Product Name *</Label>
-                  <Input
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Grabba Leaf 2oz"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>SKU</Label>
-                  <Input
-                    value={form.sku || ''}
-                    onChange={(e) => setForm({ ...form, sku: e.target.value })}
-                    placeholder="GRB-2OZ-001"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Barcode</Label>
-                  <Input
-                    value={form.barcode || ''}
-                    onChange={(e) => setForm({ ...form, barcode: e.target.value })}
-                    placeholder="123456789012"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <Input
-                    value={form.category || ''}
-                    onChange={(e) => setForm({ ...form, category: e.target.value })}
-                    placeholder="Tobacco"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Type</Label>
-                  <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="standard">Standard</SelectItem>
-                      <SelectItem value="bundle">Bundle</SelectItem>
-                      <SelectItem value="variant">Variant</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Unit Type</Label>
-                  <Select value={form.unit_type} onValueChange={(v) => setForm({ ...form, unit_type: v })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unit">Unit</SelectItem>
-                      <SelectItem value="box">Box</SelectItem>
-                      <SelectItem value="case">Case</SelectItem>
-                      <SelectItem value="pack">Pack</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Case Size</Label>
-                  <Input
-                    type="number"
-                    value={form.case_size || 1}
-                    onChange={(e) => setForm({ ...form, case_size: parseInt(e.target.value) })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Cost</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.cost || 0}
-                    onChange={(e) => setForm({ ...form, cost: parseFloat(e.target.value) })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Wholesale Price</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.wholesale_price || 0}
-                    onChange={(e) => setForm({ ...form, wholesale_price: parseFloat(e.target.value) })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Retail Price</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.suggested_retail_price || 0}
-                    onChange={(e) => setForm({ ...form, suggested_retail_price: parseFloat(e.target.value) })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Reorder Point</Label>
-                  <Input
-                    type="number"
-                    value={form.reorder_point || 0}
-                    onChange={(e) => setForm({ ...form, reorder_point: parseInt(e.target.value) })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Safety Stock</Label>
-                  <Input
-                    type="number"
-                    value={form.safety_stock || 0}
-                    onChange={(e) => setForm({ ...form, safety_stock: parseInt(e.target.value) })}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  value={form.description || ''}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Product description..."
-                  rows={3}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreate} disabled={!form.name || createProduct.isPending}>
-                {createProduct.isPending ? 'Creating...' : 'Create Product'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" disabled>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+          <Button onClick={handleOpenCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Product
+          </Button>
+        </div>
       </div>
 
-      {/* Search */}
+      {/* Filters Row */}
       <Card>
         <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, SKU, or barcode..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, SKU, or barcode..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            {/* Status Filter */}
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+              <SelectTrigger className="w-full sm:w-[160px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            {/* TODO (Inventory + Revenue):
+              - filter by low stock / high demand later
+              - filter by brand/business
+              - show hero/ghost score column when Revenue Engine V2 is active
+            */}
           </div>
         </CardContent>
       </Card>
@@ -289,12 +156,14 @@ export default function ProductsPage() {
       {/* Products Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Products ({products?.length || 0})</CardTitle>
+          <CardTitle>All Products ({filteredProducts?.length || 0})</CardTitle>
           <CardDescription>Your complete product catalog</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
           ) : (
             <Table>
               <TableHeader>
@@ -307,24 +176,39 @@ export default function ProductsPage() {
                   <TableHead>Retail</TableHead>
                   <TableHead>Scores</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead></TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products?.map((product) => (
+                {filteredProducts?.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
-                          <Package className="h-5 w-5 text-muted-foreground" />
+                        <div className="w-10 h-10 rounded bg-muted flex items-center justify-center overflow-hidden">
+                          {product.image_url ? (
+                            <img 
+                              src={product.image_url} 
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Package className="h-5 w-5 text-muted-foreground" />
+                          )}
                         </div>
                         <div>
                           <p className="font-medium">{product.name}</p>
-                          {product.brand && (
-                            <Badge variant="outline" className="text-xs">
-                              {product.brand.name}
-                            </Badge>
-                          )}
+                          <div className="flex items-center gap-1">
+                            {product.brand && (
+                              <Badge variant="outline" className="text-xs">
+                                {product.brand.name}
+                              </Badge>
+                            )}
+                            {product.variant && (
+                              <span className="text-xs text-muted-foreground">
+                                {product.variant}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
@@ -335,7 +219,7 @@ export default function ProductsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{product.type}</Badge>
+                      <Badge variant="secondary" className="capitalize">{product.type}</Badge>
                     </TableCell>
                     <TableCell className="font-mono">{formatCurrency(product.cost)}</TableCell>
                     <TableCell className="font-mono">{formatCurrency(product.wholesale_price)}</TableCell>
@@ -365,18 +249,37 @@ export default function ProductsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/os/inventory/products/${product.id}`}>
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link to={`/os/inventory/products/${product.id}`}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenEdit(product.id)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Product
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
-                {!products?.length && (
+                {!filteredProducts?.length && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                      No products found. Add your first product to get started.
+                    <TableCell colSpan={9} className="text-center py-12">
+                      <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-30" />
+                      <p className="text-muted-foreground">
+                        {search || statusFilter !== 'all' 
+                          ? 'No products match your filters.' 
+                          : "No products yet. Click 'Add Product' to create your first SKU."}
+                      </p>
                     </TableCell>
                   </TableRow>
                 )}
@@ -385,6 +288,13 @@ export default function ProductsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Product Form Modal */}
+      <ProductFormModal
+        open={isFormModalOpen}
+        onClose={handleCloseModal}
+        productId={editProductId || undefined}
+      />
     </div>
   );
 }
