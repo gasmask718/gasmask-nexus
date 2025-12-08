@@ -583,29 +583,7 @@ export default function AppRoutes() {
         <Route path="/crm/data/import" element={<CRMDataImport />} />
         <Route path="/crm/data/backup" element={<CRMBackupSettings />} />
 
-        {/* Communication Center - Modular V2-V8 with nested routes */}
-        <Route path="/communication" element={<CommunicationHubLayout />}>
-          <Route index element={<InboxPage />} />
-          <Route path="inbox" element={<InboxPage />} />
-          <Route path="dialer" element={<DialerPage />} />
-          <Route path="manual-calls" element={<ManualCallPage />} />
-          <Route path="manual-text" element={<ManualTextPage />} />
-          <Route path="live" element={<LiveCallsPage />} />
-          <Route path="escalations" element={<EscalationsPage />} />
-          <Route path="engagement" element={<EngagementPage />} />
-          <Route path="routing" element={<RoutingPage />} />
-          <Route path="outreach" element={<OutreachPage />} />
-          <Route path="campaigns" element={<CampaignsPage />} />
-          <Route path="personas" element={<PersonasPage />} />
-          <Route path="call-flows" element={<CallFlowsPage />} />
-          <Route path="heatmap" element={<HeatmapPage />} />
-          <Route path="call-reasons" element={<CallReasonsPage />} />
-          <Route path="predictions" element={<PredictionsPage />} />
-          <Route path="agents" element={<AgentsPage />} />
-          <Route path="language" element={<LanguagePage />} />
-          <Route path="voice-matrix" element={<VoiceMatrixPage />} />
-          <Route path="settings" element={<CommSettingsPage />} />
-        </Route>
+        {/* Communication Center - MOVED to ProtectedNoLayout to prevent double nav */}
 
         {/* Companies */}
         <Route path="/companies" element={<Companies />} />
@@ -829,6 +807,30 @@ export default function AppRoutes() {
       {/* PROTECTED ROUTES WITHOUT LAYOUT (Portal, special pages)                      */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedNoLayout />}>
+        {/* Communication Center - Full-screen floor with own layout (no main Layout wrapper) */}
+        <Route path="/communication" element={<CommunicationHubLayout />}>
+          <Route index element={<InboxPage />} />
+          <Route path="inbox" element={<InboxPage />} />
+          <Route path="dialer" element={<DialerPage />} />
+          <Route path="manual-calls" element={<ManualCallPage />} />
+          <Route path="manual-text" element={<ManualTextPage />} />
+          <Route path="live" element={<LiveCallsPage />} />
+          <Route path="escalations" element={<EscalationsPage />} />
+          <Route path="engagement" element={<EngagementPage />} />
+          <Route path="routing" element={<RoutingPage />} />
+          <Route path="outreach" element={<OutreachPage />} />
+          <Route path="campaigns" element={<CampaignsPage />} />
+          <Route path="personas" element={<PersonasPage />} />
+          <Route path="call-flows" element={<CallFlowsPage />} />
+          <Route path="heatmap" element={<HeatmapPage />} />
+          <Route path="call-reasons" element={<CallReasonsPage />} />
+          <Route path="predictions" element={<PredictionsPage />} />
+          <Route path="agents" element={<AgentsPage />} />
+          <Route path="language" element={<LanguagePage />} />
+          <Route path="voice-matrix" element={<VoiceMatrixPage />} />
+          <Route path="settings" element={<CommSettingsPage />} />
+        </Route>
+
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/messages/:threadId" element={<MessagesPage />} />
         <Route path="/routes/my-route" element={<MyRoute />} />
