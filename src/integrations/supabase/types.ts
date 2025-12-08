@@ -888,10 +888,13 @@ export type Database = {
           business_id: string | null
           completed_at: string | null
           completed_calls: number | null
+          control_flow_id: string | null
           conversion_count: number | null
           created_at: string
           description: string | null
           dynamic_persona_switching: boolean | null
+          experiment_mode: boolean | null
+          experiment_split: Json | null
           failed_calls: number | null
           flow_id: string | null
           followup_template: string | null
@@ -900,6 +903,7 @@ export type Database = {
           name: string
           persona_id: string | null
           prediction_snapshot: Json | null
+          predictive_goal: string | null
           priority_mode: string | null
           retry_window_hours: number | null
           scheduled_at: string | null
@@ -910,6 +914,8 @@ export type Database = {
           target_segment: string | null
           total_targets: number | null
           updated_at: string
+          variant_a_flow_id: string | null
+          variant_b_flow_id: string | null
           voicemail_count: number | null
         }
         Insert: {
@@ -918,10 +924,13 @@ export type Database = {
           business_id?: string | null
           completed_at?: string | null
           completed_calls?: number | null
+          control_flow_id?: string | null
           conversion_count?: number | null
           created_at?: string
           description?: string | null
           dynamic_persona_switching?: boolean | null
+          experiment_mode?: boolean | null
+          experiment_split?: Json | null
           failed_calls?: number | null
           flow_id?: string | null
           followup_template?: string | null
@@ -930,6 +939,7 @@ export type Database = {
           name: string
           persona_id?: string | null
           prediction_snapshot?: Json | null
+          predictive_goal?: string | null
           priority_mode?: string | null
           retry_window_hours?: number | null
           scheduled_at?: string | null
@@ -940,6 +950,8 @@ export type Database = {
           target_segment?: string | null
           total_targets?: number | null
           updated_at?: string
+          variant_a_flow_id?: string | null
+          variant_b_flow_id?: string | null
           voicemail_count?: number | null
         }
         Update: {
@@ -948,10 +960,13 @@ export type Database = {
           business_id?: string | null
           completed_at?: string | null
           completed_calls?: number | null
+          control_flow_id?: string | null
           conversion_count?: number | null
           created_at?: string
           description?: string | null
           dynamic_persona_switching?: boolean | null
+          experiment_mode?: boolean | null
+          experiment_split?: Json | null
           failed_calls?: number | null
           flow_id?: string | null
           followup_template?: string | null
@@ -960,6 +975,7 @@ export type Database = {
           name?: string
           persona_id?: string | null
           prediction_snapshot?: Json | null
+          predictive_goal?: string | null
           priority_mode?: string | null
           retry_window_hours?: number | null
           scheduled_at?: string | null
@@ -970,6 +986,8 @@ export type Database = {
           target_segment?: string | null
           total_targets?: number | null
           updated_at?: string
+          variant_a_flow_id?: string | null
+          variant_b_flow_id?: string | null
           voicemail_count?: number | null
         }
         Relationships: [
@@ -4343,6 +4361,56 @@ export type Database = {
           },
         ]
       }
+      call_experiment_results: {
+        Row: {
+          answered: number | null
+          avg_sentiment: number | null
+          calls: number | null
+          campaign_id: string | null
+          churn_signals: number | null
+          complaints: number | null
+          created_at: string
+          flow_variant: string
+          id: string
+          orders: number | null
+          persona_id: string | null
+        }
+        Insert: {
+          answered?: number | null
+          avg_sentiment?: number | null
+          calls?: number | null
+          campaign_id?: string | null
+          churn_signals?: number | null
+          complaints?: number | null
+          created_at?: string
+          flow_variant: string
+          id?: string
+          orders?: number | null
+          persona_id?: string | null
+        }
+        Update: {
+          answered?: number | null
+          avg_sentiment?: number | null
+          calls?: number | null
+          campaign_id?: string | null
+          churn_signals?: number | null
+          complaints?: number | null
+          created_at?: string
+          flow_variant?: string
+          id?: string
+          orders?: number | null
+          persona_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_experiment_results_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_flow_edges: {
         Row: {
           condition_label: string | null
@@ -4646,17 +4714,63 @@ export type Database = {
           },
         ]
       }
+      call_prediction_snapshots: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          id: string
+          snapshot: Json
+          store_id: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          store_id?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_prediction_snapshots_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_prediction_snapshots_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_priority_queue: {
         Row: {
           ai_prediction: Json | null
           campaign_id: string | null
           created_at: string
+          experiment_group: string | null
           id: string
           last_order_date: string | null
           opportunity_score: number | null
+          persona_variant: string | null
+          predicted_answer_prob: number | null
+          predicted_churn_risk: number | null
+          predicted_complaint_risk: number | null
+          predicted_order_prob: number | null
           priority_score: number | null
           reason: string | null
           risk_score: number | null
+          script_variant: string | null
           status: string | null
           store_id: string | null
           updated_at: string
@@ -4665,12 +4779,19 @@ export type Database = {
           ai_prediction?: Json | null
           campaign_id?: string | null
           created_at?: string
+          experiment_group?: string | null
           id?: string
           last_order_date?: string | null
           opportunity_score?: number | null
+          persona_variant?: string | null
+          predicted_answer_prob?: number | null
+          predicted_churn_risk?: number | null
+          predicted_complaint_risk?: number | null
+          predicted_order_prob?: number | null
           priority_score?: number | null
           reason?: string | null
           risk_score?: number | null
+          script_variant?: string | null
           status?: string | null
           store_id?: string | null
           updated_at?: string
@@ -4679,12 +4800,19 @@ export type Database = {
           ai_prediction?: Json | null
           campaign_id?: string | null
           created_at?: string
+          experiment_group?: string | null
           id?: string
           last_order_date?: string | null
           opportunity_score?: number | null
+          persona_variant?: string | null
+          predicted_answer_prob?: number | null
+          predicted_churn_risk?: number | null
+          predicted_complaint_risk?: number | null
+          predicted_order_prob?: number | null
           priority_score?: number | null
           reason?: string | null
           risk_score?: number | null
+          script_variant?: string | null
           status?: string | null
           store_id?: string | null
           updated_at?: string
