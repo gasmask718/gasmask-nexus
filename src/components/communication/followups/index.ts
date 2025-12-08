@@ -4,3 +4,4 @@ export { FollowUpReasonBadge } from './FollowUpReasonBadge';
 export { FollowUpActionSelector } from './FollowUpActionSelector';
 export { FollowUpTimeline } from './FollowUpTimeline';
 export { NextFollowUpBanner } from './NextFollowUpBanner';
+export { RescheduleDialog } from './RescheduleDialog';
