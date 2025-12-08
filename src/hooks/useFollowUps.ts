@@ -184,3 +184,22 @@ export function useRunFollowUpEngine() {
     onError: () => toast.error('Failed to run follow-up engine'),
   });
 }
+
+export function useRescheduleFollowUp() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, due_at, recommended_action }: { id: string; due_at: string; recommended_action?: string }) => {
+      const client = supabase as any;
+      const updates: Record<string, any> = { due_at, status: 'pending' };
+      if (recommended_action) updates.recommended_action = recommended_action;
+      
+      const { error } = await client.from('follow_up_queue').update(updates).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+      toast.success('Follow-up rescheduled');
+    },
+    onError: () => toast.error('Failed to reschedule follow-up'),
+  });
+}
