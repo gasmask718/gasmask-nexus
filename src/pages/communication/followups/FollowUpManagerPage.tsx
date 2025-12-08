@@ -20,6 +20,8 @@ import {
 } from '@/hooks/useFollowUps';
 import { FollowUpCard } from '@/components/communication/followups/FollowUpCard';
 import { RescheduleDialog } from '@/components/communication/followups/RescheduleDialog';
+import { triggerFollowUp as triggerFollowUpAction } from '@/services/followUpTriggerService';
+import { toast } from 'sonner';
 
 const REASON_OPTIONS = [
   { value: 'all', label: 'All Reasons' },
@@ -66,7 +68,18 @@ export default function FollowUpManagerPage() {
   const triggerFollowUp = useTriggerFollowUpNow();
   const runEngine = useRunFollowUpEngine();
 
-  const handleTrigger = (id: string) => triggerFollowUp.mutate(id);
+  const handleTrigger = async (id: string) => {
+    const followUp = [...(pendingFollowUps || []), ...(dueTodayFollowUps || []), ...(overdueFollowUps || [])].find(f => f.id === id);
+    if (followUp) {
+      const result = await triggerFollowUpAction(followUp);
+      if (result.success) {
+        toast.success(result.message);
+        triggerFollowUp.mutate(id); // Also update local state
+      } else {
+        toast.error(result.message);
+      }
+    }
+  };
   const handleComplete = (id: string) => completeFollowUp.mutate(id);
   const handleCancel = (id: string) => cancelFollowUp.mutate(id);
   const handleReschedule = (item: FollowUpQueueItem) => setRescheduleItem(item);
