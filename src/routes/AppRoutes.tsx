@@ -139,6 +139,7 @@ import ManualCallPage from '@/pages/communication/manual/ManualCallPage';
 import ManualTextPage from '@/pages/communication/manual/ManualTextPage';
 import AIAutoDialerPage from '@/pages/communication/ai/AIAutoDialerPage';
 import AIAutoTextPage from '@/pages/communication/ai/AIAutoTextPage';
+import OutboundEnginePage from '@/pages/communication/ai/OutboundEnginePage';
 // Legacy Communication imports (kept for other routes)
 import CommunicationOverview from '@/pages/communication/CommunicationOverview';
 import CommunicationCampaigns from '@/pages/communication/CommunicationCampaigns';
@@ -818,6 +819,7 @@ export default function AppRoutes() {
           <Route path="manual-text" element={<ManualTextPage />} />
           <Route path="ai-auto-dialer" element={<AIAutoDialerPage />} />
           <Route path="ai-auto-text" element={<AIAutoTextPage />} />
+          <Route path="outbound-engine" element={<OutboundEnginePage />} />
           <Route path="live" element={<LiveCallsPage />} />
           <Route path="escalations" element={<EscalationsPage />} />
           <Route path="engagement" element={<EngagementPage />} />
