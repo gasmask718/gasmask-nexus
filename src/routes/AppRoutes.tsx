@@ -252,9 +252,9 @@ import PODSettings from '@/pages/pod/settings';
 import PodLayout from '@/pages/pod/PodLayout';
 
 // OS Modules
-import { ProcurementDashboard, SuppliersPage, SupplierDetailPage, PurchaseOrdersPage, NewPurchaseOrderPage } from '@/pages/os/procurement';
+import { ProcurementDashboard, SuppliersPage as ProcurementSuppliersPage, SupplierDetailPage as ProcurementSupplierDetailPage, PurchaseOrdersPage as ProcurementPurchaseOrdersPage, NewPurchaseOrderPage as ProcurementNewPurchaseOrderPage } from '@/pages/os/procurement';
 import { WarehouseDashboard } from '@/pages/os/warehouse';
-import { InventoryDashboard, ProductsPage, ProductDetailPage, WarehousesPage, WarehouseDetailPage, SuppliersPage, SupplierDetailPage, PurchaseOrdersPage, NewPurchaseOrderPage, PurchaseOrderDetailPage } from '@/pages/os/inventory';
+import { InventoryDashboard, ProductsPage, ProductDetailPage, WarehousesPage, WarehouseDetailPage, SuppliersPage as InventorySuppliersPage, SupplierDetailPage as InventorySupplierDetailPage, PurchaseOrdersPage as InventoryPurchaseOrdersPage, NewPurchaseOrderPage as InventoryNewPurchaseOrderPage, PurchaseOrderDetailPage } from '@/pages/os/inventory';
 import TopTierDashboard from '@/pages/os/toptier/TopTierDashboard';
 import UnforgettableDashboard from '@/pages/os/unforgettable/UnforgettableDashboard';
 import ICleanDashboard from '@/pages/os/iclean/ICleanDashboard';
@@ -641,10 +641,10 @@ export default function AppRoutes() {
         {/* OS Procurement & Warehouse */}
         <Route path="/os/procurement" element={<ProcurementDashboard />} />
         <Route path="/os/procurement/dashboard" element={<ProcurementDashboard />} />
-        <Route path="/os/procurement/suppliers" element={<SuppliersPage />} />
-        <Route path="/os/procurement/suppliers/:id" element={<SupplierDetailPage />} />
-        <Route path="/os/procurement/purchase-orders" element={<PurchaseOrdersPage />} />
-        <Route path="/os/procurement/purchase-orders/new" element={<NewPurchaseOrderPage />} />
+        <Route path="/os/procurement/suppliers" element={<ProcurementSuppliersPage />} />
+        <Route path="/os/procurement/suppliers/:id" element={<ProcurementSupplierDetailPage />} />
+        <Route path="/os/procurement/purchase-orders" element={<ProcurementPurchaseOrdersPage />} />
+        <Route path="/os/procurement/purchase-orders/new" element={<ProcurementNewPurchaseOrderPage />} />
         <Route path="/os/warehouse" element={<WarehouseDashboard />} />
 
         {/* OS Inventory */}
@@ -654,10 +654,10 @@ export default function AppRoutes() {
         <Route path="/os/inventory/products/:productId" element={<ProductDetailPage />} />
         <Route path="/os/inventory/warehouses" element={<WarehousesPage />} />
         <Route path="/os/inventory/warehouses/:warehouseId" element={<WarehouseDetailPage />} />
-        <Route path="/os/inventory/suppliers" element={<SuppliersPage />} />
-        <Route path="/os/inventory/suppliers/:supplierId" element={<SupplierDetailPage />} />
-        <Route path="/os/inventory/purchase-orders" element={<PurchaseOrdersPage />} />
-        <Route path="/os/inventory/purchase-orders/new" element={<NewPurchaseOrderPage />} />
+        <Route path="/os/inventory/suppliers" element={<InventorySuppliersPage />} />
+        <Route path="/os/inventory/suppliers/:supplierId" element={<InventorySupplierDetailPage />} />
+        <Route path="/os/inventory/purchase-orders" element={<InventoryPurchaseOrdersPage />} />
+        <Route path="/os/inventory/purchase-orders/new" element={<InventoryNewPurchaseOrderPage />} />
         <Route path="/os/inventory/purchase-orders/:poId" element={<PurchaseOrderDetailPage />} />
 
         {/* Dynasty OS Business Units */}
