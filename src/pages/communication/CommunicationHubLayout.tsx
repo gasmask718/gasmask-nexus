@@ -14,7 +14,8 @@ import {
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { path: "inbox", label: "Inbox", icon: MessageSquare, badge: 12 },
+  { path: "unified-inbox", label: "Unified Inbox", icon: MessageSquare, badge: 12, highlight: true },
+  { path: "inbox", label: "Inbox (Legacy)", icon: MessageSquare },
   { path: "outbound-engine", label: "Outbound Engine", icon: Zap, badge: undefined },
   { path: "deals", label: "Deals & Sales", icon: DollarSign },
   { path: "follow-ups", label: "Follow-Up Manager", icon: Activity },
@@ -95,7 +96,9 @@ export default function CommunicationHubLayout() {
                     "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors relative",
                     isActive
                       ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      : (item as any).highlight 
+                        ? "text-foreground bg-muted/50 hover:bg-muted font-medium border border-primary/20"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     collapsed && "justify-center px-2"
                   )
                 }
