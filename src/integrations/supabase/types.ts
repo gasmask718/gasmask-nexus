@@ -9000,6 +9000,89 @@ export type Database = {
           },
         ]
       }
+      follow_up_queue: {
+        Row: {
+          brand: string | null
+          business_id: string | null
+          completed_at: string | null
+          completed_by: string | null
+          context: Json | null
+          created_at: string | null
+          due_at: string
+          id: string
+          priority: number | null
+          reason: string
+          recommended_action: string
+          status: string | null
+          store_id: string | null
+          updated_at: string | null
+          vertical_id: string | null
+        }
+        Insert: {
+          brand?: string | null
+          business_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          context?: Json | null
+          created_at?: string | null
+          due_at: string
+          id?: string
+          priority?: number | null
+          reason: string
+          recommended_action: string
+          status?: string | null
+          store_id?: string | null
+          updated_at?: string | null
+          vertical_id?: string | null
+        }
+        Update: {
+          brand?: string | null
+          business_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          context?: Json | null
+          created_at?: string | null
+          due_at?: string
+          id?: string
+          priority?: number | null
+          reason?: string
+          recommended_action?: string
+          status?: string | null
+          store_id?: string | null
+          updated_at?: string | null
+          vertical_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_queue_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_up_queue_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_up_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_up_queue_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follow_up_sequences: {
         Row: {
           created_at: string
@@ -20892,6 +20975,7 @@ export type Database = {
         Args: { p_action: string; p_details?: Json }
         Returns: string
       }
+      mark_overdue_followups: { Args: never; Returns: undefined }
       process_ai_approval: {
         Args: { p_approved: boolean; p_notes?: string; p_request_id: string }
         Returns: boolean

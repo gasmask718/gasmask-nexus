@@ -17,6 +17,7 @@ const navItems = [
   { path: "inbox", label: "Inbox", icon: MessageSquare, badge: 12 },
   { path: "outbound-engine", label: "Outbound Engine", icon: Zap, badge: undefined },
   { path: "deals", label: "Deals & Sales", icon: DollarSign },
+  { path: "follow-ups", label: "Follow-Up Manager", icon: Activity },
   { path: "autonomous-director", label: "Autonomous Director", icon: Brain },
   { path: "dialer", label: "Dialer (AI)", icon: Phone },
   { path: "manual-calls", label: "Manual Calls", icon: PhoneOutgoing },
