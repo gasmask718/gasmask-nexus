@@ -19,7 +19,8 @@ import { FollowUpAIRecommendation } from "@/components/store/FollowUpAIRecommend
 import { ReplenishmentAI } from "@/components/store/ReplenishmentAI";
 import { AIRelationshipHealth } from "@/components/communication/AIRelationshipHealth";
 import { RouteIntelligence } from "@/components/store/RouteIntelligence";
-import { Activity } from "lucide-react";
+import { StoreCallIntelligenceTab } from "@/components/store/StoreCallIntelligenceTab";
+import { Activity, Headphones } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from '@/components/store/StoreContactsSection';
 import { RecentStoreInteractions } from '@/components/crm/RecentStoreInteractions';
@@ -567,7 +568,7 @@ const StoreDetail = () => {
 
           {/* Tabs for Inventory & History */}
           <Tabs defaultValue="inventory" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="inventory">
                 <Package className="h-4 w-4 mr-2" />
                 Inventory
@@ -576,13 +577,17 @@ const StoreDetail = () => {
                 <TrendingUp className="h-4 w-4 mr-2" />
                 Performance
               </TabsTrigger>
+              <TabsTrigger value="calls">
+                <Headphones className="h-4 w-4 mr-2" />
+                Calls
+              </TabsTrigger>
               <TabsTrigger value="route-coverage">
                 <MapPin className="h-4 w-4 mr-2" />
                 Coverage
               </TabsTrigger>
               <TabsTrigger value="history">
                 <Clock className="h-4 w-4 mr-2" />
-                Visit History
+                History
               </TabsTrigger>
             </TabsList>
 
@@ -648,6 +653,10 @@ const StoreDetail = () => {
 
             <TabsContent value="performance">
               <StorePerformanceTab storeId={id!} storeName={store.name} />
+            </TabsContent>
+
+            <TabsContent value="calls">
+              <StoreCallIntelligenceTab storeId={id!} />
             </TabsContent>
 
             <TabsContent value="route-coverage">
