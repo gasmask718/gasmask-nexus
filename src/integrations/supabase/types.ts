@@ -11306,9 +11306,49 @@ export type Database = {
           },
         ]
       }
+      inventory_snapshots: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          id: string
+          low_stock_count: number | null
+          out_of_stock_count: number | null
+          snapshot_date: string
+          snapshot_warehouse_id: string | null
+          total_products: number | null
+          total_units: number | null
+          total_value: number | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          id?: string
+          low_stock_count?: number | null
+          out_of_stock_count?: number | null
+          snapshot_date: string
+          snapshot_warehouse_id?: string | null
+          total_products?: number | null
+          total_units?: number | null
+          total_value?: number | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          id?: string
+          low_stock_count?: number | null
+          out_of_stock_count?: number | null
+          snapshot_date?: string
+          snapshot_warehouse_id?: string | null
+          total_products?: number | null
+          total_units?: number | null
+          total_value?: number | null
+        }
+        Relationships: []
+      }
       inventory_stock: {
         Row: {
           bin_id: string | null
+          business_id: string | null
           created_at: string | null
           id: string
           owner_id: string | null
@@ -11324,6 +11364,7 @@ export type Database = {
         }
         Insert: {
           bin_id?: string | null
+          business_id?: string | null
           created_at?: string | null
           id?: string
           owner_id?: string | null
@@ -11339,6 +11380,7 @@ export type Database = {
         }
         Update: {
           bin_id?: string | null
+          business_id?: string | null
           created_at?: string | null
           id?: string
           owner_id?: string | null
@@ -11358,6 +11400,13 @@ export type Database = {
             columns: ["bin_id"]
             isOneToOne: false
             referencedRelation: "warehouse_bins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_stock_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
           {
@@ -15547,50 +15596,92 @@ export type Database = {
       }
       products: {
         Row: {
+          barcode: string | null
           brand_id: string | null
+          business_id: string | null
+          case_size: number | null
           category: string | null
+          cost: number | null
           created_at: string | null
+          description: string | null
+          ghost_score: number | null
+          hero_score: number | null
           id: string
+          image_url: string | null
           is_active: boolean | null
+          moq: number | null
           name: string
+          reorder_point: number | null
+          reorder_qty: number | null
+          safety_stock: number | null
           sku: string | null
           store_price: number | null
           suggested_retail_price: number | null
           type: string
           unit_type: string
           units_per_box: number | null
+          variant: string | null
+          vertical_id: string | null
           weight_per_unit: number | null
           wholesale_price: number | null
         }
         Insert: {
+          barcode?: string | null
           brand_id?: string | null
+          business_id?: string | null
+          case_size?: number | null
           category?: string | null
+          cost?: number | null
           created_at?: string | null
+          description?: string | null
+          ghost_score?: number | null
+          hero_score?: number | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
+          moq?: number | null
           name: string
+          reorder_point?: number | null
+          reorder_qty?: number | null
+          safety_stock?: number | null
           sku?: string | null
           store_price?: number | null
           suggested_retail_price?: number | null
           type: string
           unit_type: string
           units_per_box?: number | null
+          variant?: string | null
+          vertical_id?: string | null
           weight_per_unit?: number | null
           wholesale_price?: number | null
         }
         Update: {
+          barcode?: string | null
           brand_id?: string | null
+          business_id?: string | null
+          case_size?: number | null
           category?: string | null
+          cost?: number | null
           created_at?: string | null
+          description?: string | null
+          ghost_score?: number | null
+          hero_score?: number | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
+          moq?: number | null
           name?: string
+          reorder_point?: number | null
+          reorder_qty?: number | null
+          safety_stock?: number | null
           sku?: string | null
           store_price?: number | null
           suggested_retail_price?: number | null
           type?: string
           unit_type?: string
           units_per_box?: number | null
+          variant?: string | null
+          vertical_id?: string | null
           weight_per_unit?: number | null
           wholesale_price?: number | null
         }
@@ -15600,6 +15691,20 @@ export type Database = {
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
             referencedColumns: ["id"]
           },
         ]
@@ -15770,6 +15875,7 @@ export type Database = {
       }
       purchase_orders: {
         Row: {
+          business_id: string | null
           created_at: string
           created_by: string | null
           estimated_arrival: string | null
@@ -15779,12 +15885,14 @@ export type Database = {
           shipping_cost: number | null
           status: string | null
           supplier_id: string | null
+          target_warehouse_id: string | null
           total_cost: number | null
           tracking_number: string | null
           updated_at: string
           warehouse_location: string | null
         }
         Insert: {
+          business_id?: string | null
           created_at?: string
           created_by?: string | null
           estimated_arrival?: string | null
@@ -15794,12 +15902,14 @@ export type Database = {
           shipping_cost?: number | null
           status?: string | null
           supplier_id?: string | null
+          target_warehouse_id?: string | null
           total_cost?: number | null
           tracking_number?: string | null
           updated_at?: string
           warehouse_location?: string | null
         }
         Update: {
+          business_id?: string | null
           created_at?: string
           created_by?: string | null
           estimated_arrival?: string | null
@@ -15809,6 +15919,7 @@ export type Database = {
           shipping_cost?: number | null
           status?: string | null
           supplier_id?: string | null
+          target_warehouse_id?: string | null
           total_cost?: number | null
           tracking_number?: string | null
           updated_at?: string
@@ -15816,10 +15927,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "purchase_orders_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "purchase_orders_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_target_warehouse_id_fkey"
+            columns: ["target_warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
         ]
@@ -20677,28 +20802,37 @@ export type Database = {
       }
       warehouse_bins: {
         Row: {
+          aisle: string | null
           bin_code: string
           created_at: string | null
           description: string | null
           id: string
+          max_weight: number | null
+          shelf: string | null
           updated_at: string | null
           warehouse_id: string | null
           zone_id: string | null
         }
         Insert: {
+          aisle?: string | null
           bin_code: string
           created_at?: string | null
           description?: string | null
           id?: string
+          max_weight?: number | null
+          shelf?: string | null
           updated_at?: string | null
           warehouse_id?: string | null
           zone_id?: string | null
         }
         Update: {
+          aisle?: string | null
           bin_code?: string
           created_at?: string | null
           description?: string | null
           id?: string
+          max_weight?: number | null
+          shelf?: string | null
           updated_at?: string | null
           warehouse_id?: string | null
           zone_id?: string | null
@@ -20759,6 +20893,8 @@ export type Database = {
         Row: {
           address_line1: string | null
           address_line2: string | null
+          business_id: string | null
+          capacity: number | null
           city: string | null
           code: string
           contact_phone: string | null
@@ -20768,6 +20904,7 @@ export type Database = {
           is_active: boolean | null
           name: string
           state: string | null
+          timezone: string | null
           type: string | null
           updated_at: string | null
           zip: string | null
@@ -20775,6 +20912,8 @@ export type Database = {
         Insert: {
           address_line1?: string | null
           address_line2?: string | null
+          business_id?: string | null
+          capacity?: number | null
           city?: string | null
           code: string
           contact_phone?: string | null
@@ -20784,6 +20923,7 @@ export type Database = {
           is_active?: boolean | null
           name: string
           state?: string | null
+          timezone?: string | null
           type?: string | null
           updated_at?: string | null
           zip?: string | null
@@ -20791,6 +20931,8 @@ export type Database = {
         Update: {
           address_line1?: string | null
           address_line2?: string | null
+          business_id?: string | null
+          capacity?: number | null
           city?: string | null
           code?: string
           contact_phone?: string | null
@@ -20800,11 +20942,20 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           state?: string | null
+          timezone?: string | null
           type?: string | null
           updated_at?: string | null
           zip?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "warehouses_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       warehouses_listings: {
         Row: {
