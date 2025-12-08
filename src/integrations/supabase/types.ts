@@ -921,6 +921,7 @@ export type Database = {
           updated_at: string
           variant_a_flow_id: string | null
           variant_b_flow_id: string | null
+          vertical_id: string | null
           voicemail_count: number | null
         }
         Insert: {
@@ -962,6 +963,7 @@ export type Database = {
           updated_at?: string
           variant_a_flow_id?: string | null
           variant_b_flow_id?: string | null
+          vertical_id?: string | null
           voicemail_count?: number | null
         }
         Update: {
@@ -1003,6 +1005,7 @@ export type Database = {
           updated_at?: string
           variant_a_flow_id?: string | null
           variant_b_flow_id?: string | null
+          vertical_id?: string | null
           voicemail_count?: number | null
         }
         Relationships: [
@@ -1025,6 +1028,13 @@ export type Database = {
             columns: ["sms_number_id"]
             isOneToOne: false
             referencedRelation: "business_phone_numbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_campaigns_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
             referencedColumns: ["id"]
           },
         ]
@@ -3461,6 +3471,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brand_verticals: {
+        Row: {
+          allow_cross_vertical: boolean | null
+          created_at: string | null
+          description: string | null
+          id: string
+          industry: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          allow_cross_vertical?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          industry: string
+          name: string
+          slug: string
+        }
+        Update: {
+          allow_cross_vertical?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          industry?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
       }
       brands: {
         Row: {
@@ -7759,6 +7799,7 @@ export type Database = {
           status: string
           store_id: string
           updated_at: string | null
+          vertical_id: string | null
         }
         Insert: {
           business_id: string
@@ -7784,6 +7825,7 @@ export type Database = {
           status?: string
           store_id: string
           updated_at?: string | null
+          vertical_id?: string | null
         }
         Update: {
           business_id?: string
@@ -7809,6 +7851,7 @@ export type Database = {
           status?: string
           store_id?: string
           updated_at?: string | null
+          vertical_id?: string | null
         }
         Relationships: [
           {
@@ -7830,6 +7873,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
             referencedColumns: ["id"]
           },
         ]
@@ -17613,6 +17663,57 @@ export type Database = {
           },
         ]
       }
+      store_vertical_permissions: {
+        Row: {
+          allowed_brands: string[] | null
+          can_receive_pitch: boolean | null
+          created_at: string | null
+          forbidden_brands: string[] | null
+          id: string
+          notes: string | null
+          store_id: string
+          updated_at: string | null
+          vertical_id: string
+        }
+        Insert: {
+          allowed_brands?: string[] | null
+          can_receive_pitch?: boolean | null
+          created_at?: string | null
+          forbidden_brands?: string[] | null
+          id?: string
+          notes?: string | null
+          store_id: string
+          updated_at?: string | null
+          vertical_id: string
+        }
+        Update: {
+          allowed_brands?: string[] | null
+          can_receive_pitch?: boolean | null
+          created_at?: string | null
+          forbidden_brands?: string[] | null
+          id?: string
+          notes?: string | null
+          store_id?: string
+          updated_at?: string | null
+          vertical_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_vertical_permissions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_vertical_permissions_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_voice_notes: {
         Row: {
           created_at: string
@@ -19244,6 +19345,117 @@ export type Database = {
         }
         Relationships: []
       }
+      vertical_brands: {
+        Row: {
+          brand_id: string
+          brand_name: string
+          can_cross_promote: boolean | null
+          created_at: string | null
+          id: string
+          pitch_priority: number | null
+          vertical_id: string
+        }
+        Insert: {
+          brand_id: string
+          brand_name: string
+          can_cross_promote?: boolean | null
+          created_at?: string | null
+          id?: string
+          pitch_priority?: number | null
+          vertical_id: string
+        }
+        Update: {
+          brand_id?: string
+          brand_name?: string
+          can_cross_promote?: boolean | null
+          created_at?: string | null
+          id?: string
+          pitch_priority?: number | null
+          vertical_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vertical_brands_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vertical_pitch_rules: {
+        Row: {
+          created_at: string | null
+          id: string
+          rule_type: string
+          rule_value: string
+          severity: string | null
+          vertical_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          rule_type: string
+          rule_value: string
+          severity?: string | null
+          vertical_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          rule_type?: string
+          rule_value?: string
+          severity?: string | null
+          vertical_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vertical_pitch_rules_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vertical_script_guardrails: {
+        Row: {
+          created_at: string | null
+          guardrail_type: string
+          guardrail_value: string
+          id: string
+          is_active: boolean | null
+          priority: number | null
+          vertical_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          guardrail_type: string
+          guardrail_value: string
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          vertical_id: string
+        }
+        Update: {
+          created_at?: string | null
+          guardrail_type?: string
+          guardrail_value?: string
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          vertical_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vertical_script_guardrails_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visit_logs: {
         Row: {
           cash_collected: number | null
@@ -20602,6 +20814,18 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      can_pitch_brand_to_store: {
+        Args: { p_brand_id: string; p_store_id: string }
+        Returns: boolean
+      }
+      get_allowed_brands_for_store: {
+        Args: { p_store_id: string }
+        Returns: {
+          brand_id: string
+          brand_name: string
+          vertical_name: string
+        }[]
+      }
       get_audit_summary: {
         Args: { p_limit?: number }
         Returns: {
@@ -20624,6 +20848,14 @@ export type Database = {
           business_slug: string
           logo_url: string
           member_role: string
+        }[]
+      }
+      get_vertical_guardrails: {
+        Args: { p_vertical_slug: string }
+        Returns: {
+          guardrail_type: string
+          guardrail_value: string
+          priority: number
         }[]
       }
       has_org_role: {
