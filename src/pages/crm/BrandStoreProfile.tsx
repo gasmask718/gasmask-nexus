@@ -19,6 +19,7 @@ import {
 import { useStoreNotes, useAddStoreNote, useDeleteStoreNote } from "@/hooks/useStoreNotes";
 import { useStoreStatusHistory, useAddStoreStatusEvent } from "@/hooks/useStoreStatusHistory";
 import { format } from "date-fns";
+import { StoreFollowUpSection } from "@/components/communication/followups/StoreFollowUpSection";
 
 export default function BrandStoreProfile() {
   const { brandId, storeId } = useParams<{ brandId: string; storeId: string }>();
@@ -314,8 +315,10 @@ export default function BrandStoreProfile() {
           </Card>
         </div>
 
-        {/* Right Column - Contacts & History */}
+        {/* Right Column - Contacts, Follow-Ups & History */}
         <div className="space-y-6">
+          {/* Follow-Up Section */}
+          {storeId && <StoreFollowUpSection storeId={storeId} />}
           {/* Linked Contacts */}
           <Card>
             <CardHeader>
