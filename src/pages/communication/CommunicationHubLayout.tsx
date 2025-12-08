@@ -8,13 +8,15 @@ import {
   MessageSquare, Phone, Headphones, AlertTriangle, Activity, Users, 
   Sparkles, Zap, User, GitBranch, BarChart3, Tag, Brain, Shield, 
   Languages, Radio, Settings, ArrowLeft, ChevronLeft, ChevronRight,
-  Search, Plus, PhoneCall, MessageCircle
+  Search, Plus, PhoneCall, MessageCircle, PhoneOutgoing, MessageSquarePlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { path: "inbox", label: "Inbox", icon: MessageSquare, badge: 12 },
-  { path: "dialer", label: "Dialer", icon: Phone },
+  { path: "dialer", label: "Dialer (AI)", icon: Phone },
+  { path: "manual-calls", label: "Manual Calls", icon: PhoneOutgoing },
+  { path: "manual-text", label: "Manual Text", icon: MessageSquarePlus },
   { path: "live", label: "Live Calls", icon: Headphones, badge: 3 },
   { path: "escalations", label: "Escalations", icon: AlertTriangle, badge: 2 },
   { path: "engagement", label: "Engagement", icon: Activity },
