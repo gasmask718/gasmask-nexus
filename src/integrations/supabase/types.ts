@@ -886,6 +886,7 @@ export type Database = {
           answered_calls: number | null
           auto_followup_text: boolean | null
           business_id: string | null
+          call_number_id: string | null
           completed_at: string | null
           completed_calls: number | null
           control_flow_id: string | null
@@ -899,16 +900,20 @@ export type Database = {
           flow_id: string | null
           followup_template: string | null
           id: string
+          max_calls_per_minute: number | null
           max_concurrent_calls: number | null
+          max_texts_per_minute: number | null
           name: string
           persona_id: string | null
           prediction_snapshot: Json | null
           predictive_goal: string | null
           priority_mode: string | null
           retry_window_hours: number | null
+          run_parallel: boolean | null
           scheduled_at: string | null
           sentiment_adaptation: boolean | null
           sequence_steps: Json | null
+          sms_number_id: string | null
           started_at: string | null
           status: string | null
           target_segment: string | null
@@ -922,6 +927,7 @@ export type Database = {
           answered_calls?: number | null
           auto_followup_text?: boolean | null
           business_id?: string | null
+          call_number_id?: string | null
           completed_at?: string | null
           completed_calls?: number | null
           control_flow_id?: string | null
@@ -935,16 +941,20 @@ export type Database = {
           flow_id?: string | null
           followup_template?: string | null
           id?: string
+          max_calls_per_minute?: number | null
           max_concurrent_calls?: number | null
+          max_texts_per_minute?: number | null
           name: string
           persona_id?: string | null
           prediction_snapshot?: Json | null
           predictive_goal?: string | null
           priority_mode?: string | null
           retry_window_hours?: number | null
+          run_parallel?: boolean | null
           scheduled_at?: string | null
           sentiment_adaptation?: boolean | null
           sequence_steps?: Json | null
+          sms_number_id?: string | null
           started_at?: string | null
           status?: string | null
           target_segment?: string | null
@@ -958,6 +968,7 @@ export type Database = {
           answered_calls?: number | null
           auto_followup_text?: boolean | null
           business_id?: string | null
+          call_number_id?: string | null
           completed_at?: string | null
           completed_calls?: number | null
           control_flow_id?: string | null
@@ -971,16 +982,20 @@ export type Database = {
           flow_id?: string | null
           followup_template?: string | null
           id?: string
+          max_calls_per_minute?: number | null
           max_concurrent_calls?: number | null
+          max_texts_per_minute?: number | null
           name?: string
           persona_id?: string | null
           prediction_snapshot?: Json | null
           predictive_goal?: string | null
           priority_mode?: string | null
           retry_window_hours?: number | null
+          run_parallel?: boolean | null
           scheduled_at?: string | null
           sentiment_adaptation?: boolean | null
           sequence_steps?: Json | null
+          sms_number_id?: string | null
           started_at?: string | null
           status?: string | null
           target_segment?: string | null
@@ -996,6 +1011,20 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_campaigns_call_number_id_fkey"
+            columns: ["call_number_id"]
+            isOneToOne: false
+            referencedRelation: "business_phone_numbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_campaigns_sms_number_id_fkey"
+            columns: ["sms_number_id"]
+            isOneToOne: false
+            referencedRelation: "business_phone_numbers"
             referencedColumns: ["id"]
           },
         ]
@@ -3498,6 +3527,59 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_phone_numbers: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          label: string | null
+          max_calls_per_minute: number | null
+          max_sms_per_minute: number | null
+          phone_number: string
+          provider: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          label?: string | null
+          max_calls_per_minute?: number | null
+          max_sms_per_minute?: number | null
+          phone_number: string
+          provider?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          label?: string | null
+          max_calls_per_minute?: number | null
+          max_sms_per_minute?: number | null
+          phone_number?: string
+          provider?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_phone_numbers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -13186,39 +13268,52 @@ export type Database = {
       }
       outbound_queue: {
         Row: {
+          business_id: string | null
           campaign_id: string | null
           channel: string | null
           created_at: string
           experiment_group: string | null
           id: string
+          phone_number: string | null
           predicted_outcome: Json | null
           priority_score: number | null
           status: string | null
           store_id: string | null
         }
         Insert: {
+          business_id?: string | null
           campaign_id?: string | null
           channel?: string | null
           created_at?: string
           experiment_group?: string | null
           id?: string
+          phone_number?: string | null
           predicted_outcome?: Json | null
           priority_score?: number | null
           status?: string | null
           store_id?: string | null
         }
         Update: {
+          business_id?: string | null
           campaign_id?: string | null
           channel?: string | null
           created_at?: string
           experiment_group?: string | null
           id?: string
+          phone_number?: string | null
           predicted_outcome?: Json | null
           priority_score?: number | null
           status?: string | null
           store_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "outbound_queue_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "outbound_queue_store_id_fkey"
             columns: ["store_id"]

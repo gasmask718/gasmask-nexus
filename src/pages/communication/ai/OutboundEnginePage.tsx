@@ -18,9 +18,11 @@ import {
   Brain, TrendingUp, TrendingDown, AlertTriangle, Sparkles, Settings,
   ArrowUpRight, ArrowDownRight, Calendar, MessageSquare, UserCheck,
   Activity, Mic, Radio, LineChart, FlaskConical, Lightbulb,
-  ShieldCheck, Eye, Send, Users, Smartphone, PhoneCall, Mail
+  ShieldCheck, Eye, Send, Users, Smartphone, PhoneCall, Mail, Building2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useBusinessStore } from "@/stores/businessStore";
+import { BusinessCampaignFilters } from "@/components/communication/BusinessCampaignFilters";
 
 // Mock unified predictions data
 const mockPredictions = [
@@ -57,14 +59,26 @@ const mockLiveTexts = [
   { id: "3", storeName: "Sam's Tobacco", phone: "+1 555-0654", lastMessage: "Yes! Send me the order link", sentiment: "positive", status: "converting", aiSuggestion: "Send order form link immediately" },
 ];
 
+// Mock phone numbers for the selected business
+const mockPhoneNumbers = [
+  { id: 'phone-1', number: '+1 (555) 123-4567', label: 'Main Line', type: 'both' },
+  { id: 'phone-2', number: '+1 (555) 234-5678', label: 'Reactivation', type: 'call' },
+  { id: 'phone-3', number: '+1 (555) 345-6789', label: 'Promo Texts', type: 'sms' },
+];
+
 export default function OutboundEnginePage() {
   const { toast } = useToast();
+  const { selectedBusiness } = useBusinessStore();
   const [activeTab, setActiveTab] = useState("overview");
   const [campaignName, setCampaignName] = useState("");
   const [selectedChannel, setSelectedChannel] = useState("mixed");
   const [predictiveGoal, setPredictiveGoal] = useState("max_orders");
   const [experimentMode, setExperimentMode] = useState(false);
   const [selectedPrediction, setSelectedPrediction] = useState<typeof mockPredictions[0] | null>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState("all");
+  const [selectedPhoneNumber, setSelectedPhoneNumber] = useState("all");
+  const [callNumberId, setCallNumberId] = useState("");
+  const [smsNumberId, setSmsNumberId] = useState("");
 
   const stats = {
     totalCalls: 245,
@@ -114,9 +128,16 @@ export default function OutboundEnginePage() {
             AI Outbound Engine
             <Badge variant="secondary" className="ml-2">V3 Unified</Badge>
           </h1>
-          <p className="text-muted-foreground">Predictive voice + SMS engine with shared intelligence brain</p>
+          <p className="text-muted-foreground">
+            Multi-business, multi-phone, multi-campaign outbound intelligence
+            {selectedBusiness && <span className="font-medium text-foreground ml-1">• {selectedBusiness.name}</span>}
+          </p>
         </div>
         <div className="flex items-center gap-2">
+          <Badge variant="outline" className="gap-1">
+            <Building2 className="h-3 w-3" />
+            {selectedBusiness?.name || 'All Businesses'}
+          </Badge>
           <Badge variant="outline" className="gap-1">
             <PhoneCall className="h-3 w-3" />
             {mockLiveCalls.length} Live Calls
@@ -131,6 +152,14 @@ export default function OutboundEnginePage() {
           </Badge>
         </div>
       </div>
+
+      {/* Business/Campaign/Phone Filters */}
+      <BusinessCampaignFilters
+        selectedCampaign={selectedCampaign}
+        onCampaignChange={setSelectedCampaign}
+        selectedPhoneNumber={selectedPhoneNumber}
+        onPhoneNumberChange={setSelectedPhoneNumber}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full max-w-4xl grid-cols-7">
