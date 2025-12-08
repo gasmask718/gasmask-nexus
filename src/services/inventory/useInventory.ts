@@ -221,15 +221,21 @@ export function useInventoryAlerts(params?: { unresolved?: boolean; severity?: s
 
       if (error) throw error;
       
-      let filtered = data || [];
+      // Map urgency_score to severity for backward compatibility
+      let alerts = (data || []).map(a => ({
+        ...a,
+        severity: (a as any).urgency_score >= 80 ? 'critical' : 
+                  (a as any).urgency_score >= 50 ? 'high' : 'medium'
+      }));
+      
       if (params?.unresolved) {
-        filtered = filtered.filter(a => !a.is_resolved);
+        alerts = alerts.filter(a => !a.is_resolved);
       }
       if (params?.severity) {
-        filtered = filtered.filter(a => a.severity === params.severity);
+        alerts = alerts.filter(a => a.severity === params.severity);
       }
       
-      return filtered as unknown as InventoryAlert[];
+      return alerts as unknown as InventoryAlert[];
     },
   });
 }
