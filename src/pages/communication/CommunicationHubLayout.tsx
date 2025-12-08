@@ -17,6 +17,8 @@ const navItems = [
   { path: "dialer", label: "Dialer (AI)", icon: Phone },
   { path: "manual-calls", label: "Manual Calls", icon: PhoneOutgoing },
   { path: "manual-text", label: "Manual Text", icon: MessageSquarePlus },
+  { path: "ai-auto-dialer", label: "AI Auto Dialer", icon: PhoneCall },
+  { path: "ai-auto-text", label: "AI Auto Text", icon: MessageCircle },
   { path: "live", label: "Live Calls", icon: Headphones, badge: 3 },
   { path: "escalations", label: "Escalations", icon: AlertTriangle, badge: 2 },
   { path: "engagement", label: "Engagement", icon: Activity },
