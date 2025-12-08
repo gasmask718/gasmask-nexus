@@ -145,6 +145,7 @@ import AutonomousDirectorPage from '@/pages/communication/ai/AutonomousDirectorP
 import VoiceLibraryPage from '@/pages/communication/voice/VoiceLibraryPage';
 import DealsSalesPage from '@/pages/communication/deals/DealsSalesPage';
 import FollowUpManagerPage from '@/pages/communication/followups/FollowUpManagerPage';
+import UnifiedInboxV3Page from '@/pages/communication/inbox/UnifiedInboxV3Page';
 // Legacy Communication imports (kept for other routes)
 import CommunicationOverview from '@/pages/communication/CommunicationOverview';
 import CommunicationCampaigns from '@/pages/communication/CommunicationCampaigns';
@@ -845,6 +846,7 @@ export default function AppRoutes() {
           <Route path="settings" element={<CommSettingsPage />} />
           <Route path="phone-numbers" element={<PhoneNumbersSettingsPage />} />
           <Route path="follow-ups" element={<FollowUpManagerPage />} />
+          <Route path="unified-inbox" element={<UnifiedInboxV3Page />} />
         </Route>
 
         <Route path="/messages" element={<MessagesPage />} />
