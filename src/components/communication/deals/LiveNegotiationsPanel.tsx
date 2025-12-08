@@ -5,17 +5,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Phone, 
   MessageSquare, 
-  Play,
   Pause,
   UserPlus,
   CheckCircle,
   XCircle,
   Volume2,
-  Bot
+  Bot,
+  Shield
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
+import { VerticalBadge } from '../verticals/VerticalBadge';
 
 export default function LiveNegotiationsPanel() {
   const { data: activeSessions, isLoading } = useQuery({
@@ -30,7 +31,8 @@ export default function LiveNegotiationsPanel() {
             expected_value, 
             discount_percent,
             store:store_master(store_name),
-            business:businesses(name)
+            business:businesses(name),
+            vertical:brand_verticals(id, name, slug)
           ),
           ai_agent:ai_agents(name)
         `)
@@ -107,9 +109,14 @@ function NegotiationCard({ session }: { session: any }) {
               <p className="font-medium">
                 {session.deal?.store?.store_name || 'Unknown Store'}
               </p>
-              <p className="text-sm text-muted-foreground">
-                {session.deal?.business?.name} • {session.session_type}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-muted-foreground">
+                  {session.deal?.business?.name} • {session.session_type}
+                </p>
+                {session.deal?.vertical && (
+                  <VerticalBadge verticalSlug={session.deal.vertical.slug} size="sm" />
+                )}
+              </div>
             </div>
           </div>
           
