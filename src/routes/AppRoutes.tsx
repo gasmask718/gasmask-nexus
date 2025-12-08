@@ -1119,6 +1119,13 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+      <Route path="/grabba/communication" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
+            <Layout><CommunicationHubLayout /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
       <Route path="/grabba/text-center" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
