@@ -15,6 +15,7 @@ import {
   Send
 } from "lucide-react";
 import { useStoreRevenueScore, useStoreRevenueRecommendations, useRevenueEngineActions } from "@/hooks/useRevenueEngine";
+import { StoreProductPredictionsPanel } from "./StoreProductPredictionsPanel";
 import { format } from "date-fns";
 
 interface StoreRevenueIntelligenceTabProps {
@@ -284,6 +285,9 @@ export function StoreRevenueIntelligenceTab({ storeId }: StoreRevenueIntelligenc
           </CardContent>
         </Card>
       )}
+
+      {/* V2: Product Predictions Panel */}
+      <StoreProductPredictionsPanel storeId={storeId} />
     </div>
   );
 }
