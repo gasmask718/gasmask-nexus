@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { path: "inbox", label: "Inbox", icon: MessageSquare, badge: 12 },
+  { path: "outbound-engine", label: "Outbound Engine", icon: Zap, badge: undefined },
   { path: "dialer", label: "Dialer (AI)", icon: Phone },
   { path: "manual-calls", label: "Manual Calls", icon: PhoneOutgoing },
   { path: "manual-text", label: "Manual Text", icon: MessageSquarePlus },

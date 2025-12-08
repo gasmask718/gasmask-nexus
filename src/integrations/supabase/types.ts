@@ -13032,6 +13032,202 @@ export type Database = {
         }
         Relationships: []
       }
+      outbound_experiments: {
+        Row: {
+          answered: number | null
+          avg_sentiment: number | null
+          calls: number | null
+          campaign_id: string | null
+          channel: string | null
+          complaints: number | null
+          created_at: string
+          id: string
+          orders: number | null
+          replies: number | null
+          sms: number | null
+          variant_name: string
+        }
+        Insert: {
+          answered?: number | null
+          avg_sentiment?: number | null
+          calls?: number | null
+          campaign_id?: string | null
+          channel?: string | null
+          complaints?: number | null
+          created_at?: string
+          id?: string
+          orders?: number | null
+          replies?: number | null
+          sms?: number | null
+          variant_name: string
+        }
+        Update: {
+          answered?: number | null
+          avg_sentiment?: number | null
+          calls?: number | null
+          campaign_id?: string | null
+          channel?: string | null
+          complaints?: number | null
+          created_at?: string
+          id?: string
+          orders?: number | null
+          replies?: number | null
+          sms?: number | null
+          variant_name?: string
+        }
+        Relationships: []
+      }
+      outbound_personalized_scripts: {
+        Row: {
+          campaign_id: string | null
+          channel: string | null
+          created_at: string
+          id: string
+          persona: string | null
+          script: Json | null
+          store_id: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          channel?: string | null
+          created_at?: string
+          id?: string
+          persona?: string | null
+          script?: Json | null
+          store_id?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          channel?: string | null
+          created_at?: string
+          id?: string
+          persona?: string | null
+          script?: Json | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outbound_personalized_scripts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outbound_predictions: {
+        Row: {
+          answer_prob: number | null
+          best_time_window: string | null
+          business_id: string | null
+          campaign_id: string | null
+          churn_risk: number | null
+          complaint_risk: number | null
+          created_at: string
+          id: string
+          order_prob: number | null
+          recommended_channel: string | null
+          recommended_persona: string | null
+          recommended_script_variant: string | null
+          snapshot: Json | null
+          store_id: string | null
+          text_reply_prob: number | null
+        }
+        Insert: {
+          answer_prob?: number | null
+          best_time_window?: string | null
+          business_id?: string | null
+          campaign_id?: string | null
+          churn_risk?: number | null
+          complaint_risk?: number | null
+          created_at?: string
+          id?: string
+          order_prob?: number | null
+          recommended_channel?: string | null
+          recommended_persona?: string | null
+          recommended_script_variant?: string | null
+          snapshot?: Json | null
+          store_id?: string | null
+          text_reply_prob?: number | null
+        }
+        Update: {
+          answer_prob?: number | null
+          best_time_window?: string | null
+          business_id?: string | null
+          campaign_id?: string | null
+          churn_risk?: number | null
+          complaint_risk?: number | null
+          created_at?: string
+          id?: string
+          order_prob?: number | null
+          recommended_channel?: string | null
+          recommended_persona?: string | null
+          recommended_script_variant?: string | null
+          snapshot?: Json | null
+          store_id?: string | null
+          text_reply_prob?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outbound_predictions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_predictions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outbound_queue: {
+        Row: {
+          campaign_id: string | null
+          channel: string | null
+          created_at: string
+          experiment_group: string | null
+          id: string
+          predicted_outcome: Json | null
+          priority_score: number | null
+          status: string | null
+          store_id: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          channel?: string | null
+          created_at?: string
+          experiment_group?: string | null
+          id?: string
+          predicted_outcome?: Json | null
+          priority_score?: number | null
+          status?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          channel?: string | null
+          created_at?: string
+          experiment_group?: string | null
+          id?: string
+          predicted_outcome?: Json | null
+          priority_score?: number | null
+          status?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outbound_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payouts: {
         Row: {
           assignment_fee: number
