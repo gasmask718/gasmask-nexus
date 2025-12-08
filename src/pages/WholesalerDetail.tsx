@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Mail, Phone, MapPin, Star, MessageSquare, Package } from "lucide-react";
+import { Building2, Mail, Phone, MapPin, Star, MessageSquare, Package, Headphones } from "lucide-react";
 import { CommunicationTimeline } from "@/components/CommunicationTimeline";
 import { CommunicationStats } from "@/components/communication/CommunicationStats";
 import { CommunicationLogModal } from "@/components/CommunicationLogModal";
@@ -152,6 +152,10 @@ export default function WholesalerDetail() {
         <Tabs defaultValue="communication" className="space-y-6">
           <TabsList>
             <TabsTrigger value="communication">Communication</TabsTrigger>
+            <TabsTrigger value="calls">
+              <Headphones className="h-4 w-4 mr-2" />
+              Calls
+            </TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
           </TabsList>
@@ -161,6 +165,15 @@ export default function WholesalerDetail() {
               <AIRelationshipHealth entityType="wholesaler" entityId={id!} />
               <FollowUpInsights entityType="wholesaler" entityId={id!} />
             <CommunicationTimeline entityType="wholesaler" entityId={id!} />
+          </TabsContent>
+
+          <TabsContent value="calls" className="space-y-6">
+            <Card className="p-6">
+              <div className="text-center py-8 text-muted-foreground">
+                <Headphones className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
+                <p>Call recordings and intelligence will appear here when calls are made to this wholesaler.</p>
+              </div>
+            </Card>
           </TabsContent>
 
           <TabsContent value="products">
