@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// PRODUCT FORM MODAL — Create/Edit Product with Full Fields
+// PRODUCT FORM MODAL — Create/Edit Product with Full Fields + Image Upload
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useProduct, useCreateProduct, useUpdateProduct, Product } from '@/services/inventory';
-import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { ImageUpload } from './ImageUpload';
+import { Loader2, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ProductFormModalProps {
   open: boolean;
@@ -36,6 +51,31 @@ export default function ProductFormModal({ open, onClose, productId }: ProductFo
   
   const isEditMode = !!productId;
   const isSubmitting = createProduct.isPending || updateProduct.isPending;
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Fetch brands for dropdown
+  const { data: brands = [] } = useQuery({
+    queryKey: ['brands-dropdown'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('brands')
+        .select('id, name')
+        .order('name');
+      return data || [];
+    },
+  });
+
+  // Fetch businesses for dropdown
+  const { data: businesses = [] } = useQuery({
+    queryKey: ['businesses-dropdown'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('businesses')
+        .select('id, name')
+        .order('name');
+      return data || [];
+    },
+  });
 
   const [form, setForm] = useState<Partial<Product>>({
     name: '',
@@ -55,6 +95,9 @@ export default function ProductFormModal({ open, onClose, productId }: ProductFo
     reorder_qty: 0,
     safety_stock: 0,
     is_active: true,
+    image_url: null,
+    brand_id: null,
+    business_id: null,
   });
 
   // Reset form when modal opens with existing product data
@@ -78,6 +121,7 @@ export default function ProductFormModal({ open, onClose, productId }: ProductFo
         reorder_qty: existingProduct.reorder_qty || 0,
         safety_stock: existingProduct.safety_stock || 0,
         is_active: existingProduct.is_active ?? true,
+        image_url: existingProduct.image_url || null,
         business_id: existingProduct.business_id,
         vertical_id: existingProduct.vertical_id,
         brand_id: existingProduct.brand_id,
@@ -102,6 +146,9 @@ export default function ProductFormModal({ open, onClose, productId }: ProductFo
         reorder_qty: 0,
         safety_stock: 0,
         is_active: true,
+        image_url: null,
+        brand_id: null,
+        business_id: null,
       });
     }
   }, [open, existingProduct, isEditMode]);
@@ -119,8 +166,34 @@ export default function ProductFormModal({ open, onClose, productId }: ProductFo
     }
   };
 
+  const handleDelete = async () => {
+    if (!productId) return;
+    
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ is_active: false })
+        .eq('id', productId);
+      
+      if (error) throw error;
+      toast.success('Product deleted');
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete product');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const updateField = (field: keyof Product, value: any) => {
     setForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const generateSKU = () => {
+    const prefix = form.name?.slice(0, 3).toUpperCase() || 'PRD';
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    updateField('sku', `${prefix}-${random}`);
   };
 
   return (
@@ -138,8 +211,14 @@ export default function ProductFormModal({ open, onClose, productId }: ProductFo
           </div>
         ) : (
           <div className="grid gap-4 py-4">
+            {/* Image Upload */}
+            <ImageUpload 
+              value={form.image_url} 
+              onChange={(url) => updateField('image_url', url)} 
+            />
+
             {/* Basic Info Section */}
-            <div className="space-y-1">
+            <div className="space-y-1 pt-2">
               <h3 className="text-sm font-medium text-muted-foreground">Basic Information</h3>
             </div>
             
@@ -154,11 +233,55 @@ export default function ProductFormModal({ open, onClose, productId }: ProductFo
               </div>
               <div className="space-y-2">
                 <Label>SKU *</Label>
-                <Input
-                  value={form.sku || ''}
-                  onChange={(e) => updateField('sku', e.target.value)}
-                  placeholder="GRB-2OZ-001"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    value={form.sku || ''}
+                    onChange={(e) => updateField('sku', e.target.value)}
+                    placeholder="GRB-2OZ-001"
+                    className="flex-1"
+                  />
+                  <Button type="button" variant="outline" size="sm" onClick={generateSKU}>
+                    Auto
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Business & Brand Assignment */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Business</Label>
+                <Select
+                  value={form.business_id || 'none'}
+                  onValueChange={(v) => updateField('business_id', v === 'none' ? null : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Business" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Business</SelectItem>
+                    {businesses.map((b: any) => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Brand</Label>
+                <Select
+                  value={form.brand_id || 'none'}
+                  onValueChange={(v) => updateField('brand_id', v === 'none' ? null : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Brand" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Brand</SelectItem>
+                    {brands.map((b: any) => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -332,20 +455,46 @@ export default function ProductFormModal({ open, onClose, productId }: ProductFo
           </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={!form.name || isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {isEditMode ? 'Saving...' : 'Creating...'}
-              </>
-            ) : (
-              isEditMode ? 'Save Changes' : 'Create Product'
+        <div className="flex justify-between gap-2 pt-4 border-t">
+          <div>
+            {isEditMode && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" disabled={isDeleting}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Product?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will deactivate the product. It can be reactivated later.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
-          </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={!form.name || isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {isEditMode ? 'Saving...' : 'Creating...'}
+                </>
+              ) : (
+                isEditMode ? 'Save Changes' : 'Create Product'
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
