@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,7 +35,6 @@ import {
   Plus,
   Search,
   ArrowLeft,
-  ArrowRight,
   Star,
   TrendingDown,
   Barcode,
@@ -46,23 +46,39 @@ import {
 } from 'lucide-react';
 import { useProducts, Product } from '@/services/inventory';
 import ProductFormModal from '@/components/inventory/ProductFormModal';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 
 export default function ProductsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [brandFilter, setBrandFilter] = useState<string>('all');
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editProductId, setEditProductId] = useState<string | null>(null);
 
   const { data: products, isLoading } = useProducts({ search: search || undefined });
 
-  // Filter products by status
+  // Fetch brands for filter dropdown
+  const { data: brands = [] } = useQuery({
+    queryKey: ['brands-filter'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('brands')
+        .select('id, name')
+        .order('name');
+      return data || [];
+    },
+  });
+
+  // Filter products by status and brand
   const filteredProducts = products?.filter(product => {
-    if (statusFilter === 'all') return true;
-    if (statusFilter === 'active') return product.is_active;
-    if (statusFilter === 'inactive') return !product.is_active;
-    return true;
+    const statusMatch = statusFilter === 'all' || 
+      (statusFilter === 'active' && product.is_active) ||
+      (statusFilter === 'inactive' && !product.is_active);
+    const brandMatch = brandFilter === 'all' || product.brand_id === brandFilter;
+    return statusMatch && brandMatch;
   });
 
   const formatCurrency = (amount: number | null) => {
@@ -144,11 +160,18 @@ export default function ProductsPage() {
                 <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
-            {/* TODO (Inventory + Revenue):
-              - filter by low stock / high demand later
-              - filter by brand/business
-              - show hero/ghost score column when Revenue Engine V2 is active
-            */}
+            {/* Brand Filter */}
+            <Select value={brandFilter} onValueChange={setBrandFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Brand" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Brands</SelectItem>
+                {brands.map((brand: any) => (
+                  <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -170,13 +193,12 @@ export default function ProductsPage() {
                 <TableRow>
                   <TableHead>Product</TableHead>
                   <TableHead>SKU</TableHead>
-                  <TableHead>Type</TableHead>
+                  <TableHead>Unit Size</TableHead>
                   <TableHead>Cost</TableHead>
-                  <TableHead>Wholesale</TableHead>
-                  <TableHead>Retail</TableHead>
-                  <TableHead>Scores</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Updated</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+                  <TableHead className="w-[80px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -203,11 +225,6 @@ export default function ProductsPage() {
                                 {product.brand.name}
                               </Badge>
                             )}
-                            {product.variant && (
-                              <span className="text-xs text-muted-foreground">
-                                {product.variant}
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -219,29 +236,21 @@ export default function ProductsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="capitalize">{product.type}</Badge>
+                      <span className="text-sm capitalize">{product.unit_type || '-'}</span>
+                      {product.case_size && product.case_size > 1 && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          (x{product.case_size})
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="font-mono">{formatCurrency(product.cost)}</TableCell>
                     <TableCell className="font-mono">{formatCurrency(product.wholesale_price)}</TableCell>
-                    <TableCell className="font-mono">{formatCurrency(product.suggested_retail_price)}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        {product.hero_score && product.hero_score >= 50 && (
-                          <div className="flex items-center gap-1 text-amber-500">
-                            <Star className="h-3 w-3" />
-                            <span className="text-xs">{product.hero_score.toFixed(0)}</span>
-                          </div>
-                        )}
-                        {product.ghost_score && product.ghost_score >= 50 && (
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <TrendingDown className="h-3 w-3" />
-                            <span className="text-xs">{product.ghost_score.toFixed(0)}</span>
-                          </div>
-                        )}
-                        {!product.hero_score && !product.ghost_score && (
-                          <span className="text-xs text-muted-foreground">-</span>
-                        )}
-                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {product.updated_at 
+                          ? format(new Date(product.updated_at), 'MMM d, yyyy')
+                          : '-'}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <Badge variant={product.is_active ? 'default' : 'secondary'}>
@@ -249,34 +258,39 @@ export default function ProductsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link to={`/os/inventory/products/${product.id}`}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleOpenEdit(product.id)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit Product
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleOpenEdit(product.id)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link to={`/os/inventory/products/${product.id}`}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </Link>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
                 {!filteredProducts?.length && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-12">
+                    <TableCell colSpan={8} className="text-center py-12">
                       <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-30" />
                       <p className="text-muted-foreground">
-                        {search || statusFilter !== 'all' 
+                        {search || statusFilter !== 'all' || brandFilter !== 'all'
                           ? 'No products match your filters.' 
                           : "No products yet. Click 'Add Product' to create your first SKU."}
                       </p>
