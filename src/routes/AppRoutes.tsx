@@ -254,7 +254,8 @@ import PodLayout from '@/pages/pod/PodLayout';
 // OS Modules
 import { ProcurementDashboard, SuppliersPage as ProcurementSuppliersPage, SupplierDetailPage as ProcurementSupplierDetailPage, PurchaseOrdersPage as ProcurementPurchaseOrdersPage, NewPurchaseOrderPage as ProcurementNewPurchaseOrderPage } from '@/pages/os/procurement';
 import { WarehouseDashboard } from '@/pages/os/warehouse';
-import { InventoryDashboard, ProductsPage, ProductDetailPage, WarehousesPage, WarehouseDetailPage, SuppliersPage as InventorySuppliersPage, SupplierDetailPage as InventorySupplierDetailPage, PurchaseOrdersPage as InventoryPurchaseOrdersPage, NewPurchaseOrderPage as InventoryNewPurchaseOrderPage, PurchaseOrderDetailPage, StockLevelsPage, MovementsPage, ProcurementPage, InsightsPage } from '@/pages/os/inventory';
+import { InventoryDashboard, ProductsPage, ProductDetailPage, WarehousesPage, WarehouseDetailPage, SuppliersPage as InventorySuppliersPage, SupplierDetailPage as InventorySupplierDetailPage, PurchaseOrdersPage as InventoryPurchaseOrdersPage, NewPurchaseOrderPage as InventoryNewPurchaseOrderPage, PurchaseOrderDetailPage, StockLevelsPage, MovementsPage, ProcurementPage, InsightsPage, NeighborhoodIntelligencePage } from '@/pages/os/inventory';
+import { LiveTubesDetailPage, BoxesSoldDetailPage, LowStockDetailPage } from '@/pages/os/inventory/dashboard';
 import TopTierDashboard from '@/pages/os/toptier/TopTierDashboard';
 import UnforgettableDashboard from '@/pages/os/unforgettable/UnforgettableDashboard';
 import ICleanDashboard from '@/pages/os/iclean/ICleanDashboard';
@@ -663,6 +664,10 @@ export default function AppRoutes() {
         <Route path="/os/inventory/movements" element={<MovementsPage />} />
         <Route path="/os/inventory/procurement" element={<ProcurementPage />} />
         <Route path="/os/inventory/insights" element={<InsightsPage />} />
+        <Route path="/os/inventory/neighborhood" element={<NeighborhoodIntelligencePage />} />
+        <Route path="/os/inventory/dashboard/live-tubes" element={<LiveTubesDetailPage />} />
+        <Route path="/os/inventory/dashboard/boxes-sold" element={<BoxesSoldDetailPage />} />
+        <Route path="/os/inventory/dashboard/low-stock" element={<LowStockDetailPage />} />
 
         {/* Dynasty OS Business Units */}
         <Route path="/os/toptier" element={<TopTierDashboard />} />
