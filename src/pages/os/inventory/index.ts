@@ -12,3 +12,5 @@ export { default as StockLevelsPage } from './StockLevelsPage';
 export { default as MovementsPage } from './MovementsPage';
 export { default as ProcurementPage } from './ProcurementPage';
 export { default as InsightsPage } from './InsightsPage';
+export { default as NeighborhoodIntelligencePage } from './NeighborhoodIntelligencePage';
+export * from './dashboard';
