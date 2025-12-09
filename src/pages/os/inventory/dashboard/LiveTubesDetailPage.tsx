@@ -27,58 +27,71 @@ import {
   MapPin,
   Package,
   Eye,
+  Building,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function LiveTubesDetailPage() {
   const [search, setSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
+  const [brandFilter, setBrandFilter] = useState('all');
   
-  // Fetch stores with inventory
+  // Fetch inventory with store details
   const { data: storeInventory = [], isLoading } = useQuery({
-    queryKey: ['live-tubes-detail', cityFilter],
+    queryKey: ['live-tubes-detail'],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from('inventory_stock')
         .select(`
           id,
           quantity_on_hand,
           quantity_reserved,
           updated_at,
-          products (id, name, sku, brand_id),
+          products (id, name, sku, brand_id, brands (id, name)),
           warehouses (id, name, city, state)
         `)
         .gt('quantity_on_hand', 0);
       
-      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
   });
 
   // Get unique cities
-  const cities = [...new Set(storeInventory.map((s: any) => s.warehouses?.city).filter(Boolean))];
+  const cities = [...new Set(storeInventory.map((s: any) => s.warehouses?.city).filter(Boolean))].sort();
+
+  // Get unique brands
+  const brands = [...new Set(storeInventory.map((s: any) => 
+    (s.products as any)?.brands?.name
+  ).filter(Boolean))].sort();
+
+  // Calculate totals
+  const totalOnHand = storeInventory.reduce((sum: number, item: any) => sum + (item.quantity_on_hand || 0), 0);
+  const totalReserved = storeInventory.reduce((sum: number, item: any) => sum + (item.quantity_reserved || 0), 0);
 
   // Filter results
   const filtered = storeInventory.filter((item: any) => {
     if (cityFilter !== 'all' && item.warehouses?.city !== cityFilter) return false;
+    if (brandFilter !== 'all' && (item.products as any)?.brands?.name !== brandFilter) return false;
     if (search) {
       const term = search.toLowerCase();
       const name = item.warehouses?.name?.toLowerCase() || '';
       const product = item.products?.name?.toLowerCase() || '';
-      return name.includes(term) || product.includes(term);
+      const sku = item.products?.sku?.toLowerCase() || '';
+      return name.includes(term) || product.includes(term) || sku.includes(term);
     }
     return true;
   });
 
   const handleExport = () => {
     const csv = [
-      ['Warehouse', 'City', 'State', 'Product', 'SKU', 'On Hand', 'Reserved', 'Last Updated'],
+      ['Warehouse', 'City', 'State', 'Product', 'Brand', 'SKU', 'On Hand', 'Reserved', 'Last Updated'],
       ...filtered.map((item: any) => [
         item.warehouses?.name || '',
         item.warehouses?.city || '',
         item.warehouses?.state || '',
         item.products?.name || '',
+        (item.products as any)?.brands?.name || '',
         item.products?.sku || '',
         item.quantity_on_hand || 0,
         item.quantity_reserved || 0,
@@ -118,6 +131,34 @@ export default function LiveTubesDetailPage() {
         </Button>
       </div>
 
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-3xl font-bold text-primary">{totalOnHand.toLocaleString()}</p>
+              <p className="text-sm text-muted-foreground">Total Units On Hand</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-3xl font-bold text-orange-500">{totalReserved.toLocaleString()}</p>
+              <p className="text-sm text-muted-foreground">Reserved Units</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-3xl font-bold">{filtered.length}</p>
+              <p className="text-sm text-muted-foreground">Stock Records</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
@@ -125,14 +166,14 @@ export default function LiveTubesDetailPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by warehouse or product..."
+                placeholder="Search by warehouse, product, or SKU..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
             <Select value={cityFilter} onValueChange={setCityFilter}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[180px]">
                 <MapPin className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="All Cities" />
               </SelectTrigger>
@@ -140,6 +181,18 @@ export default function LiveTubesDetailPage() {
                 <SelectItem value="all">All Cities</SelectItem>
                 {cities.map((city) => (
                   <SelectItem key={city} value={city}>{city}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={brandFilter} onValueChange={setBrandFilter}>
+              <SelectTrigger className="w-[180px]">
+                <Building className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="All Brands" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Brands</SelectItem>
+                {brands.map((brand) => (
+                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -163,6 +216,7 @@ export default function LiveTubesDetailPage() {
                   <TableHead>Warehouse</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Product</TableHead>
+                  <TableHead>Brand</TableHead>
                   <TableHead>SKU</TableHead>
                   <TableHead className="text-right">On Hand</TableHead>
                   <TableHead className="text-right">Reserved</TableHead>
@@ -178,6 +232,11 @@ export default function LiveTubesDetailPage() {
                       {item.warehouses?.city}, {item.warehouses?.state}
                     </TableCell>
                     <TableCell>{item.products?.name || 'Unknown'}</TableCell>
+                    <TableCell>
+                      {(item.products as any)?.brands?.name && (
+                        <Badge variant="outline">{(item.products as any).brands.name}</Badge>
+                      )}
+                    </TableCell>
                     <TableCell className="font-mono text-sm">{item.products?.sku || '-'}</TableCell>
                     <TableCell className="text-right font-medium">{item.quantity_on_hand || 0}</TableCell>
                     <TableCell className="text-right">{item.quantity_reserved || 0}</TableCell>
@@ -195,7 +254,7 @@ export default function LiveTubesDetailPage() {
                 ))}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
                       No inventory records found
                     </TableCell>
                   </TableRow>
