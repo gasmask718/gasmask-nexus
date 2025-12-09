@@ -35,6 +35,7 @@ export interface Product {
   vertical_id: string | null;
   brand_id: string | null;
   created_at: string | null;
+  updated_at: string | null;
   brand?: { id: string; name: string; color?: string };
 }
 
