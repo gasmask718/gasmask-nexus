@@ -105,6 +105,9 @@ export default function InventoryDashboard() {
                   <p className="text-xs text-muted-foreground">Products</p>
                 </div>
               </div>
+              <Button variant="link" size="sm" className="px-0 mt-2 h-auto" asChild>
+                <Link to="/os/inventory/products">View Details →</Link>
+              </Button>
             </CardContent>
           </Card>
 
@@ -119,6 +122,9 @@ export default function InventoryDashboard() {
                   <p className="text-xs text-muted-foreground">On Hand</p>
                 </div>
               </div>
+              <Button variant="link" size="sm" className="px-0 mt-2 h-auto" asChild>
+                <Link to="/os/inventory/dashboard/live-tubes">View Details →</Link>
+              </Button>
             </CardContent>
           </Card>
 
@@ -133,6 +139,9 @@ export default function InventoryDashboard() {
                   <p className="text-xs text-muted-foreground">Reserved</p>
                 </div>
               </div>
+              <Button variant="link" size="sm" className="px-0 mt-2 h-auto" asChild>
+                <Link to="/os/inventory/dashboard/boxes-sold">View Details →</Link>
+              </Button>
             </CardContent>
           </Card>
 
@@ -161,6 +170,9 @@ export default function InventoryDashboard() {
                   <p className="text-xs text-muted-foreground">Low Stock</p>
                 </div>
               </div>
+              <Button variant="link" size="sm" className="px-0 mt-2 h-auto" asChild>
+                <Link to="/os/inventory/dashboard/low-stock">View Details →</Link>
+              </Button>
             </CardContent>
           </Card>
 
@@ -175,6 +187,9 @@ export default function InventoryDashboard() {
                   <p className="text-xs text-muted-foreground">Out of Stock</p>
                 </div>
               </div>
+              <Button variant="link" size="sm" className="px-0 mt-2 h-auto" asChild>
+                <Link to="/os/inventory/dashboard/low-stock">View Details →</Link>
+              </Button>
             </CardContent>
           </Card>
         </div>
