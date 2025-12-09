@@ -38,6 +38,7 @@ import {
   ReorderSuggestion 
 } from "@/lib/inventory/calculateReorderSuggestions";
 import { ReorderPolicyModal } from "@/components/inventory/ReorderPolicyModal";
+import { fetchInventoryForecasts } from "@/lib/inventory/calculateInventoryInsights";
 
 const ProcurementPage = () => {
   const queryClient = useQueryClient();
@@ -82,6 +83,21 @@ const ProcurementPage = () => {
         warehouseId: selectedWarehouse !== 'all' ? selectedWarehouse : undefined,
       });
     },
+  });
+
+  // Fetch forecasts for insight columns
+  const { data: forecasts = [] } = useQuery({
+    queryKey: ['procurement-forecasts', selectedWarehouse],
+    queryFn: () => fetchInventoryForecasts({
+      warehouseId: selectedWarehouse !== 'all' ? selectedWarehouse : undefined,
+    }),
+  });
+
+  // Create a map for quick forecast lookup
+  const forecastMap = new Map<string, any>();
+  forecasts.forEach((f: any) => {
+    const key = `${f.product_id}|${f.warehouse_id}`;
+    forecastMap.set(key, f);
   });
 
   // Fetch policies
@@ -319,6 +335,9 @@ const ProcurementPage = () => {
                       <TableHead>Supplier</TableHead>
                       <TableHead className="text-right">Available</TableHead>
                       <TableHead className="text-right">Reorder Pt</TableHead>
+                      <TableHead className="text-right">Avg Daily</TableHead>
+                      <TableHead className="text-right">Days Left</TableHead>
+                      <TableHead>Risk</TableHead>
                       <TableHead className="text-right">Suggested Qty</TableHead>
                       <TableHead className="text-right">Unit Cost</TableHead>
                       <TableHead className="text-right">Line Total</TableHead>
@@ -329,6 +348,7 @@ const ProcurementPage = () => {
                       const key = getItemKey(suggestion);
                       const isCritical = suggestion.available <= 0;
                       const noSupplier = !suggestion.supplier_id;
+                      const forecast = forecastMap.get(key);
                       
                       return (
                         <TableRow 
@@ -367,6 +387,29 @@ const ProcurementPage = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">{suggestion.reorder_point ?? '—'}</TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {forecast?.avg_daily_usage ? Number(forecast.avg_daily_usage).toFixed(1) : '—'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {forecast?.days_until_runout !== null && forecast?.days_until_runout !== undefined ? (
+                              <span className={forecast.days_until_runout <= 7 ? 'text-destructive font-medium' : ''}>
+                                {forecast.days_until_runout}
+                              </span>
+                            ) : '—'}
+                          </TableCell>
+                          <TableCell>
+                            {forecast?.risk_level ? (
+                              <Badge variant={
+                                forecast.risk_level === 'critical' || forecast.risk_level === 'high' 
+                                  ? 'destructive' 
+                                  : forecast.risk_level === 'medium' 
+                                    ? 'secondary' 
+                                    : 'outline'
+                              }>
+                                {forecast.risk_level}
+                              </Badge>
+                            ) : '—'}
+                          </TableCell>
                           <TableCell className="text-right font-medium">{suggestion.suggested_qty}</TableCell>
                           <TableCell className="text-right">
                             {suggestion.unit_cost 
