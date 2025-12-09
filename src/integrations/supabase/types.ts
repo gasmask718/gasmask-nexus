@@ -11174,6 +11174,79 @@ export type Database = {
           },
         ]
       }
+      inventory_forecasts: {
+        Row: {
+          avg_daily_usage: number | null
+          business_id: string | null
+          calculated_at: string | null
+          days_until_runout: number | null
+          forecast_demand: number | null
+          horizon_days: number
+          id: string
+          metadata: Json | null
+          product_id: string | null
+          projected_runout_date: string | null
+          risk_level: string | null
+          risk_reason: string | null
+          suggestion: string | null
+          warehouse_id: string | null
+        }
+        Insert: {
+          avg_daily_usage?: number | null
+          business_id?: string | null
+          calculated_at?: string | null
+          days_until_runout?: number | null
+          forecast_demand?: number | null
+          horizon_days?: number
+          id?: string
+          metadata?: Json | null
+          product_id?: string | null
+          projected_runout_date?: string | null
+          risk_level?: string | null
+          risk_reason?: string | null
+          suggestion?: string | null
+          warehouse_id?: string | null
+        }
+        Update: {
+          avg_daily_usage?: number | null
+          business_id?: string | null
+          calculated_at?: string | null
+          days_until_runout?: number | null
+          forecast_demand?: number | null
+          horizon_days?: number
+          id?: string
+          metadata?: Json | null
+          product_id?: string | null
+          projected_runout_date?: string | null
+          risk_level?: string | null
+          risk_reason?: string | null
+          suggestion?: string | null
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_forecasts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_forecasts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_forecasts_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_hubs: {
         Row: {
           created_at: string
@@ -11302,6 +11375,67 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_risk_flags: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          days_without_movement: number | null
+          flag_type: string
+          id: string
+          last_movement_at: string | null
+          message: string
+          product_id: string | null
+          severity: string
+          warehouse_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          days_without_movement?: number | null
+          flag_type: string
+          id?: string
+          last_movement_at?: string | null
+          message: string
+          product_id?: string | null
+          severity?: string
+          warehouse_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          days_without_movement?: number | null
+          flag_type?: string
+          id?: string
+          last_movement_at?: string | null
+          message?: string
+          product_id?: string | null
+          severity?: string
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_risk_flags_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_risk_flags_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_risk_flags_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
         ]
