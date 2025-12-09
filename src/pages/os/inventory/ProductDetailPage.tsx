@@ -4,10 +4,19 @@
 
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   ArrowLeft,
   Package,
@@ -21,9 +30,14 @@ import {
   Activity,
   Loader2,
   AlertCircle,
+  AlertTriangle,
+  Lightbulb,
+  Clock,
 } from 'lucide-react';
 import { useProduct } from '@/services/inventory';
+import { supabase } from '@/integrations/supabase/client';
 import ProductFormModal from '@/components/inventory/ProductFormModal';
+import ProductInventoryInsights from '@/components/inventory/ProductInventoryInsights';
 
 export default function ProductDetailPage() {
   const { productId } = useParams<{ productId: string }>();
@@ -279,34 +293,9 @@ export default function ProductDetailPage() {
           )}
         </TabsContent>
 
-        {/* Inventory Tab (Placeholder) */}
-        <TabsContent value="inventory" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Warehouse className="h-5 w-5" />
-                Warehouse Stock Levels
-              </CardTitle>
-              <CardDescription>
-                View stock levels across all warehouses
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="py-12">
-              <div className="text-center text-muted-foreground">
-                <Warehouse className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                <p className="text-lg font-medium">Coming in Inventory V2</p>
-                <p className="text-sm">
-                  Warehouse stock levels and bin locations will appear here once the Warehouse module is active.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-          {/* TODO (Inventory V2):
-            - fetchInventoryLevelsByProduct(productId)
-            - show warehouse-level stock breakdown
-            - show bin locations
-            - show quantity on hand, reserved, in transit
-          */}
+        {/* Inventory Tab with Insights */}
+        <TabsContent value="inventory" className="mt-6 space-y-6">
+          <ProductInventoryInsights productId={productId || ''} />
         </TabsContent>
 
         {/* Suppliers Tab (Placeholder) */}

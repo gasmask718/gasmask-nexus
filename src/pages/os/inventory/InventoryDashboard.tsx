@@ -31,10 +31,13 @@ import {
   Box,
   ShoppingCart,
   Clock,
+  Lightbulb,
 } from 'lucide-react';
 import { useInventoryDashboardStats, useInventoryAlerts, useLowStockReport, useRunInventoryEngine } from '@/services/inventory';
 import { useWarehouses } from '@/services/warehouse';
 import { usePurchaseOrders } from '@/services/procurement';
+import { getInsightsSummary } from '@/lib/inventory/calculateInventoryInsights';
+import { useQuery } from '@tanstack/react-query';
 
 export default function InventoryDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -44,6 +47,12 @@ export default function InventoryDashboard() {
   const { data: warehouses } = useWarehouses();
   const { data: purchaseOrders } = usePurchaseOrders();
   const runEngine = useRunInventoryEngine();
+  
+  // Fetch insights summary for dashboard cards
+  const { data: insightsSummary } = useQuery({
+    queryKey: ['inventory-insights-summary-dashboard'],
+    queryFn: () => getInsightsSummary(),
+  });
 
   const incomingPOs = purchaseOrders?.filter(po => 
     ['placed', 'paid', 'in_transit', 'shipped'].includes(po.status || '')
@@ -218,10 +227,80 @@ export default function InventoryDashboard() {
                       <span className="text-xs">New PO</span>
                     </Link>
                   </Button>
-                  <Button variant="outline" className="h-auto py-4 flex-col">
-                    <Brain className="h-5 w-5 mb-1" />
-                    <span className="text-xs">AI Forecast</span>
+                  <Button variant="outline" className="h-auto py-4 flex-col" asChild>
+                    <Link to="/os/inventory/insights">
+                      <Lightbulb className="h-5 w-5 mb-1" />
+                      <span className="text-xs">Insights</span>
+                    </Link>
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Insights Section */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Lightbulb className="h-5 w-5 text-primary" />
+                    Inventory Insights
+                  </CardTitle>
+                  <CardDescription>AI-powered risk and forecast analysis</CardDescription>
+                </div>
+                <Button size="sm" asChild>
+                  <Link to="/os/inventory/insights">
+                    View All
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Link to="/os/inventory/insights?risk=high" className="block">
+                    <div className="p-4 border rounded-lg hover:border-destructive/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-destructive/10 rounded-lg">
+                          <AlertTriangle className="h-5 w-5 text-destructive" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-destructive">
+                            {insightsSummary?.atRiskCount || 0}
+                          </p>
+                          <p className="text-xs text-muted-foreground">At-Risk SKUs</p>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                  <Link to="/os/inventory/insights?tab=deadstock" className="block">
+                    <div className="p-4 border rounded-lg hover:border-orange-500/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-orange-500/10 rounded-lg">
+                          <Clock className="h-5 w-5 text-orange-500" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-orange-500">
+                            {insightsSummary?.deadStockCount || 0}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Dead Stock</p>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                  <Link to="/os/inventory/insights?tab=overstock" className="block">
+                    <div className="p-4 border rounded-lg hover:border-yellow-500/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-yellow-500/10 rounded-lg">
+                          <TrendingDown className="h-5 w-5 text-yellow-600" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-yellow-600">
+                            {insightsSummary?.overstockCount || 0}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Overstock</p>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
