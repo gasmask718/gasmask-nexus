@@ -30,12 +30,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const initialized = useRef(false);
 
   useEffect(() => {
-    // Prevent multiple initializations
+    // Prevent multiple initializations (handles React Strict Mode)
     if (initialized.current) return;
     initialized.current = true;
 
-    // Get initial session first, then set up listener
+    let isMounted = true;
+
+    // Get initial session first
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
+      
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -45,8 +49,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           .select('role')
           .eq('id', session.user.id)
           .single()
-          .then(({ data: profile }) => {
-            if (profile) {
+          .then(({ data: profile, error }) => {
+            if (!isMounted) return;
+            if (profile && !error) {
               setUserRole(profile.role);
             }
             setLoading(false);
@@ -56,34 +61,50 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
-    // Set up auth state listener for future changes
+    // Set up auth state listener for future changes only
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        // Only handle actual state changes
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+      (event, session) => {
+        if (!isMounted) return;
+        
+        // Only handle explicit state changes - ignore TOKEN_REFRESHED to prevent loops
+        if (event === 'SIGNED_IN') {
           setSession(session);
           setUser(session?.user ?? null);
           
-          if (session?.user && event === 'SIGNED_IN') {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', session.user.id)
-              .single();
-            
-            if (profile) {
-              setUserRole(profile.role);
-            }
-          } else if (!session) {
-            setUserRole(null);
+          if (session?.user) {
+            // Defer profile fetch to avoid deadlock
+            setTimeout(() => {
+              if (!isMounted) return;
+              supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', session.user.id)
+                .single()
+                .then(({ data: profile }) => {
+                  if (!isMounted) return;
+                  if (profile) {
+                    setUserRole(profile.role);
+                  }
+                  setLoading(false);
+                });
+            }, 0);
+          } else {
+            setLoading(false);
           }
-          
+        } else if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setUserRole(null);
           setLoading(false);
         }
+        // Ignore TOKEN_REFRESHED - session is already valid, no state update needed
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {

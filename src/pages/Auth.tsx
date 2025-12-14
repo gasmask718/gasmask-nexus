@@ -35,11 +35,11 @@ const Auth = () => {
 
     if (error) {
       toast.error(error.message);
-      setLoading(false);
     } else {
       toast.success('Welcome back!');
-      // Don't navigate here - let useEffect handle it after AuthContext updates
     }
+    setLoading(false);
+    // Navigation handled by useEffect when AuthContext updates
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
