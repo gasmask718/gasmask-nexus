@@ -36,10 +36,9 @@ const Auth = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Welcome back!');
+      toast.success('Signed in successfully');
     }
     setLoading(false);
-    // Navigation handled by useEffect when AuthContext updates
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
