@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -27,17 +27,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const initialized = useRef(false);
 
   useEffect(() => {
-    // Set up auth state listener
+    // Prevent multiple initializations
+    if (initialized.current) return;
+    initialized.current = true;
+
+    // Get initial session first, then set up listener
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data: profile }) => {
+            if (profile) {
+              setUserRole(profile.role);
+            }
+            setLoading(false);
+          });
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // Set up auth state listener for future changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Defer profile fetch
-          setTimeout(async () => {
+        // Only handle actual state changes
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user && event === 'SIGNED_IN') {
             const { data: profile } = await supabase
               .from('profiles')
               .select('role')
@@ -47,37 +74,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (profile) {
               setUserRole(profile.role);
             }
-          }, 0);
-        } else {
-          setUserRole(null);
+          } else if (!session) {
+            setUserRole(null);
+          }
+          
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        setTimeout(async () => {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profile) {
-            setUserRole(profile.role);
-          }
-          setLoading(false);
-        }, 0);
-      } else {
-        setLoading(false);
-      }
-    });
 
     return () => subscription.unsubscribe();
   }, []);
