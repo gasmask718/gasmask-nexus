@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 🔒 Guards
   const initialized = useRef(false);
   const manualSignIn = useRef(false);
+  const manualSignOut = useRef(false);
 
   // Set the module-level function
   markManualSignInFn = () => {
@@ -109,10 +110,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         case "SIGNED_OUT": {
-          setSession(null);
-          setUser(null);
-          setUserRole(null);
-          setLoading(false);
+          console.warn("[AUTH] SIGNED_OUT event received");
+          
+          // Only clear state if user explicitly signed out
+          if (manualSignOut.current) {
+            setSession(null);
+            setUser(null);
+            setUserRole(null);
+            setLoading(false);
+            manualSignOut.current = false;
+          } else {
+            // Block unexpected sign-outs and log for debugging
+            console.error(
+              "[AUTH BLOCKED] Unexpected sign-out prevented. Stack:",
+              new Error().stack
+            );
+          }
           break;
         }
 
@@ -128,7 +141,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // 🛡️ Session watchdog - detect unexpected session loss
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session && user) {
+        console.error("[AUTH WATCHDOG] Session vanished unexpectedly at", new Date().toISOString());
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   const signOut = async () => {
+    manualSignOut.current = true;
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
