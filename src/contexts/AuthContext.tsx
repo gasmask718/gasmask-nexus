@@ -66,8 +66,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       (event, session) => {
         if (!isMounted) return;
         
-        // Only handle explicit state changes - ignore TOKEN_REFRESHED to prevent loops
-        if (event === 'SIGNED_IN') {
+        // Handle all relevant auth events
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
           setSession(session);
           setUser(session?.user ?? null);
           
