@@ -56,13 +56,13 @@ const BRANDS = [
   'Hot Scalati'
 ];
 
-const CATEGORIES = [
-  'Grabba Leaf',
-  'Tubes',
-  'Bags',
-  'Boxes',
-  'Merch',
-  'Accessories'
+const CATEGORY_OPTIONS = [
+  { label: 'Grabba Leaf', value: 'grabba-leaf' },
+  { label: 'Tubes', value: 'tubes' },
+  { label: 'Bags', value: 'bags' },
+  { label: 'Boxes', value: 'boxes' },
+  { label: 'Merch', value: 'merch' },
+  { label: 'Accessories', value: 'accessories' },
 ];
 
 const PRODUCT_TYPES = ['Unit', 'Pack', 'Box', 'Bundle'];
@@ -269,6 +269,9 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
     try {
       const payload = {
         ...form,
+        sku: form.sku?.trim() || null,
+        category: form.category ? form.category : null,
+        target_store_type: form.target_store_type?.trim() || null,
         is_active: form.status === 'active',
       };
 
@@ -362,8 +365,10 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">No Category</SelectItem>
-                            {CATEGORIES.map((c) => (
-                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                            {CATEGORY_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
