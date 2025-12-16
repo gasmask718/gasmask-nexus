@@ -15730,90 +15730,159 @@ export type Database = {
       }
       products: {
         Row: {
+          age_restricted: boolean | null
+          ai_notes: string | null
+          available_direct: boolean | null
+          available_for_promotions: boolean | null
+          available_to_ambassadors: boolean | null
+          available_to_stores: boolean | null
+          available_to_wholesalers: boolean | null
           barcode: string | null
           brand_id: string | null
+          bulk_discount_rules: Json | null
           business_id: string | null
           case_size: number | null
           category: string | null
           cost: number | null
           created_at: string | null
           description: string | null
+          documents: string[] | null
+          flavor_notes: string | null
           ghost_score: number | null
           hero_score: number | null
           id: string
           image_url: string | null
+          internal_notes: string | null
           is_active: boolean | null
+          low_stock_threshold: number | null
+          min_order_qty: number | null
           moq: number | null
           name: string
           reorder_point: number | null
           reorder_qty: number | null
+          requires_license: boolean | null
           safety_stock: number | null
+          short_description: string | null
           sku: string | null
+          status: string | null
           store_price: number | null
+          strength_level: string | null
+          suggested_crosssell_product_id: string | null
           suggested_retail_price: number | null
+          suggested_upsell_product_id: string | null
+          target_store_type: string | null
+          taxable: boolean | null
+          track_inventory: boolean | null
           type: string
           unit_type: string
           units_per_box: number | null
+          units_per_pack: number | null
           variant: string | null
           vertical_id: string | null
           weight_per_unit: number | null
           wholesale_price: number | null
         }
         Insert: {
+          age_restricted?: boolean | null
+          ai_notes?: string | null
+          available_direct?: boolean | null
+          available_for_promotions?: boolean | null
+          available_to_ambassadors?: boolean | null
+          available_to_stores?: boolean | null
+          available_to_wholesalers?: boolean | null
           barcode?: string | null
           brand_id?: string | null
+          bulk_discount_rules?: Json | null
           business_id?: string | null
           case_size?: number | null
           category?: string | null
           cost?: number | null
           created_at?: string | null
           description?: string | null
+          documents?: string[] | null
+          flavor_notes?: string | null
           ghost_score?: number | null
           hero_score?: number | null
           id?: string
           image_url?: string | null
+          internal_notes?: string | null
           is_active?: boolean | null
+          low_stock_threshold?: number | null
+          min_order_qty?: number | null
           moq?: number | null
           name: string
           reorder_point?: number | null
           reorder_qty?: number | null
+          requires_license?: boolean | null
           safety_stock?: number | null
+          short_description?: string | null
           sku?: string | null
+          status?: string | null
           store_price?: number | null
+          strength_level?: string | null
+          suggested_crosssell_product_id?: string | null
           suggested_retail_price?: number | null
+          suggested_upsell_product_id?: string | null
+          target_store_type?: string | null
+          taxable?: boolean | null
+          track_inventory?: boolean | null
           type: string
           unit_type: string
           units_per_box?: number | null
+          units_per_pack?: number | null
           variant?: string | null
           vertical_id?: string | null
           weight_per_unit?: number | null
           wholesale_price?: number | null
         }
         Update: {
+          age_restricted?: boolean | null
+          ai_notes?: string | null
+          available_direct?: boolean | null
+          available_for_promotions?: boolean | null
+          available_to_ambassadors?: boolean | null
+          available_to_stores?: boolean | null
+          available_to_wholesalers?: boolean | null
           barcode?: string | null
           brand_id?: string | null
+          bulk_discount_rules?: Json | null
           business_id?: string | null
           case_size?: number | null
           category?: string | null
           cost?: number | null
           created_at?: string | null
           description?: string | null
+          documents?: string[] | null
+          flavor_notes?: string | null
           ghost_score?: number | null
           hero_score?: number | null
           id?: string
           image_url?: string | null
+          internal_notes?: string | null
           is_active?: boolean | null
+          low_stock_threshold?: number | null
+          min_order_qty?: number | null
           moq?: number | null
           name?: string
           reorder_point?: number | null
           reorder_qty?: number | null
+          requires_license?: boolean | null
           safety_stock?: number | null
+          short_description?: string | null
           sku?: string | null
+          status?: string | null
           store_price?: number | null
+          strength_level?: string | null
+          suggested_crosssell_product_id?: string | null
           suggested_retail_price?: number | null
+          suggested_upsell_product_id?: string | null
+          target_store_type?: string | null
+          taxable?: boolean | null
+          track_inventory?: boolean | null
           type?: string
           unit_type?: string
           units_per_box?: number | null
+          units_per_pack?: number | null
           variant?: string | null
           vertical_id?: string | null
           weight_per_unit?: number | null
@@ -15832,6 +15901,20 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_suggested_crosssell_product_id_fkey"
+            columns: ["suggested_crosssell_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_suggested_upsell_product_id_fkey"
+            columns: ["suggested_upsell_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
