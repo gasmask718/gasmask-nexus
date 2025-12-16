@@ -260,13 +260,24 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
   };
 
   const handleSubmit = async () => {
-    if (!form.name) {
+    if (!form.name?.trim()) {
       toast.error('Product name is required');
+      return;
+    }
+
+    if (!form.type?.trim() || !form.unit_type?.trim()) {
+      toast.error('Product type and unit type are required');
       return;
     }
 
     setIsSubmitting(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.error('You must be signed in to create products');
+        return;
+      }
+
       const payload = {
         ...form,
         sku: form.sku?.trim() || null,
@@ -276,24 +287,42 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
       };
 
       if (isEditMode && productId) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('products')
           .update(payload)
-          .eq('id', productId);
-        if (error) throw error;
+          .eq('id', productId)
+          .select('id')
+          .single();
+
+        if (error) {
+          console.error('PRODUCT UPDATE ERROR:', { error, payload, productId });
+          throw error;
+        }
+
         toast.success('Product updated successfully');
-      } else {
-        const { error } = await supabase
-          .from('products')
-          .insert(payload);
-        if (error) throw error;
-        toast.success('Product created successfully');
+        onSuccess?.();
+        onClose();
+        return data;
       }
 
+      const { data, error } = await supabase
+        .from('products')
+        .insert(payload)
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('PRODUCT INSERT ERROR:', { error, payload });
+        throw error;
+      }
+
+      toast.success('Product created successfully');
       onSuccess?.();
       onClose();
+      return data;
     } catch (error: any) {
-      toast.error(error.message || 'Failed to save product');
+      console.error('PRODUCT SAVE FAILED:', error);
+      toast.error(error?.message || 'Failed to save product');
     } finally {
       setIsSubmitting(false);
     }
