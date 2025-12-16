@@ -27,6 +27,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { supabase } from '@/integrations/supabase/client';
+import { createProduct, updateProduct, validateProduct } from '@/services/products/productService';
 import { ImageUpload } from '@/components/inventory/ImageUpload';
 import { 
   Loader2, 
@@ -38,9 +39,11 @@ import {
   Brain, 
   Shield,
   Sparkles,
-  Upload
+  Upload,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ProductFormSheetProps {
   open: boolean;
@@ -155,6 +158,7 @@ const defaultForm: ProductForm = {
 export function ProductFormSheet({ open, onClose, productId, onSuccess }: ProductFormSheetProps) {
   const [form, setForm] = useState<ProductForm>(defaultForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const isEditMode = !!productId;
 
   // Fetch brands
@@ -259,70 +263,52 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
     updateField('sku', `${brandPrefix}-${catPrefix}-${random}`);
   };
 
-  const handleSubmit = async () => {
-    if (!form.name?.trim()) {
-      toast.error('Product name is required');
-      return;
-    }
+  // Real-time validation
+  const validation = useMemo(() => {
+    return validateProduct({
+      name: form.name,
+      type: form.type,
+      unit_type: form.unit_type,
+      wholesale_price: form.wholesale_price,
+    });
+  }, [form.name, form.type, form.unit_type, form.wholesale_price]);
 
-    if (!form.type?.trim() || !form.unit_type?.trim()) {
-      toast.error('Product type and unit type are required');
+  const canSubmit = validation.valid && !isSubmitting;
+
+  const handleSubmit = async () => {
+    // Clear previous errors
+    setValidationErrors([]);
+
+    // Validate before submit
+    if (!validation.valid) {
+      setValidationErrors(validation.errors);
+      toast.error(validation.errors[0]);
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        toast.error('You must be signed in to create products');
-        return;
-      }
-
-      const payload = {
-        ...form,
-        sku: form.sku?.trim() || null,
-        category: form.category ? form.category : null,
-        target_store_type: form.target_store_type?.trim() || null,
-        is_active: form.status === 'active',
-      };
-
       if (isEditMode && productId) {
-        const { data, error } = await supabase
-          .from('products')
-          .update(payload)
-          .eq('id', productId)
-          .select('id')
-          .single();
-
-        if (error) {
-          console.error('PRODUCT UPDATE ERROR:', { error, payload, productId });
-          throw error;
-        }
-
+        await updateProduct(productId, {
+          ...form,
+          is_active: form.status === 'active',
+        });
         toast.success('Product updated successfully');
-        onSuccess?.();
-        onClose();
-        return data;
+      } else {
+        await createProduct({
+          ...form,
+          is_active: form.status === 'active',
+        });
+        toast.success('Product created successfully');
       }
 
-      const { data, error } = await supabase
-        .from('products')
-        .insert(payload)
-        .select('id')
-        .single();
-
-      if (error) {
-        console.error('PRODUCT INSERT ERROR:', { error, payload });
-        throw error;
-      }
-
-      toast.success('Product created successfully');
       onSuccess?.();
       onClose();
-      return data;
     } catch (error: any) {
       console.error('PRODUCT SAVE FAILED:', error);
-      toast.error(error?.message || 'Failed to save product');
+      const errorMessage = error?.message || 'Failed to save product';
+      setValidationErrors([errorMessage]);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -787,11 +773,25 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
           </ScrollArea>
         )}
 
+        {/* Validation Errors */}
+        {validationErrors.length > 0 && (
+          <div className="px-4 pb-2">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {validationErrors.map((err, i) => (
+                  <div key={i}>{err}</div>
+                ))}
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         <div className="border-t p-4 flex gap-3 justify-end">
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button onClick={handleSubmit} disabled={!canSubmit}>
             {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             {isEditMode ? 'Update Product' : 'Create Product'}
           </Button>
