@@ -20111,6 +20111,35 @@ export type Database = {
           },
         ]
       }
+      user_brand_map: {
+        Row: {
+          brand_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_brand_map_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_invitations: {
         Row: {
           accepted_at: string | null
@@ -20239,6 +20268,35 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "roles"
             referencedColumns: ["name"]
+          },
+        ]
+      }
+      user_store_map: {
+        Row: {
+          created_at: string | null
+          id: string
+          store_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          store_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          store_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_store_map_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -22130,8 +22188,16 @@ export type Database = {
         Args: { _brand: string; _user_id: string }
         Returns: boolean
       }
+      can_access_brand_by_user: {
+        Args: { _brand_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_access_own_or_admin: {
         Args: { _owner_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_access_store: {
+        Args: { _store_id: string; _user_id: string }
         Returns: boolean
       }
       can_manage_org: {
@@ -22198,11 +22264,13 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_developer: { Args: { _user_id: string }; Returns: boolean }
       is_elevated_user: { Args: { _user_id: string }; Returns: boolean }
       is_org_member: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      is_owner: { Args: { _user_id: string }; Returns: boolean }
       log_audit_event: {
         Args: {
           p_action: string
@@ -22217,6 +22285,7 @@ export type Database = {
         Returns: string
       }
       mark_overdue_followups: { Args: never; Returns: undefined }
+      not_developer: { Args: { _user_id: string }; Returns: boolean }
       process_ai_approval: {
         Args: { p_approved: boolean; p_notes?: string; p_request_id: string }
         Returns: boolean
@@ -22287,6 +22356,10 @@ export type Database = {
         | "customer"
         | "pod_worker"
         | "realestate_worker"
+        | "owner"
+        | "developer"
+        | "staff"
+        | "creator"
       brand_contact_role:
         | "owner"
         | "manager"
@@ -22574,6 +22647,10 @@ export const Constants = {
         "customer",
         "pod_worker",
         "realestate_worker",
+        "owner",
+        "developer",
+        "staff",
+        "creator",
       ],
       brand_contact_role: [
         "owner",
