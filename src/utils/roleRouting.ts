@@ -8,9 +8,12 @@ export type AppRole = Database['public']['Enums']['app_role'];
  */
 export function routeUserByRole(role: AppRole): string {
   switch (role) {
+    case 'owner':
     case 'admin':
     case 'employee':
       return '/';
+    case 'developer':
+      return '/developer'; // UI-only access
     case 'driver':
       return '/driver/home';
     case 'biker':
@@ -18,6 +21,7 @@ export function routeUserByRole(role: AppRole): string {
     case 'store':
       return '/portal/store';
     case 'wholesale':
+    case 'wholesaler':
       return '/portal/wholesale';
     case 'influencer':
       return '/portal/influencer';
@@ -25,6 +29,10 @@ export function routeUserByRole(role: AppRole): string {
       return '/portal/ambassador';
     case 'customer':
       return '/portal/customer';
+    case 'staff':
+      return '/';
+    case 'creator':
+      return '/portal/creator';
     default:
       return '/portal/dashboard';
   }
@@ -35,8 +43,11 @@ export function routeUserByRole(role: AppRole): string {
  */
 export function getRoleDisplayName(role: AppRole): string {
   const names: Partial<Record<AppRole, string>> = {
+    owner: 'Dynasty Owner',
     admin: 'Administrator',
     employee: 'Employee',
+    staff: 'Staff',
+    developer: 'Developer',
     driver: 'Driver',
     biker: 'Biker',
     store: 'Store',
@@ -48,15 +59,32 @@ export function getRoleDisplayName(role: AppRole): string {
     customer: 'Customer',
     csr: 'Customer Service',
     accountant: 'Accountant',
+    creator: 'Creator',
+    pod_worker: 'POD Worker',
+    realestate_worker: 'Real Estate Worker',
   };
   return names[role] || role;
+}
+
+/**
+ * Check if a role is the owner (highest privilege)
+ */
+export function isOwnerRole(role: AppRole): boolean {
+  return role === 'owner';
 }
 
 /**
  * Check if a role has access to admin features
  */
 export function isAdminRole(role: AppRole): boolean {
-  return role === 'admin' || role === 'employee';
+  return role === 'owner' || role === 'admin' || role === 'employee';
+}
+
+/**
+ * Check if a role is developer (UI only, no data)
+ */
+export function isDeveloperRole(role: AppRole): boolean {
+  return role === 'developer';
 }
 
 /**
@@ -67,10 +95,10 @@ export function isFieldRole(role: AppRole): boolean {
 }
 
 /**
- * Check if a role is a portal user (external)
+ * Check if a role is a portal user (external, strict isolation)
  */
 export function isPortalRole(role: AppRole): boolean {
-  return ['store', 'wholesale', 'influencer', 'ambassador', 'customer'].includes(role);
+  return ['store', 'wholesale', 'wholesaler', 'influencer', 'ambassador', 'customer', 'driver', 'biker'].includes(role);
 }
 
 /**
@@ -78,8 +106,11 @@ export function isPortalRole(role: AppRole): boolean {
  */
 export function getRoleThemeColor(role: AppRole): string {
   const colors: Partial<Record<AppRole, string>> = {
+    owner: 'hsl(45, 100%, 50%)', // Gold
     admin: 'hsl(var(--primary))',
     employee: 'hsl(var(--primary))',
+    staff: 'hsl(var(--primary))',
+    developer: 'hsl(0, 0%, 50%)', // Gray (limited access)
     driver: 'hsl(210, 100%, 50%)',
     biker: 'hsl(180, 100%, 40%)',
     store: 'hsl(270, 100%, 50%)',
@@ -91,6 +122,9 @@ export function getRoleThemeColor(role: AppRole): string {
     customer: 'hsl(240, 100%, 50%)',
     csr: 'hsl(200, 100%, 50%)',
     accountant: 'hsl(120, 100%, 40%)',
+    creator: 'hsl(320, 100%, 50%)',
+    pod_worker: 'hsl(190, 100%, 45%)',
+    realestate_worker: 'hsl(15, 100%, 45%)',
   };
   return colors[role] || 'hsl(var(--primary))';
 }

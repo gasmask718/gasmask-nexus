@@ -1,0 +1,5 @@
+-- DYNASTY OS RLS CONSTITUTION - Part 1: Add missing roles
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'owner';
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'developer';
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'staff';
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'creator';

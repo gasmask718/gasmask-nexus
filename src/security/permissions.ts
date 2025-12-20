@@ -1,17 +1,21 @@
 // src/security/permissions.ts
+// Dynasty OS Permission Matrix (from RLS Constitution)
 
 export type Permission =
   | 'crm.read'
   | 'crm.write'
   | 'finance.view'
   | 'finance.admin'
+  | 'finance.owner' // Owner-only financial access
   | 'playboxxx.view'
   | 'playboxxx.admin'
   | 'sports-betting.view'
   | 'sports-betting.admin'
   | 'os.wealth-engine'
+  | 'os.ai-core' // Owner-only AI core access
   | 'system.modules'
   | 'system.lockdown'
+  | 'system.audit' // Access to audit logs
   | 'driver.portal'
   | 'biker.portal'
   | 'store.portal'
@@ -19,12 +23,44 @@ export type Permission =
   | 'ambassador.portal'
   | 'influencer.portal'
   | 'customer.portal'
+  | 'developer.ui' // Developer UI-only access
   | '*'; // wildcard for full access
 
+/**
+ * Role Permission Matrix
+ * Defines what each role can do in the system
+ * 
+ * HIERARCHY:
+ * - owner: Full access ('*'), bypasses all limits
+ * - admin: Operational access, limited finance
+ * - employee/staff: Scoped by assignment
+ * - Portal roles: Own data only
+ * - developer: UI only, NO data
+ */
 export const ROLE_PERMISSION_MATRIX: Record<string, Permission[]> = {
-  admin: ['*'],
+  // Owner - Full access
+  owner: ['*'],
+  
+  // Admin - Operational but not owner-level
+  admin: [
+    'crm.read', 'crm.write', 
+    'finance.view', 'finance.admin',
+    'playboxxx.view', 'playboxxx.admin',
+    'sports-betting.view', 'sports-betting.admin',
+    'os.wealth-engine',
+    'system.modules', 'system.lockdown', 'system.audit'
+  ],
+  
+  // Employee - Day-to-day operations
   employee: ['crm.read', 'crm.write', 'finance.view', 'playboxxx.view', 'system.modules'],
+  
+  // Staff - Limited operations
   staff: ['crm.read', 'crm.write', 'finance.view', 'playboxxx.view'],
+  
+  // Developer - UI ONLY, no data access
+  developer: ['developer.ui'],
+  
+  // Portal roles - strict isolation
   driver: ['driver.portal'],
   biker: ['biker.portal'],
   store: ['store.portal', 'crm.read'],
@@ -34,9 +70,13 @@ export const ROLE_PERMISSION_MATRIX: Record<string, Permission[]> = {
   influencer: ['influencer.portal', 'playboxxx.view'],
   ambassador: ['ambassador.portal', 'crm.read'],
   customer: ['customer.portal'],
+  
+  // Specialized roles
   csr: ['crm.read', 'crm.write'],
   accountant: ['finance.view', 'finance.admin'],
   creator: ['playboxxx.view'],
+  pod_worker: ['crm.read'],
+  realestate_worker: ['crm.read'],
 };
 
 /**
@@ -85,4 +125,20 @@ export function mergePermissions(roles: string[]): Permission[] {
   }
   
   return Array.from(allPermissions);
+}
+
+/**
+ * Check if role is owner (has wildcard)
+ */
+export function isOwnerPermission(roleName: string): boolean {
+  const perms = ROLE_PERMISSION_MATRIX[roleName] || [];
+  return perms.includes('*');
+}
+
+/**
+ * Check if role is developer (UI only)
+ */
+export function isDeveloperPermission(roleName: string): boolean {
+  const perms = ROLE_PERMISSION_MATRIX[roleName] || [];
+  return perms.includes('developer.ui') && perms.length === 1;
 }
