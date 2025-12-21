@@ -173,13 +173,13 @@ export default function StoreOrder() {
           </CardHeader>
           <CardContent>
             <select
-              className="w-full p-2 border rounded-lg"
+              className="w-full p-2 border rounded-lg bg-background text-foreground"
               value={selectedStore}
               onChange={(e) => setSelectedStore(e.target.value)}
             >
-              <option value="">Choose a store...</option>
+              <option value="" className="bg-background text-foreground">Choose a store...</option>
               {stores?.map((store) => (
-                <option key={store.id} value={store.id}>
+                <option key={store.id} value={store.id} className="bg-background text-foreground">
                   {store.name} - {store.address_city}
                 </option>
               ))}
