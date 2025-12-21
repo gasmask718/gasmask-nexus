@@ -60,18 +60,32 @@ export function SendMessageModal({
     },
   });
 
+  // Map UI entity types to DB-allowed linked_entity_type values
+  // DB constraint allows: 'store', 'wholesaler', 'influencer', 'prospect'
+  const mapEntityTypeToDbValue = (uiType: string): string => {
+    const mapping: Record<string, string> = {
+      store: 'store',
+      wholesale: 'wholesaler',
+      influencer: 'influencer',
+      customer: 'prospect',
+      driver: 'prospect', // drivers treated as prospects in communication context
+    };
+    return mapping[uiType] || 'prospect';
+  };
+
   const sendMessageMutation = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // In mock mode, just log the communication
+      const dbEntityType = mapEntityTypeToDbValue(entityType);
+
       const { error } = await supabase.from("communication_events").insert({
-        linked_entity_type: entityType,
+        linked_entity_type: dbEntityType,
         linked_entity_id: entityId,
         channel: channel,
         direction: "outbound",
-        event_type: channel, // Use 'sms' or 'email' directly (matches constraint)
+        event_type: channel,
         summary: message.substring(0, 100),
         user_id: user.id,
       });
