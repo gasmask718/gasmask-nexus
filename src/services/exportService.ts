@@ -45,8 +45,9 @@ function downloadFile(content: string | ArrayBuffer, filename: string, mimeType:
 /**
  * Export all empire data to a single Excel file with multiple sheets.
  */
-export async function exportEmpireDataToExcel(sources: EmpireDataSources = {}) {
+export async function exportEmpireDataToExcel(sources: EmpireDataSources = {}): Promise<{ success: boolean; message: string }> {
   const wb = XLSX.utils.book_new();
+  let sheetsAdded = 0;
 
   async function addSheet(label: string, fetcher?: () => Promise<Record<string, unknown>[]>) {
     if (!fetcher) return;
@@ -56,6 +57,7 @@ export async function exportEmpireDataToExcel(sources: EmpireDataSources = {}) {
     });
     const { name, sheet } = sheetFromData(data, label);
     XLSX.utils.book_append_sheet(wb, sheet, name.slice(0, 31)); // Excel sheet name limit
+    sheetsAdded++;
   }
 
   await addSheet('Customers', sources.fetchCustomers);
@@ -73,6 +75,12 @@ export async function exportEmpireDataToExcel(sources: EmpireDataSources = {}) {
   await addSheet('WholesaleDeals', sources.fetchWholesaleDeals);
   await addSheet('PlayboxxxCreators', sources.fetchPlayboxxxCreators);
 
+  // Guard: ensure at least one sheet exists before writing
+  if (sheetsAdded === 0) {
+    console.warn('📤 Export cancelled: No data sources provided');
+    return { success: false, message: 'No data to export. Please ensure data sources are configured.' };
+  }
+
   const fileName = `Dynasty_Empire_Data_${new Date().toISOString().split('T')[0]}.xlsx`;
   const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   downloadFile(
@@ -82,6 +90,7 @@ export async function exportEmpireDataToExcel(sources: EmpireDataSources = {}) {
   );
 
   console.log('📤 Empire data exported to Excel:', fileName);
+  return { success: true, message: `Exported ${sheetsAdded} sheets to ${fileName}` };
 }
 
 /**

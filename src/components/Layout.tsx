@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -740,7 +741,14 @@ const Layout = ({ children }: LayoutProps) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => exportEmpireDataToExcel({})}
+                  onClick={async () => {
+                    const result = await exportEmpireDataToExcel({});
+                    if (!result.success) {
+                      toast.error(result.message);
+                    } else {
+                      toast.success(result.message);
+                    }
+                  }}
                   className="border-emerald-500/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20 text-xs"
                 >
                   <Download className="h-3 w-3 mr-1" />
