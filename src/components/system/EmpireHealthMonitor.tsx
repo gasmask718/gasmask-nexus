@@ -12,11 +12,12 @@ import {
 } from '@/components/ui/tooltip';
 
 export function EmpireHealthMonitor() {
-  const { isAdmin } = useUserRole();
+  const { roles, loading } = useUserRole();
   const { lastCheck, isRunning, runHealthCheck } = useEmpireHealthMonitor();
 
-  // Only show for admins
-  if (!isAdmin()) return null;
+  // Only show for admins - use stable check
+  const isAdminUser = roles.includes('admin');
+  if (loading || !isAdminUser) return null;
 
   const statusIcon = {
     healthy: <CheckCircle className="h-3 w-3 text-emerald-400" />,
