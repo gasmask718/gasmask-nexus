@@ -30,8 +30,26 @@ export function AutomationPanel({ isOpen, onClose, floorId }: AutomationPanelPro
   const canManage = role === 'admin' || role === 'employee';
   const canView = canManage || role === 'csr';
 
+  // Show message if user doesn't have permission instead of silently returning null
   if (!canView) {
-    return null;
+    return (
+      <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <SheetContent className="w-full sm:max-w-xl">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-yellow-500" />
+              Automation Control Center
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground text-center">
+              You don't have permission to view automations.<br />
+              Please contact an administrator.
+            </p>
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
   }
 
   return (

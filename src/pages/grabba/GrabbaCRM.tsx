@@ -307,15 +307,33 @@ export default function GrabbaCRM() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navigate(`/companies/${company.id}`)}>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/companies/${company.id}`);
+                      }}
+                    >
                       <ExternalLink className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Open Profile</TooltipContent>
                 </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navigate(`/grabba/communication?company=${company.id}`)}>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/grabba/communication?company=${company.id}`);
+                      }}
+                    >
                       <MessageSquare className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -396,7 +414,15 @@ export default function GrabbaCRM() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navigate(`/grabba/store-master/${store.id}`)}>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/grabba/store-master/${store.id}`);
+                      }}
+                    >
                       <ExternalLink className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -442,7 +468,15 @@ export default function GrabbaCRM() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navigate(`/wholesaler/${wholesaler.id}`)}>
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  className="h-8 w-8" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/wholesaler/${wholesaler.id}`);
+                  }}
+                >
                   <ExternalLink className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
@@ -482,7 +516,15 @@ export default function GrabbaCRM() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navigate(`/grabba/ambassadors`)}>
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  className="h-8 w-8" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/grabba/ambassadors`);
+                  }}
+                >
                   <ExternalLink className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>

@@ -22,7 +22,11 @@ export function AutomationIndicator({ floorId }: AutomationIndicatorProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPanelOpen(true)}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                setPanelOpen(true);
+              }}
               className={`relative ${recentEvent?.status === 'running' ? 'animate-pulse' : ''}`}
             >
               <Zap className="h-4 w-4 text-yellow-500" />
