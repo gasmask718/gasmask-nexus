@@ -21,9 +21,16 @@ export function useCrudOperations({
 
   const createMutation = useMutation({
     mutationFn: async (data: Record<string, unknown>) => {
+      // Get current user ID to set created_by for RLS
+      const { data: { user } } = await supabase.auth.getUser();
+      const insertData = {
+        ...data,
+        created_by: user?.id || null, // Set created_by for ownership tracking
+      };
+      
       const { data: result, error } = await (supabase as any)
         .from(table)
-        .insert(data)
+        .insert(insertData)
         .select()
         .single();
       if (error) throw error;
