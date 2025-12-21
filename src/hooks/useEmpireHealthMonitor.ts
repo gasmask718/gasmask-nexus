@@ -41,7 +41,11 @@ const REQUIRED_TABLES = [
 export function useEmpireHealthMonitor(intervalMs = 300000) { // 5 minutes default
   const [lastCheck, setLastCheck] = useState<HealthCheckResult | null>(null);
   const [isRunning, setIsRunning] = useState(false);
-  const { isAdmin } = useUserRole();
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const { roles, loading } = useUserRole();
+  
+  // Memoize admin check to prevent dependency instability
+  const isAdminUser = roles.includes('admin');
 
   const runHealthCheck = useCallback(async (): Promise<HealthCheckResult> => {
     console.log('🧠 Running Empire Health Scan...');
@@ -121,19 +125,22 @@ export function useEmpireHealthMonitor(intervalMs = 300000) { // 5 minutes defau
   }, []);
 
   useEffect(() => {
-    // Only run for admin users
-    if (!isAdmin()) return;
+    // Wait for role loading to complete and only run for admin users
+    if (loading || !isAdminUser) return;
+    
+    // Only run initial check once
+    if (!hasInitialized) {
+      runHealthCheck();
+      setHasInitialized(true);
+    }
 
-    // Run initial check
-    runHealthCheck();
-
-    // Set up interval
+    // Set up interval for periodic checks
     const interval = setInterval(() => {
       runHealthCheck();
     }, intervalMs);
 
     return () => clearInterval(interval);
-  }, [isAdmin, intervalMs, runHealthCheck]);
+  }, [loading, isAdminUser, intervalMs, runHealthCheck, hasInitialized]);
 
   return {
     lastCheck,
