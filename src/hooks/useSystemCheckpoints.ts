@@ -115,12 +115,13 @@ export function useSystemCheckpoints(autoIntervalMinutes = 10): UseSystemCheckpo
     return () => clearInterval(id);
   }, [isAutoSaving, autoIntervalMinutes, triggerAutoCheckpoint]);
 
-  // Initial cloud sync
+  // Initial cloud sync - only run once when ownerId is set
   useEffect(() => {
     if (ownerId) {
       syncFromCloud();
     }
-  }, [ownerId, syncFromCloud]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ownerId]); // Intentionally exclude syncFromCloud to prevent re-runs
 
   return {
     checkpoints,

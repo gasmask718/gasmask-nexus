@@ -1,14 +1,10 @@
 // 🧠 EMPIRE HEALTH MONITOR (EHM)
-// Runs periodically, checking for:
-// - Missing DB tables
-// - Module diagnostics integrity
-// - Route health
-// - Sidebar consistency
+// Runs ONCE on app load for admin users only
+// Can be manually triggered via runHealthCheck()
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { departmentRegistry } from '@/modules/RegisterDepartments';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserRole } from '@/hooks/useUserRole';
 
 export interface HealthCheckResult {
   timestamp: Date;
@@ -38,14 +34,14 @@ const REQUIRED_TABLES = [
   'stores',
 ];
 
-export function useEmpireHealthMonitor(intervalMs = 300000) { // 5 minutes default
-  const [lastCheck, setLastCheck] = useState<HealthCheckResult | null>(null);
+// Module-level singleton to prevent multiple instances from running
+let globalHasRun = false;
+let globalLastCheck: HealthCheckResult | null = null;
+
+export function useEmpireHealthMonitor() {
+  const [lastCheck, setLastCheck] = useState<HealthCheckResult | null>(globalLastCheck);
   const [isRunning, setIsRunning] = useState(false);
-  const [hasInitialized, setHasInitialized] = useState(false);
-  const { roles, loading } = useUserRole();
-  
-  // Memoize admin check to prevent dependency instability
-  const isAdminUser = roles.includes('admin');
+  const hasRunRef = useRef(false);
 
   const runHealthCheck = useCallback(async (): Promise<HealthCheckResult> => {
     console.log('🧠 Running Empire Health Scan...');
@@ -118,6 +114,7 @@ export function useEmpireHealthMonitor(intervalMs = 300000) { // 5 minutes defau
     };
 
     console.log('🧠 Empire Health Scan Complete:', result);
+    globalLastCheck = result;
     setLastCheck(result);
     setIsRunning(false);
     
@@ -125,22 +122,21 @@ export function useEmpireHealthMonitor(intervalMs = 300000) { // 5 minutes defau
   }, []);
 
   useEffect(() => {
-    // Wait for role loading to complete and only run for admin users
-    if (loading || !isAdminUser) return;
-    
-    // Only run initial check once
-    if (!hasInitialized) {
-      runHealthCheck();
-      setHasInitialized(true);
+    // Use both ref and module-level flag to prevent duplicate runs
+    if (hasRunRef.current || globalHasRun) {
+      return;
     }
 
-    // Set up interval for periodic checks
-    const interval = setInterval(() => {
-      runHealthCheck();
-    }, intervalMs);
+    // Mark as run immediately to prevent race conditions
+    hasRunRef.current = true;
+    globalHasRun = true;
 
-    return () => clearInterval(interval);
-  }, [loading, isAdminUser, intervalMs, runHealthCheck, hasInitialized]);
+    // Run health check once on mount
+    runHealthCheck();
+
+    // No interval - only manual refresh allowed
+    // No cleanup needed since we don't set up any subscriptions
+  }, [runHealthCheck]);
 
   return {
     lastCheck,
