@@ -71,7 +71,7 @@ export function SendMessageModal({
         linked_entity_id: entityId,
         channel: channel,
         direction: "outbound",
-        event_type: `${channel}_sent`,
+        event_type: channel, // Use 'sms' or 'email' directly (matches constraint)
         summary: message.substring(0, 100),
         user_id: user.id,
       });
