@@ -497,7 +497,7 @@ const CRMCustomerDetail = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Order History</CardTitle>
-              <Button size="sm">
+              <Button size="sm" onClick={() => navigate(`/stores/order?customer_id=${id}`)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Create Order
               </Button>
