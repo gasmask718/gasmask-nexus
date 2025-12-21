@@ -62,7 +62,13 @@ export function EntityModal({
     if (field.validation) {
       schemaShape[field.name] = field.validation;
     } else if (field.required) {
-      schemaShape[field.name] = z.string().min(1, `${field.label} is required`);
+      // For select fields, ensure empty string is treated as missing
+      if (field.type === 'select') {
+        schemaShape[field.name] = z.string({ required_error: `${field.label} is required` })
+          .min(1, `${field.label} is required`);
+      } else {
+        schemaShape[field.name] = z.string().min(1, `${field.label} is required`);
+      }
     } else {
       schemaShape[field.name] = z.any().optional();
     }
@@ -72,13 +78,17 @@ export function EntityModal({
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues,
+    mode: 'onSubmit', // Validate on submit
+    reValidateMode: 'onChange', // Re-validate on change after first submit
   });
 
+  // Reset form when modal opens with new default values
   useEffect(() => {
     if (open) {
       form.reset(defaultValues);
     }
-  }, [open, defaultValues]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]); // Only reset when modal opens, not on every defaultValues change
 
   const handleSubmit = async (data: Record<string, any>) => {
     setSubmitting(true);
@@ -117,7 +127,9 @@ export function EntityModal({
             <Label htmlFor={field.name}>{field.label}{field.required && ' *'}</Label>
             <Select
               value={form.watch(field.name) || ''}
-              onValueChange={(value) => form.setValue(field.name, value)}
+              onValueChange={(value) => {
+                form.setValue(field.name, value, { shouldValidate: true });
+              }}
             >
               <SelectTrigger className={error ? 'border-destructive' : ''}>
                 <SelectValue placeholder={field.placeholder || `Select ${field.label}`} />
