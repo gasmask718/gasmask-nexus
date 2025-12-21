@@ -12,6 +12,9 @@ import {
   Volume2, DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SendMessageModal } from "@/components/communication/SendMessageModal";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 const navItems = [
   { path: "unified-inbox", label: "Unified Inbox", icon: MessageSquare, badge: 12, highlight: true },
@@ -47,6 +50,33 @@ export default function CommunicationHubLayout() {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [smsModalOpen, setSmsModalOpen] = useState(false);
+  const [callModalOpen, setCallModalOpen] = useState(false);
+
+  const handleNewCall = () => {
+    // Navigate to manual calls page or open dialer
+    navigate("/communication/manual-calls");
+    toast.info("Opening call dialer...");
+  };
+
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case "log-call":
+        navigate("/communication/manual-calls");
+        break;
+      case "send-email":
+        navigate("/grabba/email-center");
+        break;
+      case "create-campaign":
+        navigate("/communication/campaigns");
+        break;
+      case "view-escalations":
+        navigate("/communication/escalations");
+        break;
+      default:
+        toast.info(`Action: ${action}`);
+    }
+  };
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
@@ -144,18 +174,49 @@ export default function CommunicationHubLayout() {
 
           {/* Quick Actions */}
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" className="gap-2">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => setSmsModalOpen(true)}
+            >
               <MessageCircle className="h-4 w-4" />
               <span className="hidden sm:inline">New SMS</span>
             </Button>
-            <Button size="sm" className="gap-2">
+            <Button 
+              size="sm" 
+              className="gap-2 bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleNewCall}
+            >
               <PhoneCall className="h-4 w-4" />
               <span className="hidden sm:inline">New Call</span>
             </Button>
-            <Button size="sm" variant="secondary" className="gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Quick Action</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="secondary" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Quick Action</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleQuickAction("log-call")}>
+                  <Phone className="h-4 w-4 mr-2" />
+                  Log a Call
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleQuickAction("send-email")}>
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Send Email
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleQuickAction("create-campaign")}>
+                  <Zap className="h-4 w-4 mr-2" />
+                  Create Campaign
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleQuickAction("view-escalations")}>
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  View Escalations
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
@@ -166,6 +227,12 @@ export default function CommunicationHubLayout() {
           </div>
         </main>
       </div>
+
+      {/* SMS Modal */}
+      <SendMessageModal 
+        open={smsModalOpen} 
+        onOpenChange={setSmsModalOpen}
+      />
     </div>
   );
 }
