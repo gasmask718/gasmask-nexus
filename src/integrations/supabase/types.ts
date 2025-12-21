@@ -7135,6 +7135,7 @@ export type Database = {
           business_type: string | null
           city: string | null
           created_at: string | null
+          created_by: string | null
           dialect_preference: string | null
           email: string | null
           formality_level: string | null
@@ -7156,6 +7157,7 @@ export type Database = {
           business_type?: string | null
           city?: string | null
           created_at?: string | null
+          created_by?: string | null
           dialect_preference?: string | null
           email?: string | null
           formality_level?: string | null
@@ -7177,6 +7179,7 @@ export type Database = {
           business_type?: string | null
           city?: string | null
           created_at?: string | null
+          created_by?: string | null
           dialect_preference?: string | null
           email?: string | null
           formality_level?: string | null
