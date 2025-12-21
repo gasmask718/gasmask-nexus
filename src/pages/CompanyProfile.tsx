@@ -15,6 +15,8 @@ import { NeighborhoodIntelligence } from '@/components/company/NeighborhoodIntel
 import { TubeIntelligencePanel } from '@/components/company/TubeIntelligencePanel';
 import { PaymentScoreBadge } from '@/components/company/PaymentScoreBadge';
 import { PaymentSummaryPanel } from '@/components/company/PaymentSummaryPanel';
+import { SendMessageModal } from '@/components/communication/SendMessageModal';
+import { toast } from 'sonner';
 import { 
   Building2, Phone, Mail, MapPin, ArrowLeft, Users, ShoppingCart, 
   FileText, CreditCard, Package, StickyNote, Store, Truck, User, BarChart3, 
@@ -52,6 +54,36 @@ export default function CompanyProfile() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [brandFilter, setBrandFilter] = useState<string>('all');
+  const [messageModalOpen, setMessageModalOpen] = useState(false);
+
+  // Action handlers for buttons
+  const handleCreateInvoice = () => {
+    navigate(`/billing/invoices/new?company_id=${id}`);
+  };
+
+  const handleCreateOrder = () => {
+    navigate(`/stores/order?company_id=${id}`);
+  };
+
+  const handleCall = (phone?: string | null) => {
+    if (phone) {
+      window.location.href = `tel:${phone}`;
+    } else {
+      toast.error('No phone number available for this company');
+    }
+  };
+
+  const handleMessage = () => {
+    setMessageModalOpen(true);
+  };
+
+  const handleContactCall = (phone: string) => {
+    window.location.href = `tel:${phone}`;
+  };
+
+  const handleContactMessage = () => {
+    setMessageModalOpen(true);
+  };
 
   const { data: company, isLoading: companyLoading } = useQuery({
     queryKey: ['company', id],
@@ -717,19 +749,22 @@ export default function CompanyProfile() {
 
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-3">
-              <Button className="bg-gradient-to-r from-emerald-600 to-emerald-500">
+              <Button 
+                className="bg-gradient-to-r from-emerald-600 to-emerald-500"
+                onClick={handleCreateInvoice}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Invoice
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleCreateOrder}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Order
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={() => handleCall(company.default_phone)}>
                 <Phone className="h-4 w-4 mr-2" />
                 Call
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleMessage}>
                 <MessageCircle className="h-4 w-4 mr-2" />
                 Message
               </Button>
@@ -763,11 +798,21 @@ export default function CompanyProfile() {
                         </div>
                         <div className="flex gap-2">
                           {contact.phone && (
-                            <Button size="icon" variant="outline" className="h-8 w-8">
+                            <Button 
+                              size="icon" 
+                              variant="outline" 
+                              className="h-8 w-8"
+                              onClick={() => handleContactCall(contact.phone)}
+                            >
                               <Phone className="h-4 w-4" />
                             </Button>
                           )}
-                          <Button size="icon" variant="outline" className="h-8 w-8">
+                          <Button 
+                            size="icon" 
+                            variant="outline" 
+                            className="h-8 w-8"
+                            onClick={handleContactMessage}
+                          >
                             <MessageCircle className="h-4 w-4" />
                           </Button>
                         </div>
@@ -1035,11 +1080,11 @@ export default function CompanyProfile() {
                       Calls, SMS, and emails will appear here
                     </p>
                     <div className="flex justify-center gap-2 mt-4">
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => handleCall(company.default_phone)}>
                         <Phone className="h-4 w-4 mr-2" />
                         Log Call
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={handleMessage}>
                         <MessageCircle className="h-4 w-4 mr-2" />
                         Send SMS
                       </Button>
@@ -1122,6 +1167,14 @@ export default function CompanyProfile() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Send Message Modal */}
+        <SendMessageModal
+          open={messageModalOpen}
+          onOpenChange={setMessageModalOpen}
+          defaultEntityType="store"
+          defaultEntityId={id}
+        />
       </div>
     </Layout>
   );
