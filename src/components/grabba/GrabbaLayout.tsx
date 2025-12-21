@@ -161,7 +161,11 @@ function GrabbaLayoutContent({ children }: GrabbaLayoutProps) {
                 variant="outline"
                 size="icon"
                 className="fixed top-20 right-4 z-40 h-10 w-10 rounded-full shadow-lg bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-primary/10 hover:border-primary/40"
-                onClick={() => setVoiceOverlayOpen(true)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setVoiceOverlayOpen(true);
+                }}
               >
                 <Mic className="h-5 w-5 text-primary" />
               </Button>
