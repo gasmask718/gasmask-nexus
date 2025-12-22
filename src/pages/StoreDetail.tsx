@@ -26,6 +26,8 @@ import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from '@/components/store/StoreContactsSection';
 import { StorePeopleSection } from '@/components/store/StorePeopleSection';
 import { StoreContactInfoCard } from '@/components/store/StoreContactInfoCard';
+import { StoreNotesSection } from '@/components/store/StoreNotesSection';
+import { AddNoteModal } from '@/components/store/AddNoteModal';
 import { RecentStoreInteractions } from '@/components/crm/RecentStoreInteractions';
 import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import {
@@ -118,6 +120,7 @@ const StoreDetail = () => {
   const [resolvedStoreMasterId, setResolvedStoreMasterId] = useState<string | null>(null);
   const [timelineRefresh, setTimelineRefresh] = useState(0);
   const [geocoding, setGeocoding] = useState(false);
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
 
   // Fetch store contacts for interaction modal
   const { data: storeContacts } = useQuery({
@@ -336,7 +339,11 @@ const StoreDetail = () => {
                 <Navigation className="h-4 w-4 mr-2" />
                 {geocoding ? 'Geocoding...' : 'Geocode Address'}
               </Button>
-              <Button variant="outline" className="border-border/50">
+              <Button 
+                variant="outline" 
+                className="border-border/50"
+                onClick={() => setNoteModalOpen(true)}
+              >
                 <FileText className="h-4 w-4 mr-2" />
                 Add Note
               </Button>
@@ -366,6 +373,14 @@ const StoreDetail = () => {
         entityId={id || ''}
         entityName={store.name}
         onSuccess={() => setTimelineRefresh(prev => prev + 1)}
+      />
+
+      <AddNoteModal
+        open={noteModalOpen}
+        onOpenChange={setNoteModalOpen}
+        storeId={id || ''}
+        storeName={store.name}
+        onSuccess={() => {}}
       />
 
       <BulkCommunicationLogModal
@@ -398,6 +413,9 @@ const StoreDetail = () => {
 
           {/* All Store Contacts (for adding new) */}
           <StoreContactsSection storeId={id || ''} storeName={store.name} />
+
+          {/* Notes Section */}
+          <StoreNotesSection storeId={id || ''} storeName={store.name} />
 
           {/* Recent Interactions */}
           <RecentStoreInteractions
