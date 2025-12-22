@@ -9,9 +9,11 @@ import { WarehouseInventoryTab } from './tabs/WarehouseInventoryTab';
 import { WarehouseMovementsTab } from './tabs/WarehouseMovementsTab';
 import { WarehousePurchaseOrdersTab } from './tabs/WarehousePurchaseOrdersTab';
 import { WarehouseRoutingTab } from './tabs/WarehouseRoutingTab';
+import WarehouseFormModal from '@/components/inventory/WarehouseFormModal';
 
 export default function WarehouseDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
+  const [modalOpen, setModalOpen] = useState(false);
   const { data: stats, isLoading: statsLoading } = useWarehouseStats();
   const { data: warehouses } = useWarehouses();
   const runBrain = useRunWarehouseBrain();
@@ -155,7 +157,7 @@ export default function WarehouseDashboard() {
                   <CardTitle>Warehouses</CardTitle>
                   <CardDescription>Active warehouse locations</CardDescription>
                 </div>
-                <Button size="sm">
+                <Button size="sm" onClick={() => setModalOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Warehouse
                 </Button>
@@ -191,7 +193,7 @@ export default function WarehouseDashboard() {
                   <div className="text-center py-8 text-muted-foreground">
                     <Warehouse className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     <p>No warehouses configured yet</p>
-                    <Button variant="outline" className="mt-3" size="sm">
+                    <Button variant="outline" className="mt-3" size="sm" onClick={() => setModalOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add First Warehouse
                     </Button>
@@ -251,6 +253,12 @@ export default function WarehouseDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <WarehouseFormModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        warehouseId={null}
+      />
     </div>
   );
 }
