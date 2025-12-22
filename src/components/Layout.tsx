@@ -178,7 +178,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/os/warehouse', label: 'Warehouse', icon: Building2 },
         { path: '/os/procurement', label: 'Procurement', icon: ShoppingCart },
         { path: '/os/procurement/suppliers', label: 'Suppliers', icon: Truck },
-        { path: '/os/procurement/orders', label: 'Purchase Orders', icon: FileText },
+        { path: '/os/procurement/purchase-orders', label: 'Purchase Orders', icon: FileText },
       ],
     },
     {

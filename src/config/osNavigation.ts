@@ -463,7 +463,7 @@ export const SECTION_WAREHOUSE: OSFloor = {
     { id: 'warehouse-dash', label: 'Warehouse Dashboard', path: '/os/warehouse', icon: Factory, roles: ['ceo', 'admin', 'va'] },
     { id: 'procurement-dash', label: 'Procurement Dashboard', path: '/os/procurement', icon: Database, roles: ['ceo', 'admin', 'va'] },
     { id: 'procurement-suppliers', label: 'Suppliers', path: '/os/procurement/suppliers', icon: Users, roles: ['ceo', 'admin', 'va'] },
-    { id: 'procurement-orders', label: 'Purchase Orders', path: '/os/procurement/orders', icon: ClipboardList, roles: ['ceo', 'admin', 'va'] },
+    { id: 'procurement-orders', label: 'Purchase Orders', path: '/os/procurement/purchase-orders', icon: ClipboardList, roles: ['ceo', 'admin', 'va'] },
   ],
 };
 
