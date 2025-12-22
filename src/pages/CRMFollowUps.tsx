@@ -18,8 +18,8 @@ const CRMFollowUps = () => {
         .from('communication_logs')
         .select(`
           *,
-          contact:crm_contacts(name, type),
-          store:stores(name),
+          contact:crm_contacts(id, name, type),
+          store:stores(id, name),
           created_by_profile:profiles!communication_logs_created_by_fkey(name)
         `)
         .eq('follow_up_required', true)
@@ -134,7 +134,14 @@ const CRMFollowUps = () => {
             {overdueFollowUps.map((followUp) => (
               <div
                 key={followUp.id}
-                className="flex items-start gap-4 p-4 rounded-lg border border-destructive/20 bg-destructive/5"
+                className="flex items-start gap-4 p-4 rounded-lg border border-destructive/20 bg-destructive/5 cursor-pointer hover:bg-destructive/10 transition-colors"
+                onClick={() => {
+                  if (followUp.contact_id) {
+                    navigate(`/crm/contacts/${followUp.contact_id}`);
+                  } else if (followUp.store_id) {
+                    navigate(`/stores/${followUp.store_id}`);
+                  }
+                }}
               >
                 <div className="p-2 rounded-lg bg-destructive/10">
                   {getChannelIcon(followUp.channel)}
@@ -142,7 +149,7 @@ const CRMFollowUps = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium">
+                      <p className="font-medium hover:underline">
                         {followUp.contact?.name || followUp.store?.name || 'Unknown'}
                       </p>
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
@@ -165,7 +172,10 @@ const CRMFollowUps = () => {
                     </div>
                     <Button
                       size="sm"
-                      onClick={() => completeFollowUpMutation.mutate(followUp.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        completeFollowUpMutation.mutate(followUp.id);
+                      }}
                     >
                       <CheckCircle2 className="mr-2 h-4 w-4" />
                       Complete
@@ -185,7 +195,14 @@ const CRMFollowUps = () => {
           {upcomingFollowUps?.map((followUp) => (
             <div
               key={followUp.id}
-              className="flex items-start gap-4 p-4 rounded-lg border hover:bg-secondary/50 transition-colors"
+              className="flex items-start gap-4 p-4 rounded-lg border hover:bg-secondary/50 transition-colors cursor-pointer"
+              onClick={() => {
+                if (followUp.contact_id) {
+                  navigate(`/crm/contacts/${followUp.contact_id}`);
+                } else if (followUp.store_id) {
+                  navigate(`/stores/${followUp.store_id}`);
+                }
+              }}
             >
               <div className="p-2 rounded-lg bg-primary/10">
                 {getChannelIcon(followUp.channel)}
@@ -193,7 +210,7 @@ const CRMFollowUps = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium">
+                    <p className="font-medium hover:underline">
                       {followUp.contact?.name || followUp.store?.name || 'Unknown'}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
@@ -217,7 +234,10 @@ const CRMFollowUps = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => completeFollowUpMutation.mutate(followUp.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      completeFollowUpMutation.mutate(followUp.id);
+                    }}
                   >
                     <CheckCircle2 className="mr-2 h-4 w-4" />
                     Complete

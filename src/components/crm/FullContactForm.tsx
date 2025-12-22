@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { Plus, MapPin, User, Building2, Home, Loader2, CheckCircle, AlertCircle, Sparkles, Map, UserCog } from 'lucide-react';
@@ -145,6 +146,12 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
   const [isAddingNeighborhood, setIsAddingNeighborhood] = useState(false);
   const [suggestedNeighborhoods, setSuggestedNeighborhoods] = useState<string[]>([]);
   
+  // Company management state
+  const [showAddCompany, setShowAddCompany] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState('');
+  const [newCompanyType, setNewCompanyType] = useState('retail');
+  const [isAddingCompany, setIsAddingCompany] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -152,6 +159,7 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
     type: 'lead',
     roleId: '',
     organization: '',
+    companyId: '',
     addressStreet: '',
     addressCity: '',
     addressState: 'NY',
@@ -159,6 +167,19 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
     boroughId: '',
     neighborhoodId: '',
     notes: '',
+  });
+
+  // Fetch companies
+  const { data: companies = [], refetch: refetchCompanies } = useQuery({
+    queryKey: ['companies-for-contact'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name, type')
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   // Fetch boroughs
@@ -274,6 +295,7 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
         type: editingContact.type || 'lead',
         roleId: editingContact.role_id || '',
         organization: editingContact.organization || '',
+        companyId: editingContact.company_id || '',
         addressStreet: editingContact.address_street || '',
         addressCity: editingContact.address_city || '',
         addressState: editingContact.address_state || 'NY',
@@ -329,6 +351,44 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
     }
   };
 
+  const handleAddCompany = async () => {
+    if (!newCompanyName.trim()) {
+      toast({ title: 'Please enter a company name', variant: 'destructive' });
+      return;
+    }
+
+    setIsAddingCompany(true);
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .insert({
+          name: newCompanyName.trim(),
+          type: newCompanyType,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({ title: `Added company: ${newCompanyName}` });
+      
+      await refetchCompanies();
+      setFormData(prev => ({ ...prev, companyId: data.id }));
+      
+      setShowAddCompany(false);
+      setNewCompanyName('');
+      setNewCompanyType('retail');
+    } catch (error: any) {
+      toast({ 
+        title: 'Failed to add company', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsAddingCompany(false);
+    }
+  };
+
   const addSmartPrompt = (prompt: string) => {
     setFormData(prev => ({
       ...prev,
@@ -369,6 +429,7 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
         type: formData.type,
         role_id: formData.roleId || null,
         organization: formData.organization.trim() || null,
+        company_id: formData.companyId || null,
         address_street: formData.addressStreet.trim() || null,
         address_city: formData.addressCity.trim() || null,
         address_state: formData.addressState.trim() || null,
@@ -411,6 +472,7 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
         type: 'lead',
         roleId: '',
         organization: '',
+        companyId: '',
         addressStreet: '',
         addressCity: '',
         addressState: 'NY',
@@ -507,6 +569,40 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
                 <SelectItem value="wholesaler">Wholesaler</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Company Selection */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+              Company
+            </Label>
+            <div className="flex gap-2">
+              <Select 
+                value={formData.companyId} 
+                onValueChange={(value) => setFormData({ ...formData, companyId: value === 'none' ? '' : value })}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select company (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No company</SelectItem>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.name} <span className="text-muted-foreground text-xs">({company.type})</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="icon"
+                onClick={() => setShowAddCompany(true)}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -813,6 +909,55 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
           </>
         )}
       </Button>
+
+      {/* Add Company Dialog */}
+      <Dialog open={showAddCompany} onOpenChange={setShowAddCompany}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Company</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="newCompanyName">Company Name *</Label>
+              <Input
+                id="newCompanyName"
+                value={newCompanyName}
+                onChange={(e) => setNewCompanyName(e.target.value)}
+                placeholder="Enter company name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newCompanyType">Company Type</Label>
+              <Select value={newCompanyType} onValueChange={setNewCompanyType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="retail">Retail</SelectItem>
+                  <SelectItem value="wholesale">Wholesale</SelectItem>
+                  <SelectItem value="distributor">Distributor</SelectItem>
+                  <SelectItem value="manufacturer">Manufacturer</SelectItem>
+                  <SelectItem value="service">Service</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddCompany(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddCompany} disabled={isAddingCompany}>
+              {isAddingCompany ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              Add Company
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 };
