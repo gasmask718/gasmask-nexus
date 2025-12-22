@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, MapPin, Phone, Plus, User, Users } from 'lucide-react';
+import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag } from 'lucide-react';
 
 interface StoreContact {
   id: string;
@@ -29,6 +29,11 @@ interface Store {
   phone: string;
   status: string;
   tags: string[];
+  sells_flowers: boolean;
+  sticker_status: string;
+  sticker_door: boolean;
+  sticker_instore: boolean;
+  sticker_phone: boolean;
   contacts: StoreContact[];
 }
 
@@ -36,14 +41,16 @@ const Stores = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [tagFilter, setTagFilter] = useState<string>('all');
+  const [stickerFilter, setStickerFilter] = useState<string>('all');
 
   const { data: stores = [], isLoading } = useQuery({
     queryKey: ['stores-with-contacts'],
     queryFn: async () => {
-      // Fetch stores
+      // Fetch stores with sticker fields
       const { data: storesData, error: storesError } = await supabase
         .from('stores')
-        .select('id, name, type, address_street, address_city, address_state, address_zip, phone, status, tags')
+        .select('id, name, type, address_street, address_city, address_state, address_zip, phone, status, tags, sells_flowers, sticker_status, sticker_door, sticker_instore, sticker_phone')
         .order('name');
 
       if (storesError) throw storesError;
@@ -77,7 +84,19 @@ const Stores = () => {
     
     const matchesStatus = statusFilter === 'all' || store.status === statusFilter;
     
-    return matchesSearch && matchesStatus;
+    // Tag filter - flowers
+    const matchesTag = tagFilter === 'all' || 
+      (tagFilter === 'flowers' && store.sells_flowers);
+    
+    // Sticker filter
+    const matchesSticker = stickerFilter === 'all' ||
+      (stickerFilter === 'has_door' && store.sticker_door) ||
+      (stickerFilter === 'has_instore' && store.sticker_instore) ||
+      (stickerFilter === 'has_phone' && store.sticker_phone) ||
+      (stickerFilter === 'has_any' && (store.sticker_door || store.sticker_instore || store.sticker_phone)) ||
+      (stickerFilter === 'no_sticker' && !store.sticker_door && !store.sticker_instore && !store.sticker_phone);
+    
+    return matchesSearch && matchesStatus && matchesTag && matchesSticker;
   });
 
   const getStatusColor = (status: string) => {
@@ -95,6 +114,15 @@ const Stores = () => {
     active: stores.filter(s => s.status === 'active').length,
     prospect: stores.filter(s => s.status === 'prospect').length,
     needsFollowUp: stores.filter(s => s.status === 'needsFollowUp').length,
+  };
+
+  const flowersCount = stores.filter(s => s.sells_flowers).length;
+  const stickerCounts = {
+    hasDoor: stores.filter(s => s.sticker_door).length,
+    hasInstore: stores.filter(s => s.sticker_instore).length,
+    hasPhone: stores.filter(s => s.sticker_phone).length,
+    hasAny: stores.filter(s => s.sticker_door || s.sticker_instore || s.sticker_phone).length,
+    noSticker: stores.filter(s => !s.sticker_door && !s.sticker_instore && !s.sticker_phone).length,
   };
 
   // Helper to get owners and workers from contacts
@@ -120,27 +148,77 @@ const Stores = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search stores by name, location, or tags..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-secondary/50 border-border/50"
-          />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search stores by name, location, or tags..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-secondary/50 border-border/50"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-48 bg-secondary/50 border-border/50">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Stores ({statusCounts.all})</SelectItem>
+              <SelectItem value="active">Active ({statusCounts.active})</SelectItem>
+              <SelectItem value="prospect">Prospects ({statusCounts.prospect})</SelectItem>
+              <SelectItem value="needsFollowUp">Needs Follow-up ({statusCounts.needsFollowUp})</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-48 bg-secondary/50 border-border/50">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Stores ({statusCounts.all})</SelectItem>
-            <SelectItem value="active">Active ({statusCounts.active})</SelectItem>
-            <SelectItem value="prospect">Prospects ({statusCounts.prospect})</SelectItem>
-            <SelectItem value="needsFollowUp">Needs Follow-up ({statusCounts.needsFollowUp})</SelectItem>
-          </SelectContent>
-        </Select>
+        
+        {/* Additional Filters Row */}
+        <div className="flex flex-wrap gap-2">
+          {/* Tag Filter */}
+          <Select value={tagFilter} onValueChange={setTagFilter}>
+            <SelectTrigger className="w-44 bg-secondary/50 border-border/50">
+              <Tag className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Tags" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Tags</SelectItem>
+              <SelectItem value="flowers">
+                <span className="flex items-center gap-2">
+                  <Flower2 className="h-4 w-4 text-pink-500" />
+                  Sells Flowers ({flowersCount})
+                </span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Sticker Filter */}
+          <Select value={stickerFilter} onValueChange={setStickerFilter}>
+            <SelectTrigger className="w-52 bg-secondary/50 border-border/50">
+              <Sticker className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Stickers" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sticker Status</SelectItem>
+              <SelectItem value="has_any">Has Any Sticker ({stickerCounts.hasAny})</SelectItem>
+              <SelectItem value="has_door">Door Sticker ({stickerCounts.hasDoor})</SelectItem>
+              <SelectItem value="has_instore">In-Store Sticker ({stickerCounts.hasInstore})</SelectItem>
+              <SelectItem value="has_phone">Phone Sticker ({stickerCounts.hasPhone})</SelectItem>
+              <SelectItem value="no_sticker">No Stickers ({stickerCounts.noSticker})</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Active Filters Display */}
+          {(tagFilter !== 'all' || stickerFilter !== 'all') && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => { setTagFilter('all'); setStickerFilter('all'); }}
+              className="text-muted-foreground"
+            >
+              Clear filters
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Stores Grid */}
@@ -216,9 +294,25 @@ const Stores = () => {
                     </div>
                   )}
 
+                  {/* Operations Tags */}
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {store.sells_flowers && (
+                      <Badge className="text-xs bg-pink-500/10 text-pink-600 border-pink-500/30">
+                        <Flower2 className="h-3 w-3 mr-1" />
+                        Flowers
+                      </Badge>
+                    )}
+                    {(store.sticker_door || store.sticker_instore || store.sticker_phone) && (
+                      <Badge className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/30">
+                        <Sticker className="h-3 w-3 mr-1" />
+                        Sticker
+                      </Badge>
+                    )}
+                  </div>
+
                   {/* Tags */}
                   {store.tags && store.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 pt-1">
+                    <div className="flex flex-wrap gap-1">
                       {store.tags.slice(0, 3).map(tag => (
                         <Badge key={tag} variant="outline" className="text-xs">
                           {tag}

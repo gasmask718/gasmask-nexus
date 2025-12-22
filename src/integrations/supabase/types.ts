@@ -19150,7 +19150,13 @@ export type Database = {
           sells_flowers: boolean | null
           special_information: string | null
           status: Database["public"]["Enums"]["store_status"] | null
+          sticker_door: boolean | null
+          sticker_instore: boolean | null
+          sticker_last_seen_at: string | null
+          sticker_phone: boolean | null
           sticker_status: Database["public"]["Enums"]["sticker_status"] | null
+          sticker_taken_down: boolean | null
+          sticker_taken_down_at: string | null
           store_code: string | null
           tags: string[] | null
           type: Database["public"]["Enums"]["store_type"]
@@ -19199,7 +19205,13 @@ export type Database = {
           sells_flowers?: boolean | null
           special_information?: string | null
           status?: Database["public"]["Enums"]["store_status"] | null
+          sticker_door?: boolean | null
+          sticker_instore?: boolean | null
+          sticker_last_seen_at?: string | null
+          sticker_phone?: boolean | null
           sticker_status?: Database["public"]["Enums"]["sticker_status"] | null
+          sticker_taken_down?: boolean | null
+          sticker_taken_down_at?: string | null
           store_code?: string | null
           tags?: string[] | null
           type: Database["public"]["Enums"]["store_type"]
@@ -19248,7 +19260,13 @@ export type Database = {
           sells_flowers?: boolean | null
           special_information?: string | null
           status?: Database["public"]["Enums"]["store_status"] | null
+          sticker_door?: boolean | null
+          sticker_instore?: boolean | null
+          sticker_last_seen_at?: string | null
+          sticker_phone?: boolean | null
           sticker_status?: Database["public"]["Enums"]["sticker_status"] | null
+          sticker_taken_down?: boolean | null
+          sticker_taken_down_at?: string | null
           store_code?: string | null
           tags?: string[] | null
           type?: Database["public"]["Enums"]["store_type"]
