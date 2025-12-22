@@ -28,6 +28,7 @@ import { StorePeopleSection } from '@/components/store/StorePeopleSection';
 import { StoreContactInfoCard } from '@/components/store/StoreContactInfoCard';
 import { StoreNotesSection } from '@/components/store/StoreNotesSection';
 import { AddNoteModal } from '@/components/store/AddNoteModal';
+import { StoreOperationsCard } from '@/components/store/StoreOperationsCard';
 import { RecentStoreInteractions } from '@/components/crm/RecentStoreInteractions';
 import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import {
@@ -75,6 +76,14 @@ interface Store {
   visit_risk_level: string | null;
   pipeline_stage?: string;
   ai_recommendation?: string;
+  // Operations fields
+  sells_flowers: boolean;
+  sticker_door: boolean;
+  sticker_instore: boolean;
+  sticker_phone: boolean;
+  sticker_last_seen_at: string | null;
+  sticker_taken_down: boolean;
+  sticker_taken_down_at: string | null;
 }
 
 interface ProductInventory {
@@ -416,6 +425,21 @@ const StoreDetail = () => {
 
           {/* Notes Section */}
           <StoreNotesSection storeId={id || ''} storeName={store.name} />
+
+          {/* Operations & Stickers */}
+          <StoreOperationsCard 
+            store={store} 
+            onUpdate={() => {
+              supabase
+                .from('stores')
+                .select('*')
+                .eq('id', id)
+                .single()
+                .then(({ data }) => {
+                  if (data) setStore(data);
+                });
+            }} 
+          />
 
           {/* Recent Interactions */}
           <RecentStoreInteractions
