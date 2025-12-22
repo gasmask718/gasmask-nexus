@@ -84,20 +84,40 @@ const ManualCallPage = () => {
   };
 
   const handleSaveCallLog = async () => {
+    // Validate required fields
+    if (!callSummary.trim()) {
+      toast.error('Please enter a call summary');
+      return;
+    }
+
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('You must be logged in to log calls');
+        return;
+      }
+
       // Log to communication_logs
       const { error } = await supabase.from('communication_logs').insert({
-        business_id: currentBusiness?.id,
+        business_id: currentBusiness?.id || null,
         channel: 'phone',
         direction: 'outbound',
         contact_id: selectedContact?.id || null,
-        outcome: callOutcome,
+        outcome: callOutcome || null,
         summary: callSummary,
-        full_message: followUpNotes,
+        full_message: followUpNotes || null,
         follow_up_required: selectedTags.includes('Follow-up Required'),
+        created_by: user.id,
+        call_duration: callDuration > 0 ? callDuration : null,
+        recipient_phone: phoneNumber || null,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Failed to insert call log:', error);
+        throw error;
+      }
+      
       toast.success('Call logged successfully');
       
       // Reset form
@@ -107,8 +127,9 @@ const ManualCallPage = () => {
       setSelectedTags([]);
       setCallStatus('idle');
       setCallDuration(0);
-    } catch (error) {
-      toast.error('Failed to log call');
+    } catch (error: any) {
+      console.error('Call log error:', error);
+      toast.error(`Failed to log call: ${error.message || 'Unknown error'}`);
     }
   };
 
