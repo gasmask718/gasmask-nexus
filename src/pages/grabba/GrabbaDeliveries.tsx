@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Truck, MapPin, DollarSign, CheckCircle, Clock, Plus, User, 
   Search, Route, Zap, TrendingUp, AlertTriangle, Bike, Star,
@@ -22,6 +26,83 @@ import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
 import { TableRowActions, type RowAction } from "@/components/crud/TableRowActions";
 import { driverFields, routeFields } from "@/config/entityFieldConfigs";
 import { toast } from "sonner";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CREATE ROUTE FORM COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+interface CreateRouteFormProps {
+  drivers: any[];
+  onSubmit: (data: { driver_id: string | null; route_date: string; notes: string | null }) => Promise<void>;
+}
+
+function CreateRouteForm({ drivers, onSubmit }: CreateRouteFormProps) {
+  const [driverId, setDriverId] = useState<string>("none");
+  const [routeDate, setRouteDate] = useState(new Date().toISOString().split('T')[0]);
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await onSubmit({
+        driver_id: driverId === "none" ? null : driverId,
+        route_date: routeDate,
+        notes: notes || null
+      });
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create route');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label>Driver (Optional)</Label>
+        <Select value={driverId} onValueChange={setDriverId}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a driver" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">No driver assigned</SelectItem>
+            {drivers.map((driver: any) => (
+              <SelectItem key={driver.id} value={driver.id}>
+                {driver.name} {driver.region ? `(${driver.region})` : ''}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div className="space-y-2">
+        <Label>Route Date *</Label>
+        <Input 
+          type="date" 
+          value={routeDate} 
+          onChange={(e) => setRouteDate(e.target.value)}
+          required
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label>Notes</Label>
+        <Textarea 
+          value={notes} 
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Route notes..."
+        />
+      </div>
+      
+      <div className="flex justify-end gap-2 pt-4">
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Creating...' : 'Create Route'}
+        </Button>
+      </div>
+    </form>
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FLOOR 4 — GRABBA DELIVERIES & DRIVERS
@@ -841,28 +922,31 @@ export default function GrabbaDeliveries() {
       />
       
       {/* Create Route Modal */}
-      <EntityModal
-        open={createRouteOpen}
-        onOpenChange={setCreateRouteOpen}
-        title="Create New Route"
-        fields={routeFields}
-        onSubmit={async (data) => {
-          const routeDate = data.route_date || new Date().toISOString().split('T')[0];
-          const { error } = await supabase
-            .from('driver_routes')
-            .insert({ 
-              driver_id: data.driver_id || null, 
-              route_date: routeDate,
-              status: 'planned',
-              notes: data.notes || null
-            } as any);
-          if (error) throw error;
-          queryClient.invalidateQueries({ queryKey: ['grabba-routes-today'] });
-          toast.success('Route created successfully');
-        }}
-        mode="create"
-        defaultValues={{ route_date: new Date().toISOString().split('T')[0] }}
-      />
+      <Dialog open={createRouteOpen} onOpenChange={setCreateRouteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Route</DialogTitle>
+            <DialogDescription>Create a delivery route for today or a future date</DialogDescription>
+          </DialogHeader>
+          <CreateRouteForm 
+            drivers={drivers || []}
+            onSubmit={async (data) => {
+              const { error } = await supabase
+                .from('driver_routes')
+                .insert({ 
+                  driver_id: data.driver_id || null, 
+                  route_date: data.route_date,
+                  status: 'planned',
+                  notes: data.notes || null
+                } as any);
+              if (error) throw error;
+              queryClient.invalidateQueries({ queryKey: ['grabba-routes-today'] });
+              toast.success('Route created successfully');
+              setCreateRouteOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
