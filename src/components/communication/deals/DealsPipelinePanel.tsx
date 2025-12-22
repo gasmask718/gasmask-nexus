@@ -142,34 +142,82 @@ export default function DealsPipelinePanel() {
         </div>
       </div>
 
-      {/* Kanban Board */}
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {STAGES.map((stage) => (
-          <div key={stage.key} className="flex-shrink-0 w-72">
-            <div className="flex items-center gap-2 mb-3">
-              <div className={`h-3 w-3 rounded-full ${stage.color}`} />
-              <span className="font-medium">{stage.label}</span>
-              <Badge variant="secondary" className="ml-auto">
-                {dealsByStage[stage.key]?.length || 0}
-              </Badge>
-            </div>
-            
-            <ScrollArea className="h-[600px]">
-              <div className="space-y-3 pr-2">
-                {dealsByStage[stage.key]?.map((deal) => (
-                  <DealCard key={deal.id} deal={deal} />
-                ))}
-                
-                {(!dealsByStage[stage.key] || dealsByStage[stage.key]?.length === 0) && (
-                  <div className="p-4 border border-dashed rounded-lg text-center text-muted-foreground text-sm">
-                    No deals
-                  </div>
-                )}
+      {/* View Content */}
+      {viewMode === 'kanban' ? (
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {STAGES.map((stage) => (
+            <div key={stage.key} className="flex-shrink-0 w-72">
+              <div className="flex items-center gap-2 mb-3">
+                <div className={`h-3 w-3 rounded-full ${stage.color}`} />
+                <span className="font-medium">{stage.label}</span>
+                <Badge variant="secondary" className="ml-auto">
+                  {dealsByStage[stage.key]?.length || 0}
+                </Badge>
               </div>
-            </ScrollArea>
-          </div>
-        ))}
-      </div>
+              
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-3 pr-2">
+                  {dealsByStage[stage.key]?.map((deal) => (
+                    <DealCard key={deal.id} deal={deal} />
+                  ))}
+                  
+                  {(!dealsByStage[stage.key] || dealsByStage[stage.key]?.length === 0) && (
+                    <div className="p-4 border border-dashed rounded-lg text-center text-muted-foreground text-sm">
+                      No deals
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="border rounded-lg overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="text-left p-3 font-medium">Store</th>
+                <th className="text-left p-3 font-medium">Business</th>
+                <th className="text-left p-3 font-medium">Stage</th>
+                <th className="text-left p-3 font-medium">Value</th>
+                <th className="text-left p-3 font-medium">Probability</th>
+                <th className="text-left p-3 font-medium">Risk</th>
+                <th className="text-left p-3 font-medium">Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deals?.map((deal) => (
+                <tr key={deal.id} className="border-t hover:bg-muted/30 transition-colors">
+                  <td className="p-3">{deal.store?.store_name || 'Unknown'}</td>
+                  <td className="p-3 text-muted-foreground">{deal.business?.name || '-'}</td>
+                  <td className="p-3">
+                    <Badge variant="outline">
+                      {STAGES.find(s => s.key === deal.stage)?.label || deal.stage}
+                    </Badge>
+                  </td>
+                  <td className="p-3 font-medium">${Number(deal.expected_value || 0).toLocaleString()}</td>
+                  <td className="p-3">{deal.probability}%</td>
+                  <td className="p-3">
+                    <Badge className={riskColors[deal.risk_level] || riskColors.medium}>
+                      {deal.risk_level}
+                    </Badge>
+                  </td>
+                  <td className="p-3 text-muted-foreground text-sm">
+                    {formatDistanceToNow(new Date(deal.updated_at), { addSuffix: true })}
+                  </td>
+                </tr>
+              ))}
+              {(!deals || deals.length === 0) && (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                    No deals found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
