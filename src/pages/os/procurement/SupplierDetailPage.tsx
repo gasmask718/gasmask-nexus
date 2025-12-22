@@ -2,11 +2,21 @@
 // SUPPLIER DETAIL PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -27,16 +37,52 @@ import {
   FileText,
   AlertTriangle,
   Edit,
+  Plus,
 } from 'lucide-react';
-import { useSupplier, useSupplierProducts, usePurchaseOrders } from '@/services/procurement';
+import { useSupplier, useSupplierProducts, usePurchaseOrders, useCreateSupplierProduct } from '@/services/procurement';
+import { toast } from 'sonner';
 
 export default function SupplierDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: supplier, isLoading } = useSupplier(id || '');
-  const { data: products } = useSupplierProducts(id);
+  const { data: products, refetch: refetchProducts } = useSupplierProducts(id);
   const { data: allPOs } = usePurchaseOrders();
+  const createProduct = useCreateSupplierProduct();
+  
+  const [addProductOpen, setAddProductOpen] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    sku: '',
+    moq: 1,
+    unit_cost: 0,
+    bulk_cost: 0,
+  });
 
   const supplierPOs = allPOs?.filter(po => po.supplier_id === id) || [];
+
+  const handleAddProduct = async () => {
+    if (!newProduct.name || !id) {
+      toast.error('Product name is required');
+      return;
+    }
+    
+    try {
+      await createProduct.mutateAsync({
+        name: newProduct.name,
+        supplier_id: id,
+        sku: newProduct.sku || null,
+        moq: newProduct.moq || 1,
+        unit_cost: newProduct.unit_cost || 0,
+        bulk_cost: newProduct.bulk_cost || 0,
+      });
+      toast.success('Product added to supplier');
+      setAddProductOpen(false);
+      setNewProduct({ name: '', sku: '', moq: 1, unit_cost: 0, bulk_cost: 0 });
+      refetchProducts();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add product');
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -184,9 +230,15 @@ export default function SupplierDetailPage() {
 
         <TabsContent value="products" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Supplier Products</CardTitle>
-              <CardDescription>Products available from this supplier</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Supplier Products</CardTitle>
+                <CardDescription>Products available from this supplier</CardDescription>
+              </div>
+              <Button onClick={() => setAddProductOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
             </CardHeader>
             <CardContent>
               <Table>
@@ -300,6 +352,74 @@ export default function SupplierDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Add Product Modal */}
+      <Dialog open={addProductOpen} onOpenChange={setAddProductOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Product to Supplier</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="product-name">Product Name *</Label>
+              <Input
+                id="product-name"
+                value={newProduct.name}
+                onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                placeholder="e.g., Grabba Leaf 100-pack"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="product-sku">SKU</Label>
+              <Input
+                id="product-sku"
+                value={newProduct.sku}
+                onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
+                placeholder="e.g., GL-100"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="product-moq">MOQ</Label>
+                <Input
+                  id="product-moq"
+                  type="number"
+                  value={newProduct.moq}
+                  onChange={(e) => setNewProduct({ ...newProduct, moq: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="product-unit-cost">Unit Cost</Label>
+                <Input
+                  id="product-unit-cost"
+                  type="number"
+                  step="0.01"
+                  value={newProduct.unit_cost}
+                  onChange={(e) => setNewProduct({ ...newProduct, unit_cost: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="product-bulk-cost">Bulk Cost</Label>
+                <Input
+                  id="product-bulk-cost"
+                  type="number"
+                  step="0.01"
+                  value={newProduct.bulk_cost}
+                  onChange={(e) => setNewProduct({ ...newProduct, bulk_cost: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddProductOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddProduct} disabled={createProduct.isPending}>
+              {createProduct.isPending ? 'Adding...' : 'Add Product'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
