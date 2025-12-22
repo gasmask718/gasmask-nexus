@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -140,11 +141,33 @@ export default function OutboundEnginePage() {
     return <Smartphone className="h-4 w-4" />;
   };
 
+  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("");
+
   const handleLaunchCampaign = () => {
     toast({
       title: "Unified Campaign Launched",
       description: `AI Outbound Engine V3 campaign "${campaignName || 'New Campaign'}" is now running across calls & SMS.`,
     });
+  };
+
+  const handleScheduleCampaign = () => {
+    if (!scheduledDate || !scheduledTime) {
+      toast({
+        title: "Missing Schedule",
+        description: "Please select both a date and time for the campaign.",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({
+      title: "Campaign Scheduled",
+      description: `Campaign "${campaignName || 'New Campaign'}" scheduled for ${scheduledDate} at ${scheduledTime}.`,
+    });
+    setIsScheduleDialogOpen(false);
+    setScheduledDate("");
+    setScheduledTime("");
   };
 
   const handleCallStore = (prediction: typeof mockPredictions[0]) => {
@@ -448,10 +471,49 @@ export default function OutboundEnginePage() {
                   <Play className="h-4 w-4" />
                   Launch Campaign
                 </Button>
-                <Button variant="outline" className="gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Schedule
-                </Button>
+                <Dialog open={isScheduleDialogOpen} onOpenChange={setIsScheduleDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Schedule
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Schedule Campaign</DialogTitle>
+                      <DialogDescription>
+                        Set the date and time to launch "{campaignName || 'New Campaign'}"
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label>Date</Label>
+                        <Input 
+                          type="date" 
+                          value={scheduledDate} 
+                          onChange={(e) => setScheduledDate(e.target.value)} 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Time</Label>
+                        <Input 
+                          type="time" 
+                          value={scheduledTime} 
+                          onChange={(e) => setScheduledTime(e.target.value)} 
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsScheduleDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleScheduleCampaign}>
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Confirm Schedule
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardContent>
           </Card>
