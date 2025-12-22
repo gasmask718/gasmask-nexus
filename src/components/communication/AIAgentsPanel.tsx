@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,9 +7,10 @@ import { useAIAgents } from "@/hooks/useAIAgents";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { AIAgentCard } from "./AIAgentCard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
+import { CreateAgentDialog } from "./CreateAgentDialog";
 export function AIAgentsPanel() {
   const { currentBusiness } = useBusiness();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const { 
     agents, 
     agentsLoading, 
@@ -80,18 +82,20 @@ export function AIAgentsPanel() {
           <Bot className="h-5 w-5" />
           AI Agent Team
         </h3>
-        <Button size="sm">
+        <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-1" />
           Add Agent
         </Button>
       </div>
+
+      <CreateAgentDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
 
       {agents.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Bot className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground">No AI agents configured yet</p>
-            <Button className="mt-4">
+            <Button className="mt-4" onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />
               Create First Agent
             </Button>
