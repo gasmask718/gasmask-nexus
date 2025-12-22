@@ -2,10 +2,21 @@
 // PURCHASE ORDER DETAIL PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useParams, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -26,13 +37,74 @@ import {
   CheckCircle,
   Clock,
   AlertTriangle,
+  Download,
 } from 'lucide-react';
-import { usePurchaseOrder } from '@/services/procurement';
+import { usePurchaseOrder, useUpdatePurchaseOrder } from '@/services/procurement';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 export default function PurchaseOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { data: po, isLoading } = usePurchaseOrder(id || '');
+  const navigate = useNavigate();
+  const { data: po, isLoading, refetch } = usePurchaseOrder(id || '');
+  const updatePO = useUpdatePurchaseOrder();
+  
+  const [editOpen, setEditOpen] = useState(false);
+  const [editData, setEditData] = useState({
+    tracking_number: '',
+    warehouse_location: '',
+    notes: '',
+  });
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPDF = () => {
+    // Use browser print dialog with PDF option
+    window.print();
+    toast.info('Use "Save as PDF" in the print dialog to download');
+  };
+
+  const handleEdit = () => {
+    if (po) {
+      setEditData({
+        tracking_number: po.tracking_number || '',
+        warehouse_location: po.warehouse_location || '',
+        notes: po.notes || '',
+      });
+      setEditOpen(true);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!id) return;
+    
+    try {
+      await updatePO.mutateAsync({
+        id,
+        tracking_number: editData.tracking_number || null,
+        warehouse_location: editData.warehouse_location || null,
+        notes: editData.notes || null,
+      });
+      setEditOpen(false);
+      refetch();
+    } catch (error) {
+      // Error handled by hook
+    }
+  };
+
+  const handleStatusUpdate = async (newStatus: string) => {
+    if (!id) return;
+    
+    try {
+      await updatePO.mutateAsync({ id, status: newStatus });
+      toast.success(`Order marked as ${newStatus}`);
+      refetch();
+    } catch (error) {
+      // Error handled by hook
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -123,12 +195,12 @@ export default function PurchaseOrderDetailPage() {
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
+        <div className="flex gap-2 print:hidden">
+          <Button variant="outline" onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" />
             Print
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleEdit}>
             <Edit className="h-4 w-4 mr-2" />
             Edit
           </Button>
@@ -296,25 +368,90 @@ export default function PurchaseOrderDetailPage() {
           </Card>
 
           {/* Status Actions */}
-          <Card>
+          <Card className="print:hidden">
             <CardHeader>
               <CardTitle>Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {po.status === 'draft' && (
-                <Button className="w-full">Submit Order</Button>
+                <Button 
+                  className="w-full" 
+                  onClick={() => handleStatusUpdate('placed')}
+                  disabled={updatePO.isPending}
+                >
+                  Submit Order
+                </Button>
               )}
               {po.status === 'placed' && (
-                <Button className="w-full">Mark as Shipped</Button>
+                <Button 
+                  className="w-full" 
+                  onClick={() => handleStatusUpdate('shipped')}
+                  disabled={updatePO.isPending}
+                >
+                  Mark as Shipped
+                </Button>
               )}
               {po.status === 'shipped' && (
-                <Button className="w-full">Mark as Delivered</Button>
+                <Button 
+                  className="w-full" 
+                  onClick={() => handleStatusUpdate('delivered')}
+                  disabled={updatePO.isPending}
+                >
+                  Mark as Delivered
+                </Button>
               )}
-              <Button variant="outline" className="w-full">Download PDF</Button>
+              <Button variant="outline" className="w-full" onClick={handleDownloadPDF}>
+                <Download className="h-4 w-4 mr-2" />
+                Download PDF
+              </Button>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Purchase Order</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Tracking Number</Label>
+              <Input
+                value={editData.tracking_number}
+                onChange={(e) => setEditData({ ...editData, tracking_number: e.target.value })}
+                placeholder="Enter tracking number"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Warehouse Location</Label>
+              <Input
+                value={editData.warehouse_location}
+                onChange={(e) => setEditData({ ...editData, warehouse_location: e.target.value })}
+                placeholder="Main warehouse, Aisle 5"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea
+                value={editData.notes}
+                onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
+                placeholder="Additional notes..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={updatePO.isPending}>
+              {updatePO.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
