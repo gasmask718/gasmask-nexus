@@ -27,7 +27,7 @@ import {
 import { ArrowLeft, Plus, Trash2, Brain, Send } from 'lucide-react';
 import {
   useSuppliers,
-  useSupplierProducts,
+  useProducts,
   useCreatePurchaseOrder,
   POProduct,
 } from '@/services/procurement';
@@ -44,7 +44,7 @@ export default function NewPurchaseOrderPage() {
   const [warehouseLocation, setWarehouseLocation] = useState('');
   const [notes, setNotes] = useState('');
 
-  const { data: supplierProducts } = useSupplierProducts(supplierId || undefined);
+  const { data: availableProducts } = useProducts();
 
   const totalCost = products.reduce((sum, p) => sum + p.qty * p.unit_cost, 0);
   const grandTotal = totalCost + shippingCost;
@@ -64,12 +64,12 @@ export default function NewPurchaseOrderPage() {
   };
 
   const handleProductSelect = (index: number, productId: string) => {
-    const product = supplierProducts?.find(p => p.id === productId);
+    const product = availableProducts?.find(p => p.id === productId);
     if (product) {
       updateProduct(index, {
         product_id: productId,
         name: product.name,
-        unit_cost: product.unit_cost || 0,
+        unit_cost: product.cost || product.wholesale_price || 0,
       });
     }
   };
@@ -182,9 +182,9 @@ export default function NewPurchaseOrderPage() {
                               <SelectValue placeholder="Select product" />
                             </SelectTrigger>
                             <SelectContent>
-                              {supplierProducts?.map((sp) => (
-                                <SelectItem key={sp.id} value={sp.id}>
-                                  {sp.name} (MOQ: {sp.moq})
+                              {availableProducts?.map((p) => (
+                                <SelectItem key={p.id} value={p.id}>
+                                  {p.name} {p.sku ? `(${p.sku})` : ''}
                                 </SelectItem>
                               ))}
                             </SelectContent>

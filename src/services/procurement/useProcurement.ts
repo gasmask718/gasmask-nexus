@@ -199,6 +199,30 @@ export function useSupplierProducts(supplierId?: string) {
   });
 }
 
+// Fetch products from the main products table for PO creation
+export interface Product {
+  id: string;
+  name: string;
+  sku: string | null;
+  wholesale_price: number | null;
+  cost: number | null;
+}
+
+export function useProducts() {
+  return useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, sku, wholesale_price, cost')
+        .order('name');
+
+      if (error) throw error;
+      return data as Product[];
+    },
+  });
+}
+
 export function useCreateSupplierProduct() {
   const queryClient = useQueryClient();
 
