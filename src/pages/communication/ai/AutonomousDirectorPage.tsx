@@ -22,10 +22,13 @@ import {
   DollarSign,
   Users,
   Phone,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAutonomousOps } from '@/hooks/useAutonomousOps';
+import { toast } from 'sonner';
 import DirectorReportsPanel from '@/components/communication/director/DirectorReportsPanel';
 import DirectorTasksPanel from '@/components/communication/director/DirectorTasksPanel';
 import RevenueForecastPanel from '@/components/communication/director/RevenueForecastPanel';
@@ -35,6 +38,9 @@ export default function AutonomousDirectorPage() {
   const [autoCreateCampaigns, setAutoCreateCampaigns] = useState(true);
   const [autoAdjustPacing, setAutoAdjustPacing] = useState(true);
   const [autoChangeVoices, setAutoChangeVoices] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+
+  const { runCycle, runningCycle } = useAutonomousOps();
 
   const { data: latestReport } = useQuery({
     queryKey: ['latest-director-report'],
@@ -61,6 +67,45 @@ export default function AutonomousDirectorPage() {
     },
   });
 
+  const handleRunNow = async () => {
+    if (!directorEnabled) {
+      toast.error('Director is paused', {
+        description: 'Enable the Autonomous Director to run cycles.',
+      });
+      return;
+    }
+
+    setIsRunning(true);
+    try {
+      // Determine which cycle to run based on current time
+      const hour = new Date().getHours();
+      let cycleType: 'morning' | 'midday' | 'evening';
+      
+      if (hour < 12) {
+        cycleType = 'morning';
+      } else if (hour < 17) {
+        cycleType = 'midday';
+      } else {
+        cycleType = 'evening';
+      }
+
+      toast.info(`Starting ${cycleType} cycle...`, {
+        description: 'The Autonomous Director is now processing.',
+      });
+
+      await runCycle(cycleType);
+      
+      toast.success('Autonomous Director cycle completed', {
+        description: `The ${cycleType} cycle has finished successfully.`,
+      });
+    } catch (error) {
+      // Error already handled in runCycle
+      console.error('Run now failed:', error);
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -84,9 +129,17 @@ export default function AutonomousDirectorPage() {
               {directorEnabled ? 'Active' : 'Paused'}
             </Label>
           </div>
-          <Button variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Run Now
+          <Button 
+            variant="outline" 
+            onClick={handleRunNow}
+            disabled={isRunning || !!runningCycle || !directorEnabled}
+          >
+            {isRunning || runningCycle ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            {isRunning || runningCycle ? 'Running...' : 'Run Now'}
           </Button>
         </div>
       </div>
