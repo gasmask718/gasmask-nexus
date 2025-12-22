@@ -61,6 +61,20 @@ export function EntityModal({
   fields.forEach((field) => {
     if (field.validation) {
       schemaShape[field.name] = field.validation;
+    } else if (field.type === 'number') {
+      // Handle number fields properly - transform NaN to undefined, then validate
+      if (field.required) {
+        schemaShape[field.name] = z.preprocess(
+          (val) => (val === '' || Number.isNaN(val) ? undefined : val),
+          z.number({ required_error: `${field.label} is required`, invalid_type_error: `${field.label} must be a number` })
+            .min(0, `${field.label} must be 0 or greater`)
+        );
+      } else {
+        schemaShape[field.name] = z.preprocess(
+          (val) => (val === '' || Number.isNaN(val) ? undefined : val),
+          z.number().optional()
+        );
+      }
     } else if (field.required) {
       // For select fields, ensure empty string is treated as missing
       if (field.type === 'select') {
