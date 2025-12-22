@@ -153,7 +153,16 @@ export function useAutonomousOps() {
   const runCycle = useCallback(async (cycleType: 'morning' | 'midday' | 'evening') => {
     setRunningCycle(cycleType);
     try {
-      const functionName = `${cycleType}-ops-cycle`;
+      // Map cycle types to their actual edge function names
+      const functionNameMap: Record<string, string> = {
+        morning: 'morning-ops-cycle',
+        midday: 'midday-monitor-cycle',
+        evening: 'evening-ops-cycle',
+      };
+      const functionName = functionNameMap[cycleType];
+      
+      console.log(`[Autonomous Ops] Invoking ${functionName}...`);
+      
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: {},
       });
