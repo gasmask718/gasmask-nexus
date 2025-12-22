@@ -121,12 +121,12 @@ export const productionBatchFields: FieldConfig[] = [
 ];
 
 export const routeFields: FieldConfig[] = [
-  { name: 'route_date', label: 'Route Date', type: 'date', required: true },
-  { name: 'status', label: 'Status', type: 'select', options: [
+  { name: 'driver_id', label: 'Driver', type: 'text', placeholder: 'Driver ID (optional)' },
+  { name: 'route_date', label: 'Route Date', type: 'date', required: true, defaultValue: new Date().toISOString().split('T')[0] },
+  { name: 'status', label: 'Status', type: 'select', defaultValue: 'planned', options: [
     { value: 'planned', label: 'Planned' },
     { value: 'in_progress', label: 'In Progress' },
     { value: 'completed', label: 'Completed' },
-    { value: 'cancelled', label: 'Cancelled' },
   ]},
   { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Route notes...' },
 ];

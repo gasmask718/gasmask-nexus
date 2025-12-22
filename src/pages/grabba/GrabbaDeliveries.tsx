@@ -119,7 +119,7 @@ export default function GrabbaDeliveries() {
           stops:driver_route_stops(
             *,
             company:companies(name, default_phone),
-            store:stores(name, address)
+            store:stores(name, address_street)
           )
         `)
         .eq("route_date", today)
@@ -847,18 +847,21 @@ export default function GrabbaDeliveries() {
         title="Create New Route"
         fields={routeFields}
         onSubmit={async (data) => {
+          const routeDate = data.route_date || new Date().toISOString().split('T')[0];
           const { error } = await supabase
             .from('driver_routes')
             .insert({ 
-              driver_id: data.driver_id, 
-              route_date: data.route_date || new Date().toISOString().split('T')[0],
-              status: 'planned' 
+              driver_id: data.driver_id || null, 
+              route_date: routeDate,
+              status: 'planned',
+              notes: data.notes || null
             } as any);
           if (error) throw error;
           queryClient.invalidateQueries({ queryKey: ['grabba-routes-today'] });
           toast.success('Route created successfully');
         }}
         mode="create"
+        defaultValues={{ route_date: new Date().toISOString().split('T')[0] }}
       />
     </div>
   );
