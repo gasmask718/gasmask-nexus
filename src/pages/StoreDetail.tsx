@@ -24,6 +24,8 @@ import { StoreRevenueIntelligenceTab } from "@/components/revenue/StoreRevenueIn
 import { Activity, Headphones, Flame } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from '@/components/store/StoreContactsSection';
+import { StorePeopleSection } from '@/components/store/StorePeopleSection';
+import { StoreContactInfoCard } from '@/components/store/StoreContactInfoCard';
 import { RecentStoreInteractions } from '@/components/crm/RecentStoreInteractions';
 import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import {
@@ -375,72 +377,26 @@ const StoreDetail = () => {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left Column - Main Info */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Contact Information */}
-          <Card className="glass-card border-border/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                Contact Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Address</p>
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-primary mt-0.5" />
-                    <div className="text-sm">
-                      <p>{store.address_street}</p>
-                      <p>{store.address_city}, {store.address_state} {store.address_zip}</p>
-                    </div>
-                  </div>
-                </div>
-                {store.primary_contact_name && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Primary Contact</p>
-                    <p className="text-sm font-medium">{store.primary_contact_name}</p>
-                  </div>
-                )}
-              </div>
-              <Separator />
-              <div className="grid gap-4 md:grid-cols-2">
-                {store.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-primary" />
-                    <a href={`tel:${store.phone}`} className="text-sm hover:underline">
-                      {store.phone}
-                    </a>
-                  </div>
-                )}
-                {store.alt_phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <a href={`tel:${store.alt_phone}`} className="text-sm hover:underline text-muted-foreground">
-                      {store.alt_phone} (alt)
-                    </a>
-                  </div>
-                )}
-                {store.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-primary" />
-                    <a href={`mailto:${store.email}`} className="text-sm hover:underline">
-                      {store.email}
-                    </a>
-                  </div>
-                )}
-              </div>
-              <Separator />
-              <div className="flex flex-wrap gap-2">
-                {store.tags?.map(tag => (
-                  <Badge key={tag} variant="outline" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Contact Information - With Edit Button and Clear Phone Labels */}
+          <StoreContactInfoCard 
+            store={store} 
+            onUpdate={() => {
+              // Refetch store data
+              supabase
+                .from('stores')
+                .select('*')
+                .eq('id', id)
+                .single()
+                .then(({ data }) => {
+                  if (data) setStore(data);
+                });
+            }} 
+          />
 
-          {/* Store Contacts Section */}
+          {/* Owners & Workers Sections */}
+          <StorePeopleSection storeId={id || ''} />
+
+          {/* All Store Contacts (for adding new) */}
           <StoreContactsSection storeId={id || ''} storeName={store.name} />
 
           {/* Recent Interactions */}

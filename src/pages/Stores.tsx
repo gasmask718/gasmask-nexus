@@ -1,48 +1,73 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, MapPin, Phone, Plus } from 'lucide-react';
+import { Search, MapPin, Phone, Plus, User, Users } from 'lucide-react';
+
+interface StoreContact {
+  id: string;
+  name: string;
+  role: string;
+  phone: string;
+  can_receive_sms: boolean;
+  is_primary: boolean;
+}
 
 interface Store {
   id: string;
   name: string;
   type: string;
+  address_street: string;
   address_city: string;
   address_state: string;
+  address_zip: string;
   phone: string;
   status: string;
   tags: string[];
+  contacts: StoreContact[];
 }
 
 const Stores = () => {
   const navigate = useNavigate();
-  const [stores, setStores] = useState<Store[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchStores = async () => {
-      const { data, error } = await supabase
+  const { data: stores = [], isLoading } = useQuery({
+    queryKey: ['stores-with-contacts'],
+    queryFn: async () => {
+      // Fetch stores
+      const { data: storesData, error: storesError } = await supabase
         .from('stores')
-        .select('id, name, type, address_city, address_state, phone, status, tags')
+        .select('id, name, type, address_street, address_city, address_state, address_zip, phone, status, tags')
         .order('name');
 
-      if (error) {
-        console.error('Error fetching stores:', error);
-      } else {
-        setStores(data || []);
-      }
-      setLoading(false);
-    };
+      if (storesError) throw storesError;
 
-    fetchStores();
-  }, []);
+      // Fetch all contacts for these stores
+      const storeIds = storesData?.map(s => s.id) || [];
+      const { data: contactsData } = await supabase
+        .from('store_contacts')
+        .select('id, store_id, name, role, phone, can_receive_sms, is_primary')
+        .in('store_id', storeIds);
+
+      // Map contacts to stores
+      const contactsByStore = (contactsData || []).reduce((acc, contact) => {
+        if (!acc[contact.store_id]) acc[contact.store_id] = [];
+        acc[contact.store_id].push(contact);
+        return acc;
+      }, {} as Record<string, StoreContact[]>);
+
+      return (storesData || []).map(store => ({
+        ...store,
+        contacts: contactsByStore[store.id] || [],
+      }));
+    },
+  });
 
   const filteredStores = stores.filter(store => {
     const matchesSearch = 
@@ -71,6 +96,13 @@ const Stores = () => {
     prospect: stores.filter(s => s.status === 'prospect').length,
     needsFollowUp: stores.filter(s => s.status === 'needsFollowUp').length,
   };
+
+  // Helper to get owners and workers from contacts
+  const getOwners = (contacts: StoreContact[]) => 
+    contacts.filter(c => c.role?.toLowerCase().includes('owner'));
+  
+  const getWorkers = (contacts: StoreContact[]) => 
+    contacts.filter(c => ['worker', 'manager'].includes(c.role?.toLowerCase()));
 
   return (
     <div className="space-y-6">
@@ -112,66 +144,101 @@ const Stores = () => {
       </div>
 
       {/* Stores Grid */}
-      {loading ? (
+      {isLoading ? (
         <div className="text-center py-12">
           <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredStores.map((store, index) => (
-            <Card
-              key={store.id}
-              className="glass-card border-border/50 hover-lift hover-glow cursor-pointer"
-              style={{ animationDelay: `${index * 50}ms` }}
-              onClick={() => navigate(`/stores/${store.id}`)}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg">{store.name}</CardTitle>
-                    <Badge variant="outline" className="text-xs">
-                      {store.type.replace('_', ' ')}
+          {filteredStores.map((store, index) => {
+            const owners = getOwners(store.contacts);
+            const workers = getWorkers(store.contacts);
+            const fullAddress = [store.address_street, store.address_city, store.address_state, store.address_zip]
+              .filter(Boolean)
+              .join(', ');
+
+            return (
+              <Card
+                key={store.id}
+                className="glass-card border-border/50 hover-lift hover-glow cursor-pointer"
+                style={{ animationDelay: `${index * 50}ms` }}
+                onClick={() => navigate(`/stores/${store.id}`)}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg">{store.name}</CardTitle>
+                      <Badge variant="outline" className="text-xs">
+                        {store.type.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                    <Badge className={getStatusColor(store.status)}>
+                      {store.status === 'needsFollowUp' ? 'Follow-up' : store.status}
                     </Badge>
                   </div>
-                  <Badge className={getStatusColor(store.status)}>
-                    {store.status === 'needsFollowUp' ? 'Follow-up' : store.status}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {store.address_city && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span>{store.address_city}, {store.address_state}</span>
-                  </div>
-                )}
-                {store.phone && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Phone className="h-4 w-4" />
-                    <span>{store.phone}</span>
-                  </div>
-                )}
-                {store.tags && store.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 pt-2">
-                    {store.tags.slice(0, 3).map(tag => (
-                      <Badge key={tag} variant="outline" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                    {store.tags.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{store.tags.length - 3}
-                      </Badge>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {/* Full Address */}
+                  {fullAddress && (
+                    <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+                      <span className="line-clamp-2">{fullAddress}</span>
+                    </div>
+                  )}
+                  
+                  {/* Store Phone */}
+                  {store.phone && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Phone className="h-4 w-4" />
+                      <span>{store.phone}</span>
+                    </div>
+                  )}
+
+                  {/* Owners */}
+                  {owners.length > 0 && (
+                    <div className="flex items-start gap-2 text-sm">
+                      <User className="h-4 w-4 mt-0.5 text-amber-500 shrink-0" />
+                      <div>
+                        <span className="text-muted-foreground text-xs">Owners: </span>
+                        <span className="font-medium">{owners.map(o => o.name).join(', ')}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Workers */}
+                  {workers.length > 0 && (
+                    <div className="flex items-start gap-2 text-sm">
+                      <Users className="h-4 w-4 mt-0.5 text-blue-500 shrink-0" />
+                      <div>
+                        <span className="text-muted-foreground text-xs">Staff: </span>
+                        <span className="font-medium">{workers.map(w => w.name).join(', ')}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  {store.tags && store.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {store.tags.slice(0, 3).map(tag => (
+                        <Badge key={tag} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                      {store.tags.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{store.tags.length - 3}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {!loading && filteredStores.length === 0 && (
+      {!isLoading && filteredStores.length === 0 && (
         <div className="text-center py-12">
           <p className="text-muted-foreground">No stores found matching your filters</p>
         </div>
