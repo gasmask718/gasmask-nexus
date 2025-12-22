@@ -10,17 +10,39 @@ import {
   AlertTriangle,
   Truck,
   Plus,
-  RefreshCw
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import DealsPipelinePanel from '@/components/communication/deals/DealsPipelinePanel';
 import LiveNegotiationsPanel from '@/components/communication/deals/LiveNegotiationsPanel';
 import ApprovalsPanel from '@/components/communication/deals/ApprovalsPanel';
 import RefundsPanel from '@/components/communication/deals/RefundsPanel';
 import DispatchPanel from '@/components/communication/deals/DispatchPanel';
+import CreateDealDialog from '@/components/communication/deals/CreateDealDialog';
 
 export default function DealsSalesPage() {
+  const [createDealOpen, setCreateDealOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      // Invalidate all deal-related queries to refresh data
+      await queryClient.invalidateQueries({ queryKey: ['deals-pipeline'] });
+      await queryClient.invalidateQueries({ queryKey: ['deal-stats'] });
+      await queryClient.invalidateQueries({ queryKey: ['live-negotiations'] });
+      toast.success('Deals synchronized successfully');
+    } catch (error) {
+      toast.error('Failed to sync deals');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const { data: dealStats } = useQuery({
     queryKey: ['deal-stats'],
     queryFn: async () => {
@@ -55,16 +77,22 @@ export default function DealsSalesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button variant="outline" onClick={handleSync} disabled={isSyncing}>
+            {isSyncing ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
             Sync
           </Button>
-          <Button>
+          <Button onClick={() => setCreateDealOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             New Deal
           </Button>
         </div>
       </div>
+
+      <CreateDealDialog open={createDealOpen} onOpenChange={setCreateDealOpen} />
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
