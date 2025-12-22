@@ -24,7 +24,7 @@ export interface LiveCallSession {
   // Joined data
   store?: { id: string; store_name: string } | null;
   business?: { id: string; name: string } | null;
-  persona?: { id: string; name: string; default_tone: string } | null;
+  persona?: { id: string; name: string; tone: string } | null;
 }
 
 export interface ToneEvent {
@@ -61,7 +61,7 @@ export function useLiveCallSessions(businessId?: string) {
           *,
           store:store_master(id, store_name),
           business:businesses(id, name),
-          persona:voice_personas(id, name, default_tone)
+          persona:voice_personas(id, name, tone)
         `)
         .in("status", ["initiated", "ringing", "ai_active", "human_active", "on_hold"])
         .order("created_at", { ascending: false });

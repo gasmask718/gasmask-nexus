@@ -95,10 +95,10 @@ export function LiveCallCard({
             {getSentimentIcon(session.sentiment_trend)}
             <span className="text-sm capitalize">{session.sentiment_trend || "neutral"}</span>
           </div>
-          {session.persona?.default_tone && (
+          {session.persona?.tone && (
             <div className="flex items-center gap-1">
               <span className="text-sm text-muted-foreground">Tone:</span>
-              <Badge variant="outline" className="text-xs">{session.persona.default_tone}</Badge>
+              <Badge variant="outline" className="text-xs">{session.persona.tone}</Badge>
             </div>
           )}
         </div>
