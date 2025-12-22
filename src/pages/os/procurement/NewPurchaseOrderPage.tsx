@@ -210,10 +210,15 @@ export default function NewPurchaseOrderPage() {
                           <Input
                             type="number"
                             step="0.01"
-                            value={product.unit_cost}
+                            value={product.unit_cost || ''}
                             onChange={(e) =>
                               updateProduct(index, { unit_cost: parseFloat(e.target.value) || 0 })
                             }
+                            onBlur={(e) => {
+                              if (!e.target.value) {
+                                updateProduct(index, { unit_cost: 0 });
+                              }
+                            }}
                             className="w-24"
                           />
                         </TableCell>
