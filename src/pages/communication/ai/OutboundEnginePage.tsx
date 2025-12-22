@@ -79,6 +79,35 @@ export default function OutboundEnginePage() {
   const [selectedPhoneNumber, setSelectedPhoneNumber] = useState("all");
   const [callNumberId, setCallNumberId] = useState("");
   const [smsNumberId, setSmsNumberId] = useState("");
+  const [isRefreshingPredictions, setIsRefreshingPredictions] = useState(false);
+  const [highPriorityOnly, setHighPriorityOnly] = useState(false);
+
+  // Filter predictions based on high priority toggle (churn risk > 0.5 or order prob > 0.6)
+  const filteredPredictions = highPriorityOnly 
+    ? mockPredictions.filter(p => p.churnRisk > 0.5 || p.orderProb > 0.6)
+    : mockPredictions;
+
+  const handleRefreshPredictions = async () => {
+    setIsRefreshingPredictions(true);
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setIsRefreshingPredictions(false);
+    toast({
+      title: "Predictions Refreshed",
+      description: `Updated ${mockPredictions.length} store predictions with latest AI analysis.`,
+    });
+  };
+
+  const handleToggleHighPriority = () => {
+    const newValue = !highPriorityOnly;
+    setHighPriorityOnly(newValue);
+    toast({
+      title: newValue ? "Showing High Priority Only" : "Showing All Predictions",
+      description: newValue 
+        ? `Filtered to ${mockPredictions.filter(p => p.churnRisk > 0.5 || p.orderProb > 0.6).length} high-priority stores`
+        : `Showing all ${mockPredictions.length} stores`,
+    });
+  };
 
   const stats = {
     totalCalls: 245,
@@ -455,18 +484,29 @@ export default function OutboundEnginePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2 mb-4">
-                    <Button size="sm" className="gap-1">
-                      <RefreshCw className="h-4 w-4" />
-                      Refresh Predictions
+                    <Button 
+                      size="sm" 
+                      className="gap-1" 
+                      onClick={handleRefreshPredictions}
+                      disabled={isRefreshingPredictions}
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isRefreshingPredictions ? 'animate-spin' : ''}`} />
+                      {isRefreshingPredictions ? 'Refreshing...' : 'Refresh Predictions'}
                     </Button>
-                    <Button size="sm" variant="outline" className="gap-1">
+                    <Button 
+                      size="sm" 
+                      variant={highPriorityOnly ? "default" : "outline"} 
+                      className="gap-1"
+                      onClick={handleToggleHighPriority}
+                    >
                       <Eye className="h-4 w-4" />
                       High Priority Only
+                      {highPriorityOnly && <Badge variant="secondary" className="ml-1 h-5 px-1.5">{filteredPredictions.length}</Badge>}
                     </Button>
                   </div>
                   <ScrollArea className="h-[450px]">
                     <div className="space-y-2">
-                      {mockPredictions.map((pred) => (
+                      {filteredPredictions.map((pred) => (
                         <div 
                           key={pred.id}
                           onClick={() => setSelectedPrediction(pred)}
