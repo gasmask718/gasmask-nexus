@@ -252,7 +252,7 @@ import PODSettings from '@/pages/pod/settings';
 import PodLayout from '@/pages/pod/PodLayout';
 
 // OS Modules
-import { ProcurementDashboard, SuppliersPage as ProcurementSuppliersPage, SupplierDetailPage as ProcurementSupplierDetailPage, PurchaseOrdersPage as ProcurementPurchaseOrdersPage, NewPurchaseOrderPage as ProcurementNewPurchaseOrderPage } from '@/pages/os/procurement';
+import { ProcurementDashboard, SuppliersPage as ProcurementSuppliersPage, SupplierDetailPage as ProcurementSupplierDetailPage, PurchaseOrdersPage as ProcurementPurchaseOrdersPage, NewPurchaseOrderPage as ProcurementNewPurchaseOrderPage, PurchaseOrderDetailPage as ProcurementPurchaseOrderDetailPage } from '@/pages/os/procurement';
 import { WarehouseDashboard } from '@/pages/os/warehouse';
 import { InventoryDashboard, ProductsPage, ProductDetailPage, WarehousesPage, WarehouseDetailPage, SuppliersPage as InventorySuppliersPage, SupplierDetailPage as InventorySupplierDetailPage, PurchaseOrdersPage as InventoryPurchaseOrdersPage, NewPurchaseOrderPage as InventoryNewPurchaseOrderPage, PurchaseOrderDetailPage, StockLevelsPage, MovementsPage, ProcurementPage, InsightsPage, NeighborhoodIntelligencePage } from '@/pages/os/inventory';
 import { LiveTubesDetailPage, BoxesSoldDetailPage, LowStockDetailPage } from '@/pages/os/inventory/dashboard';
@@ -646,6 +646,7 @@ export default function AppRoutes() {
         <Route path="/os/procurement/suppliers/:id" element={<ProcurementSupplierDetailPage />} />
         <Route path="/os/procurement/purchase-orders" element={<ProcurementPurchaseOrdersPage />} />
         <Route path="/os/procurement/purchase-orders/new" element={<ProcurementNewPurchaseOrderPage />} />
+        <Route path="/os/procurement/purchase-orders/:id" element={<ProcurementPurchaseOrderDetailPage />} />
         <Route path="/os/warehouse" element={<WarehouseDashboard />} />
 
         {/* OS Inventory */}
