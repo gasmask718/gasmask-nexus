@@ -254,8 +254,13 @@ export default function NewPurchaseOrderPage() {
                   <Input
                     type="number"
                     step="0.01"
-                    value={shippingCost}
+                    value={shippingCost || ''}
                     onChange={(e) => setShippingCost(parseFloat(e.target.value) || 0)}
+                    onBlur={(e) => {
+                      if (!e.target.value) {
+                        setShippingCost(0);
+                      }
+                    }}
                     placeholder="0.00"
                   />
                 </div>
