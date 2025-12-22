@@ -11,10 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 import { 
   MessageSquare, Send, Sparkles, Clock, Users, CheckCircle, 
   XCircle, RefreshCw, Zap, Target, BarChart3, Plus, Trash2, 
-  Wand2, ArrowRight, Calendar, MessageCircle
+  Wand2, ArrowRight, Calendar, MessageCircle, Loader2
 } from "lucide-react";
 
 interface Campaign {
@@ -42,7 +43,17 @@ const mockCampaigns: Campaign[] = [
   { id: "3", name: "Holiday Promo", type: "blast", status: "scheduled", sent: 0, delivered: 0, replies: 0, ctr: 0, scheduledAt: "2024-01-20 09:00" },
 ];
 
+// AI-generated message templates based on step position
+const aiMessageTemplates = [
+  "Hey {first_name}! Just wanted to reach out and see how things are going at {store_name}. We've got some great new products that might interest you!",
+  "Hi {first_name}, hope all is well! Haven't heard from you in a bit - any questions about our latest offerings? I'm here to help!",
+  "Quick check-in, {first_name}! Your customers at {store_name} would love our new arrivals. Ready to stock up?",
+  "Hey there! Just a friendly reminder that we're always here for {store_name}. Need anything? Let's chat!",
+  "Last chance alert, {first_name}! Don't miss out on exclusive deals for {store_name}. Reply YES to learn more!"
+];
+
 export default function AIAutoTextPage() {
+  const { toast } = useToast();
   const [campaignName, setCampaignName] = useState("");
   const [messageType, setMessageType] = useState("");
   const [selectedPersona, setSelectedPersona] = useState("");
@@ -50,12 +61,41 @@ export default function AIAutoTextPage() {
   const [messageContent, setMessageContent] = useState("");
   const [isAIEnabled, setIsAIEnabled] = useState(true);
   const [throttle, setThrottle] = useState("50");
+  const [generatingStepId, setGeneratingStepId] = useState<string | null>(null);
   
   const [dripSteps, setDripSteps] = useState<DripStep[]>([
     { id: "1", day: 1, message: "Hey {first_name}! We have some exciting new products you might love. Check them out!", condition: "none" },
     { id: "2", day: 3, message: "Hi again! Just wanted to make sure you saw our new arrivals. Any questions?", condition: "no_reply" },
     { id: "3", day: 7, message: "Last chance! Don't miss out on these amazing deals. Reply to learn more!", condition: "no_reply" },
   ]);
+
+  const handleAIGenerate = async (stepId: string, stepIndex: number) => {
+    setGeneratingStepId(stepId);
+    
+    toast({
+      title: "Generating AI Message",
+      description: "Creating personalized content for this step...",
+    });
+
+    // Simulate AI generation delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Get appropriate template based on step position
+    const templateIndex = Math.min(stepIndex, aiMessageTemplates.length - 1);
+    const generatedMessage = aiMessageTemplates[templateIndex];
+
+    // Update the step with the generated message
+    setDripSteps(prev => prev.map(step => 
+      step.id === stepId ? { ...step, message: generatedMessage } : step
+    ));
+
+    setGeneratingStepId(null);
+    
+    toast({
+      title: "Message Generated",
+      description: "AI has created a personalized message for this step.",
+    });
+  };
 
   const addDripStep = () => {
     const lastDay = dripSteps.length > 0 ? Math.max(...dripSteps.map(s => s.day)) : 0;
@@ -375,9 +415,19 @@ export default function AIAutoTextPage() {
                           rows={2}
                         />
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="gap-1">
-                            <Wand2 className="h-3 w-3" />
-                            AI Generate
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="gap-1"
+                            onClick={() => handleAIGenerate(step.id, index)}
+                            disabled={generatingStepId === step.id}
+                          >
+                            {generatingStepId === step.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Wand2 className="h-3 w-3" />
+                            )}
+                            {generatingStepId === step.id ? "Generating..." : "AI Generate"}
                           </Button>
                         </div>
                         {index < dripSteps.length - 1 && (
