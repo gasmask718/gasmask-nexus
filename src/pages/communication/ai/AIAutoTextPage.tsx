@@ -12,6 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useBusiness } from "@/contexts/BusinessContext";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +64,7 @@ const aiMessageTemplates = [
 
 export default function AIAutoTextPage() {
   const { toast } = useToast();
+  const { currentBusiness } = useBusiness();
   const [campaignName, setCampaignName] = useState("");
   const [messageType, setMessageType] = useState("");
   const [selectedPersona, setSelectedPersona] = useState("");
@@ -75,6 +78,12 @@ export default function AIAutoTextPage() {
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
   const [isScheduling, setIsScheduling] = useState(false);
+  
+  // Drip campaign state
+  const [dripCampaignName, setDripCampaignName] = useState("");
+  const [dripTargetSegment, setDripTargetSegment] = useState("");
+  const [isLaunchingDrip, setIsLaunchingDrip] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   
   const [dripSteps, setDripSteps] = useState<DripStep[]>([
     { id: "1", day: 1, message: "Hey {first_name}! We have some exciting new products you might love. Check them out!", condition: "none" },
@@ -273,6 +282,142 @@ export default function AIAutoTextPage() {
 
   const removeDripStep = (id: string) => {
     setDripSteps(dripSteps.filter(s => s.id !== id));
+  };
+
+  const validateDripCampaign = () => {
+    if (!dripCampaignName.trim()) {
+      toast({
+        title: "Campaign Name Required",
+        description: "Please enter a name for your drip campaign.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (!dripTargetSegment) {
+      toast({
+        title: "Target Segment Required",
+        description: "Please select a target segment for your campaign.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (dripSteps.some(step => !step.message.trim())) {
+      toast({
+        title: "Empty Message Steps",
+        description: "All message steps must have content.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleLaunchDripCampaign = async () => {
+    if (!validateDripCampaign()) return;
+
+    setIsLaunchingDrip(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to launch a campaign.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase.from('ai_text_sequences').insert({
+        business_id: currentBusiness?.id || null,
+        title: dripCampaignName,
+        goal: 'drip_campaign',
+        steps: dripSteps.map(step => ({
+          day: step.day,
+          message: step.message,
+          condition: step.condition,
+        })),
+        target_filter: { segment: dripTargetSegment },
+        is_active: true,
+        created_by: user.id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Campaign Launched!",
+        description: `"${dripCampaignName}" is now active and will start sending messages.`,
+      });
+
+      // Reset form
+      setDripCampaignName("");
+      setDripTargetSegment("");
+      setDripSteps([
+        { id: "1", day: 1, message: "", condition: "none" },
+      ]);
+    } catch (error: any) {
+      console.error('Failed to launch drip campaign:', error);
+      toast({
+        title: "Launch Failed",
+        description: error.message || "Could not launch the campaign. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLaunchingDrip(false);
+    }
+  };
+
+  const handleSaveAsDraft = async () => {
+    if (!dripCampaignName.trim()) {
+      toast({
+        title: "Campaign Name Required",
+        description: "Please enter a name to save as draft.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSavingDraft(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to save drafts.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase.from('ai_text_sequences').insert({
+        business_id: currentBusiness?.id || null,
+        title: dripCampaignName,
+        goal: 'drip_campaign_draft',
+        steps: dripSteps.map(step => ({
+          day: step.day,
+          message: step.message,
+          condition: step.condition,
+        })),
+        target_filter: { segment: dripTargetSegment },
+        is_active: false,
+        created_by: user.id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Draft Saved",
+        description: `"${dripCampaignName}" has been saved as a draft.`,
+      });
+    } catch (error: any) {
+      console.error('Failed to save draft:', error);
+      toast({
+        title: "Save Failed",
+        description: error.message || "Could not save the draft. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingDraft(false);
+    }
   };
 
   const stats = {
@@ -548,11 +693,15 @@ export default function AIAutoTextPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Campaign Name</Label>
-                  <Input placeholder="e.g., Store Reactivation Sequence" />
+                  <Input 
+                    placeholder="e.g., Store Reactivation Sequence" 
+                    value={dripCampaignName}
+                    onChange={(e) => setDripCampaignName(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Target Segment</Label>
-                  <Select>
+                  <Select value={dripTargetSegment} onValueChange={setDripTargetSegment}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select segment" />
                     </SelectTrigger>
@@ -638,11 +787,28 @@ export default function AIAutoTextPage() {
                 </div>
 
                 <div className="pt-4 flex gap-2">
-                  <Button className="flex-1 gap-2">
-                    <Zap className="h-4 w-4" />
-                    Launch Drip Campaign
+                  <Button 
+                    className="flex-1 gap-2"
+                    onClick={handleLaunchDripCampaign}
+                    disabled={isLaunchingDrip || isSavingDraft}
+                  >
+                    {isLaunchingDrip ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Zap className="h-4 w-4" />
+                    )}
+                    {isLaunchingDrip ? "Launching..." : "Launch Drip Campaign"}
                   </Button>
-                  <Button variant="outline">Save as Draft</Button>
+                  <Button 
+                    variant="outline"
+                    onClick={handleSaveAsDraft}
+                    disabled={isLaunchingDrip || isSavingDraft}
+                  >
+                    {isSavingDraft ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    {isSavingDraft ? "Saving..." : "Save as Draft"}
+                  </Button>
                 </div>
               </div>
             </CardContent>
