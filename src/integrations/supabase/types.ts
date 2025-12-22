@@ -7010,6 +7010,7 @@ export type Database = {
           ai_sentiment: string | null
           borough_id: string | null
           business_id: string | null
+          company_id: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -7041,6 +7042,7 @@ export type Database = {
           ai_sentiment?: string | null
           borough_id?: string | null
           business_id?: string | null
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -7072,6 +7074,7 @@ export type Database = {
           ai_sentiment?: string | null
           borough_id?: string | null
           business_id?: string | null
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -7104,6 +7107,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
           {
