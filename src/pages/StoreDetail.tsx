@@ -29,6 +29,9 @@ import { StoreContactInfoCard } from '@/components/store/StoreContactInfoCard';
 import { StoreNotesSection } from '@/components/store/StoreNotesSection';
 import { AddNoteModal } from '@/components/store/AddNoteModal';
 import { StoreOperationsCard } from '@/components/store/StoreOperationsCard';
+import { StoreTubeInventoryCard } from '@/components/store/StoreTubeInventoryCard';
+import { UpdateInventoryModal } from '@/components/store/UpdateInventoryModal';
+import { StoreQuickActions } from '@/components/store/StoreQuickActions';
 import { RecentStoreInteractions } from '@/components/crm/RecentStoreInteractions';
 import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import {
@@ -130,6 +133,7 @@ const StoreDetail = () => {
   const [timelineRefresh, setTimelineRefresh] = useState(0);
   const [geocoding, setGeocoding] = useState(false);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [updateInventoryModalOpen, setUpdateInventoryModalOpen] = useState(false);
 
   // Fetch store contacts for interaction modal
   const { data: storeContacts } = useQuery({
@@ -425,6 +429,12 @@ const StoreDetail = () => {
 
           {/* Notes Section */}
           <StoreNotesSection storeId={id || ''} storeName={store.name} />
+
+          {/* Tube Inventory with Exact Counts */}
+          <StoreTubeInventoryCard
+            storeId={id || ''}
+            onAddCount={() => setUpdateInventoryModalOpen(true)}
+          />
 
           {/* Operations & Stickers */}
           <StoreOperationsCard 
@@ -849,29 +859,17 @@ const StoreDetail = () => {
           )}
 
           {/* Quick Actions */}
-          <Card className="glass-card border-border/50">
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
-                <Package className="h-4 w-4 mr-2" />
-                Update Inventory
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Phone className="h-4 w-4 mr-2" />
-                Call Store
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <MapPin className="h-4 w-4 mr-2" />
-                Add to Route
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <FileText className="h-4 w-4 mr-2" />
-                Create Invoice
-              </Button>
-            </CardContent>
-          </Card>
+          <StoreQuickActions
+            storeId={id || ''}
+            storeName={store.name}
+            storePhone={store.phone}
+            onInventoryUpdated={() => {
+              // Trigger refetch of tube inventory
+            }}
+            onInvoiceCreated={(invoiceId) => {
+              // Navigate to invoice or show success
+            }}
+          />
         </div>
       </div>
 
@@ -885,6 +883,14 @@ const StoreDetail = () => {
         storeMasterId={resolvedStoreMasterId || undefined}
         storeName={store.name}
         storeContacts={storeContacts || []}
+      />
+
+      {/* Update Inventory Modal */}
+      <UpdateInventoryModal
+        open={updateInventoryModalOpen}
+        onOpenChange={setUpdateInventoryModalOpen}
+        storeId={id || ''}
+        storeName={store.name}
       />
     </div>
   );
