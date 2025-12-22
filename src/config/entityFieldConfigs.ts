@@ -101,10 +101,9 @@ export const invoiceFields: FieldConfig[] = [
 ];
 
 export const inventoryFields: FieldConfig[] = [
+  { name: 'store_id', label: 'Store', type: 'select', required: true, options: [] }, // Options populated dynamically
   { name: 'brand', label: 'Brand', type: 'select', required: true, options: brandOptions.slice(1) },
   { name: 'current_tubes_left', label: 'Current Tubes', type: 'number', required: true, placeholder: '0' },
-  { name: 'boxes_on_hand', label: 'Boxes On Hand', type: 'number', placeholder: '0' },
-  { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Inventory notes...' },
 ];
 
 export const productionBatchFields: FieldConfig[] = [
