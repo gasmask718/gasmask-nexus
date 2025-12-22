@@ -194,10 +194,15 @@ export default function NewPurchaseOrderPage() {
                           <Input
                             type="number"
                             min="1"
-                            value={product.qty}
+                            value={product.qty || ''}
                             onChange={(e) =>
-                              updateProduct(index, { qty: parseInt(e.target.value) || 1 })
+                              updateProduct(index, { qty: parseInt(e.target.value) || 0 })
                             }
+                            onBlur={(e) => {
+                              if (!e.target.value || parseInt(e.target.value) < 1) {
+                                updateProduct(index, { qty: 1 });
+                              }
+                            }}
                             className="w-20"
                           />
                         </TableCell>
