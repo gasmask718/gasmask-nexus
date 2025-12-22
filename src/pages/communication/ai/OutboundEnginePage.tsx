@@ -26,12 +26,12 @@ import { BusinessCampaignFilters } from "@/components/communication/BusinessCamp
 
 // Mock unified predictions data
 const mockPredictions = [
-  { id: "1", storeName: "Mike's Corner Store", answerProb: 0.82, textReplyProb: 0.68, orderProb: 0.65, churnRisk: 0.15, recommendedChannel: "call", persona: "Friendly Sales", bestWindow: "10am-12pm", experimentGroup: "variant_a" },
-  { id: "2", storeName: "Downtown Liquor", answerProb: 0.45, textReplyProb: 0.72, orderProb: 0.42, churnRisk: 0.78, recommendedChannel: "sms", persona: "Retention Calm", bestWindow: "2pm-4pm", experimentGroup: "control" },
-  { id: "3", storeName: "Quick Mart #42", answerProb: 0.91, textReplyProb: 0.55, orderProb: 0.88, churnRisk: 0.05, recommendedChannel: "call", persona: "Hype Sales", bestWindow: "9am-11am", experimentGroup: "variant_b" },
-  { id: "4", storeName: "Sam's Tobacco", answerProb: 0.67, textReplyProb: 0.81, orderProb: 0.51, churnRisk: 0.45, recommendedChannel: "mixed", persona: "Professional", bestWindow: "11am-1pm", experimentGroup: "control" },
-  { id: "5", storeName: "City Smoke Shop", answerProb: 0.38, textReplyProb: 0.62, orderProb: 0.25, churnRisk: 0.89, recommendedChannel: "sms", persona: "Empathetic Support", bestWindow: "3pm-5pm", experimentGroup: "variant_a" },
-  { id: "6", storeName: "Gas N Go Express", answerProb: 0.75, textReplyProb: 0.45, orderProb: 0.72, churnRisk: 0.22, recommendedChannel: "call", persona: "Friendly Sales", bestWindow: "10am-11am", experimentGroup: "variant_b" },
+  { id: "1", storeName: "Mike's Corner Store", phone: "+1 555-0123", answerProb: 0.82, textReplyProb: 0.68, orderProb: 0.65, churnRisk: 0.15, recommendedChannel: "call", persona: "Friendly Sales", bestWindow: "10am-12pm", experimentGroup: "variant_a" },
+  { id: "2", storeName: "Downtown Liquor", phone: "+1 555-0234", answerProb: 0.45, textReplyProb: 0.72, orderProb: 0.42, churnRisk: 0.78, recommendedChannel: "sms", persona: "Retention Calm", bestWindow: "2pm-4pm", experimentGroup: "control" },
+  { id: "3", storeName: "Quick Mart #42", phone: "+1 555-0345", answerProb: 0.91, textReplyProb: 0.55, orderProb: 0.88, churnRisk: 0.05, recommendedChannel: "call", persona: "Hype Sales", bestWindow: "9am-11am", experimentGroup: "variant_b" },
+  { id: "4", storeName: "Sam's Tobacco", phone: "+1 555-0456", answerProb: 0.67, textReplyProb: 0.81, orderProb: 0.51, churnRisk: 0.45, recommendedChannel: "mixed", persona: "Professional", bestWindow: "11am-1pm", experimentGroup: "control" },
+  { id: "5", storeName: "City Smoke Shop", phone: "+1 555-0567", answerProb: 0.38, textReplyProb: 0.62, orderProb: 0.25, churnRisk: 0.89, recommendedChannel: "sms", persona: "Empathetic Support", bestWindow: "3pm-5pm", experimentGroup: "variant_a" },
+  { id: "6", storeName: "Gas N Go Express", phone: "+1 555-0678", answerProb: 0.75, textReplyProb: 0.45, orderProb: 0.72, churnRisk: 0.22, recommendedChannel: "call", persona: "Friendly Sales", bestWindow: "10am-11am", experimentGroup: "variant_b" },
 ];
 
 const mockExperimentResults = [
@@ -145,6 +145,22 @@ export default function OutboundEnginePage() {
       title: "Unified Campaign Launched",
       description: `AI Outbound Engine V3 campaign "${campaignName || 'New Campaign'}" is now running across calls & SMS.`,
     });
+  };
+
+  const handleCallStore = (prediction: typeof mockPredictions[0]) => {
+    toast({
+      title: "Initiating Call",
+      description: `Calling ${prediction.storeName} at ${prediction.phone} with ${prediction.persona} persona...`,
+    });
+    // In a real implementation, this would trigger the AI dialer
+  };
+
+  const handleTextStore = (prediction: typeof mockPredictions[0]) => {
+    toast({
+      title: "Opening SMS Composer",
+      description: `Preparing message for ${prediction.storeName} at ${prediction.phone}...`,
+    });
+    // In a real implementation, this would open the SMS composer modal
   };
 
   return (
@@ -633,11 +649,20 @@ export default function OutboundEnginePage() {
                       </div>
 
                       <div className="flex gap-2">
-                        <Button className="flex-1 gap-1" size="sm">
+                        <Button 
+                          className="flex-1 gap-1" 
+                          size="sm"
+                          onClick={() => handleCallStore(selectedPrediction)}
+                        >
                           <PhoneCall className="h-4 w-4" />
                           Call
                         </Button>
-                        <Button variant="secondary" className="flex-1 gap-1" size="sm">
+                        <Button 
+                          variant="secondary" 
+                          className="flex-1 gap-1" 
+                          size="sm"
+                          onClick={() => handleTextStore(selectedPrediction)}
+                        >
                           <MessageSquare className="h-4 w-4" />
                           Text
                         </Button>
