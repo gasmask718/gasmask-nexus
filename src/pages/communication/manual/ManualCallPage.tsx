@@ -101,7 +101,7 @@ const ManualCallPage = () => {
       // Log to communication_logs
       const { error } = await supabase.from('communication_logs').insert({
         business_id: currentBusiness?.id || null,
-        channel: 'phone',
+        channel: 'call',
         direction: 'outbound',
         contact_id: selectedContact?.id || null,
         outcome: callOutcome || null,
