@@ -47,6 +47,29 @@ export default function GrabbaInventory() {
     }
   });
 
+  // Fetch stores for dropdown
+  const { data: stores } = useQuery({
+    queryKey: ["stores-for-inventory"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("stores")
+        .select("id, name")
+        .order("name");
+      return data || [];
+    },
+  });
+
+  // Dynamic inventory fields with store options
+  const dynamicInventoryFields = inventoryFields.map(field => {
+    if (field.name === 'store_id') {
+      return {
+        ...field,
+        options: stores?.map(s => ({ value: s.id, label: s.name })) || []
+      };
+    }
+    return field;
+  });
+
   // Live inventory
   const { data: liveInventory, isLoading: loadingInventory } = useQuery({
     queryKey: ["grabba-live-inventory", selectedBrand],
@@ -523,7 +546,7 @@ export default function GrabbaInventory() {
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
         title="Add Inventory Record"
-        fields={inventoryFields}
+        fields={dynamicInventoryFields}
         onSubmit={handleCreate}
         mode="create"
       />
@@ -532,7 +555,7 @@ export default function GrabbaInventory() {
         open={!!editingItem}
         onOpenChange={(open) => !open && setEditingItem(null)}
         title="Edit Inventory"
-        fields={inventoryFields}
+        fields={dynamicInventoryFields}
         defaultValues={editingItem || {}}
         onSubmit={handleUpdate}
         mode="edit"
