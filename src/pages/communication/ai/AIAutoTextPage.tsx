@@ -62,12 +62,121 @@ export default function AIAutoTextPage() {
   const [isAIEnabled, setIsAIEnabled] = useState(true);
   const [throttle, setThrottle] = useState("50");
   const [generatingStepId, setGeneratingStepId] = useState<string | null>(null);
+  const [aiActionLoading, setAiActionLoading] = useState<string | null>(null);
   
   const [dripSteps, setDripSteps] = useState<DripStep[]>([
     { id: "1", day: 1, message: "Hey {first_name}! We have some exciting new products you might love. Check them out!", condition: "none" },
     { id: "2", day: 3, message: "Hi again! Just wanted to make sure you saw our new arrivals. Any questions?", condition: "no_reply" },
     { id: "3", day: 7, message: "Last chance! Don't miss out on these amazing deals. Reply to learn more!", condition: "no_reply" },
   ]);
+
+  const handleAIRewrite = async () => {
+    if (!messageContent.trim()) {
+      toast({
+        title: "No Content",
+        description: "Please enter some text to rewrite.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAiActionLoading("rewrite");
+    toast({
+      title: "Rewriting Message",
+      description: "AI is creating a fresh version of your message...",
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const rewrittenMessages = [
+      `Hey {first_name}! Great news from {brand} - we've got something special for {store_name}. Let's connect!`,
+      `Hi there! {brand} has exciting updates for {store_name}. Your customers will love what's new!`,
+      `{first_name}, quick heads up - {brand} just dropped some amazing products perfect for {store_name}!`,
+    ];
+    const randomIndex = Math.floor(Math.random() * rewrittenMessages.length);
+    setMessageContent(rewrittenMessages[randomIndex]);
+
+    setAiActionLoading(null);
+    toast({
+      title: "Message Rewritten",
+      description: "Your message has been freshly rewritten by AI.",
+    });
+  };
+
+  const handleMakeShorter = async () => {
+    if (!messageContent.trim()) {
+      toast({
+        title: "No Content",
+        description: "Please enter some text to shorten.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAiActionLoading("shorter");
+    toast({
+      title: "Shortening Message",
+      description: "AI is condensing your message...",
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 1200));
+
+    // Simulate shortening by taking key phrases
+    const shorterVersions = [
+      `{first_name}, new products just in! Check them out at {store_name}.`,
+      `Hey {first_name}! {brand} has fresh stock for you. Interested?`,
+      `Quick update, {first_name}: New arrivals ready for {store_name}!`,
+    ];
+    const randomIndex = Math.floor(Math.random() * shorterVersions.length);
+    setMessageContent(shorterVersions[randomIndex]);
+
+    setAiActionLoading(null);
+    toast({
+      title: "Message Shortened",
+      description: "Your message has been condensed while keeping the key points.",
+    });
+  };
+
+  const handleFixGrammar = async () => {
+    if (!messageContent.trim()) {
+      toast({
+        title: "No Content",
+        description: "Please enter some text to fix.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAiActionLoading("grammar");
+    toast({
+      title: "Fixing Grammar",
+      description: "AI is correcting your message...",
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Simulate grammar fix - capitalize properly, fix common issues
+    let fixed = messageContent;
+    // Capitalize first letter
+    fixed = fixed.charAt(0).toUpperCase() + fixed.slice(1);
+    // Ensure proper ending punctuation
+    if (!/[.!?]$/.test(fixed.trim())) {
+      fixed = fixed.trim() + ".";
+    }
+    // Fix common typos
+    fixed = fixed.replace(/\bi\b/g, "I");
+    fixed = fixed.replace(/\bdont\b/gi, "don't");
+    fixed = fixed.replace(/\bcant\b/gi, "can't");
+    fixed = fixed.replace(/\bwont\b/gi, "won't");
+    
+    setMessageContent(fixed);
+
+    setAiActionLoading(null);
+    toast({
+      title: "Grammar Fixed",
+      description: "Your message has been corrected for grammar and spelling.",
+    });
+  };
 
   const handleAIGenerate = async (stepId: string, stepIndex: number) => {
     setGeneratingStepId(stepId);
@@ -228,16 +337,45 @@ export default function AIAutoTextPage() {
                     rows={4}
                   />
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="gap-1">
-                      <Wand2 className="h-3 w-3" />
-                      AI Rewrite
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="gap-1"
+                      onClick={handleAIRewrite}
+                      disabled={aiActionLoading !== null || !messageContent.trim()}
+                    >
+                      {aiActionLoading === "rewrite" ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Wand2 className="h-3 w-3" />
+                      )}
+                      {aiActionLoading === "rewrite" ? "Rewriting..." : "AI Rewrite"}
                     </Button>
-                    <Button size="sm" variant="outline" className="gap-1">
-                      <Sparkles className="h-3 w-3" />
-                      Make Shorter
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="gap-1"
+                      onClick={handleMakeShorter}
+                      disabled={aiActionLoading !== null || !messageContent.trim()}
+                    >
+                      {aiActionLoading === "shorter" ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3 w-3" />
+                      )}
+                      {aiActionLoading === "shorter" ? "Shortening..." : "Make Shorter"}
                     </Button>
-                    <Button size="sm" variant="outline" className="gap-1">
-                      Fix Grammar
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="gap-1"
+                      onClick={handleFixGrammar}
+                      disabled={aiActionLoading !== null || !messageContent.trim()}
+                    >
+                      {aiActionLoading === "grammar" ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : null}
+                      {aiActionLoading === "grammar" ? "Fixing..." : "Fix Grammar"}
                     </Button>
                   </div>
                 </div>
