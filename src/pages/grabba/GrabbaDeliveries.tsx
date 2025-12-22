@@ -852,7 +852,7 @@ export default function GrabbaDeliveries() {
             .insert({ 
               driver_id: data.driver_id, 
               route_date: data.route_date || new Date().toISOString().split('T')[0],
-              status: 'pending' 
+              status: 'planned' 
             } as any);
           if (error) throw error;
           queryClient.invalidateQueries({ queryKey: ['grabba-routes-today'] });
