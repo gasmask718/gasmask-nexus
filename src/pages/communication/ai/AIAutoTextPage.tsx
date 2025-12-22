@@ -85,11 +85,76 @@ export default function AIAutoTextPage() {
   const [isLaunchingDrip, setIsLaunchingDrip] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   
+  // Bulk blast state
+  const [isSendingBlast, setIsSendingBlast] = useState(false);
+  
   const [dripSteps, setDripSteps] = useState<DripStep[]>([
     { id: "1", day: 1, message: "Hey {first_name}! We have some exciting new products you might love. Check them out!", condition: "none" },
     { id: "2", day: 3, message: "Hi again! Just wanted to make sure you saw our new arrivals. Any questions?", condition: "no_reply" },
     { id: "3", day: 7, message: "Last chance! Don't miss out on these amazing deals. Reply to learn more!", condition: "no_reply" },
   ]);
+
+  const handleSendNow = async () => {
+    if (!campaignName || !messageContent || !selectedSegment) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in campaign name, message content, and target segment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingBlast(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to send campaigns.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase.from('ai_text_sequences').insert({
+        business_id: currentBusiness?.id || null,
+        title: campaignName,
+        goal: 'bulk_blast',
+        steps: [{
+          message: messageContent,
+          persona: selectedPersona,
+          messageType: messageType,
+          throttle: parseInt(throttle),
+        }],
+        target_filter: { segment: selectedSegment },
+        is_active: true,
+        created_by: user.id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Campaign Sent!",
+        description: `"${campaignName}" is now sending to the ${selectedSegment} segment.`,
+      });
+
+      // Reset form
+      setCampaignName("");
+      setMessageContent("");
+      setSelectedSegment("");
+      setMessageType("");
+      setSelectedPersona("");
+    } catch (error: any) {
+      console.error('Failed to send bulk blast:', error);
+      toast({
+        title: "Send Failed",
+        description: error.message || "Could not send the campaign. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingBlast(false);
+    }
+  };
 
   const handleOpenScheduleModal = () => {
     if (!campaignName || !messageContent || !selectedSegment) {
@@ -596,9 +661,17 @@ export default function AIAutoTextPage() {
                 </div>
 
                 <div className="pt-4 flex gap-2">
-                  <Button className="flex-1 gap-2" disabled={!campaignName || !messageContent || !selectedSegment}>
-                    <Send className="h-4 w-4" />
-                    Send Now
+                  <Button 
+                    className="flex-1 gap-2" 
+                    disabled={!campaignName || !messageContent || !selectedSegment || isSendingBlast}
+                    onClick={handleSendNow}
+                  >
+                    {isSendingBlast ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    {isSendingBlast ? "Sending..." : "Send Now"}
                   </Button>
                   <Button 
                     variant="outline" 
