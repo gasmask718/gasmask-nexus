@@ -169,6 +169,7 @@ import EmailCenter from '@/pages/EmailCenter';
 import BillingCenter from '@/pages/BillingCenter';
 import BillingInvoices from '@/pages/BillingInvoices';
 import BillingInvoiceNew from '@/pages/BillingInvoiceNew';
+import BillingInvoiceDetail from '@/pages/BillingInvoiceDetail';
 
 // Portal
 import RoleRouter from '@/components/portal/RoleRouter';
@@ -570,7 +571,7 @@ export default function AppRoutes() {
         <Route path="/billing/center" element={<BillingCenter />} />
         <Route path="/billing/invoices" element={<BillingInvoices />} />
         <Route path="/billing/invoices/new" element={<BillingInvoiceNew />} />
-
+        <Route path="/billing/invoices/:id" element={<BillingInvoiceDetail />} />
         {/* Communication Center - Redirect to modular hub */}
         <Route path="/communication-center" element={<CommunicationHubLayout />} />
 

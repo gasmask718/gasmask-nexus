@@ -22,6 +22,9 @@ import { VoiceNotesCard } from '@/components/grabba/VoiceNotesCard';
 import { useStoreMasterAutoCreate } from '@/hooks/useStoreMasterAutoCreate';
 import { getExtractedProfile } from '@/services/profileExtractionService';
 import { getStoreRelationshipScore, RelationshipScore } from '@/services/crmInsightsService';
+import { StoreTransactionsCard } from '@/components/store/StoreTransactionsCard';
+import { StoreTubeIntelCard } from '@/components/store/StoreTubeIntelCard';
+import { NeighborhoodSnapshotCard } from '@/components/store/NeighborhoodSnapshotCard';
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -407,45 +410,18 @@ export default function StoreMasterProfile() {
             </CardContent>
           </Card>
 
-          {/* Recent Payments */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Recent Transactions
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {payments && payments.length > 0 ? (
-                <div className="space-y-2">
-                  {payments.slice(0, 3).map((payment: any) => (
-                    <div key={payment.id} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
-                      <span>${Number(payment.paid_amount || 0).toLocaleString()}</span>
-                      <Badge variant={payment.payment_status === 'paid' ? 'default' : 'secondary'} className="text-xs">
-                        {payment.payment_status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">No payments recorded</p>
-              )}
-              
-              {/* View Store Master Memory Button - Always visible */}
-              <Button 
-                variant="outline" 
-                className="w-full mt-2 border-primary/30 hover:bg-primary/10"
-                onClick={() => {
-                  const memoryPanel = document.getElementById('store-memory-panel');
-                  memoryPanel?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                View Store Master Memory
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Recent Transactions - Clickable Invoices */}
+          <StoreTransactionsCard storeId={id || ''} storeName={storeMaster.store_name} />
 
+          {/* Tube Intel with Exact Counts */}
+          <StoreTubeIntelCard storeId={id || ''} />
+
+          {/* Neighborhood Snapshot */}
+          <NeighborhoodSnapshotCard 
+            storeId={id || ''} 
+            neighborhood={storeMaster.city}
+            borough={(storeMaster as any).borough}
+          />
         </div>
       </div>
 
