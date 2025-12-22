@@ -12,6 +12,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   MessageSquare, Send, Sparkles, Clock, Users, CheckCircle, 
   XCircle, RefreshCw, Zap, Target, BarChart3, Plus, Trash2, 
@@ -63,12 +71,59 @@ export default function AIAutoTextPage() {
   const [throttle, setThrottle] = useState("50");
   const [generatingStepId, setGeneratingStepId] = useState<string | null>(null);
   const [aiActionLoading, setAiActionLoading] = useState<string | null>(null);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [isScheduling, setIsScheduling] = useState(false);
   
   const [dripSteps, setDripSteps] = useState<DripStep[]>([
     { id: "1", day: 1, message: "Hey {first_name}! We have some exciting new products you might love. Check them out!", condition: "none" },
     { id: "2", day: 3, message: "Hi again! Just wanted to make sure you saw our new arrivals. Any questions?", condition: "no_reply" },
     { id: "3", day: 7, message: "Last chance! Don't miss out on these amazing deals. Reply to learn more!", condition: "no_reply" },
   ]);
+
+  const handleOpenScheduleModal = () => {
+    if (!campaignName || !messageContent || !selectedSegment) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in campaign name, message content, and target segment before scheduling.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setShowScheduleModal(true);
+  };
+
+  const handleConfirmSchedule = async () => {
+    if (!scheduleDate || !scheduleTime) {
+      toast({
+        title: "Select Date & Time",
+        description: "Please select both a date and time for the scheduled campaign.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsScheduling(true);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    toast({
+      title: "Campaign Scheduled",
+      description: `"${campaignName}" is scheduled for ${scheduleDate} at ${scheduleTime}.`,
+    });
+
+    setIsScheduling(false);
+    setShowScheduleModal(false);
+    setScheduleDate("");
+    setScheduleTime("");
+    
+    // Reset form
+    setCampaignName("");
+    setMessageContent("");
+    setSelectedSegment("");
+  };
 
   const handleAIRewrite = async () => {
     if (!messageContent.trim()) {
@@ -400,7 +455,11 @@ export default function AIAutoTextPage() {
                     <Send className="h-4 w-4" />
                     Send Now
                   </Button>
-                  <Button variant="outline" className="gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="gap-2"
+                    onClick={handleOpenScheduleModal}
+                  >
                     <Calendar className="h-4 w-4" />
                     Schedule
                   </Button>
@@ -684,6 +743,96 @@ export default function AIAutoTextPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Schedule Modal */}
+      <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              Schedule Campaign
+            </DialogTitle>
+            <DialogDescription>
+              Choose when to send "{campaignName || "your campaign"}" to {selectedSegment || "selected stores"}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Date</Label>
+              <Input
+                type="date"
+                value={scheduleDate}
+                onChange={(e) => setScheduleDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Time</Label>
+              <Select value={scheduleTime} onValueChange={setScheduleTime}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select time" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="06:00">6:00 AM</SelectItem>
+                  <SelectItem value="08:00">8:00 AM</SelectItem>
+                  <SelectItem value="09:00">9:00 AM</SelectItem>
+                  <SelectItem value="10:00">10:00 AM</SelectItem>
+                  <SelectItem value="11:00">11:00 AM</SelectItem>
+                  <SelectItem value="12:00">12:00 PM</SelectItem>
+                  <SelectItem value="13:00">1:00 PM</SelectItem>
+                  <SelectItem value="14:00">2:00 PM</SelectItem>
+                  <SelectItem value="15:00">3:00 PM</SelectItem>
+                  <SelectItem value="16:00">4:00 PM</SelectItem>
+                  <SelectItem value="17:00">5:00 PM</SelectItem>
+                  <SelectItem value="18:00">6:00 PM</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+              <p className="text-sm font-medium">Campaign Summary</p>
+              <p className="text-xs text-muted-foreground">
+                Message: {messageContent.slice(0, 50)}{messageContent.length > 50 ? "..." : ""}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Target: {selectedSegment || "Not selected"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Rate: {throttle} messages/minute
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowScheduleModal(false)}
+              disabled={isScheduling}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmSchedule}
+              disabled={isScheduling || !scheduleDate || !scheduleTime}
+              className="gap-2"
+            >
+              {isScheduling ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Scheduling...
+                </>
+              ) : (
+                <>
+                  <Clock className="h-4 w-4" />
+                  Confirm Schedule
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
