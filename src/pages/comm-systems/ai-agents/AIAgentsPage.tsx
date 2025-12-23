@@ -42,7 +42,7 @@ export default function AIAgentsPage() {
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div><span className="text-muted-foreground">Voice:</span> {agent.voice_selection}</div>
-                <div><span className="text-muted-foreground">Calls:</span> {agent.calls_handled || 0}</div>
+                <div><span className="text-muted-foreground">Calls:</span> {(agent as any).calls_handled || 0}</div>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm"><Edit className="h-3 w-3 mr-1" />Configure</Button>

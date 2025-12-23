@@ -165,7 +165,17 @@ import CallCenter from '@/pages/CallCenter';
 import TextCenter from '@/pages/TextCenter';
 import EmailCenter from '@/pages/EmailCenter';
 
-// Billing
+// Communication Systems - New Unified Module
+import CommSystemsDialerPage from '@/pages/comm-systems/dialer/DialerPage';
+import CommSystemsCallLogsPage from '@/pages/comm-systems/call-logs/CallLogsPage';
+import CommSystemsAIAgentsPage from '@/pages/comm-systems/ai-agents/AIAgentsPage';
+import CommSystemsAnalyticsPage from '@/pages/comm-systems/analytics/CallAnalyticsPage';
+import CommSystemsMessagesPage from '@/pages/comm-systems/messages/MessagesPage';
+import CommSystemsEmailsPage from '@/pages/comm-systems/emails/EmailsPage';
+import CommSystemsCommAIPage from '@/pages/comm-systems/hub/CommAIPage';
+import CommSystemsAutomationPage from '@/pages/comm-systems/hub/CommAutomationPage';
+import CommSystemsInsightsPage from '@/pages/comm-systems/hub/CommInsightsPage';
+
 import BillingCenter from '@/pages/BillingCenter';
 import BillingInvoices from '@/pages/BillingInvoices';
 import BillingInvoiceNew from '@/pages/BillingInvoiceNew';
@@ -500,7 +510,18 @@ export default function AppRoutes() {
         <Route path="/callcenter/emails" element={<Emails />} />
         <Route path="/callcenter/settings" element={<CallCenterSettings />} />
 
-        {/* VA & HR */}
+        {/* 📡 Communication Systems - New Unified Module */}
+        <Route path="/comm-systems" element={<CommSystemsDialerPage />} />
+        <Route path="/comm-systems/dialer" element={<CommSystemsDialerPage />} />
+        <Route path="/comm-systems/call-logs" element={<CommSystemsCallLogsPage />} />
+        <Route path="/comm-systems/ai-agents" element={<CommSystemsAIAgentsPage />} />
+        <Route path="/comm-systems/call-analytics" element={<CommSystemsAnalyticsPage />} />
+        <Route path="/comm-systems/messages" element={<CommSystemsMessagesPage />} />
+        <Route path="/comm-systems/emails" element={<CommSystemsEmailsPage />} />
+        <Route path="/comm-systems/comm-ai" element={<CommSystemsCommAIPage />} />
+        <Route path="/comm-systems/automation" element={<CommSystemsAutomationPage />} />
+        <Route path="/comm-systems/insights" element={<CommSystemsInsightsPage />} />
+
         <Route path="/va-performance" element={<VAPerformance />} />
         <Route path="/va-ranking" element={<VARanking />} />
         <Route path="/va-task-center" element={<VATaskCenter />} />

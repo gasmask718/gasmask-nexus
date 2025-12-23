@@ -299,19 +299,19 @@ const DYNASTY_NAVIGATION = {
     id: 'communication-systems',
     name: '📡 Communication Systems',
     items: [
-      { path: '/callcenter', label: '📞 AI Call Center OS', icon: PhoneCall },
-      { path: '/callcenter/dialer', label: 'Dialer', icon: Phone },
-      { path: '/callcenter/logs', label: 'Call Logs', icon: FileText },
-      { path: '/callcenter/ai-agents', label: 'AI Agents', icon: Bot },
-      { path: '/callcenter/analytics', label: 'Call Analytics', icon: BarChart3 },
-      { path: '/text-center', label: '💬 AI Text Center OS', icon: MessageSquare },
-      { path: '/callcenter/messages', label: 'Messages', icon: MessageSquare },
-      { path: '/email-center', label: '📧 Email Center OS', icon: Mail },
-      { path: '/callcenter/emails', label: 'Emails', icon: Mail },
-      { path: '/communications', label: '📻 Communication Hub', icon: Radio },
-      { path: '/communications-ai', label: 'Communications AI', icon: Brain },
-      { path: '/communication-automation', label: 'Comm Automation', icon: Zap },
-      { path: '/communication-insights', label: 'Comm Insights', icon: Eye },
+      // AI Call Center OS
+      { path: '/comm-systems/dialer', label: '📞 Dialer', icon: Phone },
+      { path: '/comm-systems/call-logs', label: 'Call Logs', icon: FileText },
+      { path: '/comm-systems/ai-agents', label: 'AI Agents', icon: Bot },
+      { path: '/comm-systems/call-analytics', label: 'Call Analytics', icon: BarChart3 },
+      // AI Text Center OS
+      { path: '/comm-systems/messages', label: '💬 Messages', icon: MessageSquare },
+      // Email Center OS
+      { path: '/comm-systems/emails', label: '📧 Emails', icon: Mail },
+      // Communication Hub
+      { path: '/comm-systems/comm-ai', label: '📻 Communications AI', icon: Brain },
+      { path: '/comm-systems/automation', label: 'Comm Automation', icon: Zap },
+      { path: '/comm-systems/insights', label: 'Comm Insights', icon: Eye },
     ],
   },
   marketplaces: {
