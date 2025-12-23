@@ -11628,6 +11628,99 @@ export type Database = {
           },
         ]
       }
+      inventory_audit_log: {
+        Row: {
+          change_reason: string | null
+          changed_by: string | null
+          changed_by_system: boolean | null
+          created_at: string | null
+          field_changed: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          product_id: string | null
+          quantity_delta: number | null
+          reference_id: string | null
+          reference_type: string | null
+          stock_id: string | null
+          store_id: string | null
+          store_inventory_id: string | null
+          warehouse_id: string | null
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by?: string | null
+          changed_by_system?: boolean | null
+          created_at?: string | null
+          field_changed: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          product_id?: string | null
+          quantity_delta?: number | null
+          reference_id?: string | null
+          reference_type?: string | null
+          stock_id?: string | null
+          store_id?: string | null
+          store_inventory_id?: string | null
+          warehouse_id?: string | null
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by?: string | null
+          changed_by_system?: boolean | null
+          created_at?: string | null
+          field_changed?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          product_id?: string | null
+          quantity_delta?: number | null
+          reference_id?: string | null
+          reference_type?: string | null
+          stock_id?: string | null
+          store_id?: string | null
+          store_inventory_id?: string | null
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_audit_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_audit_log_stock_id_fkey"
+            columns: ["stock_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_stock"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_audit_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_audit_log_store_inventory_id_fkey"
+            columns: ["store_inventory_id"]
+            isOneToOne: false
+            referencedRelation: "store_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_audit_log_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_events: {
         Row: {
           created_at: string
@@ -18625,6 +18718,63 @@ export type Database = {
         }
         Relationships: []
       }
+      store_inventory: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_restock_date: string | null
+          last_sale_date: string | null
+          notes: string | null
+          product_id: string
+          quantity_on_hand: number | null
+          quantity_reserved: number | null
+          reorder_point: number | null
+          store_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_restock_date?: string | null
+          last_sale_date?: string | null
+          notes?: string | null
+          product_id: string
+          quantity_on_hand?: number | null
+          quantity_reserved?: number | null
+          reorder_point?: number | null
+          store_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_restock_date?: string | null
+          last_sale_date?: string | null
+          notes?: string | null
+          product_id?: string
+          quantity_on_hand?: number | null
+          quantity_reserved?: number | null
+          reorder_point?: number | null
+          store_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_inventory_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_inventory_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_master: {
         Row: {
           address: string
@@ -23029,6 +23179,7 @@ export type Database = {
           user_name: string
         }[]
       }
+      get_store_full_address: { Args: { p_store_id: string }; Returns: string }
       get_user_businesses: {
         Args: { user_id: string }
         Returns: {

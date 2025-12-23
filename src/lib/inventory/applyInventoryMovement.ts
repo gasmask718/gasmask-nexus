@@ -146,6 +146,21 @@ export async function applyInventoryMovement(
       throw new Error(`Failed to log movement: ${movementError.message}`);
     }
 
+    // 5) Log to audit trail
+    await supabase.from('inventory_audit_log').insert({
+      stock_id,
+      product_id,
+      warehouse_id,
+      field_changed: 'quantity_on_hand',
+      old_value: String(before_on_hand),
+      new_value: String(new_on_hand),
+      quantity_delta: quantity_change,
+      change_reason: reason || movement_type,
+      changed_by_system: true,
+      reference_type,
+      reference_id,
+    });
+
     return {
       success: true,
       movement_id: movement.id,

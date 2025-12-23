@@ -266,6 +266,8 @@ import PodLayout from '@/pages/pod/PodLayout';
 import { ProcurementDashboard, SuppliersPage as ProcurementSuppliersPage, SupplierDetailPage as ProcurementSupplierDetailPage, PurchaseOrdersPage as ProcurementPurchaseOrdersPage, NewPurchaseOrderPage as ProcurementNewPurchaseOrderPage, PurchaseOrderDetailPage as ProcurementPurchaseOrderDetailPage } from '@/pages/os/procurement';
 import { WarehouseDashboard } from '@/pages/os/warehouse';
 import { InventoryDashboard, ProductsPage, ProductDetailPage, WarehousesPage, WarehouseDetailPage, SuppliersPage as InventorySuppliersPage, SupplierDetailPage as InventorySupplierDetailPage, PurchaseOrdersPage as InventoryPurchaseOrdersPage, NewPurchaseOrderPage as InventoryNewPurchaseOrderPage, PurchaseOrderDetailPage, StockLevelsPage, MovementsPage, ProcurementPage, InsightsPage, NeighborhoodIntelligencePage } from '@/pages/os/inventory';
+import StoreInventoryPage from '@/pages/os/inventory/StoreInventoryPage';
+import InventoryAuditLogPage from '@/pages/os/inventory/InventoryAuditLogPage';
 import { LiveTubesDetailPage, BoxesSoldDetailPage, LowStockDetailPage } from '@/pages/os/inventory/dashboard';
 import TopTierDashboard from '@/pages/os/toptier/TopTierDashboard';
 import UnforgettableDashboard from '@/pages/os/unforgettable/UnforgettableDashboard';
@@ -691,6 +693,8 @@ export default function AppRoutes() {
         <Route path="/os/inventory/dashboard/live-tubes" element={<LiveTubesDetailPage />} />
         <Route path="/os/inventory/dashboard/boxes-sold" element={<BoxesSoldDetailPage />} />
         <Route path="/os/inventory/dashboard/low-stock" element={<LowStockDetailPage />} />
+        <Route path="/os/inventory/store-inventory" element={<StoreInventoryPage />} />
+        <Route path="/os/inventory/audit" element={<InventoryAuditLogPage />} />
 
         {/* Dynasty OS Business Units */}
         <Route path="/os/toptier" element={<TopTierDashboard />} />
