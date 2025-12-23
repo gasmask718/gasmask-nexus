@@ -9,21 +9,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Phone, PhoneCall, PhoneOff, PhoneMissed,
   UserCircle, Clock, Mic, MicOff, Volume2, VolumeX, 
   ArrowRightLeft, Calendar, Tag, FileText, Bot, User,
-  Search, Play, Pause, RotateCcw
+  Search, Play, Pause, RotateCcw, Lock, Unlock, Building2,
+  Brain, AlertTriangle, History
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useBusiness } from "@/contexts/BusinessContext";
+import { useCommBusinessContext, BusinessCompliancePanel } from "@/components/comm-systems";
 import CommSystemsLayout from "../CommSystemsLayout";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
 export default function DialerPage() {
-  const { currentBusiness } = useBusiness();
+  const { context, lockBusiness, unlockBusiness } = useCommBusinessContext();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [selectedLine, setSelectedLine] = useState("");
   const [selectedAgent, setSelectedAgent] = useState("");
@@ -40,11 +42,28 @@ export default function DialerPage() {
   const [aiAssistEnabled, setAiAssistEnabled] = useState(true);
   const [scriptContent, setScriptContent] = useState("");
   const [contactSearch, setContactSearch] = useState("");
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string>("");
   const timerRef = useRef<NodeJS.Timeout>();
+
+  // Check if dialer can be used (requires business context)
+  const canDial = context.mode === 'single' || selectedBusinessId;
+
+  // Fetch businesses for selector when in "all" mode
+  const { data: businesses } = useQuery({
+    queryKey: ['dialer-businesses'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('id, name')
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   // Fetch phone numbers
   const { data: phoneNumbers } = useQuery({
-    queryKey: ['comm-phone-numbers', currentBusiness?.id],
+    queryKey: ['comm-phone-numbers', context.businessId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('call_center_phone_numbers')
@@ -58,7 +77,7 @@ export default function DialerPage() {
 
   // Fetch AI agents
   const { data: aiAgents } = useQuery({
-    queryKey: ['comm-ai-agents', currentBusiness?.id],
+    queryKey: ['comm-ai-agents', context.businessId],
     queryFn: async () => {
       const query = supabase
         .from('call_center_ai_agents')
@@ -66,8 +85,8 @@ export default function DialerPage() {
         .eq('is_active', true)
         .order('name');
       
-      if (currentBusiness?.id) {
-        query.eq('business_name', currentBusiness.name);
+      if (context.businessId) {
+        query.eq('business_name', context.businessName);
       }
       
       const { data, error } = await query;
@@ -78,7 +97,7 @@ export default function DialerPage() {
 
   // Fetch contacts for selector
   const { data: contacts } = useQuery({
-    queryKey: ['comm-contacts', currentBusiness?.id, contactSearch],
+    queryKey: ['comm-contacts', context.businessId, contactSearch],
     queryFn: async () => {
       const query = supabase
         .from('crm_contacts')
@@ -122,6 +141,10 @@ export default function DialerPage() {
   };
 
   const handleCall = () => {
+    if (!canDial) {
+      toast.error("Please select a business before making calls");
+      return;
+    }
     if (!phoneNumber) {
       toast.error("Please enter a phone number");
       return;
@@ -134,12 +157,30 @@ export default function DialerPage() {
     toast.success("Call initiated");
   };
 
+  const handleLockSession = () => {
+    const businessId = context.businessId || selectedBusinessId;
+    const business = businesses?.find(b => b.id === businessId);
+    if (business) {
+      lockBusiness(business.id, business.name);
+      toast.success(`Session locked to ${business.name}`);
+    }
+  };
+
+  const handleSwitchBusiness = () => {
+    if (isCallActive) {
+      toast.error("End current call before switching business");
+      return;
+    }
+    unlockBusiness();
+  };
+
   const handleHangup = async () => {
-    // Log the call
-    if (currentBusiness) {
+    // Log the call with business context
+    const businessName = context.businessName || businesses?.find(b => b.id === selectedBusinessId)?.name;
+    if (businessName) {
       await supabase.from('call_center_logs').insert({
         caller_id: phoneNumber,
-        business_name: currentBusiness.name,
+        business_name: businessName,
         direction: 'outbound',
         duration: callDuration,
         answered_by: callMode === 'ai' ? 'ai' : 'human',
@@ -176,6 +217,85 @@ export default function DialerPage() {
 
   return (
     <CommSystemsLayout title="Dialer" subtitle="Place and receive calls with AI assistance">
+      {/* Business Context Warning */}
+      {context.mode === 'all' && !selectedBusinessId && (
+        <Alert className="mb-6 border-amber-500/50 bg-amber-500/10">
+          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>Select a business before making calls. Cross-business dialing is disabled.</span>
+            <Select value={selectedBusinessId} onValueChange={setSelectedBusinessId}>
+              <SelectTrigger className="w-[200px] ml-4">
+                <SelectValue placeholder="Select business" />
+              </SelectTrigger>
+              <SelectContent>
+                {businesses?.map((business) => (
+                  <SelectItem key={business.id} value={business.id}>
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      {business.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Business Context Controls */}
+      {(context.mode === 'single' || selectedBusinessId) && (
+        <Card className="mb-6 bg-primary/5 border-primary/20">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${context.isLocked ? 'bg-amber-500/20' : 'bg-primary/20'}`}>
+                  <Building2 className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">{context.businessName || businesses?.find(b => b.id === selectedBusinessId)?.name}</p>
+                  <p className="text-sm text-muted-foreground">Active Business Context</p>
+                </div>
+                {context.isLocked && (
+                  <Badge variant="outline" className="text-amber-500 border-amber-500/30">
+                    <Lock className="h-3 w-3 mr-1" /> Session Locked
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => toast.info("Loading conversation memory...")}
+                  disabled={!selectedContact}
+                >
+                  <Brain className="h-4 w-4 mr-1" />
+                  Load Memory
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => toast.info("Viewing call history...")}
+                >
+                  <History className="h-4 w-4 mr-1" />
+                  History
+                </Button>
+                {context.isLocked ? (
+                  <Button variant="secondary" size="sm" onClick={handleSwitchBusiness}>
+                    <Unlock className="h-4 w-4 mr-1" />
+                    Unlock
+                  </Button>
+                ) : (
+                  <Button variant="default" size="sm" onClick={handleLockSession}>
+                    <Lock className="h-4 w-4 mr-1" />
+                    Lock Session
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left: Dial Pad & Controls */}
         <div className="lg:col-span-1 space-y-4">
