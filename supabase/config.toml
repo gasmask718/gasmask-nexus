@@ -73,3 +73,9 @@ verify_jwt = false
 
 [functions.explain-customer-insight]
 verify_jwt = false
+
+[functions.intent-extraction]
+verify_jwt = false
+
+[functions.simulate-outcomes]
+verify_jwt = false

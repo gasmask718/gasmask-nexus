@@ -14730,6 +14730,59 @@ export type Database = {
           },
         ]
       }
+      outcome_simulations: {
+        Row: {
+          confidence_index: number | null
+          conversation_id: string
+          created_at: string
+          expiry_timestamp: string | null
+          generated_at: string
+          human_override_notes: string | null
+          id: string
+          recommended_scenario_id: string | null
+          status: string | null
+          triggering_context: Json | null
+          triggering_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          confidence_index?: number | null
+          conversation_id: string
+          created_at?: string
+          expiry_timestamp?: string | null
+          generated_at?: string
+          human_override_notes?: string | null
+          id?: string
+          recommended_scenario_id?: string | null
+          status?: string | null
+          triggering_context?: Json | null
+          triggering_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          confidence_index?: number | null
+          conversation_id?: string
+          created_at?: string
+          expiry_timestamp?: string | null
+          generated_at?: string
+          human_override_notes?: string | null
+          id?: string
+          recommended_scenario_id?: string | null
+          status?: string | null
+          triggering_context?: Json | null
+          triggering_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outcome_simulations_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_memories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payouts: {
         Row: {
           assignment_fee: number
@@ -17892,6 +17945,156 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulation_feedback: {
+        Row: {
+          actual_outcome: Json | null
+          created_at: string
+          created_by: string | null
+          executed_scenario_id: string | null
+          feedback_notes: string | null
+          feedback_type: string | null
+          human_intuition_note: string | null
+          id: string
+          predicted_vs_actual_accuracy: number | null
+          scenario_id: string | null
+          simulation_id: string
+        }
+        Insert: {
+          actual_outcome?: Json | null
+          created_at?: string
+          created_by?: string | null
+          executed_scenario_id?: string | null
+          feedback_notes?: string | null
+          feedback_type?: string | null
+          human_intuition_note?: string | null
+          id?: string
+          predicted_vs_actual_accuracy?: number | null
+          scenario_id?: string | null
+          simulation_id: string
+        }
+        Update: {
+          actual_outcome?: Json | null
+          created_at?: string
+          created_by?: string | null
+          executed_scenario_id?: string | null
+          feedback_notes?: string | null
+          feedback_type?: string | null
+          human_intuition_note?: string | null
+          id?: string
+          predicted_vs_actual_accuracy?: number | null
+          scenario_id?: string | null
+          simulation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulation_feedback_executed_scenario_id_fkey"
+            columns: ["executed_scenario_id"]
+            isOneToOne: false
+            referencedRelation: "simulation_scenarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulation_feedback_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "simulation_scenarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulation_feedback_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "outcome_simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulation_scenarios: {
+        Row: {
+          confidence_level: number | null
+          created_at: string
+          id: string
+          initiating_action_type: string
+          is_dismissed: boolean | null
+          is_pinned: boolean | null
+          is_recommended: boolean | null
+          opportunity_score: number | null
+          predicted_contact_response: string | null
+          predicted_intent_shift: Json | null
+          predicted_outcomes: Json | null
+          predicted_sentiment_shift: string | null
+          recommendation_reasoning: string | null
+          risk_score: number | null
+          scenario_name: string
+          scenario_rank: number | null
+          signals_to_watch: string[] | null
+          simulation_id: string
+          supporting_evidence: Json | null
+          time_to_resolution_estimate: string | null
+          tone_profile: string | null
+          trust_impact_score: number | null
+          warnings: string[] | null
+        }
+        Insert: {
+          confidence_level?: number | null
+          created_at?: string
+          id?: string
+          initiating_action_type: string
+          is_dismissed?: boolean | null
+          is_pinned?: boolean | null
+          is_recommended?: boolean | null
+          opportunity_score?: number | null
+          predicted_contact_response?: string | null
+          predicted_intent_shift?: Json | null
+          predicted_outcomes?: Json | null
+          predicted_sentiment_shift?: string | null
+          recommendation_reasoning?: string | null
+          risk_score?: number | null
+          scenario_name: string
+          scenario_rank?: number | null
+          signals_to_watch?: string[] | null
+          simulation_id: string
+          supporting_evidence?: Json | null
+          time_to_resolution_estimate?: string | null
+          tone_profile?: string | null
+          trust_impact_score?: number | null
+          warnings?: string[] | null
+        }
+        Update: {
+          confidence_level?: number | null
+          created_at?: string
+          id?: string
+          initiating_action_type?: string
+          is_dismissed?: boolean | null
+          is_pinned?: boolean | null
+          is_recommended?: boolean | null
+          opportunity_score?: number | null
+          predicted_contact_response?: string | null
+          predicted_intent_shift?: Json | null
+          predicted_outcomes?: Json | null
+          predicted_sentiment_shift?: string | null
+          recommendation_reasoning?: string | null
+          risk_score?: number | null
+          scenario_name?: string
+          scenario_rank?: number | null
+          signals_to_watch?: string[] | null
+          simulation_id?: string
+          supporting_evidence?: Json | null
+          time_to_resolution_estimate?: string | null
+          tone_profile?: string | null
+          trust_impact_score?: number | null
+          warnings?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulation_scenarios_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "outcome_simulations"
             referencedColumns: ["id"]
           },
         ]
@@ -22539,6 +22742,7 @@ export type Database = {
         Args: { p_brand_id: string; p_store_id: string }
         Returns: boolean
       }
+      expire_old_simulations: { Args: never; Returns: undefined }
       get_allowed_brands_for_store: {
         Args: { p_store_id: string }
         Returns: {
