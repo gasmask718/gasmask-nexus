@@ -4701,6 +4701,59 @@ export type Database = {
           },
         ]
       }
+      call_dispositions: {
+        Row: {
+          business_name: string | null
+          call_log_id: string
+          created_at: string
+          created_by: string | null
+          disposition_code: string
+          follow_up_required: boolean
+          follow_up_scheduled_at: string | null
+          follow_up_type: string | null
+          id: string
+          notes: string | null
+          reason_category: string | null
+          recording_consent_given: boolean | null
+        }
+        Insert: {
+          business_name?: string | null
+          call_log_id: string
+          created_at?: string
+          created_by?: string | null
+          disposition_code: string
+          follow_up_required?: boolean
+          follow_up_scheduled_at?: string | null
+          follow_up_type?: string | null
+          id?: string
+          notes?: string | null
+          reason_category?: string | null
+          recording_consent_given?: boolean | null
+        }
+        Update: {
+          business_name?: string | null
+          call_log_id?: string
+          created_at?: string
+          created_by?: string | null
+          disposition_code?: string
+          follow_up_required?: boolean
+          follow_up_scheduled_at?: string | null
+          follow_up_type?: string | null
+          id?: string
+          notes?: string | null
+          reason_category?: string | null
+          recording_consent_given?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_dispositions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_experiment_results: {
         Row: {
           answered: number | null
@@ -6195,6 +6248,98 @@ export type Database = {
           },
         ]
       }
+      communication_compliance_logs: {
+        Row: {
+          action: string
+          business_name: string | null
+          channel_type: string
+          compliance_type: string
+          contact_id: string | null
+          evidence: string | null
+          id: string
+          logged_at: string
+          logged_by: string | null
+          source: string | null
+        }
+        Insert: {
+          action: string
+          business_name?: string | null
+          channel_type: string
+          compliance_type: string
+          contact_id?: string | null
+          evidence?: string | null
+          id?: string
+          logged_at?: string
+          logged_by?: string | null
+          source?: string | null
+        }
+        Update: {
+          action?: string
+          business_name?: string | null
+          channel_type?: string
+          compliance_type?: string
+          contact_id?: string | null
+          evidence?: string | null
+          id?: string
+          logged_at?: string
+          logged_by?: string | null
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_compliance_logs_logged_by_fkey"
+            columns: ["logged_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_delivery_status: {
+        Row: {
+          business_name: string | null
+          channel_type: string
+          created_at: string
+          delivered_at: string | null
+          failure_code: string | null
+          failure_reason: string | null
+          id: string
+          last_retry_at: string | null
+          retry_count: number
+          source_id: string
+          source_table: string
+          status: string
+        }
+        Insert: {
+          business_name?: string | null
+          channel_type: string
+          created_at?: string
+          delivered_at?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
+          id?: string
+          last_retry_at?: string | null
+          retry_count?: number
+          source_id: string
+          source_table: string
+          status: string
+        }
+        Update: {
+          business_name?: string | null
+          channel_type?: string
+          created_at?: string
+          delivered_at?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
+          id?: string
+          last_retry_at?: string | null
+          retry_count?: number
+          source_id?: string
+          source_table?: string
+          status?: string
+        }
+        Relationships: []
+      }
       communication_escalations: {
         Row: {
           ai_notes: string | null
@@ -6470,59 +6615,122 @@ export type Database = {
       }
       communication_messages: {
         Row: {
+          actor_type: string | null
           ai_generated: boolean | null
+          assigned_at: string | null
+          assigned_by: string | null
           business_id: string | null
           channel: string
           contact_id: string | null
           content: string | null
           created_at: string | null
           direction: string
+          due_at: string | null
+          escalated_to: string | null
+          escalation_level: number | null
+          escalation_reason: string | null
+          first_response_at: string | null
           id: string
           metadata: Json | null
+          owner_user_id: string | null
           phone_number: string | null
+          priority: string | null
+          resolved_at: string | null
           sentiment: string | null
+          sla_deadline: string | null
+          snooze_reason: string | null
+          snoozed_until: string | null
           status: string | null
           store_id: string | null
           updated_at: string | null
         }
         Insert: {
+          actor_type?: string | null
           ai_generated?: boolean | null
+          assigned_at?: string | null
+          assigned_by?: string | null
           business_id?: string | null
           channel: string
           contact_id?: string | null
           content?: string | null
           created_at?: string | null
           direction: string
+          due_at?: string | null
+          escalated_to?: string | null
+          escalation_level?: number | null
+          escalation_reason?: string | null
+          first_response_at?: string | null
           id?: string
           metadata?: Json | null
+          owner_user_id?: string | null
           phone_number?: string | null
+          priority?: string | null
+          resolved_at?: string | null
           sentiment?: string | null
+          sla_deadline?: string | null
+          snooze_reason?: string | null
+          snoozed_until?: string | null
           status?: string | null
           store_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          actor_type?: string | null
           ai_generated?: boolean | null
+          assigned_at?: string | null
+          assigned_by?: string | null
           business_id?: string | null
           channel?: string
           contact_id?: string | null
           content?: string | null
           created_at?: string | null
           direction?: string
+          due_at?: string | null
+          escalated_to?: string | null
+          escalation_level?: number | null
+          escalation_reason?: string | null
+          first_response_at?: string | null
           id?: string
           metadata?: Json | null
+          owner_user_id?: string | null
           phone_number?: string | null
+          priority?: string | null
+          resolved_at?: string | null
           sentiment?: string | null
+          sla_deadline?: string | null
+          snooze_reason?: string | null
+          snoozed_until?: string | null
           status?: string | null
           store_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "communication_messages_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "communication_messages_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_messages_escalated_to_fkey"
+            columns: ["escalated_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_messages_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -8938,6 +9146,62 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      escalation_rules: {
+        Row: {
+          business_name: string | null
+          channel_type: string | null
+          created_at: string
+          description: string | null
+          escalate_to_role: string | null
+          escalate_to_user_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notification_method: string
+          priority: number
+          trigger_config: Json
+          trigger_type: string
+        }
+        Insert: {
+          business_name?: string | null
+          channel_type?: string | null
+          created_at?: string
+          description?: string | null
+          escalate_to_role?: string | null
+          escalate_to_user_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notification_method?: string
+          priority?: number
+          trigger_config?: Json
+          trigger_type: string
+        }
+        Update: {
+          business_name?: string | null
+          channel_type?: string | null
+          created_at?: string
+          description?: string | null
+          escalate_to_role?: string | null
+          escalate_to_user_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notification_method?: string
+          priority?: number
+          trigger_config?: Json
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escalation_rules_escalate_to_user_id_fkey"
+            columns: ["escalate_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
