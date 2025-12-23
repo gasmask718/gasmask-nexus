@@ -8,13 +8,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Separator } from '@/components/ui/separator';
 import { 
   Building2, 
   Globe, 
@@ -154,7 +148,7 @@ export function GlobalBusinessFilter({
               <span>🌐 All Businesses</span>
             </div>
           </SelectItem>
-          <DropdownMenuSeparator />
+          <Separator className="my-1" />
           {businesses?.map((business) => {
             const config = business.theme_config as { primary?: string; icon?: string } | null;
             const color = config?.primary || '#6366f1';
