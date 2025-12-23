@@ -3845,8 +3845,12 @@ export type Database = {
           brand_banner_url: string | null
           brand_type: string | null
           business_model: string | null
+          business_type: string | null
           category: string | null
+          channels_enabled: string[] | null
           city: string | null
+          communication_enabled: boolean | null
+          compliance_profile: string | null
           created_at: string | null
           default_dialect: string | null
           default_language: string | null
@@ -3900,8 +3904,12 @@ export type Database = {
           brand_banner_url?: string | null
           brand_type?: string | null
           business_model?: string | null
+          business_type?: string | null
           category?: string | null
+          channels_enabled?: string[] | null
           city?: string | null
+          communication_enabled?: boolean | null
+          compliance_profile?: string | null
           created_at?: string | null
           default_dialect?: string | null
           default_language?: string | null
@@ -3955,8 +3963,12 @@ export type Database = {
           brand_banner_url?: string | null
           brand_type?: string | null
           business_model?: string | null
+          business_type?: string | null
           category?: string | null
+          channels_enabled?: string[] | null
           city?: string | null
+          communication_enabled?: boolean | null
+          compliance_profile?: string | null
           created_at?: string | null
           default_dialect?: string | null
           default_language?: string | null
