@@ -54,11 +54,12 @@ export function GlobalBusinessFilter({
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { data: businesses } = useQuery({
-    queryKey: ['global-businesses'],
+    queryKey: ['global-businesses-active'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('businesses')
-        .select('id, name, slug')
+        .select('id, name, slug, theme_config')
+        .eq('is_active', true)
         .order('name');
       if (error) throw error;
       return data || [];
@@ -154,14 +155,23 @@ export function GlobalBusinessFilter({
             </div>
           </SelectItem>
           <DropdownMenuSeparator />
-          {businesses?.map((business) => (
-            <SelectItem key={business.id} value={business.id}>
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                <span>{business.name}</span>
-              </div>
-            </SelectItem>
-          ))}
+          {businesses?.map((business) => {
+            const config = business.theme_config as { primary?: string; icon?: string } | null;
+            const color = config?.primary || '#6366f1';
+            const icon = config?.icon || '🏢';
+            return (
+              <SelectItem key={business.id} value={business.id}>
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="h-3 w-3 rounded-full flex-shrink-0" 
+                    style={{ backgroundColor: color }}
+                  />
+                  <span className="mr-1">{icon}</span>
+                  <span>{business.name}</span>
+                </div>
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
 

@@ -1,7 +1,7 @@
-import { useBusinessStore } from '@/stores/businessStore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Building2, Phone, Megaphone } from 'lucide-react';
+import { Phone, Megaphone } from 'lucide-react';
+import { GlobalBusinessSelector } from '@/components/crm/GlobalBusinessSelector';
 
 interface BusinessCampaignFiltersProps {
   selectedCampaign?: string;
@@ -36,31 +36,14 @@ export const BusinessCampaignFilters = ({
   showPhoneFilter = true,
   showCampaignFilter = true,
 }: BusinessCampaignFiltersProps) => {
-  const { businesses, selectedBusiness, switchBusiness } = useBusinessStore();
-
   return (
     <div className="flex flex-wrap items-end gap-4 p-4 bg-card/50 rounded-lg border border-border">
-      {/* Business Filter */}
+      {/* Business Filter - Using GlobalBusinessSelector */}
       <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground flex items-center gap-1">
-          <Building2 className="h-3 w-3" />
+        <Label className="text-xs text-muted-foreground">
           Business
         </Label>
-        <Select
-          value={selectedBusiness?.id || ''}
-          onValueChange={switchBusiness}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select business" />
-          </SelectTrigger>
-          <SelectContent>
-            {businesses.map((business) => (
-              <SelectItem key={business.id} value={business.id}>
-                {business.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <GlobalBusinessSelector showAllOption={true} className="w-[200px]" />
       </div>
 
       {/* Campaign Filter */}
