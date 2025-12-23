@@ -11129,6 +11129,187 @@ export type Database = {
           },
         ]
       }
+      intent_graphs: {
+        Row: {
+          active_intents: string[] | null
+          confidence_score: number | null
+          conflicting_intents: string[] | null
+          conversation_id: string
+          created_at: string
+          dormant_intents: string[] | null
+          id: string
+          intent_velocity_score: number | null
+          last_analyzed_at: string | null
+          opportunity_index: number | null
+          predictions: Json | null
+          resolved_intents: string[] | null
+          risk_index: number | null
+          suggestions: Json | null
+          updated_at: string
+        }
+        Insert: {
+          active_intents?: string[] | null
+          confidence_score?: number | null
+          conflicting_intents?: string[] | null
+          conversation_id: string
+          created_at?: string
+          dormant_intents?: string[] | null
+          id?: string
+          intent_velocity_score?: number | null
+          last_analyzed_at?: string | null
+          opportunity_index?: number | null
+          predictions?: Json | null
+          resolved_intents?: string[] | null
+          risk_index?: number | null
+          suggestions?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          active_intents?: string[] | null
+          confidence_score?: number | null
+          conflicting_intents?: string[] | null
+          conversation_id?: string
+          created_at?: string
+          dormant_intents?: string[] | null
+          id?: string
+          intent_velocity_score?: number | null
+          last_analyzed_at?: string | null
+          opportunity_index?: number | null
+          predictions?: Json | null
+          resolved_intents?: string[] | null
+          risk_index?: number | null
+          suggestions?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intent_graphs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversation_memories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intent_nodes: {
+        Row: {
+          ai_reasoning: string | null
+          blockers: string[] | null
+          created_at: string
+          dependencies: string[] | null
+          emotional_charge: string | null
+          human_override_note: string | null
+          id: string
+          intent_direction: string
+          intent_graph_id: string
+          intent_strength: number
+          intent_type: string
+          is_locked: boolean | null
+          likelihood_to_convert: number | null
+          origin_event_id: string | null
+          status: string
+          supporting_event_ids: string[] | null
+          updated_at: string
+          urgency_score: number | null
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          blockers?: string[] | null
+          created_at?: string
+          dependencies?: string[] | null
+          emotional_charge?: string | null
+          human_override_note?: string | null
+          id?: string
+          intent_direction?: string
+          intent_graph_id: string
+          intent_strength?: number
+          intent_type: string
+          is_locked?: boolean | null
+          likelihood_to_convert?: number | null
+          origin_event_id?: string | null
+          status?: string
+          supporting_event_ids?: string[] | null
+          updated_at?: string
+          urgency_score?: number | null
+        }
+        Update: {
+          ai_reasoning?: string | null
+          blockers?: string[] | null
+          created_at?: string
+          dependencies?: string[] | null
+          emotional_charge?: string | null
+          human_override_note?: string | null
+          id?: string
+          intent_direction?: string
+          intent_graph_id?: string
+          intent_strength?: number
+          intent_type?: string
+          is_locked?: boolean | null
+          likelihood_to_convert?: number | null
+          origin_event_id?: string | null
+          status?: string
+          supporting_event_ids?: string[] | null
+          updated_at?: string
+          urgency_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intent_nodes_intent_graph_id_fkey"
+            columns: ["intent_graph_id"]
+            isOneToOne: false
+            referencedRelation: "intent_graphs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intent_nodes_origin_event_id_fkey"
+            columns: ["origin_event_id"]
+            isOneToOne: false
+            referencedRelation: "memory_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intent_training_feedback: {
+        Row: {
+          corrected_value: Json | null
+          created_at: string
+          feedback_type: string
+          id: string
+          intent_node_id: string
+          notes: string | null
+          original_value: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          corrected_value?: Json | null
+          created_at?: string
+          feedback_type: string
+          id?: string
+          intent_node_id: string
+          notes?: string | null
+          original_value?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          corrected_value?: Json | null
+          created_at?: string
+          feedback_type?: string
+          id?: string
+          intent_node_id?: string
+          notes?: string | null
+          original_value?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intent_training_feedback_intent_node_id_fkey"
+            columns: ["intent_node_id"]
+            isOneToOne: false
+            referencedRelation: "intent_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_alerts: {
         Row: {
           alert_type: string
