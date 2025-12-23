@@ -2,6 +2,11 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface BusinessThemeConfig {
+  primary?: string;
+  icon?: string;
+}
+
 export interface Business {
   id: string;
   name: string;
@@ -9,8 +14,9 @@ export interface Business {
   logo_url: string | null;
   member_role: string;
   subscription_tier: string;
-  theme_config: any;
+  theme_config: BusinessThemeConfig | null;
   settings: any;
+  is_active?: boolean;
 }
 
 interface BusinessState {
@@ -89,8 +95,9 @@ export const useBusinessStore = create<BusinessState>()(
             logo_url: b.logo_url,
             member_role: 'member',
             subscription_tier: b.subscription_tier || 'free',
-            theme_config: b.theme_config || {},
-            settings: b.settings || {}
+            theme_config: b.theme_config as BusinessThemeConfig | null,
+            settings: b.settings || {},
+            is_active: b.is_active ?? true
           })) as Business[];
 
           set({ businesses: businessList });
