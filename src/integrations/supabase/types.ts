@@ -6893,6 +6893,63 @@ export type Database = {
           },
         ]
       }
+      conversation_memories: {
+        Row: {
+          ai_confidence_score: number | null
+          associated_businesses: string[] | null
+          contact_id: string
+          created_at: string
+          first_interaction_at: string | null
+          id: string
+          is_frozen: boolean | null
+          last_interaction_at: string | null
+          memory_summary_current: string | null
+          memory_summary_versions: Json | null
+          preferences: Json | null
+          risk_flags: string[] | null
+          sentiment_trend: string | null
+          status: string
+          unresolved_items: Json | null
+          updated_at: string
+        }
+        Insert: {
+          ai_confidence_score?: number | null
+          associated_businesses?: string[] | null
+          contact_id: string
+          created_at?: string
+          first_interaction_at?: string | null
+          id?: string
+          is_frozen?: boolean | null
+          last_interaction_at?: string | null
+          memory_summary_current?: string | null
+          memory_summary_versions?: Json | null
+          preferences?: Json | null
+          risk_flags?: string[] | null
+          sentiment_trend?: string | null
+          status?: string
+          unresolved_items?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          ai_confidence_score?: number | null
+          associated_businesses?: string[] | null
+          contact_id?: string
+          created_at?: string
+          first_interaction_at?: string | null
+          id?: string
+          is_frozen?: boolean | null
+          last_interaction_at?: string | null
+          memory_summary_current?: string | null
+          memory_summary_versions?: Json | null
+          preferences?: Json | null
+          risk_flags?: string[] | null
+          sentiment_trend?: string | null
+          status?: string
+          unresolved_items?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       conversation_routing: {
         Row: {
           assigned_to: string | null
@@ -13093,6 +13150,68 @@ export type Database = {
           target_count?: number
         }
         Relationships: []
+      }
+      memory_events: {
+        Row: {
+          actor: string
+          actor_name: string | null
+          ai_extracted_summary: string | null
+          business_id: string | null
+          channel: string
+          conversation_id: string
+          created_at: string
+          direction: string | null
+          escalation_flag: boolean | null
+          id: string
+          linked_tasks: string[] | null
+          metadata: Json | null
+          raw_content: string | null
+          sentiment_score: number | null
+          tags: string[] | null
+        }
+        Insert: {
+          actor: string
+          actor_name?: string | null
+          ai_extracted_summary?: string | null
+          business_id?: string | null
+          channel: string
+          conversation_id: string
+          created_at?: string
+          direction?: string | null
+          escalation_flag?: boolean | null
+          id?: string
+          linked_tasks?: string[] | null
+          metadata?: Json | null
+          raw_content?: string | null
+          sentiment_score?: number | null
+          tags?: string[] | null
+        }
+        Update: {
+          actor?: string
+          actor_name?: string | null
+          ai_extracted_summary?: string | null
+          business_id?: string | null
+          channel?: string
+          conversation_id?: string
+          created_at?: string
+          direction?: string | null
+          escalation_flag?: boolean | null
+          id?: string
+          linked_tasks?: string[] | null
+          metadata?: Json | null
+          raw_content?: string | null
+          sentiment_score?: number | null
+          tags?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_memories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       message_language_detection: {
         Row: {
