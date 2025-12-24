@@ -8813,6 +8813,47 @@ export type Database = {
           },
         ]
       }
+      delivery_rates: {
+        Row: {
+          base_rate: number
+          bonus_rules_json: Json | null
+          business_id: string
+          created_at: string
+          id: string
+          task_type: string
+          updated_at: string
+          worker_type: string
+        }
+        Insert: {
+          base_rate?: number
+          bonus_rules_json?: Json | null
+          business_id: string
+          created_at?: string
+          id?: string
+          task_type: string
+          updated_at?: string
+          worker_type: string
+        }
+        Update: {
+          base_rate?: number
+          bonus_rules_json?: Json | null
+          business_id?: string
+          created_at?: string
+          id?: string
+          task_type?: string
+          updated_at?: string
+          worker_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_rates_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_stops: {
         Row: {
           amount_due: number | null
@@ -8980,6 +9021,118 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_debt_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          debt_id: string
+          id: string
+          method: string
+          payment_date: string
+          recorded_by_user_id: string | null
+          reference: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          debt_id: string
+          id?: string
+          method: string
+          payment_date?: string
+          recorded_by_user_id?: string | null
+          reference?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          debt_id?: string
+          id?: string
+          method?: string
+          payment_date?: string
+          recorded_by_user_id?: string | null
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_debt_payments_debt_id_fkey"
+            columns: ["debt_id"]
+            isOneToOne: false
+            referencedRelation: "driver_debts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_debt_payments_recorded_by_user_id_fkey"
+            columns: ["recorded_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_debts: {
+        Row: {
+          business_id: string
+          created_at: string
+          created_by_user_id: string | null
+          debt_type: string
+          driver_id: string
+          id: string
+          notes: string | null
+          original_amount: number
+          remaining_amount: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          debt_type: string
+          driver_id: string
+          id?: string
+          notes?: string | null
+          original_amount: number
+          remaining_amount: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          debt_type?: string
+          driver_id?: string
+          id?: string
+          notes?: string | null
+          original_amount?: number
+          remaining_amount?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_debts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_debts_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_debts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
         ]
@@ -18976,6 +19129,94 @@ export type Database = {
           },
         ]
       }
+      store_check_fields: {
+        Row: {
+          business_id: string
+          check_type: string
+          created_at: string
+          field_key: string
+          field_label: string
+          field_type: string
+          id: string
+          options_json: Json | null
+          required: boolean | null
+          sort_order: number | null
+        }
+        Insert: {
+          business_id: string
+          check_type: string
+          created_at?: string
+          field_key: string
+          field_label: string
+          field_type?: string
+          id?: string
+          options_json?: Json | null
+          required?: boolean | null
+          sort_order?: number | null
+        }
+        Update: {
+          business_id?: string
+          check_type?: string
+          created_at?: string
+          field_key?: string
+          field_label?: string
+          field_type?: string
+          id?: string
+          options_json?: Json | null
+          required?: boolean | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_check_fields_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_check_responses: {
+        Row: {
+          created_at: string
+          field_key: string
+          id: string
+          store_check_id: string
+          value_bool: boolean | null
+          value_json: Json | null
+          value_number: number | null
+          value_text: string | null
+        }
+        Insert: {
+          created_at?: string
+          field_key: string
+          id?: string
+          store_check_id: string
+          value_bool?: boolean | null
+          value_json?: Json | null
+          value_number?: number | null
+          value_text?: string | null
+        }
+        Update: {
+          created_at?: string
+          field_key?: string
+          id?: string
+          store_check_id?: string
+          value_bool?: boolean | null
+          value_json?: Json | null
+          value_number?: number | null
+          value_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_check_responses_store_check_id_fkey"
+            columns: ["store_check_id"]
+            isOneToOne: false
+            referencedRelation: "store_checks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_checks: {
         Row: {
           assigned_biker_id: string | null
@@ -23536,6 +23777,119 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      worker_payout_lines: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          line_type: string
+          payout_id: string
+          ref_id: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description: string
+          id?: string
+          line_type: string
+          payout_id: string
+          ref_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          line_type?: string
+          payout_id?: string
+          ref_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worker_payout_lines_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "worker_payouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      worker_payouts: {
+        Row: {
+          adjustments: number | null
+          approved_by_user_id: string | null
+          business_id: string
+          created_at: string
+          debt_withheld: number | null
+          id: string
+          paid_at: string | null
+          payout_method: string | null
+          payout_reference: string | null
+          period_end: string
+          period_start: string
+          status: string
+          total_earned: number
+          total_to_pay: number
+          updated_at: string
+          worker_id: string
+          worker_type: string
+        }
+        Insert: {
+          adjustments?: number | null
+          approved_by_user_id?: string | null
+          business_id: string
+          created_at?: string
+          debt_withheld?: number | null
+          id?: string
+          paid_at?: string | null
+          payout_method?: string | null
+          payout_reference?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          total_earned?: number
+          total_to_pay?: number
+          updated_at?: string
+          worker_id: string
+          worker_type: string
+        }
+        Update: {
+          adjustments?: number | null
+          approved_by_user_id?: string | null
+          business_id?: string
+          created_at?: string
+          debt_withheld?: number | null
+          id?: string
+          paid_at?: string | null
+          payout_method?: string | null
+          payout_reference?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          total_earned?: number
+          total_to_pay?: number
+          updated_at?: string
+          worker_id?: string
+          worker_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worker_payouts_approved_by_user_id_fkey"
+            columns: ["approved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_payouts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
