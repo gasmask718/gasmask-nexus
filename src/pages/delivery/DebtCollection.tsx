@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBusiness } from "@/contexts/BusinessContext";
+import Layout from "@/components/Layout";
 import { useDriverDebts, useDrivers, useCreateDebt, useRecordDebtPayment, type DriverDebt } from "@/hooks/useDeliveryData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -104,8 +105,9 @@ export default function DebtCollection() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <Layout>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/delivery")}>
             <ArrowLeft className="h-5 w-5" />
@@ -377,5 +379,6 @@ export default function DebtCollection() {
         </DialogContent>
       </Dialog>
     </div>
+    </Layout>
   );
 }

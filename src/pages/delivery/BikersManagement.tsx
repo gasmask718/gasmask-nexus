@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { 
   Bike, Search, Filter, Plus, Edit, Phone, Mail, 
-  MapPin, CheckCircle2, XCircle, Download, User
+  MapPin, CheckCircle2, XCircle, Download, User, Eye
 } from 'lucide-react';
 
 type Biker = {
@@ -31,6 +32,7 @@ type Biker = {
 
 const BikersManagement: React.FC = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -261,10 +263,18 @@ const BikersManagement: React.FC = () => {
                   )}
                   
                   <div className="flex gap-2 pt-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => navigate(`/delivery/bikers/${biker.id}`)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" /> View
+                    </Button>
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button size="sm" variant="outline" className="flex-1" onClick={() => setEditingBiker(biker)}>
-                          <Edit className="h-4 w-4 mr-1" /> Edit
+                        <Button size="sm" variant="outline" onClick={() => setEditingBiker(biker)}>
+                          <Edit className="h-4 w-4" />
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
