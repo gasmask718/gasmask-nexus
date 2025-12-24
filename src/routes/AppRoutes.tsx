@@ -282,6 +282,20 @@ import BettingDashboard from '@/pages/os/betting/BettingDashboard';
 import BikerDashboard from '@/pages/os/biker/BikerDashboard';
 import ModuleDiagnosticsPage from '@/pages/ModuleDiagnosticsPage';
 
+// Delivery & Logistics
+import { 
+  DeliveryDashboard, 
+  DeliveriesBoard, 
+  DriversManagement, 
+  BikersManagement, 
+  BikerTasks, 
+  LocationsManagement, 
+  WorkerPayouts, 
+  DebtCollection, 
+  DriverHome,
+  DeliveryMyRoute 
+} from '@/pages/delivery';
+
 // Grabba
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
 import GrabbaClusterDashboard from '@/pages/grabba/GrabbaClusterDashboard';
@@ -710,7 +724,19 @@ export default function AppRoutes() {
         <Route path="/os/sports-betting" element={<BettingDashboard />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
 
-        {/* Legacy OS Routes */}
+        {/* Delivery & Logistics Department */}
+        <Route path="/delivery" element={<DeliveryDashboard />} />
+        <Route path="/delivery/dashboard" element={<DeliveryDashboard />} />
+        <Route path="/delivery/deliveries" element={<DeliveriesBoard />} />
+        <Route path="/delivery/drivers" element={<DriversManagement />} />
+        <Route path="/delivery/bikers" element={<BikersManagement />} />
+        <Route path="/delivery/biker-tasks" element={<BikerTasks />} />
+        <Route path="/delivery/locations" element={<LocationsManagement />} />
+        <Route path="/delivery/payouts" element={<WorkerPayouts />} />
+        <Route path="/delivery/debt" element={<DebtCollection />} />
+        <Route path="/delivery/driver-home" element={<DriverHome />} />
+        <Route path="/delivery/my-route" element={<DeliveryMyRoute />} />
+        <Route path="/delivery/my-route/:deliveryId" element={<DeliveryMyRoute />} />
         <Route path="/toptier" element={<TopTierDashboard />} />
         <Route path="/toptier/*" element={<TopTierDashboard />} />
         <Route path="/unforgettable" element={<UnforgettableDashboard />} />

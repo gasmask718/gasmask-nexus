@@ -1,7 +1,7 @@
 import {
   MapPin, Package, Users, TrendingUp, FileText, Phone, MessageCircle, Mail,
   BarChart3, Map, Radar, Brain, Target, DollarSign, Trophy, Gift, Home, Settings,
-  Database, Crown
+  Database, Crown, Truck, Bike, ClipboardCheck, CreditCard
 } from 'lucide-react';
 
 export const navigationItems = [
@@ -36,6 +36,19 @@ export const navigationItems = [
   { to: '/sales', icon: Target, label: 'Sales Dashboard', roles: ['admin', 'csr'] },
   { to: '/sales/prospects', icon: Users, label: 'Prospects', roles: ['admin', 'csr'] },
   { to: '/sales/report', icon: BarChart3, label: 'Sales Report', roles: ['admin', 'csr'] },
+  
+  // Delivery & Logistics
+  { to: '/delivery', icon: Truck, label: 'Delivery Dashboard', roles: ['admin', 'dispatcher', 'ops_manager'] },
+  { to: '/delivery/deliveries', icon: Package, label: 'Deliveries Board', roles: ['admin', 'dispatcher', 'ops_manager'] },
+  { to: '/delivery/drivers', icon: Truck, label: 'Drivers', roles: ['admin', 'dispatcher', 'ops_manager'] },
+  { to: '/delivery/bikers', icon: Bike, label: 'Bikers', roles: ['admin', 'dispatcher', 'ops_manager'] },
+  { to: '/delivery/biker-tasks', icon: ClipboardCheck, label: 'Store Checks', roles: ['admin', 'dispatcher', 'ops_manager', 'biker'] },
+  { to: '/delivery/locations', icon: MapPin, label: 'Locations', roles: ['admin', 'dispatcher', 'ops_manager'] },
+  { to: '/delivery/payouts', icon: CreditCard, label: 'Worker Payouts', roles: ['admin', 'finance', 'ops_manager'] },
+  { to: '/delivery/debt', icon: DollarSign, label: 'Debt Collection', roles: ['admin', 'finance'] },
+  { to: '/delivery/driver-home', icon: Home, label: 'Driver Home', roles: ['driver'] },
+  { to: '/delivery/my-route', icon: MapPin, label: 'My Route', roles: ['driver'] },
+  
   { to: '/me/home', icon: MapPin, label: 'Worker Home', roles: ['driver', 'biker', 'ambassador'] },
   { to: '/me/driver', icon: Home, label: 'Driver Dashboard', roles: ['driver', 'biker'] },
   { to: '/drivers/leaderboard', icon: Trophy, label: 'Leaderboard', roles: ['driver', 'biker', 'admin'] },
