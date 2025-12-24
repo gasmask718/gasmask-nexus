@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { useDeliveryWithStops, useUpdateDelivery, useUpdateStop, useCreateStop, useLocations, useCreateProof, type DeliveryStop } from "@/hooks/useDeliveryData";
+import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +28,8 @@ import {
   Plus,
   Truck,
   Package,
-  DollarSign
+  DollarSign,
+  Play
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -38,6 +42,23 @@ export default function MyRoute() {
   const navigate = useNavigate();
   const { currentBusiness } = useBusiness();
   const businessId = currentBusiness?.id;
+
+  // If no deliveryId, show route selector
+  const { data: availableRoutes = [], isLoading: loadingRoutes } = useQuery({
+    queryKey: ['available-routes', businessId],
+    queryFn: async () => {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const { data, error } = await supabase
+        .from('deliveries')
+        .select(`*, delivery_stops(count)`)
+        .eq('scheduled_date', today)
+        .in('status', ['scheduled', 'in_progress'])
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !deliveryId && !!businessId
+  });
 
   const { data: delivery, isLoading } = useDeliveryWithStops(deliveryId);
   const { data: locations = [] } = useLocations(businessId);
@@ -58,12 +79,110 @@ export default function MyRoute() {
   const [amountCollected, setAmountCollected] = useState("");
   const [proofNote, setProofNote] = useState("");
 
+  // Route Selector View
+  if (!deliveryId) {
+    return (
+      <Layout>
+        <div className="container mx-auto p-4 md:p-6 space-y-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/delivery/driver-home')}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">Select Route</h1>
+              <p className="text-muted-foreground">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
+            </div>
+          </div>
+
+          {loadingRoutes ? (
+            <div className="text-center py-8 text-muted-foreground">Loading routes...</div>
+          ) : availableRoutes.length === 0 ? (
+            <Card>
+              <CardContent className="py-16 text-center">
+                <Truck className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <h2 className="text-xl font-semibold mb-2">No Routes Today</h2>
+                <p className="text-muted-foreground mb-4">You have no routes scheduled for today.</p>
+                <Button onClick={() => navigate('/delivery/driver-home')}>
+                  Back to Driver Home
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {availableRoutes.map((route: any) => {
+                const stopCount = route.delivery_stops?.[0]?.count || 0;
+                return (
+                  <Card 
+                    key={route.id} 
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => navigate(`/delivery/my-route/${route.id}`)}
+                  >
+                    <CardContent className="py-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Truck className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-lg">
+                              {route.delivery_type?.replace('_', ' ').toUpperCase() || 'Delivery'}
+                            </p>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-4 w-4" /> {stopCount} stops
+                              </span>
+                              <Badge variant={route.status === 'in_progress' ? 'default' : 'secondary'}>
+                                {route.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <Button>
+                          {route.status === 'in_progress' ? (
+                            <>
+                              <Navigation className="h-4 w-4 mr-2" /> Continue
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-4 w-4 mr-2" /> Start
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      {route.dispatcher_notes && (
+                        <p className="text-sm text-muted-foreground mt-3 p-2 bg-muted rounded">
+                          {route.dispatcher_notes}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </Layout>
+    );
+  }
+
   if (isLoading) {
-    return <div className="p-6 text-center">Loading...</div>;
+    return (
+      <Layout>
+        <div className="p-6 text-center">Loading...</div>
+      </Layout>
+    );
   }
 
   if (!delivery) {
-    return <div className="p-6 text-center text-muted-foreground">Delivery not found</div>;
+    return (
+      <Layout>
+        <div className="p-6 text-center">
+          <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <p className="text-muted-foreground mb-4">Delivery not found</p>
+          <Button onClick={() => navigate('/delivery/my-route')}>View All Routes</Button>
+        </div>
+      </Layout>
+    );
   }
 
   const stops = delivery.stops || [];

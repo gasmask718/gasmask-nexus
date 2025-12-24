@@ -288,6 +288,7 @@ import {
   DeliveriesBoard, 
   DriversManagement, 
   BikersManagement, 
+  BikerProfile,
   BikerTasks, 
   LocationsManagement, 
   WorkerPayouts, 
@@ -730,6 +731,7 @@ export default function AppRoutes() {
         <Route path="/delivery/deliveries" element={<DeliveriesBoard />} />
         <Route path="/delivery/drivers" element={<DriversManagement />} />
         <Route path="/delivery/bikers" element={<BikersManagement />} />
+        <Route path="/delivery/bikers/:bikerId" element={<BikerProfile />} />
         <Route path="/delivery/biker-tasks" element={<BikerTasks />} />
         <Route path="/delivery/locations" element={<LocationsManagement />} />
         <Route path="/delivery/payouts" element={<WorkerPayouts />} />
