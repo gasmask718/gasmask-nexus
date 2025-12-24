@@ -5,7 +5,7 @@ import { AppRole } from '@/utils/roleRouting';
 // Check if we're in development/preview mode
 const isDev = import.meta.env.DEV || window.location.hostname.includes('lovable');
 
-export function useUserRole() {
+export function useUserRole(currentBusinessId?: string | null) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,10 +17,15 @@ export function useUserRole() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         
+        if (isDev) {
+          console.log('🔐 [RBAC DEBUG] Auth user:', user?.id, user?.email);
+          console.log('🔐 [RBAC DEBUG] Current business ID:', currentBusinessId ?? 'not set');
+        }
+        
         if (!user) {
           // In dev mode, default to admin for testing
           if (isDev) {
-            console.log('🔧 DEV MODE: Defaulting to admin role for preview');
+            console.log('🔧 DEV MODE: No user, defaulting to admin role for preview');
             setRole('admin');
             setRoles(['admin']);
             setLoading(false);
@@ -32,25 +37,51 @@ export function useUserRole() {
           return;
         }
 
+        // Build driver/biker queries - with or without business filter
+        let driverQuery = supabase
+          .from('drivers')
+          .select('id, status, business_id')
+          .eq('user_id', user.id)
+          .eq('status', 'active');
+          
+        let bikerQuery = supabase
+          .from('bikers')
+          .select('id, status, business_id')
+          .eq('user_id', user.id)
+          .eq('status', 'active');
+
+        // If business is specified, scope to that business
+        if (currentBusinessId) {
+          driverQuery = driverQuery.eq('business_id', currentBusinessId);
+          bikerQuery = bikerQuery.eq('business_id', currentBusinessId);
+        }
+
         // Fetch roles, driver assignment, and biker assignment in parallel
         const [rolesResult, driverResult, bikerResult] = await Promise.all([
           supabase
             .from('user_roles')
             .select('role')
             .eq('user_id', user.id),
-          supabase
-            .from('drivers')
-            .select('id, status')
-            .eq('user_id', user.id)
-            .eq('status', 'active')
-            .maybeSingle(),
-          supabase
-            .from('bikers')
-            .select('id, status')
-            .eq('user_id', user.id)
-            .eq('status', 'active')
-            .maybeSingle()
+          driverQuery.maybeSingle(),
+          bikerQuery.maybeSingle()
         ]);
+
+        if (isDev) {
+          console.log('🔐 [RBAC DEBUG] user_roles query:', {
+            data: rolesResult.data,
+            error: rolesResult.error?.message
+          });
+          console.log('🔐 [RBAC DEBUG] drivers query:', {
+            data: driverResult.data,
+            error: driverResult.error?.message,
+            businessScoped: !!currentBusinessId
+          });
+          console.log('🔐 [RBAC DEBUG] bikers query:', {
+            data: bikerResult.data,
+            error: bikerResult.error?.message,
+            businessScoped: !!currentBusinessId
+          });
+        }
 
         // Track driver/biker assignments
         const isDriver = !!driverResult.data;
@@ -79,13 +110,13 @@ export function useUserRole() {
           // Add driver role if assigned in drivers table
           if (isDriver && !rolesList.includes('driver')) {
             rolesList.push('driver');
-            console.log('🚗 User is an active driver');
+            if (isDev) console.log('🚗 User is an active driver');
           }
 
           // Add biker role if assigned in bikers table
           if (isBiker && !rolesList.includes('biker')) {
             rolesList.push('biker');
-            console.log('🚴 User is an active biker');
+            if (isDev) console.log('🚴 User is an active biker');
           }
 
           if (rolesList.length > 0) {
@@ -100,7 +131,9 @@ export function useUserRole() {
             
             setRole(primaryRole);
             
-            console.log('👤 User roles loaded:', rolesList, 'Primary:', primaryRole);
+            if (isDev) {
+              console.log('🔐 [RBAC DEBUG] Final roles:', rolesList, 'Primary:', primaryRole);
+            }
           } else if (isDev) {
             // In dev mode with logged-in user but no roles, default to admin
             console.log('🔧 DEV MODE: No roles found, defaulting to admin');
@@ -167,7 +200,7 @@ export function useUserRole() {
     return () => {
       channel.unsubscribe();
     };
-  }, []);
+  }, [currentBusinessId]);
 
   const hasRole = (checkRole: AppRole): boolean => {
     return roles.includes(checkRole);
