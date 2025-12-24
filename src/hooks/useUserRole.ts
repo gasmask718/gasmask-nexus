@@ -11,6 +11,8 @@ export function useUserRole(currentBusinessId?: string | null) {
   const [loading, setLoading] = useState(true);
   const [isDriverAssigned, setIsDriverAssigned] = useState(false);
   const [isBikerAssigned, setIsBikerAssigned] = useState(false);
+  const [driverAssignmentBusinessId, setDriverAssignmentBusinessId] = useState<string | null>(null);
+  const [bikerAssignmentBusinessId, setBikerAssignmentBusinessId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchUserRole() {
@@ -37,109 +39,166 @@ export function useUserRole(currentBusinessId?: string | null) {
           return;
         }
 
-        // Build driver/biker queries - with or without business filter
-        let driverQuery = supabase
+        // Build assignment queries (always check cross-business; additionally check scoped when business is selected)
+        const rolesQuery = supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id);
+
+        const driverAnyQuery = supabase
           .from('drivers')
           .select('id, status, business_id')
           .eq('user_id', user.id)
-          .eq('status', 'active');
-          
-        let bikerQuery = supabase
+          .eq('status', 'active')
+          .maybeSingle();
+
+        const bikerAnyQuery = supabase
           .from('bikers')
           .select('id, status, business_id')
           .eq('user_id', user.id)
-          .eq('status', 'active');
+          .eq('status', 'active')
+          .maybeSingle();
 
-        // If business is specified, scope to that business
-        if (currentBusinessId) {
-          driverQuery = driverQuery.eq('business_id', currentBusinessId);
-          bikerQuery = bikerQuery.eq('business_id', currentBusinessId);
-        }
+        const driverScopedQuery = currentBusinessId
+          ? supabase
+              .from('drivers')
+              .select('id, status, business_id')
+              .eq('user_id', user.id)
+              .eq('status', 'active')
+              .eq('business_id', currentBusinessId)
+              .maybeSingle()
+          : null;
 
-        // Fetch roles, driver assignment, and biker assignment in parallel
-        const [rolesResult, driverResult, bikerResult] = await Promise.all([
-          supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', user.id),
-          driverQuery.maybeSingle(),
-          bikerQuery.maybeSingle()
-        ]);
+        const bikerScopedQuery = currentBusinessId
+          ? supabase
+              .from('bikers')
+              .select('id, status, business_id')
+              .eq('user_id', user.id)
+              .eq('status', 'active')
+              .eq('business_id', currentBusinessId)
+              .maybeSingle()
+          : null;
+
+        const emptyResult = { data: null, error: null } as { data: any; error: any };
+
+        const [rolesResult, driverAnyResult, bikerAnyResult, driverScopedResult, bikerScopedResult] =
+          await Promise.all([
+            rolesQuery,
+            driverAnyQuery,
+            bikerAnyQuery,
+            driverScopedQuery ?? Promise.resolve(emptyResult),
+            bikerScopedQuery ?? Promise.resolve(emptyResult),
+          ]);
+
+        const driverAny = driverAnyResult.data ?? null;
+        const bikerAny = bikerAnyResult.data ?? null;
+        const driverScoped = currentBusinessId ? (driverScopedResult.data ?? null) : null;
+        const bikerScoped = currentBusinessId ? (bikerScopedResult.data ?? null) : null;
+
+        setDriverAssignmentBusinessId(driverAny?.business_id ?? null);
+        setBikerAssignmentBusinessId(bikerAny?.business_id ?? null);
+
+        // Track driver/biker assignments for the current business (when selected), otherwise any business
+        const driverAssignedForScope = currentBusinessId ? !!driverScoped : !!driverAny;
+        const bikerAssignedForScope = currentBusinessId ? !!bikerScoped : !!bikerAny;
+        setIsDriverAssigned(driverAssignedForScope);
+        setIsBikerAssigned(bikerAssignedForScope);
 
         if (isDev) {
+          const statusOf = (r: { data: any; error: any }) => (r.error ? 'error' : r.data ? 'assigned' : 'empty');
+
           console.log('🔐 [RBAC DEBUG] user_roles query:', {
+            status: statusOf(rolesResult as any),
             data: rolesResult.data,
-            error: rolesResult.error?.message
+            error: rolesResult.error?.message,
           });
-          console.log('🔐 [RBAC DEBUG] drivers query:', {
-            data: driverResult.data,
-            error: driverResult.error?.message,
-            businessScoped: !!currentBusinessId
+
+          console.log('🔐 [RBAC DEBUG] drivers(any) query:', {
+            status: statusOf(driverAnyResult as any),
+            data: driverAnyResult.data,
+            error: driverAnyResult.error?.message,
           });
-          console.log('🔐 [RBAC DEBUG] bikers query:', {
-            data: bikerResult.data,
-            error: bikerResult.error?.message,
-            businessScoped: !!currentBusinessId
+
+          console.log('🔐 [RBAC DEBUG] bikers(any) query:', {
+            status: statusOf(bikerAnyResult as any),
+            data: bikerAnyResult.data,
+            error: bikerAnyResult.error?.message,
+          });
+
+          console.log('🔐 [RBAC DEBUG] drivers(scoped) query:', {
+            status: statusOf(driverScopedResult as any),
+            data: driverScopedResult.data,
+            error: driverScopedResult.error?.message,
+            currentBusinessId: currentBusinessId ?? 'not set',
+          });
+
+          console.log('🔐 [RBAC DEBUG] bikers(scoped) query:', {
+            status: statusOf(bikerScopedResult as any),
+            data: bikerScopedResult.data,
+            error: bikerScopedResult.error?.message,
+            currentBusinessId: currentBusinessId ?? 'not set',
           });
         }
 
-        // Track driver/biker assignments
-        const isDriver = !!driverResult.data;
-        const isBiker = !!bikerResult.data;
-        setIsDriverAssigned(isDriver);
-        setIsBikerAssigned(isBiker);
+        const rolesList: AppRole[] = [];
 
-        // Force admin for the owner account - bypass DB entirely
-        if (user?.email?.toLowerCase() === 'gasmaskapprovedllc@gmail.com') {
-          console.log('🔐 OWNER DETECTED - Forcing admin role');
-          setRole('admin');
-          setRoles(['admin', 'owner']);
-        } else {
-          const rolesList: AppRole[] = [];
-          
-          // Add roles from user_roles table
-          if (rolesResult.data && rolesResult.data.length > 0) {
-            rolesResult.data.forEach(r => {
-              const normalizedRole = (r.role as string).trim().toLowerCase() as AppRole;
-              if (!rolesList.includes(normalizedRole)) {
-                rolesList.push(normalizedRole);
-              }
+        // Add roles from user_roles table
+        if (rolesResult.data && rolesResult.data.length > 0) {
+          rolesResult.data.forEach((r: any) => {
+            const normalizedRole = (r.role as string).trim().toLowerCase() as AppRole;
+            if (!rolesList.includes(normalizedRole)) {
+              rolesList.push(normalizedRole);
+            }
+          });
+        }
+
+        // Add driver role if assigned (scoped when business selected)
+        if (driverAssignedForScope && !rolesList.includes('driver')) {
+          rolesList.push('driver');
+          if (isDev) {
+            console.log('🚗 User is an active driver', {
+              assignedBusinessId: driverAny?.business_id ?? null,
+              currentBusinessId: currentBusinessId ?? null,
             });
           }
+        }
 
-          // Add driver role if assigned in drivers table
-          if (isDriver && !rolesList.includes('driver')) {
-            rolesList.push('driver');
-            if (isDev) console.log('🚗 User is an active driver');
+        // Add biker role if assigned (scoped when business selected)
+        if (bikerAssignedForScope && !rolesList.includes('biker')) {
+          rolesList.push('biker');
+          if (isDev) {
+            console.log('🚴 User is an active biker', {
+              assignedBusinessId: bikerAny?.business_id ?? null,
+              currentBusinessId: currentBusinessId ?? null,
+            });
           }
+        }
 
-          // Add biker role if assigned in bikers table
-          if (isBiker && !rolesList.includes('biker')) {
-            rolesList.push('biker');
-            if (isDev) console.log('🚴 User is an active biker');
-          }
+        if (rolesList.length > 0) {
+          setRoles(rolesList);
 
-          if (rolesList.length > 0) {
-            setRoles(rolesList);
-            
-            // Set primary role (admin takes precedence, then driver, then biker)
-            const primaryRole = rolesList.includes('admin') 
-              ? 'admin' 
-              : rolesList.includes('driver')
+          // Set primary role (admin takes precedence, then driver, then biker)
+          const primaryRole = rolesList.includes('admin')
+            ? 'admin'
+            : rolesList.includes('driver')
               ? 'driver'
               : rolesList[0];
-            
-            setRole(primaryRole);
-            
-            if (isDev) {
-              console.log('🔐 [RBAC DEBUG] Final roles:', rolesList, 'Primary:', primaryRole);
-            }
-          } else if (isDev) {
-            // In dev mode with logged-in user but no roles, default to admin
-            console.log('🔧 DEV MODE: No roles found, defaulting to admin');
-            setRole('admin');
-            setRoles(['admin']);
+
+          setRole(primaryRole);
+
+          if (isDev) {
+            console.log('🔐 [RBAC DEBUG] Computed booleans:', {
+              isAdmin: rolesList.includes('admin') || rolesList.includes('owner'),
+              isDriver: driverAssignedForScope || rolesList.includes('driver'),
+              isBiker: bikerAssignedForScope || rolesList.includes('biker'),
+            });
+            console.log('🔐 [RBAC DEBUG] Final roles:', rolesList, 'Primary:', primaryRole);
           }
+        } else if (isDev) {
+          // In dev mode with logged-in user but no roles, default to admin
+          console.log('🔧 DEV MODE: No roles found, defaulting to admin');
+          setRole('admin');
+          setRoles(['admin']);
         }
       } catch (error) {
         console.error('Error fetching user role:', error);
@@ -220,5 +279,5 @@ export function useUserRole(currentBusinessId?: string | null) {
     return isBikerAssigned || roles.includes('biker');
   };
 
-  return { role, roles, loading, hasRole, isAdmin, isDriver, isBiker, isDriverAssigned, isBikerAssigned };
+  return { role, roles, loading, hasRole, isAdmin, isDriver, isBiker, isDriverAssigned, isBikerAssigned, driverAssignmentBusinessId, bikerAssignmentBusinessId };
 }
