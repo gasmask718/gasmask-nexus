@@ -500,23 +500,39 @@ const GlobalCRM = () => {
                   )
                   .map((business) => {
                     const stats = brandStats[business.id] || { storeCount: 0, contactCount: 0 };
+                    const primaryColor = business.primary_color || 'hsl(var(--primary))';
                     return (
                       <Card 
                         key={`biz-${business.id}`} 
-                        className="p-6 hover:shadow-lg transition-all cursor-pointer group border-t-4 border-t-primary/50"
-                        onClick={() => navigate(`/crm/brand/${business.id}`)}
+                        className="p-6 hover:shadow-lg transition-all cursor-pointer group border-t-4"
+                        style={{ borderTopColor: primaryColor }}
+                        onClick={() => navigate(`/crm/business/${business.slug}`)}
                       >
                         <div className="flex items-start justify-between mb-4">
-                          <div 
-                            className="w-12 h-12 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-lg bg-primary/80"
-                          >
-                            {business.name?.charAt(0) || 'B'}
-                          </div>
-                          <Badge variant="outline">Business</Badge>
+                          {business.logo_url ? (
+                            <img 
+                              src={business.logo_url} 
+                              alt={business.name || ''} 
+                              className="w-12 h-12 rounded-lg object-contain"
+                            />
+                          ) : (
+                            <div 
+                              className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg"
+                              style={{ backgroundColor: primaryColor }}
+                            >
+                              {business.name?.charAt(0) || 'B'}
+                            </div>
+                          )}
+                          <Badge variant="outline" className="text-xs">
+                            {business.business_type || business.category || 'Business'}
+                          </Badge>
                         </div>
-                        <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors">
+                        <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">
                           {business.name}
                         </h3>
+                        {business.tagline && (
+                          <p className="text-xs text-muted-foreground mb-2 line-clamp-1">{business.tagline}</p>
+                        )}
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Store className="h-4 w-4" />
@@ -533,10 +549,10 @@ const GlobalCRM = () => {
                           className="w-full mt-4"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/crm/brand/${business.id}`);
+                            navigate(`/crm/business/${business.slug}`);
                           }}
                         >
-                          Open Business CRM
+                          Open Dynamic CRM
                         </Button>
                       </Card>
                     );

@@ -109,6 +109,7 @@ export function DynamicCRMLayout({
               <DynamicEntityList
                 categorySlug={categorySlug}
                 entityType={tab.entity}
+                businessId={businessSlug}
                 onSelect={onEntitySelect}
                 selectedId={selectedEntityId}
               />
