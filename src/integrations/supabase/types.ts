@@ -3193,6 +3193,66 @@ export type Database = {
           },
         ]
       }
+      bikers: {
+        Row: {
+          business_id: string
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          payout_handle: string | null
+          payout_method: string | null
+          phone: string | null
+          status: string
+          territory: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          payout_handle?: string | null
+          payout_method?: string | null
+          phone?: string | null
+          status?: string
+          territory?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          payout_handle?: string | null
+          payout_method?: string | null
+          phone?: string | null
+          status?: string
+          territory?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bikers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bikers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boroughs: {
         Row: {
           business_id: string | null
@@ -8545,6 +8605,121 @@ export type Database = {
           },
         ]
       }
+      deliveries: {
+        Row: {
+          assigned_driver_id: string | null
+          business_id: string
+          created_at: string
+          created_by_user_id: string | null
+          delivery_type: string
+          dispatcher_notes: string | null
+          id: string
+          internal_notes: string | null
+          priority: string
+          scheduled_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_driver_id?: string | null
+          business_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          delivery_type?: string
+          dispatcher_notes?: string | null
+          id?: string
+          internal_notes?: string | null
+          priority?: string
+          scheduled_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_driver_id?: string | null
+          business_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          delivery_type?: string
+          dispatcher_notes?: string | null
+          id?: string
+          internal_notes?: string | null
+          priority?: string
+          scheduled_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deliveries_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliveries_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliveries_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_activity_log: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          business_id: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          metadata_json: Json | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          business_id: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          metadata_json?: Json | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          business_id?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          metadata_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_activity_log_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_activity_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_capacity_metrics: {
         Row: {
           biker_count: number
@@ -8634,6 +8809,72 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_stops: {
+        Row: {
+          amount_due: number | null
+          completion_time: string | null
+          created_at: string
+          delivery_id: string
+          driver_notes: string | null
+          id: string
+          items_summary: string | null
+          location_id: string | null
+          status: string
+          stop_order: number
+          stop_type: string
+          updated_at: string
+          window_end: string | null
+          window_start: string | null
+        }
+        Insert: {
+          amount_due?: number | null
+          completion_time?: string | null
+          created_at?: string
+          delivery_id: string
+          driver_notes?: string | null
+          id?: string
+          items_summary?: string | null
+          location_id?: string | null
+          status?: string
+          stop_order?: number
+          stop_type?: string
+          updated_at?: string
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          amount_due?: number | null
+          completion_time?: string | null
+          created_at?: string
+          delivery_id?: string
+          driver_notes?: string | null
+          id?: string
+          items_summary?: string | null
+          location_id?: string | null
+          status?: string
+          stop_order?: number
+          stop_type?: string
+          updated_at?: string
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_stops_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "deliveries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_stops_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
             referencedColumns: ["id"]
           },
         ]
@@ -9034,6 +9275,72 @@ export type Database = {
           {
             foreignKeyName: "driver_xp_driver_id_fkey"
             columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drivers: {
+        Row: {
+          business_id: string
+          created_at: string
+          email: string | null
+          full_name: string
+          home_base: string | null
+          id: string
+          license_number: string | null
+          payout_handle: string | null
+          payout_method: string | null
+          phone: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+          vehicle_type: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          email?: string | null
+          full_name: string
+          home_base?: string | null
+          id?: string
+          license_number?: string | null
+          payout_handle?: string | null
+          payout_method?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          vehicle_type?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          home_base?: string | null
+          id?: string
+          license_number?: string | null
+          payout_handle?: string | null
+          payout_method?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          vehicle_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drivers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drivers_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -13389,6 +13696,68 @@ export type Database = {
           },
         ]
       }
+      locations: {
+        Row: {
+          address_line1: string | null
+          business_id: string
+          city: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          lat: number | null
+          lng: number | null
+          location_type: string
+          name: string
+          notes: string | null
+          state: string | null
+          updated_at: string
+          zip: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          business_id: string
+          city?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          location_type?: string
+          name: string
+          notes?: string | null
+          state?: string | null
+          updated_at?: string
+          zip?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          business_id?: string
+          city?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          location_type?: string
+          name?: string
+          notes?: string | null
+          state?: string | null
+          updated_at?: string
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       machine_service_logs: {
         Row: {
           created_at: string | null
@@ -16784,6 +17153,57 @@ export type Database = {
         }
         Relationships: []
       }
+      proofs: {
+        Row: {
+          business_id: string
+          captured_at: string
+          captured_by_user_id: string | null
+          file_url: string | null
+          id: string
+          proof_type: string
+          related_id: string
+          related_type: string
+          text_note: string | null
+        }
+        Insert: {
+          business_id: string
+          captured_at?: string
+          captured_by_user_id?: string | null
+          file_url?: string | null
+          id?: string
+          proof_type: string
+          related_id: string
+          related_type: string
+          text_note?: string | null
+        }
+        Update: {
+          business_id?: string
+          captured_at?: string
+          captured_by_user_id?: string | null
+          file_url?: string | null
+          id?: string
+          proof_type?: string
+          related_id?: string
+          related_type?: string
+          text_note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proofs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proofs_captured_by_user_id_fkey"
+            columns: ["captured_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_order_items: {
         Row: {
           created_at: string | null
@@ -18552,6 +18972,90 @@ export type Database = {
             columns: ["store_master_id"]
             isOneToOne: false
             referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_checks: {
+        Row: {
+          assigned_biker_id: string | null
+          business_id: string
+          check_type: string
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          location_id: string | null
+          reviewed_at: string | null
+          reviewed_by_user_id: string | null
+          scheduled_date: string
+          status: string
+          summary_notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_biker_id?: string | null
+          business_id: string
+          check_type?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          location_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          scheduled_date?: string
+          status?: string
+          summary_notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_biker_id?: string | null
+          business_id?: string
+          check_type?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          location_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          scheduled_date?: string
+          status?: string
+          summary_notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_checks_assigned_biker_id_fkey"
+            columns: ["assigned_biker_id"]
+            isOneToOne: false
+            referencedRelation: "bikers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_checks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_checks_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_checks_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_checks_reviewed_by_user_id_fkey"
+            columns: ["reviewed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
