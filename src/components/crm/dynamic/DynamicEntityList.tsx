@@ -4,17 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   getCRMCategoryConfig, 
   getCategoryEntity,
   CRMCategorySlug, 
   EntityType 
 } from '@/config/crmCategories';
-import { Plus, Search, Filter } from 'lucide-react';
+import { useCRMEntities } from '@/hooks/useCRMEntities';
+import { Plus, Search, Filter, RefreshCw, AlertCircle } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 interface DynamicEntityListProps {
   categorySlug: CRMCategorySlug;
   entityType: EntityType;
+  businessId?: string | null;
   onSelect?: (id: string | null) => void;
   selectedId?: string | null;
 }
@@ -22,6 +26,7 @@ interface DynamicEntityListProps {
 export function DynamicEntityList({
   categorySlug,
   entityType,
+  businessId,
   onSelect,
   selectedId,
 }: DynamicEntityListProps) {
@@ -36,10 +41,20 @@ export function DynamicEntityList({
     return getCRMCategoryConfig(categorySlug);
   }, [categorySlug]);
 
+  // Fetch real data
+  const { data: entities = [], isLoading, error, refetch } = useCRMEntities({
+    categorySlug,
+    entityType,
+    businessId,
+    searchTerm,
+    limit: 100,
+  });
+
   if (!entityConfig) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
+          <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
           <p className="text-muted-foreground">
             Entity type "{entityType}" is not configured for this category.
           </p>
@@ -48,12 +63,26 @@ export function DynamicEntityList({
     );
   }
 
-  // Mock data for demonstration - will be replaced with actual data fetching
-  const mockData = [
-    { id: '1', name: 'Sample Item 1', status: 'active' },
-    { id: '2', name: 'Sample Item 2', status: 'pending' },
-    { id: '3', name: 'Sample Item 3', status: 'inactive' },
-  ];
+  const getStatusVariant = (status: string | boolean) => {
+    if (typeof status === 'boolean') {
+      return status ? 'default' : 'secondary';
+    }
+    const statusLower = String(status).toLowerCase();
+    if (['active', 'confirmed', 'completed', 'true'].includes(statusLower)) {
+      return 'default' as const;
+    }
+    if (['pending', 'warm', 'in_progress'].includes(statusLower)) {
+      return 'outline' as const;
+    }
+    return 'secondary' as const;
+  };
+
+  const formatStatus = (status: string | boolean) => {
+    if (typeof status === 'boolean') {
+      return status ? 'Active' : 'Inactive';
+    }
+    return String(status).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
 
   return (
     <Card>
@@ -62,13 +91,23 @@ export function DynamicEntityList({
           <CardTitle className="text-lg flex items-center gap-2">
             {entityConfig.labelPlural}
             <Badge variant="secondary" className="ml-2">
-              {mockData.length}
+              {isLoading ? '...' : entities.length}
             </Badge>
           </CardTitle>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Add {entityConfig.label}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => refetch()}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              Add {entityConfig.label}
+            </Button>
+          </div>
         </div>
         
         {/* Search & Filter Bar */}
@@ -90,38 +129,74 @@ export function DynamicEntityList({
       
       <CardContent>
         <ScrollArea className="h-[400px]">
-          <div className="space-y-2">
-            {mockData.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => onSelect?.(item.id)}
-                className={`
-                  p-4 rounded-lg border cursor-pointer transition-colors
-                  ${selectedId === item.id 
-                    ? 'border-primary bg-primary/5' 
-                    : 'hover:bg-muted/50'
-                  }
-                `}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{item.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {entityConfig.label} ID: {item.id}
-                    </p>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                    <Skeleton className="h-5 w-16" />
                   </div>
-                  <Badge 
-                    variant={item.status === 'active' ? 'default' : 'secondary'}
-                    style={{ 
-                      backgroundColor: item.status === 'active' ? config.color : undefined 
-                    }}
-                  >
-                    {item.status}
-                  </Badge>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="py-12 text-center">
+              <AlertCircle className="h-8 w-8 mx-auto text-destructive mb-2" />
+              <p className="text-muted-foreground">Failed to load {entityConfig.labelPlural.toLowerCase()}</p>
+              <Button variant="outline" size="sm" className="mt-4" onClick={() => refetch()}>
+                Try Again
+              </Button>
+            </div>
+          ) : entities.length === 0 ? (
+            <div className="py-12 text-center">
+              <p className="text-muted-foreground mb-4">
+                No {entityConfig.labelPlural.toLowerCase()} found
+              </p>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Add First {entityConfig.label}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {entities.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => onSelect?.(item.id)}
+                  className={`
+                    p-4 rounded-lg border cursor-pointer transition-colors
+                    ${selectedId === item.id 
+                      ? 'border-primary bg-primary/5' 
+                      : 'hover:bg-muted/50'
+                    }
+                  `}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{item.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.rawData?.created_at && (
+                          <>Added {formatDistanceToNow(new Date(item.rawData.created_at), { addSuffix: true })}</>
+                        )}
+                      </p>
+                    </div>
+                    <Badge 
+                      variant={getStatusVariant(item.status)}
+                      style={{ 
+                        backgroundColor: getStatusVariant(item.status) === 'default' ? config.color : undefined 
+                      }}
+                    >
+                      {formatStatus(item.status)}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </ScrollArea>
       </CardContent>
     </Card>
