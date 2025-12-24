@@ -1,1 +1,10 @@
 export { default as DeliveryDashboard } from './DeliveryDashboard';
+export { default as DeliveriesBoard } from './DeliveriesBoard';
+export { default as DriversManagement } from './DriversManagement';
+export { default as BikersManagement } from './BikersManagement';
+export { default as BikerTasks } from './BikerTasks';
+export { default as LocationsManagement } from './LocationsManagement';
+export { default as WorkerPayouts } from './WorkerPayouts';
+export { default as DebtCollection } from './DebtCollection';
+export { default as DriverHome } from './DriverHome';
+export { default as DeliveryMyRoute } from './MyRoute';
