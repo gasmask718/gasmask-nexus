@@ -594,7 +594,11 @@ export default function AppRoutes() {
         <Route path="/expansion/regions" element={<ExpansionRegions />} />
         <Route path="/expansion/heatmap" element={<ExpansionHeatmap />} />
         <Route path="/rewards" element={<Rewards />} />
-        <Route path="/driver" element={<Driver />} />
+        <Route path="/driver" element={
+          <RequireRole allowedRoles={['driver', 'biker', 'admin', 'owner', 'employee']}>
+            <Driver />
+          </RequireRole>
+        } />
         <Route path="/drivers/leaderboard" element={<Leaderboard />} />
         <Route path="/drivers/payroll" element={<Payroll />} />
         <Route path="/ai/meta" element={<MetaAI />} />

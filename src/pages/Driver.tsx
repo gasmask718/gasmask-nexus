@@ -50,30 +50,28 @@ export default function Driver() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
-    loadTodayRoute();
+    loadUserAndRoute();
   }, []);
 
-  const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+  const loadUserAndRoute = async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) {
       navigate('/auth');
       return;
     }
 
+    // Just load the profile for display purposes - access is controlled by RequireRole
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', user.id)
+      .eq('id', authUser.id)
       .single();
 
-    if (!profile || !['driver', 'biker'].includes(profile.role)) {
-      toast.error('Access denied. Driver/Biker only.');
-      navigate('/');
-      return;
+    if (profile) {
+      setUser(profile);
     }
-
-    setUser(profile);
+    
+    loadTodayRoute();
   };
 
   const loadTodayRoute = async () => {
