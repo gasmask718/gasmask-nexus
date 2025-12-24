@@ -941,6 +941,10 @@ export default function AppRoutes() {
         <Route path="/routes/my-route" element={<Navigate to="/delivery/my-route" replace />} />
         <Route path="/my-route" element={<Navigate to="/delivery/my-route" replace />} />
         <Route path="/my-route/:deliveryId" element={<Navigate to="/delivery/my-route/:deliveryId" replace />} />
+        {/* Driver OS redirects to delivery department */}
+        <Route path="/driver/home" element={<Navigate to="/delivery/driver-home" replace />} />
+        <Route path="/driver/my-route" element={<Navigate to="/delivery/my-route" replace />} />
+        <Route path="/driver/my-route/:deliveryId" element={<Navigate to="/delivery/my-route/:deliveryId" replace />} />
         <Route path="/me/home" element={<WorkerHome />} />
         <Route path="/me/driver" element={<WorkerHome />} />
         <Route path="/operations/live-map" element={<LiveMap />} />
