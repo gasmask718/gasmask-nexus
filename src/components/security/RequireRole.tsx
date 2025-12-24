@@ -1,7 +1,7 @@
 import { ReactNode, createContext, useContext } from 'react';
 import { Navigate, useLocation, Link } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useBusinessStore } from '@/stores/businessStore';
+import { useBusiness } from '@/contexts/BusinessContext';
 import { AppRole } from '@/utils/roleRouting';
 import { Lock, Shield, UserPlus, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -39,14 +39,41 @@ export function RequireRole({
   readOnly = false,
   showLocked = false
 }: RequireRoleProps) {
-  const { selectedBusiness } = useBusinessStore();
-  const currentBusinessId = selectedBusiness?.id;
-  
+  const { currentBusiness, loading: businessLoading } = useBusiness();
+  const currentBusinessId = currentBusiness?.id ?? null;
+
+  // IMPORTANT: don't scope assignment checks until business resolution has finished
+  const businessIdForChecks = businessLoading ? null : currentBusinessId;
+
   // Pass business context to role hook for scoped assignment checks
-  const { role, roles, loading, isAdmin, isDriver, isBiker, isDriverAssigned, isBikerAssigned } = useUserRole(currentBusinessId);
+  const {
+    role,
+    roles,
+    loading,
+    isAdmin,
+    isDriver,
+    isBiker,
+    isDriverAssigned,
+    isBikerAssigned,
+    driverAssignmentBusinessId,
+    bikerAssignmentBusinessId,
+  } = useUserRole(businessIdForChecks);
+
   const location = useLocation();
 
-  // Show loading state - NEVER deny while loading
+  // Never deny access while business is resolving
+  if (businessLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <Shield className="h-12 w-12 text-primary animate-pulse mx-auto" />
+          <p className="text-muted-foreground">Loading business...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state - NEVER deny while role/assignment is resolving
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -60,11 +87,11 @@ export function RequireRole({
 
   // Check if user has any elevated role (ALWAYS allowed)
   const hasElevatedAccess = roles.some(r => ELEVATED_ROLES.includes(r)) || isAdmin();
-  
+
   // Check if user has any of the allowed roles
   const hasDirectAccess = role && allowedRoles.includes(role);
   const hasAnyAllowedRole = roles.some(r => allowedRoles.includes(r));
-  
+
   // Special check for driver/biker pages based on assignment
   const isDriverPage = allowedRoles.includes('driver');
   const isBikerPage = allowedRoles.includes('biker');
@@ -89,16 +116,24 @@ export function RequireRole({
       currentBusinessId: currentBusinessId ?? 'not set',
       userRoles: roles,
       primaryRole: role,
-      isDriverAssigned,
-      isBikerAssigned,
+      assignments: {
+        scoped: {
+          isDriverAssigned,
+          isBikerAssigned,
+        },
+        any: {
+          driverAssignmentBusinessId: driverAssignmentBusinessId ?? null,
+          bikerAssignmentBusinessId: bikerAssignmentBusinessId ?? null,
+        },
+      },
       checks: {
         hasElevatedAccess,
         hasDirectAccess,
         hasAnyAllowedRole,
         hasDriverAccess,
-        hasBikerAccess
+        hasBikerAccess,
       },
-      finalDecision: hasAccess ? `GRANTED (${accessGrantedBy})` : 'DENIED'
+      finalDecision: hasAccess ? `GRANTED (${accessGrantedBy})` : 'DENIED',
     });
   }
 
@@ -129,7 +164,22 @@ export function RequireRole({
       // Determine what type of assignment is needed
       const needsDriverAssignment = isDriverPage && !isDriver();
       const needsBikerAssignment = isBikerPage && !isBiker();
-      
+
+      // If scoped assignment fails but user is assigned in another business, surface it clearly
+      const driverBusinessMismatch =
+        !!currentBusinessId &&
+        isDriverPage &&
+        !isDriverAssigned &&
+        !!driverAssignmentBusinessId &&
+        driverAssignmentBusinessId !== currentBusinessId;
+
+      const bikerBusinessMismatch =
+        !!currentBusinessId &&
+        isBikerPage &&
+        !isBikerAssigned &&
+        !!bikerAssignmentBusinessId &&
+        bikerAssignmentBusinessId !== currentBusinessId;
+
       return (
         <div className="min-h-screen flex items-center justify-center bg-background">
           <div className="text-center space-y-4 max-w-md p-8">
@@ -138,17 +188,25 @@ export function RequireRole({
             </div>
             <h2 className="text-2xl font-bold text-foreground">Access Restricted</h2>
             <p className="text-muted-foreground">
-              {needsDriverAssignment 
-                ? "You are not assigned as a Driver for this business. Contact an administrator to be assigned."
-                : needsBikerAssignment
-                ? "You are not assigned as a Biker for this business. Contact an administrator to be assigned."
-                : "You don't have permission to access this area. Contact an administrator if you believe this is an error."
-              }
+              {driverBusinessMismatch
+                ? 'You are assigned as a driver, but not for this business.'
+                : bikerBusinessMismatch
+                  ? 'You are assigned as a biker, but not for this business.'
+                  : needsDriverAssignment
+                    ? 'You are not assigned as a Driver for this business. Contact an administrator to be assigned.'
+                    : needsBikerAssignment
+                      ? 'You are not assigned as a Biker for this business. Contact an administrator to be assigned.'
+                      : "You don't have permission to access this area. Contact an administrator if you believe this is an error."}
             </p>
             <p className="text-xs text-muted-foreground/60">
               Required: {allowedRoles.join(' or ')} | Your roles: {roles.join(', ') || 'none'}
-              {currentBusinessId && ` | Business: ${currentBusinessId.slice(0,8)}...`}
+              {currentBusinessId && ` | Business: ${currentBusinessId.slice(0, 8)}...`}
             </p>
+            {(driverBusinessMismatch || bikerBusinessMismatch) && (
+              <p className="text-xs text-muted-foreground/60">
+                Assigned business: {(driverAssignmentBusinessId ?? bikerAssignmentBusinessId)?.slice(0, 8)}...
+              </p>
+            )}
             {(needsDriverAssignment || needsBikerAssignment) && isAdmin() && (
               <Button asChild variant="outline" className="mt-4">
                 <Link to={needsDriverAssignment ? '/delivery/drivers' : '/delivery/bikers'}>
