@@ -2,7 +2,7 @@
  * AppRoutes - Clean nested route structure for Dynasty OS
  * Uses React Router nested routes with Layout wrapper
  */
-import { Routes, Route, Outlet } from 'react-router-dom';
+import { Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { RequireRole } from '@/components/security/RequireRole';
 import Layout from '@/components/Layout';
@@ -739,6 +739,8 @@ export default function AppRoutes() {
         <Route path="/delivery/driver-home" element={<DriverHome />} />
         <Route path="/delivery/my-route" element={<DeliveryMyRoute />} />
         <Route path="/delivery/my-route/:deliveryId" element={<DeliveryMyRoute />} />
+        {/* Catch-all for unknown /delivery/* paths - redirect to delivery dashboard */}
+        <Route path="/delivery/*" element={<Navigate to="/delivery" replace />} />
         <Route path="/toptier" element={<TopTierDashboard />} />
         <Route path="/toptier/*" element={<TopTierDashboard />} />
         <Route path="/unforgettable" element={<UnforgettableDashboard />} />
@@ -931,7 +933,10 @@ export default function AppRoutes() {
 
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/messages/:threadId" element={<MessagesPage />} />
-        <Route path="/routes/my-route" element={<MyRoute />} />
+        {/* Legacy route redirect to new delivery system */}
+        <Route path="/routes/my-route" element={<Navigate to="/delivery/my-route" replace />} />
+        <Route path="/my-route" element={<Navigate to="/delivery/my-route" replace />} />
+        <Route path="/my-route/:deliveryId" element={<Navigate to="/delivery/my-route/:deliveryId" replace />} />
         <Route path="/me/home" element={<WorkerHome />} />
         <Route path="/me/driver" element={<WorkerHome />} />
         <Route path="/operations/live-map" element={<LiveMap />} />
