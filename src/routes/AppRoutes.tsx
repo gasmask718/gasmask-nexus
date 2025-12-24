@@ -294,6 +294,7 @@ import {
   WorkerPayouts, 
   DebtCollection, 
   DriverHome,
+  DriverOS,
   DeliveryMyRoute 
 } from '@/pages/delivery';
 
@@ -594,11 +595,7 @@ export default function AppRoutes() {
         <Route path="/expansion/regions" element={<ExpansionRegions />} />
         <Route path="/expansion/heatmap" element={<ExpansionHeatmap />} />
         <Route path="/rewards" element={<Rewards />} />
-        <Route path="/driver" element={
-          <RequireRole allowedRoles={['driver', 'biker', 'admin', 'owner', 'employee']}>
-            <Driver />
-          </RequireRole>
-        } />
+        <Route path="/driver" element={<Navigate to="/delivery/driver" replace />} />
         <Route path="/drivers/leaderboard" element={<Leaderboard />} />
         <Route path="/drivers/payroll" element={<Payroll />} />
         <Route path="/ai/meta" element={<MetaAI />} />
@@ -740,6 +737,7 @@ export default function AppRoutes() {
         <Route path="/delivery/locations" element={<LocationsManagement />} />
         <Route path="/delivery/payouts" element={<WorkerPayouts />} />
         <Route path="/delivery/debt" element={<DebtCollection />} />
+        <Route path="/delivery/driver" element={<DriverOS />} />
         <Route path="/delivery/driver-home" element={<DriverHome />} />
         <Route path="/delivery/my-route" element={<DeliveryMyRoute />} />
         <Route path="/delivery/my-route/:deliveryId" element={<DeliveryMyRoute />} />

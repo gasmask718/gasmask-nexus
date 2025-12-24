@@ -8,4 +8,5 @@ export { default as LocationsManagement } from './LocationsManagement';
 export { default as WorkerPayouts } from './WorkerPayouts';
 export { default as DebtCollection } from './DebtCollection';
 export { default as DriverHome } from './DriverHome';
+export { default as DriverOS } from './DriverOS';
 export { default as DeliveryMyRoute } from './MyRoute';
