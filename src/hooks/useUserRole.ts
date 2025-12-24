@@ -9,6 +9,8 @@ export function useUserRole() {
   const [role, setRole] = useState<AppRole | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDriverAssigned, setIsDriverAssigned] = useState(false);
+  const [isBikerAssigned, setIsBikerAssigned] = useState(false);
 
   useEffect(() => {
     async function fetchUserRole() {
@@ -30,40 +32,81 @@ export function useUserRole() {
           return;
         }
 
-        const { data: userRoles, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id);
+        // Fetch roles, driver assignment, and biker assignment in parallel
+        const [rolesResult, driverResult, bikerResult] = await Promise.all([
+          supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id),
+          supabase
+            .from('drivers')
+            .select('id, status')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .maybeSingle(),
+          supabase
+            .from('bikers')
+            .select('id, status')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .maybeSingle()
+        ]);
 
-        if (error) throw error;
+        // Track driver/biker assignments
+        const isDriver = !!driverResult.data;
+        const isBiker = !!bikerResult.data;
+        setIsDriverAssigned(isDriver);
+        setIsBikerAssigned(isBiker);
 
         // Force admin for the owner account - bypass DB entirely
         if (user?.email?.toLowerCase() === 'gasmaskapprovedllc@gmail.com') {
           console.log('🔐 OWNER DETECTED - Forcing admin role');
           setRole('admin');
-          setRoles(['admin']);
-        } else if (userRoles && userRoles.length > 0) {
-          // Normalize all roles to lowercase
-          const rolesList = userRoles.map(r => (r.role as string).trim().toLowerCase() as AppRole);
+          setRoles(['admin', 'owner']);
+        } else {
+          const rolesList: AppRole[] = [];
           
-          // Remove duplicates
-          const uniqueRoles = Array.from(new Set(rolesList));
-          
-          setRoles(uniqueRoles);
-          
-          // Set primary role (admin takes precedence)
-          const primaryRole = uniqueRoles.includes('admin') 
-            ? 'admin' 
-            : uniqueRoles[0];
-          
-          setRole(primaryRole);
-          
-          console.log('👤 User roles loaded:', uniqueRoles, 'Primary:', primaryRole);
-        } else if (isDev) {
-          // In dev mode with logged-in user but no roles, default to admin
-          console.log('🔧 DEV MODE: No roles found, defaulting to admin');
-          setRole('admin');
-          setRoles(['admin']);
+          // Add roles from user_roles table
+          if (rolesResult.data && rolesResult.data.length > 0) {
+            rolesResult.data.forEach(r => {
+              const normalizedRole = (r.role as string).trim().toLowerCase() as AppRole;
+              if (!rolesList.includes(normalizedRole)) {
+                rolesList.push(normalizedRole);
+              }
+            });
+          }
+
+          // Add driver role if assigned in drivers table
+          if (isDriver && !rolesList.includes('driver')) {
+            rolesList.push('driver');
+            console.log('🚗 User is an active driver');
+          }
+
+          // Add biker role if assigned in bikers table
+          if (isBiker && !rolesList.includes('biker')) {
+            rolesList.push('biker');
+            console.log('🚴 User is an active biker');
+          }
+
+          if (rolesList.length > 0) {
+            setRoles(rolesList);
+            
+            // Set primary role (admin takes precedence, then driver, then biker)
+            const primaryRole = rolesList.includes('admin') 
+              ? 'admin' 
+              : rolesList.includes('driver')
+              ? 'driver'
+              : rolesList[0];
+            
+            setRole(primaryRole);
+            
+            console.log('👤 User roles loaded:', rolesList, 'Primary:', primaryRole);
+          } else if (isDev) {
+            // In dev mode with logged-in user but no roles, default to admin
+            console.log('🔧 DEV MODE: No roles found, defaulting to admin');
+            setRole('admin');
+            setRoles(['admin']);
+          }
         }
       } catch (error) {
         console.error('Error fetching user role:', error);
@@ -97,6 +140,28 @@ export function useUserRole() {
           fetchUserRole();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'drivers',
+        },
+        () => {
+          fetchUserRole();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bikers',
+        },
+        () => {
+          fetchUserRole();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -111,8 +176,16 @@ export function useUserRole() {
   const isAdmin = (): boolean => {
     // In dev mode, always return true for admin check
     if (isDev && loading) return true;
-    return roles.includes('admin');
+    return roles.includes('admin') || roles.includes('owner');
   };
 
-  return { role, roles, loading, hasRole, isAdmin };
+  const isDriver = (): boolean => {
+    return isDriverAssigned || roles.includes('driver');
+  };
+
+  const isBiker = (): boolean => {
+    return isBikerAssigned || roles.includes('biker');
+  };
+
+  return { role, roles, loading, hasRole, isAdmin, isDriver, isBiker, isDriverAssigned, isBikerAssigned };
 }

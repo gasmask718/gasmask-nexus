@@ -46,8 +46,8 @@ export const navigationItems = [
   { to: '/delivery/locations', icon: MapPin, label: 'Locations', roles: ['admin', 'dispatcher', 'ops_manager'] },
   { to: '/delivery/payouts', icon: CreditCard, label: 'Worker Payouts', roles: ['admin', 'finance', 'ops_manager'] },
   { to: '/delivery/debt', icon: DollarSign, label: 'Debt Collection', roles: ['admin', 'finance'] },
-  { to: '/delivery/driver-home', icon: Home, label: 'Driver Home', roles: ['driver'] },
-  { to: '/delivery/my-route', icon: MapPin, label: 'My Route', roles: ['driver'] },
+  { to: '/delivery/driver-home', icon: Home, label: 'Driver Home', roles: ['driver', 'admin', 'employee'] },
+  { to: '/delivery/my-route', icon: MapPin, label: 'My Route', roles: ['driver', 'admin', 'employee'] },
   
   { to: '/me/home', icon: MapPin, label: 'Worker Home', roles: ['driver', 'biker', 'ambassador'] },
   { to: '/me/driver', icon: Home, label: 'Driver Dashboard', roles: ['driver', 'biker'] },
