@@ -12,6 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
+import { SimulationModeToggle, SimulationBanner } from '@/components/delivery/SimulationModeToggle';
+import { useResolvedData, useSimulationData } from '@/hooks/useSimulationData';
 import { 
   DollarSign, Search, Filter, Plus, CheckCircle2, Clock, 
   FileText, Download, CreditCard, User, Truck, Bike
@@ -33,10 +36,14 @@ type WorkerPayout = {
   payout_reference: string | null;
   paid_at: string | null;
   created_at: string;
+  worker_name?: string;
+  is_simulated?: boolean;
 };
 
 const WorkerPayouts: React.FC = () => {
   const queryClient = useQueryClient();
+  const { simulationMode } = useSimulationMode();
+  const simData = useSimulationData();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [workerTypeFilter, setWorkerTypeFilter] = useState<string>('all');
@@ -57,6 +64,30 @@ const WorkerPayouts: React.FC = () => {
       return data as WorkerPayout[];
     }
   });
+
+  // Convert simulation payouts to match expected format
+  const simPayouts: WorkerPayout[] = simData.payouts.map(p => ({
+    id: p.id,
+    business_id: 'sim',
+    worker_type: p.worker_type,
+    worker_id: p.worker_id,
+    period_start: p.period_start,
+    period_end: p.period_end,
+    total_earned: p.total_earned,
+    adjustments: p.adjustments,
+    debt_withheld: p.debt_withheld,
+    total_to_pay: p.total_to_pay,
+    status: p.status,
+    payout_method: null,
+    payout_reference: null,
+    paid_at: null,
+    created_at: new Date().toISOString(),
+    worker_name: p.worker_name,
+    is_simulated: true,
+  }));
+
+  // Resolve payouts data
+  const resolvedPayouts = useResolvedData(payouts, simPayouts);
 
   // Fetch drivers
   const { data: drivers = [] } = useQuery({
@@ -116,6 +147,8 @@ const WorkerPayouts: React.FC = () => {
   });
 
   const getWorkerName = (payout: WorkerPayout) => {
+    // Check for simulated worker name first
+    if (payout.worker_name) return payout.worker_name;
     if (payout.worker_type === 'driver') {
       return drivers.find(d => d.id === payout.worker_id)?.full_name || 'Unknown Driver';
     }
@@ -133,7 +166,7 @@ const WorkerPayouts: React.FC = () => {
     return <Badge variant={variants[status] || 'outline'}>{status.replace('_', ' ')}</Badge>;
   };
 
-  const filteredPayouts = payouts.filter(payout => {
+  const filteredPayouts = resolvedPayouts.data.filter(payout => {
     const workerName = getWorkerName(payout).toLowerCase();
     const matchesSearch = workerName.includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || payout.status === statusFilter;
@@ -141,9 +174,9 @@ const WorkerPayouts: React.FC = () => {
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const totalPending = payouts.filter(p => p.status === 'pending_approval').reduce((sum, p) => sum + p.total_to_pay, 0);
-  const totalApproved = payouts.filter(p => p.status === 'approved').reduce((sum, p) => sum + p.total_to_pay, 0);
-  const totalPaid = payouts.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.total_to_pay, 0);
+  const totalPending = resolvedPayouts.data.filter(p => p.status === 'pending_approval').reduce((sum, p) => sum + p.total_to_pay, 0);
+  const totalApproved = resolvedPayouts.data.filter(p => p.status === 'approved').reduce((sum, p) => sum + p.total_to_pay, 0);
+  const totalPaid = resolvedPayouts.data.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.total_to_pay, 0);
 
   const exportCSV = () => {
     const headers = ['Worker', 'Type', 'Period', 'Earned', 'Adjustments', 'Debt', 'Total', 'Status'];
@@ -168,6 +201,7 @@ const WorkerPayouts: React.FC = () => {
 
   return (
     <Layout>
+      <SimulationBanner />
       <div className="container mx-auto p-4 md:p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -175,10 +209,12 @@ const WorkerPayouts: React.FC = () => {
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <DollarSign className="h-6 w-6 text-primary" />
               Worker Payouts
+              {resolvedPayouts.isSimulated && <SimulationBadge />}
             </h1>
             <p className="text-muted-foreground">Manage driver and biker payments</p>
           </div>
           <div className="flex gap-2">
+            <SimulationModeToggle />
             <Button variant="outline" onClick={exportCSV}>
               <Download className="h-4 w-4 mr-2" /> Export CSV
             </Button>
@@ -241,7 +277,7 @@ const WorkerPayouts: React.FC = () => {
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <div className="text-2xl font-bold">{payouts.length}</div>
+                  <div className="text-2xl font-bold">{resolvedPayouts.data.length}</div>
                   <p className="text-sm text-muted-foreground">Total Payouts</p>
                 </div>
               </div>

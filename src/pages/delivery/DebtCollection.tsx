@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBusiness } from "@/contexts/BusinessContext";
+import { useSimulationMode, SimulationBadge, SimulatedSection } from "@/contexts/SimulationModeContext";
+import { SimulationModeToggle, SimulationBanner } from "@/components/delivery/SimulationModeToggle";
+import { useResolvedData, useSimulationData } from "@/hooks/useSimulationData";
 import Layout from "@/components/Layout";
 import { useDriverDebts, useDrivers, useCreateDebt, useRecordDebtPayment, type DriverDebt } from "@/hooks/useDeliveryData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +32,8 @@ const PAYMENT_METHODS = ["withheld_from_payout", "cash", "zelle", "ach", "other"
 export default function DebtCollection() {
   const navigate = useNavigate();
   const { currentBusiness } = useBusiness();
+  const { simulationMode } = useSimulationMode();
+  const simData = useSimulationData();
   const businessId = currentBusiness?.id;
 
   const [search, setSearch] = useState("");
@@ -54,8 +59,26 @@ export default function DebtCollection() {
   const createDebt = useCreateDebt();
   const recordPayment = useRecordDebtPayment();
 
-  const filteredDebts = debts.filter(d => {
-    const matchesSearch = d.driver?.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+  // Convert simulation debts to match expected format
+  const simDebts = simData.debts.map(d => ({
+    id: d.id,
+    driver_id: d.driver_id,
+    debt_type: d.debt_type,
+    original_amount: d.original_amount,
+    remaining_amount: d.remaining_amount,
+    status: d.status,
+    created_at: d.created_at.toISOString(),
+    notes: d.notes,
+    driver: { full_name: d.driver_name },
+    is_simulated: true,
+  }));
+
+  // Resolve debts data
+  const resolvedDebts = useResolvedData(debts, simDebts as any);
+
+  const filteredDebts = resolvedDebts.data.filter(d => {
+    const driverName = (d as any).driver?.full_name || (d as any).driver_name || '';
+    const matchesSearch = driverName.toLowerCase().includes(search.toLowerCase()) ||
       d.debt_type.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = !statusFilter || d.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -106,6 +129,7 @@ export default function DebtCollection() {
 
   return (
     <Layout>
+      <SimulationBanner />
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -113,10 +137,14 @@ export default function DebtCollection() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Debt Collection</h1>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              Debt Collection
+              {resolvedDebts.isSimulated && <SimulationBadge />}
+            </h1>
             <p className="text-muted-foreground">Track and collect driver debts</p>
           </div>
         </div>
+        <SimulationModeToggle />
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -192,7 +220,7 @@ export default function DebtCollection() {
                 <DollarSign className="h-5 w-5 text-red-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold">${totalOpen.toFixed(2)}</p>
+                <p className="text-2xl font-bold">${resolvedDebts.data.filter(d => d.status === "open").reduce((sum, d) => sum + d.remaining_amount, 0).toFixed(2)}</p>
                 <p className="text-xs text-muted-foreground">Open Debt</p>
               </div>
             </div>
@@ -206,7 +234,7 @@ export default function DebtCollection() {
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold">${totalInCollection.toFixed(2)}</p>
+                <p className="text-2xl font-bold">${resolvedDebts.data.filter(d => d.status === "in_collection").reduce((sum, d) => sum + d.remaining_amount, 0).toFixed(2)}</p>
                 <p className="text-xs text-muted-foreground">In Collection</p>
               </div>
             </div>
@@ -220,7 +248,7 @@ export default function DebtCollection() {
                 <CheckCircle2 className="h-5 w-5 text-green-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{totalSettled}</p>
+                <p className="text-2xl font-bold">{resolvedDebts.data.filter(d => d.status === "settled").length}</p>
                 <p className="text-xs text-muted-foreground">Settled</p>
               </div>
             </div>
@@ -234,7 +262,7 @@ export default function DebtCollection() {
                 <DollarSign className="h-5 w-5 text-slate-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{debts.length}</p>
+                <p className="text-2xl font-bold">{resolvedDebts.data.length}</p>
                 <p className="text-xs text-muted-foreground">Total Records</p>
               </div>
             </div>
