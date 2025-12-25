@@ -165,8 +165,8 @@ export const FLOOR_4_DELIVERY: OSFloor = {
     { id: 'routes', label: 'Route Plans', path: '/routes', icon: Map, roles: ['ceo', 'admin', 'va', 'driver'] },
     { id: 'route-optimizer', label: 'Route Optimizer', path: '/route-optimizer', icon: Target, roles: ['ceo', 'admin', 'va'] },
     { id: 'live-map', label: 'Live Map', path: '/operations/live-map', icon: Globe, roles: ['ceo', 'admin', 'va'] },
-    { id: 'biker-payouts', label: 'Biker Payouts', path: '/biker-payouts', icon: Wallet, roles: ['ceo', 'admin', 'va'] },
-    { id: 'driver-payouts', label: 'Driver Payouts', path: '/driver-payouts', icon: Wallet, roles: ['ceo', 'admin', 'va'] },
+    { id: 'biker-payouts', label: 'Biker Payouts', path: '/delivery/payouts', icon: Wallet, roles: ['ceo', 'admin', 'va'] },
+    { id: 'driver-payouts', label: 'Driver Payouts', path: '/delivery/payouts', icon: Wallet, roles: ['ceo', 'admin', 'va'] },
   ],
 };
 
@@ -598,7 +598,7 @@ export const SECTION_LEGACY_SYSTEMS: OSFloor = {
     // Old Drivers/Bikers
     { id: 'legacy-driver', label: 'Driver Management', path: '/driver', icon: Car, roles: ['ceo', 'admin', 'va'] },
     { id: 'legacy-driver-debt', label: 'Driver Debt Collection', path: '/driver-debt-collection', icon: DollarSign, roles: ['ceo', 'admin'] },
-    { id: 'legacy-biker-payouts', label: 'Biker Payouts', path: '/biker-payouts', icon: Wallet, roles: ['ceo', 'admin', 'va'] },
+    { id: 'legacy-biker-payouts', label: 'Biker Payouts', path: '/delivery/payouts', icon: Wallet, roles: ['ceo', 'admin', 'va'] },
     { id: 'legacy-delivery-capacity', label: 'Delivery Capacity', path: '/delivery-capacity', icon: Truck, roles: ['ceo', 'admin', 'va'] },
     // Old Analytics / Reports
     { id: 'legacy-analytics', label: 'Analytics', path: '/analytics', icon: BarChart3, roles: ['ceo', 'admin', 'va'] },
