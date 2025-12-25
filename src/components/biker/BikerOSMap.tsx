@@ -181,79 +181,80 @@ export const BikerOSMap: React.FC<BikerOSMapProps> = ({
               ) : (
                 <Store className="h-5 w-5 text-blue-500" />
               )}
-              {selectedEntity?.type === 'biker' 
-                ? (selectedEntity.data as BikerLocation).name 
-                : (selectedEntity.data as StoreLocation).name}
+              {selectedEntity?.data?.name || 'Loading...'}
             </SheetTitle>
           </SheetHeader>
 
-          {selectedEntity?.type === 'biker' && (
-            <div className="mt-6 space-y-4">
-              <div className="flex items-center gap-2">
-                <Badge variant={selectedEntity.data.status === 'active' ? 'default' : 'secondary'}>
-                  {(selectedEntity.data as BikerLocation).status}
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{(selectedEntity.data as BikerLocation).territory}</span>
+          {selectedEntity?.type === 'biker' && selectedEntity.data && (() => {
+            const biker = selectedEntity.data as BikerLocation;
+            return (
+              <div className="mt-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Badge variant={biker.status === 'active' ? 'default' : 'secondary'}>
+                    {biker.status}
+                  </Badge>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Route className="h-4 w-4 text-muted-foreground" />
-                  <span>{(selectedEntity.data as BikerLocation).tasksToday} tasks today</span>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{biker.territory}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Route className="h-4 w-4 text-muted-foreground" />
+                    <span>{biker.tasksToday} tasks today</span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2 pt-4">
+                  <Button onClick={() => onBikerClick?.(biker.id)}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Profile
+                  </Button>
+                  <Button variant="outline">
+                    <Route className="h-4 w-4 mr-2" />
+                    Assign Route
+                  </Button>
                 </div>
               </div>
-              <div className="flex flex-col gap-2 pt-4">
-                <Button onClick={() => onBikerClick?.(selectedEntity.data.id)}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Profile
-                </Button>
-                <Button variant="outline">
-                  <Route className="h-4 w-4 mr-2" />
-                  Assign Route
-                </Button>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
-          {selectedEntity?.type === 'store' && (
-            <div className="mt-6 space-y-4">
-              <Badge variant="outline" className="capitalize">
-                {(selectedEntity.data as StoreLocation).status.replace('_', ' ')}
-              </Badge>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{(selectedEntity.data as StoreLocation).address}</span>
+          {selectedEntity?.type === 'store' && selectedEntity.data && (() => {
+            const store = selectedEntity.data as StoreLocation;
+            return (
+              <div className="mt-6 space-y-4">
+                <Badge variant="outline" className="capitalize">
+                  {store.status.replace('_', ' ')}
+                </Badge>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{store.address}</span>
+                  </div>
+                  {store.lastCheck && (
+                    <p className="text-sm text-muted-foreground">
+                      Last check: {store.lastCheck}
+                    </p>
+                  )}
                 </div>
-                {(selectedEntity.data as StoreLocation).lastCheck && (
-                  <p className="text-sm text-muted-foreground">
-                    Last check: {(selectedEntity.data as StoreLocation).lastCheck}
-                  </p>
-                )}
+                <div className="flex flex-col gap-2 pt-4">
+                  <Button onClick={() => onStoreClick?.(store.id)}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Store Profile
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      onAssignBiker?.(store.id, store.name);
+                      setSelectedEntity(null);
+                    }}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Assign Biker
+                  </Button>
+                </div>
               </div>
-              <div className="flex flex-col gap-2 pt-4">
-                <Button onClick={() => onStoreClick?.(selectedEntity.data.id)}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Store Profile
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    onAssignBiker?.(
-                      selectedEntity.data.id, 
-                      (selectedEntity.data as StoreLocation).name
-                    );
-                    setSelectedEntity(null);
-                  }}
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Assign Biker
-                </Button>
-              </div>
-            </div>
-          )}
+            );
+          })()}
         </SheetContent>
       </Sheet>
     </>
