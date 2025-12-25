@@ -125,17 +125,18 @@ const DriverIssuesReported: React.FC = () => {
   const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
 
   // Fetch real issues data
-  const { data: realIssues = [] } = useQuery({
+  const { data: realIssues = [] } = useQuery<any[], Error>({
     queryKey: ['driver-reported-issues', user?.id],
-    queryFn: async (): Promise<any[]> => {
+    queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client = supabase as any;
+      const result = await client
         .from('biker_issues')
-        .select('id, issue_type, severity, status, created_at, description, store_id')
+        .select('*')
         .eq('reported_by', user.id)
         .order('created_at', { ascending: false });
-      if (error) return [];
-      return data || [];
+      return result.data ?? [];
     },
     enabled: !!user?.id,
   });
