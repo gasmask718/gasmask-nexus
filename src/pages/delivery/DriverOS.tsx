@@ -159,33 +159,55 @@ const DriverOS: React.FC = () => {
 
   // Simulate driver data when no real data exists
   const simDriver = simulationData.drivers?.[0];
-  const hasRealData = !!profile || routesCompleted > 0 || stopsCompleted > 0;
+  
+  // Check for ACTUAL meaningful data - profile existing alone is not enough
+  const hasRealRouteData = routesCompleted > 0 || (routeStats?.completed || 0) > 0;
+  const hasRealStopData = stopsCompleted > 0;
+  const hasRealPayoutData = (payoutSummary?.lastPaid || 0) > 0 || (payoutSummary?.pendingAmount || 0) > 0;
+  const hasRealActivityData = recentHistory.length > 0;
+  
+  // Only consider real data if there's actual route/payout/activity data
+  const hasRealData = hasRealRouteData || hasRealStopData || hasRealPayoutData || hasRealActivityData;
   const showSimulated = simulationMode && !hasRealData;
 
-  // Resolve stats: real or simulated
+  // FORCED SIMULATION VALUES - use when no real data
+  const SIM_TOTAL_ROUTES = 48;
+  const SIM_TOTAL_STOPS = 312;
+  const SIM_ISSUES = 9;
+  const SIM_HEALTH_SCORE = 97;
+  const SIM_LIFETIME_EARNINGS = 18420;
+  const SIM_LAST_PAYOUT = 860;
+  const SIM_PENDING_PAYOUT = 320;
+
+  // Resolve stats: real or FORCED simulated
   const totalRoutes = hasRealData 
     ? Math.max(routesCompleted, routeStats?.completed || 0)
-    : (showSimulated ? simDriver?.routes_today || 1 : 0);
+    : (showSimulated ? SIM_TOTAL_ROUTES : 0);
   const totalStops = hasRealData 
     ? stopsCompleted 
-    : (showSimulated ? (simDriver?.stops_completed || 0) + (simDriver?.stops_pending || 0) : 0);
+    : (showSimulated ? SIM_TOTAL_STOPS : 0);
+  const issuesReported = hasRealData 
+    ? 0 
+    : (showSimulated ? SIM_ISSUES : 0);
   const healthScore = hasRealData 
     ? (profile?.driver_health_score || 100)
-    : (showSimulated ? 95 : 100);
+    : (showSimulated ? SIM_HEALTH_SCORE : 100);
   const lastPayout = hasRealData 
     ? (payoutSummary?.lastPaid || 0)
-    : (showSimulated ? 320 : 0);
+    : (showSimulated ? SIM_LAST_PAYOUT : 0);
   const pendingPayout = hasRealData 
     ? (payoutSummary?.pendingAmount || 0)
-    : (showSimulated ? simDriver?.estimated_earnings || 280 : 0);
+    : (showSimulated ? SIM_PENDING_PAYOUT : 0);
 
-  // Simulated activity
+  // FORCED simulated activity with realistic route IDs
   const resolvedActivity = hasRealData 
     ? recentHistory 
     : (showSimulated ? [
-        { id: 'sim-1', date: new Date().toISOString(), type: 'Wholesale', territory: 'Brooklyn', status: 'completed' },
-        { id: 'sim-2', date: new Date(Date.now() - 86400000).toISOString(), type: 'Retail', territory: 'Queens', status: 'completed' },
-        { id: 'sim-3', date: new Date(Date.now() - 172800000).toISOString(), type: 'Wholesale', territory: 'Bronx', status: 'completed' },
+        { id: 'RT-SIM-101', date: new Date().toISOString(), type: 'Wholesale', territory: 'Brooklyn', status: 'completed' },
+        { id: 'RT-SIM-099', date: new Date(Date.now() - 86400000).toISOString(), type: 'Retail', territory: 'Queens', status: 'completed' },
+        { id: 'RT-SIM-088', date: new Date(Date.now() - 172800000).toISOString(), type: 'Wholesale', territory: 'Bronx', status: 'completed' },
+        { id: 'RT-SIM-075', date: new Date(Date.now() - 259200000).toISOString(), type: 'Retail', territory: 'Manhattan', status: 'completed' },
+        { id: 'RT-SIM-062', date: new Date(Date.now() - 345600000).toISOString(), type: 'Wholesale', territory: 'Brooklyn', status: 'completed' },
       ] : []);
 
   return (
@@ -277,7 +299,7 @@ const DriverOS: React.FC = () => {
               <div className="h-10 w-10 mx-auto rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mb-2">
                 <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
               </div>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{issuesReported}</div>
               <p className="text-sm text-muted-foreground">Issues Reported</p>
             </CardContent>
           </Card>
