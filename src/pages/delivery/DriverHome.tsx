@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useSimulationMode, SimulationBadge, SimulatedSection } from '@/contexts/SimulationModeContext';
 import { SimulationModeToggle, SimulationBanner } from '@/components/delivery/SimulationModeToggle';
-import { generateSimRoutes, generateSimStops } from '@/lib/simulation/deliverySimData';
+import { useSimulationData } from '@/hooks/useSimulationData';
 import { 
   Truck, MapPin, Package, Clock, Play, RefreshCw,
   AlertTriangle, DollarSign, CheckCircle2, Navigation,
@@ -26,16 +26,9 @@ const DriverHome: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { simulationMode } = useSimulationMode();
+  const simData = useSimulationData();
   const today = format(new Date(), 'yyyy-MM-dd');
   const [driverStatus, setDriverStatus] = useState<DriverStatus>('available');
-
-  // Generate simulation data
-  const simRoutes = useMemo(() => generateSimRoutes(3), []);
-  const simTrainingRoute = useMemo(() => ({
-    ...generateSimRoutes(1)[0],
-    delivery_type: 'Training Route (Demo)',
-    dispatcher_notes: 'This is a simulated training route. Actions here are for demonstration only.',
-  }), []);
 
   // Fetch driver's active routes for today (assigned to current driver)
   const { data: activeRoutes = [], isLoading: loadingActive, refetch: refetchActive } = useQuery({
@@ -119,23 +112,53 @@ const DriverHome: React.FC = () => {
     enabled: !!user?.id,
   });
 
-  // Calculate stats
-  const totalDeliveries = activeRoutes.length;
-  const totalStops = activeRoutes.reduce((sum, d: any) => sum + (d.delivery_stops?.length || 0), 0);
-  const completedStops = activeRoutes.reduce((sum, d: any) => 
-    sum + (d.delivery_stops?.filter((s: any) => s.status === 'completed').length || 0), 0);
+  // FORCE SIMULATION DATA: Resolve routes - real data takes priority, then simulation
+  const hasRealData = activeRoutes.length > 0;
+  const showSimulated = simulationMode && !hasRealData;
+  
+  // Get simulation route when no real data
+  const simRoute = showSimulated && simData.routes.length > 0 ? {
+    id: simData.routes[0].id,
+    status: simData.routes[0].status,
+    priority: simData.routes[0].priority,
+    delivery_type: simData.routes[0].delivery_type,
+    scheduled_date: simData.routes[0].scheduled_date,
+    dispatcher_notes: simData.routes[0].dispatcher_notes,
+    delivery_stops: simData.routes[0].stops.map(s => ({
+      id: s.id,
+      status: s.status,
+      store_name: s.store_name,
+    })),
+    driver_name: simData.routes[0].driver_name,
+    estimated_earnings: simData.routes[0].estimated_earnings,
+    is_simulated: true,
+  } : null;
+
+  // Calculate stats from real or sim data
+  const totalDeliveries = hasRealData ? activeRoutes.length : (showSimulated ? 1 : 0);
+  const totalStops = hasRealData 
+    ? activeRoutes.reduce((sum, d: any) => sum + (d.delivery_stops?.length || 0), 0)
+    : (showSimulated && simData.routes[0] ? simData.routes[0].total_stops : 0);
+  const completedStops = hasRealData 
+    ? activeRoutes.reduce((sum, d: any) => sum + (d.delivery_stops?.filter((s: any) => s.status === 'completed').length || 0), 0)
+    : (showSimulated && simData.routes[0] ? simData.routes[0].completed_stops : 0);
   const pendingStops = totalStops - completedStops;
   
-  // Alerts: stops with amount_due or tight time windows
-  const alerts = activeRoutes.flatMap((d: any) => 
-    d.delivery_stops?.filter((s: any) => 
-      s.amount_due > 0 || (s.window_end && new Date(`${today}T${s.window_end}`) < new Date(Date.now() + 60 * 60 * 1000))
-    ) || []
-  );
+  // FORCED: Alerts and earnings for simulation
+  const alerts = hasRealData 
+    ? activeRoutes.flatMap((d: any) => 
+        d.delivery_stops?.filter((s: any) => 
+          s.amount_due > 0 || (s.window_end && new Date(`${today}T${s.window_end}`) < new Date(Date.now() + 60 * 60 * 1000))
+        ) || []
+      )
+    : (showSimulated ? simData.routes[0]?.stops.filter(s => s.amount_due > 0).slice(0, 3) || [] : []);
 
-  // Get active route (in_progress first, then scheduled)
-  const activeRoute = activeRoutes.find((r: any) => r.status === 'in_progress') 
-    || activeRoutes.find((r: any) => r.status === 'scheduled');
+  const estimatedEarnings = hasRealData ? 0 : (showSimulated && simData.routes[0] ? simData.routes[0].estimated_earnings : 0);
+
+  // Get active route (real or simulated)
+  const activeRoute = hasRealData 
+    ? (activeRoutes.find((r: any) => r.status === 'in_progress') || activeRoutes.find((r: any) => r.status === 'scheduled'))
+    : simRoute;
 
   const handleRefresh = () => {
     refetchActive();
@@ -188,16 +211,20 @@ const DriverHome: React.FC = () => {
   return (
     <Layout>
       <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-4xl">
+        <SimulationBanner />
+        
         {/* SECTION A — Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Truck className="h-6 w-6 text-primary" />
               Driver Command Center
+              {showSimulated && <SimulationBadge className="ml-2" />}
             </h1>
             <p className="text-muted-foreground">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
           </div>
           <div className="flex items-center gap-3">
+            <SimulationModeToggle />
             <Button variant="outline" size="sm" onClick={handleRefresh}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
@@ -214,7 +241,7 @@ const DriverHome: React.FC = () => {
           </div>
         </div>
 
-        {/* Stats Row */}
+        {/* Stats Row - FORCED values */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
             <CardContent className="p-4">
@@ -255,20 +282,120 @@ const DriverHome: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-gradient-to-br from-emerald-500/5 to-emerald-500/10 border-emerald-500/20">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold">{alerts.length}</div>
-                  <p className="text-sm text-muted-foreground">Alerts</p>
+                  <div className="text-2xl font-bold">${estimatedEarnings || 320}</div>
+                  <p className="text-sm text-muted-foreground">Est. Earnings</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* SECTION B — Primary Action - Active Route */}
+        {activeRoute ? (
+          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-transparent to-transparent">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Zap className="h-5 w-5 text-primary" />
+                Active Route
+                {(activeRoute as any).is_simulated && <SimulationBadge className="ml-2" />}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col md:flex-row justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-sm text-muted-foreground">
+                      #{activeRoute.id.slice(0, 12)}
+                    </span>
+                    {getStatusBadge(activeRoute.status)}
+                    {getPriorityBadge(activeRoute.priority)}
+                    <Badge variant="outline">{activeRoute.delivery_type}</Badge>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-4 w-4" />
+                      {(activeRoute as any).delivery_stops?.filter((s: any) => s.status === 'completed').length || completedStops}/
+                      {(activeRoute as any).delivery_stops?.length || totalStops} stops
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      Start: 9:30 AM
+                    </span>
+                  </div>
+                  {activeRoute.dispatcher_notes && (
+                    <p className="text-sm bg-muted p-2 rounded">{activeRoute.dispatcher_notes}</p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  {activeRoute.status === 'scheduled' && (
+                    <Button 
+                      size="lg" 
+                      onClick={() => navigate(`/delivery/my-route/${activeRoute.id}`)}
+                    >
+                      <Play className="h-4 w-4 mr-2" /> Start Route
+                    </Button>
+                  )}
+                  {activeRoute.status === 'in_progress' && (
+                    <Button 
+                      size="lg" 
+                      onClick={() => navigate(`/delivery/my-route/${activeRoute.id}`)}
+                    >
+                      <Navigation className="h-4 w-4 mr-2" /> View Route
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm">
+                    <MessageSquare className="h-4 w-4 mr-2" /> Contact Dispatcher
+                  </Button>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-muted-foreground">Progress</span>
+                  <span className="font-medium">
+                    {totalStops > 0 ? Math.round((completedStops / totalStops) * 100) : 0}%
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all"
+                    style={{ width: `${totalStops > 0 ? (completedStops / totalStops) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-dashed">
+            <CardContent className="py-8 text-center space-y-4">
+              <div className="h-16 w-16 mx-auto rounded-full bg-muted flex items-center justify-center">
+                <Truck className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">No Active Route</h3>
+                <p className="text-muted-foreground text-sm">
+                  {simulationMode ? 'Loading simulation data...' : 'You\'re all caught up! No deliveries assigned for today yet.'}
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+                <Button variant="outline" onClick={() => setDriverStatus('available')}>
+                  <User className="h-4 w-4 mr-2" /> Set Available
+                </Button>
+                <Button variant="outline">
+                  <MessageSquare className="h-4 w-4 mr-2" /> Message Dispatcher
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* SECTION B — Primary Action */}
         {activeRoute ? (
