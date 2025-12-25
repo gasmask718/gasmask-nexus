@@ -15,8 +15,11 @@ import { format } from 'date-fns';
 import { 
   ArrowLeft, Bike, Phone, Mail, MapPin, Edit, 
   DollarSign, CheckCircle2, Clock, Calendar, 
-  ClipboardCheck, AlertTriangle
+  ClipboardCheck, AlertTriangle, TrendingUp, AlertCircle
 } from 'lucide-react';
+import { useBikerIssues } from '@/hooks/useBikerIssues';
+import BikerPerformanceTab from '@/components/biker/BikerPerformanceTab';
+import BikerIssuesTab from '@/components/biker/BikerIssuesTab';
 
 const BikerProfile: React.FC = () => {
   const { bikerId } = useParams();
@@ -233,11 +236,17 @@ const BikerProfile: React.FC = () => {
           </div>
         </div>
 
-        {/* Tabs for Tasks & Payouts */}
+        {/* Tabs for Tasks, Issues, Performance & Payouts */}
         <Tabs defaultValue="tasks">
           <TabsList>
             <TabsTrigger value="tasks">
-              <ClipboardCheck className="h-4 w-4 mr-2" /> Recent Tasks
+              <ClipboardCheck className="h-4 w-4 mr-2" /> Tasks
+            </TabsTrigger>
+            <TabsTrigger value="issues">
+              <AlertCircle className="h-4 w-4 mr-2" /> Issues
+            </TabsTrigger>
+            <TabsTrigger value="performance">
+              <TrendingUp className="h-4 w-4 mr-2" /> Performance
             </TabsTrigger>
             <TabsTrigger value="payouts">
               <DollarSign className="h-4 w-4 mr-2" /> Payouts
@@ -278,6 +287,14 @@ const BikerProfile: React.FC = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="issues" className="mt-4">
+            <BikerIssuesTab bikerId={bikerId || ''} />
+          </TabsContent>
+
+          <TabsContent value="performance" className="mt-4">
+            <BikerPerformanceTab bikerId={bikerId || ''} />
           </TabsContent>
 
           <TabsContent value="payouts" className="mt-4">

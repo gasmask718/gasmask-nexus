@@ -295,7 +295,10 @@ import {
   DebtCollection, 
   DriverHome,
   DriverOS,
-  DeliveryMyRoute 
+  DeliveryMyRoute,
+  HeatmapPage as DeliveryHeatmapPage,
+  IssueDetailPage as DeliveryIssueDetailPage,
+  RouteSuggestionsPage as DeliveryRouteSuggestionsPage
 } from '@/pages/delivery';
 import DeliveryStoreProfile from '@/pages/delivery/StoreProfile';
 import DeliveryRouteDetailPage from '@/pages/delivery/DeliveryRouteDetail';
@@ -745,6 +748,9 @@ export default function AppRoutes() {
         <Route path="/delivery/my-route/:deliveryId" element={<DeliveryMyRoute />} />
         <Route path="/delivery/store/:storeId" element={<DeliveryStoreProfile />} />
         <Route path="/delivery/routes/:routeId" element={<DeliveryRouteDetailPage />} />
+        <Route path="/delivery/heatmap" element={<DeliveryHeatmapPage />} />
+        <Route path="/delivery/issues/:issueId" element={<DeliveryIssueDetailPage />} />
+        <Route path="/delivery/route-suggestions" element={<DeliveryRouteSuggestionsPage />} />
         {/* Catch-all for unknown /delivery/* paths - redirect to delivery dashboard */}
         <Route path="/delivery/*" element={<Navigate to="/delivery" replace />} />
         <Route path="/toptier" element={<TopTierDashboard />} />
