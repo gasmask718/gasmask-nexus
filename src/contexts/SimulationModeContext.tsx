@@ -24,8 +24,13 @@ export function SimulationModeProvider({ children }: { children: ReactNode }) {
 
 export function useSimulationMode() {
   const context = useContext(SimulationModeContext);
+  // Return default values if not in provider (graceful fallback for edge cases)
   if (context === undefined) {
-    throw new Error('useSimulationMode must be used within a SimulationModeProvider');
+    return {
+      simulationMode: false,
+      setSimulationMode: () => {},
+      toggleSimulationMode: () => {},
+    };
   }
   return context;
 }
