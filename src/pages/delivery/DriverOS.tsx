@@ -274,33 +274,45 @@ const DriverOS: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Lifetime Stats */}
+        {/* Lifetime Stats - CLICKABLE */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
+          <Card 
+            className="cursor-pointer hover:bg-muted/50 transition-colors group"
+            onClick={() => navigate('/delivery/driver/routes-completed')}
+          >
             <CardContent className="p-4 text-center">
               <div className="h-10 w-10 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-2">
                 <Truck className="h-5 w-5 text-primary" />
               </div>
               <div className="text-2xl font-bold">{totalRoutes}</div>
               <p className="text-sm text-muted-foreground">Routes Completed</p>
+              <p className="text-xs text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">View Details →</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className="cursor-pointer hover:bg-muted/50 transition-colors group"
+            onClick={() => navigate('/delivery/driver/stops-completed')}
+          >
             <CardContent className="p-4 text-center">
               <div className="h-10 w-10 mx-auto rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-2">
                 <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               <div className="text-2xl font-bold">{totalStops}</div>
               <p className="text-sm text-muted-foreground">Stops Completed</p>
+              <p className="text-xs text-green-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">View Details →</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className="cursor-pointer hover:bg-muted/50 transition-colors group"
+            onClick={() => navigate('/delivery/driver/issues-reported')}
+          >
             <CardContent className="p-4 text-center">
               <div className="h-10 w-10 mx-auto rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mb-2">
                 <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
               </div>
               <div className="text-2xl font-bold">{issuesReported}</div>
               <p className="text-sm text-muted-foreground">Issues Reported</p>
+              <p className="text-xs text-yellow-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">View Details →</p>
             </CardContent>
           </Card>
           <Card>
