@@ -10,3 +10,6 @@ export { default as DebtCollection } from './DebtCollection';
 export { default as DriverHome } from './DriverHome';
 export { default as DriverOS } from './DriverOS';
 export { default as DeliveryMyRoute } from './MyRoute';
+export { default as HeatmapPage } from './HeatmapPage';
+export { default as IssueDetailPage } from './IssueDetailPage';
+export { default as RouteSuggestionsPage } from './RouteSuggestionsPage';
