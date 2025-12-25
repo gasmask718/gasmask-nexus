@@ -116,8 +116,8 @@ const DriverHome: React.FC = () => {
   const hasRealData = activeRoutes.length > 0;
   const showSimulated = simulationMode && !hasRealData;
   
-  // Get simulation route when no real data
-  const simRoute = showSimulated && simData.routes.length > 0 ? {
+  // FORCED: Get simulation route when no real data - always use simData from context
+  const simRoute = showSimulated && simData.routes && simData.routes.length > 0 ? {
     id: simData.routes[0].id,
     status: simData.routes[0].status,
     priority: simData.routes[0].priority,
@@ -134,14 +134,14 @@ const DriverHome: React.FC = () => {
     is_simulated: true,
   } : null;
 
-  // Calculate stats from real or sim data
+  // FORCED: Calculate stats from real or sim data
   const totalDeliveries = hasRealData ? activeRoutes.length : (showSimulated ? 1 : 0);
   const totalStops = hasRealData 
     ? activeRoutes.reduce((sum, d: any) => sum + (d.delivery_stops?.length || 0), 0)
-    : (showSimulated && simData.routes[0] ? simData.routes[0].total_stops : 0);
+    : (showSimulated && simData.routes?.[0] ? simData.routes[0].total_stops : 0);
   const completedStops = hasRealData 
     ? activeRoutes.reduce((sum, d: any) => sum + (d.delivery_stops?.filter((s: any) => s.status === 'completed').length || 0), 0)
-    : (showSimulated && simData.routes[0] ? simData.routes[0].completed_stops : 0);
+    : (showSimulated && simData.routes?.[0] ? simData.routes[0].completed_stops : 0);
   const pendingStops = totalStops - completedStops;
   
   // FORCED: Alerts and earnings for simulation
@@ -151,9 +151,9 @@ const DriverHome: React.FC = () => {
           s.amount_due > 0 || (s.window_end && new Date(`${today}T${s.window_end}`) < new Date(Date.now() + 60 * 60 * 1000))
         ) || []
       )
-    : (showSimulated ? simData.routes[0]?.stops.filter(s => s.amount_due > 0).slice(0, 3) || [] : []);
+    : (showSimulated && simData.routes?.[0] ? simData.routes[0].stops.filter(s => s.amount_due > 0).slice(0, 3) : []);
 
-  const estimatedEarnings = hasRealData ? 0 : (showSimulated && simData.routes[0] ? simData.routes[0].estimated_earnings : 0);
+  const estimatedEarnings = hasRealData ? 0 : (showSimulated && simData.routes?.[0] ? simData.routes[0].estimated_earnings : 320);
 
   // Get active route (real or simulated)
   const activeRoute = hasRealData 

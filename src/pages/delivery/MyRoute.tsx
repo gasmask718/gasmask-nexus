@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +33,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
+import { SimulationModeToggle, SimulationBanner } from '@/components/delivery/SimulationModeToggle';
 
 const STOP_STATUSES = ["pending", "en_route", "arrived", "completed", "failed", "skipped"];
 const STOP_TYPES = ["pickup", "dropoff", "checkin", "other"];
@@ -42,6 +44,7 @@ export default function MyRoute() {
   const navigate = useNavigate();
   const { currentBusiness } = useBusiness();
   const businessId = currentBusiness?.id;
+  const { simulationMode, simulationData } = useSimulationMode();
 
   // If no deliveryId, show route selector
   const { data: availableRoutes = [], isLoading: loadingRoutes } = useQuery({
@@ -79,24 +82,49 @@ export default function MyRoute() {
   const [amountCollected, setAmountCollected] = useState("");
   const [proofNote, setProofNote] = useState("");
 
+  // Generate simulated routes when no real data and simulation mode is ON
+  const simRoutes = useMemo(() => {
+    if (!simulationMode || availableRoutes.length > 0) return [];
+    return simulationData.routes.map(route => ({
+      id: route.id,
+      delivery_type: route.delivery_type,
+      status: route.status,
+      dispatcher_notes: route.dispatcher_notes,
+      delivery_stops: route.stops,
+      stop_count: route.total_stops,
+      is_simulated: true,
+    }));
+  }, [simulationMode, simulationData, availableRoutes.length]);
+
+  // Resolve: real data takes priority, then simulation
+  const resolvedRoutes = availableRoutes.length > 0 ? availableRoutes : simRoutes;
+  const isSimulated = availableRoutes.length === 0 && simRoutes.length > 0;
+
   // Route Selector View
   if (!deliveryId) {
     return (
       <Layout>
+        <SimulationBanner />
         <div className="container mx-auto p-4 md:p-6 space-y-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/delivery/driver-home')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Select Route</h1>
-              <p className="text-muted-foreground">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate('/delivery/driver-home')}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold flex items-center gap-2">
+                  Select Route
+                  {isSimulated && <SimulationBadge className="ml-2" />}
+                </h1>
+                <p className="text-muted-foreground">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
+              </div>
             </div>
+            <SimulationModeToggle />
           </div>
 
-          {loadingRoutes ? (
+          {loadingRoutes && !simulationMode ? (
             <div className="text-center py-8 text-muted-foreground">Loading routes...</div>
-          ) : availableRoutes.length === 0 ? (
+          ) : resolvedRoutes.length === 0 ? (
             <Card>
               <CardContent className="py-16 text-center">
                 <Truck className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
@@ -109,13 +137,20 @@ export default function MyRoute() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {availableRoutes.map((route: any) => {
-                const stopCount = route.delivery_stops?.[0]?.count || 0;
+              {resolvedRoutes.map((route: any) => {
+                const stopCount = route.stop_count || route.delivery_stops?.[0]?.count || route.delivery_stops?.length || 0;
                 return (
                   <Card 
                     key={route.id} 
                     className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => navigate(`/delivery/my-route/${route.id}`)}
+                    onClick={() => {
+                      if (route.is_simulated) {
+                        // For simulated routes, navigate with special handling
+                        navigate(`/delivery/my-route/${route.id}`);
+                      } else {
+                        navigate(`/delivery/my-route/${route.id}`);
+                      }
+                    }}
                   >
                     <CardContent className="py-4">
                       <div className="flex items-center justify-between">
@@ -124,8 +159,9 @@ export default function MyRoute() {
                             <Truck className="h-6 w-6 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium text-lg">
-                              {route.delivery_type?.replace('_', ' ').toUpperCase() || 'Delivery'}
+                            <p className="font-medium text-lg flex items-center gap-2">
+                              {route.delivery_type?.replace('_', ' ').toUpperCase() || 'WHOLESALE'}
+                              {route.is_simulated && <SimulationBadge text="Demo" />}
                             </p>
                             <div className="flex items-center gap-3 text-sm text-muted-foreground">
                               <span className="flex items-center gap-1">
@@ -165,7 +201,16 @@ export default function MyRoute() {
     );
   }
 
-  if (isLoading) {
+  // Check if this is a simulated route
+  const isSimulatedRoute = deliveryId?.startsWith('RT-SIM-') || deliveryId?.startsWith('sim-');
+  
+  // Get simulated route data if applicable
+  const simRoute = useMemo(() => {
+    if (!isSimulatedRoute || !simulationMode) return null;
+    return simulationData.routes.find(r => r.id === deliveryId) || simulationData.routes[0];
+  }, [isSimulatedRoute, simulationMode, simulationData, deliveryId]);
+
+  if (isLoading && !isSimulatedRoute) {
     return (
       <Layout>
         <div className="p-6 text-center">Loading...</div>
@@ -173,7 +218,32 @@ export default function MyRoute() {
     );
   }
 
-  if (!delivery) {
+  // Use simulated delivery data if no real delivery and simulation mode is on
+  const resolvedDelivery = delivery || (isSimulatedRoute && simRoute ? {
+    id: simRoute.id,
+    delivery_type: simRoute.delivery_type,
+    scheduled_date: simRoute.scheduled_date,
+    status: simRoute.status,
+    priority: simRoute.priority,
+    dispatcher_notes: simRoute.dispatcher_notes,
+    driver: { full_name: simRoute.driver_name },
+    stops: simRoute.stops.map(s => ({
+      id: s.id,
+      status: s.status,
+      stop_type: 'dropoff',
+      stop_order: s.sequence,
+      items_summary: s.notes,
+      amount_due: s.amount_due,
+      location: {
+        id: s.store_id,
+        name: s.store_name,
+        address_line1: s.address,
+      }
+    })),
+    is_simulated: true,
+  } : null);
+
+  if (!resolvedDelivery) {
     return (
       <Layout>
         <div className="p-6 text-center">
@@ -185,12 +255,16 @@ export default function MyRoute() {
     );
   }
 
-  const stops = delivery.stops || [];
-  const completedStops = stops.filter(s => s.status === "completed" || s.status === "failed" || s.status === "skipped");
-  const remainingStops = stops.filter(s => s.status === "pending" || s.status === "en_route" || s.status === "arrived");
+  const stops = resolvedDelivery.stops || [];
+  const completedStops = stops.filter((s: any) => s.status === "completed" || s.status === "failed" || s.status === "skipped");
+  const remainingStops = stops.filter((s: any) => s.status === "pending" || s.status === "en_route" || s.status === "arrived");
 
   const handleStartRoute = async () => {
-    await updateDelivery.mutateAsync({ id: delivery.id, status: "in_progress" });
+    if ((resolvedDelivery as any).is_simulated) {
+      toast.success("Route started! (Simulated - no DB write)");
+      return;
+    }
+    await updateDelivery.mutateAsync({ id: resolvedDelivery.id, status: "in_progress" });
     toast.success("Route started!");
   };
 
@@ -199,7 +273,12 @@ export default function MyRoute() {
       toast.error("Complete all stops before finishing the route");
       return;
     }
-    await updateDelivery.mutateAsync({ id: delivery.id, status: "completed" });
+    if ((resolvedDelivery as any).is_simulated) {
+      toast.success("Route completed! (Simulated - no DB write)");
+      navigate("/delivery");
+      return;
+    }
+    await updateDelivery.mutateAsync({ id: resolvedDelivery.id, status: "completed" });
     toast.success("Route completed!");
     navigate("/delivery");
   };
@@ -278,27 +357,32 @@ export default function MyRoute() {
 
   return (
     <div className="p-6 space-y-6">
+      <SimulationBanner />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/delivery/deliveries")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/delivery/my-route")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">{delivery.delivery_type.replace("_", " ").toUpperCase()}</h1>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              {resolvedDelivery.delivery_type.replace("_", " ").toUpperCase()}
+              {(resolvedDelivery as any).is_simulated && <SimulationBadge className="ml-2" />}
+            </h1>
             <p className="text-muted-foreground">
-              {format(new Date(delivery.scheduled_date), "EEEE, MMMM d")} • {delivery.driver?.full_name || "Unassigned"}
+              {format(new Date(resolvedDelivery.scheduled_date), "EEEE, MMMM d")} • {resolvedDelivery.driver?.full_name || "Unassigned"}
             </p>
           </div>
         </div>
         <div className="flex gap-2">
-          {delivery.status === "scheduled" && (
+          <SimulationModeToggle />
+          {resolvedDelivery.status === "scheduled" && (
             <Button onClick={handleStartRoute}>
               <Truck className="h-4 w-4 mr-2" />
               Start Route
             </Button>
           )}
-          {delivery.status === "in_progress" && remainingStops.length === 0 && (
+          {resolvedDelivery.status === "in_progress" && remainingStops.length === 0 && (
             <Button onClick={handleCompleteRoute}>
               <CheckCircle2 className="h-4 w-4 mr-2" />
               Complete Route
@@ -336,10 +420,10 @@ export default function MyRoute() {
       </div>
 
       {/* Dispatcher Notes */}
-      {delivery.dispatcher_notes && (
+      {resolvedDelivery.dispatcher_notes && (
         <Card className="bg-amber-500/10 border-amber-500/30">
           <CardContent className="py-3">
-            <p className="text-sm"><strong>Dispatcher Notes:</strong> {delivery.dispatcher_notes}</p>
+            <p className="text-sm"><strong>Dispatcher Notes:</strong> {resolvedDelivery.dispatcher_notes}</p>
           </CardContent>
         </Card>
       )}
