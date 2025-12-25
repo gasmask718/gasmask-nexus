@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import IssuesBoard from '@/components/biker/IssuesBoard';
 import { useAllBikersPerformance } from '@/hooks/useBikerPerformance';
+import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
+import { SimulationModeToggle, SimulationBanner } from '@/components/delivery/SimulationModeToggle';
 
 type Biker = {
   id: string;
@@ -37,12 +39,13 @@ type Biker = {
 const BikersManagement: React.FC = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { simulationMode, simulationData } = useSimulationMode();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingBiker, setEditingBiker] = useState<Biker | null>(null);
 
-  const { data: bikers = [], isLoading } = useQuery({
+  const { data: dbBikers = [], isLoading } = useQuery({
     queryKey: ['bikers'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -53,6 +56,29 @@ const BikersManagement: React.FC = () => {
       return data as Biker[];
     }
   });
+
+  // Generate simulated bikers from simulation data
+  const simBikers = useMemo(() => {
+    if (!simulationMode || dbBikers.length > 0) return [];
+    return simulationData.bikers.map(b => ({
+      id: b.id,
+      business_id: 'sim-business',
+      user_id: null,
+      full_name: b.full_name,
+      phone: b.phone,
+      email: b.email,
+      territory: b.territory,
+      status: b.status === 'offline' ? 'paused' : 'active',
+      payout_method: 'zelle',
+      payout_handle: b.email,
+      created_at: new Date().toISOString(),
+      is_simulated: true,
+    })) as (Biker & { is_simulated?: boolean })[];
+  }, [simulationMode, simulationData, dbBikers.length]);
+
+  // Resolve data
+  const bikers = dbBikers.length > 0 ? dbBikers : simBikers;
+  const isSimulated = dbBikers.length === 0 && simBikers.length > 0;
 
   const createMutation = useMutation({
     mutationFn: async (data: Partial<Biker>) => {
@@ -138,6 +164,7 @@ const BikersManagement: React.FC = () => {
 
   return (
     <Layout>
+      <SimulationBanner />
       <div className="container mx-auto p-4 md:p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -145,10 +172,12 @@ const BikersManagement: React.FC = () => {
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Bike className="h-6 w-6 text-primary" />
               Bikers Management
+              {isSimulated && <SimulationBadge className="ml-2" />}
             </h1>
             <p className="text-muted-foreground">Manage store checker bikers</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <SimulationModeToggle />
             <Button variant="outline" onClick={() => navigate('/delivery/heatmap')}>
               <MapIcon className="h-4 w-4 mr-2" /> Heatmap
             </Button>
