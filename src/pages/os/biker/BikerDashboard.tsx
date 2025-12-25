@@ -137,7 +137,7 @@ export default function BikerDashboard() {
       icon: Bike, 
       change: `${bikers.filter(b => b.status !== 'active').length} offline`, 
       color: "text-emerald-500",
-      onClick: () => setActiveTab('bikers')
+      onClick: () => navigate('/delivery/bikers/active')
     },
     { 
       label: "Stores Checked Today", 
@@ -145,7 +145,7 @@ export default function BikerDashboard() {
       icon: Store, 
       change: `${pendingChecks} pending`, 
       color: "text-blue-500",
-      onClick: () => setActiveTab('routes')
+      onClick: () => navigate('/delivery/bikers/stores-checked')
     },
     { 
       label: "Issues Reported", 
@@ -153,7 +153,7 @@ export default function BikerDashboard() {
       icon: AlertTriangle, 
       change: issues.filter(i => i.severity === 'high').length + " urgent", 
       color: "text-amber-500",
-      onClick: () => setActiveTab('issues')
+      onClick: () => navigate('/delivery/bikers/issues')
     },
     { 
       label: "Weekly Payouts", 
@@ -161,7 +161,7 @@ export default function BikerDashboard() {
       icon: DollarSign, 
       change: "Due Friday", 
       color: "text-purple-500",
-      onClick: () => navigate('/delivery/payouts')
+      onClick: () => navigate('/delivery/bikers/weekly-payouts')
     },
   ];
 
