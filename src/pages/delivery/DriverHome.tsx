@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
@@ -6,14 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useSimulationMode, SimulationBadge, SimulatedSection } from '@/contexts/SimulationModeContext';
+import { SimulationModeToggle, SimulationBanner } from '@/components/delivery/SimulationModeToggle';
+import { generateSimRoutes, generateSimStops } from '@/lib/simulation/deliverySimData';
 import { 
   Truck, MapPin, Package, Clock, Play, RefreshCw,
   AlertTriangle, DollarSign, CheckCircle2, Navigation,
   Calendar, MessageSquare, History, FileText, User,
-  ChevronRight, Zap, Phone
+  ChevronRight, Zap, Phone, GraduationCap, Eye
 } from 'lucide-react';
 
 type DriverStatus = 'available' | 'on_route' | 'offline';
@@ -22,8 +25,17 @@ const DriverHome: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { simulationMode } = useSimulationMode();
   const today = format(new Date(), 'yyyy-MM-dd');
   const [driverStatus, setDriverStatus] = useState<DriverStatus>('available');
+
+  // Generate simulation data
+  const simRoutes = useMemo(() => generateSimRoutes(3), []);
+  const simTrainingRoute = useMemo(() => ({
+    ...generateSimRoutes(1)[0],
+    delivery_type: 'Training Route (Demo)',
+    dispatcher_notes: 'This is a simulated training route. Actions here are for demonstration only.',
+  }), []);
 
   // Fetch driver's active routes for today (assigned to current driver)
   const { data: activeRoutes = [], isLoading: loadingActive, refetch: refetchActive } = useQuery({

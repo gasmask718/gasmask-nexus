@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { BusinessProvider } from "./contexts/BusinessContext";
+import { SimulationModeProvider } from "./contexts/SimulationModeContext";
 
 // Initialize Dynasty OS Module System - Auto-registers all modules
 import './modules';
@@ -22,7 +23,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <BusinessProvider>
-            <AppRoutes />
+            <SimulationModeProvider>
+              <AppRoutes />
+            </SimulationModeProvider>
           </BusinessProvider>
         </AuthProvider>
       </BrowserRouter>
