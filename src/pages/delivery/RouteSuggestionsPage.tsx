@@ -110,12 +110,12 @@ const RouteSuggestionsPage: React.FC = () => {
               <div className="space-y-4 mt-4">
                 <div>
                   <label className="text-sm font-medium">Borough (optional)</label>
-                  <Select value={generateBoro} onValueChange={setGenerateBoro}>
+                  <Select value={generateBoro || 'all'} onValueChange={(v) => setGenerateBoro(v === 'all' ? '' : v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="All Boroughs" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Boroughs</SelectItem>
+                      <SelectItem value="all">All Boroughs</SelectItem>
                       {boros.map(boro => (
                         <SelectItem key={boro} value={boro}>{boro}</SelectItem>
                       ))}
@@ -156,12 +156,12 @@ const RouteSuggestionsPage: React.FC = () => {
         {/* Filters */}
         <Card>
           <CardContent className="p-4 flex gap-4 items-center">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter || 'all'} onValueChange={(v) => setStatusFilter(v === 'all' ? '' : v)}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="reviewed">Reviewed</SelectItem>
                 <SelectItem value="approved">Approved</SelectItem>
