@@ -731,6 +731,10 @@ export default function AppRoutes() {
         <Route path="/os/sports-betting" element={<BettingDashboard />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
 
+        {/* Legacy payouts aliases (keep old links working) */}
+        <Route path="/biker-payouts" element={<Navigate to="/delivery/payouts" replace />} />
+        <Route path="/driver-payouts" element={<Navigate to="/delivery/payouts" replace />} />
+
         {/* Delivery & Logistics Department */}
         <Route path="/delivery" element={<DeliveryDashboard />} />
         <Route path="/delivery/dashboard" element={<DeliveryDashboard />} />
