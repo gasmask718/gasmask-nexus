@@ -1,20 +1,14 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { useSimulationMode, SimulationBadge } from "@/contexts/SimulationModeContext";
 import { useDeliveries, useStoreChecks, useDrivers, useBikers } from "@/hooks/useDeliveryData";
+import { useResolvedData, useSimulationData } from "@/hooks/useSimulationData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SimulationModeToggle, SimulationBanner } from "@/components/delivery/SimulationModeToggle";
-import { 
-  generateSimKPIs, 
-  generateSimActivityFeed, 
-  generateSimRoutes,
-  generateSimIssues,
-  type SimActivityItem 
-} from "@/lib/simulation/deliverySimData";
 import { 
   Truck, 
   Bike, 
@@ -39,6 +33,7 @@ export default function DeliveryDashboard() {
   const navigate = useNavigate();
   const { currentBusiness } = useBusiness();
   const { simulationMode } = useSimulationMode();
+  const simData = useSimulationData();
   const businessId = currentBusiness?.id;
 
   const today = format(new Date(), "yyyy-MM-dd");
@@ -47,16 +42,14 @@ export default function DeliveryDashboard() {
   const { data: drivers = [] } = useDrivers(businessId);
   const { data: bikers = [] } = useBikers(businessId);
 
-  // Generate simulation data when needed
-  const simKPIs = useMemo(() => generateSimKPIs(), []);
-  const simActivity = useMemo(() => generateSimActivityFeed(12), []);
-  const simRoutes = useMemo(() => generateSimRoutes(5), []);
-  const simIssues = useMemo(() => generateSimIssues(4), []);
+  // Resolve data using simulation hook
+  const resolvedRoutes = useResolvedData(deliveries, simData.routes as any[]);
+  const resolvedDrivers = useResolvedData(drivers, simData.drivers as any[]);
+  const resolvedBikers = useResolvedData(bikers, simData.bikers as any[]);
+  const resolvedIssues = useResolvedData(storeChecks, simData.issues as any[]);
+  const resolvedActivity = useResolvedData([], simData.activityFeed as any[]);
 
-  // Determine if we have real data
-  const hasRealData = deliveries.length > 0 || drivers.length > 0 || bikers.length > 0;
-
-  // Use real or simulated data based on mode
+  // Calculate KPIs from resolved data or use simulation KPIs
   const inProgressDeliveries = deliveries.filter(d => d.status === "in_progress");
   const scheduledDeliveries = deliveries.filter(d => d.status === "scheduled");
   const completedDeliveries = deliveries.filter(d => d.status === "completed");
@@ -67,17 +60,19 @@ export default function DeliveryDashboard() {
   const activeDrivers = drivers.filter(d => d.status === "active");
   const activeBikers = bikers.filter(b => b.status === "active");
 
-  // KPIs: use real data if available, otherwise use simulation when enabled
+  // Use simulation KPIs when no real data
+  const hasRealData = deliveries.length > 0 || drivers.length > 0 || bikers.length > 0;
   const showSimulated = simulationMode && !hasRealData;
-  const kpis = showSimulated ? {
-    deliveriesToday: simKPIs.deliveries_today,
-    stopsCompleted: simKPIs.stops_completed,
-    stopsPending: simKPIs.stops_pending,
-    activeDrivers: simKPIs.active_drivers,
-    activeBikers: simKPIs.active_bikers,
-    openIssues: simKPIs.open_issues,
-    payoutsPending: simKPIs.payouts_pending,
-    totalPendingAmount: simKPIs.total_pending_amount,
+  
+  const kpis = showSimulated && simData.kpis ? {
+    deliveriesToday: simData.kpis.deliveries_today,
+    stopsCompleted: simData.kpis.stops_completed,
+    stopsPending: simData.kpis.stops_pending,
+    activeDrivers: simData.kpis.active_drivers,
+    activeBikers: simData.kpis.active_bikers,
+    openIssues: simData.kpis.open_issues,
+    payoutsPending: simData.kpis.payouts_pending,
+    totalPendingAmount: simData.kpis.total_pending_amount,
   } : {
     deliveriesToday: deliveries.length,
     stopsCompleted: completedDeliveries.length,
@@ -266,7 +261,7 @@ export default function DeliveryDashboard() {
               </Button>
             </CardHeader>
             <CardContent>
-              {(!hasRealData && !simulationMode) ? (
+              {resolvedRoutes.showEmptyState ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
                   <p>No active deliveries today</p>
@@ -274,7 +269,7 @@ export default function DeliveryDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {(showSimulated ? simRoutes : [...inProgressDeliveries, ...scheduledDeliveries].slice(0, 5)).map((item: any) => (
+                  {resolvedRoutes.data.slice(0, 5).map((item: any) => (
                     <div
                       key={item.id}
                       className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
@@ -290,7 +285,7 @@ export default function DeliveryDashboard() {
                             {item.is_simulated && <SimulationBadge />}
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {item.driver?.full_name || item.driver_name || "Unassigned"} • {item.total_stops || item.delivery_stops?.length || 0} stops
+                            {item.driver?.full_name || item.driver_name || "Unassigned"} • {item.total_stops || item.delivery_stops?.length || item.stops?.length || 0} stops
                           </p>
                         </div>
                       </div>
@@ -354,12 +349,12 @@ export default function DeliveryDashboard() {
                 <Radio className="h-5 w-5 text-green-500 animate-pulse" />
                 Live Activity Feed
               </CardTitle>
-              {showSimulated && <SimulationBadge />}
+              {resolvedActivity.isSimulated && <SimulationBadge />}
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-3">
-                  {(showSimulated ? simActivity : []).map((activity: SimActivityItem) => (
+                  {resolvedActivity.data.map((activity: any) => (
                     <div
                       key={activity.id}
                       className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
@@ -375,7 +370,7 @@ export default function DeliveryDashboard() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm">{activity.message}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
+                          {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
                         </p>
                       </div>
                       <Button variant="ghost" size="sm" className="shrink-0">
@@ -383,7 +378,7 @@ export default function DeliveryDashboard() {
                       </Button>
                     </div>
                   ))}
-                  {!showSimulated && (
+                  {resolvedActivity.showEmptyState && (
                     <div className="text-center py-8 text-muted-foreground">
                       <Radio className="h-8 w-8 mx-auto mb-2 opacity-30" />
                       <p className="text-sm">Activity feed will update in real-time</p>
@@ -399,7 +394,7 @@ export default function DeliveryDashboard() {
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
-                Open Issues ({showSimulated ? simIssues.filter(i => i.status !== 'resolved').length : submittedChecks.length})
+                Open Issues ({resolvedIssues.data.filter((i: any) => i.status !== 'resolved').length})
               </CardTitle>
               <Button variant="ghost" size="sm" onClick={() => navigate("/delivery/biker-tasks")}>
                 View All <ArrowRight className="h-4 w-4 ml-1" />
@@ -408,7 +403,7 @@ export default function DeliveryDashboard() {
             <CardContent>
               <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-3">
-                  {(showSimulated ? simIssues.filter(i => i.status !== 'resolved') : submittedChecks).map((issue: any) => (
+                  {resolvedIssues.data.filter((i: any) => i.status !== 'resolved').map((issue: any) => (
                     <div
                       key={issue.id}
                       className="p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
@@ -417,7 +412,7 @@ export default function DeliveryDashboard() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <Badge variant={issue.severity === 'critical' || issue.severity === 'high' ? 'destructive' : 'secondary'}>
-                            {issue.severity || issue.check_type?.replace("_", " ")}
+                            {issue.severity || issue.check_type?.replace("_", " ") || issue.issue_type}
                           </Badge>
                           {issue.is_simulated && <SimulationBadge />}
                         </div>
