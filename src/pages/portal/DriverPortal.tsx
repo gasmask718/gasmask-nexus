@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MapPin, Package, DollarSign, Clock, CheckCircle2, Camera, Truck, AlertTriangle, Play } from 'lucide-react';
 import PortalDashboard from '@/layouts/PortalDashboard';
 import { HudCard } from '@/components/portal/HudCard';
@@ -8,6 +9,8 @@ import { HudStatusBadge } from '@/components/portal/HudStatusBadge';
 import { PermissionGate } from '@/components/portal/PermissionGate';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useTranslation } from '@/hooks/useTranslation';
+import { ViewDetailsBar, KpiType } from '@/components/portal/driver/ViewDetailsBar';
+import { cn } from '@/lib/utils';
 
 const todayStops = [
   { id: 1, store: 'Smoke King Miami', address: '123 Main St', eta: '10:00 AM', status: 'completed', boxes: 12 },
@@ -19,6 +22,14 @@ export default function DriverPortal() {
   const { data: profileData } = useCurrentUserProfile();
   const { t } = useTranslation();
   const driverProfile = profileData?.roleProfile;
+  const [selectedKpi, setSelectedKpi] = useState<KpiType>(null);
+
+  const handleKpiClick = (kpi: KpiType) => {
+    setSelectedKpi(selectedKpi === kpi ? null : kpi);
+  };
+
+  const completedStops = todayStops.filter(s => s.status === 'completed').length;
+  const stopsLeft = todayStops.filter(s => s.status !== 'completed').length;
 
   return (
     <PortalDashboard title={t('driver.title')} subtitle="Route Day: Monday" roleColor="cyan">
@@ -31,22 +42,66 @@ export default function DriverPortal() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
-        <HudCard variant="cyan" glow>
-          <HudMetric label={t('driver.todays_route')} value={todayStops.length} icon={<MapPin className="h-4 w-4" />} variant="cyan" size="lg" />
-          <HudProgress value={1} max={3} label="Completed" variant="cyan" size="sm" />
+      {/* Interactive KPI Cards */}
+      <div className="grid gap-4 md:grid-cols-4 mb-4">
+        <HudCard 
+          variant="cyan" 
+          glow 
+          className={cn(
+            "cursor-pointer transition-all hover:scale-[1.02]",
+            selectedKpi === 'routes' && "ring-2 ring-hud-cyan"
+          )}
+          onClick={() => handleKpiClick('routes')}
+        >
+          <HudMetric label="Routes Today" value={2} icon={<MapPin className="h-4 w-4" />} variant="cyan" size="lg" />
+          <p className="text-xs text-muted-foreground mt-1">Click to view details</p>
         </HudCard>
-        <HudCard variant="green" glow>
-          <HudMetric label="Boxes Delivered" value={12} icon={<Package className="h-4 w-4" />} trend="up" trendValue="+3 today" variant="green" size="lg" />
+        
+        <HudCard 
+          variant="amber" 
+          glow
+          className={cn(
+            "cursor-pointer transition-all hover:scale-[1.02]",
+            selectedKpi === 'stops_left' && "ring-2 ring-hud-amber"
+          )}
+          onClick={() => handleKpiClick('stops_left')}
+        >
+          <HudMetric label="Stops Left" value={stopsLeft} icon={<Package className="h-4 w-4" />} variant="amber" size="lg" />
+          <p className="text-xs text-muted-foreground mt-1">Click to view details</p>
         </HudCard>
+        
+        <HudCard 
+          variant="green" 
+          glow
+          className={cn(
+            "cursor-pointer transition-all hover:scale-[1.02]",
+            selectedKpi === 'stops_completed' && "ring-2 ring-hud-green"
+          )}
+          onClick={() => handleKpiClick('stops_completed')}
+        >
+          <HudMetric label="Stops Completed" value={completedStops} icon={<CheckCircle2 className="h-4 w-4" />} variant="green" size="lg" />
+          <p className="text-xs text-muted-foreground mt-1">Click to view details</p>
+        </HudCard>
+        
         <PermissionGate permission="view_driver_earnings">
-          <HudCard variant="amber" glow>
-            <HudMetric label={t('driver.earnings')} value="$485" icon={<DollarSign className="h-4 w-4" />} variant="amber" size="lg" />
+          <HudCard 
+            variant="purple" 
+            glow
+            className={cn(
+              "cursor-pointer transition-all hover:scale-[1.02]",
+              selectedKpi === 'earnings' && "ring-2 ring-hud-purple"
+            )}
+            onClick={() => handleKpiClick('earnings')}
+          >
+            <HudMetric label="Est. Earnings" value="$95" icon={<DollarSign className="h-4 w-4" />} variant="purple" size="lg" />
+            <p className="text-xs text-muted-foreground mt-1">Click to view details</p>
           </HudCard>
         </PermissionGate>
-        <HudCard variant="purple" glow>
-          <HudMetric label="ETA Next" value="15 min" icon={<Clock className="h-4 w-4" />} variant="purple" size="lg" />
-        </HudCard>
+      </div>
+
+      {/* View Details Bar */}
+      <div className="mb-6">
+        <ViewDetailsBar selectedKpi={selectedKpi} onClose={() => setSelectedKpi(null)} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

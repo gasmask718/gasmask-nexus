@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, MouseEventHandler } from 'react';
 import { cn } from '@/lib/utils';
 
 interface HudCardProps {
@@ -8,7 +8,9 @@ interface HudCardProps {
   className?: string;
   variant?: 'default' | 'cyan' | 'green' | 'amber' | 'purple' | 'red';
   glow?: boolean;
+  onClick?: MouseEventHandler<HTMLDivElement>;
 }
+
 
 const variantStyles = {
   default: 'border-border/50',
@@ -43,15 +45,20 @@ export function HudCard({
   children, 
   className,
   variant = 'default',
-  glow = false
+  glow = false,
+  onClick
 }: HudCardProps) {
   return (
-    <div className={cn(
-      'relative rounded-lg border bg-card/80 backdrop-blur-sm p-4',
-      variantStyles[variant],
-      glow && glowStyles[variant],
-      className
-    )}>
+    <div 
+      className={cn(
+        'relative rounded-lg border bg-card/80 backdrop-blur-sm p-4',
+        variantStyles[variant],
+        glow && glowStyles[variant],
+        onClick && 'cursor-pointer',
+        className
+      )}
+      onClick={onClick}
+    >
       {/* Corner accents */}
       <div className="absolute top-0 left-0 w-3 h-3 border-l-2 border-t-2 border-current opacity-50 rounded-tl" 
            style={{ color: `hsl(var(--${variant === 'default' ? 'border' : variant === 'red' ? 'primary' : `hud-${variant}`}))` }} />
