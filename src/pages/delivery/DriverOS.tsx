@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
@@ -14,10 +14,13 @@ import {
   CheckCircle2, AlertTriangle, History, Navigation,
   ChevronRight, Home, FileText, Settings
 } from 'lucide-react';
+import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
+import { SimulationModeToggle, SimulationBanner } from '@/components/delivery/SimulationModeToggle';
 
 const DriverOS: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { simulationMode, simulationData } = useSimulationMode();
   const [isAvailable, setIsAvailable] = useState(true);
 
   // Fetch driver profile
@@ -154,10 +157,40 @@ const DriverOS: React.FC = () => {
     toast.success(checked ? 'You are now available for routes' : 'You are now offline');
   };
 
-  const totalRoutes = Math.max(routesCompleted, routeStats?.completed || 0);
+  // Simulate driver data when no real data exists
+  const simDriver = simulationData.drivers?.[0];
+  const hasRealData = !!profile || routesCompleted > 0 || stopsCompleted > 0;
+  const showSimulated = simulationMode && !hasRealData;
+
+  // Resolve stats: real or simulated
+  const totalRoutes = hasRealData 
+    ? Math.max(routesCompleted, routeStats?.completed || 0)
+    : (showSimulated ? simDriver?.routes_today || 1 : 0);
+  const totalStops = hasRealData 
+    ? stopsCompleted 
+    : (showSimulated ? (simDriver?.stops_completed || 0) + (simDriver?.stops_pending || 0) : 0);
+  const healthScore = hasRealData 
+    ? (profile?.driver_health_score || 100)
+    : (showSimulated ? 95 : 100);
+  const lastPayout = hasRealData 
+    ? (payoutSummary?.lastPaid || 0)
+    : (showSimulated ? 320 : 0);
+  const pendingPayout = hasRealData 
+    ? (payoutSummary?.pendingAmount || 0)
+    : (showSimulated ? simDriver?.estimated_earnings || 280 : 0);
+
+  // Simulated activity
+  const resolvedActivity = hasRealData 
+    ? recentHistory 
+    : (showSimulated ? [
+        { id: 'sim-1', date: new Date().toISOString(), type: 'Wholesale', territory: 'Brooklyn', status: 'completed' },
+        { id: 'sim-2', date: new Date(Date.now() - 86400000).toISOString(), type: 'Retail', territory: 'Queens', status: 'completed' },
+        { id: 'sim-3', date: new Date(Date.now() - 172800000).toISOString(), type: 'Wholesale', territory: 'Bronx', status: 'completed' },
+      ] : []);
 
   return (
     <Layout>
+      <SimulationBanner />
       <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-4xl">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -165,9 +198,11 @@ const DriverOS: React.FC = () => {
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Settings className="h-6 w-6 text-primary" />
               Driver OS
+              {showSimulated && <SimulationBadge className="ml-2" />}
             </h1>
             <p className="text-muted-foreground">Your driver profile and system settings</p>
           </div>
+          <SimulationModeToggle />
         </div>
 
         {/* Driver Profile Card */}
@@ -233,7 +268,7 @@ const DriverOS: React.FC = () => {
               <div className="h-10 w-10 mx-auto rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-2">
                 <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
-              <div className="text-2xl font-bold">{stopsCompleted}</div>
+              <div className="text-2xl font-bold">{totalStops}</div>
               <p className="text-sm text-muted-foreground">Stops Completed</p>
             </CardContent>
           </Card>
@@ -251,7 +286,7 @@ const DriverOS: React.FC = () => {
               <div className="h-10 w-10 mx-auto rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-2">
                 <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <div className="text-2xl font-bold">{profile?.driver_health_score || 100}</div>
+              <div className="text-2xl font-bold">{healthScore}</div>
               <p className="text-sm text-muted-foreground">Health Score</p>
             </CardContent>
           </Card>
@@ -270,7 +305,7 @@ const DriverOS: React.FC = () => {
               <div className="p-4 bg-muted/50 rounded-lg">
                 <p className="text-sm text-muted-foreground mb-1">Last Payout</p>
                 <p className="text-2xl font-bold">
-                  ${payoutSummary?.lastPaid?.toFixed(2) || '0.00'}
+                  ${lastPayout.toFixed(2)}
                 </p>
                 {payoutSummary?.lastPaidDate && (
                   <p className="text-xs text-muted-foreground mt-1">
@@ -281,10 +316,10 @@ const DriverOS: React.FC = () => {
               <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
                 <p className="text-sm text-muted-foreground mb-1">Pending Payout</p>
                 <p className="text-2xl font-bold text-primary">
-                  ${payoutSummary?.pendingAmount?.toFixed(2) || '0.00'}
+                  ${pendingPayout.toFixed(2)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {payoutSummary?.pendingAmount ? 'Awaiting approval' : 'No pending payouts'}
+                  {pendingPayout > 0 ? 'Awaiting approval' : 'No pending payouts'}
                 </p>
               </div>
             </div>
@@ -378,7 +413,7 @@ const DriverOS: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {recentHistory.length === 0 ? (
+            {resolvedActivity.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <History className="h-10 w-10 mx-auto mb-3 opacity-50" />
                 <p>No activity yet</p>
@@ -386,7 +421,7 @@ const DriverOS: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                {recentHistory.map((activity: any) => (
+                {resolvedActivity.map((activity: any) => (
                   <div key={activity.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
                     <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
                       <Truck className="h-4 w-4 text-muted-foreground" />
@@ -394,6 +429,7 @@ const DriverOS: React.FC = () => {
                     <div className="flex-1">
                       <p className="text-sm font-medium">
                         {activity.type || 'Route'} · {activity.territory || 'N/A'}
+                        {showSimulated && <SimulationBadge className="ml-2" text="Demo" />}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(activity.date).toLocaleDateString()} · 
