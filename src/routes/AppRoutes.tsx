@@ -297,6 +297,8 @@ import {
   DriverOS,
   DeliveryMyRoute 
 } from '@/pages/delivery';
+import DeliveryStoreProfile from '@/pages/delivery/StoreProfile';
+import DeliveryRouteDetailPage from '@/pages/delivery/DeliveryRouteDetail';
 
 // Grabba
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
@@ -741,6 +743,8 @@ export default function AppRoutes() {
         <Route path="/delivery/driver-home" element={<DriverHome />} />
         <Route path="/delivery/my-route" element={<DeliveryMyRoute />} />
         <Route path="/delivery/my-route/:deliveryId" element={<DeliveryMyRoute />} />
+        <Route path="/delivery/store/:storeId" element={<DeliveryStoreProfile />} />
+        <Route path="/delivery/routes/:routeId" element={<DeliveryRouteDetailPage />} />
         {/* Catch-all for unknown /delivery/* paths - redirect to delivery dashboard */}
         <Route path="/delivery/*" element={<Navigate to="/delivery" replace />} />
         <Route path="/toptier" element={<TopTierDashboard />} />
