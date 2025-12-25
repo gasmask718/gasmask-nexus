@@ -82,6 +82,15 @@ export default function MyRoute() {
   const [amountCollected, setAmountCollected] = useState("");
   const [proofNote, setProofNote] = useState("");
 
+  // Check if this is a simulated route (must be before any early returns)
+  const isSimulatedRoute = deliveryId?.startsWith('RT-SIM-') || deliveryId?.startsWith('sim-');
+
+  // Get simulated route data if applicable (must be before any early returns)
+  const simRoute = useMemo(() => {
+    if (!isSimulatedRoute || !simulationMode) return null;
+    return simulationData.routes.find(r => r.id === deliveryId) || simulationData.routes[0];
+  }, [isSimulatedRoute, simulationMode, simulationData, deliveryId]);
+
   // Generate simulated routes when no real data and simulation mode is ON
   const simRoutes = useMemo(() => {
     if (!simulationMode || availableRoutes.length > 0) return [];
@@ -200,16 +209,6 @@ export default function MyRoute() {
       </Layout>
     );
   }
-
-  // Check if this is a simulated route
-  const isSimulatedRoute = deliveryId?.startsWith('RT-SIM-') || deliveryId?.startsWith('sim-');
-  
-  // Get simulated route data if applicable
-  const simRoute = useMemo(() => {
-    if (!isSimulatedRoute || !simulationMode) return null;
-    return simulationData.routes.find(r => r.id === deliveryId) || simulationData.routes[0];
-  }, [isSimulatedRoute, simulationMode, simulationData, deliveryId]);
-
   if (isLoading && !isSimulatedRoute) {
     return (
       <Layout>
