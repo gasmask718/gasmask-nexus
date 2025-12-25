@@ -203,8 +203,8 @@ export default function AppSidebar() {
               { path: '/routes', label: 'Route Plans', emoji: '🗺️' },
               { path: '/route-optimizer', label: 'Route Optimizer', emoji: '⚡' },
               { path: '/operations/live-map', label: 'Live Map', emoji: '📍' },
-              { path: '/biker-payouts', label: 'Biker Payouts', emoji: '💵' },
-              { path: '/driver-payouts', label: 'Driver Payouts', emoji: '💰' },
+              { path: '/delivery/payouts', label: 'Biker Payouts', emoji: '💵' },
+              { path: '/delivery/payouts', label: 'Driver Payouts', emoji: '💰' },
               { path: '/driver-debt-collection', label: 'Driver Collections', emoji: '📥' },
             ])}
 
@@ -505,14 +505,14 @@ export default function AppSidebar() {
               {renderSection('drivers-os', 'Drivers / TopTier Fleet OS', '🚗', [
                 { path: '/driver', label: 'Driver Management', emoji: '🚗' },
                 { path: '/toptier/drivers', label: 'TopTier Fleet', emoji: '🚙' },
-                { path: '/driver-payouts', label: 'Driver Payouts', emoji: '💰' },
+                { path: '/delivery/payouts', label: 'Driver Payouts', emoji: '💰' },
                 { path: '/driver-debt-collection', label: 'Driver Collections', emoji: '📥' },
               ], "text-blue-400 hover:bg-blue-500/10")}
 
               {renderSection('bikers-os', 'Store Checkers OS (Bikers)', '🚴', [
-                { path: '/biker', label: 'Biker Management', emoji: '🚴' },
-                { path: '/biker-payouts', label: 'Biker Payouts', emoji: '💵' },
-                { path: '/my-route', label: 'My Route', emoji: '🗺️' },
+                { path: '/delivery/bikers', label: 'Biker Management', emoji: '🚴' },
+                { path: '/delivery/payouts', label: 'Biker Payouts', emoji: '💵' },
+                { path: '/delivery/my-route', label: 'My Route', emoji: '🗺️' },
               ], "text-green-400 hover:bg-green-500/10")}
             </div>
           )}
