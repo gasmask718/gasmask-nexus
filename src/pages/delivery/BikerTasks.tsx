@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
@@ -17,6 +17,8 @@ import {
   ClipboardCheck, MapPin, Camera, Play, Send, CheckCircle2, 
   XCircle, Clock, Search, Filter, Plus, Eye
 } from 'lucide-react';
+import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
+import { SimulationModeToggle, SimulationBanner } from '@/components/delivery/SimulationModeToggle';
 
 type StoreCheck = {
   id: string;
@@ -41,6 +43,7 @@ const CHECK_TYPES = [
 
 const BikerTasks: React.FC = () => {
   const queryClient = useQueryClient();
+  const { simulationMode, simulationData } = useSimulationMode();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedCheck, setSelectedCheck] = useState<StoreCheck | null>(null);
@@ -48,7 +51,7 @@ const BikerTasks: React.FC = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Fetch store checks
-  const { data: storeChecks = [], isLoading } = useQuery({
+  const { data: dbStoreChecks = [], isLoading } = useQuery({
     queryKey: ['store-checks'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -59,6 +62,29 @@ const BikerTasks: React.FC = () => {
       return data as StoreCheck[];
     }
   });
+
+  // Generate simulated store checks from simulation data
+  const simStoreChecks = useMemo(() => {
+    if (!simulationMode || dbStoreChecks.length > 0) return [];
+    return simulationData.bikers.flatMap((biker, bikerIdx) => 
+      Array.from({ length: biker.tasks_pending + biker.tasks_completed }, (_, i) => ({
+        id: `sim-check-${biker.id}-${i}`,
+        business_id: 'sim-business',
+        assigned_biker_id: biker.id,
+        location_id: `sim-store-00${(i % 8) + 1}`,
+        check_type: CHECK_TYPES[i % CHECK_TYPES.length],
+        scheduled_date: format(new Date(), 'yyyy-MM-dd'),
+        status: i < biker.tasks_completed ? 'approved' : i === biker.tasks_completed ? 'in_progress' : 'assigned',
+        summary_notes: i < biker.tasks_completed ? 'Completed check - all items verified' : null,
+        created_at: new Date().toISOString(),
+        is_simulated: true,
+      }))
+    ).slice(0, 12);
+  }, [simulationMode, simulationData, dbStoreChecks.length]);
+
+  // Resolve data: real data takes priority, then simulation data
+  const storeChecks = dbStoreChecks.length > 0 ? dbStoreChecks : simStoreChecks;
+  const isSimulated = dbStoreChecks.length === 0 && simStoreChecks.length > 0;
 
   // Fetch locations for display
   const { data: locations = [] } = useQuery({
@@ -123,12 +149,33 @@ const BikerTasks: React.FC = () => {
 
   const getLocationName = (locationId: string | null) => {
     if (!locationId) return 'Unknown';
+    // Check simulation stores first
+    if (locationId.startsWith('sim-store-')) {
+      const storeIdx = parseInt(locationId.replace('sim-store-00', '')) - 1;
+      const simStores = [
+        { name: 'Lucky Corner Store', address: '123 Main St' },
+        { name: 'Golden Mini Mart', address: '456 Oak Ave' },
+        { name: 'Quick Express Bodega', address: '789 Park Blvd' },
+        { name: 'Family Grocery', address: '321 Broadway' },
+        { name: 'Metro Supermarket', address: '654 Market St' },
+        { name: 'City Crown Mart', address: '987 Liberty Ave' },
+        { name: 'Star Convenience', address: '147 Center St' },
+        { name: 'Royal Foods', address: '258 Washington Blvd' },
+      ];
+      const store = simStores[storeIdx];
+      return store ? `${store.name} - ${store.address}` : 'Unknown Store';
+    }
     const loc = locations.find(l => l.id === locationId);
     return loc ? `${loc.name} - ${loc.address_line1}` : 'Unknown';
   };
 
   const getBikerName = (bikerId: string | null) => {
     if (!bikerId) return 'Unassigned';
+    // Check simulation bikers first
+    if (bikerId.startsWith('sim-biker-')) {
+      const simBiker = simulationData.bikers.find(b => b.id === bikerId);
+      return simBiker?.full_name || 'Unknown Biker';
+    }
     const biker = bikers.find(b => b.id === bikerId);
     return biker?.full_name || 'Unknown';
   };
@@ -163,35 +210,40 @@ const BikerTasks: React.FC = () => {
 
   return (
     <Layout>
+      <SimulationBanner />
       <div className="container mx-auto p-4 md:p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <ClipboardCheck className="h-6 w-6 text-primary" />
-              Biker Store Checks
-            </h1>
-            <p className="text-muted-foreground">Manage store check tasks for bikers</p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <ClipboardCheck className="h-6 w-6 text-primary" />
+                Biker Store Checks
+                {isSimulated && <SimulationBadge className="ml-2" />}
+              </h1>
+              <p className="text-muted-foreground">Manage store check tasks for bikers</p>
+            </div>
           </div>
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4 mr-2" /> New Check</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create Store Check</DialogTitle>
-              </DialogHeader>
-              <CreateCheckForm 
-                locations={locations}
-                bikers={bikers}
-                onSubmit={(data) => createCheckMutation.mutate(data)}
-                isLoading={createCheckMutation.isPending}
-              />
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-2">
+            <SimulationModeToggle />
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+              <DialogTrigger asChild>
+                <Button><Plus className="h-4 w-4 mr-2" /> New Check</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create Store Check</DialogTitle>
+                </DialogHeader>
+                <CreateCheckForm 
+                  locations={locations}
+                  bikers={bikers as any}
+                  onSubmit={(data) => createCheckMutation.mutate(data)}
+                  isLoading={createCheckMutation.isPending}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
-
-        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { useDrivers, useCreateDriver, useUpdateDriver, type Driver } from "@/hooks/useDeliveryData";
@@ -20,6 +20,8 @@ import {
   MoreHorizontal
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useSimulationMode, SimulationBadge } from "@/contexts/SimulationModeContext";
+import { SimulationModeToggle, SimulationBanner } from "@/components/delivery/SimulationModeToggle";
 
 const VEHICLE_TYPES = ["sedan", "suv", "van", "truck", "sprinter", "other"];
 const STATUSES = ["active", "paused", "offboarded"];
@@ -28,6 +30,7 @@ const PAYOUT_METHODS = ["cash", "zelle", "ach", "other"];
 export default function DriversManagement() {
   const navigate = useNavigate();
   const { currentBusiness } = useBusiness();
+  const { simulationMode, simulationData } = useSimulationMode();
   const businessId = currentBusiness?.id;
 
   const [search, setSearch] = useState("");
@@ -45,9 +48,34 @@ export default function DriversManagement() {
     payout_handle: "",
   });
 
-  const { data: drivers = [], isLoading } = useDrivers(businessId);
+  const { data: dbDrivers = [], isLoading } = useDrivers(businessId);
   const createDriver = useCreateDriver();
   const updateDriver = useUpdateDriver();
+
+  // Generate simulated drivers from simulation data
+  const simDrivers = useMemo(() => {
+    if (!simulationMode || dbDrivers.length > 0) return [];
+    return simulationData.drivers.map(d => ({
+      id: d.id,
+      business_id: 'sim-business',
+      user_id: null,
+      full_name: d.full_name,
+      phone: d.phone,
+      email: `${d.full_name.toLowerCase().replace(' ', '.')}@demo.com`,
+      vehicle_type: d.vehicle_type.toLowerCase(),
+      license_number: 'SIM-' + d.id.slice(-4).toUpperCase(),
+      home_base: d.territory,
+      status: d.status === 'offline' ? 'paused' : 'active',
+      payout_method: 'zelle',
+      payout_handle: '',
+      created_at: new Date().toISOString(),
+      is_simulated: true,
+    })) as (Driver & { is_simulated?: boolean })[];
+  }, [simulationMode, simulationData, dbDrivers.length]);
+
+  // Resolve data
+  const drivers = dbDrivers.length > 0 ? dbDrivers : simDrivers;
+  const isSimulated = dbDrivers.length === 0 && simDrivers.length > 0;
 
   const filteredDrivers = drivers.filter(d =>
     d.full_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -214,32 +242,40 @@ export default function DriversManagement() {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/delivery")}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Drivers</h1>
-            <p className="text-muted-foreground">Manage your delivery drivers</p>
+    <>
+      <SimulationBanner />
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/delivery")}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                Drivers
+                {isSimulated && <SimulationBadge className="ml-2" />}
+              </h1>
+              <p className="text-muted-foreground">Manage your delivery drivers</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <SimulationModeToggle />
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Driver
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Add Driver</DialogTitle>
+                </DialogHeader>
+                <DriverForm />
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Driver
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Add Driver</DialogTitle>
-            </DialogHeader>
-            <DriverForm />
-          </DialogContent>
-        </Dialog>
-      </div>
 
       {/* Search */}
       <div className="relative max-w-sm">
@@ -330,5 +366,6 @@ export default function DriversManagement() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }
