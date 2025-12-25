@@ -116,32 +116,35 @@ const DriverHome: React.FC = () => {
   const hasRealData = activeRoutes.length > 0;
   const showSimulated = simulationMode && !hasRealData;
   
-  // FORCED: Get simulation route when no real data - always use simData from context
-  const simRoute = showSimulated && simData.routes && simData.routes.length > 0 ? {
-    id: simData.routes[0].id,
-    status: simData.routes[0].status,
-    priority: simData.routes[0].priority,
-    delivery_type: simData.routes[0].delivery_type,
-    scheduled_date: simData.routes[0].scheduled_date,
-    dispatcher_notes: simData.routes[0].dispatcher_notes,
-    delivery_stops: simData.routes[0].stops.map(s => ({
+  // FORCED: Get simulation routes from context - ALWAYS available when simulationMode is ON
+  const simRoutes = simData?.routes || [];
+  const simRoute = showSimulated && simRoutes.length > 0 ? {
+    id: simRoutes[0].id,
+    status: simRoutes[0].status,
+    priority: simRoutes[0].priority,
+    delivery_type: simRoutes[0].delivery_type,
+    scheduled_date: simRoutes[0].scheduled_date,
+    dispatcher_notes: simRoutes[0].dispatcher_notes,
+    delivery_stops: simRoutes[0].stops?.map(s => ({
       id: s.id,
       status: s.status,
       store_name: s.store_name,
-    })),
-    driver_name: simData.routes[0].driver_name,
-    estimated_earnings: simData.routes[0].estimated_earnings,
+      amount_due: s.amount_due || 0,
+      window_end: s.window_end,
+    })) || [],
+    driver_name: simRoutes[0].driver_name,
+    estimated_earnings: simRoutes[0].estimated_earnings,
     is_simulated: true,
   } : null;
 
   // FORCED: Calculate stats from real or sim data
-  const totalDeliveries = hasRealData ? activeRoutes.length : (showSimulated ? 1 : 0);
+  const totalDeliveries = hasRealData ? activeRoutes.length : (showSimulated && simRoutes.length > 0 ? 1 : 0);
   const totalStops = hasRealData 
     ? activeRoutes.reduce((sum, d: any) => sum + (d.delivery_stops?.length || 0), 0)
-    : (showSimulated && simData.routes?.[0] ? simData.routes[0].total_stops : 0);
+    : (showSimulated && simRoutes[0] ? simRoutes[0].total_stops : 0);
   const completedStops = hasRealData 
     ? activeRoutes.reduce((sum, d: any) => sum + (d.delivery_stops?.filter((s: any) => s.status === 'completed').length || 0), 0)
-    : (showSimulated && simData.routes?.[0] ? simData.routes[0].completed_stops : 0);
+    : (showSimulated && simRoutes[0] ? simRoutes[0].completed_stops : 0);
   const pendingStops = totalStops - completedStops;
   
   // FORCED: Alerts and earnings for simulation
@@ -151,11 +154,11 @@ const DriverHome: React.FC = () => {
           s.amount_due > 0 || (s.window_end && new Date(`${today}T${s.window_end}`) < new Date(Date.now() + 60 * 60 * 1000))
         ) || []
       )
-    : (showSimulated && simData.routes?.[0] ? simData.routes[0].stops.filter(s => s.amount_due > 0).slice(0, 3) : []);
+    : (showSimulated && simRoutes[0] ? simRoutes[0].stops?.filter(s => s.amount_due > 0).slice(0, 3) || [] : []);
 
-  const estimatedEarnings = hasRealData ? 0 : (showSimulated && simData.routes?.[0] ? simData.routes[0].estimated_earnings : 320);
+  const estimatedEarnings = hasRealData ? 0 : (showSimulated && simRoutes[0] ? simRoutes[0].estimated_earnings : 320);
 
-  // Get active route (real or simulated)
+  // Get active route (real or simulated) - FORCED to show simRoute when simulation mode is on
   const activeRoute = hasRealData 
     ? (activeRoutes.find((r: any) => r.status === 'in_progress') || activeRoutes.find((r: any) => r.status === 'scheduled'))
     : simRoute;
@@ -382,7 +385,9 @@ const DriverHome: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold">No Active Route</h3>
                 <p className="text-muted-foreground text-sm">
-                  {simulationMode ? 'Loading simulation data...' : 'You\'re all caught up! No deliveries assigned for today yet.'}
+                  {simulationMode 
+                    ? 'Simulation mode is ON but no route data is available. Check scenario selection.' 
+                    : 'You\'re all caught up! No deliveries assigned for today yet.'}
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
@@ -397,133 +402,7 @@ const DriverHome: React.FC = () => {
           </Card>
         )}
 
-        {/* SECTION B — Primary Action */}
-        {activeRoute ? (
-          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-transparent to-transparent">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Zap className="h-5 w-5 text-primary" />
-                Active Route
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col md:flex-row justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-sm text-muted-foreground">
-                      #{activeRoute.id.slice(0, 8)}
-                    </span>
-                    {getStatusBadge(activeRoute.status)}
-                    {getPriorityBadge(activeRoute.priority)}
-                    <Badge variant="outline">{activeRoute.delivery_type}</Badge>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      {activeRoute.delivery_stops?.filter((s: any) => s.status === 'completed').length || 0}/
-                      {activeRoute.delivery_stops?.length || 0} stops
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      {activeRoute.scheduled_date}
-                    </span>
-                  </div>
-                  {activeRoute.dispatcher_notes && (
-                    <p className="text-sm bg-muted p-2 rounded">{activeRoute.dispatcher_notes}</p>
-                  )}
-                </div>
-                <div className="flex flex-col gap-2">
-                  {activeRoute.status === 'scheduled' && (
-                    <Button 
-                      size="lg" 
-                      onClick={() => navigate(`/delivery/my-route/${activeRoute.id}`)}
-                    >
-                      <Play className="h-4 w-4 mr-2" /> Start Route
-                    </Button>
-                  )}
-                  {activeRoute.status === 'in_progress' && (
-                    <Button 
-                      size="lg" 
-                      onClick={() => navigate(`/delivery/my-route/${activeRoute.id}`)}
-                    >
-                      <Navigation className="h-4 w-4 mr-2" /> Continue Route
-                    </Button>
-                  )}
-                  <Button variant="outline" size="sm">
-                    <MessageSquare className="h-4 w-4 mr-2" /> Contact Dispatcher
-                  </Button>
-                </div>
-              </div>
-
-              {/* Progress bar */}
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-muted-foreground">Progress</span>
-                  <span className="font-medium">
-                    {activeRoute.delivery_stops?.length > 0 
-                      ? Math.round((activeRoute.delivery_stops.filter((s: any) => s.status === 'completed').length / activeRoute.delivery_stops.length) * 100) 
-                      : 0}%
-                  </span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary transition-all"
-                    style={{ 
-                      width: `${activeRoute.delivery_stops?.length > 0 
-                        ? (activeRoute.delivery_stops.filter((s: any) => s.status === 'completed').length / activeRoute.delivery_stops.length) * 100 
-                        : 0}%` 
-                    }}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="border-dashed">
-            <CardContent className="py-8 text-center space-y-4">
-              <div className="h-16 w-16 mx-auto rounded-full bg-muted flex items-center justify-center">
-                <Truck className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">No Active Route</h3>
-                <p className="text-muted-foreground text-sm">
-                  You're all caught up! No deliveries assigned for today yet.
-                </p>
-              </div>
-
-              {/* Show last completed if exists */}
-              {lastCompleted && (
-                <div className="bg-muted/50 rounded-lg p-4 text-left">
-                  <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                    <History className="h-4 w-4" />
-                    Last Completed Route
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                      {format(new Date(lastCompleted.scheduled_date), 'MMM d, yyyy')} · {lastCompleted.delivery_type}
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => navigate(`/delivery/my-route/${lastCompleted.id}`)}
-                    >
-                      View <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
-                <Button variant="outline" onClick={() => setDriverStatus('available')}>
-                  <User className="h-4 w-4 mr-2" /> Set Available
-                </Button>
-                <Button variant="outline">
-                  <MessageSquare className="h-4 w-4 mr-2" /> Message Dispatcher
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* DUPLICATE SECTION REMOVED - Active Route section is already rendered above */}
 
         {/* Alerts Panel */}
         {alerts.length > 0 && (
@@ -599,27 +478,28 @@ const DriverHome: React.FC = () => {
         </Card>
 
         {/* SECTION D — Recent Activity */}
-        {recentActivity.length > 0 && (
+        {(recentActivity.length > 0 || showSimulated) && (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <History className="h-5 w-5" />
                 Recent Activity
+                {showSimulated && recentActivity.length === 0 && <SimulationBadge className="ml-2" text="Demo" />}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {recentActivity.map((activity: any) => (
+                {(recentActivity.length > 0 ? recentActivity : (simData?.activityFeed?.slice(0, 5) || [])).map((activity: any) => (
                   <div key={activity.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
                     <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
                       <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium">
-                        {activity.type || 'Route'} · {activity.territory || 'N/A'}
+                        {activity.type || activity.entity_type || 'Route'} · {activity.territory || activity.message?.split(' at ')[1]?.slice(0, 20) || 'N/A'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(activity.date), 'MMM d, yyyy')} · {activity.status}
+                        {format(new Date(activity.date || activity.timestamp), 'MMM d, yyyy')} · {activity.status || activity.severity}
                       </p>
                     </div>
                   </div>
