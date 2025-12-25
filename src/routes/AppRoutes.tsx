@@ -298,7 +298,10 @@ import {
   DeliveryMyRoute,
   HeatmapPage as DeliveryHeatmapPage,
   IssueDetailPage as DeliveryIssueDetailPage,
-  RouteSuggestionsPage as DeliveryRouteSuggestionsPage
+  RouteSuggestionsPage as DeliveryRouteSuggestionsPage,
+  DriverRoutesCompleted,
+  DriverStopsCompleted,
+  DriverIssuesReported
 } from '@/pages/delivery';
 import DeliveryStoreProfile from '@/pages/delivery/StoreProfile';
 import DeliveryRouteDetailPage from '@/pages/delivery/DeliveryRouteDetail';
@@ -748,6 +751,9 @@ export default function AppRoutes() {
         <Route path="/delivery/debt" element={<DebtCollection />} />
         <Route path="/delivery/driver" element={<DriverOS />} />
         <Route path="/delivery/driver-home" element={<DriverHome />} />
+        <Route path="/delivery/driver/routes-completed" element={<DriverRoutesCompleted />} />
+        <Route path="/delivery/driver/stops-completed" element={<DriverStopsCompleted />} />
+        <Route path="/delivery/driver/issues-reported" element={<DriverIssuesReported />} />
         <Route path="/delivery/my-route" element={<DeliveryMyRoute />} />
         <Route path="/delivery/my-route/:deliveryId" element={<DeliveryMyRoute />} />
         <Route path="/delivery/store/:storeId" element={<DeliveryStoreProfile />} />

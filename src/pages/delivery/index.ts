@@ -13,3 +13,6 @@ export { default as DeliveryMyRoute } from './MyRoute';
 export { default as HeatmapPage } from './HeatmapPage';
 export { default as IssueDetailPage } from './IssueDetailPage';
 export { default as RouteSuggestionsPage } from './RouteSuggestionsPage';
+export { default as DriverRoutesCompleted } from './DriverRoutesCompleted';
+export { default as DriverStopsCompleted } from './DriverStopsCompleted';
+export { default as DriverIssuesReported } from './DriverIssuesReported';
