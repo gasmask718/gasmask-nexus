@@ -94,14 +94,14 @@ const IssueCard: React.FC<IssueCardProps> = ({ issue, onViewDetails, onAssign, o
 
 export const IssuesBoard: React.FC = () => {
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [severityFilter, setSeverityFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<any>(null);
 
   const { data: issues = [], isLoading } = useBikerIssues({
-    status: statusFilter || undefined,
-    severity: severityFilter || undefined
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    severity: severityFilter === 'all' ? undefined : severityFilter
   });
 
   const escalateIssue = useEscalateIssue();
@@ -134,7 +134,7 @@ export const IssuesBoard: React.FC = () => {
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Status</SelectItem>
+            <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="open">Open</SelectItem>
             <SelectItem value="in_progress">In Progress</SelectItem>
             <SelectItem value="resolved">Resolved</SelectItem>
@@ -146,7 +146,7 @@ export const IssuesBoard: React.FC = () => {
             <SelectValue placeholder="All Severity" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Severity</SelectItem>
+            <SelectItem value="all">All Severity</SelectItem>
             <SelectItem value="critical">Critical</SelectItem>
             <SelectItem value="high">High</SelectItem>
             <SelectItem value="medium">Medium</SelectItem>
