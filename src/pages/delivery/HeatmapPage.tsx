@@ -124,12 +124,12 @@ const HeatmapPage: React.FC = () => {
                 className="px-3 py-1 border rounded-md bg-background"
               />
             </div>
-            <Select value={selectedBoro} onValueChange={setSelectedBoro}>
+            <Select value={selectedBoro || 'all'} onValueChange={(v) => setSelectedBoro(v === 'all' ? '' : v)}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="All Boroughs" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Boroughs</SelectItem>
+                <SelectItem value="all">All Boroughs</SelectItem>
                 {boros.map(boro => (
                   <SelectItem key={boro} value={boro}>{boro}</SelectItem>
                 ))}
