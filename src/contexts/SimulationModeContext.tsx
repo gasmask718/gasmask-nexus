@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { SimScenario, getSimulationScenario, SimulationState } from '@/lib/simulation/scenarioData';
 
 interface SimulationModeContextType {
@@ -13,8 +14,32 @@ interface SimulationModeContextType {
 const SimulationModeContext = createContext<SimulationModeContextType | undefined>(undefined);
 
 export function SimulationModeProvider({ children }: { children: ReactNode }) {
-  const [simulationMode, setSimulationMode] = useState(false);
-  const [scenario, setScenario] = useState<SimScenario>('normal');
+  const isDev = import.meta.env.DEV || (typeof window !== 'undefined' && window.location.hostname.includes('lovable'));
+
+  const [simulationMode, setSimulationMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const stored = window.localStorage.getItem('sim:mode');
+    if (stored === '1') return true;
+    if (stored === '0') return false;
+    // Force demo data ON by default in Lovable preview/dev
+    return isDev;
+  });
+
+  const [scenario, setScenario] = useState<SimScenario>(() => {
+    if (typeof window === 'undefined') return 'normal';
+    const stored = window.localStorage.getItem('sim:scenario') as SimScenario | null;
+    return stored === 'normal' || stored === 'heavy_issue' || stored === 'low_volume' ? stored : 'normal';
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('sim:mode', simulationMode ? '1' : '0');
+  }, [simulationMode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('sim:scenario', scenario);
+  }, [scenario]);
 
   const toggleSimulationMode = useCallback(() => {
     setSimulationMode(prev => !prev);
@@ -55,12 +80,27 @@ export function useSimulationMode() {
 }
 
 // Simulation badge component for marking simulated data
-export function SimulationBadge({ className = '' }: { className?: string }) {
+export function SimulationBadge({
+  className = '',
+  text = 'Simulated Data',
+  tooltip = 'Demo-only data for preview. No simulated data is written to the database.',
+}: {
+  className?: string;
+  text?: string;
+  tooltip?: string;
+}) {
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 rounded-full ${className}`}>
-      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-      Simulated Data
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={`inline-flex cursor-help items-center gap-1 px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 rounded-full ${className}`}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+          {text}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
   );
 }
 
