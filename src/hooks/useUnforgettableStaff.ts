@@ -214,7 +214,7 @@ export function useStaffList(filters?: { category_id?: string; state?: string; s
         return staff;
       }
 
-      let query = supabase
+      const baseQuery = supabase
         .from('ut_staff')
         .select(`
           *,
@@ -224,17 +224,19 @@ export function useStaffList(filters?: { category_id?: string; state?: string; s
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
+      // Apply filters - use type assertion since we know the column values
+      let finalQuery = baseQuery;
       if (filters?.category_id) {
-        query = query.eq('category_id', filters.category_id);
+        finalQuery = finalQuery.eq('category_id', filters.category_id);
       }
       if (filters?.state) {
-        query = query.eq('state', filters.state);
+        finalQuery = finalQuery.eq('state', filters.state);
       }
-      if (filters?.status) {
-        query = query.eq('status', filters.status);
+      if (filters?.status && ['active', 'inactive', 'pending', 'on_leave', 'terminated'].includes(filters.status)) {
+        finalQuery = finalQuery.eq('status', filters.status as 'active' | 'inactive' | 'pending' | 'on_leave' | 'terminated');
       }
 
-      const { data, error } = await query;
+      const { data, error } = await finalQuery;
       if (error) throw error;
       return (data || []) as unknown as UTStaffMember[];
     },
@@ -314,32 +316,36 @@ export function useCreateStaff() {
         };
       }
 
-      const insertData = {
+      // Build insert object and use type bypass
+      const insertPayload = {
         first_name: data.first_name,
         last_name: data.last_name,
-        email: data.email,
+        email: data.email || null,
         phone: data.phone,
         category_id: data.category_id,
         dob: data.dob,
         address_line_1: data.address_line_1,
-        address_line_2: data.address_line_2,
+        address_line_2: data.address_line_2 || null,
         city: data.city,
         state: data.state,
         zip: data.zip,
-        status: (data.status || 'active') as 'active' | 'inactive' | 'pending' | 'on_leave' | 'terminated',
-        preferred_contact_method: data.preferred_contact_method,
-        pay_type: data.pay_type,
-        pay_rate: data.pay_rate,
-        availability_notes: data.availability_notes,
-        emergency_contact_name: data.emergency_contact_name,
-        emergency_contact_phone: data.emergency_contact_phone,
-        notes: data.notes,
+        status: 'active' as const,
+        preferred_contact_method: data.preferred_contact_method || null,
+        pay_type: data.pay_type || null,
+        pay_rate: data.pay_rate || null,
+        availability_notes: data.availability_notes || null,
+        emergency_contact_name: data.emergency_contact_name || null,
+        emergency_contact_phone: data.emergency_contact_phone || null,
+        notes: data.notes || null,
         business_slug: 'unforgettable_times_usa',
+        role: 'event_coordinator_assistant' as const,
+        category: 'event_staff' as const,
+        employment_type: 'contractor' as const,
       };
 
       const { data: result, error } = await supabase
         .from('ut_staff')
-        .insert(insertData)
+        .insert(insertPayload)
         .select(`
           *,
           category:ut_staff_categories(*)

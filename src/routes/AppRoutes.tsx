@@ -301,6 +301,8 @@ import {
   UnforgettableStaff,
   UnforgettableStaffProfile,
   UnforgettableStaffNew,
+  UnforgettableStaffEdit,
+  UnforgettableStaffCategories,
   UnforgettableScheduling,
   UnforgettableSchedulingToday,
   UnforgettableSchedulingUpcoming,
@@ -848,7 +850,9 @@ export default function AppRoutes() {
         <Route path="/os/unforgettable" element={<UnforgettableDashboard />} />
         <Route path="/os/unforgettable/staff" element={<UnforgettableStaff />} />
         <Route path="/os/unforgettable/staff/new" element={<UnforgettableStaffNew />} />
+        <Route path="/os/unforgettable/staff/categories" element={<UnforgettableStaffCategories />} />
         <Route path="/os/unforgettable/staff/:staffId" element={<UnforgettableStaffProfile />} />
+        <Route path="/os/unforgettable/staff/:staffId/edit" element={<UnforgettableStaffEdit />} />
         <Route path="/os/unforgettable/scheduling" element={<UnforgettableScheduling />} />
         <Route path="/os/unforgettable/scheduling/today" element={<UnforgettableSchedulingToday />} />
         <Route path="/os/unforgettable/scheduling/upcoming" element={<UnforgettableSchedulingUpcoming />} />
