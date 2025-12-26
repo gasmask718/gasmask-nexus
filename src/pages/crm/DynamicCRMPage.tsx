@@ -1,23 +1,14 @@
-import { useState, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DynamicCRMLayout } from '@/components/crm/dynamic';
 import { inferCRMCategory, CRMCategorySlug } from '@/config/crmCategories';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, UserCog, CalendarDays, DollarSign, FileText } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import CRMLayout from './CRMLayout';
-
-// Quick access links for specific businesses
-const BUSINESS_QUICK_LINKS: Record<string, { label: string; path: string; icon: React.ElementType }[]> = {
-  'unforgettable_times_usa': [
-    { label: 'Staff Management', path: '/os/unforgettable/staff', icon: UserCog },
-    { label: 'Scheduling', path: '/os/unforgettable/scheduling', icon: CalendarDays },
-    { label: 'Payroll', path: '/os/unforgettable/payroll', icon: DollarSign },
-    { label: 'Documents', path: '/os/unforgettable/documents', icon: FileText },
-  ],
-};
+import { StaffOperationsSection, StaffOverviewWidget } from '@/components/crm/unforgettable';
 
 export default function DynamicCRMPage() {
   const { businessSlug } = useParams();
@@ -27,6 +18,27 @@ export default function DynamicCRMPage() {
   
   // Get category override from URL if present
   const categoryOverride = searchParams.get('category') as CRMCategorySlug | null;
+
+  // ANTI-REGRESSION SAFEGUARD: Ensure Staff & Operations renders for unforgettable_times_usa
+  useEffect(() => {
+    if (businessSlug === 'unforgettable_times_usa') {
+      // Verify the Staff & Operations section rendered
+      const checkRendered = () => {
+        const staffOpsSection = document.querySelector('[data-testid="staff-operations-section"]');
+        if (!staffOpsSection) {
+          console.error(
+            '[CRM-SAFEGUARD] ❌ CRITICAL: Staff & Operations section FAILED to render for unforgettable_times_usa. ' +
+            'This violates the hard requirement for permanent Staff & Operations bridge.'
+          );
+        } else {
+          console.log('[CRM-SAFEGUARD] ✅ Staff & Operations section verified for unforgettable_times_usa');
+        }
+      };
+      // Check after render
+      const timeout = setTimeout(checkRendered, 100);
+      return () => clearTimeout(timeout);
+    }
+  }, [businessSlug]);
 
   // Fetch business by slug
   const { data: business, isLoading, error } = useQuery({
@@ -57,8 +69,6 @@ export default function DynamicCRMPage() {
     );
   }, [business, categoryOverride]);
 
-  // Get quick links for this business
-  const quickLinks = businessSlug ? BUSINESS_QUICK_LINKS[businessSlug] || [] : [];
 
   if (isLoading) {
     return (
@@ -108,21 +118,20 @@ export default function DynamicCRMPage() {
               </p>
             </div>
           </div>
-
-          {/* Quick Links for specific businesses */}
-          {quickLinks.length > 0 && (
-            <div className="flex items-center gap-2">
-              {quickLinks.map((link) => (
-                <Button key={link.path} variant="outline" size="sm" asChild>
-                  <Link to={link.path}>
-                    <link.icon className="h-4 w-4 mr-2" />
-                    {link.label}
-                  </Link>
-                </Button>
-              ))}
-            </div>
-          )}
         </div>
+
+        {/* PERMANENT STAFF & OPERATIONS BRIDGE (HARD REQUIREMENT) */}
+        {/* This section MUST render for unforgettable_times_usa regardless of category inference */}
+        {businessSlug === 'unforgettable_times_usa' && (
+          <div data-testid="staff-operations-section">
+            <StaffOperationsSection businessSlug={businessSlug} />
+          </div>
+        )}
+
+        {/* Staff Overview Widget */}
+        {businessSlug === 'unforgettable_times_usa' && (
+          <StaffOverviewWidget businessSlug={businessSlug} isSimulationMode={true} />
+        )}
 
         {/* Dynamic CRM Layout based on category */}
         <DynamicCRMLayout
