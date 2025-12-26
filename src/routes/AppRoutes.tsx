@@ -90,6 +90,7 @@ import GlobalCRMDashboard from '@/pages/crm/GlobalCRMDashboard';
 import BusinessCRMDashboard from '@/pages/crm/BusinessCRMDashboard';
 import CRMRouter from '@/pages/crm/CRMRouter';
 import DynamicCRMPage from '@/pages/crm/DynamicCRMPage';
+import { TopTierPartnerDashboard, TopTierPartnerCategoryPage, TopTierPartnerProfile, TopTierPartnersByState } from '@/pages/crm/toptier';
 import AddBusinessPage from '@/pages/crm/AddBusinessPage';
 import CRMDataPage from '@/pages/crm/CRMDataPage';
 import CRMExportPage from '@/pages/crm/CRMExportPage';
@@ -662,6 +663,13 @@ export default function AppRoutes() {
         {/* Business-scoped CRM routes - CANONICAL PATTERN: /crm/:businessSlug/* */}
         {/* CRMRouter handles legacy vs new CRM routing: Grabba → Legacy, Others → Blueprint */}
         <Route path="/crm/:businessSlug" element={<CRMRouter />} />
+        
+        {/* TopTier Partner CRM Routes */}
+        <Route path="/crm/toptier-experience/partners" element={<TopTierPartnerDashboard />} />
+        <Route path="/crm/toptier-experience/partners/states" element={<TopTierPartnersByState />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId" element={<TopTierPartnerProfile />} />
+        <Route path="/crm/toptier-experience/partners/:category" element={<TopTierPartnerCategoryPage />} />
+        
         <Route path="/crm/:businessSlug/:entityType" element={<EntityListPage />} />
         <Route path="/crm/:businessSlug/:entityType/new" element={<EntityProfilePage />} />
         <Route path="/crm/:businessSlug/:entityType/:recordId" element={<EntityProfilePage />} />
