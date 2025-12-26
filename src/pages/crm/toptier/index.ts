@@ -13,3 +13,8 @@ export { default as TopTierInteractionDetail } from './TopTierInteractionDetail'
 export { default as TopTierContactDetail } from './TopTierContactDetail';
 export { default as TopTierAssetDetail } from './TopTierAssetDetail';
 export { default as TopTierNoteDetail } from './TopTierNoteDetail';
+export { default as TopTierAnalyticsDeals } from './TopTierAnalyticsDeals';
+export { default as TopTierAnalyticsRevenue } from './TopTierAnalyticsRevenue';
+export { default as TopTierAnalyticsCommissions } from './TopTierAnalyticsCommissions';
+export { default as TopTierAllContacts } from './TopTierAllContacts';
+export { default as TopTierInteractionsHub } from './TopTierInteractionsHub';

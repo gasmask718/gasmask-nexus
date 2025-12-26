@@ -90,7 +90,7 @@ import GlobalCRMDashboard from '@/pages/crm/GlobalCRMDashboard';
 import BusinessCRMDashboard from '@/pages/crm/BusinessCRMDashboard';
 import CRMRouter from '@/pages/crm/CRMRouter';
 import DynamicCRMPage from '@/pages/crm/DynamicCRMPage';
-import { TopTierPartnerDashboard, TopTierPartnerCategoryPage, TopTierPartnerProfile, TopTierPartnersByState, TopTierAddPartner, TopTierRecentBookings, TopTierCustomerRequests, TopTierRequestDetail, TopTierPartnerEdit, TopTierDealDetail, TopTierCampaignDetail, TopTierInteractionDetail, TopTierContactDetail, TopTierAssetDetail, TopTierNoteDetail } from '@/pages/crm/toptier';
+import { TopTierPartnerDashboard, TopTierPartnerCategoryPage, TopTierPartnerProfile, TopTierPartnersByState, TopTierAddPartner, TopTierRecentBookings, TopTierCustomerRequests, TopTierRequestDetail, TopTierPartnerEdit, TopTierDealDetail, TopTierCampaignDetail, TopTierInteractionDetail, TopTierContactDetail, TopTierAssetDetail, TopTierNoteDetail, TopTierAnalyticsDeals, TopTierAnalyticsRevenue, TopTierAnalyticsCommissions, TopTierAllContacts, TopTierInteractionsHub } from '@/pages/crm/toptier';
 import AddBusinessPage from '@/pages/crm/AddBusinessPage';
 import CRMDataPage from '@/pages/crm/CRMDataPage';
 import CRMExportPage from '@/pages/crm/CRMExportPage';
@@ -693,6 +693,18 @@ export default function AppRoutes() {
         <Route path="/crm/toptier-experience/requests/new" element={<TopTierCustomerRequests />} />
         <Route path="/crm/toptier-experience/requests/:requestId" element={<TopTierRequestDetail />} />
         <Route path="/crm/toptier-experience/assets/:assetId" element={<TopTierAssetDetail />} />
+        
+        {/* TopTier Analytics Pages */}
+        <Route path="/crm/toptier-experience/analytics/deals" element={<TopTierAnalyticsDeals />} />
+        <Route path="/crm/toptier-experience/analytics/revenue" element={<TopTierAnalyticsRevenue />} />
+        <Route path="/crm/toptier-experience/analytics/commissions" element={<TopTierAnalyticsCommissions />} />
+        
+        {/* TopTier Company-wide Contacts */}
+        <Route path="/crm/toptier-experience/contacts" element={<TopTierAllContacts />} />
+        
+        {/* TopTier Interactions Hub */}
+        <Route path="/crm/toptier-experience/interactions" element={<TopTierInteractionsHub />} />
+        <Route path="/crm/toptier-experience/interactions/:interactionId" element={<TopTierInteractionsHub />} />
         
         <Route path="/crm/:businessSlug/:entityType" element={<EntityListPage />} />
         <Route path="/crm/:businessSlug/:entityType/new" element={<EntityProfilePage />} />
