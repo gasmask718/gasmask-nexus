@@ -88,6 +88,7 @@ import ContactProfile from '@/pages/crm/ContactProfile';
 import GlobalCRM from '@/pages/crm/GlobalCRM';
 import GlobalCRMDashboard from '@/pages/crm/GlobalCRMDashboard';
 import BusinessCRMDashboard from '@/pages/crm/BusinessCRMDashboard';
+import CRMRouter from '@/pages/crm/CRMRouter';
 import DynamicCRMPage from '@/pages/crm/DynamicCRMPage';
 import AddBusinessPage from '@/pages/crm/AddBusinessPage';
 import CRMDataPage from '@/pages/crm/CRMDataPage';
@@ -659,7 +660,8 @@ export default function AppRoutes() {
         <Route path="/crm/legacy" element={<GlobalCRM />} />
         
         {/* Business-scoped CRM routes - CANONICAL PATTERN: /crm/:businessSlug/* */}
-        <Route path="/crm/:businessSlug" element={<BusinessCRMDashboard />} />
+        {/* CRMRouter handles legacy vs new CRM routing: Grabba → Legacy, Others → Blueprint */}
+        <Route path="/crm/:businessSlug" element={<CRMRouter />} />
         <Route path="/crm/:businessSlug/:entityType" element={<EntityListPage />} />
         <Route path="/crm/:businessSlug/:entityType/new" element={<EntityProfilePage />} />
         <Route path="/crm/:businessSlug/:entityType/:recordId" element={<EntityProfilePage />} />
