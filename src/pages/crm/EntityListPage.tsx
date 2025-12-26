@@ -111,7 +111,7 @@ export default function EntityListPage() {
           <p className="text-muted-foreground mb-6">
             The entity type "{entityType}" is not enabled for this business.
           </p>
-          <Button onClick={() => navigate(`/crm?business=${businessSlug}`)}>
+          <Button onClick={() => navigate(`/crm/${businessSlug}`)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to CRM
           </Button>
@@ -126,7 +126,7 @@ export default function EntityListPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate(`/crm?business=${businessSlug}`)}>
+            <Button variant="ghost" size="sm" onClick={() => navigate(`/crm/${businessSlug}`)}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
