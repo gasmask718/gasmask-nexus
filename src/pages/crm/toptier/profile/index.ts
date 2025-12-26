@@ -6,3 +6,4 @@ export { default as PartnerInteractionsTab } from './PartnerInteractionsTab';
 export { default as PartnerContactsTab } from './PartnerContactsTab';
 export { default as PartnerAssetsTab } from './PartnerAssetsTab';
 export { default as PartnerNotesTab } from './PartnerNotesTab';
+export { default as PartnerMediaVaultTab } from './PartnerMediaVaultTab';
