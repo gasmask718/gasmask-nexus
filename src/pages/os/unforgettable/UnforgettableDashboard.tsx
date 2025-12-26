@@ -117,7 +117,7 @@ export default function UnforgettableDashboard() {
                 variant="ghost"
                 size="sm"
                 className="h-auto p-0 text-xs text-pink-500 hover:text-pink-600 hover:bg-transparent"
-                onClick={() => navigate('/os/unforgettable/scheduling')}
+                onClick={() => navigate('/os/unforgettable/scheduling/today')}
               >
                 View Schedule <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
@@ -132,7 +132,7 @@ export default function UnforgettableDashboard() {
                 variant="ghost"
                 size="sm"
                 className="h-auto p-0 text-xs text-pink-500 hover:text-pink-600 hover:bg-transparent"
-                onClick={() => navigate('/os/unforgettable/scheduling')}
+                onClick={() => navigate('/os/unforgettable/scheduling/upcoming')}
               >
                 View Upcoming <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
@@ -147,7 +147,7 @@ export default function UnforgettableDashboard() {
                 variant="ghost"
                 size="sm"
                 className="h-auto p-0 text-xs text-amber-600 hover:text-amber-700 hover:bg-transparent"
-                onClick={() => navigate('/os/unforgettable/scheduling')}
+                onClick={() => navigate('/os/unforgettable/scheduling/gaps')}
               >
                 Resolve <ArrowRight className="h-3 w-3 ml-1" />
               </Button>

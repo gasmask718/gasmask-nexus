@@ -42,7 +42,7 @@ export function StaffOverviewWidget({ businessSlug, isSimulationMode = false, va
   const upcomingAssignments = isSimulationMode ? 28 : (values?.upcomingAssignments ?? 0);
   const staffingGaps = isSimulationMode ? 3 : (values?.staffingGaps ?? 0);
 
-  // Simulated or provided data
+  // Simulated or provided data with CORRECT routes
   const metrics: StaffMetric[] = [
     {
       label: 'Total Active Staff',
@@ -56,7 +56,7 @@ export function StaffOverviewWidget({ businessSlug, isSimulationMode = false, va
       label: 'Assigned Today',
       value: assignedToday,
       icon: Calendar,
-      link: '/os/unforgettable/scheduling',
+      link: '/os/unforgettable/scheduling/today',
       linkLabel: 'View Schedule',
       variant: 'default',
     },
@@ -64,7 +64,7 @@ export function StaffOverviewWidget({ businessSlug, isSimulationMode = false, va
       label: 'Upcoming Assignments',
       value: upcomingAssignments,
       icon: Clock,
-      link: '/os/unforgettable/scheduling',
+      link: '/os/unforgettable/scheduling/upcoming',
       linkLabel: 'View Upcoming',
       variant: 'default',
     },
@@ -72,7 +72,7 @@ export function StaffOverviewWidget({ businessSlug, isSimulationMode = false, va
       label: 'Staffing Gaps',
       value: staffingGaps,
       icon: AlertTriangle,
-      link: '/os/unforgettable/scheduling',
+      link: '/os/unforgettable/scheduling/gaps',
       linkLabel: 'Resolve Gaps',
       variant: staffingGaps > 0 ? 'warning' : 'default',
     },

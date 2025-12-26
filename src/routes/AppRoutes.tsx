@@ -296,7 +296,22 @@ import StoreInventoryPage from '@/pages/os/inventory/StoreInventoryPage';
 import InventoryAuditLogPage from '@/pages/os/inventory/InventoryAuditLogPage';
 import { LiveTubesDetailPage, BoxesSoldDetailPage, LowStockDetailPage } from '@/pages/os/inventory/dashboard';
 import TopTierDashboard from '@/pages/os/toptier/TopTierDashboard';
-import UnforgettableDashboard from '@/pages/os/unforgettable/UnforgettableDashboard';
+import {
+  UnforgettableDashboard,
+  UnforgettableStaff,
+  UnforgettableStaffProfile,
+  UnforgettableScheduling,
+  UnforgettableSchedulingToday,
+  UnforgettableSchedulingUpcoming,
+  UnforgettableSchedulingGaps,
+  UnforgettablePayroll,
+  UnforgettablePayrollDetail,
+  UnforgettableDocuments,
+  UnforgettableDocumentDetail,
+  UnforgettableAvailability,
+  UnforgettablePerformance,
+  UnforgettableCommunications,
+} from '@/pages/os/unforgettable';
 import ICleanDashboard from '@/pages/os/iclean/ICleanDashboard';
 import PlayboxxxDashboard from '@/pages/os/playboxxx/PlayboxxxDashboard';
 import SpecialNeedsDashboard from '@/pages/os/specialneeds/SpecialNeedsDashboard';
@@ -818,6 +833,19 @@ export default function AppRoutes() {
         {/* Dynasty OS Business Units */}
         <Route path="/os/toptier" element={<TopTierDashboard />} />
         <Route path="/os/unforgettable" element={<UnforgettableDashboard />} />
+        <Route path="/os/unforgettable/staff" element={<UnforgettableStaff />} />
+        <Route path="/os/unforgettable/staff/:staffId" element={<UnforgettableStaffProfile />} />
+        <Route path="/os/unforgettable/scheduling" element={<UnforgettableScheduling />} />
+        <Route path="/os/unforgettable/scheduling/today" element={<UnforgettableSchedulingToday />} />
+        <Route path="/os/unforgettable/scheduling/upcoming" element={<UnforgettableSchedulingUpcoming />} />
+        <Route path="/os/unforgettable/scheduling/gaps" element={<UnforgettableSchedulingGaps />} />
+        <Route path="/os/unforgettable/payroll" element={<UnforgettablePayroll />} />
+        <Route path="/os/unforgettable/payroll/:staffId" element={<UnforgettablePayrollDetail />} />
+        <Route path="/os/unforgettable/documents" element={<UnforgettableDocuments />} />
+        <Route path="/os/unforgettable/documents/:documentId" element={<UnforgettableDocumentDetail />} />
+        <Route path="/os/unforgettable/availability" element={<UnforgettableAvailability />} />
+        <Route path="/os/unforgettable/performance" element={<UnforgettablePerformance />} />
+        <Route path="/os/unforgettable/communications" element={<UnforgettableCommunications />} />
         <Route path="/os/iclean" element={<ICleanDashboard />} />
         <Route path="/os/playboxxx" element={<PlayboxxxDashboard />} />
         <Route path="/os/special-needs" element={<SpecialNeedsDashboard />} />
