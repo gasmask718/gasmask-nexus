@@ -641,14 +641,20 @@ export default function AppRoutes() {
         {/* Communication Center - Redirect to modular hub */}
         <Route path="/communication-center" element={<CommunicationHubLayout />} />
 
-        {/* CRM - Global CRM is now the main entry point */}
-        <Route path="/crm" element={<GlobalCRM />} />
+        {/* CRM - Global CRM with Blueprint System */}
+        <Route path="/crm" element={<GlobalCRMDashboard />} />
         <Route path="/crm/add-business" element={<AddBusinessPage />} />
+        <Route path="/crm/settings" element={<CRMSettingsPage />} />
         <Route path="/crm/dashboard" element={<CRM />} />
-        <Route path="/crm/global" element={<GlobalCRM />} />
+        <Route path="/crm/global" element={<GlobalCRMDashboard />} />
+        <Route path="/crm/legacy" element={<GlobalCRM />} />
         <Route path="/crm/brand/:brandId" element={<CRMBrandPage />} />
         <Route path="/crm/brand/:brandId/store/:storeId" element={<CRMBrandStoreProfile />} />
         <Route path="/crm/business/:businessSlug" element={<DynamicCRMPage />} />
+        {/* Dynamic entity routes */}
+        <Route path="/crm/:businessSlug/:entityType" element={<EntityListPage />} />
+        <Route path="/crm/:businessSlug/:entityType/new" element={<EntityProfilePage />} />
+        <Route path="/crm/:businessSlug/:entityType/:recordId" element={<EntityProfilePage />} />
         <Route path="/crm/customers" element={<CRMCustomers />} />
         <Route path="/crm/customers/new" element={<CRMCustomerNew />} />
         <Route path="/crm/customers/import" element={<CRMCustomerImport />} />
