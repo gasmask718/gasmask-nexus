@@ -144,10 +144,20 @@ export default function TopTierCustomers() {
             </div>
             <p className="text-muted-foreground">Track customers, bookings, and lifetime value</p>
           </div>
-          <Button onClick={() => navigate('/crm/toptier-experience/customers/new')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Customer
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => {
+                console.log('[CRM] Add New Customer button mounted', { 
+                  currentRoute: window.location.pathname,
+                  targetRoute: '/crm/toptier-experience/customers/new'
+                });
+                navigate('/crm/toptier-experience/customers/new');
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add New Customer
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -263,16 +273,33 @@ export default function TopTierCustomers() {
         </CardHeader>
         <CardContent>
           {filteredCustomers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No customers found</p>
-              <Button 
-                className="mt-4"
-                onClick={() => navigate('/crm/toptier-experience/customers/new')}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add First Customer
-              </Button>
+            <div className="text-center py-12 text-muted-foreground">
+              <div className="mx-auto h-20 w-20 rounded-full bg-muted/50 flex items-center justify-center mb-6">
+                <Users className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">No customers found</h3>
+              <p className="text-sm max-w-md mx-auto mb-6">
+                {searchTerm || stateFilter !== 'all' || typeFilter !== 'all'
+                  ? 'Try adjusting your filters or search term'
+                  : 'Start building your customer database by adding your first customer'}
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button 
+                  onClick={() => {
+                    console.log('[CRM] Add New Customer button (empty state) clicked');
+                    navigate('/crm/toptier-experience/customers/new');
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New Customer
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate('/crm/toptier-experience/bookings')}
+                >
+                  Create Booking
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">

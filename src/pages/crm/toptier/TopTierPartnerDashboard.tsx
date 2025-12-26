@@ -163,9 +163,9 @@ export default function TopTierPartnerDashboard() {
             <Eye className="h-4 w-4 mr-2" />
             Recent Bookings
           </Button>
-          <Button variant="outline" onClick={() => navigate('/crm/toptier-experience/requests')}>
+          <Button variant="outline" onClick={() => navigate('/crm/toptier-experience/customers')}>
             <Users className="h-4 w-4 mr-2" />
-            Customer Requests
+            Customers
           </Button>
           <Button variant="outline" onClick={handleViewByState}>
             <MapPin className="h-4 w-4 mr-2" />
@@ -174,6 +174,13 @@ export default function TopTierPartnerDashboard() {
           <Button variant="outline" onClick={handleViewAllPartners}>
             <Users className="h-4 w-4 mr-2" />
             All Partners
+          </Button>
+          <Button onClick={() => {
+            console.log('[CRM] Add New Customer button clicked', { route: '/crm/toptier-experience/customers/new' });
+            navigate('/crm/toptier-experience/customers/new');
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Customer
           </Button>
           <Button onClick={() => navigate('/crm/toptier-experience/partner/new')}>
             <Plus className="h-4 w-4 mr-2" />
