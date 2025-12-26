@@ -1,13 +1,23 @@
 import { useState, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DynamicCRMLayout } from '@/components/crm/dynamic';
 import { inferCRMCategory, CRMCategorySlug } from '@/config/crmCategories';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, UserCog, CalendarDays, DollarSign, FileText } from 'lucide-react';
 import CRMLayout from './CRMLayout';
+
+// Quick access links for specific businesses
+const BUSINESS_QUICK_LINKS: Record<string, { label: string; path: string; icon: React.ElementType }[]> = {
+  'unforgettable_times_usa': [
+    { label: 'Staff Management', path: '/os/unforgettable/staff', icon: UserCog },
+    { label: 'Scheduling', path: '/os/unforgettable/scheduling', icon: CalendarDays },
+    { label: 'Payroll', path: '/os/unforgettable/payroll', icon: DollarSign },
+    { label: 'Documents', path: '/os/unforgettable/documents', icon: FileText },
+  ],
+};
 
 export default function DynamicCRMPage() {
   const { businessSlug } = useParams();
@@ -47,6 +57,9 @@ export default function DynamicCRMPage() {
     );
   }, [business, categoryOverride]);
 
+  // Get quick links for this business
+  const quickLinks = businessSlug ? BUSINESS_QUICK_LINKS[businessSlug] || [] : [];
+
   if (isLoading) {
     return (
       <CRMLayout title="Loading...">
@@ -79,20 +92,36 @@ export default function DynamicCRMPage() {
     <CRMLayout title={business.name}>
       <div className="space-y-6">
         {/* Header with back button */}
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => navigate('/crm')}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{business.name} CRM</h1>
-            <p className="text-sm text-muted-foreground">
-              {business.tagline || business.short_description || 'Dynamic CRM'}
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate('/crm')}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">{business.name} CRM</h1>
+              <p className="text-sm text-muted-foreground">
+                {business.tagline || business.short_description || 'Dynamic CRM'}
+              </p>
+            </div>
           </div>
+
+          {/* Quick Links for specific businesses */}
+          {quickLinks.length > 0 && (
+            <div className="flex items-center gap-2">
+              {quickLinks.map((link) => (
+                <Button key={link.path} variant="outline" size="sm" asChild>
+                  <Link to={link.path}>
+                    <link.icon className="h-4 w-4 mr-2" />
+                    {link.label}
+                  </Link>
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Dynamic CRM Layout based on category */}
