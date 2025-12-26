@@ -90,7 +90,7 @@ import GlobalCRMDashboard from '@/pages/crm/GlobalCRMDashboard';
 import BusinessCRMDashboard from '@/pages/crm/BusinessCRMDashboard';
 import CRMRouter from '@/pages/crm/CRMRouter';
 import DynamicCRMPage from '@/pages/crm/DynamicCRMPage';
-import { TopTierPartnerDashboard, TopTierPartnerCategoryPage, TopTierPartnerProfile, TopTierPartnersByState, TopTierAddPartner, TopTierRecentBookings, TopTierCustomerRequests, TopTierRequestDetail } from '@/pages/crm/toptier';
+import { TopTierPartnerDashboard, TopTierPartnerCategoryPage, TopTierPartnerProfile, TopTierPartnersByState, TopTierAddPartner, TopTierRecentBookings, TopTierCustomerRequests, TopTierRequestDetail, TopTierPartnerEdit, TopTierDealDetail, TopTierCampaignDetail, TopTierInteractionDetail, TopTierContactDetail, TopTierAssetDetail, TopTierNoteDetail } from '@/pages/crm/toptier';
 import AddBusinessPage from '@/pages/crm/AddBusinessPage';
 import CRMDataPage from '@/pages/crm/CRMDataPage';
 import CRMExportPage from '@/pages/crm/CRMExportPage';
@@ -670,12 +670,29 @@ export default function AppRoutes() {
         <Route path="/crm/toptier-experience/partner/new" element={<TopTierAddPartner />} />
         <Route path="/crm/toptier-experience/partners/states" element={<TopTierPartnersByState />} />
         <Route path="/crm/toptier-experience/partners/profile/:partnerId" element={<TopTierPartnerProfile />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId/edit" element={<TopTierPartnerEdit />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId/deals" element={<TopTierPartnerProfile />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId/campaigns" element={<TopTierPartnerProfile />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId/commissions" element={<TopTierPartnerProfile />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId/interactions" element={<TopTierPartnerProfile />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId/interactions/:interactionId" element={<TopTierInteractionDetail />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId/contacts" element={<TopTierPartnerProfile />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId/contacts/:contactId" element={<TopTierContactDetail />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId/assets" element={<TopTierPartnerProfile />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId/assets/:assetId" element={<TopTierAssetDetail />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId/notes" element={<TopTierPartnerProfile />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId/notes/:noteId" element={<TopTierNoteDetail />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId/media" element={<TopTierPartnerProfile />} />
+        <Route path="/crm/toptier-experience/partners/profile/:partnerId/media/:assetId" element={<TopTierAssetDetail />} />
         <Route path="/crm/toptier-experience/partners/:category" element={<TopTierPartnerCategoryPage />} />
+        <Route path="/crm/toptier-experience/deals/:dealId" element={<TopTierDealDetail />} />
+        <Route path="/crm/toptier-experience/campaigns/:campaignId" element={<TopTierCampaignDetail />} />
         <Route path="/crm/toptier-experience/bookings" element={<TopTierRecentBookings />} />
         <Route path="/crm/toptier-experience/bookings/recent" element={<TopTierRecentBookings />} />
         <Route path="/crm/toptier-experience/requests" element={<TopTierCustomerRequests />} />
         <Route path="/crm/toptier-experience/requests/new" element={<TopTierCustomerRequests />} />
         <Route path="/crm/toptier-experience/requests/:requestId" element={<TopTierRequestDetail />} />
+        <Route path="/crm/toptier-experience/assets/:assetId" element={<TopTierAssetDetail />} />
         
         <Route path="/crm/:businessSlug/:entityType" element={<EntityListPage />} />
         <Route path="/crm/:businessSlug/:entityType/new" element={<EntityProfilePage />} />
