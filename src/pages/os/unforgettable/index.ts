@@ -8,6 +8,7 @@ export { default as UnforgettableStaffVenues } from './UnforgettableStaffVenues'
 export { default as UnforgettableStaffNotes } from './UnforgettableStaffNotes';
 export { default as UnforgettableStaffCall } from './UnforgettableStaffCall';
 export { default as UnforgettableStaffEmail } from './UnforgettableStaffEmail';
+export { default as UnforgettableStaffPerformance } from './UnforgettableStaffPerformance';
 export { default as UnforgettableScheduling } from './UnforgettableScheduling';
 export { default as UnforgettableSchedulingToday } from './UnforgettableSchedulingToday';
 export { default as UnforgettableSchedulingUpcoming } from './UnforgettableSchedulingUpcoming';
@@ -20,5 +21,8 @@ export { default as UnforgettableDocuments } from './UnforgettableDocuments';
 export { default as UnforgettableDocumentDetail } from './UnforgettableDocumentDetail';
 export { default as UnforgettableCommunications } from './UnforgettableCommunications';
 export { default as UnforgettableAICalling } from './UnforgettableAICalling';
+export { default as UnforgettableAICallDetail } from './UnforgettableAICallDetail';
 export { default as UnforgettableOnboarding } from './UnforgettableOnboarding';
 export { default as UnforgettableCustomerService } from './UnforgettableCustomerService';
+export { default as UnforgettableMedia } from './UnforgettableMedia';
+export { default as UnforgettableMediaDetail } from './UnforgettableMediaDetail';

@@ -307,6 +307,7 @@ import {
   UnforgettableStaffNotes,
   UnforgettableStaffCall,
   UnforgettableStaffEmail,
+  UnforgettableStaffPerformance,
   UnforgettableScheduling,
   UnforgettableSchedulingToday,
   UnforgettableSchedulingUpcoming,
@@ -319,8 +320,11 @@ import {
   UnforgettablePerformance,
   UnforgettableCommunications,
   UnforgettableAICalling,
+  UnforgettableAICallDetail,
   UnforgettableOnboarding,
   UnforgettableCustomerService,
+  UnforgettableMedia,
+  UnforgettableMediaDetail,
 } from '@/pages/os/unforgettable';
 import {
   UnforgettableEventHalls,
@@ -873,8 +877,12 @@ export default function AppRoutes() {
         <Route path="/os/unforgettable/performance" element={<UnforgettablePerformance />} />
         <Route path="/os/unforgettable/communications" element={<UnforgettableCommunications />} />
         <Route path="/os/unforgettable/ai-calling" element={<UnforgettableAICalling />} />
+        <Route path="/os/unforgettable/ai-calling/:callId" element={<UnforgettableAICallDetail />} />
         <Route path="/os/unforgettable/onboarding" element={<UnforgettableOnboarding />} />
         <Route path="/os/unforgettable/customer-service" element={<UnforgettableCustomerService />} />
+        <Route path="/os/unforgettable/media" element={<UnforgettableMedia />} />
+        <Route path="/os/unforgettable/media/:mediaId" element={<UnforgettableMediaDetail />} />
+        <Route path="/os/unforgettable/staff/:staffId/performance" element={<UnforgettableStaffPerformance />} />
         
         {/* Unforgettable Times CRM Routes */}
         <Route path="/crm/unforgettable_times_usa/event-halls" element={<UnforgettableEventHalls />} />
