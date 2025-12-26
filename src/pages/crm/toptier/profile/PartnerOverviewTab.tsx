@@ -83,7 +83,7 @@ export default function PartnerOverviewTab({ partner, isSimulated, bookings, cam
               variant="ghost" 
               size="sm" 
               className="mt-4 w-full"
-              onClick={() => navigate(`/crm/toptier-experience/partners/profile/${partnerId}/deals`)}
+              onClick={() => navigate(`/crm/toptier-experience/analytics/deals`)}
             >
               <Eye className="h-4 w-4 mr-2" />
               View Details
@@ -106,7 +106,7 @@ export default function PartnerOverviewTab({ partner, isSimulated, bookings, cam
               variant="ghost" 
               size="sm" 
               className="mt-4 w-full"
-              onClick={() => navigate(`/crm/toptier-experience/partners/profile/${partnerId}/commissions`)}
+              onClick={() => navigate(`/crm/toptier-experience/analytics/revenue`)}
             >
               <Eye className="h-4 w-4 mr-2" />
               View Details
@@ -129,7 +129,7 @@ export default function PartnerOverviewTab({ partner, isSimulated, bookings, cam
               variant="ghost" 
               size="sm" 
               className="mt-4 w-full"
-              onClick={() => navigate(`/crm/toptier-experience/partners/profile/${partnerId}/commissions`)}
+              onClick={() => navigate(`/crm/toptier-experience/analytics/commissions`)}
             >
               <Eye className="h-4 w-4 mr-2" />
               View Details
@@ -227,7 +227,7 @@ export default function PartnerOverviewTab({ partner, isSimulated, bookings, cam
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Contact Information</CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/crm/toptier-experience/partners/profile/${partnerId}/contacts`)}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/crm/toptier-experience/contacts`)}>
             <Eye className="h-4 w-4 mr-2" />
             View All Contacts
           </Button>
