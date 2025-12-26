@@ -22527,14 +22527,21 @@ export type Database = {
       }
       ut_staff: {
         Row: {
+          address_line_1: string | null
+          address_line_2: string | null
           availability: Json | null
+          availability_notes: string | null
           business_id: string | null
+          business_slug: string | null
           category: Database["public"]["Enums"]["ut_staff_category"]
+          category_id: string | null
           certifications: string[] | null
+          city: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
           department: string | null
+          dob: string | null
           email: string | null
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
@@ -22547,27 +22554,39 @@ export type Database = {
           id: string
           last_name: string
           notes: string | null
+          pay_rate: number | null
+          pay_type: string | null
           payment_details: Json | null
           payment_method: string | null
           phone: string | null
+          preferred_contact_method: string | null
           preferred_hours: Json | null
           rating: number | null
           role: Database["public"]["Enums"]["ut_staff_role"]
           specialties: string[] | null
+          state: string | null
           status: Database["public"]["Enums"]["ut_staff_status"]
           total_earnings: number | null
           updated_at: string
           user_id: string | null
+          zip: string | null
         }
         Insert: {
+          address_line_1?: string | null
+          address_line_2?: string | null
           availability?: Json | null
+          availability_notes?: string | null
           business_id?: string | null
+          business_slug?: string | null
           category?: Database["public"]["Enums"]["ut_staff_category"]
+          category_id?: string | null
           certifications?: string[] | null
+          city?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           department?: string | null
+          dob?: string | null
           email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
@@ -22580,27 +22599,39 @@ export type Database = {
           id?: string
           last_name: string
           notes?: string | null
+          pay_rate?: number | null
+          pay_type?: string | null
           payment_details?: Json | null
           payment_method?: string | null
           phone?: string | null
+          preferred_contact_method?: string | null
           preferred_hours?: Json | null
           rating?: number | null
           role: Database["public"]["Enums"]["ut_staff_role"]
           specialties?: string[] | null
+          state?: string | null
           status?: Database["public"]["Enums"]["ut_staff_status"]
           total_earnings?: number | null
           updated_at?: string
           user_id?: string | null
+          zip?: string | null
         }
         Update: {
+          address_line_1?: string | null
+          address_line_2?: string | null
           availability?: Json | null
+          availability_notes?: string | null
           business_id?: string | null
+          business_slug?: string | null
           category?: Database["public"]["Enums"]["ut_staff_category"]
+          category_id?: string | null
           certifications?: string[] | null
+          city?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           department?: string | null
+          dob?: string | null
           email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
@@ -22613,17 +22644,22 @@ export type Database = {
           id?: string
           last_name?: string
           notes?: string | null
+          pay_rate?: number | null
+          pay_type?: string | null
           payment_details?: Json | null
           payment_method?: string | null
           phone?: string | null
+          preferred_contact_method?: string | null
           preferred_hours?: Json | null
           rating?: number | null
           role?: Database["public"]["Enums"]["ut_staff_role"]
           specialties?: string[] | null
+          state?: string | null
           status?: Database["public"]["Enums"]["ut_staff_status"]
           total_earnings?: number | null
           updated_at?: string
           user_id?: string | null
+          zip?: string | null
         }
         Relationships: [
           {
@@ -22631,6 +22667,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_staff_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ut_staff_categories"
             referencedColumns: ["id"]
           },
         ]
@@ -22702,6 +22745,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ut_staff_categories: {
+        Row: {
+          business_slug: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          business_slug?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          business_slug?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       va_attempts: {
         Row: {
