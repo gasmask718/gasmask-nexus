@@ -27,6 +27,7 @@ interface BusinessCard {
   industry?: string | null;
   is_active: boolean;
   created_at: string;
+  theme_config?: { primary?: string; icon?: string } | null;
 }
 
 export default function GlobalCRMDashboard() {
@@ -41,7 +42,7 @@ export default function GlobalCRMDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('businesses')
-        .select('id, name, slug, logo_url, business_type, industry, is_active, created_at')
+        .select('id, name, slug, logo_url, business_type, industry, is_active, created_at, theme_config')
         .eq('is_active', true)
         .order('name');
       if (error) throw error;
@@ -207,76 +208,80 @@ export default function GlobalCRMDashboard() {
           </Card>
         ) : viewMode === 'grid' ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredBusinesses.map((business) => (
-              <Card
-                key={business.id}
-                className="p-6 cursor-pointer hover:shadow-lg transition-all group border-t-4"
-                style={{ borderTopColor: 'hsl(var(--primary))' }}
-                onClick={() => handleBusinessClick(business.slug)}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  {business.logo_url ? (
-                    <img
-                      src={business.logo_url}
-                      alt={business.name}
-                      className="w-12 h-12 rounded-lg object-contain"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
-                      {business.name.charAt(0)}
+            {filteredBusinesses.map((business) => {
+              const themeColor = business.theme_config?.primary || 'hsl(var(--primary))';
+              const themeIcon = business.theme_config?.icon || '🏢';
+              
+              return (
+                <Card
+                  key={business.id}
+                  className="p-6 cursor-pointer hover:shadow-lg transition-all group border-t-4"
+                  style={{ borderTopColor: themeColor }}
+                  onClick={() => handleBusinessClick(business.slug)}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div 
+                      className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
+                      style={{ backgroundColor: `${themeColor}20` }}
+                    >
+                      {themeIcon}
                     </div>
+                    <Badge variant="outline" className="text-xs">
+                      {business.industry?.replace(/_/g, ' ') || 'General'}
+                    </Badge>
+                  </div>
+                  <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">
+                    {business.name}
+                  </h3>
+                  {business.business_type && (
+                    <p className="text-sm text-muted-foreground mb-4 capitalize">
+                      {business.business_type.replace(/_/g, ' ')}
+                    </p>
                   )}
-                  <Badge variant="outline" className="text-xs">
-                    {business.industry || 'General'}
-                  </Badge>
-                </div>
-                <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">
-                  {business.name}
-                </h3>
-                {business.business_type && (
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {business.business_type}
-                  </p>
-                )}
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>View CRM</span>
-                  <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </Card>
-            ))}
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>View CRM</span>
+                    <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         ) : (
           <Card>
             <div className="divide-y">
-              {filteredBusinesses.map((business) => (
-                <div
-                  key={business.id}
-                  className="flex items-center gap-4 p-4 hover:bg-muted/50 cursor-pointer transition-colors group"
-                  onClick={() => handleBusinessClick(business.slug)}
-                >
-                  {business.logo_url ? (
-                    <img
-                      src={business.logo_url}
-                      alt={business.name}
-                      className="w-10 h-10 rounded-lg object-contain"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">
-                      {business.name.charAt(0)}
+              {filteredBusinesses.map((business) => {
+                const themeColor = business.theme_config?.primary || 'hsl(var(--primary))';
+                const themeIcon = business.theme_config?.icon || '🏢';
+                
+                return (
+                  <div
+                    key={business.id}
+                    className="flex items-center gap-4 p-4 hover:bg-muted/50 cursor-pointer transition-colors group"
+                    onClick={() => handleBusinessClick(business.slug)}
+                  >
+                    <div 
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                      style={{ backgroundColor: `${themeColor}20` }}
+                    >
+                      {themeIcon}
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium truncate group-hover:text-primary transition-colors">
-                      {business.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {business.industry || 'General'} • {business.business_type || 'Business'}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium truncate group-hover:text-primary transition-colors">
+                        {business.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground truncate capitalize">
+                        {business.industry?.replace(/_/g, ' ') || 'General'} • {business.business_type?.replace(/_/g, ' ') || 'Business'}
+                      </p>
+                    </div>
+                    <div 
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: themeColor }}
+                    />
+                    <Badge variant="outline">Active</Badge>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
-                  <Badge variant="outline">Active</Badge>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                </div>
-              ))}
+                );
+              })}
             </div>
           </Card>
         )}
