@@ -90,7 +90,7 @@ import GlobalCRMDashboard from '@/pages/crm/GlobalCRMDashboard';
 import BusinessCRMDashboard from '@/pages/crm/BusinessCRMDashboard';
 import CRMRouter from '@/pages/crm/CRMRouter';
 import DynamicCRMPage from '@/pages/crm/DynamicCRMPage';
-import { TopTierPartnerDashboard, TopTierPartnerCategoryPage, TopTierPartnerProfile, TopTierPartnersByState } from '@/pages/crm/toptier';
+import { TopTierPartnerDashboard, TopTierPartnerCategoryPage, TopTierPartnerProfile, TopTierPartnersByState, TopTierAddPartner } from '@/pages/crm/toptier';
 import AddBusinessPage from '@/pages/crm/AddBusinessPage';
 import CRMDataPage from '@/pages/crm/CRMDataPage';
 import CRMExportPage from '@/pages/crm/CRMExportPage';
@@ -666,6 +666,8 @@ export default function AppRoutes() {
         
         {/* TopTier Partner CRM Routes */}
         <Route path="/crm/toptier-experience/partners" element={<TopTierPartnerDashboard />} />
+        <Route path="/crm/toptier-experience/partners/new" element={<TopTierAddPartner />} />
+        <Route path="/crm/toptier-experience/partner/new" element={<TopTierAddPartner />} />
         <Route path="/crm/toptier-experience/partners/states" element={<TopTierPartnersByState />} />
         <Route path="/crm/toptier-experience/partners/profile/:partnerId" element={<TopTierPartnerProfile />} />
         <Route path="/crm/toptier-experience/partners/:category" element={<TopTierPartnerCategoryPage />} />
