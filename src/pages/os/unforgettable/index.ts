@@ -4,6 +4,10 @@ export { default as UnforgettableStaffProfile } from './UnforgettableStaffProfil
 export { default as UnforgettableStaffNew } from './UnforgettableStaffNew';
 export { default as UnforgettableStaffEdit } from './UnforgettableStaffEdit';
 export { default as UnforgettableStaffCategories } from './UnforgettableStaffCategories';
+export { default as UnforgettableStaffVenues } from './UnforgettableStaffVenues';
+export { default as UnforgettableStaffNotes } from './UnforgettableStaffNotes';
+export { default as UnforgettableStaffCall } from './UnforgettableStaffCall';
+export { default as UnforgettableStaffEmail } from './UnforgettableStaffEmail';
 export { default as UnforgettableScheduling } from './UnforgettableScheduling';
 export { default as UnforgettableSchedulingToday } from './UnforgettableSchedulingToday';
 export { default as UnforgettableSchedulingUpcoming } from './UnforgettableSchedulingUpcoming';
