@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ArrowLeft, Search, Eye, Plus, Users, DollarSign, 
-  MapPin, Star, Crown, UserPlus, TrendingUp, Calendar
+  MapPin, Star, Crown, UserPlus, TrendingUp, Calendar,
+  Instagram, ExternalLink, Cake
 } from 'lucide-react';
 import { US_STATES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
@@ -46,6 +47,20 @@ const generateSimulatedCustomers = () => {
     const avgSpend = Math.floor(Math.random() * 15000) + 2000;
     const totalSpend = bookingCount * avgSpend;
     
+    // Generate random DOB (ages 25-55)
+    const birthYear = 1970 + Math.floor(Math.random() * 30);
+    const birthMonth = Math.floor(Math.random() * 12) + 1;
+    const birthDay = Math.floor(Math.random() * 28) + 1;
+    const dob = `${birthYear}-${String(birthMonth).padStart(2, '0')}-${String(birthDay).padStart(2, '0')}`;
+    
+    // Generate random social media handles
+    const socialHandles = {
+      instagram: Math.random() > 0.3 ? `@${name.toLowerCase().replace(' ', '')}` : '',
+      tiktok: Math.random() > 0.5 ? `@${name.toLowerCase().replace(' ', '_')}` : '',
+      twitter: Math.random() > 0.6 ? `@${name.toLowerCase().replace(' ', '')}` : '',
+      facebook: Math.random() > 0.4 ? `https://facebook.com/${name.toLowerCase().replace(' ', '.')}` : '',
+    };
+    
     let customerType: 'new' | 'returning' | 'vip';
     if (bookingCount >= 5 || totalSpend >= 50000) {
       customerType = 'vip';
@@ -66,6 +81,12 @@ const generateSimulatedCustomers = () => {
       total_bookings: bookingCount,
       lifetime_spend: totalSpend,
       customer_type: customerType,
+      dob,
+      social_instagram: socialHandles.instagram,
+      social_tiktok: socialHandles.tiktok,
+      social_twitter: socialHandles.twitter,
+      social_facebook: socialHandles.facebook,
+      has_social: Object.values(socialHandles).some(h => h),
       last_booking_date: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString(),
       created_at: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
     };
@@ -77,6 +98,33 @@ export default function TopTierCustomers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stateFilter, setStateFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [hasSocialFilter, setHasSocialFilter] = useState<string>('all');
+  const [ageRangeFilter, setAgeRangeFilter] = useState<string>('all');
+
+  // Helper to calculate age from DOB
+  const calculateAge = (dob: string) => {
+    if (!dob) return null;
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  // Helper to get social URL
+  const getSocialUrl = (platform: string, handle: string) => {
+    if (!handle) return '';
+    if (handle.startsWith('http')) return handle;
+    const cleanHandle = handle.replace('@', '');
+    switch (platform) {
+      case 'instagram': return `https://instagram.com/${cleanHandle}`;
+      case 'tiktok': return `https://tiktok.com/@${cleanHandle}`;
+      default: return handle;
+    }
+  };
 
   const { simulationMode } = useSimulationMode();
   const { getEntityData } = useCRMSimulation('toptier-experience');
@@ -93,9 +141,30 @@ export default function TopTierCustomers() {
         customer.email?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesState = stateFilter === 'all' || customer.primary_state === stateFilter;
       const matchesType = typeFilter === 'all' || customer.customer_type === typeFilter;
-      return matchesSearch && matchesState && matchesType;
+      const matchesSocial = hasSocialFilter === 'all' || 
+        (hasSocialFilter === 'yes' && customer.has_social) ||
+        (hasSocialFilter === 'no' && !customer.has_social);
+      
+      // Age range filter
+      let matchesAge = true;
+      if (ageRangeFilter !== 'all') {
+        const age = calculateAge(customer.dob);
+        if (age !== null) {
+          switch (ageRangeFilter) {
+            case '18-25': matchesAge = age >= 18 && age <= 25; break;
+            case '26-35': matchesAge = age >= 26 && age <= 35; break;
+            case '36-45': matchesAge = age >= 36 && age <= 45; break;
+            case '46-55': matchesAge = age >= 46 && age <= 55; break;
+            case '55+': matchesAge = age > 55; break;
+          }
+        } else {
+          matchesAge = false;
+        }
+      }
+      
+      return matchesSearch && matchesState && matchesType && matchesSocial && matchesAge;
     }).sort((a: any, b: any) => b.lifetime_spend - a.lifetime_spend);
-  }, [customers, searchTerm, stateFilter, typeFilter]);
+  }, [customers, searchTerm, stateFilter, typeFilter, hasSocialFilter, ageRangeFilter]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -232,8 +301,8 @@ export default function TopTierCustomers() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
+      <div className="flex flex-col md:flex-row gap-4 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by name or email..."
@@ -243,7 +312,7 @@ export default function TopTierCustomers() {
           />
         </div>
         <Select value={stateFilter} onValueChange={setStateFilter}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="State" />
           </SelectTrigger>
           <SelectContent>
@@ -254,7 +323,7 @@ export default function TopTierCustomers() {
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-[130px]">
             <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent>
@@ -262,6 +331,29 @@ export default function TopTierCustomers() {
             <SelectItem value="vip">VIP</SelectItem>
             <SelectItem value="returning">Returning</SelectItem>
             <SelectItem value="new">New</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={ageRangeFilter} onValueChange={setAgeRangeFilter}>
+          <SelectTrigger className="w-[130px]">
+            <SelectValue placeholder="Age Range" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Ages</SelectItem>
+            <SelectItem value="18-25">18-25</SelectItem>
+            <SelectItem value="26-35">26-35</SelectItem>
+            <SelectItem value="36-45">36-45</SelectItem>
+            <SelectItem value="46-55">46-55</SelectItem>
+            <SelectItem value="55+">55+</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={hasSocialFilter} onValueChange={setHasSocialFilter}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Social Media" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Any Social</SelectItem>
+            <SelectItem value="yes">Has Social</SelectItem>
+            <SelectItem value="no">No Social</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -307,11 +399,11 @@ export default function TopTierCustomers() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-3 px-4 font-medium">Customer</th>
+                    <th className="text-left py-3 px-4 font-medium">DOB / Age</th>
                     <th className="text-left py-3 px-4 font-medium">State</th>
-                    <th className="text-left py-3 px-4 font-medium">Cities</th>
+                    <th className="text-center py-3 px-4 font-medium">Social</th>
                     <th className="text-right py-3 px-4 font-medium">Bookings</th>
                     <th className="text-right py-3 px-4 font-medium">Lifetime Spend</th>
-                    <th className="text-left py-3 px-4 font-medium">Last Booking</th>
                     <th className="text-left py-3 px-4 font-medium">Type</th>
                     <th className="text-right py-3 px-4 font-medium">Actions</th>
                   </tr>
@@ -330,18 +422,51 @@ export default function TopTierCustomers() {
                         </div>
                       </td>
                       <td className="py-3 px-4">
+                        {customer.dob ? (
+                          <div className="flex items-center gap-1 text-sm">
+                            <Cake className="h-3 w-3 text-muted-foreground" />
+                            <span>{format(new Date(customer.dob), 'MMM d')}</span>
+                            <span className="text-muted-foreground">({calculateAge(customer.dob)})</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
                         <div className="flex items-center gap-1">
                           <MapPin className="h-3 w-3 text-muted-foreground" />
                           {customer.primary_state}
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <div className="flex flex-wrap gap-1">
-                          {customer.cities?.slice(0, 2).map((city: string) => (
-                            <Badge key={city} variant="outline" className="text-xs">
-                              {city}
-                            </Badge>
-                          ))}
+                        <div className="flex items-center justify-center gap-1">
+                          {customer.social_instagram && (
+                            <a
+                              href={getSocialUrl('instagram', customer.social_instagram)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1 rounded hover:bg-muted transition-colors"
+                            >
+                              <Instagram className="h-4 w-4 text-pink-500" />
+                            </a>
+                          )}
+                          {customer.social_tiktok && (
+                            <a
+                              href={getSocialUrl('tiktok', customer.social_tiktok)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1 rounded hover:bg-muted transition-colors"
+                            >
+                              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                              </svg>
+                            </a>
+                          )}
+                          {!customer.has_social && (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
                         </div>
                       </td>
                       <td className="py-3 px-4 text-right font-medium">
@@ -349,9 +474,6 @@ export default function TopTierCustomers() {
                       </td>
                       <td className="py-3 px-4 text-right font-medium text-green-600">
                         ${customer.lifetime_spend?.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4">
-                        {customer.last_booking_date && format(new Date(customer.last_booking_date), 'MMM d, yyyy')}
                       </td>
                       <td className="py-3 px-4">
                         {getTypeBadge(customer.customer_type)}

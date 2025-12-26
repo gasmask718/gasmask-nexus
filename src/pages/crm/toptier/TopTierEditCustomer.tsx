@@ -10,10 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Save, User, MapPin, Settings, Shield } from 'lucide-react';
+import { ArrowLeft, Save, User, MapPin, Settings, Shield, Globe, Instagram, Twitter, Facebook, Cake, ExternalLink } from 'lucide-react';
 import { US_STATES, TOPTIER_PARTNER_CATEGORIES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { toast } from 'sonner';
+import { differenceInYears, format } from 'date-fns';
 
 export default function TopTierEditCustomer() {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ export default function TopTierEditCustomer() {
     phone: '',
     email: '',
     preferred_contact: 'call',
+    dob: '',
     primary_state: '',
     cities: '',
     travel_willingness: 'local',
@@ -34,6 +36,12 @@ export default function TopTierEditCustomer() {
     preferred_categories: [] as string[],
     budget_range: '',
     event_frequency: 'one-time',
+    social_instagram: '',
+    social_tiktok: '',
+    social_twitter: '',
+    social_facebook: '',
+    social_other_label: '',
+    social_other_url: '',
     sms_opt_in: true,
     email_opt_in: true,
     consent_notes: '',
@@ -50,6 +58,7 @@ export default function TopTierEditCustomer() {
         phone: '+1 305-555-0123',
         email: 'marcus.johnson@email.com',
         preferred_contact: 'call',
+        dob: '1988-05-15',
         primary_state: 'FL',
         cities: 'Miami, Fort Lauderdale',
         travel_willingness: 'multi-state',
@@ -57,6 +66,12 @@ export default function TopTierEditCustomer() {
         preferred_categories: ['exotic_rental_car_promo', 'yachts'],
         budget_range: '$5,000 - $15,000',
         event_frequency: 'recurring',
+        social_instagram: '@marcusjohnson',
+        social_tiktok: '@marcusj',
+        social_twitter: '@marcusjohnson',
+        social_facebook: 'https://facebook.com/marcusjohnson',
+        social_other_label: 'LinkedIn',
+        social_other_url: 'https://linkedin.com/in/marcusjohnson',
         sms_opt_in: true,
         email_opt_in: true,
         consent_notes: '',
@@ -67,6 +82,20 @@ export default function TopTierEditCustomer() {
       setIsLoading(false);
     }, 500);
   }, [customerId]);
+
+  // Helper to normalize social handle to URL
+  const getSocialUrl = (platform: string, handle: string) => {
+    if (!handle) return '';
+    if (handle.startsWith('http')) return handle;
+    const cleanHandle = handle.replace('@', '');
+    switch (platform) {
+      case 'instagram': return `https://instagram.com/${cleanHandle}`;
+      case 'tiktok': return `https://tiktok.com/@${cleanHandle}`;
+      case 'twitter': return `https://x.com/${cleanHandle}`;
+      case 'facebook': return handle.startsWith('http') ? handle : `https://facebook.com/${cleanHandle}`;
+      default: return handle;
+    }
+  };
 
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -177,6 +206,155 @@ export default function TopTierEditCustomer() {
                 <SelectItem value="email">Email</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="dob">Date of Birth</Label>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Cake className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="dob"
+                  type="date"
+                  value={formData.dob}
+                  onChange={(e) => handleChange('dob', e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              {formData.dob && (
+                <span className="text-sm text-muted-foreground">
+                  Age: {differenceInYears(new Date(), new Date(formData.dob))}
+                </span>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Social Media */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            Social Media
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="social_instagram">Instagram</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-pink-500" />
+                <Input
+                  id="social_instagram"
+                  value={formData.social_instagram}
+                  onChange={(e) => handleChange('social_instagram', e.target.value)}
+                  placeholder="@username"
+                  className="pl-10"
+                />
+              </div>
+              {formData.social_instagram && (
+                <Button variant="ghost" size="icon" asChild>
+                  <a href={getSocialUrl('instagram', formData.social_instagram)} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="social_tiktok">TikTok</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                </svg>
+                <Input
+                  id="social_tiktok"
+                  value={formData.social_tiktok}
+                  onChange={(e) => handleChange('social_tiktok', e.target.value)}
+                  placeholder="@username"
+                  className="pl-10"
+                />
+              </div>
+              {formData.social_tiktok && (
+                <Button variant="ghost" size="icon" asChild>
+                  <a href={getSocialUrl('tiktok', formData.social_tiktok)} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="social_twitter">X / Twitter</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sky-500" />
+                <Input
+                  id="social_twitter"
+                  value={formData.social_twitter}
+                  onChange={(e) => handleChange('social_twitter', e.target.value)}
+                  placeholder="@username"
+                  className="pl-10"
+                />
+              </div>
+              {formData.social_twitter && (
+                <Button variant="ghost" size="icon" asChild>
+                  <a href={getSocialUrl('twitter', formData.social_twitter)} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="social_facebook">Facebook</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-600" />
+                <Input
+                  id="social_facebook"
+                  value={formData.social_facebook}
+                  onChange={(e) => handleChange('social_facebook', e.target.value)}
+                  placeholder="Profile URL"
+                  className="pl-10"
+                />
+              </div>
+              {formData.social_facebook && (
+                <Button variant="ghost" size="icon" asChild>
+                  <a href={getSocialUrl('facebook', formData.social_facebook)} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="social_other_label">Other Platform</Label>
+            <Input
+              id="social_other_label"
+              value={formData.social_other_label}
+              onChange={(e) => handleChange('social_other_label', e.target.value)}
+              placeholder="e.g., YouTube, LinkedIn"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="social_other_url">Other URL</Label>
+            <div className="flex gap-2">
+              <Input
+                id="social_other_url"
+                value={formData.social_other_url}
+                onChange={(e) => handleChange('social_other_url', e.target.value)}
+                placeholder="https://..."
+              />
+              {formData.social_other_url && (
+                <Button variant="ghost" size="icon" asChild>
+                  <a href={formData.social_other_url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

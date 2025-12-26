@@ -18,7 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { 
   ArrowLeft, Save, User, Phone, Mail, MapPin, 
   DollarSign, Calendar, Shield, StickyNote, Loader2,
-  UserPlus, CheckCircle
+  UserPlus, CheckCircle, Instagram, Twitter, Facebook, Globe, Cake
 } from 'lucide-react';
 import { US_STATES, TOPTIER_PARTNER_CATEGORIES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
@@ -31,6 +31,7 @@ const customerFormSchema = z.object({
   phone: z.string().min(10, 'Enter a valid phone number').regex(/^\+?[1-9]\d{1,14}$|^\d{10}$/, 'Invalid phone format'),
   email: z.string().email('Enter a valid email address'),
   preferred_contact: z.enum(['call', 'text', 'email']),
+  dob: z.string().optional(),
   
   // Location
   primary_state: z.string().min(1, 'Select a state'),
@@ -42,6 +43,14 @@ const customerFormSchema = z.object({
   preferred_categories: z.array(z.string()).min(1, 'Select at least one category'),
   budget_range: z.string().optional(),
   event_frequency: z.enum(['one_time', 'recurring']),
+  
+  // Social Media
+  social_instagram: z.string().optional(),
+  social_tiktok: z.string().optional(),
+  social_twitter: z.string().optional(),
+  social_facebook: z.string().optional(),
+  social_other_label: z.string().optional(),
+  social_other_url: z.string().optional(),
   
   // Consent
   sms_opt_in: z.boolean(),
@@ -69,6 +78,7 @@ export default function TopTierNewCustomer() {
       phone: '',
       email: '',
       preferred_contact: 'text',
+      dob: '',
       primary_state: '',
       cities: '',
       travel_willingness: 'local',
@@ -76,6 +86,12 @@ export default function TopTierNewCustomer() {
       preferred_categories: [],
       budget_range: '',
       event_frequency: 'one_time',
+      social_instagram: '',
+      social_tiktok: '',
+      social_twitter: '',
+      social_facebook: '',
+      social_other_label: '',
+      social_other_url: '',
       sms_opt_in: false,
       email_opt_in: false,
       consent_notes: '',
@@ -259,10 +275,138 @@ export default function TopTierNewCustomer() {
                   )}
                 />
               </div>
+              <FormField
+                control={form.control}
+                name="dob"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date of Birth</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Cake className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input type="date" className="pl-10" {...field} />
+                      </div>
+                    </FormControl>
+                    <FormDescription>Used for birthday offers and age verification</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
 
-          {/* Section 2: Location */}
+          {/* Section 2: Social Media */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                Social Media
+              </CardTitle>
+              <CardDescription>Social profiles for marketing and engagement</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="social_instagram"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Instagram</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-pink-500" />
+                          <Input placeholder="@username or URL" className="pl-10" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="social_tiktok"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>TikTok</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                          </svg>
+                          <Input placeholder="@username or URL" className="pl-10" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="social_twitter"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>X / Twitter</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sky-500" />
+                          <Input placeholder="@username or URL" className="pl-10" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="social_facebook"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Facebook</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-600" />
+                          <Input placeholder="Profile URL" className="pl-10" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="social_other_label"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Other Social (Label)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., YouTube, LinkedIn" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="social_other_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Other Social (URL)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Section 3: Location */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
