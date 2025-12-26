@@ -4,35 +4,34 @@
  */
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
 import { 
-  ArrowLeft, Edit, ExternalLink, Phone, Mail, MapPin, 
-  DollarSign, Percent, Calendar, FileText, Building2,
-  User, Clock, Link2, CheckCircle, AlertCircle, Users,
-  Megaphone, MessageSquare, File, Plus, Send, Download,
-  PhoneCall, MessageCircle, Video, StickyNote, Filter,
-  TrendingUp, CreditCard, Wallet, Eye, Upload, Tag, X
+  ArrowLeft, Edit, ExternalLink, MapPin, 
+  Percent, Building2, Plus, MessageSquare, Upload,
+  CheckCircle, AlertCircle, Clock
 } from 'lucide-react';
 import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { useResolvedData } from '@/hooks/useResolvedData';
-import { format } from 'date-fns';
+import {
+  PartnerOverviewTab,
+  PartnerDealsTab,
+  PartnerCampaignsTab,
+  PartnerCommissionsTab,
+  PartnerInteractionsTab,
+  PartnerContactsTab,
+  PartnerAssetsTab,
+  PartnerNotesTab
+} from './profile';
 
 export default function TopTierPartnerProfile() {
   const navigate = useNavigate();
   const { partnerId } = useParams<{ partnerId: string }>();
   const [activeTab, setActiveTab] = useState('overview');
-  const [newNote, setNewNote] = useState('');
-  const [interactionFilter, setInteractionFilter] = useState('all');
   
   const { simulationMode } = useSimulationMode();
   const { getEntityData } = useCRMSimulation('toptier-experience');
