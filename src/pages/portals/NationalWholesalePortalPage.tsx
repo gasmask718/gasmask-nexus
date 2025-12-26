@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { EnhancedPortalLayout, CommandCenterKPI, ActivityFeed, ActivityItem } from '@/components/portal';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { useResolvedData } from '@/hooks/useResolvedData';
-import { Globe, MapPin, Users, ShoppingCart, DollarSign, FileText, ChevronUp, TrendingUp } from 'lucide-react';
+import { Globe, MapPin, Users, ShoppingCart, DollarSign, FileText, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,9 +30,9 @@ const SIMULATION_ORDERS = [
 ];
 
 const SIMULATION_ACTIVITY: ActivityItem[] = [
-  { id: '1', type: 'order', title: 'Bulk Order Received', description: 'BO-001 from Metro Distributors', timestamp: '2 hours ago' },
-  { id: '2', type: 'partner', title: 'New Partner Added', description: 'Bay State Goods joined MA region', timestamp: '1 day ago' },
-  { id: '3', type: 'region', title: 'Region Milestone', description: 'NY reached $125K monthly revenue', timestamp: '2 days ago' },
+  { id: '1', type: 'info', title: 'Bulk Order Received', description: 'BO-001 from Metro Distributors', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+  { id: '2', type: 'success', title: 'New Partner Added', description: 'Bay State Goods joined MA region', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+  { id: '3', type: 'success', title: 'Region Milestone', description: 'NY reached $125K monthly revenue', timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000) },
 ];
 
 type KpiType = 'regions' | 'partners' | 'orders' | 'revenue' | null;
@@ -42,20 +42,25 @@ export default function NationalWholesalePortalPage() {
   const { simulationMode } = useSimulationMode();
   const [selectedKpi, setSelectedKpi] = useState<KpiType>(null);
 
-  const regions = useResolvedData([], SIMULATION_REGIONS);
-  const partners = useResolvedData([], SIMULATION_PARTNERS);
-  const orders = useResolvedData([], SIMULATION_ORDERS);
-  const activity = useResolvedData([], SIMULATION_ACTIVITY);
+  const regionsResult = useResolvedData([], SIMULATION_REGIONS);
+  const partnersResult = useResolvedData([], SIMULATION_PARTNERS);
+  const ordersResult = useResolvedData([], SIMULATION_ORDERS);
+  const activityResult = useResolvedData([], SIMULATION_ACTIVITY);
+
+  const regions = regionsResult.data;
+  const partners = partnersResult.data;
+  const orders = ordersResult.data;
+  const activity = activityResult.data;
 
   const totalPartners = regions.reduce((sum, r) => sum + r.partners, 0);
   const totalRevenue = regions.reduce((sum, r) => sum + r.revenue, 0);
   const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing');
 
   const kpis = [
-    { key: 'regions' as KpiType, label: 'Active Regions', value: regions.length.toString(), icon: MapPin, color: 'text-blue-500' },
-    { key: 'partners' as KpiType, label: 'Total Partners', value: totalPartners.toString(), icon: Users, color: 'text-purple-500' },
-    { key: 'orders' as KpiType, label: 'Pending Orders', value: pendingOrders.length.toString(), icon: ShoppingCart, color: 'text-amber-500' },
-    { key: 'revenue' as KpiType, label: 'Monthly Revenue', value: `$${(totalRevenue / 1000).toFixed(0)}K`, icon: DollarSign, color: 'text-emerald-500' },
+    { key: 'regions' as KpiType, label: 'Active Regions', value: regions.length.toString(), variant: 'cyan' as const },
+    { key: 'partners' as KpiType, label: 'Total Partners', value: totalPartners.toString(), variant: 'purple' as const },
+    { key: 'orders' as KpiType, label: 'Pending Orders', value: pendingOrders.length.toString(), variant: 'amber' as const },
+    { key: 'revenue' as KpiType, label: 'Monthly Revenue', value: `$${(totalRevenue / 1000).toFixed(0)}K`, variant: 'green' as const },
   ];
 
   const handleKpiClick = (kpi: KpiType) => {
@@ -156,7 +161,7 @@ export default function NationalWholesalePortalPage() {
                   <span>{region.name}</span>
                   <span className="font-medium">${(region.revenue / 1000).toFixed(0)}K</span>
                 </div>
-                <Progress value={(region.revenue / totalRevenue) * 100} />
+                <Progress value={totalRevenue > 0 ? (region.revenue / totalRevenue) * 100 : 0} />
               </div>
             ))}
             <div className="pt-2 border-t">
@@ -176,11 +181,11 @@ export default function NationalWholesalePortalPage() {
     <EnhancedPortalLayout
       title="National Wholesale Portal"
       subtitle="Multi-state network management"
-      icon={Globe}
+      portalIcon={<Globe className="h-4 w-4 text-primary-foreground" />}
       quickActions={[
-        { label: 'View Regions', onClick: () => navigate('/portals/national-wholesale/regions') },
-        { label: 'Partner List', onClick: () => navigate('/portals/national-wholesale/partners') },
-        { label: 'Bulk Orders', onClick: () => navigate('/portals/national-wholesale/orders') },
+        { label: 'View Regions', href: '/portals/national-wholesale/regions' },
+        { label: 'Partner List', href: '/portals/national-wholesale/partners' },
+        { label: 'Bulk Orders', href: '/portals/national-wholesale/orders' },
       ]}
     >
       {/* KPI Command Center */}
@@ -190,11 +195,10 @@ export default function NationalWholesalePortalPage() {
             key={kpi.key}
             label={kpi.label}
             value={kpi.value}
-            icon={kpi.icon}
-            color={kpi.color}
+            variant={kpi.variant}
             isActive={selectedKpi === kpi.key}
             onClick={() => handleKpiClick(kpi.key)}
-            isSimulated={simulationMode}
+            isSimulated={regionsResult.isSimulated}
           />
         ))}
       </div>
@@ -244,7 +248,14 @@ export default function NationalWholesalePortalPage() {
       </div>
 
       {/* Activity Feed */}
-      <ActivityFeed items={activity} title="Recent Activity" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ActivityFeed items={activity} isSimulated={activityResult.isSimulated} />
+        </CardContent>
+      </Card>
     </EnhancedPortalLayout>
   );
 }

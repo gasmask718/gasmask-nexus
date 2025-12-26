@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { EnhancedPortalLayout, CommandCenterKPI, ActivityFeed, ActivityItem } from '@/components/portal';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { useResolvedData } from '@/hooks/useResolvedData';
-import { Headphones, Inbox, CheckSquare, Clock, AlertCircle, FileText, ChevronUp, CheckCircle } from 'lucide-react';
+import { Headphones, Inbox, CheckSquare, AlertCircle, FileText, ChevronUp, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,9 +37,9 @@ const SIMULATION_CHECKLIST = [
 ];
 
 const SIMULATION_ACTIVITY: ActivityItem[] = [
-  { id: '1', type: 'task', title: 'Task Completed', description: 'Updated 5 store records', timestamp: '30 min ago' },
-  { id: '2', type: 'approval', title: 'Approval Submitted', description: 'Forwarded expense report', timestamp: '1 hour ago' },
-  { id: '3', type: 'ticket', title: 'Ticket Resolved', description: 'Closed TKT-099', timestamp: '2 hours ago' },
+  { id: '1', type: 'success', title: 'Task Completed', description: 'Updated 5 store records', timestamp: new Date(Date.now() - 30 * 60 * 1000) },
+  { id: '2', type: 'info', title: 'Approval Submitted', description: 'Forwarded expense report', timestamp: new Date(Date.now() - 60 * 60 * 1000) },
+  { id: '3', type: 'success', title: 'Ticket Resolved', description: 'Closed TKT-099', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) },
 ];
 
 type KpiType = 'tasks' | 'approvals' | 'tickets' | 'urgent' | null;
@@ -49,23 +49,29 @@ export default function VAPortalPage() {
   const { simulationMode } = useSimulationMode();
   const [selectedKpi, setSelectedKpi] = useState<KpiType>(null);
 
-  const tasks = useResolvedData([], SIMULATION_TASKS);
-  const approvals = useResolvedData([], SIMULATION_APPROVALS);
-  const tickets = useResolvedData([], SIMULATION_TICKETS);
-  const checklist = useResolvedData([], SIMULATION_CHECKLIST);
-  const activity = useResolvedData([], SIMULATION_ACTIVITY);
+  const tasksResult = useResolvedData([], SIMULATION_TASKS);
+  const approvalsResult = useResolvedData([], SIMULATION_APPROVALS);
+  const ticketsResult = useResolvedData([], SIMULATION_TICKETS);
+  const checklistResult = useResolvedData([], SIMULATION_CHECKLIST);
+  const activityResult = useResolvedData([], SIMULATION_ACTIVITY);
+
+  const tasks = tasksResult.data;
+  const approvals = approvalsResult.data;
+  const tickets = ticketsResult.data;
+  const checklist = checklistResult.data;
+  const activity = activityResult.data;
 
   const pendingTasks = tasks.filter(t => t.status === 'pending');
   const pendingApprovals = approvals.filter(a => a.status === 'pending');
   const openTickets = tickets.filter(t => t.status === 'open');
   const urgentItems = [...tasks.filter(t => t.priority === 'high'), ...tickets.filter(t => t.priority === 'high')];
-  const checklistProgress = Math.round((checklist.filter(c => c.completed).length / checklist.length) * 100);
+  const checklistProgress = checklist.length > 0 ? Math.round((checklist.filter(c => c.completed).length / checklist.length) * 100) : 0;
 
   const kpis = [
-    { key: 'tasks' as KpiType, label: 'Pending Tasks', value: pendingTasks.length.toString(), icon: Inbox, color: 'text-blue-500' },
-    { key: 'approvals' as KpiType, label: 'Approvals', value: pendingApprovals.length.toString(), icon: CheckSquare, color: 'text-amber-500' },
-    { key: 'tickets' as KpiType, label: 'Open Tickets', value: openTickets.length.toString(), icon: Headphones, color: 'text-purple-500' },
-    { key: 'urgent' as KpiType, label: 'Urgent Items', value: urgentItems.length.toString(), icon: AlertCircle, color: 'text-red-500' },
+    { key: 'tasks' as KpiType, label: 'Pending Tasks', value: pendingTasks.length.toString(), variant: 'cyan' as const },
+    { key: 'approvals' as KpiType, label: 'Approvals', value: pendingApprovals.length.toString(), variant: 'amber' as const },
+    { key: 'tickets' as KpiType, label: 'Open Tickets', value: openTickets.length.toString(), variant: 'purple' as const },
+    { key: 'urgent' as KpiType, label: 'Urgent Items', value: urgentItems.length.toString(), variant: 'red' as const },
   ];
 
   const handleKpiClick = (kpi: KpiType) => {
@@ -178,11 +184,11 @@ export default function VAPortalPage() {
     <EnhancedPortalLayout
       title="VA Portal"
       subtitle="Tasks, approvals, and support management"
-      icon={Headphones}
+      portalIcon={<Headphones className="h-4 w-4 text-primary-foreground" />}
       quickActions={[
-        { label: 'View Tasks', onClick: () => navigate('/portals/va/tasks') },
-        { label: 'Approvals', onClick: () => navigate('/portals/va/approvals') },
-        { label: 'SOP Library', onClick: () => navigate('/portals/va/sops') },
+        { label: 'View Tasks', href: '/portals/va/tasks' },
+        { label: 'Approvals', href: '/portals/va/approvals' },
+        { label: 'SOP Library', href: '/portals/va/sops' },
       ]}
     >
       {/* KPI Command Center */}
@@ -192,11 +198,10 @@ export default function VAPortalPage() {
             key={kpi.key}
             label={kpi.label}
             value={kpi.value}
-            icon={kpi.icon}
-            color={kpi.color}
+            variant={kpi.variant}
             isActive={selectedKpi === kpi.key}
             onClick={() => handleKpiClick(kpi.key)}
-            isSimulated={simulationMode}
+            isSimulated={tasksResult.isSimulated}
           />
         ))}
       </div>
@@ -264,7 +269,14 @@ export default function VAPortalPage() {
       </div>
 
       {/* Activity Feed */}
-      <ActivityFeed items={activity} title="Recent Activity" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ActivityFeed items={activity} isSimulated={activityResult.isSimulated} />
+        </CardContent>
+      </Card>
     </EnhancedPortalLayout>
   );
 }

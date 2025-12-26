@@ -27,9 +27,9 @@ const SIMULATION_PAYOUTS = [
 ];
 
 const SIMULATION_ACTIVITY: ActivityItem[] = [
-  { id: '1', type: 'order', title: 'New Order Received', description: 'WO-002 from Midtown Mart', timestamp: '30 min ago' },
-  { id: '2', type: 'payout', title: 'Payout Processed', description: '$2,500 deposited', timestamp: '1 day ago' },
-  { id: '3', type: 'stock', title: 'Low Stock Alert', description: 'Economy Widget C running low', timestamp: '2 days ago' },
+  { id: '1', type: 'info', title: 'New Order Received', description: 'WO-002 from Midtown Mart', timestamp: new Date(Date.now() - 30 * 60 * 1000) },
+  { id: '2', type: 'success', title: 'Payout Processed', description: '$2,500 deposited', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+  { id: '3', type: 'warning', title: 'Low Stock Alert', description: 'Economy Widget C running low', timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000) },
 ];
 
 type KpiType = 'products' | 'orders' | 'pending' | 'revenue' | 'customers' | null;
@@ -39,20 +39,25 @@ export default function WholesalerPortalPage() {
   const { simulationMode } = useSimulationMode();
   const [selectedKpi, setSelectedKpi] = useState<KpiType>(null);
 
-  const products = useResolvedData([], SIMULATION_PRODUCTS);
-  const orders = useResolvedData([], SIMULATION_ORDERS);
-  const payouts = useResolvedData([], SIMULATION_PAYOUTS);
-  const activity = useResolvedData([], SIMULATION_ACTIVITY);
+  const productsResult = useResolvedData([], SIMULATION_PRODUCTS);
+  const ordersResult = useResolvedData([], SIMULATION_ORDERS);
+  const payoutsResult = useResolvedData([], SIMULATION_PAYOUTS);
+  const activityResult = useResolvedData([], SIMULATION_ACTIVITY);
+
+  const products = productsResult.data;
+  const orders = ordersResult.data;
+  const payouts = payoutsResult.data;
+  const activity = activityResult.data;
 
   const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing');
   const totalRevenue = orders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.total, 0);
 
   const kpis = [
-    { key: 'products' as KpiType, label: 'Active Products', value: products.length.toString(), icon: Package, color: 'text-blue-500' },
-    { key: 'orders' as KpiType, label: 'Total Orders', value: orders.length.toString(), icon: ShoppingCart, color: 'text-emerald-500' },
-    { key: 'pending' as KpiType, label: 'Pending Orders', value: pendingOrders.length.toString(), icon: TrendingUp, color: 'text-amber-500' },
-    { key: 'revenue' as KpiType, label: 'Revenue', value: `$${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-green-500' },
-    { key: 'customers' as KpiType, label: 'Customers', value: '12', icon: Users, color: 'text-purple-500' },
+    { key: 'products' as KpiType, label: 'Active Products', value: products.length.toString(), variant: 'cyan' as const },
+    { key: 'orders' as KpiType, label: 'Total Orders', value: orders.length.toString(), variant: 'green' as const },
+    { key: 'pending' as KpiType, label: 'Pending Orders', value: pendingOrders.length.toString(), variant: 'amber' as const },
+    { key: 'revenue' as KpiType, label: 'Revenue', value: `$${totalRevenue.toLocaleString()}`, variant: 'green' as const },
+    { key: 'customers' as KpiType, label: 'Customers', value: '12', variant: 'purple' as const },
   ];
 
   const handleKpiClick = (kpi: KpiType) => {
@@ -148,11 +153,11 @@ export default function WholesalerPortalPage() {
     <EnhancedPortalLayout
       title="Wholesaler Portal"
       subtitle="Manage inventory, orders, and payouts"
-      icon={Warehouse}
+      portalIcon={<Warehouse className="h-4 w-4 text-primary-foreground" />}
       quickActions={[
-        { label: 'Add Product', onClick: () => navigate('/portals/wholesaler/products/new') },
-        { label: 'View Orders', onClick: () => navigate('/portals/wholesaler/orders') },
-        { label: 'Payouts', onClick: () => navigate('/portals/wholesaler/payouts') },
+        { label: 'Add Product', href: '/portals/wholesaler/products/new' },
+        { label: 'View Orders', href: '/portals/wholesaler/orders' },
+        { label: 'Payouts', href: '/portals/wholesaler/payouts' },
       ]}
     >
       {/* KPI Command Center */}
@@ -162,11 +167,10 @@ export default function WholesalerPortalPage() {
             key={kpi.key}
             label={kpi.label}
             value={kpi.value}
-            icon={kpi.icon}
-            color={kpi.color}
+            variant={kpi.variant}
             isActive={selectedKpi === kpi.key}
             onClick={() => handleKpiClick(kpi.key)}
-            isSimulated={simulationMode}
+            isSimulated={productsResult.isSimulated}
           />
         ))}
       </div>
@@ -216,7 +220,14 @@ export default function WholesalerPortalPage() {
       </div>
 
       {/* Activity Feed */}
-      <ActivityFeed items={activity} title="Recent Activity" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ActivityFeed items={activity} isSimulated={activityResult.isSimulated} />
+        </CardContent>
+      </Card>
     </EnhancedPortalLayout>
   );
 }
