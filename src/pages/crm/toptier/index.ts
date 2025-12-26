@@ -20,3 +20,4 @@ export { default as TopTierAllContacts } from './TopTierAllContacts';
 export { default as TopTierInteractionsHub } from './TopTierInteractionsHub';
 export { default as TopTierCustomers } from './TopTierCustomers';
 export { default as TopTierCustomerProfile } from './TopTierCustomerProfile';
+export { default as TopTierNewCustomer } from './TopTierNewCustomer';

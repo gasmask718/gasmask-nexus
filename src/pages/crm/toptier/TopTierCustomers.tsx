@@ -16,6 +16,7 @@ import { US_STATES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { useResolvedData } from '@/hooks/useResolvedData';
+import { CommunicationActions } from '@/components/crm/toptier/CommunicationActions';
 import { format } from 'date-fns';
 
 // Generate simulated customers
@@ -329,16 +330,28 @@ export default function TopTierCustomers() {
                         {getTypeBadge(customer.customer_type)}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/crm/toptier-experience/customers/${customer.id}`);
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <CommunicationActions
+                            contact={{
+                              id: customer.id,
+                              name: customer.name,
+                              phone: customer.phone,
+                              email: customer.email,
+                            }}
+                            entityType="customer"
+                            size="icon"
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/crm/toptier-experience/customers/${customer.id}`);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
