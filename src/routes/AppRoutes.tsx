@@ -90,7 +90,7 @@ import GlobalCRMDashboard from '@/pages/crm/GlobalCRMDashboard';
 import BusinessCRMDashboard from '@/pages/crm/BusinessCRMDashboard';
 import CRMRouter from '@/pages/crm/CRMRouter';
 import DynamicCRMPage from '@/pages/crm/DynamicCRMPage';
-import { TopTierPartnerDashboard, TopTierPartnerCategoryPage, TopTierPartnerProfile, TopTierPartnersByState, TopTierAddPartner, TopTierRecentBookings, TopTierCustomerRequests, TopTierRequestDetail, TopTierPartnerEdit, TopTierDealDetail, TopTierCampaignDetail, TopTierInteractionDetail, TopTierContactDetail, TopTierAssetDetail, TopTierNoteDetail, TopTierAnalyticsDeals, TopTierAnalyticsRevenue, TopTierAnalyticsCommissions, TopTierAllContacts, TopTierInteractionsHub, TopTierCustomers, TopTierCustomerProfile, TopTierNewCustomer } from '@/pages/crm/toptier';
+import { TopTierPartnerDashboard, TopTierPartnerCategoryPage, TopTierPartnerProfile, TopTierPartnersByState, TopTierAddPartner, TopTierRecentBookings, TopTierCustomerRequests, TopTierRequestDetail, TopTierPartnerEdit, TopTierDealDetail, TopTierCampaignDetail, TopTierInteractionDetail, TopTierContactDetail, TopTierAssetDetail, TopTierNoteDetail, TopTierAnalyticsDeals, TopTierAnalyticsRevenue, TopTierAnalyticsCommissions, TopTierAllContacts, TopTierInteractionsHub, TopTierCustomers, TopTierCustomerProfile, TopTierNewCustomer, TopTierEditCustomer, TopTierVIPCustomers, TopTierReturningCustomers, TopTierNewCustomers, TopTierCustomerBookings, TopTierCustomerValue } from '@/pages/crm/toptier';
 import AddBusinessPage from '@/pages/crm/AddBusinessPage';
 import CRMDataPage from '@/pages/crm/CRMDataPage';
 import CRMExportPage from '@/pages/crm/CRMExportPage';
@@ -709,7 +709,13 @@ export default function AppRoutes() {
         {/* TopTier Customer Module */}
         <Route path="/crm/toptier-experience/customers" element={<TopTierCustomers />} />
         <Route path="/crm/toptier-experience/customers/new" element={<TopTierNewCustomer />} />
+        <Route path="/crm/toptier-experience/customers/vip" element={<TopTierVIPCustomers />} />
+        <Route path="/crm/toptier-experience/customers/returning" element={<TopTierReturningCustomers />} />
+        <Route path="/crm/toptier-experience/customers/newly-added" element={<TopTierNewCustomers />} />
+        <Route path="/crm/toptier-experience/customers/bookings" element={<TopTierCustomerBookings />} />
+        <Route path="/crm/toptier-experience/customers/value" element={<TopTierCustomerValue />} />
         <Route path="/crm/toptier-experience/customers/:customerId" element={<TopTierCustomerProfile />} />
+        <Route path="/crm/toptier-experience/customers/:customerId/edit" element={<TopTierEditCustomer />} />
         
         <Route path="/crm/:businessSlug/:entityType" element={<EntityListPage />} />
         <Route path="/crm/:businessSlug/:entityType/new" element={<EntityProfilePage />} />
