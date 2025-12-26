@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EnhancedPortalLayout, CommandCenterKPI, ActivityFeed, ActivityItem } from '@/components/portal';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
-import { useResolvedData } from '@/hooks/useResolvedData';
+import { useResolvedData, useResolvedValue } from '@/hooks/useResolvedData';
 import { User, ShoppingBag, Heart, Gift, HeadphonesIcon, ChevronUp, Package, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,9 +26,9 @@ const SIMULATION_REWARDS = {
 };
 
 const SIMULATION_ACTIVITY: ActivityItem[] = [
-  { id: '1', type: 'order', title: 'Order Delivered', description: 'ORD-001 delivered successfully', timestamp: '3 days ago' },
-  { id: '2', type: 'reward', title: 'Points Earned', description: '+50 points from last order', timestamp: '3 days ago' },
-  { id: '3', type: 'promo', title: 'New Offer', description: '20% off your next order', timestamp: '1 week ago' },
+  { id: '1', type: 'success', title: 'Order Delivered', description: 'ORD-001 delivered successfully', timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
+  { id: '2', type: 'info', title: 'Points Earned', description: '+50 points from last order', timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
+  { id: '3', type: 'info', title: 'New Offer', description: '20% off your next order', timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
 ];
 
 type KpiType = 'orders' | 'tracking' | 'saved' | 'rewards' | null;
@@ -38,18 +38,23 @@ export default function CustomerPortalPage() {
   const { simulationMode } = useSimulationMode();
   const [selectedKpi, setSelectedKpi] = useState<KpiType>(null);
 
-  const orders = useResolvedData([], SIMULATION_ORDERS);
-  const saved = useResolvedData([], SIMULATION_SAVED);
-  const rewards = useResolvedData({ points: 0, tier: 'Bronze', nextTier: 'Silver', pointsToNext: 500 }, SIMULATION_REWARDS);
-  const activity = useResolvedData([], SIMULATION_ACTIVITY);
+  const ordersResult = useResolvedData([], SIMULATION_ORDERS);
+  const savedResult = useResolvedData([], SIMULATION_SAVED);
+  const rewardsResult = useResolvedValue(null, SIMULATION_REWARDS);
+  const activityResult = useResolvedData([], SIMULATION_ACTIVITY);
+
+  const orders = ordersResult.data;
+  const saved = savedResult.data;
+  const rewards = rewardsResult.value;
+  const activity = activityResult.data;
 
   const inTransit = orders.filter(o => o.status === 'in_transit');
 
   const kpis = [
-    { key: 'orders' as KpiType, label: 'Total Orders', value: orders.length.toString(), icon: ShoppingBag, color: 'text-blue-500' },
-    { key: 'tracking' as KpiType, label: 'In Transit', value: inTransit.length.toString(), icon: Truck, color: 'text-amber-500' },
-    { key: 'saved' as KpiType, label: 'Saved Items', value: saved.length.toString(), icon: Heart, color: 'text-red-500' },
-    { key: 'rewards' as KpiType, label: 'Reward Points', value: rewards.points.toLocaleString(), icon: Gift, color: 'text-emerald-500' },
+    { key: 'orders' as KpiType, label: 'Total Orders', value: orders.length.toString(), variant: 'cyan' as const },
+    { key: 'tracking' as KpiType, label: 'In Transit', value: inTransit.length.toString(), variant: 'amber' as const },
+    { key: 'saved' as KpiType, label: 'Saved Items', value: saved.length.toString(), variant: 'red' as const },
+    { key: 'rewards' as KpiType, label: 'Reward Points', value: rewards.points.toLocaleString(), variant: 'green' as const },
   ];
 
   const handleKpiClick = (kpi: KpiType) => {
@@ -153,11 +158,11 @@ export default function CustomerPortalPage() {
     <EnhancedPortalLayout
       title="My Account"
       subtitle="Orders, rewards, and account settings"
-      icon={User}
+      portalIcon={<User className="h-4 w-4 text-primary-foreground" />}
       quickActions={[
-        { label: 'Shop Now', onClick: () => navigate('/shop') },
-        { label: 'Track Order', onClick: () => setSelectedKpi('tracking') },
-        { label: 'Get Support', onClick: () => navigate('/portals/customer/support') },
+        { label: 'Shop Now', href: '/shop' },
+        { label: 'Track Order', href: '/portals/customer/tracking' },
+        { label: 'Get Support', href: '/portals/customer/support' },
       ]}
     >
       {/* KPI Command Center */}
@@ -167,11 +172,10 @@ export default function CustomerPortalPage() {
             key={kpi.key}
             label={kpi.label}
             value={kpi.value}
-            icon={kpi.icon}
-            color={kpi.color}
+            variant={kpi.variant}
             isActive={selectedKpi === kpi.key}
             onClick={() => handleKpiClick(kpi.key)}
-            isSimulated={simulationMode}
+            isSimulated={ordersResult.isSimulated}
           />
         ))}
       </div>
@@ -221,7 +225,14 @@ export default function CustomerPortalPage() {
       </div>
 
       {/* Activity Feed */}
-      <ActivityFeed items={activity} title="Recent Activity" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ActivityFeed items={activity} isSimulated={activityResult.isSimulated} />
+        </CardContent>
+      </Card>
     </EnhancedPortalLayout>
   );
 }

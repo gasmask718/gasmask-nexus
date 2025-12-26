@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { EnhancedPortalLayout, CommandCenterKPI, PortalEmptyState, ActivityFeed, ActivityItem } from '@/components/portal';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { useResolvedData } from '@/hooks/useResolvedData';
-import { Store, ShoppingCart, FileText, HeadphonesIcon, Gift, Package, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { Store, ShoppingCart, FileText, HeadphonesIcon, Gift, Package, ChevronUp, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,9 +25,9 @@ const SIMULATION_TICKETS = [
 ];
 
 const SIMULATION_ACTIVITY: ActivityItem[] = [
-  { id: '1', type: 'order', title: 'Order Delivered', description: 'ORD-001 delivered successfully', timestamp: '2 hours ago' },
-  { id: '2', type: 'invoice', title: 'Invoice Paid', description: 'INV-001 payment confirmed', timestamp: '1 day ago' },
-  { id: '3', type: 'promo', title: 'New Promotion', description: '15% off on bulk orders', timestamp: '2 days ago' },
+  { id: '1', type: 'success', title: 'Order Delivered', description: 'ORD-001 delivered successfully', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+  { id: '2', type: 'info', title: 'Invoice Paid', description: 'INV-001 payment confirmed', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+  { id: '3', type: 'info', title: 'New Promotion', description: '15% off on bulk orders', timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000) },
 ];
 
 type KpiType = 'orders' | 'pending' | 'invoices' | 'tickets' | 'rewards' | null;
@@ -37,21 +37,26 @@ export default function StorePortalPage() {
   const { simulationMode } = useSimulationMode();
   const [selectedKpi, setSelectedKpi] = useState<KpiType>(null);
 
-  const orders = useResolvedData([], SIMULATION_ORDERS);
-  const invoices = useResolvedData([], SIMULATION_INVOICES);
-  const tickets = useResolvedData([], SIMULATION_TICKETS);
-  const activity = useResolvedData([], SIMULATION_ACTIVITY);
+  const ordersResult = useResolvedData([], SIMULATION_ORDERS);
+  const invoicesResult = useResolvedData([], SIMULATION_INVOICES);
+  const ticketsResult = useResolvedData([], SIMULATION_TICKETS);
+  const activityResult = useResolvedData([], SIMULATION_ACTIVITY);
+
+  const orders = ordersResult.data;
+  const invoices = invoicesResult.data;
+  const tickets = ticketsResult.data;
+  const activity = activityResult.data;
 
   const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'in_transit');
   const pendingInvoices = invoices.filter(i => i.status === 'pending');
   const openTickets = tickets.filter(t => t.status === 'open');
 
   const kpis = [
-    { key: 'orders' as KpiType, label: 'Total Orders', value: orders.length.toString(), icon: Package, color: 'text-blue-500' },
-    { key: 'pending' as KpiType, label: 'Pending Orders', value: pendingOrders.length.toString(), icon: ShoppingCart, color: 'text-amber-500' },
-    { key: 'invoices' as KpiType, label: 'Unpaid Invoices', value: pendingInvoices.length.toString(), icon: FileText, color: 'text-red-500' },
-    { key: 'tickets' as KpiType, label: 'Open Tickets', value: openTickets.length.toString(), icon: HeadphonesIcon, color: 'text-purple-500' },
-    { key: 'rewards' as KpiType, label: 'Reward Points', value: '1,250', icon: Gift, color: 'text-emerald-500' },
+    { key: 'orders' as KpiType, label: 'Total Orders', value: orders.length.toString(), variant: 'cyan' as const },
+    { key: 'pending' as KpiType, label: 'Pending Orders', value: pendingOrders.length.toString(), variant: 'amber' as const },
+    { key: 'invoices' as KpiType, label: 'Unpaid Invoices', value: pendingInvoices.length.toString(), variant: 'red' as const },
+    { key: 'tickets' as KpiType, label: 'Open Tickets', value: openTickets.length.toString(), variant: 'purple' as const },
+    { key: 'rewards' as KpiType, label: 'Reward Points', value: '1,250', variant: 'green' as const },
   ];
 
   const handleKpiClick = (kpi: KpiType) => {
@@ -149,11 +154,11 @@ export default function StorePortalPage() {
     <EnhancedPortalLayout
       title="Store Portal"
       subtitle="Manage orders, invoices, and support"
-      icon={Store}
+      portalIcon={<Store className="h-4 w-4 text-primary-foreground" />}
       quickActions={[
-        { label: 'Browse Products', onClick: () => navigate('/portals/store/products') },
-        { label: 'View Cart', onClick: () => navigate('/portals/store/cart') },
-        { label: 'Contact Support', onClick: () => navigate('/portals/store/support') },
+        { label: 'Browse Products', href: '/portals/store/products' },
+        { label: 'View Cart', href: '/portals/store/cart' },
+        { label: 'Contact Support', href: '/portals/store/support' },
       ]}
     >
       {/* KPI Command Center */}
@@ -163,11 +168,10 @@ export default function StorePortalPage() {
             key={kpi.key}
             label={kpi.label}
             value={kpi.value}
-            icon={kpi.icon}
-            color={kpi.color}
+            variant={kpi.variant}
             isActive={selectedKpi === kpi.key}
             onClick={() => handleKpiClick(kpi.key)}
-            isSimulated={simulationMode}
+            isSimulated={ordersResult.isSimulated}
           />
         ))}
       </div>
@@ -217,7 +221,14 @@ export default function StorePortalPage() {
       </div>
 
       {/* Activity Feed */}
-      <ActivityFeed items={activity} title="Recent Activity" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ActivityFeed items={activity} isSimulated={activityResult.isSimulated} />
+        </CardContent>
+      </Card>
     </EnhancedPortalLayout>
   );
 }

@@ -28,9 +28,9 @@ const SIMULATION_QC = [
 ];
 
 const SIMULATION_ACTIVITY: ActivityItem[] = [
-  { id: '1', type: 'batch', title: 'Batch Completed', description: 'BATCH-002 ready for shipment', timestamp: '1 hour ago' },
-  { id: '2', type: 'qc', title: 'QC Passed', description: 'BATCH-001 passed inspection', timestamp: '3 hours ago' },
-  { id: '3', type: 'order', title: 'New Work Order', description: 'WO-003 assigned to QC Team', timestamp: '5 hours ago' },
+  { id: '1', type: 'success', title: 'Batch Completed', description: 'BATCH-002 ready for shipment', timestamp: new Date(Date.now() - 60 * 60 * 1000) },
+  { id: '2', type: 'success', title: 'QC Passed', description: 'BATCH-001 passed inspection', timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000) },
+  { id: '3', type: 'info', title: 'New Work Order', description: 'WO-003 assigned to QC Team', timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000) },
 ];
 
 type KpiType = 'batches' | 'workOrders' | 'qcPending' | 'shipped' | 'incidents' | null;
@@ -40,21 +40,25 @@ export default function ProductionPortalPage() {
   const { simulationMode } = useSimulationMode();
   const [selectedKpi, setSelectedKpi] = useState<KpiType>(null);
 
-  const batches = useResolvedData([], SIMULATION_BATCHES);
-  const workOrders = useResolvedData([], SIMULATION_WORK_ORDERS);
-  const qcResults = useResolvedData([], SIMULATION_QC);
-  const activity = useResolvedData([], SIMULATION_ACTIVITY);
+  const batchesResult = useResolvedData([], SIMULATION_BATCHES);
+  const workOrdersResult = useResolvedData([], SIMULATION_WORK_ORDERS);
+  const qcResult = useResolvedData([], SIMULATION_QC);
+  const activityResult = useResolvedData([], SIMULATION_ACTIVITY);
+
+  const batches = batchesResult.data;
+  const workOrders = workOrdersResult.data;
+  const qcResults = qcResult.data;
+  const activity = activityResult.data;
 
   const activeBatches = batches.filter(b => b.status === 'in_progress');
-  const pendingWorkOrders = workOrders.filter(w => w.status === 'pending');
   const completedBatches = batches.filter(b => b.status === 'completed');
 
   const kpis = [
-    { key: 'batches' as KpiType, label: 'Active Batches', value: activeBatches.length.toString(), icon: Boxes, color: 'text-blue-500' },
-    { key: 'workOrders' as KpiType, label: 'Work Orders', value: workOrders.length.toString(), icon: ClipboardList, color: 'text-amber-500' },
-    { key: 'qcPending' as KpiType, label: 'QC Pending', value: '1', icon: CheckCircle, color: 'text-purple-500' },
-    { key: 'shipped' as KpiType, label: 'Ready to Ship', value: completedBatches.length.toString(), icon: Truck, color: 'text-emerald-500' },
-    { key: 'incidents' as KpiType, label: 'Incidents', value: '0', icon: AlertTriangle, color: 'text-red-500' },
+    { key: 'batches' as KpiType, label: 'Active Batches', value: activeBatches.length.toString(), variant: 'cyan' as const },
+    { key: 'workOrders' as KpiType, label: 'Work Orders', value: workOrders.length.toString(), variant: 'amber' as const },
+    { key: 'qcPending' as KpiType, label: 'QC Pending', value: '1', variant: 'purple' as const },
+    { key: 'shipped' as KpiType, label: 'Ready to Ship', value: completedBatches.length.toString(), variant: 'green' as const },
+    { key: 'incidents' as KpiType, label: 'Incidents', value: '0', variant: 'red' as const },
   ];
 
   const handleKpiClick = (kpi: KpiType) => {
@@ -169,11 +173,11 @@ export default function ProductionPortalPage() {
     <EnhancedPortalLayout
       title="Production Portal"
       subtitle="Manufacturing, QC, and batch tracking"
-      icon={Factory}
+      portalIcon={<Factory className="h-4 w-4 text-primary-foreground" />}
       quickActions={[
-        { label: 'New Batch', onClick: () => navigate('/portals/production/batches/new') },
-        { label: 'Work Orders', onClick: () => navigate('/portals/production/work-orders') },
-        { label: 'QC Dashboard', onClick: () => navigate('/portals/production/qc') },
+        { label: 'New Batch', href: '/portals/production/batches/new' },
+        { label: 'Work Orders', href: '/portals/production/work-orders' },
+        { label: 'QC Dashboard', href: '/portals/production/qc' },
       ]}
     >
       {/* KPI Command Center */}
@@ -183,11 +187,10 @@ export default function ProductionPortalPage() {
             key={kpi.key}
             label={kpi.label}
             value={kpi.value}
-            icon={kpi.icon}
-            color={kpi.color}
+            variant={kpi.variant}
             isActive={selectedKpi === kpi.key}
             onClick={() => handleKpiClick(kpi.key)}
-            isSimulated={simulationMode}
+            isSimulated={batchesResult.isSimulated}
           />
         ))}
       </div>
@@ -237,7 +240,14 @@ export default function ProductionPortalPage() {
       </div>
 
       {/* Activity Feed */}
-      <ActivityFeed items={activity} title="Recent Activity" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ActivityFeed items={activity} isSimulated={activityResult.isSimulated} />
+        </CardContent>
+      </Card>
     </EnhancedPortalLayout>
   );
 }

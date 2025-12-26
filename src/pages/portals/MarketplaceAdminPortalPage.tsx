@@ -29,15 +29,15 @@ const SIMULATION_ISSUES = [
 ];
 
 const SIMULATION_ORDERS = [
-  { id: 'ORD-001', store: 'Corner Store NYC', total: 450, status: 'completed' },
+  { id: 'ORD-001', store: 'Corner Store NYC', total: 450, status: 'completed', refundRequested: false },
   { id: 'ORD-002', store: 'Brooklyn Bodega', total: 320, refundRequested: true, status: 'refund_pending' },
 ];
 
 const SIMULATION_ACTIVITY: ActivityItem[] = [
-  { id: '1', type: 'user', title: 'New User Registered', description: 'Mike Brown (Ambassador)', timestamp: '1 hour ago' },
-  { id: '2', type: 'payout', title: 'Payout Approved', description: '$420 to Sarah Biker', timestamp: '2 hours ago' },
-  { id: '3', type: 'issue', title: 'Issue Escalated', description: 'Order dispute #4521', timestamp: '3 hours ago' },
-  { id: '4', type: 'order', title: 'Refund Requested', description: 'ORD-002 - $320', timestamp: '4 hours ago' },
+  { id: '1', type: 'info', title: 'New User Registered', description: 'Mike Brown (Ambassador)', timestamp: new Date(Date.now() - 60 * 60 * 1000) },
+  { id: '2', type: 'success', title: 'Payout Approved', description: '$420 to Sarah Biker', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+  { id: '3', type: 'warning', title: 'Issue Escalated', description: 'Order dispute #4521', timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000) },
+  { id: '4', type: 'warning', title: 'Refund Requested', description: 'ORD-002 - $320', timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000) },
 ];
 
 type KpiType = 'users' | 'orders' | 'payouts' | 'issues' | null;
@@ -47,11 +47,17 @@ export default function MarketplaceAdminPortalPage() {
   const { simulationMode, scenario, setScenario } = useSimulationMode();
   const [selectedKpi, setSelectedKpi] = useState<KpiType>(null);
 
-  const users = useResolvedData([], SIMULATION_USERS);
-  const payouts = useResolvedData([], SIMULATION_PAYOUTS);
-  const issues = useResolvedData([], SIMULATION_ISSUES);
-  const orders = useResolvedData([], SIMULATION_ORDERS);
-  const activity = useResolvedData([], SIMULATION_ACTIVITY);
+  const usersResult = useResolvedData([], SIMULATION_USERS);
+  const payoutsResult = useResolvedData([], SIMULATION_PAYOUTS);
+  const issuesResult = useResolvedData([], SIMULATION_ISSUES);
+  const ordersResult = useResolvedData([], SIMULATION_ORDERS);
+  const activityResult = useResolvedData([], SIMULATION_ACTIVITY);
+
+  const users = usersResult.data;
+  const payouts = payoutsResult.data;
+  const issues = issuesResult.data;
+  const orders = ordersResult.data;
+  const activity = activityResult.data;
 
   const pendingUsers = users.filter(u => u.status === 'pending');
   const pendingPayouts = payouts.filter(p => p.status === 'pending');
@@ -59,10 +65,10 @@ export default function MarketplaceAdminPortalPage() {
   const totalSales = orders.reduce((sum, o) => sum + o.total, 0);
 
   const kpis = [
-    { key: 'users' as KpiType, label: 'Total Users', value: users.length.toString(), subValue: `${pendingUsers.length} pending`, icon: Users, color: 'text-blue-500' },
-    { key: 'orders' as KpiType, label: 'Total Sales', value: `$${totalSales.toLocaleString()}`, subValue: 'This month', icon: ShoppingCart, color: 'text-emerald-500' },
-    { key: 'payouts' as KpiType, label: 'Pending Payouts', value: pendingPayouts.length.toString(), subValue: `$${pendingPayouts.reduce((s, p) => s + p.amount, 0).toLocaleString()}`, icon: DollarSign, color: 'text-amber-500' },
-    { key: 'issues' as KpiType, label: 'Open Issues', value: openIssues.length.toString(), icon: AlertTriangle, color: 'text-red-500' },
+    { key: 'users' as KpiType, label: 'Total Users', value: users.length.toString(), trend: `${pendingUsers.length} pending`, variant: 'cyan' as const },
+    { key: 'orders' as KpiType, label: 'Total Sales', value: `$${totalSales.toLocaleString()}`, trend: 'This month', variant: 'green' as const },
+    { key: 'payouts' as KpiType, label: 'Pending Payouts', value: pendingPayouts.length.toString(), trend: `$${pendingPayouts.reduce((s, p) => s + p.amount, 0).toLocaleString()}`, variant: 'amber' as const },
+    { key: 'issues' as KpiType, label: 'Open Issues', value: openIssues.length.toString(), variant: 'red' as const },
   ];
 
   const handleKpiClick = (kpi: KpiType) => {
@@ -179,11 +185,11 @@ export default function MarketplaceAdminPortalPage() {
     <EnhancedPortalLayout
       title="Marketplace Admin"
       subtitle="Platform governance & management"
-      icon={Settings}
+      portalIcon={<Settings className="h-4 w-4 text-primary-foreground" />}
       quickActions={[
-        { label: 'User Management', onClick: () => navigate('/portals/admin/users') },
-        { label: 'Payout Approvals', onClick: () => navigate('/portals/admin/payouts') },
-        { label: 'System Health', onClick: () => navigate('/portals/admin/system') },
+        { label: 'User Management', href: '/portals/admin/users' },
+        { label: 'Payout Approvals', href: '/portals/admin/payouts' },
+        { label: 'System Health', href: '/portals/admin/system' },
       ]}
     >
       {/* Simulation Controls (Admin Only) */}
@@ -216,12 +222,11 @@ export default function MarketplaceAdminPortalPage() {
             key={kpi.key}
             label={kpi.label}
             value={kpi.value}
-            subValue={kpi.subValue}
-            icon={kpi.icon}
-            color={kpi.color}
+            trend={kpi.trend}
+            variant={kpi.variant}
             isActive={selectedKpi === kpi.key}
             onClick={() => handleKpiClick(kpi.key)}
-            isSimulated={simulationMode}
+            isSimulated={usersResult.isSimulated}
           />
         ))}
       </div>
@@ -280,7 +285,14 @@ export default function MarketplaceAdminPortalPage() {
       </div>
 
       {/* Activity Feed */}
-      <ActivityFeed items={activity} title="Platform Activity" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Platform Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ActivityFeed items={activity} isSimulated={activityResult.isSimulated} />
+        </CardContent>
+      </Card>
     </EnhancedPortalLayout>
   );
 }
