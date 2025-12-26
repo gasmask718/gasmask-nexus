@@ -18,3 +18,5 @@ export { default as TopTierAnalyticsRevenue } from './TopTierAnalyticsRevenue';
 export { default as TopTierAnalyticsCommissions } from './TopTierAnalyticsCommissions';
 export { default as TopTierAllContacts } from './TopTierAllContacts';
 export { default as TopTierInteractionsHub } from './TopTierInteractionsHub';
+export { default as TopTierCustomers } from './TopTierCustomers';
+export { default as TopTierCustomerProfile } from './TopTierCustomerProfile';
