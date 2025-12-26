@@ -2,3 +2,8 @@ export { default as UnforgettableDashboard } from './UnforgettableDashboard';
 export { default as UnforgettableStaff } from './UnforgettableStaff';
 export { default as UnforgettableStaffProfile } from './UnforgettableStaffProfile';
 export { default as UnforgettableScheduling } from './UnforgettableScheduling';
+export { default as UnforgettablePayroll } from './UnforgettablePayroll';
+export { default as UnforgettableAvailability } from './UnforgettableAvailability';
+export { default as UnforgettablePerformance } from './UnforgettablePerformance';
+export { default as UnforgettableDocuments } from './UnforgettableDocuments';
+export { default as UnforgettableCommunications } from './UnforgettableCommunications';
