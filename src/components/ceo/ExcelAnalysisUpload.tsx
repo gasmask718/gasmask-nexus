@@ -42,7 +42,7 @@ export function ExcelAnalysisUpload() {
           fileName: file.name,
           data: jsonData,
           columns,
-          attachToBrand: selectedBrand || null,
+          attachToBrand: (selectedBrand && selectedBrand !== '__none__') ? selectedBrand : null,
           attachToStore: null,
         },
       });
@@ -93,7 +93,7 @@ export function ExcelAnalysisUpload() {
                 <SelectValue placeholder="Select a brand" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No Brand</SelectItem>
+                <SelectItem value="__none__">No Brand</SelectItem>
                 {brands.map(brand => (
                   <SelectItem key={brand} value={brand}>{brand}</SelectItem>
                 ))}
