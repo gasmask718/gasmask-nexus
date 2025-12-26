@@ -300,6 +300,7 @@ import {
   UnforgettableDashboard,
   UnforgettableStaff,
   UnforgettableStaffProfile,
+  UnforgettableStaffNew,
   UnforgettableScheduling,
   UnforgettableSchedulingToday,
   UnforgettableSchedulingUpcoming,
@@ -311,7 +312,19 @@ import {
   UnforgettableAvailability,
   UnforgettablePerformance,
   UnforgettableCommunications,
+  UnforgettableAICalling,
+  UnforgettableOnboarding,
+  UnforgettableCustomerService,
 } from '@/pages/os/unforgettable';
+import {
+  UnforgettableEventHalls,
+  UnforgettableEventHallDetail,
+  UnforgettableRentals,
+  UnforgettableInfluencers,
+  UnforgettableMediaVault,
+  UnforgettablePartySuppliers,
+  UnforgettableGifts,
+} from '@/pages/crm/unforgettable';
 import ICleanDashboard from '@/pages/os/iclean/ICleanDashboard';
 import PlayboxxxDashboard from '@/pages/os/playboxxx/PlayboxxxDashboard';
 import SpecialNeedsDashboard from '@/pages/os/specialneeds/SpecialNeedsDashboard';
