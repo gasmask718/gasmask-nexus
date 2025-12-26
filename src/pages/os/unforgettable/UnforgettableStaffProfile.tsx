@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { 
   ArrowLeft, Phone, Mail, Calendar, DollarSign, Star, Clock, 
-  MapPin, FileText, Edit, MessageSquare, CalendarPlus, 
+  MapPin, FileText, Edit, CalendarPlus, 
   Award, TrendingUp, CheckCircle, AlertCircle, User, Briefcase
 } from "lucide-react";
 import { 
@@ -174,17 +174,45 @@ export default function UnforgettableStaffProfile() {
                 </div>
                 
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate(`/os/unforgettable/staff/${staffId}/call`)}
+                  >
                     <Phone className="h-4 w-4 mr-2" />
                     Call
                   </Button>
-                  <Button variant="outline" size="sm">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Message
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate(`/os/unforgettable/staff/${staffId}/email`)}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Email
                   </Button>
-                  <Button className="bg-gradient-to-r from-pink-600 to-purple-500" size="sm">
-                    <CalendarPlus className="h-4 w-4 mr-2" />
-                    Assign to Event
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate(`/os/unforgettable/staff/${staffId}/notes`)}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Notes
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate(`/os/unforgettable/staff/${staffId}/venues`)}
+                  >
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Venues
+                  </Button>
+                  <Button 
+                    className="bg-gradient-to-r from-pink-600 to-purple-500" 
+                    size="sm"
+                    onClick={() => navigate(`/os/unforgettable/staff/${staffId}/edit`)}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Profile
                   </Button>
                 </div>
               </div>

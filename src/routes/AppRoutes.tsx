@@ -303,6 +303,10 @@ import {
   UnforgettableStaffNew,
   UnforgettableStaffEdit,
   UnforgettableStaffCategories,
+  UnforgettableStaffVenues,
+  UnforgettableStaffNotes,
+  UnforgettableStaffCall,
+  UnforgettableStaffEmail,
   UnforgettableScheduling,
   UnforgettableSchedulingToday,
   UnforgettableSchedulingUpcoming,
@@ -853,6 +857,10 @@ export default function AppRoutes() {
         <Route path="/os/unforgettable/staff/categories" element={<UnforgettableStaffCategories />} />
         <Route path="/os/unforgettable/staff/:staffId" element={<UnforgettableStaffProfile />} />
         <Route path="/os/unforgettable/staff/:staffId/edit" element={<UnforgettableStaffEdit />} />
+        <Route path="/os/unforgettable/staff/:staffId/venues" element={<UnforgettableStaffVenues />} />
+        <Route path="/os/unforgettable/staff/:staffId/notes" element={<UnforgettableStaffNotes />} />
+        <Route path="/os/unforgettable/staff/:staffId/call" element={<UnforgettableStaffCall />} />
+        <Route path="/os/unforgettable/staff/:staffId/email" element={<UnforgettableStaffEmail />} />
         <Route path="/os/unforgettable/scheduling" element={<UnforgettableScheduling />} />
         <Route path="/os/unforgettable/scheduling/today" element={<UnforgettableSchedulingToday />} />
         <Route path="/os/unforgettable/scheduling/upcoming" element={<UnforgettableSchedulingUpcoming />} />
