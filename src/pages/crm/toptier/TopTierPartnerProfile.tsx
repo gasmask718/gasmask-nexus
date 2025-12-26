@@ -25,7 +25,8 @@ import {
   PartnerInteractionsTab,
   PartnerContactsTab,
   PartnerAssetsTab,
-  PartnerNotesTab
+  PartnerNotesTab,
+  PartnerMediaVaultTab
 } from './profile';
 
 export default function TopTierPartnerProfile() {
@@ -176,11 +177,12 @@ export default function TopTierPartnerProfile() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-8 w-full max-w-4xl">
+        <TabsList className="grid grid-cols-9 w-full max-w-5xl">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="deals">Deals</TabsTrigger>
           <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
           <TabsTrigger value="commissions">Commissions</TabsTrigger>
+          <TabsTrigger value="media">Media Vault</TabsTrigger>
           <TabsTrigger value="interactions">Interactions</TabsTrigger>
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="assets">Assets</TabsTrigger>
@@ -221,6 +223,14 @@ export default function TopTierPartnerProfile() {
             partner={partner} 
             isSimulated={isSimulated} 
             bookings={partnerBookings}
+          />
+        </TabsContent>
+
+        {/* Media Vault Tab */}
+        <TabsContent value="media" className="mt-6">
+          <PartnerMediaVaultTab 
+            partner={partner} 
+            isSimulated={isSimulated}
           />
         </TabsContent>
 

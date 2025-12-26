@@ -158,7 +158,15 @@ export default function TopTierPartnerDashboard() {
           </div>
           <p className="text-muted-foreground">Manage your experience partners across all categories</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => navigate('/crm/toptier-experience/bookings')}>
+            <Eye className="h-4 w-4 mr-2" />
+            Recent Bookings
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/crm/toptier-experience/requests')}>
+            <Users className="h-4 w-4 mr-2" />
+            Customer Requests
+          </Button>
           <Button variant="outline" onClick={handleViewByState}>
             <MapPin className="h-4 w-4 mr-2" />
             View by State
@@ -175,8 +183,8 @@ export default function TopTierPartnerDashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border-cyan-500/20">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border-cyan-500/20 cursor-pointer hover:shadow-lg transition-shadow" onClick={handleViewAllPartners}>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -188,7 +196,7 @@ export default function TopTierPartnerDashboard() {
           </CardContent>
         </Card>
         
-        <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+        <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20 cursor-pointer hover:shadow-lg transition-shadow" onClick={handleViewAllPartners}>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -200,7 +208,7 @@ export default function TopTierPartnerDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
+        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20 cursor-pointer hover:shadow-lg transition-shadow" onClick={handleViewByState}>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -220,6 +228,30 @@ export default function TopTierPartnerDashboard() {
                 <p className="text-3xl font-bold">{totalStats.categoriesActive}</p>
               </div>
               <Filter className="h-8 w-8 text-amber-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/crm/toptier-experience/bookings')}>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Recent Bookings</p>
+                <p className="text-3xl font-bold">{isSimulated ? 24 : 0}</p>
+              </div>
+              <Eye className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-rose-500/10 to-rose-500/5 border-rose-500/20 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/crm/toptier-experience/requests')}>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">New Requests</p>
+                <p className="text-3xl font-bold">{isSimulated ? 8 : 0}</p>
+              </div>
+              <Users className="h-8 w-8 text-rose-500" />
             </div>
           </CardContent>
         </Card>

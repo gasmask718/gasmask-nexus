@@ -272,6 +272,61 @@ export default function PartnerOverviewTab({ partner, isSimulated, bookings, cam
           </div>
         </CardContent>
       </Card>
+
+      {/* Recent Bookings Section */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-lg">Recent Bookings</CardTitle>
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/crm/toptier-experience/partners/profile/${partnerId}/deals`)}>
+            <Eye className="h-4 w-4 mr-2" />
+            View All
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {bookings.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No bookings yet</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-4"
+                onClick={() => navigate(`/crm/toptier-experience/deals/new?partnerId=${partnerId}`)}
+              >
+                Create Deal
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {bookings.slice(0, 5).map((booking: any) => (
+                <div 
+                  key={booking.id}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                  onClick={() => navigate(`/crm/toptier-experience/deals/${booking.id}`)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{booking.customer_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(booking.event_date), 'MMM d, yyyy')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-green-600">${(booking.total_amount || 0).toLocaleString()}</p>
+                    <Badge variant={booking.status === 'confirmed' ? 'default' : 'secondary'} className="text-xs">
+                      {booking.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
