@@ -205,6 +205,20 @@ import CustomerPortal from '@/pages/portal/CustomerPortal';
 import NationalWholesale from '@/pages/portal/NationalWholesale';
 import MarketplaceAdmin from '@/pages/portal/MarketplaceAdmin';
 
+// New Role Portals (Enterprise-grade)
+import {
+  DriverPortalPage,
+  BikerPortalPage,
+  AmbassadorPortalPage,
+  StorePortalPage,
+  WholesalerPortalPage,
+  ProductionPortalPage,
+  VAPortalPage,
+  CustomerPortalPage,
+  NationalWholesalePortalPage,
+  MarketplaceAdminPortalPage,
+} from '@/pages/portals';
+
 // HR
 import HR from '@/pages/HR';
 import HRApplicants from '@/pages/HRApplicants';
@@ -1010,6 +1024,20 @@ export default function AppRoutes() {
         <Route path="/portal/wholesale" element={<PortalWholesale />} />
         <Route path="/portal/influencer" element={<PortalInfluencer />} />
         <Route path="/portal/dashboard" element={<PortalDashboard />} />
+
+        {/* ═══════════════════════════════════════════════════════════════════════════ */}
+        {/* NEW ROLE PORTALS - Enterprise-grade (/portals/*)                            */}
+        {/* ═══════════════════════════════════════════════════════════════════════════ */}
+        <Route path="/portals/driver" element={<DriverPortalPage />} />
+        <Route path="/portals/biker" element={<BikerPortalPage />} />
+        <Route path="/portals/ambassador" element={<AmbassadorPortalPage />} />
+        <Route path="/portals/store" element={<StorePortalPage />} />
+        <Route path="/portals/wholesaler" element={<WholesalerPortalPage />} />
+        <Route path="/portals/production" element={<ProductionPortalPage />} />
+        <Route path="/portals/va" element={<VAPortalPage />} />
+        <Route path="/portals/customer" element={<CustomerPortalPage />} />
+        <Route path="/portals/national-wholesale" element={<NationalWholesalePortalPage />} />
+        <Route path="/portals/admin" element={<MarketplaceAdminPortalPage />} />
 
         {/* Grabba Financial (no layout) */}
         <Route path="/grabba/financial-dashboard" element={<FinancialDashboard />} />
