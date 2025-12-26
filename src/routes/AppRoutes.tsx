@@ -89,6 +89,10 @@ import GlobalCRM from '@/pages/crm/GlobalCRM';
 import GlobalCRMDashboard from '@/pages/crm/GlobalCRMDashboard';
 import DynamicCRMPage from '@/pages/crm/DynamicCRMPage';
 import AddBusinessPage from '@/pages/crm/AddBusinessPage';
+import CRMDataPage from '@/pages/crm/CRMDataPage';
+import CRMExportPage from '@/pages/crm/CRMExportPage';
+import CRMImportPage from '@/pages/crm/CRMImportPage';
+import CRMBackupPage from '@/pages/crm/CRMBackupPage';
 import EntityListPage from '@/pages/crm/EntityListPage';
 import EntityProfilePage from '@/pages/crm/EntityProfilePage';
 import CRMSettingsPage from '@/pages/crm/CRMSettingsPage';
@@ -644,6 +648,10 @@ export default function AppRoutes() {
         {/* CRM - Global CRM with Blueprint System */}
         <Route path="/crm" element={<GlobalCRMDashboard />} />
         <Route path="/crm/add-business" element={<AddBusinessPage />} />
+        <Route path="/crm/data" element={<CRMDataPage />} />
+        <Route path="/crm/data/export" element={<CRMExportPage />} />
+        <Route path="/crm/data/import" element={<CRMImportPage />} />
+        <Route path="/crm/data/backup" element={<CRMBackupPage />} />
         <Route path="/crm/settings" element={<CRMSettingsPage />} />
         <Route path="/crm/dashboard" element={<CRM />} />
         <Route path="/crm/global" element={<GlobalCRMDashboard />} />
