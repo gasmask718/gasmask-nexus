@@ -7,11 +7,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { ExtendedEntityType } from '@/config/crmBlueprints';
 
 // Maps entity types to their database tables and count logic
-const ENTITY_COUNT_CONFIG: Record<ExtendedEntityType, {
+const ENTITY_COUNT_CONFIG: Partial<Record<ExtendedEntityType, {
   table: string;
   businessIdField?: string;
   additionalFilters?: Record<string, any>;
-}> = {
+}>> = {
   partner: { table: 'ambassadors', businessIdField: 'business_id' },
   influencer: { table: 'ambassadors', businessIdField: 'business_id', additionalFilters: { ambassador_type: 'influencer' } },
   customer: { table: 'crm_customers', businessIdField: 'business_id' },
@@ -28,10 +28,18 @@ const ENTITY_COUNT_CONFIG: Record<ExtendedEntityType, {
   collab: { table: 'crm_deals', businessIdField: 'business_id', additionalFilters: { deal_type: 'collab' } },
   promo_campaign: { table: 'ai_call_campaigns', businessIdField: 'business_id' },
   task: { table: 'crm_tasks', businessIdField: 'business_id' },
-  note: { table: 'crm_notes', businessIdField: 'entity_id' }, // Notes are linked to entities
+  note: { table: 'crm_notes', businessIdField: 'entity_id' },
   interaction: { table: 'crm_interactions', businessIdField: 'business_id' },
   asset: { table: 'crm_assets', businessIdField: 'business_id' },
   media: { table: 'crm_assets', businessIdField: 'business_id', additionalFilters: { asset_type: 'media' } },
+  // Grabba store-based entities
+  store: { table: 'store_master', businessIdField: 'business_id' },
+  order: { table: 'wholesale_orders', businessIdField: 'business_id' },
+  delivery: { table: 'deliveries', businessIdField: 'business_id' },
+  driver: { table: 'drivers', businessIdField: 'business_id' },
+  biker: { table: 'bikers', businessIdField: 'business_id' },
+  payout: { table: 'worker_payouts', businessIdField: 'business_id' },
+  debt: { table: 'driver_debts', businessIdField: 'business_id' },
 };
 
 // Fallback tables that exist in most Supabase setups
@@ -152,7 +160,9 @@ export function useAllEntityCounts(businessId: string | null) {
     'partner', 'customer', 'influencer', 'client', 'model',
     'vendor', 'event_hall', 'rental_company', 'supplier', 'staff',
     'booking', 'event_booking', 'funding_application', 'collab',
-    'promo_campaign', 'task', 'note', 'interaction', 'asset', 'media'
+    'promo_campaign', 'task', 'note', 'interaction', 'asset', 'media',
+    // Grabba store-based entities
+    'store', 'order', 'delivery', 'driver', 'biker', 'payout', 'debt'
   ];
 
   return useCRMEntityCounts(businessId, allEntityTypes);
