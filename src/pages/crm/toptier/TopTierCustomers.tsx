@@ -230,10 +230,11 @@ export default function TopTierCustomers() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+      {/* Stats Cards with VIEW DETAILS buttons */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {/* Total Customers */}
         <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20">
-          <CardContent className="pt-4">
+          <CardContent className="pt-4 pb-3 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Customers</p>
@@ -241,10 +242,23 @@ export default function TopTierCustomers() {
               </div>
               <Users className="h-8 w-8 text-cyan-500" />
             </div>
+            <Button
+              variant="link"
+              size="sm"
+              className="p-0 h-auto text-cyan-600 hover:text-cyan-700 font-medium"
+              onClick={() => {
+                console.log('[CRM KPI] View Details clicked: Total Customers');
+                navigate('/crm/toptier-experience/customers');
+              }}
+            >
+              VIEW DETAILS →
+            </Button>
           </CardContent>
         </Card>
+
+        {/* VIP Customers */}
         <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-          <CardContent className="pt-4">
+          <CardContent className="pt-4 pb-3 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">VIP Customers</p>
@@ -252,10 +266,23 @@ export default function TopTierCustomers() {
               </div>
               <Crown className="h-8 w-8 text-purple-500" />
             </div>
+            <Button
+              variant="link"
+              size="sm"
+              className="p-0 h-auto text-purple-600 hover:text-purple-700 font-medium"
+              onClick={() => {
+                console.log('[CRM KPI] View Details clicked: VIP Customers');
+                navigate('/crm/toptier-experience/customers/vip');
+              }}
+            >
+              VIEW DETAILS →
+            </Button>
           </CardContent>
         </Card>
+
+        {/* Returning Customers */}
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-          <CardContent className="pt-4">
+          <CardContent className="pt-4 pb-3 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Returning</p>
@@ -263,10 +290,23 @@ export default function TopTierCustomers() {
               </div>
               <TrendingUp className="h-8 w-8 text-blue-500" />
             </div>
+            <Button
+              variant="link"
+              size="sm"
+              className="p-0 h-auto text-blue-600 hover:text-blue-700 font-medium"
+              onClick={() => {
+                console.log('[CRM KPI] View Details clicked: Returning Customers');
+                navigate('/crm/toptier-experience/customers/returning');
+              }}
+            >
+              VIEW DETAILS →
+            </Button>
           </CardContent>
         </Card>
+
+        {/* New Customers */}
         <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
-          <CardContent className="pt-4">
+          <CardContent className="pt-4 pb-3 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">New</p>
@@ -274,10 +314,23 @@ export default function TopTierCustomers() {
               </div>
               <UserPlus className="h-8 w-8 text-green-500" />
             </div>
+            <Button
+              variant="link"
+              size="sm"
+              className="p-0 h-auto text-green-600 hover:text-green-700 font-medium"
+              onClick={() => {
+                console.log('[CRM KPI] View Details clicked: New Customers');
+                navigate('/crm/toptier-experience/customers/newly-added');
+              }}
+            >
+              VIEW DETAILS →
+            </Button>
           </CardContent>
         </Card>
+
+        {/* Total Bookings */}
         <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
-          <CardContent className="pt-4">
+          <CardContent className="pt-4 pb-3 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Bookings</p>
@@ -285,10 +338,23 @@ export default function TopTierCustomers() {
               </div>
               <Calendar className="h-8 w-8 text-amber-500" />
             </div>
+            <Button
+              variant="link"
+              size="sm"
+              className="p-0 h-auto text-amber-600 hover:text-amber-700 font-medium"
+              onClick={() => {
+                console.log('[CRM KPI] View Details clicked: Total Bookings');
+                navigate('/crm/toptier-experience/customers/bookings');
+              }}
+            >
+              VIEW DETAILS →
+            </Button>
           </CardContent>
         </Card>
+
+        {/* Lifetime Value */}
         <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
-          <CardContent className="pt-4">
+          <CardContent className="pt-4 pb-3 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Lifetime Value</p>
@@ -296,6 +362,17 @@ export default function TopTierCustomers() {
               </div>
               <DollarSign className="h-8 w-8 text-emerald-500" />
             </div>
+            <Button
+              variant="link"
+              size="sm"
+              className="p-0 h-auto text-emerald-600 hover:text-emerald-700 font-medium"
+              onClick={() => {
+                console.log('[CRM KPI] View Details clicked: Lifetime Value');
+                navigate('/crm/toptier-experience/customers/value');
+              }}
+            >
+              VIEW DETAILS →
+            </Button>
           </CardContent>
         </Card>
       </div>
