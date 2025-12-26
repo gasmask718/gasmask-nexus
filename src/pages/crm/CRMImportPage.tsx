@@ -318,7 +318,7 @@ export default function CRMImportPage() {
                               <SelectValue placeholder="Select field..." />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">Skip this column</SelectItem>
+                              <SelectItem value="__skip__">Skip this column</SelectItem>
                               {selectedSchema.fields.map((field) => (
                                 <SelectItem key={field.key} value={field.key}>
                                   {field.label}

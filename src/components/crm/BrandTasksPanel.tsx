@@ -65,8 +65,8 @@ export function BrandTasksPanel({
     await onAddTask({
       title: newTask.title,
       description: newTask.description || null,
-      store_id: newTask.store_id || null,
-      contact_id: newTask.contact_id || null,
+      store_id: newTask.store_id === '__none__' ? null : (newTask.store_id || null),
+      contact_id: newTask.contact_id === '__none__' ? null : (newTask.contact_id || null),
       due_date: newTask.due_date || null,
     });
     setNewTask({ title: "", description: "", store_id: "", contact_id: "", due_date: "" });
@@ -161,7 +161,7 @@ export function BrandTasksPanel({
                           <SelectValue placeholder="Select store" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="__none__">None</SelectItem>
                           {stores.map((s) => (
                             <SelectItem key={s.id} value={s.id}>{s.store_name}</SelectItem>
                           ))}
@@ -178,7 +178,7 @@ export function BrandTasksPanel({
                           <SelectValue placeholder="Select contact" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="__none__">None</SelectItem>
                           {contacts.map((c) => (
                             <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>
                           ))}

@@ -28,7 +28,7 @@ export function RouteOptimizerPanel({ onRoutesGenerated }: RouteOptimizerPanelPr
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('optimize-routes', {
-        body: { date, territory: territory || null }
+        body: { date, territory: (territory && territory !== '__all__') ? territory : null }
       });
 
       if (error) throw error;
@@ -80,7 +80,7 @@ export function RouteOptimizerPanel({ onRoutesGenerated }: RouteOptimizerPanelPr
               <SelectValue placeholder="All territories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All territories</SelectItem>
+              <SelectItem value="__all__">All territories</SelectItem>
               <SelectItem value="Brooklyn">Brooklyn</SelectItem>
               <SelectItem value="Queens">Queens</SelectItem>
               <SelectItem value="Manhattan">Manhattan</SelectItem>
