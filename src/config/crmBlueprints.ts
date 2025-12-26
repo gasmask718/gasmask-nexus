@@ -57,7 +57,15 @@ export type ExtendedEntityType =
   | 'note'
   | 'interaction'
   | 'asset'
-  | 'media';           // Media vault items
+  | 'media'            // Media vault items
+  // Grabba store-based entity types
+  | 'store'
+  | 'order'
+  | 'delivery'
+  | 'driver'
+  | 'biker'
+  | 'payout'
+  | 'debt';
 
 // ============================================
 // PIPELINE STAGES
@@ -979,17 +987,261 @@ export const PLAYBOXXX_BLUEPRINT: CRMBlueprint = {
 };
 
 // ============================================
+// GRABBA LEGACY STORE-BASED PIPELINE
+// ============================================
+export const GRABBA_ORDER_PIPELINE = [
+  { value: 'pending', label: 'Pending', color: '#94a3b8' },
+  { value: 'confirmed', label: 'Confirmed', color: '#60a5fa' },
+  { value: 'in_progress', label: 'In Progress', color: '#fbbf24' },
+  { value: 'delivered', label: 'Delivered', color: '#22c55e' },
+  { value: 'paid', label: 'Paid', color: '#10b981' },
+  { value: 'cancelled', label: 'Cancelled', color: '#ef4444' },
+];
+
+// ============================================
+// GRABBA LEGACY STORE-BASED CRM BLUEPRINT
+// ============================================
+function createGrabbaBlueprint(
+  businessId: string,
+  businessSlug: string,
+  businessName: string,
+  brandColor: string
+): CRMBlueprint {
+  return {
+    businessId,
+    businessSlug,
+    businessName,
+    enabledEntityTypes: ['customer', 'task', 'note', 'interaction', 'asset'],
+    features: {
+      showStores: true,
+      showInventory: true,
+      showRoutes: true,
+      showBookings: false,
+      showCommissions: true,
+      showCalendar: false,
+      showMediaVault: false,
+      showWhatsApp: false,
+      showTaskTemplates: false,
+      showPipeline: true,
+    },
+    pipelines: {
+      order: GRABBA_ORDER_PIPELINE,
+    },
+    kpiConfig: [
+      { key: 'stores', label: 'Total Stores', icon: 'Store', aggregation: 'count', variant: 'cyan', clickable: true, detailsRoute: `/grabba/crm?brand=${businessSlug}` },
+      { key: 'active_stores', label: 'Active Stores', icon: 'StoreCheck', aggregation: 'count', filter: { status: 'active' }, variant: 'green', clickable: true },
+      { key: 'tubes_in_field', label: 'Tubes in Field', icon: 'Package', aggregation: 'sum', field: 'tube_count', variant: 'amber', clickable: true },
+      { key: 'pending_orders', label: 'Pending Orders', icon: 'ClipboardList', aggregation: 'count', filter: { status: 'pending' }, variant: 'purple', clickable: true },
+      { key: 'unpaid_balance', label: 'Unpaid Balance', icon: 'DollarSign', aggregation: 'sum', field: 'unpaid_amount', variant: 'red', clickable: true },
+      { key: 'deliveries_today', label: 'Deliveries Today', icon: 'Truck', aggregation: 'count', filter: { date: 'today' }, variant: 'default', clickable: true },
+    ],
+    entitySchemas: {
+      store: {
+        key: 'store' as ExtendedEntityType,
+        label: 'Store',
+        labelPlural: 'Stores',
+        icon: 'Store',
+        color: brandColor,
+        tableName: 'store_master',
+        listColumns: ['store_name', 'address', 'phone', 'status', 'tube_count', 'last_order_date'],
+        searchableFields: ['store_name', 'address', 'phone'],
+        fields: [
+          { key: 'store_name', label: 'Store Name', type: 'text', required: true, width: 'half', section: 'basic' },
+          { key: 'phone', label: 'Phone', type: 'phone', width: 'half', section: 'basic' },
+          { key: 'address', label: 'Address', type: 'address', width: 'full', section: 'location' },
+          { key: 'city', label: 'City', type: 'text', width: 'half', section: 'location' },
+          { key: 'state', label: 'State', type: 'text', width: 'half', section: 'location' },
+          { key: 'zip', label: 'ZIP Code', type: 'text', width: 'half', section: 'location' },
+          { key: 'neighborhood', label: 'Neighborhood', type: 'text', width: 'half', section: 'location' },
+          { key: 'status', label: 'Status', type: 'select', width: 'half', section: 'status', options: [
+            { value: 'active', label: 'Active' },
+            { value: 'inactive', label: 'Inactive' },
+            { value: 'pending', label: 'Pending' },
+            { value: 'lost', label: 'Lost' },
+          ]},
+          { key: 'tube_count', label: 'Current Tubes', type: 'number', width: 'half', section: 'inventory' },
+          { key: 'preferred_delivery_day', label: 'Preferred Delivery Day', type: 'select', width: 'half', section: 'delivery', options: [
+            { value: 'monday', label: 'Monday' },
+            { value: 'tuesday', label: 'Tuesday' },
+            { value: 'wednesday', label: 'Wednesday' },
+            { value: 'thursday', label: 'Thursday' },
+            { value: 'friday', label: 'Friday' },
+            { value: 'saturday', label: 'Saturday' },
+            { value: 'sunday', label: 'Sunday' },
+          ]},
+          { key: 'assigned_driver', label: 'Assigned Driver', type: 'text', width: 'half', section: 'delivery' },
+          { key: 'notes', label: 'Notes', type: 'textarea', width: 'full', section: 'notes' },
+        ],
+      },
+      order: {
+        key: 'order' as ExtendedEntityType,
+        label: 'Order',
+        labelPlural: 'Orders',
+        icon: 'ClipboardList',
+        color: '#fbbf24',
+        tableName: 'wholesale_orders',
+        listColumns: ['store_name', 'tube_quantity', 'total_amount', 'status', 'created_at'],
+        searchableFields: ['store_name'],
+        fields: [
+          { key: 'store_id', label: 'Store', type: 'select', required: true, width: 'half', section: 'basic' },
+          { key: 'tube_quantity', label: 'Tube Quantity', type: 'number', required: true, width: 'half', section: 'basic' },
+          { key: 'total_amount', label: 'Total Amount', type: 'currency', width: 'half', section: 'financial' },
+          { key: 'paid_amount', label: 'Paid Amount', type: 'currency', width: 'half', section: 'financial' },
+          { key: 'status', label: 'Status', type: 'select', width: 'half', section: 'status', options: GRABBA_ORDER_PIPELINE.map(s => ({ value: s.value, label: s.label })) },
+          { key: 'delivery_date', label: 'Delivery Date', type: 'date', width: 'half', section: 'delivery' },
+          { key: 'notes', label: 'Notes', type: 'textarea', width: 'full', section: 'notes' },
+        ],
+      },
+      delivery: {
+        key: 'delivery' as ExtendedEntityType,
+        label: 'Delivery',
+        labelPlural: 'Deliveries',
+        icon: 'Truck',
+        color: '#22d3ee',
+        tableName: 'deliveries',
+        listColumns: ['route_name', 'driver_name', 'stops_count', 'status', 'scheduled_date'],
+        searchableFields: ['route_name', 'driver_name'],
+        fields: [
+          { key: 'route_name', label: 'Route Name', type: 'text', width: 'half', section: 'basic' },
+          { key: 'driver_id', label: 'Driver', type: 'select', required: true, width: 'half', section: 'basic' },
+          { key: 'scheduled_date', label: 'Scheduled Date', type: 'date', required: true, width: 'half', section: 'schedule' },
+          { key: 'status', label: 'Status', type: 'select', width: 'half', section: 'status', options: [
+            { value: 'scheduled', label: 'Scheduled' },
+            { value: 'in_progress', label: 'In Progress' },
+            { value: 'completed', label: 'Completed' },
+            { value: 'cancelled', label: 'Cancelled' },
+          ]},
+          { key: 'stops_count', label: 'Stops', type: 'number', width: 'half', section: 'details' },
+          { key: 'total_tubes', label: 'Total Tubes', type: 'number', width: 'half', section: 'details' },
+        ],
+      },
+      customer: {
+        key: 'customer',
+        label: 'Customer',
+        labelPlural: 'Customers',
+        icon: 'User',
+        color: '#10b981',
+        tableName: 'crm_customers',
+        listColumns: ['name', 'phone', 'store_name', 'status'],
+        searchableFields: ['name', 'phone'],
+        fields: [
+          { key: 'name', label: 'Name', type: 'text', required: true, width: 'half', section: 'basic' },
+          { key: 'phone', label: 'Phone', type: 'phone', width: 'half', section: 'basic' },
+          { key: 'email', label: 'Email', type: 'email', width: 'half', section: 'basic' },
+          { key: 'store_id', label: 'Associated Store', type: 'select', width: 'half', section: 'basic' },
+          { key: 'status', label: 'Status', type: 'select', width: 'half', section: 'status', options: [
+            { value: 'active', label: 'Active' },
+            { value: 'inactive', label: 'Inactive' },
+          ]},
+        ],
+      },
+    },
+    profileTabs: {
+      store: [
+        { key: 'overview', label: 'Overview', icon: 'Store', enabled: true },
+        { key: 'orders', label: 'Orders', icon: 'ClipboardList', enabled: true },
+        { key: 'deliveries', label: 'Deliveries', icon: 'Truck', enabled: true },
+        { key: 'inventory', label: 'Inventory', icon: 'Package', enabled: true },
+        { key: 'payments', label: 'Payments', icon: 'DollarSign', enabled: true },
+        { key: 'interactions', label: 'Interactions', icon: 'MessageSquare', enabled: true },
+        { key: 'notes', label: 'Notes', icon: 'FileText', enabled: true },
+      ],
+    },
+    listViews: {
+      store: {
+        defaultColumns: ['store_name', 'address', 'phone', 'status', 'tube_count'],
+        defaultSort: { field: 'store_name', direction: 'asc' },
+        filters: [
+          { field: 'status', label: 'Status', type: 'select' },
+          { field: 'neighborhood', label: 'Neighborhood', type: 'text' },
+          { field: 'city', label: 'City', type: 'text' },
+        ],
+        savedViews: [
+          { name: 'Active Stores', filters: { status: 'active' } },
+          { name: 'Low Inventory', filters: { tube_count_lt: 50 } },
+          { name: 'Pending Stores', filters: { status: 'pending' } },
+        ],
+      },
+      order: {
+        defaultColumns: ['store_name', 'tube_quantity', 'total_amount', 'status', 'created_at'],
+        defaultSort: { field: 'created_at', direction: 'desc' },
+        filters: [
+          { field: 'status', label: 'Status', type: 'select' },
+        ],
+      },
+    },
+  };
+}
+
+// Create blueprints for each Grabba brand
+const GASMASK_BLUEPRINT = createGrabbaBlueprint(
+  'gasmask',
+  'gasmask',
+  'GasMask',
+  '#FF0000'
+);
+
+const HOTMAMA_BLUEPRINT = createGrabbaBlueprint(
+  'hot_mama',
+  'hot_mama',
+  'Hot Mama',
+  '#FF4F9D'
+);
+
+const GRABBA_R_US_BLUEPRINT = createGrabbaBlueprint(
+  'grabba_r_us',
+  'grabba_r_us',
+  'Grabba R Us',
+  '#A020F0'
+);
+
+const HOT_SCOLATTI_BLUEPRINT = createGrabbaBlueprint(
+  'hot_scolatti',
+  'hot_scolatti',
+  'Hot Scolatti',
+  '#FF7A00'
+);
+
+// ============================================
 // BLUEPRINT REGISTRY
 // ============================================
 export const CRM_BLUEPRINTS: Record<string, CRMBlueprint> = {
+  // TopTier & Storeless businesses
   'toptier-experience': TOPTIER_BLUEPRINT,
+  'toptier_experience': TOPTIER_BLUEPRINT,
   'usa-funding': FUNDING_BLUEPRINT,
+  'usa_funding': FUNDING_BLUEPRINT,
   'unforgettable-times': UNFORGETTABLE_BLUEPRINT,
+  'unforgettable_times_usa': UNFORGETTABLE_BLUEPRINT,
   'the-playboxxx': PLAYBOXXX_BLUEPRINT,
+  'playboxxx': PLAYBOXXX_BLUEPRINT,
+  // Grabba legacy store-based businesses
+  'gasmask': GASMASK_BLUEPRINT,
+  'hot_mama': HOTMAMA_BLUEPRINT,
+  'hot-mama': HOTMAMA_BLUEPRINT,
+  'grabba_r_us': GRABBA_R_US_BLUEPRINT,
+  'grabba-r-us': GRABBA_R_US_BLUEPRINT,
+  'hot_scolatti': HOT_SCOLATTI_BLUEPRINT,
+  'hot-scolatti': HOT_SCOLATTI_BLUEPRINT,
 };
 
+// Slug normalization helper
+function normalizeSlug(slug: string): string {
+  return slug.toLowerCase().replace(/-/g, '_');
+}
+
 export function getCRMBlueprint(businessSlug: string): CRMBlueprint | null {
-  return CRM_BLUEPRINTS[businessSlug] || null;
+  // Direct match first
+  if (CRM_BLUEPRINTS[businessSlug]) {
+    return CRM_BLUEPRINTS[businessSlug];
+  }
+  // Try normalized slug
+  const normalized = normalizeSlug(businessSlug);
+  if (CRM_BLUEPRINTS[normalized]) {
+    return CRM_BLUEPRINTS[normalized];
+  }
+  // Return null if no match (will fall back to default)
+  return null;
 }
 
 export function getDefaultBlueprint(): CRMBlueprint {
@@ -1019,3 +1271,18 @@ export function getDefaultBlueprint(): CRMBlueprint {
     listViews: {},
   };
 }
+
+// Helper to check if business uses store-based CRM
+export function isStoreBasedCRM(businessSlug: string): boolean {
+  const grabbaBusinesses = ['gasmask', 'hot_mama', 'hot-mama', 'grabba_r_us', 'grabba-r-us', 'hot_scolatti', 'hot-scolatti'];
+  const normalized = normalizeSlug(businessSlug);
+  return grabbaBusinesses.some(g => normalizeSlug(g) === normalized);
+}
+
+// Export individual blueprints for direct access
+export {
+  GASMASK_BLUEPRINT,
+  HOTMAMA_BLUEPRINT,
+  GRABBA_R_US_BLUEPRINT,
+  HOT_SCOLATTI_BLUEPRINT,
+};
