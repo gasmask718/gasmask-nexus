@@ -1,9 +1,11 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { PartyPopper, Building, Users, Package, ShoppingBag, Sparkles, LayoutDashboard } from 'lucide-react';
+import { PartyPopper, Building, Users, Package, ShoppingBag, Sparkles, LayoutDashboard, UserCog } from 'lucide-react';
 import UnforgettableDashboard from '@/pages/os/unforgettable/UnforgettableDashboard';
+import UnforgettableStaff from '@/pages/os/unforgettable/UnforgettableStaff';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/unforgettable', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/os/unforgettable/staff', label: 'Staff', icon: UserCog },
   { path: '/os/unforgettable/halls', label: 'Event Halls', icon: Building },
   { path: '/os/unforgettable/vendors', label: 'Vendors', icon: Users },
   { path: '/os/unforgettable/rentals', label: 'Rentals', icon: Package },
@@ -25,6 +27,7 @@ export const UnforgettableModule: DynastyModule = {
   },
   routes: [
     { path: '', component: UnforgettableDashboard, label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
+    { path: '/staff', component: UnforgettableStaff, label: 'Staff', icon: UserCog, requiresAuth: true },
     { path: '/halls', component: UnforgettableDashboard, label: 'Event Halls', icon: Building, requiresAuth: true },
     { path: '/vendors', component: UnforgettableDashboard, label: 'Vendors', icon: Users, requiresAuth: true },
     { path: '/rentals', component: UnforgettableDashboard, label: 'Rentals', icon: Package, requiresAuth: true },
