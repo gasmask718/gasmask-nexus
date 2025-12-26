@@ -87,6 +87,7 @@ import CRMCustomers from '@/pages/CRMCustomers';
 import ContactProfile from '@/pages/crm/ContactProfile';
 import GlobalCRM from '@/pages/crm/GlobalCRM';
 import GlobalCRMDashboard from '@/pages/crm/GlobalCRMDashboard';
+import BusinessCRMDashboard from '@/pages/crm/BusinessCRMDashboard';
 import DynamicCRMPage from '@/pages/crm/DynamicCRMPage';
 import AddBusinessPage from '@/pages/crm/AddBusinessPage';
 import CRMDataPage from '@/pages/crm/CRMDataPage';
@@ -646,6 +647,7 @@ export default function AppRoutes() {
         <Route path="/communication-center" element={<CommunicationHubLayout />} />
 
         {/* CRM - Global CRM with Blueprint System */}
+        {/* Floor 1: Global CRM Hub - shows all businesses */}
         <Route path="/crm" element={<GlobalCRMDashboard />} />
         <Route path="/crm/add-business" element={<AddBusinessPage />} />
         <Route path="/crm/data" element={<CRMDataPage />} />
@@ -653,16 +655,22 @@ export default function AppRoutes() {
         <Route path="/crm/data/import" element={<CRMImportPage />} />
         <Route path="/crm/data/backup" element={<CRMBackupPage />} />
         <Route path="/crm/settings" element={<CRMSettingsPage />} />
-        <Route path="/crm/dashboard" element={<CRM />} />
         <Route path="/crm/global" element={<GlobalCRMDashboard />} />
         <Route path="/crm/legacy" element={<GlobalCRM />} />
-        <Route path="/crm/brand/:brandId" element={<CRMBrandPage />} />
-        <Route path="/crm/brand/:brandId/store/:storeId" element={<CRMBrandStoreProfile />} />
-        <Route path="/crm/business/:businessSlug" element={<DynamicCRMPage />} />
-        {/* Dynamic entity routes */}
+        
+        {/* Business-scoped CRM routes - CANONICAL PATTERN: /crm/:businessSlug/* */}
+        <Route path="/crm/:businessSlug" element={<BusinessCRMDashboard />} />
         <Route path="/crm/:businessSlug/:entityType" element={<EntityListPage />} />
         <Route path="/crm/:businessSlug/:entityType/new" element={<EntityProfilePage />} />
         <Route path="/crm/:businessSlug/:entityType/:recordId" element={<EntityProfilePage />} />
+        
+        {/* Legacy/store-based CRM routes (redirect to business-scoped) */}
+        <Route path="/crm/dashboard" element={<Navigate to="/crm" replace />} />
+        <Route path="/crm/brand/:brandId" element={<CRMBrandPage />} />
+        <Route path="/crm/brand/:brandId/store/:storeId" element={<CRMBrandStoreProfile />} />
+        <Route path="/crm/business/:businessSlug" element={<Navigate to="/crm/:businessSlug" replace />} />
+        
+        {/* Legacy customer/contact routes */}
         <Route path="/crm/customers" element={<CRMCustomers />} />
         <Route path="/crm/customers/new" element={<CRMCustomerNew />} />
         <Route path="/crm/customers/import" element={<CRMCustomerImport />} />
@@ -671,10 +679,6 @@ export default function AppRoutes() {
         <Route path="/crm/contacts/:id" element={<CRMContactDetail />} />
         <Route path="/crm/store-contact/:id" element={<ContactProfile />} />
         <Route path="/crm/follow-ups" element={<CRMFollowUps />} />
-        <Route path="/crm/data" element={<CRMData />} />
-        <Route path="/crm/data/export" element={<CRMDataExport />} />
-        <Route path="/crm/data/import" element={<CRMDataImport />} />
-        <Route path="/crm/data/backup" element={<CRMBackupSettings />} />
 
         {/* Communication Center - MOVED to ProtectedNoLayout to prevent double nav */}
 

@@ -1,34 +1,22 @@
 /**
- * Global CRM Dashboard - Business-Configurable CRM
- * Entity-centric design with blueprint-driven UI
+ * Global CRM Dashboard - Floor 1 Business Selector
+ * Shows ALL businesses and allows navigation to business-specific CRMs
+ * This is the hub - actual CRM data is at /crm/:businessSlug
  */
 import { useState, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useBusiness } from '@/contexts/BusinessContext';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
-import { useCRMBlueprint, useAvailableEntityTypes } from '@/hooks/useCRMBlueprint';
-import { useCRMSimulation, useCRMSimulationStats } from '@/hooks/useCRMSimulation';
 import CRMLayout from './CRMLayout';
 import {
-  Building2, Users, Search, Plus, Settings, ArrowRight,
-  Sparkles, Calendar, Star, UserCheck, Package, Briefcase,
-  Phone, MessageCircle, FileText, Image, ListTodo, Activity,
-  Store, ChevronRight, RefreshCw, Filter, LayoutGrid, List,
+  Building2, Search, Plus, Settings, RefreshCw, LayoutGrid, List, ChevronRight,
+  Users, Briefcase, Calendar, Star
 } from 'lucide-react';
-
-const ICON_MAP: Record<string, React.ComponentType<any>> = {
-  Building2, Users, Search, Plus, Settings, ArrowRight, Sparkles,
-  Calendar, Star, UserCheck, Package, Briefcase, Phone, MessageCircle,
-  FileText, Image, ListTodo, Activity, Store,
-};
 
 interface BusinessCard {
   id: string;
@@ -37,33 +25,24 @@ interface BusinessCard {
   logo_url?: string | null;
   business_type?: string | null;
   industry?: string | null;
+  is_active: boolean;
   created_at: string;
 }
 
 export default function GlobalCRMDashboard() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const { currentBusiness, businesses } = useBusiness();
   const { simulationMode } = useSimulationMode();
-  
-  // Get selected business from URL or context
-  const selectedBusinessSlug = searchParams.get('business') || currentBusiness?.slug;
-  
-  // Get blueprint for selected business
-  const { blueprint, businessName } = useCRMBlueprint(selectedBusinessSlug || undefined);
-  const entityTypes = useAvailableEntityTypes(selectedBusinessSlug || undefined);
-  const simulationStats = useCRMSimulationStats(selectedBusinessSlug || null);
-  const { isSimulationMode, simulationData } = useCRMSimulation(selectedBusinessSlug || null);
 
-  // Fetch all businesses for the grid
+  // Fetch ALL active businesses - this is the canonical source
   const { data: allBusinesses = [], isLoading: businessesLoading, refetch } = useQuery({
-    queryKey: ['global-crm-businesses'],
+    queryKey: ['global-crm-all-businesses'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('businesses')
-        .select('id, name, slug, logo_url, business_type, industry, created_at')
+        .select('id, name, slug, logo_url, business_type, industry, is_active, created_at')
+        .eq('is_active', true)
         .order('name');
       if (error) throw error;
       return data as BusinessCard[];
@@ -81,241 +60,11 @@ export default function GlobalCRMDashboard() {
     );
   }, [allBusinesses, searchTerm]);
 
-  // Get KPI values (simulation or real)
-  const getKPIValue = (kpi: typeof blueprint.kpiConfig[0]) => {
-    if (isSimulationMode && simulationStats[kpi.entityType || '']) {
-      return simulationStats[kpi.entityType || ''];
-    }
-    return 0; // Real data would come from database queries
+  // Navigate to business-specific CRM using path-based routing
+  const handleBusinessClick = (businessSlug: string) => {
+    navigate(`/crm/${businessSlug}`);
   };
 
-  const renderIcon = (iconName: string, className = "h-5 w-5") => {
-    const IconComponent = ICON_MAP[iconName];
-    return IconComponent ? <IconComponent className={className} /> : <Building2 className={className} />;
-  };
-
-  const getVariantClasses = (variant: string) => {
-    switch (variant) {
-      case 'cyan': return 'bg-cyan-500/10 text-cyan-600 border-cyan-500/20';
-      case 'green': return 'bg-green-500/10 text-green-600 border-green-500/20';
-      case 'amber': return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
-      case 'purple': return 'bg-purple-500/10 text-purple-600 border-purple-500/20';
-      case 'red': return 'bg-red-500/10 text-red-600 border-red-500/20';
-      default: return 'bg-muted text-muted-foreground border-border';
-    }
-  };
-
-  // If a business is selected, show the business CRM dashboard
-  if (selectedBusinessSlug) {
-    return (
-      <CRMLayout title={`${businessName} CRM`}>
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/crm')}>
-                <ArrowRight className="h-4 w-4 rotate-180 mr-2" />
-                All Businesses
-              </Button>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold">{businessName}</h1>
-                  {isSimulationMode && <SimulationBadge />}
-                </div>
-                <p className="text-muted-foreground text-sm">
-                  {blueprint.enabledEntityTypes.length} entity types enabled
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => navigate('/crm/settings')}>
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Quick Add
-              </Button>
-            </div>
-          </div>
-
-          {/* KPI Tiles */}
-          {blueprint.kpiConfig.length > 0 && (
-            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-              {blueprint.kpiConfig.map((kpi) => (
-                <Card 
-                  key={kpi.key}
-                  className={`p-4 cursor-pointer hover:shadow-md transition-all border ${getVariantClasses(kpi.variant)}`}
-                  onClick={() => kpi.clickable && navigate(`/crm/${selectedBusinessSlug}/${kpi.entityType}`)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${getVariantClasses(kpi.variant)}`}>
-                        {renderIcon(kpi.icon)}
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">{kpi.label}</p>
-                        <p className="text-2xl font-bold">{getKPIValue(kpi)}</p>
-                      </div>
-                    </div>
-                    {kpi.clickable && <ChevronRight className="h-5 w-5 text-muted-foreground" />}
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {/* Entity Types Grid */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <LayoutGrid className="h-5 w-5" />
-                Entity Types
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-                {entityTypes.map((entity) => {
-                  const count = isSimulationMode ? (simulationStats[entity.key] || 0) : 0;
-                  return (
-                    <Card
-                      key={entity.key}
-                      className="p-4 cursor-pointer hover:shadow-md transition-all group"
-                      onClick={() => navigate(`/crm/${selectedBusinessSlug}/${entity.key}`)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="p-2 rounded-lg"
-                          style={{ backgroundColor: `${entity.color}20`, color: entity.color }}
-                        >
-                          {renderIcon(entity.icon)}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium group-hover:text-primary transition-colors">
-                            {entity.labelPlural}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {count} records
-                          </p>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions based on features */}
-          <div className="grid gap-4 md:grid-cols-2">
-            {/* Activity Feed */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Recent Activity
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-64">
-                  {isSimulationMode ? (
-                    <div className="space-y-3">
-                      {[
-                        { type: 'New partner added', entity: 'Luxury Wheels NYC', time: '2h ago' },
-                        { type: 'Booking confirmed', entity: 'Jennifer Martinez', time: '3h ago' },
-                        { type: 'Quote sent', entity: 'Robert Kim', time: '5h ago' },
-                        { type: 'Note added', entity: 'Elite Helicopters', time: '1d ago' },
-                      ].map((item, i) => (
-                        <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
-                          <div className="h-2 w-2 rounded-full bg-primary" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{item.type}</p>
-                            <p className="text-xs text-muted-foreground">{item.entity}</p>
-                          </div>
-                          <span className="text-xs text-muted-foreground">{item.time}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground">
-                      No recent activity
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-
-            {/* Quick Add */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="h-5 w-5" />
-                  Quick Add
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-2 grid-cols-2">
-                  {entityTypes.slice(0, 6).map((entity) => (
-                    <Button
-                      key={entity.key}
-                      variant="outline"
-                      className="justify-start"
-                      onClick={() => navigate(`/crm/${selectedBusinessSlug}/${entity.key}/new`)}
-                    >
-                      <div 
-                        className="p-1 rounded mr-2"
-                        style={{ backgroundColor: `${entity.color}20`, color: entity.color }}
-                      >
-                        {renderIcon(entity.icon, 'h-4 w-4')}
-                      </div>
-                      Add {entity.label}
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Feature-specific sections */}
-          {blueprint.features.showPipeline && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5" />
-                  Pipeline Overview
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  {Object.entries(blueprint.pipelines).map(([key, stages]) => (
-                    <div key={key} className="flex gap-2">
-                      {stages.slice(0, 5).map((stage) => (
-                        <div
-                          key={stage.value}
-                          className="flex-shrink-0 p-3 rounded-lg border min-w-[140px]"
-                          style={{ borderColor: stage.color }}
-                        >
-                          <div 
-                            className="h-2 w-2 rounded-full mb-2"
-                            style={{ backgroundColor: stage.color }}
-                          />
-                          <p className="text-sm font-medium">{stage.label}</p>
-                          <p className="text-lg font-bold">0</p>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </CRMLayout>
-    );
-  }
-
-  // No business selected - show business grid
   return (
     <CRMLayout title="Global CRM">
       <div className="space-y-6">
@@ -327,7 +76,7 @@ export default function GlobalCRMDashboard() {
               {simulationMode && <SimulationBadge />}
             </div>
             <p className="text-muted-foreground mt-1">
-              Business-configurable CRM for all entities
+              Business-configurable CRM for all entities • Select a business to view its CRM
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -345,7 +94,63 @@ export default function GlobalCRMDashboard() {
           </div>
         </div>
 
-        {/* Search and Filters */}
+        {/* Quick Stats */}
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+          <Card className="p-4 bg-cyan-500/10 border-cyan-500/20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-600">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Businesses</p>
+                <p className="text-2xl font-bold">{allBusinesses.length}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 bg-green-500/10 border-green-500/20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-500/20 text-green-600">
+                <Users className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Active CRMs</p>
+                <p className="text-2xl font-bold">{allBusinesses.filter(b => b.is_active).length}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 bg-purple-500/10 border-purple-500/20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-500/20 text-purple-600">
+                <Briefcase className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Industries</p>
+                <p className="text-2xl font-bold">
+                  {new Set(allBusinesses.map(b => b.industry).filter(Boolean)).size}
+                </p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 bg-amber-500/10 border-amber-500/20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/20 text-amber-600">
+                <Calendar className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">This Month</p>
+                <p className="text-2xl font-bold">
+                  {allBusinesses.filter(b => {
+                    const created = new Date(b.created_at);
+                    const now = new Date();
+                    return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+                  }).length}
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Search and View Toggle */}
         <div className="flex items-center gap-4">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -377,7 +182,7 @@ export default function GlobalCRMDashboard() {
         {/* Businesses Grid/List */}
         {businessesLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {[1,2,3,4,5,6].map(i => (
+            {[1, 2, 3, 4, 5, 6].map(i => (
               <Card key={i} className="p-6 animate-pulse">
                 <div className="h-24 bg-muted rounded" />
               </Card>
@@ -407,7 +212,7 @@ export default function GlobalCRMDashboard() {
                 key={business.id}
                 className="p-6 cursor-pointer hover:shadow-lg transition-all group border-t-4"
                 style={{ borderTopColor: 'hsl(var(--primary))' }}
-                onClick={() => navigate(`/crm?business=${business.slug}`)}
+                onClick={() => handleBusinessClick(business.slug)}
               >
                 <div className="flex items-start justify-between mb-4">
                   {business.logo_url ? (
@@ -421,60 +226,84 @@ export default function GlobalCRMDashboard() {
                       {business.name.charAt(0)}
                     </div>
                   )}
-                  {business.industry && (
-                    <Badge variant="outline" className="text-xs">
-                      {business.industry}
-                    </Badge>
-                  )}
+                  <Badge variant="outline" className="text-xs">
+                    {business.industry || 'General'}
+                  </Badge>
                 </div>
                 <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">
                   {business.name}
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  {business.business_type || 'No type specified'}
-                </p>
-                <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
-                  <span>Click to manage CRM</span>
-                  <ChevronRight className="h-4 w-4" />
+                {business.business_type && (
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {business.business_type}
+                  </p>
+                )}
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>View CRM</span>
+                  <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </div>
               </Card>
             ))}
           </div>
         ) : (
           <Card>
-            <ScrollArea className="h-[600px]">
-              <div className="divide-y">
-                {filteredBusinesses.map((business) => (
-                  <div
-                    key={business.id}
-                    className="flex items-center gap-4 p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/crm?business=${business.slug}`)}
-                  >
-                    {business.logo_url ? (
-                      <img
-                        src={business.logo_url}
-                        alt={business.name}
-                        className="w-10 h-10 rounded-lg object-contain"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">
-                        {business.name.charAt(0)}
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <h3 className="font-medium">{business.name}</h3>
-                      <p className="text-sm text-muted-foreground">{business.business_type}</p>
+            <div className="divide-y">
+              {filteredBusinesses.map((business) => (
+                <div
+                  key={business.id}
+                  className="flex items-center gap-4 p-4 hover:bg-muted/50 cursor-pointer transition-colors group"
+                  onClick={() => handleBusinessClick(business.slug)}
+                >
+                  {business.logo_url ? (
+                    <img
+                      src={business.logo_url}
+                      alt={business.name}
+                      className="w-10 h-10 rounded-lg object-contain"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">
+                      {business.name.charAt(0)}
                     </div>
-                    {business.industry && (
-                      <Badge variant="outline">{business.industry}</Badge>
-                    )}
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium truncate group-hover:text-primary transition-colors">
+                      {business.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {business.industry || 'General'} • {business.business_type || 'Business'}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
+                  <Badge variant="outline">Active</Badge>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+              ))}
+            </div>
           </Card>
         )}
+
+        {/* Data Management Links */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Data Management</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-4">
+              <Button variant="outline" onClick={() => navigate('/crm/data')}>
+                <Building2 className="h-4 w-4 mr-2" />
+                View All Data
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/crm/data/export')}>
+                Export Data
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/crm/data/import')}>
+                Import Data
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/crm/data/backup')}>
+                Backup Settings
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </CRMLayout>
   );

@@ -84,7 +84,7 @@ export default function EntityProfilePage() {
           <p className="text-muted-foreground mb-6">
             The requested entity could not be found.
           </p>
-          <Button onClick={() => navigate(`/crm?business=${businessSlug}`)}>
+          <Button onClick={() => navigate(`/crm/${businessSlug}`)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to CRM
           </Button>
