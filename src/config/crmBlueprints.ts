@@ -4,31 +4,35 @@
  */
 
 // ============================================
-// PROMO CATEGORIES (TopTier specific)
+// PARTNER PROMO CATEGORIES (TopTier specific)
 // ============================================
-export const TOPTIER_PROMO_CATEGORIES = [
-  { value: 'car_decor_promo', label: 'Car Decor Promo' },
-  { value: 'exotic_rental_car_promo', label: 'Exotic Rental Car Promo' },
-  { value: 'room_decor_promo', label: 'Room Decor Promo' },
-  { value: 'helicopter_promo', label: 'Helicopter Promo' },
-  { value: 'private_chef_promo', label: 'Private Chef Promo' },
-  { value: 'black_trucks_promo', label: 'Black Trucks Promo' },
-  { value: 'sprinter_van_promo', label: 'Sprinter Van Promo' },
-  { value: 'party_bus_promo', label: 'Party Bus Promo' },
-  { value: 'security_promo', label: 'Security Promo' },
-  { value: 'hotel_rooms', label: 'Hotel Rooms' },
-  { value: 'mansions_homes_condos_penthouses', label: 'Mansions/Homes/Condos/Penthouses' },
-  { value: 'eventspaces_promo_rooftop', label: 'Event Spaces/Rooftop Promo' },
-  { value: 'photography_videography', label: 'Photography & Videography' },
-  { value: 'amusementparks_affiliate', label: 'Amusement Parks (Affiliate)' },
-  { value: 'yachts', label: 'Yachts' },
-  { value: 'car_jetskis', label: 'Cars & Jetskis' },
-  { value: 'restaurant_decor_reservations', label: 'Restaurant Decor/Reservations' },
-  { value: 'club_lounge_package', label: 'Club/Lounge Package' },
-  { value: 'other', label: 'Other' },
+export const TOPTIER_PARTNER_CATEGORIES = [
+  { value: 'car_decor_promo', label: 'Car Decor Promo', icon: 'Car' },
+  { value: 'exotic_rental_car_promo', label: 'Exotic Rental Car Promo', icon: 'Sparkles' },
+  { value: 'room_decor_promo', label: 'Room Decor Promo', icon: 'Home' },
+  { value: 'helicopter_promo', label: 'Helicopter Promo', icon: 'Plane' },
+  { value: 'private_chef_promo', label: 'Private Chef Promo', icon: 'ChefHat' },
+  { value: 'black_trucks_promo', label: 'Black Trucks Promo', icon: 'Truck' },
+  { value: 'sprinter_van_promo', label: 'Sprinter Van Promo', icon: 'Bus' },
+  { value: 'party_bus_promo', label: 'Party Bus Promo', icon: 'PartyPopper' },
+  { value: 'security_promo', label: 'Security Promo', icon: 'Shield' },
+  { value: 'hotel_rooms', label: 'Hotel Rooms', icon: 'Hotel' },
+  { value: 'luxury_residences', label: 'Mansions / Homes / Condos / Penthouses', icon: 'Castle' },
+  { value: 'eventspaces_rooftop', label: 'Event Spaces (Rooftop)', icon: 'Building2' },
+  { value: 'photography_videography', label: 'Photography / Videography', icon: 'Camera' },
+  { value: 'amusementparks_affiliate', label: 'Amusement Parks (Affiliate Links & Commissions)', icon: 'Ferris' },
+  { value: 'yachts', label: 'Yachts', icon: 'Ship' },
+  { value: 'car_jetskis', label: 'Car Jet Skis', icon: 'Waves' },
+  { value: 'restaurant_decor_reservations', label: 'Restaurant Decor & Reservations', icon: 'Utensils' },
+  { value: 'club_lounge_package', label: 'Club / Lounge Package (Decorated Section + DJ Shoutout + Black Truck + Cake)', icon: 'Music' },
+  { value: 'other', label: 'Other / Custom', icon: 'MoreHorizontal' },
 ] as const;
 
-export type PromoCategoryValue = typeof TOPTIER_PROMO_CATEGORIES[number]['value'];
+// Alias for backwards compatibility
+export const TOPTIER_PROMO_CATEGORIES = TOPTIER_PARTNER_CATEGORIES;
+
+export type PartnerCategoryValue = typeof TOPTIER_PARTNER_CATEGORIES[number]['value'];
+export type PromoCategoryValue = PartnerCategoryValue;
 
 // ============================================
 // EXTENDED ENTITY TYPES
@@ -286,38 +290,50 @@ export const TOPTIER_BLUEPRINT: CRMBlueprint = {
     booking: TOPTIER_BOOKING_PIPELINE,
   },
   kpiConfig: [
-    { key: 'partners', label: 'Partners', icon: 'Users', entityType: 'partner', aggregation: 'count', variant: 'cyan', clickable: true },
-    { key: 'customers', label: 'Customers', icon: 'UserCheck', entityType: 'customer', aggregation: 'count', variant: 'green', clickable: true },
-    { key: 'influencers', label: 'Influencers', icon: 'Star', entityType: 'influencer', aggregation: 'count', variant: 'purple', clickable: true },
-    { key: 'bookings', label: 'Active Bookings', icon: 'Calendar', entityType: 'booking', aggregation: 'count', filter: { status: ['confirmed', 'in_progress'] }, variant: 'amber', clickable: true },
+    { key: 'partners', label: 'Partners', icon: 'Users', entityType: 'partner', aggregation: 'count', variant: 'cyan', clickable: true, detailsRoute: '/crm/toptier-experience/partners' },
+    { key: 'partners_by_category', label: 'Partners by Category', icon: 'Grid3X3', entityType: 'partner', aggregation: 'count', variant: 'purple', clickable: true, detailsRoute: '/crm/toptier-experience/partners?view=by-category' },
+    { key: 'active_promos', label: 'Active Promos', icon: 'Megaphone', entityType: 'promo_campaign', aggregation: 'count', filter: { status: 'active' }, variant: 'amber', clickable: true, detailsRoute: '/crm/toptier-experience/promos' },
+    { key: 'bookings', label: 'Active Bookings', icon: 'Calendar', entityType: 'booking', aggregation: 'count', filter: { status: ['confirmed', 'in_progress'] }, variant: 'green', clickable: true, detailsRoute: '/crm/toptier-experience/bookings' },
+    { key: 'customers', label: 'Customers', icon: 'UserCheck', entityType: 'customer', aggregation: 'count', variant: 'default', clickable: true, detailsRoute: '/crm/toptier-experience/customers' },
+    { key: 'influencers', label: 'Influencers', icon: 'Star', entityType: 'influencer', aggregation: 'count', variant: 'default', clickable: true, detailsRoute: '/crm/toptier-experience/influencers' },
   ],
   entitySchemas: {
     partner: {
       key: 'partner',
       label: 'Partner',
       labelPlural: 'Partners',
-      icon: 'Users',
+      icon: 'Building2',
       color: '#f59e0b',
       tableName: 'crm_partners',
-      listColumns: ['company_name', 'state', 'category', 'commission_rate', 'status'],
-      searchableFields: ['company_name', 'contact_name', 'state'],
+      listColumns: ['company_name', 'partner_category', 'state', 'city', 'commission_rate', 'contract_status'],
+      searchableFields: ['company_name', 'contact_name', 'state', 'city'],
       fields: [
-        { key: 'company_name', label: 'Company/Partner Name', type: 'text', required: true, width: 'half', section: 'basic' },
-        { key: 'contact_name', label: 'Contact Person', type: 'text', width: 'half', section: 'basic' },
+        // Basic Information
+        { key: 'company_name', label: 'Partner Name', type: 'text', required: true, width: 'half', section: 'basic', placeholder: 'Enter partner/company name' },
+        { key: 'contact_name', label: 'Primary Contact', type: 'text', width: 'half', section: 'basic' },
         { key: 'phone', label: 'Phone', type: 'phone', width: 'half', section: 'basic' },
         { key: 'email', label: 'Email', type: 'email', width: 'half', section: 'basic' },
-        { key: 'category', label: 'Service Category', type: 'select', width: 'half', section: 'coverage', options: TOPTIER_PROMO_CATEGORIES.map(c => ({ value: c.value, label: c.label })) },
-        { key: 'state', label: 'State', type: 'select', width: 'half', section: 'coverage', options: US_STATES },
-        { key: 'city', label: 'City', type: 'text', width: 'half', section: 'coverage' },
-        { key: 'service_area', label: 'Service Area', type: 'text', width: 'half', section: 'coverage' },
-        { key: 'pricing_range', label: 'Pricing Range', type: 'text', width: 'half', section: 'pricing' },
-        { key: 'booking_link', label: 'Booking Link', type: 'url', width: 'half', section: 'pricing' },
-        { key: 'commission_rate', label: 'Commission Rate (%)', type: 'percentage', width: 'half', section: 'commission' },
+        // Partner Category (REQUIRED)
+        { key: 'partner_category', label: 'Partner Category', type: 'select', required: true, width: 'full', section: 'category', options: TOPTIER_PARTNER_CATEGORIES.map(c => ({ value: c.value, label: c.label })), helpText: 'Select the primary service category this partner offers' },
+        // Location & Coverage
+        { key: 'state', label: 'State', type: 'select', required: true, width: 'half', section: 'coverage', options: US_STATES },
+        { key: 'city', label: 'City', type: 'text', required: true, width: 'half', section: 'coverage' },
+        { key: 'service_area', label: 'Service Area (Multi-State)', type: 'multiselect', width: 'full', section: 'coverage', options: US_STATES, helpText: 'Select all states where this partner operates' },
+        // Pricing & Booking
+        { key: 'pricing_range', label: 'Pricing Range', type: 'text', width: 'half', section: 'pricing', placeholder: 'e.g. $500 - $2,000' },
+        { key: 'availability_rules', label: 'Availability Rules', type: 'textarea', width: 'half', section: 'pricing', placeholder: 'e.g. Weekends only, 48hr advance notice' },
+        { key: 'booking_link', label: 'Booking / Affiliate Link', type: 'url', width: 'full', section: 'pricing' },
+        // Commission & Contract
+        { key: 'commission_rate', label: 'Commission Rate (%)', type: 'percentage', required: true, width: 'half', section: 'commission' },
         { key: 'contract_status', label: 'Contract Status', type: 'select', width: 'half', section: 'commission', options: [
           { value: 'pending', label: 'Pending' },
           { value: 'active', label: 'Active' },
           { value: 'expired', label: 'Expired' },
+          { value: 'terminated', label: 'Terminated' },
         ]},
+        { key: 'contract_start_date', label: 'Contract Start Date', type: 'date', width: 'half', section: 'commission' },
+        { key: 'contract_end_date', label: 'Contract End Date', type: 'date', width: 'half', section: 'commission' },
+        // Notes
         { key: 'notes', label: 'Notes', type: 'textarea', width: 'full', section: 'notes' },
       ],
     },
@@ -334,7 +350,7 @@ export const TOPTIER_BLUEPRINT: CRMBlueprint = {
         { key: 'name', label: 'Full Name', type: 'text', required: true, width: 'half', section: 'basic' },
         { key: 'phone', label: 'Phone', type: 'phone', required: true, width: 'half', section: 'basic' },
         { key: 'email', label: 'Email', type: 'email', width: 'half', section: 'basic' },
-        { key: 'interest_categories', label: 'Interest Categories', type: 'multiselect', width: 'full', section: 'preferences', options: TOPTIER_PROMO_CATEGORIES.map(c => ({ value: c.value, label: c.label })) },
+        { key: 'interest_categories', label: 'Interest Categories', type: 'multiselect', width: 'full', section: 'preferences', options: TOPTIER_PARTNER_CATEGORIES.map(c => ({ value: c.value, label: c.label })) },
         { key: 'budget_range', label: 'Budget Range', type: 'select', width: 'half', section: 'preferences', options: [
           { value: 'under_500', label: 'Under $500' },
           { value: '500_1000', label: '$500 - $1,000' },
@@ -351,6 +367,7 @@ export const TOPTIER_BLUEPRINT: CRMBlueprint = {
           { value: 'referral', label: 'Referral' },
           { value: 'google', label: 'Google' },
           { value: 'website', label: 'Website' },
+          { value: 'influencer', label: 'Influencer Referral' },
           { value: 'other', label: 'Other' },
         ]},
         { key: 'status', label: 'Status', type: 'select', width: 'half', section: 'status', options: [
@@ -392,14 +409,75 @@ export const TOPTIER_BLUEPRINT: CRMBlueprint = {
         ]},
       ],
     },
+    booking: {
+      key: 'booking',
+      label: 'Booking',
+      labelPlural: 'Bookings',
+      icon: 'Calendar',
+      color: '#3b82f6',
+      tableName: 'crm_bookings',
+      listColumns: ['customer_name', 'event_date', 'partner_categories', 'total_amount', 'status'],
+      searchableFields: ['customer_name', 'notes'],
+      fields: [
+        { key: 'customer_id', label: 'Customer', type: 'select', required: true, width: 'half', section: 'basic' },
+        { key: 'event_date', label: 'Event Date', type: 'date', required: true, width: 'half', section: 'basic' },
+        { key: 'event_time', label: 'Event Time', type: 'text', width: 'half', section: 'basic', placeholder: 'e.g. 7:00 PM' },
+        { key: 'event_location', label: 'Event Location', type: 'text', width: 'half', section: 'basic' },
+        // Multi-category package support
+        { key: 'partner_categories', label: 'Package Categories', type: 'multiselect', width: 'full', section: 'package', options: TOPTIER_PARTNER_CATEGORIES.map(c => ({ value: c.value, label: c.label })), helpText: 'Select all service categories included in this booking' },
+        { key: 'linked_partners', label: 'Linked Partners', type: 'multiselect', width: 'full', section: 'package', helpText: 'Select specific partners for this booking' },
+        // Pricing
+        { key: 'total_amount', label: 'Total Amount', type: 'currency', width: 'half', section: 'pricing' },
+        { key: 'deposit_amount', label: 'Deposit Amount', type: 'currency', width: 'half', section: 'pricing' },
+        { key: 'deposit_paid', label: 'Deposit Paid', type: 'boolean', width: 'half', section: 'pricing' },
+        { key: 'balance_due', label: 'Balance Due', type: 'currency', width: 'half', section: 'pricing' },
+        // Status
+        { key: 'status', label: 'Status', type: 'select', width: 'half', section: 'status', options: TOPTIER_BOOKING_PIPELINE.map(s => ({ value: s.value, label: s.label })) },
+        { key: 'notes', label: 'Notes', type: 'textarea', width: 'full', section: 'notes' },
+      ],
+    },
+    promo_campaign: {
+      key: 'promo_campaign',
+      label: 'Promo Campaign',
+      labelPlural: 'Promo Campaigns',
+      icon: 'Megaphone',
+      color: '#8b5cf6',
+      tableName: 'crm_promo_campaigns',
+      listColumns: ['name', 'promo_category', 'start_date', 'end_date', 'status'],
+      searchableFields: ['name', 'description'],
+      fields: [
+        { key: 'name', label: 'Campaign Name', type: 'text', required: true, width: 'half', section: 'basic' },
+        { key: 'description', label: 'Description', type: 'textarea', width: 'full', section: 'basic' },
+        // Category must match partner categories
+        { key: 'promo_category', label: 'Promo Category', type: 'select', required: true, width: 'half', section: 'category', options: TOPTIER_PARTNER_CATEGORIES.map(c => ({ value: c.value, label: c.label })), helpText: 'Must match partner categories for validation' },
+        // Linked entities
+        { key: 'linked_partners', label: 'Linked Partners', type: 'multiselect', width: 'full', section: 'links', helpText: 'Partners participating in this promo' },
+        { key: 'linked_influencers', label: 'Linked Influencers', type: 'multiselect', width: 'full', section: 'links', helpText: 'Influencers promoting this campaign' },
+        // Commission & Tracking
+        { key: 'commission_rules', label: 'Commission Rules', type: 'textarea', width: 'full', section: 'commission', placeholder: 'e.g. 10% for first booking, 5% for repeat' },
+        { key: 'tracking_link', label: 'Tracking Link', type: 'url', width: 'full', section: 'commission' },
+        // Dates
+        { key: 'start_date', label: 'Start Date', type: 'date', width: 'half', section: 'dates' },
+        { key: 'end_date', label: 'End Date', type: 'date', width: 'half', section: 'dates' },
+        // Status
+        { key: 'status', label: 'Status', type: 'select', width: 'half', section: 'status', options: [
+          { value: 'draft', label: 'Draft' },
+          { value: 'active', label: 'Active' },
+          { value: 'paused', label: 'Paused' },
+          { value: 'ended', label: 'Ended' },
+        ]},
+      ],
+    },
   },
   profileTabs: {
     partner: [
       { key: 'overview', label: 'Overview', icon: 'User', enabled: true },
-      { key: 'bookings', label: 'Bookings', icon: 'Calendar', enabled: true },
+      { key: 'bookings', label: 'Deals / Bookings', icon: 'Calendar', enabled: true },
+      { key: 'campaigns', label: 'Campaigns / Promos', icon: 'Megaphone', enabled: true },
       { key: 'commissions', label: 'Commissions', icon: 'DollarSign', enabled: true },
-      { key: 'notes', label: 'Notes', icon: 'FileText', enabled: true },
       { key: 'interactions', label: 'Interactions', icon: 'MessageSquare', enabled: true },
+      { key: 'notes', label: 'Notes', icon: 'FileText', enabled: true },
+      { key: 'assets', label: 'Assets (Contracts, Media)', icon: 'Folder', enabled: true },
     ],
     customer: [
       { key: 'overview', label: 'Overview', icon: 'User', enabled: true },
@@ -411,16 +489,58 @@ export const TOPTIER_BLUEPRINT: CRMBlueprint = {
       { key: 'overview', label: 'Overview', icon: 'User', enabled: true },
       { key: 'commissions', label: 'Commissions', icon: 'DollarSign', enabled: true },
       { key: 'referrals', label: 'Referrals', icon: 'Users', enabled: true },
+      { key: 'campaigns', label: 'Campaigns', icon: 'Megaphone', enabled: true },
       { key: 'notes', label: 'Notes', icon: 'FileText', enabled: true },
+    ],
+    booking: [
+      { key: 'overview', label: 'Overview', icon: 'Calendar', enabled: true },
+      { key: 'partners', label: 'Partners', icon: 'Building2', enabled: true },
+      { key: 'payments', label: 'Payments', icon: 'DollarSign', enabled: true },
+      { key: 'notes', label: 'Notes', icon: 'FileText', enabled: true },
+    ],
+    promo_campaign: [
+      { key: 'overview', label: 'Overview', icon: 'Megaphone', enabled: true },
+      { key: 'partners', label: 'Partners', icon: 'Building2', enabled: true },
+      { key: 'influencers', label: 'Influencers', icon: 'Star', enabled: true },
+      { key: 'performance', label: 'Performance', icon: 'TrendingUp', enabled: true },
     ],
   },
   listViews: {
     partner: {
-      defaultColumns: ['company_name', 'state', 'category', 'commission_rate', 'status'],
+      defaultColumns: ['company_name', 'partner_category', 'state', 'city', 'commission_rate', 'contract_status'],
       defaultSort: { field: 'company_name', direction: 'asc' },
       filters: [
+        { field: 'partner_category', label: 'Partner Category', type: 'select' },
         { field: 'state', label: 'State', type: 'select' },
-        { field: 'category', label: 'Category', type: 'select' },
+        { field: 'city', label: 'City', type: 'text' },
+        { field: 'contract_status', label: 'Contract Status', type: 'select' },
+      ],
+      savedViews: [
+        // Partner Directory
+        { name: 'Partner Directory', filters: {} },
+        // Category-based views (auto-generated per category)
+        { name: 'Car Decor Partners', filters: { partner_category: 'car_decor_promo' } },
+        { name: 'Exotic Car Rental Partners', filters: { partner_category: 'exotic_rental_car_promo' } },
+        { name: 'Room Decor Partners', filters: { partner_category: 'room_decor_promo' } },
+        { name: 'Helicopter Partners', filters: { partner_category: 'helicopter_promo' } },
+        { name: 'Private Chef Partners', filters: { partner_category: 'private_chef_promo' } },
+        { name: 'Black Trucks Partners', filters: { partner_category: 'black_trucks_promo' } },
+        { name: 'Sprinter Van Partners', filters: { partner_category: 'sprinter_van_promo' } },
+        { name: 'Party Bus Partners', filters: { partner_category: 'party_bus_promo' } },
+        { name: 'Security Partners', filters: { partner_category: 'security_promo' } },
+        { name: 'Hotel Partners', filters: { partner_category: 'hotel_rooms' } },
+        { name: 'Luxury Residences Partners', filters: { partner_category: 'luxury_residences' } },
+        { name: 'Event Spaces / Rooftop Partners', filters: { partner_category: 'eventspaces_rooftop' } },
+        { name: 'Photography / Videography Partners', filters: { partner_category: 'photography_videography' } },
+        { name: 'Amusement Parks Partners', filters: { partner_category: 'amusementparks_affiliate' } },
+        { name: 'Yacht Partners', filters: { partner_category: 'yachts' } },
+        { name: 'Jet Ski Partners', filters: { partner_category: 'car_jetskis' } },
+        { name: 'Restaurant Partners', filters: { partner_category: 'restaurant_decor_reservations' } },
+        { name: 'Club / Lounge Partners', filters: { partner_category: 'club_lounge_package' } },
+        // Status-based views
+        { name: 'Active Contracts', filters: { contract_status: 'active' } },
+        { name: 'Pending Contracts', filters: { contract_status: 'pending' } },
+        { name: 'Expired Contracts', filters: { contract_status: 'expired' } },
       ],
     },
     customer: {
@@ -429,6 +549,12 @@ export const TOPTIER_BLUEPRINT: CRMBlueprint = {
       filters: [
         { field: 'status', label: 'Status', type: 'select' },
         { field: 'interest_categories', label: 'Interest', type: 'multiselect' },
+        { field: 'preferred_state', label: 'Preferred State', type: 'select' },
+      ],
+      savedViews: [
+        { name: 'All Customers', filters: {} },
+        { name: 'VIP Customers', filters: { status: 'vip' } },
+        { name: 'Active Leads', filters: { status: 'lead' } },
       ],
     },
     influencer: {
@@ -436,6 +562,38 @@ export const TOPTIER_BLUEPRINT: CRMBlueprint = {
       defaultSort: { field: 'audience_size', direction: 'desc' },
       filters: [
         { field: 'platform', label: 'Platform', type: 'select' },
+      ],
+      savedViews: [
+        { name: 'All Influencers', filters: {} },
+        { name: 'Instagram Influencers', filters: { platform: 'instagram' } },
+        { name: 'TikTok Influencers', filters: { platform: 'tiktok' } },
+      ],
+    },
+    booking: {
+      defaultColumns: ['customer_name', 'event_date', 'partner_categories', 'total_amount', 'status'],
+      defaultSort: { field: 'event_date', direction: 'asc' },
+      filters: [
+        { field: 'status', label: 'Status', type: 'select' },
+        { field: 'partner_categories', label: 'Categories', type: 'multiselect' },
+      ],
+      savedViews: [
+        { name: 'All Bookings', filters: {} },
+        { name: 'Upcoming Events', filters: { status: ['confirmed', 'deposit_paid'] } },
+        { name: 'In Progress', filters: { status: 'in_progress' } },
+        { name: 'Completed', filters: { status: 'completed' } },
+      ],
+    },
+    promo_campaign: {
+      defaultColumns: ['name', 'promo_category', 'start_date', 'end_date', 'status'],
+      defaultSort: { field: 'start_date', direction: 'desc' },
+      filters: [
+        { field: 'promo_category', label: 'Category', type: 'select' },
+        { field: 'status', label: 'Status', type: 'select' },
+      ],
+      savedViews: [
+        { name: 'All Campaigns', filters: {} },
+        { name: 'Active Promos', filters: { status: 'active' } },
+        { name: 'Draft Promos', filters: { status: 'draft' } },
       ],
     },
   },
