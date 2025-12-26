@@ -847,6 +847,7 @@ export default function AppRoutes() {
         <Route path="/os/toptier" element={<TopTierDashboard />} />
         <Route path="/os/unforgettable" element={<UnforgettableDashboard />} />
         <Route path="/os/unforgettable/staff" element={<UnforgettableStaff />} />
+        <Route path="/os/unforgettable/staff/new" element={<UnforgettableStaffNew />} />
         <Route path="/os/unforgettable/staff/:staffId" element={<UnforgettableStaffProfile />} />
         <Route path="/os/unforgettable/scheduling" element={<UnforgettableScheduling />} />
         <Route path="/os/unforgettable/scheduling/today" element={<UnforgettableSchedulingToday />} />
@@ -859,6 +860,18 @@ export default function AppRoutes() {
         <Route path="/os/unforgettable/availability" element={<UnforgettableAvailability />} />
         <Route path="/os/unforgettable/performance" element={<UnforgettablePerformance />} />
         <Route path="/os/unforgettable/communications" element={<UnforgettableCommunications />} />
+        <Route path="/os/unforgettable/ai-calling" element={<UnforgettableAICalling />} />
+        <Route path="/os/unforgettable/onboarding" element={<UnforgettableOnboarding />} />
+        <Route path="/os/unforgettable/customer-service" element={<UnforgettableCustomerService />} />
+        
+        {/* Unforgettable Times CRM Routes */}
+        <Route path="/crm/unforgettable_times_usa/event-halls" element={<UnforgettableEventHalls />} />
+        <Route path="/crm/unforgettable_times_usa/event-halls/:hallId" element={<UnforgettableEventHallDetail />} />
+        <Route path="/crm/unforgettable_times_usa/rentals" element={<UnforgettableRentals />} />
+        <Route path="/crm/unforgettable_times_usa/influencers" element={<UnforgettableInfluencers />} />
+        <Route path="/crm/unforgettable_times_usa/media" element={<UnforgettableMediaVault />} />
+        <Route path="/crm/unforgettable_times_usa/party-suppliers" element={<UnforgettablePartySuppliers />} />
+        <Route path="/crm/unforgettable_times_usa/gifts" element={<UnforgettableGifts />} />
         <Route path="/os/iclean" element={<ICleanDashboard />} />
         <Route path="/os/playboxxx" element={<PlayboxxxDashboard />} />
         <Route path="/os/special-needs" element={<SpecialNeedsDashboard />} />

@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   PartyPopper, Calendar, Building2, Users, DollarSign, Truck, ShoppingBag, Star, Sparkles,
-  UserCog, CalendarDays, FileText, ArrowRight, Clock, AlertTriangle 
+  UserCog, CalendarDays, FileText, ArrowRight, Clock, AlertTriangle, Phone, UserPlus, 
+  Headphones, Image, Gift, Camera
 } from "lucide-react";
 
 // Staff & Operations Quick Links - HARD REQUIREMENT: Always visible
@@ -14,6 +15,23 @@ const STAFF_OPS_LINKS = [
   { label: 'Scheduling', path: '/os/unforgettable/scheduling', icon: CalendarDays, description: 'Event-based assignments' },
   { label: 'Payroll', path: '/os/unforgettable/payroll', icon: DollarSign, description: 'Payments & compensation' },
   { label: 'Documents', path: '/os/unforgettable/documents', icon: FileText, description: 'Contracts & certifications' },
+];
+
+// Additional OS modules
+const OS_MODULES = [
+  { label: 'AI Calling', path: '/os/unforgettable/ai-calling', icon: Phone, description: 'AI call logs & outcomes' },
+  { label: 'Onboarding Agents', path: '/os/unforgettable/onboarding', icon: UserPlus, description: 'Vendor & staff onboarding' },
+  { label: 'Customer Service', path: '/os/unforgettable/customer-service', icon: Headphones, description: 'Support tickets & inquiries' },
+];
+
+// CRM modules
+const CRM_MODULES = [
+  { label: 'Event Halls', path: '/crm/unforgettable_times_usa/event-halls', icon: Building2, description: 'Nationwide venues' },
+  { label: 'Rentals', path: '/crm/unforgettable_times_usa/rentals', icon: Truck, description: 'Equipment & decor' },
+  { label: 'Party Suppliers', path: '/crm/unforgettable_times_usa/party-suppliers', icon: ShoppingBag, description: 'Wholesale suppliers' },
+  { label: 'Influencers', path: '/crm/unforgettable_times_usa/influencers', icon: Star, description: 'Partner influencers' },
+  { label: 'Media Vault', path: '/crm/unforgettable_times_usa/media', icon: Camera, description: 'Promo content & assets' },
+  { label: 'Gift Ideas', path: '/crm/unforgettable_times_usa/gifts', icon: Gift, description: 'Dropship & promo gifts' },
 ];
 
 export default function UnforgettableDashboard() {
@@ -52,11 +70,78 @@ export default function UnforgettableDashboard() {
           </h1>
           <p className="text-muted-foreground mt-1">Event Halls, Party Planning & Wholesale Supplies</p>
         </div>
-        <Button className="bg-gradient-to-r from-pink-600 to-purple-500 hover:from-pink-700 hover:to-purple-600">
-          <PartyPopper className="h-4 w-4 mr-2" />
-          Book Event
+        <Button className="bg-gradient-to-r from-pink-600 to-purple-500 hover:from-pink-700 hover:to-purple-600" onClick={() => navigate('/os/unforgettable/staff/new')}>
+          <UserPlus className="h-4 w-4 mr-2" />
+          Add Staff Member
         </Button>
       </div>
+
+      {/* OS MODULES SECTION */}
+      <Card className="border-2 border-purple-500/30 bg-gradient-to-r from-purple-500/5 to-pink-500/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Sparkles className="h-5 w-5 text-purple-500" />
+            Operations Modules
+            <Badge variant="outline" className="ml-auto text-xs bg-purple-500/10 text-purple-600 border-purple-500/30">
+              AI & Customer Service
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {OS_MODULES.map((link) => (
+              <Button
+                key={link.path}
+                variant="outline"
+                className="h-auto py-4 px-4 flex flex-col items-start gap-2 hover:bg-purple-500/10 hover:border-purple-500/50 transition-all"
+                onClick={() => navigate(link.path)}
+              >
+                <div className="flex items-center gap-2 w-full">
+                  <link.icon className="h-5 w-5 text-purple-500" />
+                  <span className="font-medium text-sm">{link.label}</span>
+                  <ArrowRight className="h-4 w-4 ml-auto opacity-50" />
+                </div>
+                <span className="text-xs text-muted-foreground text-left">
+                  {link.description}
+                </span>
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* CRM MODULES SECTION */}
+      <Card className="border-2 border-emerald-500/30 bg-gradient-to-r from-emerald-500/5 to-teal-500/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Building2 className="h-5 w-5 text-emerald-500" />
+            CRM Modules
+            <Badge variant="outline" className="ml-auto text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+              Vendors, Venues & Partners
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {CRM_MODULES.map((link) => (
+              <Button
+                key={link.path}
+                variant="outline"
+                className="h-auto py-4 px-4 flex flex-col items-start gap-2 hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all"
+                onClick={() => navigate(link.path)}
+              >
+                <div className="flex items-center gap-2 w-full">
+                  <link.icon className="h-5 w-5 text-emerald-500" />
+                  <span className="font-medium text-sm">{link.label}</span>
+                </div>
+                <span className="text-xs text-muted-foreground text-left">
+                  {link.description}
+                </span>
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* STAFF & OPERATIONS SECTION - ALWAYS VISIBLE (HARD REQUIREMENT) */}
       <Card className="border-2 border-pink-500/30 bg-gradient-to-r from-pink-500/5 to-purple-500/5">
