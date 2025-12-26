@@ -256,7 +256,11 @@ export default function UnforgettableStaff() {
                       const RoleIcon = roleInfo?.icon || Users;
                       
                       return (
-                        <tr key={staff.id} className="border-b border-border/30 hover:bg-muted/30 transition-colors cursor-pointer">
+                        <tr 
+                          key={staff.id} 
+                          className="border-b border-border/30 hover:bg-muted/30 transition-colors cursor-pointer"
+                          onClick={() => navigate(`/os/unforgettable/staff/${staff.id}`)}
+                        >
                           <td className="p-3">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center">
@@ -309,7 +313,15 @@ export default function UnforgettableStaff() {
                             </Badge>
                           </td>
                           <td className="p-3">
-                            <Button size="icon" variant="ghost" className="h-8 w-8">
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-8 w-8"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/os/unforgettable/staff/${staff.id}`);
+                              }}
+                            >
                               <ChevronRight className="h-4 w-4" />
                             </Button>
                           </td>
