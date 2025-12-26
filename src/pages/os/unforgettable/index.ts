@@ -1,6 +1,7 @@
 export { default as UnforgettableDashboard } from './UnforgettableDashboard';
 export { default as UnforgettableStaff } from './UnforgettableStaff';
 export { default as UnforgettableStaffProfile } from './UnforgettableStaffProfile';
+export { default as UnforgettableStaffNew } from './UnforgettableStaffNew';
 export { default as UnforgettableScheduling } from './UnforgettableScheduling';
 export { default as UnforgettableSchedulingToday } from './UnforgettableSchedulingToday';
 export { default as UnforgettableSchedulingUpcoming } from './UnforgettableSchedulingUpcoming';
@@ -12,3 +13,6 @@ export { default as UnforgettablePerformance } from './UnforgettablePerformance'
 export { default as UnforgettableDocuments } from './UnforgettableDocuments';
 export { default as UnforgettableDocumentDetail } from './UnforgettableDocumentDetail';
 export { default as UnforgettableCommunications } from './UnforgettableCommunications';
+export { default as UnforgettableAICalling } from './UnforgettableAICalling';
+export { default as UnforgettableOnboarding } from './UnforgettableOnboarding';
+export { default as UnforgettableCustomerService } from './UnforgettableCustomerService';
