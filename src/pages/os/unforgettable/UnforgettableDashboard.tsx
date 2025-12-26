@@ -1,10 +1,23 @@
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PartyPopper, Calendar, Building2, Users, DollarSign, Truck, ShoppingBag, Star, Sparkles } from "lucide-react";
+import { 
+  PartyPopper, Calendar, Building2, Users, DollarSign, Truck, ShoppingBag, Star, Sparkles,
+  UserCog, CalendarDays, FileText, ArrowRight, Clock, AlertTriangle 
+} from "lucide-react";
+
+// Staff & Operations Quick Links - HARD REQUIREMENT: Always visible
+const STAFF_OPS_LINKS = [
+  { label: 'Staff Management', path: '/os/unforgettable/staff', icon: UserCog, description: 'View and manage all staff' },
+  { label: 'Scheduling', path: '/os/unforgettable/scheduling', icon: CalendarDays, description: 'Event-based assignments' },
+  { label: 'Payroll', path: '/os/unforgettable/payroll', icon: DollarSign, description: 'Payments & compensation' },
+  { label: 'Documents', path: '/os/unforgettable/documents', icon: FileText, description: 'Contracts & certifications' },
+];
 
 export default function UnforgettableDashboard() {
+  const navigate = useNavigate();
   const stats = [
     { label: "Upcoming Events", value: "18", icon: Calendar, change: "+5 this week", color: "text-pink-500" },
     { label: "Event Halls", value: "6", icon: Building2, change: "3 available", color: "text-purple-500" },
@@ -44,6 +57,104 @@ export default function UnforgettableDashboard() {
           Book Event
         </Button>
       </div>
+
+      {/* STAFF & OPERATIONS SECTION - ALWAYS VISIBLE (HARD REQUIREMENT) */}
+      <Card className="border-2 border-pink-500/30 bg-gradient-to-r from-pink-500/5 to-purple-500/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Users className="h-5 w-5 text-pink-500" />
+            Staff & Operations
+            <Badge variant="outline" className="ml-auto text-xs bg-pink-500/10 text-pink-600 border-pink-500/30">
+              Event Staff Management
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {STAFF_OPS_LINKS.map((link) => (
+              <Button
+                key={link.path}
+                variant="outline"
+                className="h-auto py-4 px-4 flex flex-col items-start gap-2 hover:bg-pink-500/10 hover:border-pink-500/50 transition-all"
+                onClick={() => navigate(link.path)}
+              >
+                <div className="flex items-center gap-2 w-full">
+                  <link.icon className="h-5 w-5 text-pink-500" />
+                  <span className="font-medium text-sm">{link.label}</span>
+                  <ArrowRight className="h-4 w-4 ml-auto opacity-50" />
+                </div>
+                <span className="text-xs text-muted-foreground text-left">
+                  {link.description}
+                </span>
+              </Button>
+            ))}
+          </div>
+          
+          {/* Staff Overview Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-border/50">
+            <div className="p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2 mb-1">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Active Staff</span>
+              </div>
+              <div className="text-2xl font-bold">47</div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-0 text-xs text-pink-500 hover:text-pink-600 hover:bg-transparent"
+                onClick={() => navigate('/os/unforgettable/staff')}
+              >
+                View All <ArrowRight className="h-3 w-3 ml-1" />
+              </Button>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2 mb-1">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Assigned Today</span>
+              </div>
+              <div className="text-2xl font-bold">12</div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-0 text-xs text-pink-500 hover:text-pink-600 hover:bg-transparent"
+                onClick={() => navigate('/os/unforgettable/scheduling')}
+              >
+                View Schedule <ArrowRight className="h-3 w-3 ml-1" />
+              </Button>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Upcoming</span>
+              </div>
+              <div className="text-2xl font-bold">28</div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-0 text-xs text-pink-500 hover:text-pink-600 hover:bg-transparent"
+                onClick={() => navigate('/os/unforgettable/scheduling')}
+              >
+                View Upcoming <ArrowRight className="h-3 w-3 ml-1" />
+              </Button>
+            </div>
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+              <div className="flex items-center gap-2 mb-1">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <span className="text-xs text-amber-600">Staffing Gaps</span>
+              </div>
+              <div className="text-2xl font-bold text-amber-600">3</div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-0 text-xs text-amber-600 hover:text-amber-700 hover:bg-transparent"
+                onClick={() => navigate('/os/unforgettable/scheduling')}
+              >
+                Resolve <ArrowRight className="h-3 w-3 ml-1" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
