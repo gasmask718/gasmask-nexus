@@ -1,5 +1,5 @@
 /**
- * Partner Overview Tab - Full page view with edit capability
+ * Partner Overview Tab - Full page view with edit capability and communication actions
  */
 import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from '@/config/crmBlueprints';
 import { SimulationBadge } from '@/contexts/SimulationModeContext';
+import { CommunicationActions } from '@/components/crm/toptier/CommunicationActions';
 import { format } from 'date-fns';
 
 interface PartnerOverviewTabProps {
@@ -227,10 +228,23 @@ export default function PartnerOverviewTab({ partner, isSimulated, bookings, cam
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Contact Information</CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/crm/toptier-experience/contacts`)}>
-            <Eye className="h-4 w-4 mr-2" />
-            View All Contacts
-          </Button>
+          <div className="flex items-center gap-2">
+            <CommunicationActions
+              contact={{
+                id: partner.id,
+                name: partner.name || partner.contact_name || 'Partner',
+                phone: partner.phone,
+                email: partner.email,
+              }}
+              entityType="partner"
+              variant="outline"
+              size="sm"
+            />
+            <Button variant="ghost" size="sm" onClick={() => navigate(`/crm/toptier-experience/contacts`)}>
+              <Eye className="h-4 w-4 mr-2" />
+              View All Contacts
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid md:grid-cols-3 gap-6">
