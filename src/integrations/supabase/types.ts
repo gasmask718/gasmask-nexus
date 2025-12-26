@@ -22525,6 +22525,184 @@ export type Database = {
           },
         ]
       }
+      ut_staff: {
+        Row: {
+          availability: Json | null
+          business_id: string | null
+          category: Database["public"]["Enums"]["ut_staff_category"]
+          certifications: string[] | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          department: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          employment_type: Database["public"]["Enums"]["ut_employment_type"]
+          event_rate: number | null
+          events_completed: number | null
+          first_name: string
+          hire_date: string | null
+          hourly_rate: number | null
+          id: string
+          last_name: string
+          notes: string | null
+          payment_details: Json | null
+          payment_method: string | null
+          phone: string | null
+          preferred_hours: Json | null
+          rating: number | null
+          role: Database["public"]["Enums"]["ut_staff_role"]
+          specialties: string[] | null
+          status: Database["public"]["Enums"]["ut_staff_status"]
+          total_earnings: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          availability?: Json | null
+          business_id?: string | null
+          category?: Database["public"]["Enums"]["ut_staff_category"]
+          certifications?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          department?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          employment_type?: Database["public"]["Enums"]["ut_employment_type"]
+          event_rate?: number | null
+          events_completed?: number | null
+          first_name: string
+          hire_date?: string | null
+          hourly_rate?: number | null
+          id?: string
+          last_name: string
+          notes?: string | null
+          payment_details?: Json | null
+          payment_method?: string | null
+          phone?: string | null
+          preferred_hours?: Json | null
+          rating?: number | null
+          role: Database["public"]["Enums"]["ut_staff_role"]
+          specialties?: string[] | null
+          status?: Database["public"]["Enums"]["ut_staff_status"]
+          total_earnings?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          availability?: Json | null
+          business_id?: string | null
+          category?: Database["public"]["Enums"]["ut_staff_category"]
+          certifications?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          department?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          employment_type?: Database["public"]["Enums"]["ut_employment_type"]
+          event_rate?: number | null
+          events_completed?: number | null
+          first_name?: string
+          hire_date?: string | null
+          hourly_rate?: number | null
+          id?: string
+          last_name?: string
+          notes?: string | null
+          payment_details?: Json | null
+          payment_method?: string | null
+          phone?: string | null
+          preferred_hours?: Json | null
+          rating?: number | null
+          role?: Database["public"]["Enums"]["ut_staff_role"]
+          specialties?: string[] | null
+          status?: Database["public"]["Enums"]["ut_staff_status"]
+          total_earnings?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_staff_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_staff_assignments: {
+        Row: {
+          amount_due: number | null
+          assignment_date: string
+          check_in_time: string | null
+          check_out_time: string | null
+          created_at: string
+          end_time: string | null
+          event_id: string | null
+          hours_worked: number | null
+          id: string
+          notes: string | null
+          payment_status: string | null
+          rate_applied: number | null
+          role_for_event: Database["public"]["Enums"]["ut_staff_role"] | null
+          staff_id: string
+          start_time: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_due?: number | null
+          assignment_date: string
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          end_time?: string | null
+          event_id?: string | null
+          hours_worked?: number | null
+          id?: string
+          notes?: string | null
+          payment_status?: string | null
+          rate_applied?: number | null
+          role_for_event?: Database["public"]["Enums"]["ut_staff_role"] | null
+          staff_id: string
+          start_time?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_due?: number | null
+          assignment_date?: string
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          end_time?: string | null
+          event_id?: string | null
+          hours_worked?: number | null
+          id?: string
+          notes?: string | null
+          payment_status?: string | null
+          rate_applied?: number | null
+          role_for_event?: Database["public"]["Enums"]["ut_staff_role"] | null
+          staff_id?: string
+          start_time?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_staff_assignments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "ut_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       va_attempts: {
         Row: {
           answers: Json | null
@@ -24824,6 +25002,60 @@ export type Database = {
         | "chauffeur_confirmation"
         | "model_verification"
       template_type: "sms" | "email" | "call_script" | "tone_pack"
+      ut_employment_type:
+        | "full_time"
+        | "part_time"
+        | "contractor"
+        | "1099_hourly"
+        | "per_event"
+      ut_staff_category: "internal_staff" | "event_staff" | "vendor" | "partner"
+      ut_staff_role:
+        | "owner_managing_director"
+        | "operations_director"
+        | "event_production_manager"
+        | "event_coordinator_lead"
+        | "event_coordinator_assistant"
+        | "client_success_manager"
+        | "venue_relations_manager"
+        | "vendor_relations_manager"
+        | "partner_onboarding_specialist"
+        | "rental_operations_manager"
+        | "inventory_coordinator"
+        | "setup_crew_lead"
+        | "setup_crew_member"
+        | "dj_coordinator"
+        | "dj"
+        | "mc_host"
+        | "live_performer"
+        | "catering_coordinator"
+        | "bartending_manager"
+        | "bartender"
+        | "server"
+        | "security_coordinator"
+        | "security_guard"
+        | "event_safety_supervisor"
+        | "logistics_manager"
+        | "driver"
+        | "loader_runner"
+        | "photography_coordinator"
+        | "photographer"
+        | "videographer"
+        | "content_editor"
+        | "finance_manager"
+        | "accounts_payable_receivable"
+        | "contracts_compliance_admin"
+        | "crm_data_manager"
+        | "marketing_manager"
+        | "social_media_manager"
+        | "influencer_ambassador_coordinator"
+        | "virtual_assistant"
+        | "customer_support_rep"
+      ut_staff_status:
+        | "active"
+        | "inactive"
+        | "pending"
+        | "on_leave"
+        | "terminated"
       va_role:
         | "grabba_cluster_va"
         | "gasmask_va"
@@ -25126,6 +25358,63 @@ export const Constants = {
         "model_verification",
       ],
       template_type: ["sms", "email", "call_script", "tone_pack"],
+      ut_employment_type: [
+        "full_time",
+        "part_time",
+        "contractor",
+        "1099_hourly",
+        "per_event",
+      ],
+      ut_staff_category: ["internal_staff", "event_staff", "vendor", "partner"],
+      ut_staff_role: [
+        "owner_managing_director",
+        "operations_director",
+        "event_production_manager",
+        "event_coordinator_lead",
+        "event_coordinator_assistant",
+        "client_success_manager",
+        "venue_relations_manager",
+        "vendor_relations_manager",
+        "partner_onboarding_specialist",
+        "rental_operations_manager",
+        "inventory_coordinator",
+        "setup_crew_lead",
+        "setup_crew_member",
+        "dj_coordinator",
+        "dj",
+        "mc_host",
+        "live_performer",
+        "catering_coordinator",
+        "bartending_manager",
+        "bartender",
+        "server",
+        "security_coordinator",
+        "security_guard",
+        "event_safety_supervisor",
+        "logistics_manager",
+        "driver",
+        "loader_runner",
+        "photography_coordinator",
+        "photographer",
+        "videographer",
+        "content_editor",
+        "finance_manager",
+        "accounts_payable_receivable",
+        "contracts_compliance_admin",
+        "crm_data_manager",
+        "marketing_manager",
+        "social_media_manager",
+        "influencer_ambassador_coordinator",
+        "virtual_assistant",
+        "customer_support_rep",
+      ],
+      ut_staff_status: [
+        "active",
+        "inactive",
+        "pending",
+        "on_leave",
+        "terminated",
+      ],
       va_role: [
         "grabba_cluster_va",
         "gasmask_va",
