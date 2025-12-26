@@ -2,7 +2,7 @@
  * BusinessCRMDashboard - Business-scoped CRM dashboard
  * Accessed via /crm/:businessSlug - shows CRM for a specific business
  */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { useCRMBlueprint, useAvailableEntityTypes } from '@/hooks/useCRMBlueprin
 import { useCRMSimulation, useCRMSimulationStats } from '@/hooks/useCRMSimulation';
 import { useCRMEntityCounts } from '@/hooks/useCRMEntityCounts';
 import { BusinessContextGuard } from '@/components/crm/BusinessContextGuard';
+import { StaffOperationsSection, StaffOverviewWidget } from '@/components/crm/unforgettable';
 import CRMLayout from './CRMLayout';
 import {
   Building2, Users, Plus, Settings, ArrowLeft, ChevronRight,
@@ -28,12 +29,32 @@ export default function BusinessCRMDashboard() {
   const { businessSlug } = useParams<{ businessSlug: string }>();
   const navigate = useNavigate();
   const { simulationMode } = useSimulationMode();
+
+  const normalizedBusinessSlug = (businessSlug || '').toLowerCase().trim();
+  const isUnforgettableTimesUSA = normalizedBusinessSlug === 'unforgettable_times_usa';
   
   // Get blueprint for this business
   const { blueprint, businessName, businessId, isLoading: blueprintLoading } = useCRMBlueprint(businessSlug);
   const entityTypes = useAvailableEntityTypes(businessSlug);
   const simulationStats = useCRMSimulationStats(businessSlug || null);
   const { isSimulationMode } = useCRMSimulation(businessSlug || null);
+
+  // HARD GUARANTEE (ANTI-REGRESSION): Log a console error if the bridge fails to render
+  useEffect(() => {
+    if (!isUnforgettableTimesUSA) return;
+
+    const t = window.setTimeout(() => {
+      const bridge = document.querySelector('[data-testid="ut-staff-ops-bridge"]');
+      if (!bridge) {
+        console.error(
+          '[CRM-SAFEGUARD] ❌ CRITICAL: Unforgettable Times Staff & Operations bridge did not render. ' +
+          'This violates the hard requirement for permanent OS links inside CRM.'
+        );
+      }
+    }, 150);
+
+    return () => window.clearTimeout(t);
+  }, [isUnforgettableTimesUSA]);
   
   // Get real entity counts - need both businessId and entityTypes
   const entityTypesForCounts = blueprint.enabledEntityTypes;
@@ -106,6 +127,23 @@ export default function BusinessCRMDashboard() {
               </Button>
             </div>
           </div>
+
+          {/* PERMANENT STAFF & OPERATIONS BRIDGE (UNFORGETTABLE TIMES USA ONLY) */}
+          {isUnforgettableTimesUSA && (
+            <div className="space-y-4" data-testid="ut-staff-ops-bridge">
+              <StaffOperationsSection businessSlug={normalizedBusinessSlug} />
+              <StaffOverviewWidget
+                businessSlug={normalizedBusinessSlug}
+                isSimulationMode={isSimulationMode}
+                values={{
+                  activeStaff: getEntityCount('staff'),
+                  assignedToday: 0,
+                  upcomingAssignments: 0,
+                  staffingGaps: 0,
+                }}
+              />
+            </div>
+          )}
 
           {/* KPI Tiles */}
           {blueprint.kpiConfig.length > 0 && (

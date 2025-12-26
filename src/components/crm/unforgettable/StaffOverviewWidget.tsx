@@ -17,13 +17,19 @@ interface StaffMetric {
 interface StaffOverviewWidgetProps {
   businessSlug: string;
   isSimulationMode?: boolean;
+  values?: {
+    activeStaff?: number;
+    assignedToday?: number;
+    upcomingAssignments?: number;
+    staffingGaps?: number;
+  };
 }
 
 /**
  * Staff Overview Widget - Read-only summary that links to OS pages
  * Displays key staff metrics without duplicating OS logic
  */
-export function StaffOverviewWidget({ businessSlug, isSimulationMode = false }: StaffOverviewWidgetProps) {
+export function StaffOverviewWidget({ businessSlug, isSimulationMode = false, values }: StaffOverviewWidgetProps) {
   const navigate = useNavigate();
 
   // EXPLICIT BUSINESS SLUG MATCHING
@@ -31,11 +37,16 @@ export function StaffOverviewWidget({ businessSlug, isSimulationMode = false }: 
     return null;
   }
 
-  // Simulated or real data (in production, fetch from hooks)
+  const activeStaff = isSimulationMode ? 47 : (values?.activeStaff ?? 0);
+  const assignedToday = isSimulationMode ? 12 : (values?.assignedToday ?? 0);
+  const upcomingAssignments = isSimulationMode ? 28 : (values?.upcomingAssignments ?? 0);
+  const staffingGaps = isSimulationMode ? 3 : (values?.staffingGaps ?? 0);
+
+  // Simulated or provided data
   const metrics: StaffMetric[] = [
     {
       label: 'Total Active Staff',
-      value: isSimulationMode ? 47 : '—',
+      value: activeStaff,
       icon: Users,
       link: '/os/unforgettable/staff',
       linkLabel: 'View All Staff',
@@ -43,7 +54,7 @@ export function StaffOverviewWidget({ businessSlug, isSimulationMode = false }: 
     },
     {
       label: 'Assigned Today',
-      value: isSimulationMode ? 12 : '—',
+      value: assignedToday,
       icon: Calendar,
       link: '/os/unforgettable/scheduling',
       linkLabel: 'View Schedule',
@@ -51,7 +62,7 @@ export function StaffOverviewWidget({ businessSlug, isSimulationMode = false }: 
     },
     {
       label: 'Upcoming Assignments',
-      value: isSimulationMode ? 28 : '—',
+      value: upcomingAssignments,
       icon: Clock,
       link: '/os/unforgettable/scheduling',
       linkLabel: 'View Upcoming',
@@ -59,11 +70,11 @@ export function StaffOverviewWidget({ businessSlug, isSimulationMode = false }: 
     },
     {
       label: 'Staffing Gaps',
-      value: isSimulationMode ? 3 : '—',
+      value: staffingGaps,
       icon: AlertTriangle,
       link: '/os/unforgettable/scheduling',
       linkLabel: 'Resolve Gaps',
-      variant: isSimulationMode ? 'warning' : 'default',
+      variant: staffingGaps > 0 ? 'warning' : 'default',
     },
   ];
 
