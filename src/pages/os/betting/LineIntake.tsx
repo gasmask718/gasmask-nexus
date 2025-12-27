@@ -39,7 +39,7 @@ export default function LineIntake() {
       sport: formData.sport,
       league: formData.league || undefined,
       event: formData.event,
-      market_type: formData.market_type,
+      market_type: formData.market_type as 'fantasy_prop' | 'moneyline' | 'player_prop' | 'spread' | 'total',
       player_name: formData.player_name || undefined,
       stat_type: formData.stat_type || undefined,
       line_value: parseFloat(formData.line_value),

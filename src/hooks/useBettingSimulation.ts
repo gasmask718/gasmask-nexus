@@ -269,16 +269,26 @@ export const useSimulatePickemEntry = () => {
       if (!bets || bets.length === 0) throw new Error('No bets found');
       
       // Convert to simulation results
-      const legResults: SimulationResult[] = bets.map(bet => ({
-        estimated_probability: bet.estimated_probability || 0.5,
-        confidence_score: bet.confidence_score || 50,
-        volatility_score: (bet.volatility_score === 'low' || bet.volatility_score === 'medium' || bet.volatility_score === 'high' ? bet.volatility_score : 'medium') as 'low' | 'medium' | 'high',
-        simulated_roi: bet.simulated_roi || 0,
-        break_even_probability: 0.5,
-        edge: 0,
-        recommendation: 'pass' as const,
-        reasoning: [],
-      }));
+      const legResults: SimulationResult[] = bets.map(bet => {
+        // Map numeric volatility to string label
+        const volScore = bet.volatility_score;
+        let volLabel: 'low' | 'medium' | 'high' = 'medium';
+        if (typeof volScore === 'number') {
+          if (volScore <= 33) volLabel = 'low';
+          else if (volScore >= 67) volLabel = 'high';
+        }
+        
+        return {
+          estimated_probability: bet.estimated_probability || 0.5,
+          confidence_score: bet.confidence_score || 50,
+          volatility_score: volLabel,
+          simulated_roi: bet.simulated_roi || 0,
+          break_even_probability: 0.5,
+          edge: 0,
+          recommendation: 'pass' as const,
+          reasoning: [],
+        };
+      });
       
       if (params.entry_type === 'power') {
         return simulatePowerEntry(legResults, params.platform);
