@@ -21,12 +21,6 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async () => {
-    if (!storeId || storeId.trim() === '') {
-      toast.error('Store ID is missing. Please try reopening this modal.');
-      console.error('AddNoteModal: storeId is empty or undefined', { storeId, storeName });
-      return;
-    }
-    
     if (!noteText.trim()) {
       toast.error('Please enter a note');
       return;

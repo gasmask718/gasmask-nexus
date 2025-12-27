@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,8 +24,6 @@ interface StoreOperationsCardProps {
   onUpdate: () => void;
 }
 
-type StickerToggleKey = 'sticker_door' | 'sticker_instore' | 'sticker_phone' | 'sticker_taken_down';
-
 export function StoreOperationsCard({ store, onUpdate }: StoreOperationsCardProps) {
   const [saving, setSaving] = useState(false);
   const [localState, setLocalState] = useState({
@@ -35,50 +33,18 @@ export function StoreOperationsCard({ store, onUpdate }: StoreOperationsCardProp
     sticker_phone: store.sticker_phone || false,
     sticker_taken_down: store.sticker_taken_down || false,
   });
-  const [toggleTimestamps, setToggleTimestamps] = useState<Record<StickerToggleKey, string | null>>({
-    sticker_door: store.sticker_last_seen_at ?? null,
-    sticker_instore: store.sticker_last_seen_at ?? null,
-    sticker_phone: store.sticker_last_seen_at ?? null,
-    sticker_taken_down: store.sticker_taken_down_at ?? store.sticker_last_seen_at ?? null,
-  });
-
-  const formatTimestamp = (iso: string | null) => {
-    if (!iso) return 'No changes recorded';
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return 'No changes recorded';
-    return date.toLocaleString();
-  };
-
-  useEffect(() => {
-    setToggleTimestamps({
-      sticker_door: store.sticker_last_seen_at ?? null,
-      sticker_instore: store.sticker_last_seen_at ?? null,
-      sticker_phone: store.sticker_last_seen_at ?? null,
-      sticker_taken_down: store.sticker_taken_down_at ?? store.sticker_last_seen_at ?? null,
-    });
-  }, [store.sticker_last_seen_at, store.sticker_taken_down_at]);
 
   const hasAnySticker = localState.sticker_door || localState.sticker_instore || localState.sticker_phone;
 
   const handleToggle = async (field: keyof typeof localState, value: boolean) => {
     setSaving(true);
     const updates: Record<string, any> = { [field]: value };
-    const isStickerField =
-      field === 'sticker_door' ||
-      field === 'sticker_instore' ||
-      field === 'sticker_phone' ||
-      field === 'sticker_taken_down';
-    let timestamp: string | null = null;
-
-    if (isStickerField) {
-      timestamp = new Date().toISOString();
-
-      if (field === 'sticker_taken_down') {
-        updates.sticker_taken_down_at = value ? timestamp : null;
-        updates.sticker_last_seen_at = timestamp;
-      } else {
-        updates.sticker_last_seen_at = timestamp;
-      }
+    
+    // If marking sticker as taken down, record the timestamp
+    if (field === 'sticker_taken_down' && value) {
+      updates.sticker_taken_down_at = new Date().toISOString();
+    } else if (field === 'sticker_taken_down' && !value) {
+      updates.sticker_taken_down_at = null;
     }
 
     try {
@@ -90,12 +56,6 @@ export function StoreOperationsCard({ store, onUpdate }: StoreOperationsCardProp
       if (error) throw error;
 
       setLocalState(prev => ({ ...prev, [field]: value }));
-      if (isStickerField && timestamp) {
-        setToggleTimestamps(prev => ({
-          ...prev,
-          [field as StickerToggleKey]: timestamp,
-        }));
-      }
       toast.success('Updated successfully');
       onUpdate();
     } catch (error: any) {
@@ -108,12 +68,11 @@ export function StoreOperationsCard({ store, onUpdate }: StoreOperationsCardProp
 
   const handleMarkStickerSeen = async () => {
     setSaving(true);
-    const timestamp = new Date().toISOString();
     try {
       const { error } = await supabase
         .from('stores')
         .update({ 
-          sticker_last_seen_at: timestamp,
+          sticker_last_seen_at: new Date().toISOString(),
           sticker_taken_down: false,
           sticker_taken_down_at: null,
         })
@@ -122,13 +81,6 @@ export function StoreOperationsCard({ store, onUpdate }: StoreOperationsCardProp
       if (error) throw error;
 
       setLocalState(prev => ({ ...prev, sticker_taken_down: false }));
-      setToggleTimestamps(prev => ({
-        ...prev,
-        sticker_door: timestamp,
-        sticker_instore: timestamp,
-        sticker_phone: timestamp,
-        sticker_taken_down: timestamp,
-      }));
       toast.success('Sticker marked as seen');
       onUpdate();
     } catch (error: any) {
@@ -180,12 +132,6 @@ export function StoreOperationsCard({ store, onUpdate }: StoreOperationsCardProp
                 <div>
                   <Label className="text-sm font-medium">Door Sticker</Label>
                   <p className="text-xs text-muted-foreground">Sticker on entrance door</p>
-                  <p className="text-xs text-muted-foreground">
-                    Status: {localState.sticker_door ? 'On' : 'Off'}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    Last updated: {formatTimestamp(toggleTimestamps.sticker_door)}
-                  </p>
                 </div>
               </div>
               <Switch
@@ -202,12 +148,6 @@ export function StoreOperationsCard({ store, onUpdate }: StoreOperationsCardProp
                 <div>
                   <Label className="text-sm font-medium">In-Store Sticker</Label>
                   <p className="text-xs text-muted-foreground">Sticker inside the store</p>
-                  <p className="text-xs text-muted-foreground">
-                    Status: {localState.sticker_instore ? 'On' : 'Off'}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    Last updated: {formatTimestamp(toggleTimestamps.sticker_instore)}
-                  </p>
                 </div>
               </div>
               <Switch
@@ -224,12 +164,6 @@ export function StoreOperationsCard({ store, onUpdate }: StoreOperationsCardProp
                 <div>
                   <Label className="text-sm font-medium">Phone Sticker</Label>
                   <p className="text-xs text-muted-foreground">Sticker near phone/register</p>
-                  <p className="text-xs text-muted-foreground">
-                    Status: {localState.sticker_phone ? 'On' : 'Off'}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    Last updated: {formatTimestamp(toggleTimestamps.sticker_phone)}
-                  </p>
                 </div>
               </div>
               <Switch
@@ -278,12 +212,6 @@ export function StoreOperationsCard({ store, onUpdate }: StoreOperationsCardProp
                         Reported: {format(new Date(store.sticker_taken_down_at), 'MMM d, yyyy')}
                       </p>
                     )}
-                    <p className="text-xs text-muted-foreground">
-                      Status: {localState.sticker_taken_down ? 'On' : 'Off'}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Last updated: {formatTimestamp(toggleTimestamps.sticker_taken_down)}
-                    </p>
                   </div>
                 </div>
                 <Switch

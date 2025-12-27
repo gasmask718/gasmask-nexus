@@ -59,7 +59,6 @@ interface StoreContactInfoCardProps {
 }
 
 type ContactFormData = {
-  name: string;
   phone: string;
   alt_phone: string;
   email: string;
@@ -76,7 +75,6 @@ type ContactFormData = {
 };
 
 const createInitialFormData = (store: Store): ContactFormData => ({
-  name: store.name || '',
   phone: store.phone || '',
   alt_phone: store.alt_phone || '',
   email: store.email || '',
@@ -99,21 +97,6 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<ContactFormData>(() => createInitialFormData(store));
   const [newTag, setNewTag] = useState('');
-  type StickerToggleKey = 'sticker_door' | 'sticker_instore' | 'sticker_phone' | 'sticker_taken_down';
-  const [toggleTimestamps, setToggleTimestamps] = useState<Record<StickerToggleKey, string | null>>({
-    sticker_door: null,
-    sticker_instore: null,
-    sticker_phone: null,
-    sticker_taken_down: store.sticker_taken_down_at ?? null,
-  });
-
-  const formatTimestamp = (iso: string | null) => {
-    if (!iso) return 'No changes yet';
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return 'No changes yet';
-    return date.toLocaleString();
-  };
-
   type StoreContact = {
     id: string;
     name: string;
@@ -165,12 +148,6 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
 
     setFormData(createInitialFormData(store));
     setNewTag('');
-    setToggleTimestamps({
-      sticker_door: null,
-      sticker_instore: null,
-      sticker_phone: null,
-      sticker_taken_down: store.sticker_taken_down_at ?? null,
-    });
   }, [store, editOpen]);
 
   const handleAddTag = () => {
@@ -203,7 +180,6 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
     field: 'sticker_door' | 'sticker_instore' | 'sticker_phone',
     value: boolean
   ) => {
-    const timestamp = new Date().toISOString();
     setFormData((prev) => {
       const next: ContactFormData = { ...prev, [field]: value };
       if (field === 'sticker_door' || field === 'sticker_instore') {
@@ -214,19 +190,13 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
       }
       return next;
     });
-    setToggleTimestamps((prev) => ({
-      ...prev,
-      [field]: timestamp,
-    }));
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const normalizedName = formData.name.trim() || store.name;
       const stickerStatus = deriveStickerStatus(formData.sticker_door, formData.sticker_instore);
       const updates: Record<string, unknown> = {
-        name: normalizedName,
         phone: formData.phone || null,
         alt_phone: formData.alt_phone || null,
         email: formData.email || null,
@@ -486,14 +456,6 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
           </DialogHeader>
           <div className="flex-1 space-y-4 overflow-y-auto py-4 pr-1">
             <div className="space-y-2">
-              <Label>Store Name</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Store Name"
-              />
-            </div>
-            <div className="space-y-2">
               <Label>Store Telephone (Call Only)</Label>
               <Input
                 value={formData.phone}
@@ -577,15 +539,7 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                       key={key}
                       className="flex items-center justify-between rounded-md bg-muted/20 px-3 py-2 text-sm"
                     >
-                      <div>
-                        <span>{label}</span>
-                        <p className="text-xs text-muted-foreground">
-                          {formData[key] ? 'On' : 'Off'}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground">
-                          Last toggled: {formatTimestamp(toggleTimestamps[key])}
-                        </p>
-                      </div>
+                      <span>{label}</span>
                       <Switch
                         id={`${key}-toggle`}
                         checked={formData[key]}
@@ -595,28 +549,16 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                   ))}
                 </div>
                 <div className="flex items-center justify-between rounded-md bg-destructive/5 px-3 py-2 text-sm">
-                  <div>
-                    <span>Sticker Taken Down</span>
-                    <p className="text-xs text-muted-foreground">
-                      {formData.sticker_taken_down ? 'On' : 'Off'}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Last toggled: {formatTimestamp(toggleTimestamps.sticker_taken_down)}
-                    </p>
-                  </div>
+                  <span>Sticker Taken Down</span>
                   <Switch
                     id="sticker-taken-down-toggle"
                     checked={formData.sticker_taken_down}
-                    onCheckedChange={(checked) => {
+                    onCheckedChange={(checked) =>
                       setFormData((prev) => ({
                         ...prev,
                         sticker_taken_down: checked,
-                      }));
-                      setToggleTimestamps((prev) => ({
-                        ...prev,
-                        sticker_taken_down: new Date().toISOString(),
-                      }));
-                    }}
+                      }))
+                    }
                   />
                 </div>
               </div>

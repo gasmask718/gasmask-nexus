@@ -50,25 +50,6 @@ interface Store {
   tubeInventory: TubeInventory[];
 }
 
-const normalizeBrandKey = (brand?: string | null) =>
-  (brand || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '');
-
-const BRAND_BADGE_STYLES: Record<string, string> = {
-  gasmask: 'bg-red-500/10 text-red-600 border-red-500/30',
-  hotmama: 'bg-rose-500/10 text-rose-600 border-rose-500/30',
-  grabbarus: 'bg-purple-500/10 text-purple-600 border-purple-500/30',
-  hotscolatti: 'bg-orange-500/10 text-orange-600 border-orange-500/30',
-};
-
-const DEFAULT_BRAND_BADGE_CLASS =
-  'bg-muted/20 text-muted-foreground border-border/40';
-
-const getBrandBadgeClass = (brand: string) =>
-  BRAND_BADGE_STYLES[normalizeBrandKey(brand)] ?? DEFAULT_BRAND_BADGE_CLASS;
-
 const Stores = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -474,11 +455,7 @@ const Stores = () => {
                   {sortedInventory.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {sortedInventory.map(item => (
-                        <Badge
-                          key={item.id}
-                          variant="outline"
-                          className={`text-xs ${getBrandBadgeClass(item.brand)}`}
-                        >
+                        <Badge key={item.id} variant="secondary" className="text-xs">
                           {formatBrandName(item.brand)}: {Math.max(0, item.current_tubes_left ?? 0)}
                         </Badge>
                       ))}
