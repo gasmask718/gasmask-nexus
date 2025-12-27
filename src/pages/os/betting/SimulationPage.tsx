@@ -191,8 +191,8 @@ export default function SimulationPage() {
                           <Badge variant="outline" className={getConfidenceBadge(bet.confidence_score || 0)}>
                             {bet.confidence_score}% conf
                           </Badge>
-                          <Badge variant="outline" className={getVolatilityBadge(bet.volatility_score || 'medium')}>
-                            {bet.volatility_score} vol
+                          <Badge variant="outline" className={getVolatilityBadge(String(bet.volatility_score ?? 'medium'))}>
+                            {bet.volatility_score ?? 'medium'} vol
                           </Badge>
                         </div>
                       </div>
