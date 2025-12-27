@@ -2,14 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Target, TrendingUp, DollarSign, Brain, BarChart3, Zap, Calculator, AlertTriangle, CheckCircle, Play } from "lucide-react";
-import { useSimulatedBets, useSimulationRuns, useTodaysTopProps } from '@/hooks/useBettingSimulation';
+import { Trophy, Target, TrendingUp, DollarSign, Brain, BarChart3, Zap, Calculator, AlertTriangle, CheckCircle, Play, Loader2, FlaskConical, Shield } from "lucide-react";
+import { useSimulatedBets, useSimulationRuns, useTodaysTopProps, useRunSimulation } from '@/hooks/useBettingSimulation';
 import { Link } from 'react-router-dom';
 
 export default function BettingDashboard() {
   const { data: simulatedBets } = useSimulatedBets('simulated');
   const { data: simulationRuns } = useSimulationRuns();
   const { data: topProps } = useTodaysTopProps();
+  const runSimulation = useRunSimulation();
 
   // Calculate live stats from data
   const totalSimulated = simulatedBets?.length || 0;
@@ -34,6 +35,12 @@ export default function BettingDashboard() {
     return "bg-amber-500/10 text-amber-600 border-amber-500/20";
   };
 
+  const handleRunSimulation = () => {
+    runSimulation.mutate({
+      market_types: ['player_prop', 'fantasy_prop'],
+    });
+  };
+
   return (
     <div className="min-h-screen p-6 space-y-6 bg-gradient-to-br from-background via-background to-amber-950/10">
       {/* Header */}
@@ -51,12 +58,30 @@ export default function BettingDashboard() {
               Add Lines
             </Button>
           </Link>
-          <Link to="/os/sports-betting/simulation">
-            <Button className="bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-700 hover:to-orange-600">
-              <Play className="h-4 w-4 mr-2" />
-              Run Simulation
+          <Link to="/os/sports-betting/parlay-lab">
+            <Button variant="outline">
+              <FlaskConical className="h-4 w-4 mr-2" />
+              Parlay Lab
             </Button>
           </Link>
+          <Link to="/os/sports-betting/hedge-center">
+            <Button variant="outline">
+              <Shield className="h-4 w-4 mr-2" />
+              Hedge
+            </Button>
+          </Link>
+          <Button 
+            onClick={handleRunSimulation}
+            disabled={runSimulation.isPending}
+            className="bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-700 hover:to-orange-600"
+          >
+            {runSimulation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Play className="h-4 w-4 mr-2" />
+            )}
+            Run Daily Simulation
+          </Button>
         </div>
       </div>
 
