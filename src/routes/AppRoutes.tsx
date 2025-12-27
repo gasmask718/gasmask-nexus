@@ -342,6 +342,11 @@ import FundingDashboard from '@/pages/os/funding/FundingDashboard';
 import GrantsDashboard from '@/pages/os/grants/GrantsDashboard';
 import WealthEngineDashboard from '@/pages/os/wealth/WealthEngineDashboard';
 import BettingDashboard from '@/pages/os/betting/BettingDashboard';
+import LineIntake from '@/pages/os/betting/LineIntake';
+import SimulationPage from '@/pages/os/betting/SimulationPage';
+import ParlayLab from '@/pages/os/betting/ParlayLab';
+import HedgeCenter from '@/pages/os/betting/HedgeCenter';
+import OwnerInternal from '@/pages/os/betting/OwnerInternal';
 import BikerDashboard from '@/pages/os/biker/BikerDashboard';
 import ModuleDiagnosticsPage from '@/pages/ModuleDiagnosticsPage';
 
@@ -899,6 +904,11 @@ export default function AppRoutes() {
         <Route path="/os/grants" element={<GrantsDashboard />} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
         <Route path="/os/sports-betting" element={<BettingDashboard />} />
+        <Route path="/os/sports-betting/line-intake" element={<LineIntake />} />
+        <Route path="/os/sports-betting/simulation" element={<SimulationPage />} />
+        <Route path="/os/sports-betting/parlay-lab" element={<ParlayLab />} />
+        <Route path="/os/sports-betting/hedge-center" element={<HedgeCenter />} />
+        <Route path="/os/sports-betting/internal" element={<OwnerInternal />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
 
         {/* Legacy payouts aliases (keep old links working) */}
