@@ -53,6 +53,8 @@ import {
 import { toast } from 'sonner';
 import { BulkCommunicationLogModal } from '@/components/communication/BulkCommunicationLogModal';
 
+type StickerStatus = 'none' | 'doorOnly' | 'inStoreOnly' | 'doorAndInStore';
+
 interface Store {
   id: string;
   name: string;
@@ -66,7 +68,7 @@ interface Store {
   email: string;
   status: string;
   responsiveness: string;
-  sticker_status: string;
+  sticker_status: StickerStatus | null;
   notes: string;
   tags: string[];
   primary_contact_name: string;
