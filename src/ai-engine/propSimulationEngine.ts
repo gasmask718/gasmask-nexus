@@ -1,0 +1,454 @@
+// Prop Simulation Engine - Player Prop Intelligence
+// Deterministic, explainable simulation logic for player props
+
+export interface PlayerPropInput {
+  player_name: string;
+  stat_type: string;
+  line_value: number;
+  over_under: 'over' | 'under';
+  platform: string;
+  odds_or_payout: number;
+  // Optional context
+  recent_games?: number[];
+  season_average?: number;
+  home_game?: boolean;
+  opponent_tier?: 'weak' | 'average' | 'strong';
+  pace?: 'slow' | 'average' | 'fast';
+}
+
+export interface SimulationResult {
+  estimated_probability: number;
+  confidence_score: number;
+  volatility_score: 'low' | 'medium' | 'high';
+  simulated_roi: number;
+  break_even_probability: number;
+  edge: number;
+  recommendation: 'strong_play' | 'lean' | 'pass' | 'avoid';
+  reasoning: string[];
+}
+
+export interface PickemPayout {
+  legs: number;
+  multiplier: number;
+  flex_payouts?: { correct: number; payout: number }[];
+}
+
+// Standard pick'em payout structures
+export const POWER_ENTRY_PAYOUTS: Record<number, number> = {
+  2: 3,
+  3: 5,
+  4: 10,
+  5: 20,
+  6: 40,
+};
+
+export const FLEX_ENTRY_PAYOUTS: Record<number, { correct: number; payout: number }[]> = {
+  3: [
+    { correct: 3, payout: 2.25 },
+    { correct: 2, payout: 1.25 },
+  ],
+  4: [
+    { correct: 4, payout: 5 },
+    { correct: 3, payout: 1.5 },
+  ],
+  5: [
+    { correct: 5, payout: 10 },
+    { correct: 4, payout: 2 },
+    { correct: 3, payout: 0.4 },
+  ],
+  6: [
+    { correct: 6, payout: 25 },
+    { correct: 5, payout: 2 },
+    { correct: 4, payout: 0.4 },
+  ],
+};
+
+// Convert American odds to implied probability
+export const oddsToImpliedProbability = (odds: number): number => {
+  if (odds > 0) {
+    return 100 / (odds + 100);
+  } else {
+    return Math.abs(odds) / (Math.abs(odds) + 100);
+  }
+};
+
+// Convert implied probability to American odds
+export const probabilityToOdds = (probability: number): number => {
+  if (probability >= 0.5) {
+    return -Math.round((probability / (1 - probability)) * 100);
+  } else {
+    return Math.round(((1 - probability) / probability) * 100);
+  }
+};
+
+// Calculate break-even probability for given odds
+export const calculateBreakEven = (odds: number): number => {
+  return oddsToImpliedProbability(odds);
+};
+
+// Simulate a single player prop
+export const simulatePlayerProp = (input: PlayerPropInput): SimulationResult => {
+  const reasoning: string[] = [];
+  
+  // Base probability estimation
+  let baseProbability = 0.5; // Start at 50%
+  
+  // If we have recent games data, use it
+  if (input.recent_games && input.recent_games.length > 0) {
+    const recentAvg = input.recent_games.reduce((a, b) => a + b, 0) / input.recent_games.length;
+    const hitRate = input.recent_games.filter(g => 
+      input.over_under === 'over' ? g > input.line_value : g < input.line_value
+    ).length / input.recent_games.length;
+    
+    baseProbability = hitRate;
+    reasoning.push(`Recent hit rate: ${Math.round(hitRate * 100)}% (last ${input.recent_games.length} games)`);
+  }
+  
+  // Season average adjustment
+  if (input.season_average !== undefined) {
+    const difference = input.season_average - input.line_value;
+    const seasonFactor = input.over_under === 'over' 
+      ? (difference > 0 ? 0.05 : -0.05)
+      : (difference < 0 ? 0.05 : -0.05);
+    
+    baseProbability = Math.max(0.2, Math.min(0.8, baseProbability + seasonFactor));
+    reasoning.push(`Season avg: ${input.season_average.toFixed(1)} vs line ${input.line_value}`);
+  }
+  
+  // Context adjustments
+  if (input.home_game !== undefined) {
+    const homeAdj = input.home_game ? 0.02 : -0.02;
+    baseProbability += homeAdj;
+    reasoning.push(input.home_game ? 'Home game (+2%)' : 'Away game (-2%)');
+  }
+  
+  if (input.opponent_tier) {
+    const oppAdj = {
+      weak: input.over_under === 'over' ? 0.05 : -0.05,
+      average: 0,
+      strong: input.over_under === 'over' ? -0.05 : 0.05,
+    }[input.opponent_tier];
+    baseProbability += oppAdj;
+    reasoning.push(`Opponent tier: ${input.opponent_tier}`);
+  }
+  
+  if (input.pace) {
+    const paceAdj = {
+      slow: input.over_under === 'over' ? -0.03 : 0.03,
+      average: 0,
+      fast: input.over_under === 'over' ? 0.03 : -0.03,
+    }[input.pace];
+    baseProbability += paceAdj;
+    reasoning.push(`Game pace: ${input.pace}`);
+  }
+  
+  // Clamp probability to reasonable bounds
+  const estimatedProbability = Math.max(0.30, Math.min(0.70, baseProbability));
+  
+  // Calculate break-even and edge
+  const breakEven = input.platform.toLowerCase().includes('prize') || input.platform.toLowerCase().includes('underdog')
+    ? 0.5 // Pick'em platforms are ~50% break-even per leg
+    : calculateBreakEven(input.odds_or_payout);
+  
+  const edge = (estimatedProbability - breakEven) * 100;
+  
+  // Calculate ROI
+  const simulatedRoi = edge / 100;
+  
+  // Confidence score (0-100)
+  const confidenceScore = Math.round(
+    Math.min(100, Math.max(0,
+      50 + // Base
+      (Math.abs(edge) * 5) + // Edge contribution
+      (input.recent_games && input.recent_games.length >= 5 ? 15 : 0) + // Data quality
+      (input.season_average !== undefined ? 10 : 0) // More data
+    ))
+  );
+  
+  // Volatility assessment
+  let volatilityScore: 'low' | 'medium' | 'high' = 'medium';
+  if (input.recent_games && input.recent_games.length >= 3) {
+    const variance = calculateVariance(input.recent_games);
+    const avgValue = input.recent_games.reduce((a, b) => a + b, 0) / input.recent_games.length;
+    const cv = Math.sqrt(variance) / avgValue; // Coefficient of variation
+    
+    if (cv < 0.15) volatilityScore = 'low';
+    else if (cv > 0.30) volatilityScore = 'high';
+    
+    reasoning.push(`Stat variance: ${volatilityScore}`);
+  }
+  
+  // Recommendation
+  let recommendation: 'strong_play' | 'lean' | 'pass' | 'avoid';
+  if (edge >= 5 && confidenceScore >= 70) {
+    recommendation = 'strong_play';
+  } else if (edge >= 2 && confidenceScore >= 50) {
+    recommendation = 'lean';
+  } else if (edge >= 0) {
+    recommendation = 'pass';
+  } else {
+    recommendation = 'avoid';
+  }
+  
+  return {
+    estimated_probability: Math.round(estimatedProbability * 100) / 100,
+    confidence_score: confidenceScore,
+    volatility_score: volatilityScore,
+    simulated_roi: Math.round(simulatedRoi * 1000) / 1000,
+    break_even_probability: Math.round(breakEven * 100) / 100,
+    edge: Math.round(edge * 10) / 10,
+    recommendation,
+    reasoning,
+  };
+};
+
+// Calculate variance
+const calculateVariance = (values: number[]): number => {
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  return values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
+};
+
+// Simulate a pick'em entry (power play)
+export const simulatePowerEntry = (
+  legs: SimulationResult[],
+  platform: 'prizepicks' | 'underdog' = 'prizepicks'
+): {
+  combined_probability: number;
+  expected_value: number;
+  simulated_roi: number;
+  is_profitable: boolean;
+  payout_multiplier: number;
+  recommendation: string;
+} => {
+  const numLegs = legs.length;
+  const multiplier = POWER_ENTRY_PAYOUTS[numLegs] || Math.pow(2, numLegs - 1);
+  
+  // Combined probability is product of individual probabilities
+  const combinedProbability = legs.reduce(
+    (acc, leg) => acc * leg.estimated_probability,
+    1
+  );
+  
+  // Expected value: (probability * payout) - (1 - probability) * stake
+  // Assuming $1 stake
+  const expectedValue = (combinedProbability * multiplier) - 1;
+  const simulatedRoi = expectedValue;
+  const isProfitable = expectedValue > 0;
+  
+  let recommendation = '';
+  if (expectedValue > 0.5) {
+    recommendation = 'Strong +EV entry - consider max sizing';
+  } else if (expectedValue > 0.1) {
+    recommendation = 'Slight edge - proceed with caution';
+  } else if (expectedValue > 0) {
+    recommendation = 'Marginal edge - small play only';
+  } else {
+    recommendation = 'Negative EV - avoid this combination';
+  }
+  
+  return {
+    combined_probability: Math.round(combinedProbability * 10000) / 10000,
+    expected_value: Math.round(expectedValue * 100) / 100,
+    simulated_roi: Math.round(simulatedRoi * 100) / 100,
+    is_profitable: isProfitable,
+    payout_multiplier: multiplier,
+    recommendation,
+  };
+};
+
+// Simulate a flex entry
+export const simulateFlexEntry = (
+  legs: SimulationResult[],
+  platform: 'prizepicks' | 'underdog' = 'prizepicks'
+): {
+  expected_value: number;
+  simulated_roi: number;
+  scenario_payouts: { correct: number; probability: number; payout: number; ev_contribution: number }[];
+  recommendation: string;
+} => {
+  const numLegs = legs.length;
+  const flexPayouts = FLEX_ENTRY_PAYOUTS[numLegs] || [];
+  
+  if (flexPayouts.length === 0) {
+    return {
+      expected_value: 0,
+      simulated_roi: 0,
+      scenario_payouts: [],
+      recommendation: `Flex entries not available for ${numLegs}-leg plays`,
+    };
+  }
+  
+  // Calculate probability of each scenario using binomial distribution
+  const probs = legs.map(l => l.estimated_probability);
+  const avgProb = probs.reduce((a, b) => a + b, 0) / probs.length;
+  
+  const scenarioPayouts = flexPayouts.map(fp => {
+    // Simplified binomial probability
+    const k = fp.correct;
+    const n = numLegs;
+    const binomialCoeff = factorial(n) / (factorial(k) * factorial(n - k));
+    const probability = binomialCoeff * Math.pow(avgProb, k) * Math.pow(1 - avgProb, n - k);
+    const evContribution = probability * fp.payout;
+    
+    return {
+      correct: fp.correct,
+      probability: Math.round(probability * 10000) / 10000,
+      payout: fp.payout,
+      ev_contribution: Math.round(evContribution * 1000) / 1000,
+    };
+  });
+  
+  const totalEV = scenarioPayouts.reduce((sum, s) => sum + s.ev_contribution, 0);
+  const expectedValue = totalEV - 1; // Subtract stake
+  
+  let recommendation = '';
+  if (expectedValue > 0.2) {
+    recommendation = 'Flex entry has significant edge';
+  } else if (expectedValue > 0) {
+    recommendation = 'Flex entry is marginally profitable';
+  } else {
+    recommendation = 'Flex entry is -EV, consider power play or pass';
+  }
+  
+  return {
+    expected_value: Math.round(expectedValue * 100) / 100,
+    simulated_roi: Math.round(expectedValue * 100) / 100,
+    scenario_payouts: scenarioPayouts,
+    recommendation,
+  };
+};
+
+// Helper factorial function
+const factorial = (n: number): number => {
+  if (n <= 1) return 1;
+  return n * factorial(n - 1);
+};
+
+// Compare platforms for the same prop
+export const comparePlatforms = (
+  prop: PlayerPropInput,
+  sportsbook_odds: number,
+  pickem_platform: 'prizepicks' | 'underdog' = 'prizepicks'
+): {
+  sportsbook_ev: number;
+  pickem_ev: number;
+  best_venue: 'sportsbook' | 'pickem';
+  reasoning: string;
+} => {
+  const simulation = simulatePlayerProp(prop);
+  
+  // Sportsbook EV
+  const sportsbookBreakEven = calculateBreakEven(sportsbook_odds);
+  const sportsbookEV = simulation.estimated_probability - sportsbookBreakEven;
+  
+  // Pick'em EV (assuming ~1.9x payout for single leg equivalent)
+  const pickemBreakEven = 0.526; // ~52.6% to break even at 1.9x
+  const pickemEV = simulation.estimated_probability - pickemBreakEven;
+  
+  const bestVenue = sportsbookEV > pickemEV ? 'sportsbook' : 'pickem';
+  
+  return {
+    sportsbook_ev: Math.round(sportsbookEV * 1000) / 1000,
+    pickem_ev: Math.round(pickemEV * 1000) / 1000,
+    best_venue: bestVenue,
+    reasoning: bestVenue === 'sportsbook'
+      ? `Sportsbook offers ${Math.round((sportsbookEV - pickemEV) * 1000) / 10}% better edge`
+      : `Pick'em platform offers ${Math.round((pickemEV - sportsbookEV) * 1000) / 10}% better edge`,
+  };
+};
+
+// Generate confidence label
+export const getConfidenceLabel = (score: number): 'low' | 'medium' | 'high' => {
+  if (score >= 70) return 'high';
+  if (score >= 40) return 'medium';
+  return 'low';
+};
+
+// Batch simulation summary
+export interface BatchSimulationSummary {
+  total_bets: number;
+  average_confidence: number;
+  average_edge: number;
+  average_simulated_roi: number;
+  strong_plays: number;
+  leans: number;
+  passes: number;
+  avoids: number;
+  by_platform: Record<string, { count: number; avg_edge: number }>;
+  by_stat_type: Record<string, { count: number; avg_edge: number }>;
+  top_props: { input: PlayerPropInput; result: SimulationResult }[];
+  props_to_avoid: { input: PlayerPropInput; result: SimulationResult }[];
+}
+
+export const generateBatchSummary = (
+  simulations: { input: PlayerPropInput; result: SimulationResult }[]
+): BatchSimulationSummary => {
+  const total = simulations.length;
+  if (total === 0) {
+    return {
+      total_bets: 0,
+      average_confidence: 0,
+      average_edge: 0,
+      average_simulated_roi: 0,
+      strong_plays: 0,
+      leans: 0,
+      passes: 0,
+      avoids: 0,
+      by_platform: {},
+      by_stat_type: {},
+      top_props: [],
+      props_to_avoid: [],
+    };
+  }
+  
+  const avgConfidence = simulations.reduce((s, x) => s + x.result.confidence_score, 0) / total;
+  const avgEdge = simulations.reduce((s, x) => s + x.result.edge, 0) / total;
+  const avgRoi = simulations.reduce((s, x) => s + x.result.simulated_roi, 0) / total;
+  
+  const strongPlays = simulations.filter(s => s.result.recommendation === 'strong_play').length;
+  const leans = simulations.filter(s => s.result.recommendation === 'lean').length;
+  const passes = simulations.filter(s => s.result.recommendation === 'pass').length;
+  const avoids = simulations.filter(s => s.result.recommendation === 'avoid').length;
+  
+  // Group by platform
+  const byPlatform: Record<string, { count: number; total_edge: number }> = {};
+  simulations.forEach(s => {
+    const p = s.input.platform;
+    if (!byPlatform[p]) byPlatform[p] = { count: 0, total_edge: 0 };
+    byPlatform[p].count++;
+    byPlatform[p].total_edge += s.result.edge;
+  });
+  
+  // Group by stat type
+  const byStatType: Record<string, { count: number; total_edge: number }> = {};
+  simulations.forEach(s => {
+    const st = s.input.stat_type;
+    if (!byStatType[st]) byStatType[st] = { count: 0, total_edge: 0 };
+    byStatType[st].count++;
+    byStatType[st].total_edge += s.result.edge;
+  });
+  
+  // Top props (sorted by edge)
+  const sorted = [...simulations].sort((a, b) => b.result.edge - a.result.edge);
+  const topProps = sorted.slice(0, 5);
+  const propsToAvoid = sorted.slice(-5).filter(s => s.result.edge < 0).reverse();
+  
+  return {
+    total_bets: total,
+    average_confidence: Math.round(avgConfidence * 10) / 10,
+    average_edge: Math.round(avgEdge * 10) / 10,
+    average_simulated_roi: Math.round(avgRoi * 1000) / 1000,
+    strong_plays: strongPlays,
+    leans,
+    passes,
+    avoids,
+    by_platform: Object.fromEntries(
+      Object.entries(byPlatform).map(([k, v]) => [k, { count: v.count, avg_edge: Math.round(v.total_edge / v.count * 10) / 10 }])
+    ),
+    by_stat_type: Object.fromEntries(
+      Object.entries(byStatType).map(([k, v]) => [k, { count: v.count, avg_edge: Math.round(v.total_edge / v.count * 10) / 10 }])
+    ),
+    top_props: topProps,
+    props_to_avoid: propsToAvoid,
+  };
+};
