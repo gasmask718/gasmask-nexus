@@ -182,45 +182,74 @@ export const useRunSimulation = () => {
       
       // Simulate each prop line
       const simulations: { input: PlayerPropInput; result: SimulationResult }[] = [];
-      const simulatedBets: any[] = [];
+      const simulatedBets: Array<{
+        source: string;
+        platform: string;
+        market_line_id: string;
+        bet_type: string;
+        description: string;
+        estimated_probability: number;
+        confidence_score: number;
+        simulated_roi: number;
+        volatility_score: number;
+        status: 'simulated';
+      }> = [];
+      
+      // Helper to convert volatility string to numeric score
+      const volatilityToNumber = (vol: 'low' | 'medium' | 'high'): number => {
+        if (vol === 'low') return 25;
+        if (vol === 'high') return 75;
+        return 50; // medium
+      };
       
       for (const line of lines || []) {
-        if (line.market_type === 'player_prop' || line.market_type === 'fantasy_prop') {
-          const input: PlayerPropInput = {
-            player_name: line.player_name || 'Unknown',
-            stat_type: line.stat_type || 'PTS',
-            line_value: line.line_value,
-            over_under: (line.over_under?.toLowerCase() || 'over') as 'over' | 'under',
-            platform: line.platform,
-            odds_or_payout: line.odds_or_payout || -110,
-          };
-          
-          const result = simulatePlayerProp(input);
-          simulations.push({ input, result });
-          
-          // Create simulated bet record
-          simulatedBets.push({
-            source: 'ai_model',
-            platform: line.platform,
-            market_line_id: line.id,
-            bet_type: `${line.player_name} ${line.over_under} ${line.line_value} ${line.stat_type}`,
-            description: `${line.event} - ${line.player_name} ${line.over_under} ${line.line_value} ${line.stat_type}`,
-            estimated_probability: result.estimated_probability,
-            confidence_score: result.confidence_score,
-            simulated_roi: result.simulated_roi,
-            volatility_score: result.volatility_score,
-            status: 'simulated',
-          });
-        }
+        // Process all market types, not just player props
+        const input: PlayerPropInput = {
+          player_name: line.player_name || line.event || 'Unknown',
+          stat_type: line.stat_type || line.market_type || 'line',
+          line_value: line.line_value,
+          over_under: (line.over_under?.toLowerCase() || 'over') as 'over' | 'under',
+          platform: line.platform,
+          odds_or_payout: line.odds_or_payout || -110,
+        };
+        
+        const result = simulatePlayerProp(input);
+        simulations.push({ input, result });
+        
+        // Create simulated bet record with all required fields
+        const betDescription = line.player_name 
+          ? `${line.event} - ${line.player_name} ${line.over_under || 'over'} ${line.line_value} ${line.stat_type || ''}`
+          : `${line.event} - ${line.market_type} ${line.over_under || ''} ${line.line_value}`;
+        
+        simulatedBets.push({
+          source: 'ai_model',
+          platform: line.platform,
+          market_line_id: line.id,
+          bet_type: line.player_name 
+            ? `${line.player_name} ${line.over_under || 'O'} ${line.line_value} ${line.stat_type || ''}`
+            : `${line.market_type}: ${line.over_under || ''} ${line.line_value}`,
+          description: betDescription.trim(),
+          estimated_probability: result.estimated_probability,
+          confidence_score: result.confidence_score,
+          simulated_roi: result.simulated_roi,
+          volatility_score: volatilityToNumber(result.volatility_score),
+          status: 'simulated' as const,
+        });
       }
       
-      // Insert simulated bets
+      // Insert ALL simulated bets - one row per market line
       if (simulatedBets.length > 0) {
-        const { error: insertError } = await supabase
+        const { data: insertedBets, error: insertError } = await supabase
           .from('bets_simulated')
-          .insert(simulatedBets);
+          .insert(simulatedBets)
+          .select();
         
-        if (insertError) console.error('Error inserting simulated bets:', insertError);
+        if (insertError) {
+          console.error('Error inserting simulated bets:', insertError);
+          throw new Error(`Failed to persist simulated bets: ${insertError.message}`);
+        }
+        
+        console.log(`Successfully inserted ${insertedBets?.length || 0} simulated bets`);
       }
       
       // Generate summary
