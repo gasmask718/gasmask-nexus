@@ -10,7 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Package, DollarSign, MessageSquare, Camera, Loader2 } from 'lucide-react';
+import { Package, DollarSign, MessageSquare, Camera, Loader2, CheckCircle } from 'lucide-react';
+import { VisitProductSelector, type SelectedProduct } from './visit/VisitProductSelector';
+import { useCreateVisitProducts, useUpdateStoreTubeInventory, GRABBA_COMPANIES } from '@/hooks/useVisitProducts';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface VisitLogModalProps {
   open: boolean;
@@ -22,12 +25,16 @@ interface VisitLogModalProps {
 
 const VisitLogModal = ({ open, onOpenChange, storeId, storeName, onSuccess }: VisitLogModalProps) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [visitType, setVisitType] = useState<string>('delivery');
   const [cashCollected, setCashCollected] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [customerResponse, setCustomerResponse] = useState('');
-  const [inventoryLevels, setInventoryLevels] = useState<Record<string, string>>({});
+  const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
+
+  const createVisitProducts = useCreateVisitProducts();
+  const updateTubeInventory = useUpdateStoreTubeInventory();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,19 +42,76 @@ const VisitLogModal = ({ open, onOpenChange, storeId, storeName, onSuccess }: Vi
 
     setLoading(true);
     try {
-      const { error } = await supabase.from('visit_logs').insert([{
-        store_id: storeId,
-        user_id: user.id,
-        visit_type: visitType as any,
-        cash_collected: cashCollected ? parseFloat(cashCollected) : null,
-        payment_method: paymentMethod as any || null,
-        customer_response: customerResponse || null,
-        inventory_levels: Object.keys(inventoryLevels).length > 0 ? inventoryLevels as any : null,
-      }]);
+      // 1. Create visit log
+      const productsDeliveredJson = selectedProducts.length > 0 
+        ? selectedProducts.map(p => ({
+            brand_id: p.brand_id,
+            brand_name: p.brand_name,
+            product_id: p.product_id,
+            product_name: p.product_name,
+            quantity: p.quantity,
+            unit_type: p.unit_type,
+          }))
+        : null;
 
-      if (error) throw error;
+      const { data: visitData, error: visitError } = await supabase
+        .from('visit_logs')
+        .insert([{
+          store_id: storeId,
+          user_id: user.id,
+          visit_type: visitType as any,
+          cash_collected: cashCollected ? parseFloat(cashCollected) : null,
+          payment_method: paymentMethod as any || null,
+          customer_response: customerResponse || null,
+          products_delivered: productsDeliveredJson as any,
+        }])
+        .select()
+        .single();
 
-      toast.success('Visit logged successfully!');
+      if (visitError) throw visitError;
+
+      // 2. If products were given, save to visit_products table
+      if (selectedProducts.length > 0 && visitData) {
+        const visitProductsData = selectedProducts.map(p => ({
+          visit_id: visitData.id,
+          store_id: storeId,
+          brand_id: p.brand_id,
+          product_id: p.product_id,
+          quantity: p.quantity,
+          unit_type: p.unit_type,
+        }));
+
+        await createVisitProducts.mutateAsync(visitProductsData);
+
+        // 3. Update store tube inventory
+        // Aggregate by brand name (for store_tube_inventory which uses brand name)
+        const brandQuantities = new Map<string, number>();
+        for (const product of selectedProducts) {
+          const current = brandQuantities.get(product.brand_name) || 0;
+          brandQuantities.set(product.brand_name, current + product.quantity);
+        }
+
+        const brandUpdates = Array.from(brandQuantities.entries()).map(([brand, quantity]) => ({
+          brand: brand.toLowerCase().replace(/\s+/g, ''),
+          quantity,
+        }));
+
+        await updateTubeInventory.mutateAsync({
+          storeId,
+          brandUpdates,
+        });
+      }
+
+      // 4. Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ['visit-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['store-interactions', storeId] });
+
+      toast.success('Visit logged successfully!', {
+        description: selectedProducts.length > 0 
+          ? `${selectedProducts.length} product(s) added to inventory` 
+          : undefined,
+      });
+      
       onOpenChange(false);
       resetForm();
       onSuccess?.();
@@ -64,7 +128,7 @@ const VisitLogModal = ({ open, onOpenChange, storeId, storeName, onSuccess }: Vi
     setCashCollected('');
     setPaymentMethod('');
     setCustomerResponse('');
-    setInventoryLevels({});
+    setSelectedProducts([]);
   };
 
   return (
@@ -143,59 +207,14 @@ const VisitLogModal = ({ open, onOpenChange, storeId, storeName, onSuccess }: Vi
             </>
           )}
 
-          {/* Inventory Section */}
-          {(visitType === 'inventoryCheck' || visitType === 'delivery') && (
+          {/* Products Given Section - NEW */}
+          {(visitType === 'delivery' || visitType === 'inventoryCheck') && (
             <>
               <Separator />
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-primary" />
-                  <h3 className="font-semibold">Inventory Levels</h3>
-                  <Badge variant="outline" className="ml-auto">Optional</Badge>
-                </div>
-                
-                <div className="grid gap-3">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30">
-                    <div className="h-3 w-3 rounded-full bg-red-500" />
-                    <span className="text-sm font-medium flex-1">GasMask Tubes</span>
-                    <Select 
-                      value={inventoryLevels['gasmask'] || ''} 
-                      onValueChange={(v) => setInventoryLevels({...inventoryLevels, gasmask: v})}
-                    >
-                      <SelectTrigger className="w-32 h-8 text-xs bg-background">
-                        <SelectValue placeholder="Level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="empty">Empty</SelectItem>
-                        <SelectItem value="quarter">25%</SelectItem>
-                        <SelectItem value="half">50%</SelectItem>
-                        <SelectItem value="threeQuarters">75%</SelectItem>
-                        <SelectItem value="full">Full</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30">
-                    <div className="h-3 w-3 rounded-full bg-pink-500" />
-                    <span className="text-sm font-medium flex-1">Hot Mama Tubes</span>
-                    <Select 
-                      value={inventoryLevels['hotmama'] || ''} 
-                      onValueChange={(v) => setInventoryLevels({...inventoryLevels, hotmama: v})}
-                    >
-                      <SelectTrigger className="w-32 h-8 text-xs bg-background">
-                        <SelectValue placeholder="Level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="empty">Empty</SelectItem>
-                        <SelectItem value="quarter">25%</SelectItem>
-                        <SelectItem value="half">50%</SelectItem>
-                        <SelectItem value="threeQuarters">75%</SelectItem>
-                        <SelectItem value="full">Full</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
+              <VisitProductSelector
+                selectedProducts={selectedProducts}
+                onChange={setSelectedProducts}
+              />
             </>
           )}
 
@@ -227,6 +246,21 @@ const VisitLogModal = ({ open, onOpenChange, storeId, storeName, onSuccess }: Vi
               <p className="text-sm text-muted-foreground">Photo upload coming soon</p>
             </div>
           </div>
+
+          {/* Summary Before Submit */}
+          {selectedProducts.length > 0 && (
+            <div className="rounded-lg bg-primary/10 border border-primary/20 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle className="h-4 w-4 text-primary" />
+                <span className="font-medium text-sm">Visit Summary</span>
+              </div>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• {selectedProducts.length} product(s) will be delivered</li>
+                <li>• Store inventory will be updated automatically</li>
+                <li>• Products will be available in Create Invoice</li>
+              </ul>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
