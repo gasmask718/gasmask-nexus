@@ -2,17 +2,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Target, TrendingUp, DollarSign, Brain, BarChart3, Zap, Calculator, AlertTriangle, CheckCircle, Play, Loader2, FlaskConical, Shield } from "lucide-react";
-import { useSimulatedBets, useSimulationRuns, useTodaysTopProps, useRunSimulation } from '@/hooks/useBettingSimulation';
+import { Trophy, Target, TrendingUp, DollarSign, Brain, BarChart3, Zap, Calculator, AlertTriangle, CheckCircle, Play, Loader2, FlaskConical, Shield, Info } from "lucide-react";
+import { useSimulatedBets, useSimulationRuns, useTodaysTopProps, useRunSimulation, useAllSimulatedBets } from '@/hooks/useBettingSimulation';
 import { Link } from 'react-router-dom';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function BettingDashboard() {
-  const { data: simulatedBets } = useSimulatedBets('simulated');
+  // Fetch ALL simulated bets without restrictive filters
+  const { data: simulatedBets } = useAllSimulatedBets();
   const { data: simulationRuns } = useSimulationRuns();
   const { data: topProps } = useTodaysTopProps();
   const runSimulation = useRunSimulation();
 
-  // Calculate live stats from data
+  // Calculate live stats from ALL data (no filtering)
   const totalSimulated = simulatedBets?.length || 0;
   const avgConfidence = simulatedBets?.length 
     ? Math.round(simulatedBets.reduce((s, b) => s + (b.confidence_score || 0), 0) / simulatedBets.length)
@@ -21,9 +23,10 @@ export default function BettingDashboard() {
     ? (simulatedBets.reduce((s, b) => s + (b.simulated_roi || 0), 0) / simulatedBets.length * 100)
     : 0;
   const strongPlays = simulatedBets?.filter(b => (b.confidence_score || 0) >= 70).length || 0;
+  const latestRun = simulationRuns?.[0];
 
   const stats = [
-    { label: "Simulated Bets", value: totalSimulated.toString(), icon: Target, change: "Today", color: "text-blue-500" },
+    { label: "Simulated Bets", value: totalSimulated.toString(), icon: Target, change: "Latest run", color: "text-blue-500" },
     { label: "Avg Confidence", value: `${avgConfidence}%`, icon: Brain, change: "All props", color: "text-purple-500" },
     { label: "Avg Sim ROI", value: `${avgROI >= 0 ? '+' : ''}${avgROI.toFixed(1)}%`, icon: TrendingUp, change: "Expected", color: "text-emerald-500" },
     { label: "Strong Plays", value: strongPlays.toString(), icon: Zap, change: "70%+ confidence", color: "text-amber-500" },
@@ -105,11 +108,21 @@ export default function BettingDashboard() {
         ))}
       </div>
 
+      {/* Data visibility indicator */}
+      {totalSimulated > 0 && (
+        <Alert className="bg-blue-500/10 border-blue-500/20">
+          <Info className="h-4 w-4 text-blue-500" />
+          <AlertDescription className="text-blue-600">
+            Showing all {totalSimulated} simulated bets from latest run{latestRun ? ` (${latestRun.start_date})` : ''} — includes all confidence levels
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Main Content */}
       <Tabs defaultValue="top-props" className="space-y-4">
         <TabsList className="bg-muted/50 backdrop-blur-sm">
           <TabsTrigger value="top-props">Top Simulated Props</TabsTrigger>
-          <TabsTrigger value="all-sims">All Simulations</TabsTrigger>
+          <TabsTrigger value="all-sims">All Simulations ({totalSimulated})</TabsTrigger>
           <TabsTrigger value="avoid">Props to Avoid</TabsTrigger>
           <TabsTrigger value="analytics">Quick Analytics</TabsTrigger>
         </TabsList>
