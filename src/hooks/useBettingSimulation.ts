@@ -46,7 +46,7 @@ export const useMarketLines = (filters?: {
   });
 };
 
-// Fetch simulated bets
+// Fetch simulated bets - no status filter by default, shows ALL simulated bets
 export const useSimulatedBets = (status?: BetStatus) => {
   return useQuery({
     queryKey: ['simulated-bets', status],
@@ -56,11 +56,44 @@ export const useSimulatedBets = (status?: BetStatus) => {
         .select('*')
         .order('created_at', { ascending: false });
       
+      // Only filter by status if explicitly provided
       if (status) {
         query = query.eq('status', status);
       }
       
-      const { data, error } = await query.limit(100);
+      const { data, error } = await query.limit(500); // Increased limit
+      if (error) throw error;
+      return data || [];
+    },
+  });
+};
+
+// Fetch ALL simulated bets from latest run (no filters)
+export const useAllSimulatedBets = () => {
+  return useQuery({
+    queryKey: ['all-simulated-bets'],
+    queryFn: async () => {
+      // Get the latest simulation run
+      const { data: latestRun } = await supabase
+        .from('simulation_runs')
+        .select('created_at')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      let query = supabase
+        .from('bets_simulated')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      // If we have a latest run, get bets from around that time
+      if (latestRun?.created_at) {
+        const runDate = new Date(latestRun.created_at);
+        runDate.setMinutes(runDate.getMinutes() - 5); // 5 min buffer
+        query = query.gte('created_at', runDate.toISOString());
+      }
+      
+      const { data, error } = await query.limit(500);
       if (error) throw error;
       return data || [];
     },
@@ -230,20 +263,17 @@ export const useRunSimulation = () => {
   });
 };
 
-// Get today's top simulated props
+// Get top simulated props from latest run (no date filter to avoid missing data)
 export const useTodaysTopProps = () => {
   return useQuery({
     queryKey: ['todays-top-props'],
     queryFn: async () => {
-      const today = new Date().toISOString().split('T')[0];
-      
+      // Get all simulated bets, sorted by confidence
       const { data, error } = await supabase
         .from('bets_simulated')
         .select('*')
-        .eq('status', 'simulated')
-        .gte('created_at', today)
         .order('confidence_score', { ascending: false })
-        .limit(10);
+        .limit(20); // Get more to ensure we have enough
       
       if (error) throw error;
       return data || [];
