@@ -3113,6 +3113,115 @@ export type Database = {
         }
         Relationships: []
       }
+      bets_executed: {
+        Row: {
+          created_at: string | null
+          execution_time: string | null
+          id: string
+          notes: string | null
+          odds_received: number | null
+          platform: string
+          profit_units: number | null
+          result: Database["public"]["Enums"]["bet_result"] | null
+          simulated_bet_id: string | null
+          stake_units: number
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          execution_time?: string | null
+          id?: string
+          notes?: string | null
+          odds_received?: number | null
+          platform: string
+          profit_units?: number | null
+          result?: Database["public"]["Enums"]["bet_result"] | null
+          simulated_bet_id?: string | null
+          stake_units: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          execution_time?: string | null
+          id?: string
+          notes?: string | null
+          odds_received?: number | null
+          platform?: string
+          profit_units?: number | null
+          result?: Database["public"]["Enums"]["bet_result"] | null
+          simulated_bet_id?: string | null
+          stake_units?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bets_executed_simulated_bet_id_fkey"
+            columns: ["simulated_bet_id"]
+            isOneToOne: false
+            referencedRelation: "bets_simulated"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bets_simulated: {
+        Row: {
+          bet_type: string
+          confidence_score: number | null
+          created_at: string | null
+          description: string | null
+          estimated_probability: number | null
+          id: string
+          market_line_id: string | null
+          platform: string
+          simulated_roi: number | null
+          source: string
+          status: Database["public"]["Enums"]["bet_status"] | null
+          updated_at: string | null
+          volatility_score: number | null
+        }
+        Insert: {
+          bet_type: string
+          confidence_score?: number | null
+          created_at?: string | null
+          description?: string | null
+          estimated_probability?: number | null
+          id?: string
+          market_line_id?: string | null
+          platform: string
+          simulated_roi?: number | null
+          source?: string
+          status?: Database["public"]["Enums"]["bet_status"] | null
+          updated_at?: string | null
+          volatility_score?: number | null
+        }
+        Update: {
+          bet_type?: string
+          confidence_score?: number | null
+          created_at?: string | null
+          description?: string | null
+          estimated_probability?: number | null
+          id?: string
+          market_line_id?: string | null
+          platform?: string
+          simulated_roi?: number | null
+          source?: string
+          status?: Database["public"]["Enums"]["bet_status"] | null
+          updated_at?: string | null
+          volatility_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bets_simulated_market_line_id_fkey"
+            columns: ["market_line_id"]
+            isOneToOne: false
+            referencedRelation: "market_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       biker_issues: {
         Row: {
           assigned_biker_id: string | null
@@ -14367,6 +14476,57 @@ export type Database = {
           },
         ]
       }
+      market_lines: {
+        Row: {
+          created_at: string | null
+          event: string
+          event_time: string | null
+          id: string
+          league: string | null
+          line_value: number | null
+          market_type: Database["public"]["Enums"]["market_type"]
+          odds_or_payout: number | null
+          over_under: string | null
+          platform: string
+          player_name: string | null
+          sport: string
+          stat_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event: string
+          event_time?: string | null
+          id?: string
+          league?: string | null
+          line_value?: number | null
+          market_type: Database["public"]["Enums"]["market_type"]
+          odds_or_payout?: number | null
+          over_under?: string | null
+          platform: string
+          player_name?: string | null
+          sport: string
+          stat_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event?: string
+          event_time?: string | null
+          id?: string
+          league?: string | null
+          line_value?: number | null
+          market_type?: Database["public"]["Enums"]["market_type"]
+          odds_or_payout?: number | null
+          over_under?: string | null
+          platform?: string
+          player_name?: string | null
+          sport?: string
+          stat_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       marketing_engines: {
         Row: {
           config: Json | null
@@ -16009,6 +16169,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      parlays: {
+        Row: {
+          confidence_score: number | null
+          created_at: string | null
+          estimated_probability: number | null
+          id: string
+          legs: string[]
+          parlay_type: Database["public"]["Enums"]["parlay_type"]
+          payout_structure: Json | null
+          platform: string
+          simulated_roi: number | null
+          status: Database["public"]["Enums"]["bet_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string | null
+          estimated_probability?: number | null
+          id?: string
+          legs: string[]
+          parlay_type: Database["public"]["Enums"]["parlay_type"]
+          payout_structure?: Json | null
+          platform: string
+          simulated_roi?: number | null
+          status?: Database["public"]["Enums"]["bet_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string | null
+          estimated_probability?: number | null
+          id?: string
+          legs?: string[]
+          parlay_type?: Database["public"]["Enums"]["parlay_type"]
+          payout_structure?: Json | null
+          platform?: string
+          simulated_roi?: number | null
+          status?: Database["public"]["Enums"]["bet_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       payouts: {
         Row: {
@@ -19424,6 +19626,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      simulation_runs: {
+        Row: {
+          created_at: string | null
+          drawdown: number | null
+          end_date: string | null
+          id: string
+          losses: number | null
+          markets_included: string[] | null
+          notes: string | null
+          peak_profit: number | null
+          platforms_included: string[] | null
+          roi: number | null
+          run_name: string | null
+          start_date: string
+          status: string | null
+          total_bets: number | null
+          updated_at: string | null
+          wins: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          drawdown?: number | null
+          end_date?: string | null
+          id?: string
+          losses?: number | null
+          markets_included?: string[] | null
+          notes?: string | null
+          peak_profit?: number | null
+          platforms_included?: string[] | null
+          roi?: number | null
+          run_name?: string | null
+          start_date: string
+          status?: string | null
+          total_bets?: number | null
+          updated_at?: string | null
+          wins?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          drawdown?: number | null
+          end_date?: string | null
+          id?: string
+          losses?: number | null
+          markets_included?: string[] | null
+          notes?: string | null
+          peak_profit?: number | null
+          platforms_included?: string[] | null
+          roi?: number | null
+          run_name?: string | null
+          start_date?: string
+          status?: string | null
+          total_bets?: number | null
+          updated_at?: string | null
+          wins?: number | null
+        }
+        Relationships: []
       }
       simulation_scenarios: {
         Row: {
@@ -25024,6 +25283,9 @@ export type Database = {
         | "developer"
         | "staff"
         | "creator"
+        | "va"
+      bet_result: "pending" | "win" | "loss" | "push" | "void"
+      bet_status: "simulated" | "approved" | "rejected" | "executed"
       brand_contact_role:
         | "owner"
         | "manager"
@@ -25057,6 +25319,12 @@ export type Database = {
         | "direct_mail"
         | "cold_call"
       loyalty_level_type: "Bronze" | "Silver" | "Gold" | "VIP"
+      market_type:
+        | "spread"
+        | "total"
+        | "moneyline"
+        | "player_prop"
+        | "fantasy_prop"
       order_channel:
         | "web"
         | "mobile"
@@ -25091,6 +25359,7 @@ export type Database = {
         | "shipping_staff"
         | "support_staff"
         | "back_office"
+      parlay_type: "sportsbook" | "pickem"
       payment_method: "cash" | "zelle" | "cashapp" | "venmo" | "other"
       payment_status: "unpaid" | "partial" | "paid" | "refunded" | "chargeback"
       property_type:
@@ -25369,7 +25638,10 @@ export const Constants = {
         "developer",
         "staff",
         "creator",
+        "va",
       ],
+      bet_result: ["pending", "win", "loss", "push", "void"],
+      bet_status: ["simulated", "approved", "rejected", "executed"],
       brand_contact_role: [
         "owner",
         "manager",
@@ -25406,6 +25678,13 @@ export const Constants = {
         "cold_call",
       ],
       loyalty_level_type: ["Bronze", "Silver", "Gold", "VIP"],
+      market_type: [
+        "spread",
+        "total",
+        "moneyline",
+        "player_prop",
+        "fantasy_prop",
+      ],
       order_channel: [
         "web",
         "mobile",
@@ -25444,6 +25723,7 @@ export const Constants = {
         "support_staff",
         "back_office",
       ],
+      parlay_type: ["sportsbook", "pickem"],
       payment_method: ["cash", "zelle", "cashapp", "venmo", "other"],
       payment_status: ["unpaid", "partial", "paid", "refunded", "chargeback"],
       property_type: [
