@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { MapPin, Phone, Mail, MessageSquare, Edit, Building, Plus, X } from 'lucide-react';
+import { MapPin, Phone, Mail, MessageSquare, Edit, Building, Plus, X, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -42,6 +43,7 @@ interface Store {
   phone: string;
   alt_phone: string;
   email: string;
+  primary_contact_name: string | null;
   tags: string[] | null;
   sticker_status: StickerStatus | null;
   sticker_door: boolean | null;
@@ -95,6 +97,43 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<ContactFormData>(() => createInitialFormData(store));
   const [newTag, setNewTag] = useState('');
+  type StoreContact = {
+    id: string;
+    name: string;
+    role: string | null;
+    is_primary: boolean | null;
+    phone: string | null;
+    can_receive_sms: boolean | null;
+    email: string | null;
+  };
+  const {
+    data: contacts,
+    isLoading: contactsLoading,
+  } = useQuery({
+    queryKey: ['store-owner', store.id],
+    queryFn: async (): Promise<StoreContact[]> => {
+      const { data, error } = await supabase
+        .from('store_contacts')
+        .select('id, name, role, is_primary, phone, can_receive_sms, email')
+        .eq('store_id', store.id)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching store owners:', error);
+        throw error;
+      }
+
+      return data ?? [];
+    },
+    enabled: !!store.id,
+  });
+  const contactList = contacts ?? [];
+  const ownerContact =
+    contactList.find((contact) => contact.role?.toLowerCase().includes('owner')) ??
+    contactList.find((contact) => contact.is_primary) ??
+    null;
+  const ownerName = ownerContact?.name || store.primary_contact_name || '';
   const stickerToggleConfigs: Array<{
     key: keyof Pick<ContactFormData, 'sticker_door' | 'sticker_instore' | 'sticker_phone'>;
     label: string;
@@ -213,6 +252,87 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Owner */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">Owner</p>
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-primary" />
+              <p className="text-sm">
+                {contactsLoading ? 'Loading owner...' : ownerName || 'No owner on file'}
+              </p>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Key Contacts */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">Key Contacts</p>
+            {contactsLoading ? (
+              <p className="text-sm text-muted-foreground">Loading contacts...</p>
+            ) : contactList.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No contacts added yet</p>
+            ) : (
+              <div className="space-y-2">
+                {contactList.map((contact) => (
+                  <div
+                    key={contact.id}
+                    className="flex items-start gap-3 rounded-lg border border-border/30 bg-muted/20 p-3"
+                  >
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium">{contact.name}</span>
+                        {contact.is_primary && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0">
+                            Primary
+                          </Badge>
+                        )}
+                        {contact.role && (
+                          <Badge variant="secondary" className="text-[10px] px-1 py-0 capitalize">
+                            {contact.role.replace(/[_\s]+/g, ' ')}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                        {contact.phone ? (
+                          <a href={`tel:${contact.phone}`} className="flex items-center gap-1 hover:underline">
+                            <Phone className="h-3 w-3" />
+                            {contact.phone}
+                          </a>
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            No phone
+                          </span>
+                        )}
+                        {contact.can_receive_sms && contact.phone && (
+                          <span className="flex items-center gap-1">
+                            <MessageSquare className="h-3 w-3" />
+                            SMS Enabled
+                          </span>
+                        )}
+                        {contact.email && (
+                          <a
+                            href={`mailto:${contact.email}`}
+                            className="flex items-center gap-1 hover:underline"
+                          >
+                            <Mail className="h-3 w-3" />
+                            {contact.email}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
           {/* Address */}
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">Address</p>

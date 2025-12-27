@@ -1,22 +1,34 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag } from 'lucide-react';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag, Edit } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface StoreContact {
   id: string;
   name: string;
-  role: string;
-  phone: string;
-  can_receive_sms: boolean;
-  is_primary: boolean;
+  role: string | null;
+  phone: string | null;
+  can_receive_sms: boolean | null;
+  is_primary: boolean | null;
 }
+
+interface TubeInventory {
+  id: string;
+  brand: string;
+  current_tubes_left: number | null;
+}
+
+type StoreContactRow = StoreContact & { store_id: string };
+type TubeInventoryRow = TubeInventory & { store_id: string };
 
 interface Store {
   id: string;
@@ -35,14 +47,19 @@ interface Store {
   sticker_instore: boolean;
   sticker_phone: boolean;
   contacts: StoreContact[];
+  tubeInventory: TubeInventory[];
 }
 
 const Stores = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [tagFilter, setTagFilter] = useState<string>('all');
   const [stickerFilter, setStickerFilter] = useState<string>('all');
+  const [editingStore, setEditingStore] = useState<Store | null>(null);
+  const [newStoreName, setNewStoreName] = useState('');
+  const [isSavingStoreName, setIsSavingStoreName] = useState(false);
 
   const { data: stores = [], isLoading } = useQuery({
     queryKey: ['stores-with-contacts'],
@@ -57,24 +74,60 @@ const Stores = () => {
 
       // Fetch all contacts for these stores
       const storeIds = storesData?.map(s => s.id) || [];
-      const { data: contactsData } = await supabase
-        .from('store_contacts')
-        .select('id, store_id, name, role, phone, can_receive_sms, is_primary')
-        .in('store_id', storeIds);
+
+      let contactsData: StoreContactRow[] = [];
+      if (storeIds.length) {
+        const { data, error } = await supabase
+          .from('store_contacts')
+          .select('id, store_id, name, role, phone, can_receive_sms, is_primary')
+          .in('store_id', storeIds);
+        if (error) throw error;
+        contactsData = data || [];
+      }
+
+      let tubeInventoryData: TubeInventoryRow[] = [];
+      if (storeIds.length) {
+        const { data, error } = await supabase
+          .from('store_tube_inventory')
+          .select('id, store_id, brand, current_tubes_left')
+          .in('store_id', storeIds);
+        if (error) throw error;
+        tubeInventoryData = data || [];
+      }
 
       // Map contacts to stores
-      const contactsByStore = (contactsData || []).reduce((acc, contact) => {
+      const contactsByStore = contactsData.reduce((acc, contact) => {
         if (!acc[contact.store_id]) acc[contact.store_id] = [];
         acc[contact.store_id].push(contact);
         return acc;
       }, {} as Record<string, StoreContact[]>);
 
+      const inventoryByStore = tubeInventoryData.reduce((acc, item) => {
+        if (!acc[item.store_id]) acc[item.store_id] = [];
+        acc[item.store_id].push({
+          id: item.id,
+          brand: item.brand,
+          current_tubes_left: item.current_tubes_left,
+        });
+        return acc;
+      }, {} as Record<string, TubeInventory[]>);
+
       return (storesData || []).map(store => ({
         ...store,
         contacts: contactsByStore[store.id] || [],
+        tubeInventory: inventoryByStore[store.id] || [],
       }));
     },
   });
+
+  const availableStoreTags = Array.from(
+    new Set(
+      stores
+        .flatMap(store => store.tags ?? [])
+        .map(tag => tag?.trim())
+        .filter((tag): tag is string => Boolean(tag))
+    )
+  ).sort((a, b) => a.localeCompare(b));
 
   const filteredStores = stores.filter(store => {
     const matchesSearch = 
@@ -84,9 +137,10 @@ const Stores = () => {
     
     const matchesStatus = statusFilter === 'all' || store.status === statusFilter;
     
-    // Tag filter - flowers
-    const matchesTag = tagFilter === 'all' || 
-      (tagFilter === 'flowers' && store.sells_flowers);
+    const matchesTag =
+      tagFilter === 'all' ||
+      (tagFilter === 'flowers' && store.sells_flowers) ||
+      store.tags?.some(tag => tag.toLowerCase() === tagFilter.toLowerCase());
     
     // Sticker filter
     const matchesSticker = stickerFilter === 'all' ||
@@ -126,11 +180,66 @@ const Stores = () => {
   };
 
   // Helper to get owners and workers from contacts
-  const getOwners = (contacts: StoreContact[]) => 
-    contacts.filter(c => c.role?.toLowerCase().includes('owner'));
-  
-  const getWorkers = (contacts: StoreContact[]) => 
-    contacts.filter(c => ['worker', 'manager'].includes(c.role?.toLowerCase()));
+  const getOwners = (contacts: StoreContact[]) =>
+    contacts.filter(contact => {
+      const role = contact.role?.toLowerCase() || '';
+      return role.includes('owner') || Boolean(contact.is_primary);
+    });
+
+  const workerRoleKeywords = ['worker', 'manager', 'staff', 'cashier', 'clerk', 'employee', 'team'];
+
+  const getWorkers = (contacts: StoreContact[]) =>
+    contacts.filter(contact => {
+      const role = contact.role?.toLowerCase() || '';
+      if (!role || role.includes('owner')) return false;
+      return workerRoleKeywords.some(keyword => role.includes(keyword));
+    });
+
+  const formatBrandName = (brand: string) =>
+    brand
+      .split(/[_\s-]+/)
+      .filter(Boolean)
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+
+  const openEditStoreName = (store: Store) => {
+    setEditingStore(store);
+    setNewStoreName(store.name);
+  };
+
+  const closeEditStoreName = () => {
+    setEditingStore(null);
+    setNewStoreName('');
+  };
+
+  const handleSaveStoreName = async () => {
+    if (!editingStore) return;
+
+    const trimmedName = newStoreName.trim();
+    if (!trimmedName) {
+      toast.error('Store name cannot be empty');
+      return;
+    }
+
+    setIsSavingStoreName(true);
+    try {
+      const { error } = await supabase
+        .from('stores')
+        .update({ name: trimmedName })
+        .eq('id', editingStore.id);
+
+      if (error) throw error;
+
+      toast.success('Store name updated');
+      closeEditStoreName();
+      await queryClient.invalidateQueries({ queryKey: ['stores-with-contacts'] });
+    } catch (error) {
+      console.error('Error updating store name:', error);
+      toast.error('Failed to update store name');
+    } finally {
+      setIsSavingStoreName(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -188,6 +297,23 @@ const Stores = () => {
                   Sells Flowers ({flowersCount})
                 </span>
               </SelectItem>
+              {availableStoreTags.map(tagValue => (
+                <SelectItem key={tagValue} value={tagValue}>
+                  <span className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-primary" />
+                    {tagValue}
+                    <span className="text-xs text-muted-foreground">
+                      (
+                      {
+                        stores.filter(store =>
+                          store.tags?.some(tag => tag.toLowerCase() === tagValue.toLowerCase())
+                        ).length
+                      }
+                      )
+                    </span>
+                  </span>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
@@ -231,9 +357,12 @@ const Stores = () => {
           {filteredStores.map((store, index) => {
             const owners = getOwners(store.contacts);
             const workers = getWorkers(store.contacts);
-            const fullAddress = [store.address_street, store.address_city, store.address_state, store.address_zip]
+            const cityStateZip = [store.address_city, store.address_state, store.address_zip]
               .filter(Boolean)
               .join(', ');
+            const sortedInventory = [...(store.tubeInventory || [])].sort((a, b) =>
+              a.brand.localeCompare(b.brand)
+            );
 
             return (
               <Card
@@ -250,47 +379,86 @@ const Stores = () => {
                         {store.type.replace('_', ' ')}
                       </Badge>
                     </div>
+                  <div className="flex items-start gap-2">
                     <Badge className={getStatusColor(store.status)}>
                       {store.status === 'needsFollowUp' ? 'Follow-up' : store.status}
                     </Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openEditStoreName(store);
+                      }}
+                      aria-label={`Edit ${store.name} name`}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {/* Full Address */}
-                  {fullAddress && (
-                    <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
-                      <span className="line-clamp-2">{fullAddress}</span>
+                  <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+                    <div className="space-y-0.5">
+                      {store.address_street ? (
+                        <span className="block text-foreground">{store.address_street}</span>
+                      ) : (
+                        <span>No street address on file</span>
+                      )}
+                      {cityStateZip ? (
+                        <span>{cityStateZip}</span>
+                      ) : (
+                        <span>No city / state / zip on file</span>
+                      )}
                     </div>
-                  )}
+                  </div>
                   
                   {/* Store Phone */}
-                  {store.phone && (
+                  {store.phone ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Phone className="h-4 w-4" />
                       <span>{store.phone}</span>
                     </div>
-                  )}
-
-                  {/* Owners */}
-                  {owners.length > 0 && (
-                    <div className="flex items-start gap-2 text-sm">
-                      <User className="h-4 w-4 mt-0.5 text-amber-500 shrink-0" />
-                      <div>
-                        <span className="text-muted-foreground text-xs">Owners: </span>
-                        <span className="font-medium">{owners.map(o => o.name).join(', ')}</span>
-                      </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Phone className="h-4 w-4" />
+                      <span>No phone on file</span>
                     </div>
                   )}
 
+                  {/* Owners */}
+                  <div className="flex items-start gap-2 text-sm">
+                    <User className="h-4 w-4 mt-0.5 text-amber-500 shrink-0" />
+                    <div>
+                      <span className="text-muted-foreground text-xs">Owners: </span>
+                      <span className="font-medium">
+                        {owners.length > 0 ? owners.map(o => o.name).join(', ') : 'Not on file'}
+                      </span>
+                    </div>
+                  </div>
+
                   {/* Workers */}
-                  {workers.length > 0 && (
-                    <div className="flex items-start gap-2 text-sm">
-                      <Users className="h-4 w-4 mt-0.5 text-blue-500 shrink-0" />
-                      <div>
-                        <span className="text-muted-foreground text-xs">Staff: </span>
-                        <span className="font-medium">{workers.map(w => w.name).join(', ')}</span>
-                      </div>
+                  <div className="flex items-start gap-2 text-sm">
+                    <Users className="h-4 w-4 mt-0.5 text-blue-500 shrink-0" />
+                    <div>
+                      <span className="text-muted-foreground text-xs">Staff: </span>
+                      <span className="font-medium">
+                        {workers.length > 0 ? workers.map(w => w.name).join(', ') : 'Not on file'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {sortedInventory.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {sortedInventory.map(item => (
+                        <Badge key={item.id} variant="secondary" className="text-xs">
+                          {formatBrandName(item.brand)}: {Math.max(0, item.current_tubes_left ?? 0)}
+                        </Badge>
+                      ))}
                     </div>
                   )}
 
@@ -337,6 +505,50 @@ const Stores = () => {
           <p className="text-muted-foreground">No stores found matching your filters</p>
         </div>
       )}
+
+      <Dialog
+        open={Boolean(editingStore)}
+        onOpenChange={(open) => {
+          if (!open && !isSavingStoreName) {
+            closeEditStoreName();
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Store Name</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="store-name-input">Store Name</Label>
+              <Input
+                id="store-name-input"
+                value={newStoreName}
+                onChange={(event) => setNewStoreName(event.target.value)}
+                placeholder="Enter store name"
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeEditStoreName}
+              disabled={isSavingStoreName}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveStoreName}
+              disabled={isSavingStoreName || !newStoreName.trim()}
+            >
+              {isSavingStoreName ? 'Saving...' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
