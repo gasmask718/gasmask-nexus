@@ -12,7 +12,7 @@ export const GRABBA_COMPANY_IDS = {
 export const GRABBA_COMPANIES = [
   { id: GRABBA_COMPANY_IDS.gasmask, name: 'GasMask', color: '#FF0000', icon: '🔴' },
   { id: GRABBA_COMPANY_IDS.hotmama, name: 'HotMama', color: '#FF4F9D', icon: '💖' },
-  { id: GRABBA_COMPANY_IDS.scalati, name: 'Hot Scalati', color: '#FF7A00', icon: '🟠' },
+  { id: GRABBA_COMPANY_IDS.scalati, name: 'Hot Scolatti', color: '#FF7A00', icon: '🟠' },
   { id: GRABBA_COMPANY_IDS.grabba, name: 'Grabba R Us', color: '#A020F0', icon: '🟪' },
 ] as const;
 

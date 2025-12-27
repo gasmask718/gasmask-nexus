@@ -83,23 +83,35 @@ const VisitLogModal = ({ open, onOpenChange, storeId, storeName, onSuccess }: Vi
 
         await createVisitProducts.mutateAsync(visitProductsData);
 
-        // 3. Update store tube inventory
-        // Aggregate by brand name (for store_tube_inventory which uses brand name)
+        // 3. Update store tube inventory (only for GasMask, HotMama, Hot Scolatti)
+        // Map brand names to tube inventory brand IDs
+        const brandNameToTubeId: Record<string, string> = {
+          'GasMask': 'gasmask',
+          'HotMama': 'hotmama',
+          'Hot Scolatti': 'hotscolatti',
+        };
+
+        // Aggregate by brand name (only for valid tube brands)
         const brandQuantities = new Map<string, number>();
         for (const product of selectedProducts) {
-          const current = brandQuantities.get(product.brand_name) || 0;
-          brandQuantities.set(product.brand_name, current + product.quantity);
+          const tubeId = brandNameToTubeId[product.brand_name];
+          if (tubeId) {
+            const current = brandQuantities.get(tubeId) || 0;
+            brandQuantities.set(tubeId, current + product.quantity);
+          }
         }
 
-        const brandUpdates = Array.from(brandQuantities.entries()).map(([brand, quantity]) => ({
-          brand: brand.toLowerCase().replace(/\s+/g, ''),
-          quantity,
-        }));
+        if (brandQuantities.size > 0) {
+          const brandUpdates = Array.from(brandQuantities.entries()).map(([brand, quantity]) => ({
+            brand,
+            quantity,
+          }));
 
-        await updateTubeInventory.mutateAsync({
-          storeId,
-          brandUpdates,
-        });
+          await updateTubeInventory.mutateAsync({
+            storeId,
+            brandUpdates,
+          });
+        }
       }
 
       // 4. Invalidate relevant queries
