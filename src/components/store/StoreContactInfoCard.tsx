@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,9 +6,31 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MapPin, Phone, Mail, MessageSquare, Edit, Building } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { MapPin, Phone, Mail, MessageSquare, Edit, Building, Plus, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+type StickerStatus = 'none' | 'doorOnly' | 'inStoreOnly' | 'doorAndInStore';
+
+const STICKER_STATUS_OPTIONS: StickerStatus[] = ['none', 'doorOnly', 'inStoreOnly', 'doorAndInStore'];
+
+const STICKER_STATUS_LABELS: Record<StickerStatus, string> = {
+  none: 'No Sticker',
+  doorOnly: 'Door Sticker',
+  inStoreOnly: 'In-Store Sticker',
+  doorAndInStore: 'Door & In-Store',
+};
+
+const isStickerStatus = (value: unknown): value is StickerStatus =>
+  typeof value === 'string' && STICKER_STATUS_OPTIONS.includes(value as StickerStatus);
+
+const deriveStickerStatus = (door: boolean, instore: boolean): StickerStatus => {
+  if (door && instore) return 'doorAndInStore';
+  if (door) return 'doorOnly';
+  if (instore) return 'inStoreOnly';
+  return 'none';
+};
 
 interface Store {
   id: string;
@@ -20,7 +42,13 @@ interface Store {
   phone: string;
   alt_phone: string;
   email: string;
-  tags: string[];
+  tags: string[] | null;
+  sticker_status: StickerStatus | null;
+  sticker_door: boolean | null;
+  sticker_instore: boolean | null;
+  sticker_phone: boolean | null;
+  sticker_taken_down: boolean | null;
+  sticker_taken_down_at?: string | null;
 }
 
 interface StoreContactInfoCardProps {
@@ -28,25 +56,130 @@ interface StoreContactInfoCardProps {
   onUpdate: () => void;
 }
 
+type ContactFormData = {
+  phone: string;
+  alt_phone: string;
+  email: string;
+  address_street: string;
+  address_city: string;
+  address_state: string;
+  address_zip: string;
+  tags: string[];
+  sticker_status: StickerStatus;
+  sticker_door: boolean;
+  sticker_instore: boolean;
+  sticker_phone: boolean;
+  sticker_taken_down: boolean;
+};
+
+const createInitialFormData = (store: Store): ContactFormData => ({
+  phone: store.phone || '',
+  alt_phone: store.alt_phone || '',
+  email: store.email || '',
+  address_street: store.address_street || '',
+  address_city: store.address_city || '',
+  address_state: store.address_state || '',
+  address_zip: store.address_zip || '',
+  tags: store.tags ?? [],
+  sticker_door: Boolean(store.sticker_door),
+  sticker_instore: Boolean(store.sticker_instore),
+  sticker_phone: Boolean(store.sticker_phone),
+  sticker_taken_down: Boolean(store.sticker_taken_down),
+  sticker_status: isStickerStatus(store.sticker_status)
+    ? store.sticker_status
+    : deriveStickerStatus(Boolean(store.sticker_door), Boolean(store.sticker_instore)),
+});
+
 export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({
-    phone: store.phone || '',
-    alt_phone: store.alt_phone || '',
-    email: store.email || '',
-    address_street: store.address_street || '',
-    address_city: store.address_city || '',
-    address_state: store.address_state || '',
-    address_zip: store.address_zip || '',
-  });
+  const [formData, setFormData] = useState<ContactFormData>(() => createInitialFormData(store));
+  const [newTag, setNewTag] = useState('');
+  const stickerToggleConfigs: Array<{
+    key: keyof Pick<ContactFormData, 'sticker_door' | 'sticker_instore' | 'sticker_phone'>;
+    label: string;
+  }> = [
+    { key: 'sticker_door', label: 'Door Sticker' },
+    { key: 'sticker_instore', label: 'In-Store Sticker' },
+    { key: 'sticker_phone', label: 'Phone Sticker' },
+  ];
+
+  useEffect(() => {
+    if (!editOpen) return;
+
+    setFormData(createInitialFormData(store));
+    setNewTag('');
+  }, [store, editOpen]);
+
+  const handleAddTag = () => {
+    const trimmed = newTag.trim();
+    if (!trimmed) return;
+
+    setFormData((prev) => {
+      const hasTag = prev.tags.some((tag) => tag.toLowerCase() === trimmed.toLowerCase());
+      if (hasTag) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        tags: [...prev.tags, trimmed],
+      };
+    });
+
+    setNewTag('');
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
+    }));
+  };
+
+  const handleStickerToggle = (
+    field: 'sticker_door' | 'sticker_instore' | 'sticker_phone',
+    value: boolean
+  ) => {
+    setFormData((prev) => {
+      const next: ContactFormData = { ...prev, [field]: value };
+      if (field === 'sticker_door' || field === 'sticker_instore') {
+        next.sticker_status = deriveStickerStatus(
+          field === 'sticker_door' ? value : next.sticker_door,
+          field === 'sticker_instore' ? value : next.sticker_instore
+        );
+      }
+      return next;
+    });
+  };
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      const stickerStatus = deriveStickerStatus(formData.sticker_door, formData.sticker_instore);
+      const updates: Record<string, unknown> = {
+        phone: formData.phone || null,
+        alt_phone: formData.alt_phone || null,
+        email: formData.email || null,
+        address_street: formData.address_street || null,
+        address_city: formData.address_city || null,
+        address_state: formData.address_state || null,
+        address_zip: formData.address_zip || null,
+        tags: formData.tags,
+        sticker_status: stickerStatus,
+        sticker_door: formData.sticker_door,
+        sticker_instore: formData.sticker_instore,
+        sticker_phone: formData.sticker_phone,
+        sticker_taken_down: formData.sticker_taken_down,
+      };
+
+      if (store.sticker_taken_down !== formData.sticker_taken_down) {
+        updates.sticker_taken_down_at = formData.sticker_taken_down ? new Date().toISOString() : null;
+      }
+
       const { error } = await supabase
         .from('stores')
-        .update(formData)
+        .update(updates)
         .eq('id', store.id);
 
       if (error) throw error;
@@ -120,7 +253,7 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                   </div>
                 </div>
                 <Button size="sm" variant="ghost" asChild>
-                  <a href={`tel:${store.phone}`}>
+                  <a href={`tel:${store.phone}`} aria-label={`Call ${store.name}`}>
                     <Phone className="h-4 w-4" />
                   </a>
                 </Button>
@@ -152,12 +285,12 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                 </div>
                 <div className="flex gap-1">
                   <Button size="sm" variant="ghost" asChild>
-                    <a href={`tel:${store.alt_phone}`}>
+                    <a href={`tel:${store.alt_phone}`} aria-label={`Call ${store.name} cell`}>
                       <Phone className="h-4 w-4" />
                     </a>
                   </Button>
                   <Button size="sm" variant="ghost" asChild>
-                    <a href={`sms:${store.alt_phone}`}>
+                    <a href={`sms:${store.alt_phone}`} aria-label={`Text ${store.name}`}>
                       <MessageSquare className="h-4 w-4" />
                     </a>
                   </Button>
@@ -197,11 +330,11 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit Contact Information</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="flex-1 space-y-4 overflow-y-auto py-4 pr-1">
             <div className="space-y-2">
               <Label>Store Telephone (Call Only)</Label>
               <Input
@@ -226,6 +359,89 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="store@example.com"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Store Tags</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      handleAddTag();
+                    }
+                  }}
+                  placeholder="Type a tag and press Enter"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddTag}
+                  disabled={!newTag.trim()}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add
+                </Button>
+              </div>
+              {formData.tags.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag) => (
+                    <Badge key={tag} variant="outline" className="flex items-center gap-1 text-xs">
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-destructive"
+                        aria-label={`Remove ${tag}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No tags added yet.</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-sm">Sticker Status</Label>
+                <Badge variant="outline" className="text-xs">
+                  {STICKER_STATUS_LABELS[formData.sticker_status]}
+                </Badge>
+              </div>
+              <div className="rounded-lg border border-border/40 p-3 space-y-3">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {stickerToggleConfigs.map(({ key, label }) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between rounded-md bg-muted/20 px-3 py-2 text-sm"
+                    >
+                      <span>{label}</span>
+                      <Switch
+                        id={`${key}-toggle`}
+                        checked={formData[key]}
+                        onCheckedChange={(checked) => handleStickerToggle(key, checked)}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between rounded-md bg-destructive/5 px-3 py-2 text-sm">
+                  <span>Sticker Taken Down</span>
+                  <Switch
+                    id="sticker-taken-down-toggle"
+                    checked={formData.sticker_taken_down}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        sticker_taken_down: checked,
+                      }))
+                    }
+                  />
+                </div>
+              </div>
             </div>
             <Separator />
             <div className="space-y-2">
@@ -263,7 +479,7 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 pt-4">
             <Button variant="outline" onClick={() => setEditOpen(false)}>
               Cancel
             </Button>
