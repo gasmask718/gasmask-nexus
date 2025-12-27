@@ -29,8 +29,8 @@ import { StoreContactInfoCard } from '@/components/store/StoreContactInfoCard';
 import { StoreNotesSection } from '@/components/store/StoreNotesSection';
 import { AddNoteModal } from '@/components/store/AddNoteModal';
 import { StoreOperationsCard } from '@/components/store/StoreOperationsCard';
-import { StoreTubeInventoryCard } from '@/components/store/StoreTubeInventoryCard';
-import { UpdateInventoryModal } from '@/components/store/UpdateInventoryModal';
+import { EditableTubeInventoryCard } from '@/components/store/EditableTubeInventoryCard';
+import { StoreVisitInventoryCard } from '@/components/store/StoreVisitInventoryCard';
 import { StoreQuickActions } from '@/components/store/StoreQuickActions';
 import { RecentStoreInteractions } from '@/components/crm/RecentStoreInteractions';
 import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
@@ -135,7 +135,7 @@ const StoreDetail = () => {
   const [timelineRefresh, setTimelineRefresh] = useState(0);
   const [geocoding, setGeocoding] = useState(false);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
-  const [updateInventoryModalOpen, setUpdateInventoryModalOpen] = useState(false);
+  
 
   // Fetch store contacts for interaction modal
   const { data: storeContacts } = useQuery({
@@ -432,11 +432,11 @@ const StoreDetail = () => {
           {/* Notes Section */}
           <StoreNotesSection storeId={id || ''} storeName={store.name} />
 
-          {/* Tube Inventory with Exact Counts */}
-          <StoreTubeInventoryCard
-            storeId={id || ''}
-            onAddCount={() => setUpdateInventoryModalOpen(true)}
-          />
+          {/* Tube Inventory - Editable with Brand Filter */}
+          <EditableTubeInventoryCard storeId={id || ''} />
+
+          {/* Product Inventory from Visits - Read-only */}
+          <StoreVisitInventoryCard storeId={id || ''} />
 
           {/* Operations & Stickers */}
           <StoreOperationsCard 
@@ -887,13 +887,6 @@ const StoreDetail = () => {
         storeContacts={storeContacts || []}
       />
 
-      {/* Update Inventory Modal */}
-      <UpdateInventoryModal
-        open={updateInventoryModalOpen}
-        onOpenChange={setUpdateInventoryModalOpen}
-        storeId={id || ''}
-        storeName={store.name}
-      />
     </div>
   );
 };
