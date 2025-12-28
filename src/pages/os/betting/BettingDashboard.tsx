@@ -1,13 +1,34 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Target, TrendingUp, DollarSign, Brain, BarChart3, Zap, Calculator, AlertTriangle, CheckCircle, Play, Loader2, FlaskConical, Shield, Info } from "lucide-react";
+import { Trophy, Target, TrendingUp, DollarSign, Brain, BarChart3, Zap, Calculator, AlertTriangle, CheckCircle, Play, Loader2, FlaskConical, Shield, Info, Search } from "lucide-react";
 import { useSimulatedBets, useSimulationRuns, useTodaysTopProps, useRunSimulation, useAllSimulatedBets } from '@/hooks/useBettingSimulation';
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from '@/integrations/supabase/client';
 
 export default function BettingDashboard() {
+  const [isOwner, setIsOwner] = useState(false);
+  
+  // Check owner access
+  useEffect(() => {
+    const checkOwnerAccess = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+      
+      setIsOwner(roles?.some(r => r.role === 'owner' || r.role === 'admin') ?? false);
+    };
+    
+    checkOwnerAccess();
+  }, []);
+
   // Fetch ALL simulated bets without restrictive filters
   const { data: simulatedBets } = useAllSimulatedBets();
   const { data: simulationRuns } = useSimulationRuns();
@@ -80,6 +101,14 @@ export default function BettingDashboard() {
               Hedge
             </Button>
           </Link>
+          {isOwner && (
+            <Link to="/os/sports-betting/stats-inspector">
+              <Button variant="outline" className="border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10">
+                <Search className="h-4 w-4 mr-2" />
+                Stats Inspector
+              </Button>
+            </Link>
+          )}
           <Button 
             onClick={handleRunSimulation}
             disabled={runSimulation.isPending}
