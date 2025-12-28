@@ -15187,6 +15187,333 @@ export type Database = {
         }
         Relationships: []
       }
+      nba_games_today: {
+        Row: {
+          away_team: string
+          away_team_back_to_back: boolean | null
+          created_at: string
+          game_date: string
+          game_id: string
+          game_time: string | null
+          home_team: string
+          home_team_back_to_back: boolean | null
+          id: string
+          status: string | null
+        }
+        Insert: {
+          away_team: string
+          away_team_back_to_back?: boolean | null
+          created_at?: string
+          game_date?: string
+          game_id: string
+          game_time?: string | null
+          home_team: string
+          home_team_back_to_back?: boolean | null
+          id?: string
+          status?: string | null
+        }
+        Update: {
+          away_team?: string
+          away_team_back_to_back?: boolean | null
+          created_at?: string
+          game_date?: string
+          game_id?: string
+          game_time?: string | null
+          home_team?: string
+          home_team_back_to_back?: boolean | null
+          id?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
+      nba_player_stats: {
+        Row: {
+          created_at: string
+          id: string
+          injury_status: string | null
+          last_10_games_avg_3pm: number | null
+          last_10_games_avg_ast: number | null
+          last_10_games_avg_pra: number | null
+          last_10_games_avg_pts: number | null
+          last_10_games_avg_reb: number | null
+          last_5_games_avg_3pm: number | null
+          last_5_games_avg_ast: number | null
+          last_5_games_avg_pra: number | null
+          last_5_games_avg_pts: number | null
+          last_5_games_avg_reb: number | null
+          last_updated: string
+          minutes_last_5_avg: number | null
+          player_id: string
+          player_name: string
+          position: string | null
+          season_avg_3pm: number | null
+          season_avg_ast: number | null
+          season_avg_min: number | null
+          season_avg_pra: number | null
+          season_avg_pts: number | null
+          season_avg_reb: number | null
+          std_3pm: number | null
+          std_ast: number | null
+          std_pra: number | null
+          std_pts: number | null
+          std_reb: number | null
+          team: string
+          usage_rate: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          injury_status?: string | null
+          last_10_games_avg_3pm?: number | null
+          last_10_games_avg_ast?: number | null
+          last_10_games_avg_pra?: number | null
+          last_10_games_avg_pts?: number | null
+          last_10_games_avg_reb?: number | null
+          last_5_games_avg_3pm?: number | null
+          last_5_games_avg_ast?: number | null
+          last_5_games_avg_pra?: number | null
+          last_5_games_avg_pts?: number | null
+          last_5_games_avg_reb?: number | null
+          last_updated?: string
+          minutes_last_5_avg?: number | null
+          player_id: string
+          player_name: string
+          position?: string | null
+          season_avg_3pm?: number | null
+          season_avg_ast?: number | null
+          season_avg_min?: number | null
+          season_avg_pra?: number | null
+          season_avg_pts?: number | null
+          season_avg_reb?: number | null
+          std_3pm?: number | null
+          std_ast?: number | null
+          std_pra?: number | null
+          std_pts?: number | null
+          std_reb?: number | null
+          team: string
+          usage_rate?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          injury_status?: string | null
+          last_10_games_avg_3pm?: number | null
+          last_10_games_avg_ast?: number | null
+          last_10_games_avg_pra?: number | null
+          last_10_games_avg_pts?: number | null
+          last_10_games_avg_reb?: number | null
+          last_5_games_avg_3pm?: number | null
+          last_5_games_avg_ast?: number | null
+          last_5_games_avg_pra?: number | null
+          last_5_games_avg_pts?: number | null
+          last_5_games_avg_reb?: number | null
+          last_updated?: string
+          minutes_last_5_avg?: number | null
+          player_id?: string
+          player_name?: string
+          position?: string | null
+          season_avg_3pm?: number | null
+          season_avg_ast?: number | null
+          season_avg_min?: number | null
+          season_avg_pra?: number | null
+          season_avg_pts?: number | null
+          season_avg_reb?: number | null
+          std_3pm?: number | null
+          std_ast?: number | null
+          std_pra?: number | null
+          std_pts?: number | null
+          std_reb?: number | null
+          team?: string
+          usage_rate?: number | null
+        }
+        Relationships: []
+      }
+      nba_props_generated: {
+        Row: {
+          back_to_back: boolean | null
+          break_even_probability: number | null
+          calibration_factors: Json | null
+          confidence_score: number | null
+          created_at: string
+          data_completeness: number | null
+          edge: number | null
+          estimated_probability: number | null
+          game_date: string
+          game_id: string
+          home_game: boolean | null
+          id: string
+          line_value: number
+          minutes_trend: string | null
+          opponent: string
+          opponent_def_tier: string | null
+          over_under: string
+          pace_tier: string | null
+          player_id: string
+          player_name: string
+          projected_value: number | null
+          reasoning: string[] | null
+          recommendation: string | null
+          simulated_roi: number | null
+          source: string | null
+          stat_type: string
+          team: string
+          volatility_score: string | null
+        }
+        Insert: {
+          back_to_back?: boolean | null
+          break_even_probability?: number | null
+          calibration_factors?: Json | null
+          confidence_score?: number | null
+          created_at?: string
+          data_completeness?: number | null
+          edge?: number | null
+          estimated_probability?: number | null
+          game_date?: string
+          game_id: string
+          home_game?: boolean | null
+          id?: string
+          line_value: number
+          minutes_trend?: string | null
+          opponent: string
+          opponent_def_tier?: string | null
+          over_under?: string
+          pace_tier?: string | null
+          player_id: string
+          player_name: string
+          projected_value?: number | null
+          reasoning?: string[] | null
+          recommendation?: string | null
+          simulated_roi?: number | null
+          source?: string | null
+          stat_type: string
+          team: string
+          volatility_score?: string | null
+        }
+        Update: {
+          back_to_back?: boolean | null
+          break_even_probability?: number | null
+          calibration_factors?: Json | null
+          confidence_score?: number | null
+          created_at?: string
+          data_completeness?: number | null
+          edge?: number | null
+          estimated_probability?: number | null
+          game_date?: string
+          game_id?: string
+          home_game?: boolean | null
+          id?: string
+          line_value?: number
+          minutes_trend?: string | null
+          opponent?: string
+          opponent_def_tier?: string | null
+          over_under?: string
+          pace_tier?: string | null
+          player_id?: string
+          player_name?: string
+          projected_value?: number | null
+          reasoning?: string[] | null
+          recommendation?: string | null
+          simulated_roi?: number | null
+          source?: string | null
+          stat_type?: string
+          team?: string
+          volatility_score?: string | null
+        }
+        Relationships: []
+      }
+      nba_stats_refresh_log: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          games_fetched: number | null
+          id: string
+          players_updated: number | null
+          props_generated: number | null
+          refresh_date: string
+          started_at: string | null
+          status: string | null
+          teams_updated: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          games_fetched?: number | null
+          id?: string
+          players_updated?: number | null
+          props_generated?: number | null
+          refresh_date?: string
+          started_at?: string | null
+          status?: string | null
+          teams_updated?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          games_fetched?: number | null
+          id?: string
+          players_updated?: number | null
+          props_generated?: number | null
+          refresh_date?: string
+          started_at?: string | null
+          status?: string | null
+          teams_updated?: number | null
+        }
+        Relationships: []
+      }
+      nba_team_stats: {
+        Row: {
+          created_at: string
+          def_rank_overall: number | null
+          def_rank_vs_c: number | null
+          def_rank_vs_pf: number | null
+          def_rank_vs_pg: number | null
+          def_rank_vs_sf: number | null
+          def_rank_vs_sg: number | null
+          id: string
+          last_updated: string
+          pace_rating: number | null
+          pace_tier: string | null
+          pts_allowed_avg: number | null
+          team_abbr: string
+          team_name: string
+        }
+        Insert: {
+          created_at?: string
+          def_rank_overall?: number | null
+          def_rank_vs_c?: number | null
+          def_rank_vs_pf?: number | null
+          def_rank_vs_pg?: number | null
+          def_rank_vs_sf?: number | null
+          def_rank_vs_sg?: number | null
+          id?: string
+          last_updated?: string
+          pace_rating?: number | null
+          pace_tier?: string | null
+          pts_allowed_avg?: number | null
+          team_abbr: string
+          team_name: string
+        }
+        Update: {
+          created_at?: string
+          def_rank_overall?: number | null
+          def_rank_vs_c?: number | null
+          def_rank_vs_pf?: number | null
+          def_rank_vs_pg?: number | null
+          def_rank_vs_sf?: number | null
+          def_rank_vs_sg?: number | null
+          id?: string
+          last_updated?: string
+          pace_rating?: number | null
+          pace_tier?: string | null
+          pts_allowed_avg?: number | null
+          team_abbr?: string
+          team_name?: string
+        }
+        Relationships: []
+      }
       negotiation_sessions: {
         Row: {
           ai_agent_id: string | null
