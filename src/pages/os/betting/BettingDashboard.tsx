@@ -56,6 +56,12 @@ export default function BettingDashboard() {
           <p className="text-muted-foreground mt-1">Simulation-First Analytics & Decision Support</p>
         </div>
         <div className="flex gap-2">
+          <Link to="/os/sports-betting/nba">
+            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+              <Trophy className="h-4 w-4 mr-2" />
+              NBA Daily Board
+            </Button>
+          </Link>
           <Link to="/os/sports-betting/line-intake">
             <Button variant="outline">
               <DollarSign className="h-4 w-4 mr-2" />
