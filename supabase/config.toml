@@ -82,3 +82,6 @@ verify_jwt = false
 
 [functions.nba-stats-engine]
 verify_jwt = false
+
+[functions.nba-moneyline-engine]
+verify_jwt = false
