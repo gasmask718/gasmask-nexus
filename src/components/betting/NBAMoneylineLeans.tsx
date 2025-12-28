@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,6 +11,35 @@ import {
   Home, Plane, AlertTriangle, CheckCircle, XCircle, Info
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Get today's date in Eastern Time (NBA's reference timezone)
+const getEasternDate = (): string => {
+  const now = new Date();
+  const etFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  return etFormatter.format(now); // Returns YYYY-MM-DD
+};
+
+// Convert UTC time to Eastern Time display string
+const formatGameTimeET = (gameTime: string | null): string => {
+  if (!gameTime) return 'TBD';
+  
+  try {
+    const date = new Date(gameTime);
+    return date.toLocaleTimeString('en-US', {
+      timeZone: 'America/New_York',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }) + ' ET';
+  } catch {
+    return 'TBD';
+  }
+};
 
 interface MoneylinePrediction {
   id: string;
@@ -80,9 +109,7 @@ const MoneylineCard = ({ prediction, expanded, onToggle }: {
   const awayProb = prediction.away_win_probability ? (prediction.away_win_probability * 100).toFixed(1) : 'N/A';
   const isHomeFavored = (prediction.home_win_probability || 0) >= (prediction.away_win_probability || 0);
   
-  const gameTime = prediction.game_time 
-    ? new Date(prediction.game_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-    : 'TBD';
+  const gameTime = formatGameTimeET(prediction.game_time);
 
   return (
     <Collapsible open={expanded} onOpenChange={onToggle}>
@@ -228,7 +255,7 @@ const NBAMoneylineLeans = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   
-  const today = new Date().toISOString().split('T')[0];
+  const today = useMemo(() => getEasternDate(), []);
   
   const { data: predictions, isLoading, refetch } = useQuery({
     queryKey: ['nba-moneyline-predictions', today],
