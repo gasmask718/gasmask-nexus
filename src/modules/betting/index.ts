@@ -8,7 +8,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/sports-betting/predictions', label: 'Predictions', icon: Target },
   { path: '/os/sports-betting/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/os/sports-betting/hedge', label: 'Hedge Calculator', icon: Shield },
-  { path: '/os/sports-betting/stats-inspector', label: 'Stats Inspector', icon: Search },
+  // Stats Inspector is owner-only - hidden from standard navigation but route exists
 ];
 
 export const BettingModule: DynastyModule = {
