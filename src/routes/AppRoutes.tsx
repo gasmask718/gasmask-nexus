@@ -348,6 +348,7 @@ import ParlayLab from '@/pages/os/betting/ParlayLab';
 import HedgeCenter from '@/pages/os/betting/HedgeCenter';
 import OwnerInternal from '@/pages/os/betting/OwnerInternal';
 import NBADailyBoard from '@/pages/os/betting/NBADailyBoard';
+import StatsInspector from '@/pages/os/betting/StatsInspector';
 import BikerDashboard from '@/pages/os/biker/BikerDashboard';
 import ModuleDiagnosticsPage from '@/pages/ModuleDiagnosticsPage';
 
@@ -911,6 +912,7 @@ export default function AppRoutes() {
         <Route path="/os/sports-betting/parlay-lab" element={<ParlayLab />} />
         <Route path="/os/sports-betting/hedge-center" element={<HedgeCenter />} />
         <Route path="/os/sports-betting/internal" element={<OwnerInternal />} />
+        <Route path="/os/sports-betting/stats-inspector" element={<StatsInspector />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
 
         {/* Legacy payouts aliases (keep old links working) */}
