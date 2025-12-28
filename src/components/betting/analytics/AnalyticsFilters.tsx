@@ -120,12 +120,12 @@ export function AnalyticsFilters({ filters, onChange }: AnalyticsFiltersProps) {
           {/* Sport */}
           <div className="space-y-1.5">
             <Label className="text-xs">Sport</Label>
-            <Select value={filters.sport} onValueChange={(v) => update('sport', v)}>
+            <Select value={filters.sport || 'all'} onValueChange={(v) => update('sport', v === 'all' ? '' : v)}>
               <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Sports</SelectItem>
+                <SelectItem value="all">All Sports</SelectItem>
                 {SPORTS.map(sport => (
                   <SelectItem key={sport} value={sport}>{sport}</SelectItem>
                 ))}
@@ -167,12 +167,12 @@ export function AnalyticsFilters({ filters, onChange }: AnalyticsFiltersProps) {
           {/* Market */}
           <div className="space-y-1.5">
             <Label className="text-xs">Market</Label>
-            <Select value={filters.market} onValueChange={(v) => update('market', v)}>
+            <Select value={filters.market || 'all'} onValueChange={(v) => update('market', v === 'all' ? '' : v)}>
               <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Markets</SelectItem>
+                <SelectItem value="all">All Markets</SelectItem>
                 {MARKETS.map(market => (
                   <SelectItem key={market} value={market}>{market}</SelectItem>
                 ))}
