@@ -22,7 +22,8 @@ import {
   ChevronLeft,
   Activity,
   Bug,
-  ChevronDown
+  ChevronDown,
+  EyeOff
 } from 'lucide-react';
 import { 
   useNBAGamesToday, 
@@ -35,11 +36,12 @@ import {
   useCopyPropToSimulated,
   NBAProp 
 } from '@/hooks/useNBAPredictions';
-import { NBAStatsDisplay, StatsDebugPanel } from '@/components/betting/NBAStatsDisplay';
+import { NBAStatsDisplay, StatsDebugPanel, HiddenPropMessage, hasRequiredStats } from '@/components/betting/NBAStatsDisplay';
 
 const NBADailyBoard = () => {
   const [activeTab, setActiveTab] = useState('top-props');
   const [showStatsDebug, setShowStatsDebug] = useState(false);
+  const [showHiddenCount, setShowHiddenCount] = useState(true);
   
   const { data: games, isLoading: gamesLoading } = useNBAGamesToday();
   const { data: topProps, isLoading: topLoading } = useTopAIProps(65);
@@ -81,6 +83,9 @@ const NBADailyBoard = () => {
       defRank: factors?.def_rank ?? null,
       paceRating: factors?.pace_rating ?? null,
       statsSource: factors?.stats_source ?? prop.source ?? null,
+      playerId: factors?.player_id ?? prop.player_id ?? null,
+      gameId: factors?.game_id ?? null,
+      fetchTimestamp: factors?.fetch_timestamp ?? null,
     };
   };
 
@@ -93,13 +98,42 @@ const NBADailyBoard = () => {
     return true;
   };
 
-  const PropCard = ({ prop, showAdd = true }: { prop: NBAProp; showAdd?: boolean }) => {
+  // HARD FAIL: Check if prop has all required stats for display
+  const propHasRequiredStats = (prop: NBAProp): boolean => {
+    const stats = extractStats(prop);
+    return hasRequiredStats({
+      playerName: prop.player_name,
+      team: prop.team,
+      opponent: prop.opponent,
+      last5Avg: stats.last5Avg,
+      seasonAvg: stats.seasonAvg,
+      last5MinutesAvg: stats.last5MinutesAvg,
+      opponentDefTier: prop.opponent_def_tier,
+      paceTier: prop.pace_tier,
+      source: stats.statsSource,
+    });
+  };
+
+  // Filter props with required stats
+  const filterValidProps = (props: NBAProp[] | undefined): NBAProp[] => {
+    if (!props) return [];
+    return props.filter(p => isValidPlayer(p) && propHasRequiredStats(p));
+  };
+
+  // Count hidden props
+  const countHiddenProps = (props: NBAProp[] | undefined): number => {
+    if (!props) return 0;
+    return props.filter(p => !isValidPlayer(p) || !propHasRequiredStats(p)).length;
+  };
+
+  const PropCard = ({ prop, showAdd = true, forceExpandedStats = false }: { prop: NBAProp; showAdd?: boolean; forceExpandedStats?: boolean }) => {
     const [debugOpen, setDebugOpen] = useState(false);
     const stats = extractStats(prop);
     const validPlayer = isValidPlayer(prop);
+    const hasStats = propHasRequiredStats(prop);
     
-    // Don't render invalid/placeholder players
-    if (!validPlayer) {
+    // HARD FAIL: Don't render props without valid player or required stats
+    if (!validPlayer || !hasStats) {
       return null;
     }
     
@@ -133,11 +167,13 @@ const NBADailyBoard = () => {
                 </Badge>
               </div>
               
-              {/* Stats Display - These are the SAME values used in probability calculations */}
+              {/* Stats Display - MANDATORY: These are the SAME values used in probability calculations */}
+              {/* Cannot be collapsed for Top AI Props (forceExpandedStats) */}
               <NBAStatsDisplay
                 playerName={prop.player_name}
                 team={prop.team}
                 opponent={prop.opponent}
+                gameDate={prop.game_date}
                 last5Avg={stats.last5Avg}
                 seasonAvg={stats.seasonAvg}
                 last5MinutesAvg={stats.last5MinutesAvg}
@@ -147,15 +183,16 @@ const NBADailyBoard = () => {
                 dataCompleteness={prop.data_completeness}
                 source={stats.statsSource}
                 statType={prop.stat_type}
+                forceExpanded={forceExpandedStats}
               />
 
-              {/* Stats Debug Panel (owner-only toggle) */}
+              {/* Owner Debug Toggle - View Raw Stats Data */}
               {showStatsDebug && (
                 <Collapsible open={debugOpen} onOpenChange={setDebugOpen} className="mt-2">
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-muted-foreground">
                       <Bug className="h-3 w-3 mr-1" />
-                      Stats Debug
+                      View Raw Stats Data
                       <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${debugOpen ? 'rotate-180' : ''}`} />
                     </Button>
                   </CollapsibleTrigger>
@@ -164,6 +201,9 @@ const NBADailyBoard = () => {
                       calibrationFactors={prop.calibration_factors}
                       source={prop.source}
                       dataCompleteness={prop.data_completeness}
+                      playerId={stats.playerId}
+                      gameId={stats.gameId}
+                      fetchTimestamp={stats.fetchTimestamp}
                     />
                   </CollapsibleContent>
                 </Collapsible>
@@ -212,6 +252,18 @@ const NBADailyBoard = () => {
       </Card>
     );
   };
+
+  // Count hidden props for each category
+  const hiddenTopProps = countHiddenProps(topProps);
+  const hiddenParlayProps = countHiddenProps(parlayProps);
+  const hiddenAvoidProps = countHiddenProps(avoidProps);
+  const hiddenAllProps = countHiddenProps(allProps);
+
+  // Get filtered valid props
+  const validTopProps = filterValidProps(topProps);
+  const validParlayProps = filterValidProps(parlayProps);
+  const validAvoidProps = filterValidProps(avoidProps);
+  const validAllProps = filterValidProps(allProps);
 
   const isLoading = gamesLoading || topLoading || parlayLoading || avoidLoading || allLoading;
 
@@ -303,23 +355,23 @@ const NBADailyBoard = () => {
         </Card>
       )}
 
-      {/* Props Tabs */}
+      {/* Props Tabs - Using filtered valid props counts */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-4 w-full max-w-2xl">
           <TabsTrigger value="top-props" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
-            Top Props ({topProps?.length || 0})
+            Top Props ({validTopProps.length})
           </TabsTrigger>
           <TabsTrigger value="parlay" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
-            Parlay ({parlayProps?.length || 0})
+            Parlay ({validParlayProps.length})
           </TabsTrigger>
           <TabsTrigger value="avoid" className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
-            Avoid ({avoidProps?.length || 0})
+            Avoid ({validAvoidProps.length})
           </TabsTrigger>
           <TabsTrigger value="all" className="flex items-center gap-2">
-            All ({allProps?.length || 0})
+            All ({validAllProps.length})
           </TabsTrigger>
         </TabsList>
 
@@ -331,17 +383,28 @@ const NBADailyBoard = () => {
                 Top AI Props (Singles)
               </CardTitle>
               <CardDescription>
-                High confidence plays with positive expected ROI. Min 65% confidence.
+                High confidence plays with positive expected ROI. Min 65% confidence. Stats panel always visible.
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Hidden props warning */}
+              {hiddenTopProps > 0 && (
+                <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-md flex items-center gap-2">
+                  <EyeOff className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm text-amber-700">
+                    {hiddenTopProps} prop{hiddenTopProps > 1 ? 's' : ''} hidden — insufficient verified stats
+                  </span>
+                </div>
+              )}
               <ScrollArea className="h-[500px]">
-                {topProps?.length === 0 && !isLoading && (
-                  <p className="text-muted-foreground text-center py-8">
-                    No top props found. Run predictions to generate.
-                  </p>
+                {validTopProps.length === 0 && !isLoading && (
+                  <div className="py-8">
+                    <HiddenPropMessage reason="no props with complete verified stats" />
+                  </div>
                 )}
-                {topProps?.map((prop) => <PropCard key={prop.id} prop={prop} />)}
+                {validTopProps.map((prop) => (
+                  <PropCard key={prop.id} prop={prop} forceExpandedStats={true} />
+                ))}
               </ScrollArea>
             </CardContent>
           </Card>
@@ -359,13 +422,24 @@ const NBADailyBoard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Hidden props warning */}
+              {hiddenParlayProps > 0 && (
+                <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-md flex items-center gap-2">
+                  <EyeOff className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm text-amber-700">
+                    {hiddenParlayProps} prop{hiddenParlayProps > 1 ? 's' : ''} hidden — insufficient verified stats
+                  </span>
+                </div>
+              )}
               <ScrollArea className="h-[500px]">
-                {parlayProps?.length === 0 && !isLoading && (
-                  <p className="text-muted-foreground text-center py-8">
-                    No parlay-eligible props found. Run predictions to generate.
-                  </p>
+                {validParlayProps.length === 0 && !isLoading && (
+                  <div className="py-8">
+                    <HiddenPropMessage reason="no parlay props with complete verified stats" />
+                  </div>
                 )}
-                {parlayProps?.map((prop) => <PropCard key={prop.id} prop={prop} />)}
+                {validParlayProps.map((prop) => (
+                  <PropCard key={prop.id} prop={prop} />
+                ))}
               </ScrollArea>
             </CardContent>
           </Card>
@@ -383,13 +457,24 @@ const NBADailyBoard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Hidden props warning */}
+              {hiddenAvoidProps > 0 && (
+                <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-md flex items-center gap-2">
+                  <EyeOff className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm text-amber-700">
+                    {hiddenAvoidProps} prop{hiddenAvoidProps > 1 ? 's' : ''} hidden — insufficient verified stats
+                  </span>
+                </div>
+              )}
               <ScrollArea className="h-[500px]">
-                {avoidProps?.length === 0 && !isLoading && (
-                  <p className="text-muted-foreground text-center py-8">
-                    No props to avoid found. Run predictions to generate.
-                  </p>
+                {validAvoidProps.length === 0 && !isLoading && (
+                  <div className="py-8">
+                    <HiddenPropMessage reason="no avoid props with complete verified stats" />
+                  </div>
                 )}
-                {avoidProps?.map((prop) => <PropCard key={prop.id} prop={prop} showAdd={false} />)}
+                {validAvoidProps.map((prop) => (
+                  <PropCard key={prop.id} prop={prop} showAdd={false} />
+                ))}
               </ScrollArea>
             </CardContent>
           </Card>
@@ -404,13 +489,24 @@ const NBADailyBoard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Hidden props warning */}
+              {hiddenAllProps > 0 && (
+                <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-md flex items-center gap-2">
+                  <EyeOff className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm text-amber-700">
+                    {hiddenAllProps} prop{hiddenAllProps > 1 ? 's' : ''} hidden — insufficient verified stats
+                  </span>
+                </div>
+              )}
               <ScrollArea className="h-[500px]">
-                {allProps?.length === 0 && !isLoading && (
-                  <p className="text-muted-foreground text-center py-8">
-                    No props found. Run predictions to generate.
-                  </p>
+                {validAllProps.length === 0 && !isLoading && (
+                  <div className="py-8">
+                    <HiddenPropMessage reason="no props with complete verified stats" />
+                  </div>
                 )}
-                {allProps?.map((prop) => <PropCard key={prop.id} prop={prop} />)}
+                {validAllProps.map((prop) => (
+                  <PropCard key={prop.id} prop={prop} />
+                ))}
               </ScrollArea>
             </CardContent>
           </Card>
