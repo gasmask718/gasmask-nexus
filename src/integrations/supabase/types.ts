@@ -3168,52 +3168,70 @@ export type Database = {
       }
       bets_simulated: {
         Row: {
+          ai_probability: number | null
+          ai_projection: number | null
           bet_type: string
           calibration_factors: Json | null
           confidence_score: number | null
           created_at: string | null
           data_completeness: number | null
           description: string | null
+          edge: number | null
           estimated_probability: number | null
           id: string
+          implied_probability: number | null
           market_line_id: string | null
           platform: string
+          recommendation: string | null
           simulated_roi: number | null
           source: string
+          sportsbook_line_id: string | null
           status: Database["public"]["Enums"]["bet_status"] | null
           updated_at: string | null
           volatility_score: number | null
         }
         Insert: {
+          ai_probability?: number | null
+          ai_projection?: number | null
           bet_type: string
           calibration_factors?: Json | null
           confidence_score?: number | null
           created_at?: string | null
           data_completeness?: number | null
           description?: string | null
+          edge?: number | null
           estimated_probability?: number | null
           id?: string
+          implied_probability?: number | null
           market_line_id?: string | null
           platform: string
+          recommendation?: string | null
           simulated_roi?: number | null
           source?: string
+          sportsbook_line_id?: string | null
           status?: Database["public"]["Enums"]["bet_status"] | null
           updated_at?: string | null
           volatility_score?: number | null
         }
         Update: {
+          ai_probability?: number | null
+          ai_projection?: number | null
           bet_type?: string
           calibration_factors?: Json | null
           confidence_score?: number | null
           created_at?: string | null
           data_completeness?: number | null
           description?: string | null
+          edge?: number | null
           estimated_probability?: number | null
           id?: string
+          implied_probability?: number | null
           market_line_id?: string | null
           platform?: string
+          recommendation?: string | null
           simulated_roi?: number | null
           source?: string
+          sportsbook_line_id?: string | null
           status?: Database["public"]["Enums"]["bet_status"] | null
           updated_at?: string | null
           volatility_score?: number | null
@@ -3224,6 +3242,13 @@ export type Database = {
             columns: ["market_line_id"]
             isOneToOne: false
             referencedRelation: "market_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bets_simulated_sportsbook_line_id_fkey"
+            columns: ["sportsbook_line_id"]
+            isOneToOne: false
+            referencedRelation: "sportsbook_lines"
             referencedColumns: ["id"]
           },
         ]
@@ -20228,6 +20253,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sportsbook_lines: {
+        Row: {
+          game_date: string
+          id: string
+          is_valid: boolean | null
+          line_value: number | null
+          market_type: string
+          matched_player_id: string | null
+          matched_team_id: string | null
+          opponent: string | null
+          over_odds: number | null
+          player_or_team: string
+          sport: string
+          sportsbook: string | null
+          under_odds: number | null
+          uploaded_at: string
+          uploaded_by: string | null
+          validation_notes: string | null
+        }
+        Insert: {
+          game_date: string
+          id?: string
+          is_valid?: boolean | null
+          line_value?: number | null
+          market_type: string
+          matched_player_id?: string | null
+          matched_team_id?: string | null
+          opponent?: string | null
+          over_odds?: number | null
+          player_or_team: string
+          sport?: string
+          sportsbook?: string | null
+          under_odds?: number | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+          validation_notes?: string | null
+        }
+        Update: {
+          game_date?: string
+          id?: string
+          is_valid?: boolean | null
+          line_value?: number | null
+          market_type?: string
+          matched_player_id?: string | null
+          matched_team_id?: string | null
+          opponent?: string | null
+          over_odds?: number | null
+          player_or_team?: string
+          sport?: string
+          sportsbook?: string | null
+          under_odds?: number | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+          validation_notes?: string | null
+        }
+        Relationships: []
       }
       store_ai_insights: {
         Row: {

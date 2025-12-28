@@ -85,3 +85,6 @@ verify_jwt = false
 
 [functions.nba-moneyline-engine]
 verify_jwt = false
+
+[functions.simulate-lines]
+verify_jwt = false
