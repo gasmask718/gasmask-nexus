@@ -349,6 +349,13 @@ import HedgeCenter from '@/pages/os/betting/HedgeCenter';
 import OwnerInternal from '@/pages/os/betting/OwnerInternal';
 import NBADailyBoard from '@/pages/os/betting/NBADailyBoard';
 import StatsInspector from '@/pages/os/betting/StatsInspector';
+import BettingAnalytics from '@/pages/os/betting/BettingAnalytics';
+import BettingSettings from '@/pages/os/betting/BettingSettings';
+import BettingWorkflow from '@/pages/os/betting/BettingWorkflow';
+import PlatformsDashboard from '@/pages/os/betting/PlatformsDashboard';
+import LineShopping from '@/pages/os/betting/LineShopping';
+import PickEntryWizard from '@/pages/os/betting/PickEntryWizard';
+import EntriesList from '@/pages/os/betting/EntriesList';
 import BikerDashboard from '@/pages/os/biker/BikerDashboard';
 import ModuleDiagnosticsPage from '@/pages/ModuleDiagnosticsPage';
 
@@ -913,6 +920,13 @@ export default function AppRoutes() {
         <Route path="/os/sports-betting/hedge-center" element={<HedgeCenter />} />
         <Route path="/os/sports-betting/internal" element={<OwnerInternal />} />
         <Route path="/os/sports-betting/stats-inspector" element={<StatsInspector />} />
+        <Route path="/os/sports-betting/analytics" element={<BettingAnalytics />} />
+        <Route path="/os/sports-betting/settings" element={<BettingSettings />} />
+        <Route path="/os/sports-betting/workflow" element={<BettingWorkflow />} />
+        <Route path="/os/sports-betting/platforms" element={<PlatformsDashboard />} />
+        <Route path="/os/sports-betting/line-shopping" element={<LineShopping />} />
+        <Route path="/os/sports-betting/entries" element={<EntriesList />} />
+        <Route path="/os/sports-betting/entries/new" element={<PickEntryWizard />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
 
         {/* Legacy payouts aliases (keep old links working) */}
