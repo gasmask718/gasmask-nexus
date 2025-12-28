@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Types for NBA data
+// Types for NBA data - aligned with database schema
 export interface NBAGame {
   id: string;
   game_id: string;
@@ -25,38 +25,38 @@ export interface NBAProp {
   stat_type: string;
   line_value: number;
   over_under: string;
-  estimated_probability: number;
-  break_even_probability: number;
-  edge: number;
-  confidence_score: number;
-  simulated_roi: number;
-  recommendation: string;
-  reasoning: string[];
-  player_recent_avg: number;
-  player_season_avg: number;
-  opponent_def_tier: string;
-  pace_tier: string;
-  minutes_trend: string;
-  data_completeness: number;
-  stats_source: string;
-  parlay_eligible: boolean;
-  should_avoid: boolean;
-  injury_status: string;
-  generated_at: string;
+  estimated_probability: number | null;
+  break_even_probability: number | null;
+  edge: number | null;
+  confidence_score: number | null;
+  simulated_roi: number | null;
+  recommendation: string | null;
+  reasoning: string[] | null;
+  opponent_def_tier: string | null;
+  pace_tier: string | null;
+  minutes_trend: string | null;
+  data_completeness: number | null;
+  source: string | null;
+  volatility_score: string | null;
+  calibration_factors: any | null;
+  projected_value: number | null;
+  back_to_back: boolean | null;
+  home_game: boolean | null;
+  created_at: string;
 }
 
 export interface NBAStatsRefreshLog {
   id: string;
   refresh_date: string;
-  status: string;
-  games_fetched: number;
-  players_updated: number;
-  teams_updated: number;
-  props_generated: number;
-  started_at: string;
-  completed_at: string;
-  source: string;
-  notes: string;
+  status: string | null;
+  games_fetched: number | null;
+  players_updated: number | null;
+  teams_updated: number | null;
+  props_generated: number | null;
+  started_at: string | null;
+  completed_at: string | null;
+  error_message: string | null;
+  created_at: string;
 }
 
 // Fetch today's NBA games
@@ -150,9 +150,9 @@ export const useParlayEligibleProps = () => {
       
       if (error) throw error;
       
-      // Filter to avoid correlated props (same player, same game)
+      // Filter to avoid correlated props (same player)
       const seenPlayers = new Set<string>();
-      const filtered = (data || []).filter((prop: NBAProp) => {
+      const filtered = (data || []).filter((prop) => {
         if (seenPlayers.has(prop.player_id)) return false;
         seenPlayers.add(prop.player_id);
         return true;
@@ -261,6 +261,8 @@ export const useCopyPropToSimulated = () => {
   
   return useMutation({
     mutationFn: async (prop: NBAProp) => {
+      const volatilityNum = prop.volatility_score === 'low' ? 25 : prop.volatility_score === 'high' ? 75 : 50;
+      
       const { data, error } = await supabase
         .from('bets_simulated')
         .insert({
@@ -271,7 +273,7 @@ export const useCopyPropToSimulated = () => {
           estimated_probability: prop.estimated_probability,
           confidence_score: prop.confidence_score,
           simulated_roi: prop.simulated_roi,
-          volatility_score: prop.volatility_score === 'low' ? 25 : prop.volatility_score === 'high' ? 75 : 50,
+          volatility_score: volatilityNum,
           status: 'simulated',
           calibration_factors: prop.calibration_factors,
           data_completeness: prop.data_completeness,

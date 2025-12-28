@@ -672,6 +672,9 @@ serve(async (req) => {
           else if (edge >= 2 && confidence >= 55) recommendation = "lean";
           else if (shouldAvoid) recommendation = "avoid";
 
+          // Determine volatility tier
+          const volatilityTier = volatility > 0.4 ? "high" : volatility < 0.2 ? "low" : "medium";
+
           propsGenerated.push({
             game_id: game.game_id,
             game_date: today,
@@ -689,16 +692,22 @@ serve(async (req) => {
             simulated_roi: simulatedROI,
             recommendation,
             reasoning,
-            player_recent_avg: last5,
-            player_season_avg: season,
             opponent_def_tier: oppDefTier,
             pace_tier: paceTier,
             minutes_trend: minutesTrend,
             data_completeness: player.data_completeness || 50,
-            stats_source: player.stats_source || "Unknown",
-            parlay_eligible: parlayEligible,
-            should_avoid: shouldAvoid,
-            generated_at: new Date().toISOString(),
+            source: player.stats_source || "Unknown",
+            volatility_score: volatilityTier,
+            projected_value: projected,
+            back_to_back: isB2B,
+            home_game: isHome,
+            calibration_factors: {
+              last5_avg: last5,
+              season_avg: season,
+              std: std,
+              def_rank: oppDefRank,
+              injury: player.injury_status
+            },
           });
         }
       }
