@@ -4,3 +4,4 @@ export { default as HedgeCenter } from './HedgeCenter';
 export { default as SimulationPage } from './SimulationPage';
 export { default as LineIntake } from './LineIntake';
 export { default as OwnerInternal } from './OwnerInternal';
+export { default as NBADailyBoard } from './NBADailyBoard';
