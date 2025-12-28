@@ -70,19 +70,38 @@ const NBADailyBoard = () => {
   };
 
   // Extract stats from calibration_factors for display consistency
+  // CRITICAL: These must match the values used in probability calculations
   const extractStats = (prop: NBAProp) => {
     const factors = prop.calibration_factors as Record<string, any> | null;
     return {
-      last5Avg: factors?.last_5_avg ?? factors?.player_recent_avg ?? prop.last_5_avg ?? null,
-      seasonAvg: factors?.season_avg ?? factors?.player_season_avg ?? prop.season_avg ?? null,
-      last5MinutesAvg: factors?.last_5_minutes_avg ?? factors?.minutes_l5 ?? null,
-      injuryStatus: factors?.injury_status ?? prop.injury_status ?? 'active',
+      last5Avg: factors?.last_5_avg ?? null,
+      seasonAvg: factors?.season_avg ?? null,
+      last5MinutesAvg: factors?.minutes_l5 ?? null,
+      injuryStatus: factors?.injury_status ?? 'active',
+      defRank: factors?.def_rank ?? null,
+      paceRating: factors?.pace_rating ?? null,
+      statsSource: factors?.stats_source ?? prop.source ?? null,
     };
+  };
+
+  // Check if prop has valid player identity (not placeholder)
+  const isValidPlayer = (prop: NBAProp): boolean => {
+    const invalidNames = ['PG Player', 'SG Player', 'SF Player', 'PF Player', 'C Player', 'Unknown Player', 'Unknown'];
+    if (invalidNames.some(invalid => prop.player_name?.includes(invalid))) return false;
+    if (prop.player_id?.startsWith('mock_')) return false;
+    if (prop.source?.includes('Mock')) return false;
+    return true;
   };
 
   const PropCard = ({ prop, showAdd = true }: { prop: NBAProp; showAdd?: boolean }) => {
     const [debugOpen, setDebugOpen] = useState(false);
     const stats = extractStats(prop);
+    const validPlayer = isValidPlayer(prop);
+    
+    // Don't render invalid/placeholder players
+    if (!validPlayer) {
+      return null;
+    }
     
     return (
       <Card className="mb-3">
@@ -116,6 +135,9 @@ const NBADailyBoard = () => {
               
               {/* Stats Display - These are the SAME values used in probability calculations */}
               <NBAStatsDisplay
+                playerName={prop.player_name}
+                team={prop.team}
+                opponent={prop.opponent}
                 last5Avg={stats.last5Avg}
                 seasonAvg={stats.seasonAvg}
                 last5MinutesAvg={stats.last5MinutesAvg}
@@ -123,7 +145,7 @@ const NBADailyBoard = () => {
                 paceTier={prop.pace_tier}
                 injuryStatus={stats.injuryStatus}
                 dataCompleteness={prop.data_completeness}
-                source={prop.source}
+                source={stats.statsSource}
                 statType={prop.stat_type}
               />
 
