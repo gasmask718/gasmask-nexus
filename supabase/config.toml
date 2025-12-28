@@ -79,3 +79,6 @@ verify_jwt = false
 
 [functions.simulate-outcomes]
 verify_jwt = false
+
+[functions.nba-stats-engine]
+verify_jwt = false
