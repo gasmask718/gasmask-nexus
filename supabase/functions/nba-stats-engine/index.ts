@@ -6,216 +6,316 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// NBA Stats Engine - Fetches/generates NBA player stats and runs predictions
-// For Phase 3.5: Uses deterministic mock data with realistic distributions
-// Future: Replace with real API calls (ball-dont-lie, sportradar, etc.)
+// SportsDataIO NBA API integration
+const SPORTSDATAIO_BASE = "https://api.sportsdata.io/v3/nba";
 
-interface NBAPlayer {
-  player_id: string;
-  player_name: string;
-  team: string;
-  position: string;
-  stats: {
-    pts: { last5: number; last10: number; season: number; std: number };
-    reb: { last5: number; last10: number; season: number; std: number };
-    ast: { last5: number; last10: number; season: number; std: number };
-    threepm: { last5: number; last10: number; season: number; std: number };
-    pra: { last5: number; last10: number; season: number; std: number };
-    min: { last5: number; season: number };
+// Fetch from SportsDataIO
+async function fetchSportsDataIO(endpoint: string, apiKey: string): Promise<any> {
+  const url = `${SPORTSDATAIO_BASE}${endpoint}?key=${apiKey}`;
+  console.log(`Fetching SportsDataIO: ${endpoint}`);
+  
+  const response = await fetch(url);
+  if (!response.ok) {
+    console.error(`SportsDataIO API error: ${response.status} - ${response.statusText}`);
+    throw new Error(`SportsDataIO API error: ${response.status}`);
+  }
+  return response.json();
+}
+
+// Calculate standard deviation
+function calculateStd(values: number[]): number {
+  if (values.length === 0) return 0;
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
+  return Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / values.length);
+}
+
+// Calculate average
+function calculateAvg(values: number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
+// Get defense tier from rank
+function getDefTier(rank: number): "low" | "med" | "high" {
+  if (rank <= 10) return "high";
+  if (rank >= 20) return "low";
+  return "med";
+}
+
+// Get minutes trend
+function getMinutesTrend(last5Min: number, seasonMin: number): "up" | "flat" | "down" {
+  const diff = last5Min - seasonMin;
+  if (diff > 2) return "up";
+  if (diff < -2) return "down";
+  return "flat";
+}
+
+// Calculate prop line from player stats
+function calculatePropLine(stat: number, std: number): number {
+  const line = stat - std * 0.1;
+  return Math.round(line * 2) / 2;
+}
+
+// Probability calculation with context factors
+function calculateProbability(
+  projectedValue: number,
+  lineValue: number,
+  std: number,
+  defTier: string,
+  paceTier: string,
+  minutesTrend: string,
+  overUnder: "over" | "under"
+): number {
+  const zScore = (lineValue - projectedValue) / (std || 1);
+  const probUnder = 1 / (1 + Math.exp(-1.7 * zScore));
+  let rawProb = overUnder === "over" ? 1 - probUnder : probUnder;
+  
+  // Apply context adjustments
+  let adjustment = 0;
+  if (defTier === "low") adjustment += 0.03;
+  if (defTier === "high") adjustment -= 0.03;
+  if (paceTier === "fast") adjustment += 0.02;
+  if (paceTier === "slow") adjustment -= 0.02;
+  if (minutesTrend === "up") adjustment += 0.02;
+  if (minutesTrend === "down") adjustment -= 0.02;
+  
+  if (overUnder === "over") rawProb += adjustment;
+  else rawProb -= adjustment;
+  
+  return Math.max(0.35, Math.min(0.65, rawProb));
+}
+
+// Fetch today's games from SportsDataIO
+async function fetchTodaysGames(apiKey: string, dateStr: string) {
+  try {
+    const games = await fetchSportsDataIO(`/scores/json/GamesByDate/${dateStr}`, apiKey);
+    return games || [];
+  } catch (error) {
+    console.error("Error fetching games:", error);
+    return [];
+  }
+}
+
+// Fetch player stats for a season
+async function fetchPlayerSeasonStats(apiKey: string, season: string) {
+  try {
+    const stats = await fetchSportsDataIO(`/stats/json/PlayerSeasonStats/${season}`, apiKey);
+    return stats || [];
+  } catch (error) {
+    console.error("Error fetching player season stats:", error);
+    return [];
+  }
+}
+
+// Fetch team season stats
+async function fetchTeamSeasonStats(apiKey: string, season: string) {
+  try {
+    const stats = await fetchSportsDataIO(`/scores/json/TeamSeasonStats/${season}`, apiKey);
+    return stats || [];
+  } catch (error) {
+    console.error("Error fetching team stats:", error);
+    return [];
+  }
+}
+
+// Fetch player game logs
+async function fetchPlayerGameLogs(apiKey: string, season: string) {
+  try {
+    const logs = await fetchSportsDataIO(`/stats/json/PlayerGameStatsBySeason/${season}/all`, apiKey);
+    return logs || [];
+  } catch (error) {
+    console.error("Error fetching game logs:", error);
+    return [];
+  }
+}
+
+// Process player game logs into stats
+function processPlayerFromLogs(
+  player: any, 
+  gameLogs: any[], 
+  source: string
+): any | null {
+  const playerLogs = gameLogs
+    .filter((log: any) => log.PlayerID === player.PlayerID)
+    .sort((a: any, b: any) => new Date(b.Day).getTime() - new Date(a.Day).getTime());
+  
+  if (playerLogs.length === 0) return null;
+  
+  const last5 = playerLogs.slice(0, 5);
+  const last10 = playerLogs.slice(0, 10);
+  const season = playerLogs;
+  
+  // Calculate stats
+  const pts = {
+    last5: calculateAvg(last5.map((g: any) => g.Points || 0)),
+    last10: calculateAvg(last10.map((g: any) => g.Points || 0)),
+    season: calculateAvg(season.map((g: any) => g.Points || 0)),
+    std: calculateStd(last5.map((g: any) => g.Points || 0))
   };
-  injury_status: "active" | "questionable" | "out";
-  usage_rate: number;
+  
+  const reb = {
+    last5: calculateAvg(last5.map((g: any) => g.Rebounds || 0)),
+    last10: calculateAvg(last10.map((g: any) => g.Rebounds || 0)),
+    season: calculateAvg(season.map((g: any) => g.Rebounds || 0)),
+    std: calculateStd(last5.map((g: any) => g.Rebounds || 0))
+  };
+  
+  const ast = {
+    last5: calculateAvg(last5.map((g: any) => g.Assists || 0)),
+    last10: calculateAvg(last10.map((g: any) => g.Assists || 0)),
+    season: calculateAvg(season.map((g: any) => g.Assists || 0)),
+    std: calculateStd(last5.map((g: any) => g.Assists || 0))
+  };
+  
+  const threepm = {
+    last5: calculateAvg(last5.map((g: any) => g.ThreePointersMade || 0)),
+    last10: calculateAvg(last10.map((g: any) => g.ThreePointersMade || 0)),
+    season: calculateAvg(season.map((g: any) => g.ThreePointersMade || 0)),
+    std: calculateStd(last5.map((g: any) => g.ThreePointersMade || 0))
+  };
+  
+  const pra = {
+    last5: pts.last5 + reb.last5 + ast.last5,
+    last10: pts.last10 + reb.last10 + ast.last10,
+    season: pts.season + reb.season + ast.season,
+    std: calculateStd(last5.map((g: any) => (g.Points || 0) + (g.Rebounds || 0) + (g.Assists || 0)))
+  };
+  
+  const mins = {
+    last5: calculateAvg(last5.map((g: any) => g.Minutes || 0)),
+    season: calculateAvg(season.map((g: any) => g.Minutes || 0))
+  };
+  
+  const dataCompleteness = Math.min(100, Math.round((season.length / 40) * 100));
+  
+  return {
+    player_id: player.PlayerID?.toString() || '',
+    player_name: player.Name || `${player.FirstName} ${player.LastName}`,
+    team: player.Team || '',
+    position: player.Position || '',
+    last_5_games_avg_pts: pts.last5,
+    last_5_games_avg_reb: reb.last5,
+    last_5_games_avg_ast: ast.last5,
+    last_5_games_avg_3pm: threepm.last5,
+    last_5_games_avg_pra: pra.last5,
+    last_10_games_avg_pts: pts.last10,
+    last_10_games_avg_reb: reb.last10,
+    last_10_games_avg_ast: ast.last10,
+    last_10_games_avg_3pm: threepm.last10,
+    last_10_games_avg_pra: pra.last10,
+    season_avg_pts: pts.season,
+    season_avg_reb: reb.season,
+    season_avg_ast: ast.season,
+    season_avg_3pm: threepm.season,
+    season_avg_pra: pra.season,
+    season_avg_min: mins.season,
+    std_pts: pts.std,
+    std_reb: reb.std,
+    std_ast: ast.std,
+    std_3pm: threepm.std,
+    std_pra: pra.std,
+    minutes_last_5_avg: mins.last5,
+    usage_rate: player.UsageRatePercentage || 20,
+    injury_status: player.InjuryStatus === 'Out' ? 'out' : 
+                   player.InjuryStatus === 'Questionable' ? 'questionable' : 'active',
+    stats_source: source,
+    data_completeness: dataCompleteness,
+    last_updated: new Date().toISOString()
+  };
 }
 
-interface NBATeam {
-  team_abbr: string;
-  team_name: string;
-  def_rank_overall: number;
-  def_ranks: { pg: number; sg: number; sf: number; pf: number; c: number };
-  pace_rating: number;
-  pace_tier: "slow" | "avg" | "fast";
-  pts_allowed_avg: number;
-}
-
-interface NBAGame {
-  game_id: string;
-  home_team: string;
-  away_team: string;
-  game_time: string;
-  home_b2b: boolean;
-  away_b2b: boolean;
-}
-
-// Generate realistic mock NBA data based on current date
-// This creates deterministic but varied data
-const generateMockNBAData = (dateString: string) => {
+// Fallback mock data generator for when API is unavailable
+function generateMockNBAData(dateString: string) {
   const seed = dateString.split("-").reduce((a, b) => a + parseInt(b), 0);
   const rng = (offset: number) => {
     const x = Math.sin(seed + offset) * 10000;
     return x - Math.floor(x);
   };
 
-  // NBA Teams with defensive/pace profiles
-  const teams: NBATeam[] = [
-    { team_abbr: "BOS", team_name: "Boston Celtics", def_rank_overall: 3, def_ranks: { pg: 5, sg: 4, sf: 3, pf: 2, c: 4 }, pace_rating: 100.2, pace_tier: "avg", pts_allowed_avg: 108.5 },
-    { team_abbr: "MIL", team_name: "Milwaukee Bucks", def_rank_overall: 8, def_ranks: { pg: 10, sg: 8, sf: 6, pf: 5, c: 3 }, pace_rating: 101.5, pace_tier: "fast", pts_allowed_avg: 112.3 },
-    { team_abbr: "PHI", team_name: "Philadelphia 76ers", def_rank_overall: 12, def_ranks: { pg: 15, sg: 12, sf: 10, pf: 8, c: 5 }, pace_rating: 97.8, pace_tier: "slow", pts_allowed_avg: 110.8 },
-    { team_abbr: "CLE", team_name: "Cleveland Cavaliers", def_rank_overall: 5, def_ranks: { pg: 6, sg: 5, sf: 4, pf: 6, c: 2 }, pace_rating: 98.5, pace_tier: "slow", pts_allowed_avg: 106.2 },
-    { team_abbr: "NYK", team_name: "New York Knicks", def_rank_overall: 7, def_ranks: { pg: 8, sg: 6, sf: 7, pf: 4, c: 6 }, pace_rating: 99.2, pace_tier: "avg", pts_allowed_avg: 109.1 },
-    { team_abbr: "MIA", team_name: "Miami Heat", def_rank_overall: 10, def_ranks: { pg: 12, sg: 9, sf: 8, pf: 10, c: 8 }, pace_rating: 96.5, pace_tier: "slow", pts_allowed_avg: 111.5 },
-    { team_abbr: "ATL", team_name: "Atlanta Hawks", def_rank_overall: 22, def_ranks: { pg: 20, sg: 22, sf: 18, pf: 20, c: 15 }, pace_rating: 102.8, pace_tier: "fast", pts_allowed_avg: 118.2 },
-    { team_abbr: "CHI", team_name: "Chicago Bulls", def_rank_overall: 18, def_ranks: { pg: 16, sg: 18, sf: 15, pf: 14, c: 12 }, pace_rating: 99.8, pace_tier: "avg", pts_allowed_avg: 114.5 },
-    { team_abbr: "IND", team_name: "Indiana Pacers", def_rank_overall: 25, def_ranks: { pg: 24, sg: 25, sf: 20, pf: 22, c: 18 }, pace_rating: 105.2, pace_tier: "fast", pts_allowed_avg: 120.5 },
-    { team_abbr: "DEN", team_name: "Denver Nuggets", def_rank_overall: 6, def_ranks: { pg: 7, sg: 6, sf: 5, pf: 3, c: 4 }, pace_rating: 100.5, pace_tier: "avg", pts_allowed_avg: 109.8 },
-    { team_abbr: "OKC", team_name: "Oklahoma City Thunder", def_rank_overall: 4, def_ranks: { pg: 4, sg: 3, sf: 5, pf: 4, c: 6 }, pace_rating: 101.2, pace_tier: "avg", pts_allowed_avg: 107.5 },
-    { team_abbr: "MIN", team_name: "Minnesota Timberwolves", def_rank_overall: 2, def_ranks: { pg: 3, sg: 2, sf: 2, pf: 1, c: 1 }, pace_rating: 99.5, pace_tier: "avg", pts_allowed_avg: 105.8 },
-    { team_abbr: "LAL", team_name: "Los Angeles Lakers", def_rank_overall: 14, def_ranks: { pg: 14, sg: 15, sf: 12, pf: 10, c: 8 }, pace_rating: 100.8, pace_tier: "avg", pts_allowed_avg: 113.2 },
-    { team_abbr: "PHX", team_name: "Phoenix Suns", def_rank_overall: 16, def_ranks: { pg: 18, sg: 14, sf: 16, pf: 12, c: 14 }, pace_rating: 101.0, pace_tier: "avg", pts_allowed_avg: 114.0 },
-    { team_abbr: "SAC", team_name: "Sacramento Kings", def_rank_overall: 20, def_ranks: { pg: 22, sg: 20, sf: 18, pf: 16, c: 16 }, pace_rating: 103.5, pace_tier: "fast", pts_allowed_avg: 116.8 },
-    { team_abbr: "GSW", team_name: "Golden State Warriors", def_rank_overall: 15, def_ranks: { pg: 16, sg: 14, sf: 14, pf: 14, c: 12 }, pace_rating: 101.8, pace_tier: "fast", pts_allowed_avg: 113.5 },
+  const teams = [
+    { abbr: "BOS", name: "Boston Celtics", defRank: 3, pace: 100.2 },
+    { abbr: "MIL", name: "Milwaukee Bucks", defRank: 8, pace: 101.5 },
+    { abbr: "PHI", name: "Philadelphia 76ers", defRank: 12, pace: 97.8 },
+    { abbr: "CLE", name: "Cleveland Cavaliers", defRank: 5, pace: 98.5 },
+    { abbr: "NYK", name: "New York Knicks", defRank: 7, pace: 99.2 },
+    { abbr: "MIA", name: "Miami Heat", defRank: 10, pace: 96.5 },
+    { abbr: "LAL", name: "Los Angeles Lakers", defRank: 14, pace: 100.8 },
+    { abbr: "DEN", name: "Denver Nuggets", defRank: 6, pace: 100.5 },
+    { abbr: "PHX", name: "Phoenix Suns", defRank: 16, pace: 101.0 },
+    { abbr: "GSW", name: "Golden State Warriors", defRank: 15, pace: 101.8 },
   ];
 
-  // Generate mock players for each team
-  const generateTeamPlayers = (team: string, offset: number): NBAPlayer[] => {
-    const positions = ["PG", "SG", "SF", "PF", "C"];
-    const playerTemplates = [
-      { basePts: 28, baseReb: 5, baseAst: 8, base3pm: 3.5 }, // Star guard
-      { basePts: 22, baseReb: 4, baseAst: 3, base3pm: 2.8 }, // Scoring wing
-      { basePts: 18, baseReb: 6, baseAst: 4, base3pm: 1.5 }, // Wing
-      { basePts: 16, baseReb: 8, baseAst: 3, base3pm: 0.8 }, // Big
-      { basePts: 14, baseReb: 10, baseAst: 2, base3pm: 0.3 }, // Center
-    ];
-
-    return positions.map((pos, i) => {
-      const template = playerTemplates[i];
-      const variance = 0.15;
-      const playerOffset = offset + i * 100;
-
-      const pts = template.basePts * (1 + (rng(playerOffset + 1) - 0.5) * variance);
-      const reb = template.baseReb * (1 + (rng(playerOffset + 2) - 0.5) * variance);
-      const ast = template.baseAst * (1 + (rng(playerOffset + 3) - 0.5) * variance);
-      const threepm = template.base3pm * (1 + (rng(playerOffset + 4) - 0.5) * variance);
-
-      return {
-        player_id: `${team}_${pos}_${playerOffset}`,
-        player_name: `${team} ${pos} Player`,
-        team,
-        position: pos,
-        stats: {
-          pts: {
-            last5: pts * (1 + (rng(playerOffset + 10) - 0.5) * 0.1),
-            last10: pts * (1 + (rng(playerOffset + 11) - 0.5) * 0.05),
-            season: pts,
-            std: pts * 0.2 * (1 + rng(playerOffset + 12) * 0.3),
-          },
-          reb: {
-            last5: reb * (1 + (rng(playerOffset + 20) - 0.5) * 0.15),
-            last10: reb * (1 + (rng(playerOffset + 21) - 0.5) * 0.08),
-            season: reb,
-            std: reb * 0.25 * (1 + rng(playerOffset + 22) * 0.3),
-          },
-          ast: {
-            last5: ast * (1 + (rng(playerOffset + 30) - 0.5) * 0.12),
-            last10: ast * (1 + (rng(playerOffset + 31) - 0.5) * 0.06),
-            season: ast,
-            std: ast * 0.3 * (1 + rng(playerOffset + 32) * 0.3),
-          },
-          threepm: {
-            last5: threepm * (1 + (rng(playerOffset + 40) - 0.5) * 0.2),
-            last10: threepm * (1 + (rng(playerOffset + 41) - 0.5) * 0.1),
-            season: threepm,
-            std: threepm * 0.35 * (1 + rng(playerOffset + 42) * 0.3),
-          },
-          pra: {
-            last5: pts + reb + ast + (rng(playerOffset + 50) - 0.5) * 5,
-            last10: pts + reb + ast + (rng(playerOffset + 51) - 0.5) * 3,
-            season: pts + reb + ast,
-            std: (pts + reb + ast) * 0.15,
-          },
-          min: {
-            last5: 32 + (rng(playerOffset + 60) - 0.5) * 8,
-            season: 30 + rng(playerOffset + 61) * 6,
-          },
-        },
-        injury_status: rng(playerOffset + 70) < 0.85 ? "active" : rng(playerOffset + 71) < 0.5 ? "questionable" : "out",
-        usage_rate: 18 + rng(playerOffset + 80) * 15,
-      } as NBAPlayer;
-    });
-  };
-
-  // Generate today's games (3-6 games per day)
-  const numGames = 3 + Math.floor(rng(1) * 4);
+  const numGames = 3 + Math.floor(rng(1) * 3);
   const shuffledTeams = [...teams].sort(() => rng(2) - 0.5);
-  const games: NBAGame[] = [];
+  const games = [];
 
   for (let i = 0; i < Math.min(numGames, Math.floor(shuffledTeams.length / 2)); i++) {
-    const homeTeam = shuffledTeams[i * 2];
-    const awayTeam = shuffledTeams[i * 2 + 1];
-    const gameHour = 19 + Math.floor(rng(100 + i) * 4); // 7pm - 10pm
-
     games.push({
-      game_id: `${dateString}_${homeTeam.team_abbr}_${awayTeam.team_abbr}`,
-      home_team: homeTeam.team_abbr,
-      away_team: awayTeam.team_abbr,
-      game_time: `${dateString}T${gameHour}:00:00Z`,
-      home_b2b: rng(200 + i) < 0.2,
-      away_b2b: rng(300 + i) < 0.2,
+      home_team: shuffledTeams[i * 2].abbr,
+      away_team: shuffledTeams[i * 2 + 1].abbr,
+      game_time: `${dateString}T${19 + i}:00:00Z`,
     });
   }
 
-  // Generate players for teams in today's games
-  const players: NBAPlayer[] = [];
+  // Generate mock players
+  const mockPlayers = [
+    { name: "LeBron James", team: "LAL", pts: 25.5, reb: 7.2, ast: 8.1, pos: "SF" },
+    { name: "Stephen Curry", team: "GSW", pts: 29.2, reb: 4.5, ast: 6.3, pos: "PG" },
+    { name: "Jayson Tatum", team: "BOS", pts: 27.1, reb: 8.1, ast: 4.8, pos: "SF" },
+    { name: "Giannis Antetokounmpo", team: "MIL", pts: 31.2, reb: 11.5, ast: 5.9, pos: "PF" },
+    { name: "Nikola Jokic", team: "DEN", pts: 26.4, reb: 12.1, ast: 9.2, pos: "C" },
+    { name: "Kevin Durant", team: "PHX", pts: 28.5, reb: 6.8, ast: 5.2, pos: "SF" },
+    { name: "Joel Embiid", team: "PHI", pts: 33.1, reb: 10.2, ast: 4.1, pos: "C" },
+    { name: "Donovan Mitchell", team: "CLE", pts: 28.3, reb: 4.1, ast: 5.2, pos: "SG" },
+    { name: "Jalen Brunson", team: "NYK", pts: 26.1, reb: 3.5, ast: 6.5, pos: "PG" },
+    { name: "Jimmy Butler", team: "MIA", pts: 21.5, reb: 5.9, ast: 5.2, pos: "SF" },
+  ];
+
   const teamsInGames = new Set<string>();
-  games.forEach((g) => {
+  games.forEach(g => {
     teamsInGames.add(g.home_team);
     teamsInGames.add(g.away_team);
   });
 
-  let teamIdx = 0;
-  teamsInGames.forEach((teamAbbr) => {
-    players.push(...generateTeamPlayers(teamAbbr, teamIdx * 1000));
-    teamIdx++;
-  });
+  const players = mockPlayers
+    .filter(p => teamsInGames.has(p.team))
+    .map((p, i) => ({
+      player_id: `mock_${p.name.replace(/\s/g, '_')}`,
+      player_name: p.name,
+      team: p.team,
+      position: p.pos,
+      last_5_games_avg_pts: p.pts * (1 + (rng(i * 10 + 1) - 0.5) * 0.15),
+      last_5_games_avg_reb: p.reb * (1 + (rng(i * 10 + 2) - 0.5) * 0.15),
+      last_5_games_avg_ast: p.ast * (1 + (rng(i * 10 + 3) - 0.5) * 0.15),
+      last_5_games_avg_3pm: p.pts * 0.1,
+      last_5_games_avg_pra: p.pts + p.reb + p.ast,
+      last_10_games_avg_pts: p.pts,
+      last_10_games_avg_reb: p.reb,
+      last_10_games_avg_ast: p.ast,
+      last_10_games_avg_3pm: p.pts * 0.1,
+      last_10_games_avg_pra: p.pts + p.reb + p.ast,
+      season_avg_pts: p.pts,
+      season_avg_reb: p.reb,
+      season_avg_ast: p.ast,
+      season_avg_3pm: p.pts * 0.1,
+      season_avg_pra: p.pts + p.reb + p.ast,
+      season_avg_min: 34,
+      std_pts: p.pts * 0.2,
+      std_reb: p.reb * 0.25,
+      std_ast: p.ast * 0.3,
+      std_3pm: 1.2,
+      std_pra: (p.pts + p.reb + p.ast) * 0.15,
+      minutes_last_5_avg: 34 + (rng(i * 10 + 4) - 0.5) * 4,
+      usage_rate: 20 + rng(i * 10 + 5) * 10,
+      injury_status: rng(i * 10 + 6) < 0.9 ? "active" : "questionable",
+      stats_source: "Mock Data",
+      data_completeness: 75,
+      last_updated: new Date().toISOString()
+    }));
 
-  return { teams, players, games };
-};
-
-// Calculate prop line from player stats (typical sportsbook line setting)
-const calculatePropLine = (stat: number, std: number): number => {
-  // Lines are typically set at projected value minus a small margin
-  const line = stat - std * 0.1;
-  // Round to standard increments
-  return Math.round(line * 2) / 2; // Round to nearest 0.5
-};
-
-// Probability calculation using normal distribution approximation
-const calculateProbability = (
-  projectedValue: number,
-  lineValue: number,
-  std: number,
-  overUnder: "over" | "under"
-): number => {
-  const zScore = (lineValue - projectedValue) / (std || 1);
-  const probUnder = 1 / (1 + Math.exp(-1.7 * zScore));
-  const rawProb = overUnder === "over" ? 1 - probUnder : probUnder;
-  // Clamp to 0.35-0.65 as specified
-  return Math.max(0.35, Math.min(0.65, rawProb));
-};
-
-// Get defense tier from rank
-const getDefTier = (rank: number): "low" | "med" | "high" => {
-  if (rank <= 10) return "high"; // Top 10 = strong defense = low for over
-  if (rank >= 20) return "low"; // Bottom 10 = weak defense = high for over
-  return "med";
-};
-
-// Get minutes trend
-const getMinutesTrend = (last5Min: number, seasonMin: number): "up" | "flat" | "down" => {
-  const diff = last5Min - seasonMin;
-  if (diff > 2) return "up";
-  if (diff < -2) return "down";
-  return "flat";
-};
+  return { teams, games, players };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -225,12 +325,13 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const sportsDataIOKey = Deno.env.get("SPORTSDATAIO_API_KEY");
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
-
     const { action } = await req.json();
     const today = new Date().toISOString().split("T")[0];
-
-    console.log(`NBA Stats Engine: action=${action}, date=${today}`);
+    
+    console.log(`NBA Stats Engine: action=${action}, date=${today}, hasApiKey=${!!sportsDataIOKey}`);
 
     if (action === "refresh_stats") {
       // Create refresh log
@@ -240,103 +341,211 @@ serve(async (req) => {
           refresh_date: today,
           status: "running",
           started_at: new Date().toISOString(),
+          source: sportsDataIOKey ? "SportsDataIO" : "Mock Data"
         })
         .select()
         .single();
 
       if (logError) console.error("Log creation error:", logError);
 
-      // Generate mock data for today
-      const { teams, players, games } = generateMockNBAData(today);
+      let gamesData: any[] = [];
+      let playersData: any[] = [];
+      let teamsData: any[] = [];
+      let source = "Mock Data";
+
+      // Try to use SportsDataIO if API key is available
+      if (sportsDataIOKey) {
+        try {
+          console.log("Fetching real data from SportsDataIO...");
+          source = "SportsDataIO";
+          
+          // Get current season
+          const currentYear = new Date().getFullYear();
+          const currentMonth = new Date().getMonth();
+          const season = currentMonth >= 9 ? currentYear + 1 : currentYear;
+          
+          // Fetch today's games
+          const apiGames = await fetchTodaysGames(sportsDataIOKey, today);
+          console.log(`Found ${apiGames.length} games today from SportsDataIO`);
+          
+          if (apiGames.length === 0) {
+            // No games today, still update with real team stats
+            const teamStats = await fetchTeamSeasonStats(sportsDataIOKey, season.toString());
+            teamsData = teamStats.map((t: any, i: number) => ({
+              team_abbr: t.Team,
+              team_name: t.Name,
+              def_rank_overall: i + 1,
+              pace_rating: t.Possessions / t.Games || 100,
+              pace_tier: (t.Possessions / t.Games || 100) > 101 ? "fast" : (t.Possessions / t.Games || 100) < 98 ? "slow" : "avg",
+              pts_allowed_avg: t.OpponentScore / t.Games || 110,
+              last_updated: new Date().toISOString()
+            }));
+            
+            // Update log
+            if (logEntry) {
+              await supabase.from("nba_stats_refresh_log").update({
+                games_fetched: 0,
+                players_updated: 0,
+                teams_updated: teamsData.length,
+                status: "complete",
+                completed_at: new Date().toISOString(),
+                notes: "No games scheduled today",
+                source
+              }).eq("id", logEntry.id);
+            }
+            
+            return new Response(JSON.stringify({
+              success: true,
+              message: "No games scheduled today",
+              games_fetched: 0,
+              players_updated: 0,
+              teams_updated: teamsData.length,
+              source
+            }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          }
+          
+          // Process games
+          gamesData = apiGames.map((g: any) => ({
+            game_id: g.GameID?.toString() || `${today}_${g.HomeTeam}_${g.AwayTeam}`,
+            home_team: g.HomeTeam,
+            away_team: g.AwayTeam,
+            game_time: g.DateTime,
+            home_team_back_to_back: false,
+            away_team_back_to_back: false,
+            game_date: today,
+            status: g.Status || "Scheduled"
+          }));
+          
+          // Fetch team stats
+          const teamStats = await fetchTeamSeasonStats(sportsDataIOKey, season.toString());
+          const sortedByDefense = [...teamStats].sort((a: any, b: any) => 
+            (a.OpponentScore / a.Games || 110) - (b.OpponentScore / b.Games || 110)
+          );
+          
+          teamsData = sortedByDefense.map((t: any, i: number) => ({
+            team_abbr: t.Team,
+            team_name: t.Name,
+            def_rank_vs_pg: i + 1,
+            def_rank_vs_sg: i + 1,
+            def_rank_vs_sf: i + 1,
+            def_rank_vs_pf: i + 1,
+            def_rank_vs_c: i + 1,
+            def_rank_overall: i + 1,
+            pace_rating: t.Possessions / t.Games || 100,
+            pace_tier: (t.Possessions / t.Games || 100) > 101 ? "fast" : (t.Possessions / t.Games || 100) < 98 ? "slow" : "avg",
+            pts_allowed_avg: t.OpponentScore / t.Games || 110,
+            last_updated: new Date().toISOString()
+          }));
+          
+          // Get teams playing today
+          const teamsPlaying = new Set<string>();
+          gamesData.forEach(g => {
+            teamsPlaying.add(g.home_team);
+            teamsPlaying.add(g.away_team);
+          });
+          
+          // Fetch player season stats and game logs
+          const playerSeasonStats = await fetchPlayerSeasonStats(sportsDataIOKey, season.toString());
+          const gameLogs = await fetchPlayerGameLogs(sportsDataIOKey, season.toString());
+          
+          // Filter to players on teams playing today with significant minutes
+          const relevantPlayers = playerSeasonStats.filter((p: any) => 
+            teamsPlaying.has(p.Team) && p.Minutes > 15
+          );
+          
+          console.log(`Processing ${relevantPlayers.length} relevant players`);
+          
+          for (const player of relevantPlayers.slice(0, 100)) { // Limit for performance
+            const processed = processPlayerFromLogs(player, gameLogs, source);
+            if (processed && processed.season_avg_min > 15) {
+              playersData.push(processed);
+            }
+          }
+          
+        } catch (apiError) {
+          console.error("SportsDataIO API error, falling back to mock data:", apiError);
+          source = "Mock Data (API Error)";
+          const mockData = generateMockNBAData(today);
+          gamesData = mockData.games.map((g, i) => ({
+            game_id: `${today}_${g.home_team}_${g.away_team}`,
+            home_team: g.home_team,
+            away_team: g.away_team,
+            game_time: g.game_time,
+            home_team_back_to_back: false,
+            away_team_back_to_back: false,
+            game_date: today,
+            status: "scheduled"
+          }));
+          playersData = mockData.players;
+          teamsData = mockData.teams.map((t, i) => ({
+            team_abbr: t.abbr,
+            team_name: t.name,
+            def_rank_overall: t.defRank,
+            pace_rating: t.pace,
+            pace_tier: t.pace > 101 ? "fast" : t.pace < 98 ? "slow" : "avg",
+            last_updated: new Date().toISOString()
+          }));
+        }
+      } else {
+        // Use mock data
+        console.log("No API key, using mock data");
+        const mockData = generateMockNBAData(today);
+        gamesData = mockData.games.map((g, i) => ({
+          game_id: `${today}_${g.home_team}_${g.away_team}`,
+          home_team: g.home_team,
+          away_team: g.away_team,
+          game_time: g.game_time,
+          home_team_back_to_back: false,
+          away_team_back_to_back: false,
+          game_date: today,
+          status: "scheduled"
+        }));
+        playersData = mockData.players;
+        teamsData = mockData.teams.map((t, i) => ({
+          team_abbr: t.abbr,
+          team_name: t.name,
+          def_rank_overall: t.defRank,
+          pace_rating: t.pace,
+          pace_tier: t.pace > 101 ? "fast" : t.pace < 98 ? "slow" : "avg",
+          last_updated: new Date().toISOString()
+        }));
+      }
 
       // Upsert teams
-      for (const team of teams) {
-        await supabase.from("nba_team_stats").upsert({
-          team_abbr: team.team_abbr,
-          team_name: team.team_name,
-          def_rank_vs_pg: team.def_ranks.pg,
-          def_rank_vs_sg: team.def_ranks.sg,
-          def_rank_vs_sf: team.def_ranks.sf,
-          def_rank_vs_pf: team.def_ranks.pf,
-          def_rank_vs_c: team.def_ranks.c,
-          def_rank_overall: team.def_rank_overall,
-          pace_rating: team.pace_rating,
-          pace_tier: team.pace_tier,
-          pts_allowed_avg: team.pts_allowed_avg,
-          last_updated: new Date().toISOString(),
-        }, { onConflict: "team_abbr" });
+      for (const team of teamsData) {
+        await supabase.from("nba_team_stats").upsert(team, { onConflict: "team_abbr" });
       }
 
       // Upsert players
-      for (const player of players) {
-        await supabase.from("nba_player_stats").upsert({
-          player_id: player.player_id,
-          player_name: player.player_name,
-          team: player.team,
-          position: player.position,
-          last_5_games_avg_pts: player.stats.pts.last5,
-          last_5_games_avg_reb: player.stats.reb.last5,
-          last_5_games_avg_ast: player.stats.ast.last5,
-          last_5_games_avg_3pm: player.stats.threepm.last5,
-          last_5_games_avg_pra: player.stats.pra.last5,
-          last_10_games_avg_pts: player.stats.pts.last10,
-          last_10_games_avg_reb: player.stats.reb.last10,
-          last_10_games_avg_ast: player.stats.ast.last10,
-          last_10_games_avg_3pm: player.stats.threepm.last10,
-          last_10_games_avg_pra: player.stats.pra.last10,
-          season_avg_pts: player.stats.pts.season,
-          season_avg_reb: player.stats.reb.season,
-          season_avg_ast: player.stats.ast.season,
-          season_avg_3pm: player.stats.threepm.season,
-          season_avg_pra: player.stats.pra.season,
-          season_avg_min: player.stats.min.season,
-          std_pts: player.stats.pts.std,
-          std_reb: player.stats.reb.std,
-          std_ast: player.stats.ast.std,
-          std_3pm: player.stats.threepm.std,
-          std_pra: player.stats.pra.std,
-          minutes_last_5_avg: player.stats.min.last5,
-          usage_rate: player.usage_rate,
-          injury_status: player.injury_status,
-          last_updated: new Date().toISOString(),
-        }, { onConflict: "player_id" });
+      for (const player of playersData) {
+        await supabase.from("nba_player_stats").upsert(player, { onConflict: "player_id" });
       }
 
-      // Insert today's games (delete old first)
+      // Insert today's games
       await supabase.from("nba_games_today").delete().eq("game_date", today);
-      for (const game of games) {
-        await supabase.from("nba_games_today").insert({
-          game_id: game.game_id,
-          home_team: game.home_team,
-          away_team: game.away_team,
-          game_time: game.game_time,
-          home_team_back_to_back: game.home_b2b,
-          away_team_back_to_back: game.away_b2b,
-          game_date: today,
-          status: "scheduled",
-        });
+      for (const game of gamesData) {
+        await supabase.from("nba_games_today").insert(game);
       }
 
       // Update log
       if (logEntry) {
         await supabase.from("nba_stats_refresh_log").update({
-          games_fetched: games.length,
-          players_updated: players.length,
-          teams_updated: teams.length,
+          games_fetched: gamesData.length,
+          players_updated: playersData.length,
+          teams_updated: teamsData.length,
           status: "complete",
           completed_at: new Date().toISOString(),
+          source
         }).eq("id", logEntry.id);
       }
 
-      return new Response(
-        JSON.stringify({
-          success: true,
-          games_fetched: games.length,
-          players_updated: players.length,
-          teams_updated: teams.length,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({
+        success: true,
+        games_fetched: gamesData.length,
+        players_updated: playersData.length,
+        teams_updated: teamsData.length,
+        source
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (action === "generate_props") {
@@ -355,7 +564,7 @@ serve(async (req) => {
 
       // Fetch all players for today's teams
       const teamsToday = new Set<string>();
-      games.forEach((g) => {
+      games.forEach((g: any) => {
         teamsToday.add(g.home_team);
         teamsToday.add(g.away_team);
       });
@@ -364,11 +573,11 @@ serve(async (req) => {
         .from("nba_player_stats")
         .select("*")
         .in("team", Array.from(teamsToday))
-        .eq("injury_status", "active");
+        .neq("injury_status", "out");
 
       // Fetch team stats
       const { data: teamStats } = await supabase.from("nba_team_stats").select("*");
-      const teamMap = new Map(teamStats?.map((t) => [t.team_abbr, t]) || []);
+      const teamMap = new Map(teamStats?.map((t: any) => [t.team_abbr, t]) || []);
 
       // Delete old props for today
       await supabase.from("nba_props_generated").delete().eq("game_date", today);
@@ -378,14 +587,13 @@ serve(async (req) => {
         { key: "pts", name: "PTS" },
         { key: "reb", name: "REB" },
         { key: "ast", name: "AST" },
-        { key: "threepm", name: "3PM" },
+        { key: "3pm", name: "3PM" },
         { key: "pra", name: "PRA" },
       ];
 
       for (const player of players || []) {
-        // Find the game this player is in
         const game = games.find(
-          (g) => g.home_team === player.team || g.away_team === player.team
+          (g: any) => g.home_team === player.team || g.away_team === player.team
         );
         if (!game) continue;
 
@@ -394,12 +602,8 @@ serve(async (req) => {
         const oppTeam = teamMap.get(opponent);
         const isB2B = isHome ? game.home_team_back_to_back : game.away_team_back_to_back;
 
-        // Get opponent defense tier based on player position
-        const positionKey = player.position?.toLowerCase() as "pg" | "sg" | "sf" | "pf" | "c";
-        const defRankField = `def_rank_vs_${positionKey}` as keyof typeof oppTeam;
-        const oppDefRank = oppTeam?.[defRankField] as number || 15;
+        const oppDefRank = oppTeam?.def_rank_overall || 15;
         const oppDefTier = getDefTier(oppDefRank);
-
         const paceTier = oppTeam?.pace_tier || "avg";
         const minutesTrend = getMinutesTrend(
           player.minutes_last_5_avg || 30,
@@ -407,173 +611,130 @@ serve(async (req) => {
         );
 
         for (const stat of statTypes) {
-          const last5Key = `last_5_games_avg_${stat.key}` as keyof typeof player;
-          const last10Key = `last_10_games_avg_${stat.key}` as keyof typeof player;
-          const seasonKey = `season_avg_${stat.key}` as keyof typeof player;
-          const stdKey = `std_${stat.key}` as keyof typeof player;
+          const last5Key = `last_5_games_avg_${stat.key}`;
+          const seasonKey = `season_avg_${stat.key}`;
+          const stdKey = `std_${stat.key}`;
 
           const last5 = player[last5Key] as number | null;
-          const last10 = player[last10Key] as number | null;
           const season = player[seasonKey] as number | null;
           const std = player[stdKey] as number | null;
 
-          if (!last5 || !season) continue;
-          if (stat.key === "threepm" && season < 0.5) continue; // Skip low 3PT shooters
+          if (!last5 || !season || last5 < 1) continue;
 
-          // Blend averages (70% recent, 30% season)
-          const blendedAvg = last5 * 0.7 + season * 0.3;
-          const lineValue = calculatePropLine(blendedAvg, std || blendedAvg * 0.2);
+          // Weighted projection
+          const projected = last5 * 0.6 + season * 0.4;
+          const lineValue = calculatePropLine(projected, std || projected * 0.2);
 
-          if (lineValue < 0.5) continue; // Skip very low lines
+          // Calculate probabilities
+          const overProb = calculateProbability(projected, lineValue, std || 1, oppDefTier, paceTier, minutesTrend, "over");
+          const underProb = calculateProbability(projected, lineValue, std || 1, oppDefTier, paceTier, minutesTrend, "under");
 
-          // Generate both over and under props
-          for (const overUnder of ["over", "under"] as const) {
-            const projectedValue = blendedAvg;
-            const probability = calculateProbability(projectedValue, lineValue, std || blendedAvg * 0.2, overUnder);
+          // Determine recommendation
+          const isOver = overProb > underProb;
+          const probability = isOver ? overProb : underProb;
+          const overUnder = isOver ? "over" : "under";
 
-            // Apply contextual adjustments
-            let adjustedProb = probability;
-            const factors: any[] = [];
+          // Calculate edge and ROI
+          const breakEven = 0.524;
+          const edge = (probability - breakEven) * 100;
+          const simulatedROI = edge / 100;
 
-            // Home/away
-            const homeAdj = isHome ? 0.02 : -0.02;
-            adjustedProb += overUnder === "over" ? homeAdj : -homeAdj;
-            factors.push({ factor: isHome ? "Home Game" : "Away Game", adjustment: Math.round(homeAdj * 100), direction: homeAdj > 0 ? "up" : "down" });
+          // Calculate confidence
+          let confidence = 50 + edge * 2;
+          if (player.data_completeness) confidence += (player.data_completeness - 50) * 0.2;
+          if (player.injury_status === "questionable") confidence -= 10;
+          if (isB2B) confidence -= 5;
+          confidence = Math.max(30, Math.min(70, confidence));
 
-            // Defense tier
-            const defAdj = oppDefTier === "low" ? 0.02 : oppDefTier === "high" ? -0.02 : 0;
-            adjustedProb += overUnder === "over" ? defAdj : -defAdj;
-            if (defAdj !== 0) {
-              factors.push({ factor: `${oppDefTier === "low" ? "Weak" : "Strong"} Defense`, adjustment: Math.round(defAdj * 100), direction: defAdj > 0 ? "up" : "down" });
-            }
+          // Generate reasoning
+          const reasoning = [];
+          if (last5 > season * 1.1) reasoning.push(`Hot streak: L5 avg ${last5.toFixed(1)} vs season ${season.toFixed(1)}`);
+          if (last5 < season * 0.9) reasoning.push(`Cold streak: L5 avg ${last5.toFixed(1)} vs season ${season.toFixed(1)}`);
+          if (oppDefTier === "low") reasoning.push(`Weak opponent defense (rank ${oppDefRank})`);
+          if (oppDefTier === "high") reasoning.push(`Strong opponent defense (rank ${oppDefRank})`);
+          if (paceTier === "fast") reasoning.push("Fast-paced matchup");
+          if (paceTier === "slow") reasoning.push("Slow-paced matchup");
+          if (minutesTrend === "up") reasoning.push("Minutes trending up");
+          if (minutesTrend === "down") reasoning.push("Minutes trending down");
+          if (player.injury_status === "questionable") reasoning.push("Questionable injury status");
+          if (isB2B) reasoning.push("Back-to-back game");
 
-            // Pace
-            const paceAdj = paceTier === "fast" ? 0.02 : paceTier === "slow" ? -0.02 : 0;
-            adjustedProb += overUnder === "over" ? paceAdj : -paceAdj;
-            if (paceAdj !== 0) {
-              factors.push({ factor: `${paceTier === "fast" ? "Fast" : "Slow"} Pace`, adjustment: Math.round(paceAdj * 100), direction: paceAdj > 0 ? "up" : "down" });
-            }
+          // Determine if should avoid
+          const volatility = (std || 1) / (projected || 1);
+          const shouldAvoid = edge < -2 || volatility > 0.4 || player.injury_status === "questionable";
 
-            // Minutes trend
-            const minAdj = minutesTrend === "up" ? 0.02 : minutesTrend === "down" ? -0.02 : 0;
-            adjustedProb += overUnder === "over" ? minAdj : -minAdj;
-            if (minAdj !== 0) {
-              factors.push({ factor: `Minutes ${minutesTrend === "up" ? "Up" : "Down"}`, adjustment: Math.round(minAdj * 100), direction: minAdj > 0 ? "up" : "down" });
-            }
+          // Determine parlay eligibility
+          const parlayEligible = !shouldAvoid && confidence >= 55 && volatility < 0.3;
 
-            // B2B penalty
-            if (isB2B) {
-              const b2bAdj = overUnder === "over" ? -0.02 : 0.02;
-              adjustedProb += b2bAdj;
-              factors.push({ factor: "Back-to-Back", adjustment: -2, direction: "down" });
-            }
+          // Determine recommendation type
+          let recommendation = "pass";
+          if (edge >= 5 && confidence >= 60) recommendation = "strong_play";
+          else if (edge >= 2 && confidence >= 55) recommendation = "lean";
+          else if (shouldAvoid) recommendation = "avoid";
 
-            // Clamp final probability
-            adjustedProb = Math.max(0.35, Math.min(0.65, adjustedProb));
-
-            // Calculate edge and ROI
-            const breakEven = 0.50; // Pick'em standard
-            const edge = (adjustedProb - breakEven) * 100;
-            const simulatedRoi = adjustedProb * 1.9 - 1; // ~1.9x payout
-
-            // Data completeness
-            const dataCompleteness = 85; // Mock data has good completeness
-
-            // Confidence with edge-based caps
-            const absEdge = Math.abs(edge) / 100;
-            let rawConfidence = Math.round(20 + Math.abs(edge) * 3 + dataCompleteness * 0.4);
-            let confidence: number;
-            if (absEdge < 0.01) confidence = Math.min(55, rawConfidence);
-            else if (absEdge < 0.02) confidence = Math.min(70, rawConfidence);
-            else if (absEdge < 0.03) confidence = Math.min(85, rawConfidence);
-            else confidence = Math.min(99, rawConfidence);
-
-            // Volatility
-            const cv = (std || blendedAvg * 0.2) / blendedAvg;
-            const volatility = cv < 0.15 ? "low" : cv > 0.30 ? "high" : "medium";
-
-            // Recommendation
-            let recommendation: string;
-            if (edge >= 5 && confidence >= 70) recommendation = "strong_play";
-            else if (edge >= 2 && confidence >= 50) recommendation = "lean";
-            else if (edge >= 0) recommendation = "pass";
-            else recommendation = "avoid";
-
-            // Reasoning
-            const reasoning = [
-              `Projected ${projectedValue.toFixed(1)} vs line ${lineValue}`,
-              isHome ? "Home game (+2%)" : "Away game (-2%)",
-              `Defense: ${oppDefTier} (rank ${oppDefRank})`,
-              `Pace: ${paceTier}`,
-              `Minutes: ${minutesTrend}`,
-            ];
-            if (isB2B) reasoning.push("Back-to-back game (-2%)");
-
-            propsGenerated.push({
-              game_id: game.game_id,
-              player_id: player.player_id,
-              player_name: player.player_name,
-              team: player.team,
-              opponent,
-              stat_type: stat.name,
-              line_value: lineValue,
-              over_under: overUnder,
-              projected_value: projectedValue,
-              estimated_probability: adjustedProb,
-              break_even_probability: breakEven,
-              edge: Math.round(edge * 10) / 10,
-              confidence_score: confidence,
-              simulated_roi: Math.round(simulatedRoi * 1000) / 1000,
-              volatility_score: volatility,
-              calibration_factors: factors,
-              data_completeness: dataCompleteness,
-              home_game: isHome,
-              opponent_def_tier: oppDefTier,
-              pace_tier: paceTier,
-              minutes_trend: minutesTrend,
-              back_to_back: isB2B,
-              reasoning,
-              recommendation,
-              source: "ai_model_nba",
-              game_date: today,
-            });
-          }
+          propsGenerated.push({
+            game_id: game.game_id,
+            game_date: today,
+            player_id: player.player_id,
+            player_name: player.player_name,
+            team: player.team,
+            opponent,
+            stat_type: stat.name,
+            line_value: lineValue,
+            over_under: overUnder,
+            estimated_probability: probability,
+            break_even_probability: breakEven,
+            edge: edge / 100,
+            confidence_score: Math.round(confidence),
+            simulated_roi: simulatedROI,
+            recommendation,
+            reasoning,
+            player_recent_avg: last5,
+            player_season_avg: season,
+            opponent_def_tier: oppDefTier,
+            pace_tier: paceTier,
+            minutes_trend: minutesTrend,
+            data_completeness: player.data_completeness || 50,
+            stats_source: player.stats_source || "Unknown",
+            parlay_eligible: parlayEligible,
+            should_avoid: shouldAvoid,
+            generated_at: new Date().toISOString(),
+          });
         }
       }
 
-      // Insert props in batches
-      const batchSize = 100;
-      for (let i = 0; i < propsGenerated.length; i += batchSize) {
-        const batch = propsGenerated.slice(i, i + batchSize);
-        const { error } = await supabase.from("nba_props_generated").insert(batch);
-        if (error) console.error("Batch insert error:", error);
+      // Insert props
+      if (propsGenerated.length > 0) {
+        await supabase.from("nba_props_generated").insert(propsGenerated);
       }
 
-      // Update refresh log with props count
+      // Update log
       await supabase.from("nba_stats_refresh_log")
         .update({ props_generated: propsGenerated.length })
-        .eq("refresh_date", today)
-        .eq("status", "complete");
+        .eq("status", "complete")
+        .order("completed_at", { ascending: false })
+        .limit(1);
 
-      return new Response(
-        JSON.stringify({
-          success: true,
-          props_generated: propsGenerated.length,
-          games_processed: games.length,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({
+        success: true,
+        props_generated: propsGenerated.length,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(
-      JSON.stringify({ error: "Invalid action. Use 'refresh_stats' or 'generate_props'." }),
+      JSON.stringify({ error: "Unknown action" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
     );
+
   } catch (error) {
-    console.error("NBA Stats Engine error:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-    );
+    console.error("NBA Stats Engine Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      details: "Check edge function logs for more details"
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
   }
 });

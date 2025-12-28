@@ -1,4 +1,4 @@
-// NBA Daily Board - Auto-generated predictions
+// NBA Daily Board - Auto-generated predictions with SportsDataIO integration
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,21 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { RefreshCw, TrendingUp, TrendingDown, AlertTriangle, Target, Zap, Info, CheckCircle2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Link } from 'react-router-dom';
+import { 
+  RefreshCw, 
+  TrendingUp, 
+  TrendingDown, 
+  AlertTriangle, 
+  Target, 
+  Zap, 
+  Info, 
+  CheckCircle2,
+  Database,
+  ChevronLeft,
+  Activity
+} from 'lucide-react';
 import { 
   useNBAGamesToday, 
   useTopAIProps, 
@@ -33,9 +47,9 @@ const NBADailyBoard = () => {
   const copyProp = useCopyPropToSimulated();
 
   const getConfidenceBadge = (score: number) => {
-    if (score >= 85) return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
-    if (score >= 70) return "bg-blue-500/10 text-blue-600 border-blue-500/20";
-    if (score >= 55) return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+    if (score >= 65) return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
+    if (score >= 55) return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+    if (score >= 45) return "bg-amber-500/10 text-amber-600 border-amber-500/20";
     return "bg-muted text-muted-foreground border-muted";
   };
 
@@ -49,6 +63,13 @@ const NBADailyBoard = () => {
     }
   };
 
+  const getDataCompletenessColor = (completeness: number) => {
+    if (completeness >= 80) return "bg-emerald-500";
+    if (completeness >= 60) return "bg-blue-500";
+    if (completeness >= 40) return "bg-amber-500";
+    return "bg-red-500";
+  };
+
   const PropCard = ({ prop, showAdd = true }: { prop: NBAProp; showAdd?: boolean }) => (
     <Card className="mb-3">
       <CardContent className="p-4">
@@ -58,25 +79,53 @@ const NBADailyBoard = () => {
               <span className="font-semibold">{prop.player_name}</span>
               <Badge variant="outline" className="text-xs">{prop.team}</Badge>
               <span className="text-xs text-muted-foreground">vs {prop.opponent}</span>
+              {prop.injury_status && prop.injury_status !== 'active' && (
+                <Badge variant="destructive" className="text-xs">
+                  {prop.injury_status.toUpperCase()}
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2 mb-2">
               <Badge className={prop.over_under === 'over' ? 'bg-emerald-500' : 'bg-red-500'}>
-                {prop.over_under.toUpperCase()} {prop.line_value}
+                {prop.over_under?.toUpperCase() || 'OVER'} {prop.line_value}
               </Badge>
               <span className="font-medium">{prop.stat_type}</span>
               <Badge variant="outline" className={getRecommendationBadge(prop.recommendation)}>
-                {prop.recommendation.replace('_', ' ')}
+                {prop.recommendation?.replace('_', ' ') || 'pass'}
               </Badge>
             </div>
             <div className="flex items-center gap-4 text-sm">
-              <span>Prob: <strong>{(prop.estimated_probability * 100).toFixed(1)}%</strong></span>
-              <span className={prop.edge >= 0 ? 'text-emerald-600' : 'text-red-500'}>
-                Edge: <strong>{prop.edge > 0 ? '+' : ''}{prop.edge.toFixed(1)}%</strong>
+              <span>Prob: <strong>{((prop.estimated_probability || 0) * 100).toFixed(1)}%</strong></span>
+              <span className={(prop.edge || 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}>
+                Edge: <strong>{(prop.edge || 0) > 0 ? '+' : ''}{((prop.edge || 0) * 100).toFixed(1)}%</strong>
               </span>
-              <span>ROI: <strong>{(prop.simulated_roi * 100).toFixed(1)}%</strong></span>
-              <Badge variant="outline" className={getConfidenceBadge(prop.confidence_score)}>
-                {prop.confidence_score}% conf
+              <span>ROI: <strong>{((prop.simulated_roi || 0) * 100).toFixed(1)}%</strong></span>
+              <Badge variant="outline" className={getConfidenceBadge(prop.confidence_score || 50)}>
+                {prop.confidence_score || 50}% conf
               </Badge>
+            </div>
+            
+            {/* Stats Source & Data Completeness */}
+            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Database className="h-3 w-3" />
+                <span>Source: {prop.stats_source || 'Unknown'}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span>L5: {(prop.player_recent_avg || 0).toFixed(1)}</span>
+                <span>•</span>
+                <span>Season: {(prop.player_season_avg || 0).toFixed(1)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>Data:</span>
+                <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full ${getDataCompletenessColor(prop.data_completeness || 50)}`}
+                    style={{ width: `${prop.data_completeness || 50}%` }}
+                  />
+                </div>
+                <span>{prop.data_completeness || 50}%</span>
+              </div>
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -90,13 +139,18 @@ const NBADailyBoard = () => {
                 <TooltipContent className="max-w-xs">
                   <p className="font-semibold mb-1">Why this prediction:</p>
                   <ul className="text-xs space-y-1">
-                    {prop.reasoning?.map((r, i) => (
+                    {prop.reasoning?.map((r: string, i: number) => (
                       <li key={i}>• {r}</li>
-                    ))}
+                    )) || <li>• Analysis based on recent performance</li>}
                   </ul>
-                  <p className="text-xs mt-2 text-muted-foreground">
-                    Data completeness: {prop.data_completeness}%
-                  </p>
+                  <div className="mt-2 pt-2 border-t border-border">
+                    <p className="text-xs">
+                      <strong>Context:</strong> {prop.opponent_def_tier} defense, {prop.pace_tier} pace, mins {prop.minutes_trend}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Data completeness: {prop.data_completeness || 50}%
+                    </p>
+                  </div>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -120,16 +174,29 @@ const NBADailyBoard = () => {
   const isLoading = gamesLoading || topLoading || parlayLoading || avoidLoading || allLoading;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">NBA Daily Board</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <Link to="/os/sports-betting">
+              <Button variant="ghost" size="sm" className="h-8 px-2">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-bold">NBA Daily Board</h1>
+          </div>
           <p className="text-muted-foreground">
             AI-generated player prop predictions
-            {refreshLog?.completed_at && (
+            {refreshLog && (
               <span className="ml-2 text-xs">
-                Last updated: {new Date(refreshLog.completed_at).toLocaleTimeString()}
+                • Last updated: {refreshLog.completed_at ? new Date(refreshLog.completed_at).toLocaleTimeString() : 'Never'}
+                {refreshLog.source && (
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    <Database className="h-3 w-3 mr-1" />
+                    {refreshLog.source}
+                  </Badge>
+                )}
               </span>
             )}
           </p>
@@ -137,11 +204,35 @@ const NBADailyBoard = () => {
         <Button 
           onClick={() => runPredictions.mutate()} 
           disabled={runPredictions.isPending}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${runPredictions.isPending ? 'animate-spin' : ''}`} />
           {runPredictions.isPending ? 'Running...' : 'Run NBA Predictions'}
         </Button>
       </div>
+
+      {/* Stats Summary */}
+      {refreshLog && (
+        <Card className="bg-muted/30">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-muted-foreground" />
+                  <span>Games: <strong>{refreshLog.games_fetched || 0}</strong></span>
+                </div>
+                <div>Players: <strong>{refreshLog.players_updated || 0}</strong></div>
+                <div>Props: <strong>{refreshLog.props_generated || 0}</strong></div>
+              </div>
+              {refreshLog.source && (
+                <Badge variant={refreshLog.source.includes('SportsDataIO') ? 'default' : 'secondary'}>
+                  {refreshLog.source.includes('SportsDataIO') ? '✓ Real Stats' : '⚠ Mock Data'}
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Games Today */}
       {games && games.length > 0 && (

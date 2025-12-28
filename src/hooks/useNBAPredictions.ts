@@ -10,8 +10,6 @@ export interface NBAGame {
   home_team: string;
   away_team: string;
   game_time: string;
-  home_team_back_to_back: boolean;
-  away_team_back_to_back: boolean;
   game_date: string;
   status: string;
 }
@@ -19,6 +17,7 @@ export interface NBAGame {
 export interface NBAProp {
   id: string;
   game_id: string;
+  game_date: string;
   player_id: string;
   player_name: string;
   team: string;
@@ -26,38 +25,38 @@ export interface NBAProp {
   stat_type: string;
   line_value: number;
   over_under: string;
-  projected_value: number;
   estimated_probability: number;
   break_even_probability: number;
   edge: number;
   confidence_score: number;
   simulated_roi: number;
-  volatility_score: string;
-  calibration_factors: any;
-  data_completeness: number;
-  home_game: boolean;
+  recommendation: string;
+  reasoning: string[];
+  player_recent_avg: number;
+  player_season_avg: number;
   opponent_def_tier: string;
   pace_tier: string;
   minutes_trend: string;
-  back_to_back: boolean;
-  reasoning: string[];
-  recommendation: string;
-  source: string;
-  game_date: string;
-  created_at: string;
+  data_completeness: number;
+  stats_source: string;
+  parlay_eligible: boolean;
+  should_avoid: boolean;
+  injury_status: string;
+  generated_at: string;
 }
 
 export interface NBAStatsRefreshLog {
   id: string;
   refresh_date: string;
+  status: string;
   games_fetched: number;
   players_updated: number;
   teams_updated: number;
   props_generated: number;
-  status: string;
-  error_message: string | null;
-  started_at: string | null;
-  completed_at: string | null;
+  started_at: string;
+  completed_at: string;
+  source: string;
+  notes: string;
 }
 
 // Fetch today's NBA games
