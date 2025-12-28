@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { 
-  RefreshCw, TrendingUp, TrendingDown, Minus, ChevronDown, 
+import { useUserRole } from '@/hooks/useUserRole';
+import {
+  RefreshCw, TrendingUp, TrendingDown, Minus, ChevronDown,
   Home, Plane, AlertTriangle, CheckCircle, XCircle, Info
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -24,21 +25,49 @@ const getEasternDate = (): string => {
   return etFormatter.format(now); // Returns YYYY-MM-DD
 };
 
-// Convert UTC time to Eastern Time display string
-const formatGameTimeET = (gameTime: string | null): string => {
-  if (!gameTime) return 'TBD';
-  
-  try {
-    const date = new Date(gameTime);
-    return date.toLocaleTimeString('en-US', {
+// Normalize any input into a single internal ISO-8601 UTC timestamp ending in "Z"
+// - If missing timezone suffix, we force UTC interpretation.
+const toUtcIso = (raw: string | null): string | null => {
+  if (!raw) return null;
+
+  let s = String(raw).trim();
+
+  // Prevent accidental double-conversion of already rendered strings
+  if (/\bET\b|\bEST\b|\bEDT\b/i.test(s)) return null;
+
+  // Normalize common non-ISO forms
+  s = s.replace(' ', 'T');
+  s = s.replace(/([+-]\d{2})$/, '$1:00');
+
+  // Force UTC if no timezone suffix is present
+  if (!/Z$|[+-]\d{2}:?\d{2}$/.test(s)) {
+    s = `${s}Z`;
+  }
+
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+};
+
+// Convert a UTC ISO timestamp to America/New_York for display
+const formatEtFromUtcIso = (utcIso: string | null): string => {
+  if (!utcIso) return 'TBD';
+  const d = new Date(utcIso);
+  if (Number.isNaN(d.getTime())) return 'TBD';
+
+  return (
+    d.toLocaleTimeString('en-US', {
       timeZone: 'America/New_York',
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true
-    }) + ' ET';
-  } catch {
-    return 'TBD';
-  }
+      hour12: true,
+    }) + ' ET'
+  );
+};
+
+const formatGameTimeET = (gameTime: string | null): string => {
+  const utcIso = toUtcIso(gameTime);
+  return formatEtFromUtcIso(utcIso);
 };
 
 interface MoneylinePrediction {
@@ -100,16 +129,20 @@ const NetRatingDisplay = ({ rating, label }: { rating: number | null; label: str
   );
 };
 
-const MoneylineCard = ({ prediction, expanded, onToggle }: { 
-  prediction: MoneylinePrediction; 
+const MoneylineCard = ({ prediction, expanded, onToggle, showTimeDebug }: {
+  prediction: MoneylinePrediction;
   expanded: boolean;
   onToggle: () => void;
+  showTimeDebug: boolean;
 }) => {
   const homeProb = prediction.home_win_probability ? (prediction.home_win_probability * 100).toFixed(1) : 'N/A';
   const awayProb = prediction.away_win_probability ? (prediction.away_win_probability * 100).toFixed(1) : 'N/A';
   const isHomeFavored = (prediction.home_win_probability || 0) >= (prediction.away_win_probability || 0);
-  
-  const gameTime = formatGameTimeET(prediction.game_time);
+
+  // Time debug proof (raw -> parsed UTC ISO -> rendered ET)
+  const raw_api_time = prediction.game_time;
+  const parsed_utc_time = toUtcIso(raw_api_time);
+  const rendered_et_time = formatEtFromUtcIso(parsed_utc_time);
 
   return (
     <Collapsible open={expanded} onOpenChange={onToggle}>
@@ -142,7 +175,7 @@ const MoneylineCard = ({ prediction, expanded, onToggle }: {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-muted-foreground">{gameTime}</span>
+                  <span className="text-sm text-muted-foreground">{rendered_et_time}</span>
                   {getRecommendationBadge(prediction.recommendation)}
                   {prediction.confidence_score && (
                     <Badge variant="outline" className="text-xs">
@@ -160,6 +193,12 @@ const MoneylineCard = ({ prediction, expanded, onToggle }: {
                     </Badge>
                   )}
                 </div>
+
+                {showTimeDebug && (
+                  <div className="mt-1 text-[11px] text-muted-foreground font-mono break-all">
+                    raw_api_time: {String(raw_api_time ?? 'null')} | parsed_utc_time: {String(parsed_utc_time ?? 'null')} | rendered_et_time: {rendered_et_time}
+                  </div>
+                )}
               </div>
               <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${expanded ? 'rotate-180' : ''}`} />
             </div>
@@ -258,6 +297,9 @@ const NBAMoneylineLeans = () => {
     expectedCount: number | null;
     mismatch: boolean;
   }>({ expectedCount: null, mismatch: false });
+
+  const { isAdmin } = useUserRole();
+  const showTimeDebug = isAdmin();
   
   const today = useMemo(() => getEasternDate(), []);
   
@@ -408,6 +450,7 @@ const NBAMoneylineLeans = () => {
                   prediction={prediction}
                   expanded={expandedId === prediction.id}
                   onToggle={() => setExpandedId(expandedId === prediction.id ? null : prediction.id)}
+                  showTimeDebug={showTimeDebug}
                 />
               ))}
             </div>
