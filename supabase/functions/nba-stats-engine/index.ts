@@ -156,15 +156,32 @@ async function fetchTeamSeasonStats(apiKey: string, season: string) {
   }
 }
 
-// Fetch player game logs
-async function fetchPlayerGameLogs(apiKey: string, season: string) {
-  try {
-    const logs = await fetchSportsDataIO(`/stats/json/PlayerGameStatsBySeason/${season}/all`, apiKey);
-    return logs || [];
-  } catch (error) {
-    console.error("Error fetching game logs:", error);
-    return [];
+// Fetch recent box scores (last N days) for game logs
+async function fetchRecentBoxScores(apiKey: string, days: number = 7): Promise<any[]> {
+  const allPlayerGames: any[] = [];
+  
+  for (let i = 0; i < days; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() - i - 1); // Start from yesterday
+    const dateStr = date.toISOString().split("T")[0];
+    
+    try {
+      const boxScores = await fetchSportsDataIO(`/stats/json/BoxScoresFinal/${dateStr}`, apiKey);
+      if (boxScores && Array.isArray(boxScores)) {
+        for (const game of boxScores) {
+          if (game.PlayerGames && Array.isArray(game.PlayerGames)) {
+            allPlayerGames.push(...game.PlayerGames);
+          }
+        }
+      }
+    } catch (error) {
+      // Some days may not have games, skip
+      console.log(`No box scores for ${dateStr}`);
+    }
   }
+  
+  console.log(`Fetched ${allPlayerGames.length} player game logs from last ${days} days`);
+  return allPlayerGames;
 }
 
 // Fetch active NBA players
@@ -248,11 +265,11 @@ function processPlayerFromLogs(
     season: calculateAvg(season.map((g: any) => g.Minutes || 0)),
   };
 
-  // Require minimum usable data
+  // Require minimum usable data - lowered threshold for early season
   const dataCompleteness = Math.min(100, Math.round((season.length / 40) * 100));
-  if (dataCompleteness < 20) {
+  if (season.length < 3) {
     console.log(
-      `Insufficient data for player ${getPlayerFullName(player)}: ${dataCompleteness}%`
+      `Insufficient data for player ${getPlayerFullName(player)}: only ${season.length} games`
     );
     return null;
   }
@@ -353,15 +370,31 @@ serve(async (req) => {
       const source = "SportsDataIO";
       
       try {
+        console.log("=== NBA STATS ENGINE: REFRESH_STATS START ===");
         console.log("Fetching real data from SportsDataIO...");
+        
+        // CRITICAL: Clear any existing mock/placeholder data first
+        const { data: existingMock } = await supabase
+          .from("nba_player_stats")
+          .select("player_id")
+          .or("player_id.like.%_PG_%,player_id.like.%_SG_%,player_id.like.%_SF_%,player_id.like.%_PF_%,player_id.like.%_C_%,player_id.like.mock_%");
+        
+        if (existingMock && existingMock.length > 0) {
+          console.log(`Deleting ${existingMock.length} mock/placeholder players from database`);
+          await supabase.from("nba_player_stats")
+            .delete()
+            .or("player_id.like.%_PG_%,player_id.like.%_SG_%,player_id.like.%_SF_%,player_id.like.%_PF_%,player_id.like.%_C_%,player_id.like.mock_%");
+        }
         
         // Get current season
         const currentYear = new Date().getFullYear();
         const currentMonth = new Date().getMonth();
         const season = currentMonth >= 9 ? currentYear + 1 : currentYear;
+        console.log(`Current NBA season: ${season}`);
         
         // Fetch today's games FIRST - this determines everything
         const apiGames = await fetchTodaysGames(sportsDataIOKey, today);
+        console.log(`RAW API RESPONSE - Games today: ${JSON.stringify(apiGames.slice(0, 2))}`);
         console.log(`Found ${apiGames.length} games today from SportsDataIO`);
         
         if (apiGames.length === 0) {
@@ -430,15 +463,21 @@ serve(async (req) => {
         
         // Fetch official NBA player list (identity resolution)
         const activePlayers = await fetchActivePlayers(sportsDataIOKey);
+        console.log(`RAW API RESPONSE - Active players sample: ${JSON.stringify((activePlayers || []).slice(0, 2))}`);
+        
         const playersById = new Map<number, any>();
         for (const p of activePlayers || []) {
           if (typeof p?.PlayerID === "number") playersById.set(p.PlayerID, p);
         }
         console.log(`Fetched ${playersById.size} official players for identity resolution`);
 
-        // Fetch player season stats and game logs
+        // Fetch player season stats and recent game logs from box scores
         const playerSeasonStats = await fetchPlayerSeasonStats(sportsDataIOKey, season.toString());
-        const gameLogs = await fetchPlayerGameLogs(sportsDataIOKey, season.toString());
+        console.log(`RAW API RESPONSE - Season stats sample: ${JSON.stringify((playerSeasonStats || []).slice(0, 2))}`);
+        
+        // Fetch recent box scores for game-by-game data
+        const gameLogs = await fetchRecentBoxScores(sportsDataIOKey, 14); // Last 14 days
+        console.log(`RAW API RESPONSE - Game logs sample: ${JSON.stringify((gameLogs || []).slice(0, 2))}`);
 
         console.log(`Fetched ${playerSeasonStats.length} player season stats, ${gameLogs.length} game logs`);
 
@@ -460,6 +499,7 @@ serve(async (req) => {
         console.log(`Processing ${relevantSeasonRows.length} resolvable players on today's slate`);
 
         const playersData: any[] = [];
+        let skippedCount = 0;
         for (const row of relevantSeasonRows.slice(0, 150)) {
           const official = playersById.get(row.PlayerID);
           // Merge: keep Team from season row (current team), keep identity from official list
@@ -475,10 +515,16 @@ serve(async (req) => {
           const processed = processPlayerFromLogs(merged, gameLogs);
           if (processed && processed.season_avg_min > 15) {
             playersData.push(processed);
+            // Log first few players for verification
+            if (playersData.length <= 3) {
+              console.log(`VERIFIED PLAYER: ${processed.player_name} (ID: ${processed.player_id}, Team: ${processed.team})`);
+            }
+          } else {
+            skippedCount++;
           }
         }
 
-        console.log(`Successfully processed ${playersData.length} players with complete stats`);
+        console.log(`Successfully processed ${playersData.length} players with complete stats (skipped ${skippedCount})`);
         
         // Upsert teams
         for (const team of teamsData) {
@@ -539,11 +585,15 @@ serve(async (req) => {
     }
 
     if (action === "generate_props") {
+      console.log("=== NBA STATS ENGINE: GENERATE_PROPS START ===");
+      
       // Fetch today's games
-      const { data: games } = await supabase
+      const { data: games, error: gamesError } = await supabase
         .from("nba_games_today")
         .select("*")
         .eq("game_date", today);
+
+      console.log(`Games for today: ${games?.length || 0}, error: ${gamesError?.message || 'none'}`);
 
       if (!games || games.length === 0) {
         return new Response(
@@ -558,12 +608,15 @@ serve(async (req) => {
         teamsToday.add(g.home_team);
         teamsToday.add(g.away_team);
       });
+      console.log(`Teams today: ${Array.from(teamsToday).join(', ')}`);
 
-      const { data: players } = await supabase
+      const { data: players, error: playersError } = await supabase
         .from("nba_player_stats")
         .select("*")
         .in("team", Array.from(teamsToday))
         .neq("injury_status", "out");
+
+      console.log(`Players fetched: ${players?.length || 0}, error: ${playersError?.message || 'none'}`);
 
       // CRITICAL: Filter out any invalid players that might have been stored
        const validPlayers = (players || []).filter((p: any) => {
@@ -648,38 +701,41 @@ serve(async (req) => {
           );
 
         for (const stat of statTypes) {
-          // Get stat-specific values
+          // Get stat-specific values - FIXED: Use correct column names from nba_player_stats table
           let last5 = 0, season = 0, std = 0;
           switch (stat.key) {
             case "pts":
-              last5 = player.last_5_avg_pts || 0;
+              last5 = player.last_5_games_avg_pts || 0;
               season = player.season_avg_pts || 0;
               std = player.std_pts || season * 0.2;
               break;
             case "reb":
-              last5 = player.last_5_avg_reb || 0;
+              last5 = player.last_5_games_avg_reb || 0;
               season = player.season_avg_reb || 0;
               std = player.std_reb || season * 0.25;
               break;
             case "ast":
-              last5 = player.last_5_avg_ast || 0;
+              last5 = player.last_5_games_avg_ast || 0;
               season = player.season_avg_ast || 0;
               std = player.std_ast || season * 0.3;
               break;
             case "3pm":
-              last5 = player.last_5_avg_3pm || 0;
+              last5 = player.last_5_games_avg_3pm || 0;
               season = player.season_avg_3pm || 0;
               std = player.std_3pm || season * 0.4;
               break;
             case "pra":
-              last5 = (player.last_5_avg_pts || 0) + (player.last_5_avg_reb || 0) + (player.last_5_avg_ast || 0);
+              last5 = (player.last_5_games_avg_pts || 0) + (player.last_5_games_avg_reb || 0) + (player.last_5_games_avg_ast || 0);
               season = (player.season_avg_pts || 0) + (player.season_avg_reb || 0) + (player.season_avg_ast || 0);
               std = (player.std_pts || 0) + (player.std_reb || 0) + (player.std_ast || 0);
               break;
           }
 
-          // Skip if insufficient stats
-          if (last5 <= 0 && season <= 0) continue;
+          // Skip if insufficient stats - log for debugging
+          if (last5 <= 0 && season <= 0) {
+            console.log(`Skipping ${player.player_name} ${stat.name}: no stats (last5=${last5}, season=${season})`);
+            continue;
+          }
 
           // Weighted projection
           const projected = last5 * 0.6 + season * 0.4;
@@ -791,9 +847,30 @@ serve(async (req) => {
         }
       }
 
-      // Insert props
+      // Insert props with verification
+      console.log(`Prepared ${propsGenerated.length} props for insertion`);
+      
       if (propsGenerated.length > 0) {
-        await supabase.from("nba_props_generated").insert(propsGenerated);
+        // Log sample prop for verification
+        console.log(`SAMPLE PROP: ${JSON.stringify(propsGenerated[0])}`);
+        
+        const { error: insertError } = await supabase.from("nba_props_generated").insert(propsGenerated);
+        if (insertError) {
+          console.error(`PROP INSERT ERROR: ${insertError.message}`);
+          throw new Error(`Failed to insert props: ${insertError.message}`);
+        }
+        
+        // VERIFICATION: Query back to confirm write
+        const { data: verifyProps, error: verifyError } = await supabase
+          .from("nba_props_generated")
+          .select("id, player_name, stat_type")
+          .eq("game_date", today)
+          .limit(5);
+        
+        console.log(`VERIFICATION: Found ${verifyProps?.length || 0} props in DB after insert`);
+        if (verifyError) console.error(`VERIFY ERROR: ${verifyError.message}`);
+      } else {
+        console.log("WARNING: No props generated - check player validation and team stats");
       }
 
       // Update log
@@ -802,6 +879,8 @@ serve(async (req) => {
         .eq("status", "complete")
         .order("completed_at", { ascending: false })
         .limit(1);
+
+      console.log("=== NBA STATS ENGINE: GENERATE_PROPS COMPLETE ===");
 
       return new Response(JSON.stringify({
         success: true,
