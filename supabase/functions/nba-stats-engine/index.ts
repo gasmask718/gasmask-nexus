@@ -87,27 +87,39 @@ function calculateProbability(
 }
 
 // Validate player identity - CRITICAL: No placeholder players allowed
+function getPlayerFullName(player: any): string {
+  const name =
+    player?.Name ??
+    player?.FullName ??
+    [player?.FirstName, player?.LastName].filter(Boolean).join(" ");
+  return typeof name === "string" ? name.trim() : "";
+}
+
 function isValidPlayer(player: any): boolean {
   // Must have a numeric PlayerID from SportsDataIO
-  if (!player.PlayerID || typeof player.PlayerID !== 'number') {
-    console.log(`Invalid player: missing PlayerID`, player);
+  const playerId = player?.PlayerID;
+  if (typeof playerId !== "number" || !Number.isFinite(playerId)) {
+    console.log(`Invalid player: missing/invalid PlayerID`, player);
     return false;
   }
-  
-  // Must have real name (not position-based)
-  const name = player.Name || `${player.FirstName} ${player.LastName}`;
-  const invalidNames = ['PG Player', 'SG Player', 'SF Player', 'PF Player', 'C Player', 'Unknown Player', 'Unknown', 'TBD'];
-  if (!name || invalidNames.some(invalid => name.includes(invalid))) {
-    console.log(`Invalid player name: ${name}`);
+
+  // Must have real name (not position-based placeholders)
+  const name = getPlayerFullName(player);
+  const invalidNames = [
+    "PG Player",
+    "SG Player",
+    "SF Player",
+    "PF Player",
+    "C Player",
+    "Unknown Player",
+    "Unknown",
+    "TBD",
+  ];
+  if (!name || invalidNames.some((invalid) => name.includes(invalid))) {
+    console.log(`Invalid player name: ${name || "(empty)"}`);
     return false;
   }
-  
-  // Must have real team abbreviation
-  if (!player.Team || player.Team.length !== 3) {
-    console.log(`Invalid player team: ${player.Team}`);
-    return false;
-  }
-  
+
   return true;
 }
 
@@ -168,112 +180,129 @@ async function fetchActivePlayers(apiKey: string) {
 
 // Process player game logs into stats - ONLY for validated real players
 function processPlayerFromLogs(
-  player: any, 
-  gameLogs: any[], 
-  source: string
+  player: any,
+  gameLogs: any[]
 ): any | null {
   // CRITICAL: Validate player identity first
-  if (!isValidPlayer(player)) {
+  if (!isValidPlayer(player)) return null;
+
+  // Must have real team code after merge
+  if (!player?.Team || typeof player.Team !== "string" || player.Team.length !== 3) {
+    console.log(`Invalid player team after merge: ${player?.Team}`);
     return null;
   }
 
   const playerLogs = gameLogs
     .filter((log: any) => log.PlayerID === player.PlayerID)
     .sort((a: any, b: any) => new Date(b.Day).getTime() - new Date(a.Day).getTime());
-  
+
   if (playerLogs.length === 0) {
-    console.log(`No game logs for player ${player.Name || player.FirstName}`);
+    console.log(`No game logs for player ${getPlayerFullName(player)}`);
     return null;
   }
-  
+
   const last5 = playerLogs.slice(0, 5);
   const last10 = playerLogs.slice(0, 10);
   const season = playerLogs;
-  
+
   // Calculate stats
   const pts = {
     last5: calculateAvg(last5.map((g: any) => g.Points || 0)),
     last10: calculateAvg(last10.map((g: any) => g.Points || 0)),
     season: calculateAvg(season.map((g: any) => g.Points || 0)),
-    std: calculateStd(last5.map((g: any) => g.Points || 0))
+    std: calculateStd(last5.map((g: any) => g.Points || 0)),
   };
-  
+
   const reb = {
     last5: calculateAvg(last5.map((g: any) => g.Rebounds || 0)),
     last10: calculateAvg(last10.map((g: any) => g.Rebounds || 0)),
     season: calculateAvg(season.map((g: any) => g.Rebounds || 0)),
-    std: calculateStd(last5.map((g: any) => g.Rebounds || 0))
+    std: calculateStd(last5.map((g: any) => g.Rebounds || 0)),
   };
-  
+
   const ast = {
     last5: calculateAvg(last5.map((g: any) => g.Assists || 0)),
     last10: calculateAvg(last10.map((g: any) => g.Assists || 0)),
     season: calculateAvg(season.map((g: any) => g.Assists || 0)),
-    std: calculateStd(last5.map((g: any) => g.Assists || 0))
+    std: calculateStd(last5.map((g: any) => g.Assists || 0)),
   };
-  
+
   const threepm = {
     last5: calculateAvg(last5.map((g: any) => g.ThreePointersMade || 0)),
     last10: calculateAvg(last10.map((g: any) => g.ThreePointersMade || 0)),
     season: calculateAvg(season.map((g: any) => g.ThreePointersMade || 0)),
-    std: calculateStd(last5.map((g: any) => g.ThreePointersMade || 0))
+    std: calculateStd(last5.map((g: any) => g.ThreePointersMade || 0)),
   };
-  
+
   const pra = {
     last5: pts.last5 + reb.last5 + ast.last5,
     last10: pts.last10 + reb.last10 + ast.last10,
     season: pts.season + reb.season + ast.season,
-    std: calculateStd(last5.map((g: any) => (g.Points || 0) + (g.Rebounds || 0) + (g.Assists || 0)))
+    std: calculateStd(
+      last5.map((g: any) => (g.Points || 0) + (g.Rebounds || 0) + (g.Assists || 0))
+    ),
   };
-  
+
   const mins = {
     last5: calculateAvg(last5.map((g: any) => g.Minutes || 0)),
-    season: calculateAvg(season.map((g: any) => g.Minutes || 0))
+    season: calculateAvg(season.map((g: any) => g.Minutes || 0)),
   };
-  
+
+  // Require minimum usable data
   const dataCompleteness = Math.min(100, Math.round((season.length / 40) * 100));
-  
-  // Require minimum data completeness
   if (dataCompleteness < 20) {
-    console.log(`Insufficient data for player ${player.Name || player.FirstName}: ${dataCompleteness}%`);
+    console.log(
+      `Insufficient data for player ${getPlayerFullName(player)}: ${dataCompleteness}%`
+    );
     return null;
   }
-  
-  const playerName = player.Name || `${player.FirstName} ${player.LastName}`;
-  
+
+  const playerName = getPlayerFullName(player);
+  if (!playerName) return null;
+
+  const injuryRaw = String(player?.InjuryStatus ?? "Active").toLowerCase();
+  const injury_status =
+    injuryRaw === "out" || injuryRaw === "injured"
+      ? "out"
+      : injuryRaw === "questionable"
+        ? "questionable"
+        : "active";
+
   return {
     player_id: player.PlayerID.toString(),
-    player_name: playerName.trim(),
+    player_name: playerName,
     team: player.Team,
-    position: player.Position || '',
+    position: player.Position || "",
+
     last_5_games_avg_pts: pts.last5,
     last_5_games_avg_reb: reb.last5,
     last_5_games_avg_ast: ast.last5,
     last_5_games_avg_3pm: threepm.last5,
     last_5_games_avg_pra: pra.last5,
+
     last_10_games_avg_pts: pts.last10,
     last_10_games_avg_reb: reb.last10,
     last_10_games_avg_ast: ast.last10,
     last_10_games_avg_3pm: threepm.last10,
     last_10_games_avg_pra: pra.last10,
+
     season_avg_pts: pts.season,
     season_avg_reb: reb.season,
     season_avg_ast: ast.season,
     season_avg_3pm: threepm.season,
     season_avg_pra: pra.season,
     season_avg_min: mins.season,
+
     std_pts: pts.std,
     std_reb: reb.std,
     std_ast: ast.std,
     std_3pm: threepm.std,
     std_pra: pra.std,
+
     minutes_last_5_avg: mins.last5,
-    usage_rate: player.UsageRatePercentage || 20,
-    injury_status: player.InjuryStatus === 'Out' ? 'out' : 
-                   player.InjuryStatus === 'Questionable' ? 'questionable' : 'active',
-    stats_source: source,
-    data_completeness: dataCompleteness,
-    last_updated: new Date().toISOString()
+    usage_rate: player.UsageRatePercentage || player.UsageRate || 20,
+    injury_status,
+    last_updated: new Date().toISOString(),
   };
 }
 
@@ -399,30 +428,56 @@ serve(async (req) => {
           last_updated: new Date().toISOString()
         }));
         
+        // Fetch official NBA player list (identity resolution)
+        const activePlayers = await fetchActivePlayers(sportsDataIOKey);
+        const playersById = new Map<number, any>();
+        for (const p of activePlayers || []) {
+          if (typeof p?.PlayerID === "number") playersById.set(p.PlayerID, p);
+        }
+        console.log(`Fetched ${playersById.size} official players for identity resolution`);
+
         // Fetch player season stats and game logs
         const playerSeasonStats = await fetchPlayerSeasonStats(sportsDataIOKey, season.toString());
         const gameLogs = await fetchPlayerGameLogs(sportsDataIOKey, season.toString());
-        
+
         console.log(`Fetched ${playerSeasonStats.length} player season stats, ${gameLogs.length} game logs`);
-        
-        // Filter to players on teams playing today with significant minutes
-        // CRITICAL: Only include players that pass validation
-        const relevantPlayers = playerSeasonStats.filter((p: any) => 
-          teamsPlaying.has(p.Team) && 
-          p.Minutes > 15 &&
-          isValidPlayer(p)
-        );
-        
-        console.log(`Processing ${relevantPlayers.length} relevant validated players`);
-        
+
+        // Filter to players on teams playing today with significant minutes AND resolvable PlayerID
+        const relevantSeasonRows = (playerSeasonStats || []).filter((row: any) => {
+          const playerId = row?.PlayerID;
+          if (typeof playerId !== "number") return false;
+          if (!teamsPlaying.has(row?.Team)) return false;
+          if (!row?.Team || String(row.Team).length !== 3) return false;
+          if (!row?.Minutes || row.Minutes <= 15) return false;
+
+          const official = playersById.get(playerId);
+          if (!official) return false;
+          if (!isValidPlayer(official)) return false;
+
+          return true;
+        });
+
+        console.log(`Processing ${relevantSeasonRows.length} resolvable players on today's slate`);
+
         const playersData: any[] = [];
-        for (const player of relevantPlayers.slice(0, 100)) { // Limit for performance
-          const processed = processPlayerFromLogs(player, gameLogs, source);
+        for (const row of relevantSeasonRows.slice(0, 150)) {
+          const official = playersById.get(row.PlayerID);
+          // Merge: keep Team from season row (current team), keep identity from official list
+          const merged = {
+            ...row,
+            ...official,
+            PlayerID: row.PlayerID,
+            Team: row.Team,
+            Name: getPlayerFullName(official),
+            InjuryStatus: official?.InjuryStatus ?? "Active",
+          };
+
+          const processed = processPlayerFromLogs(merged, gameLogs);
           if (processed && processed.season_avg_min > 15) {
             playersData.push(processed);
           }
         }
-        
+
         console.log(`Successfully processed ${playersData.length} players with complete stats`);
         
         // Upsert teams
@@ -511,25 +566,33 @@ serve(async (req) => {
         .neq("injury_status", "out");
 
       // CRITICAL: Filter out any invalid players that might have been stored
-      const validPlayers = (players || []).filter((p: any) => {
-        // Must have numeric player_id (not mock_*)
-        if (!p.player_id || p.player_id.startsWith('mock_')) {
-          console.log(`Skipping mock player: ${p.player_name}`);
-          return false;
-        }
-        // Must have real name
-        const invalidNames = ['PG Player', 'SG Player', 'SF Player', 'PF Player', 'C Player', 'Unknown Player'];
-        if (invalidNames.some(invalid => p.player_name?.includes(invalid))) {
-          console.log(`Skipping placeholder player: ${p.player_name}`);
-          return false;
-        }
-        // Must have stats source from SportsDataIO
-        if (!p.stats_source || p.stats_source.includes('Mock')) {
-          console.log(`Skipping mock data player: ${p.player_name}`);
-          return false;
-        }
-        return true;
-      });
+       const validPlayers = (players || []).filter((p: any) => {
+         // Must have numeric-ish player_id (not mock_*)
+         if (!p.player_id || String(p.player_id).startsWith("mock_")) {
+           console.log(`Skipping mock player: ${p.player_name}`);
+           return false;
+         }
+         // Must have real name
+         const invalidNames = [
+           "PG Player",
+           "SG Player",
+           "SF Player",
+           "PF Player",
+           "C Player",
+           "Unknown Player",
+           "Unknown",
+         ];
+         if (!p.player_name || invalidNames.some((invalid) => p.player_name?.includes(invalid))) {
+           console.log(`Skipping placeholder player: ${p.player_name}`);
+           return false;
+         }
+         // Must have valid team code
+         if (!p.team || String(p.team).length !== 3) {
+           console.log(`Skipping invalid team player: ${p.player_name} (${p.team})`);
+           return false;
+         }
+         return true;
+       });
 
       console.log(`Generating props for ${validPlayers.length} validated players`);
 
@@ -557,31 +620,32 @@ serve(async (req) => {
 
         const isHome = game.home_team === player.team;
         const opponent = isHome ? game.away_team : game.home_team;
-        const oppTeam = teamMap.get(opponent);
-        const isB2B = isHome ? game.home_team_back_to_back : game.away_team_back_to_back;
+         const oppTeam = teamMap.get(opponent);
+         if (!oppTeam) {
+           console.log(`Skipping ${player.player_name}: missing opponent team stats for ${opponent}`);
+           continue;
+         }
 
-        const oppDefRank = oppTeam?.def_rank_overall || 15;
-        const oppDefTier = getDefTier(oppDefRank);
-        const paceTier = oppTeam?.pace_tier || "avg";
-        const minutesTrend = getMinutesTrend(
-          player.minutes_last_5_avg || 30,
-          player.season_avg_min || 30
-        );
+         const isB2B = isHome ? game.home_team_back_to_back : game.away_team_back_to_back;
 
-        for (const stat of statTypes) {
-          const last5Key = `last_5_games_avg_${stat.key}`;
-          const seasonKey = `season_avg_${stat.key}`;
-          const stdKey = `std_${stat.key}`;
+         const oppDefRank = oppTeam?.def_rank_overall;
+         const oppDefTier = typeof oppDefRank === "number" ? getDefTier(oppDefRank) : null;
+         const paceTier = oppTeam?.pace_tier ?? null;
 
-          const last5 = player[last5Key] as number | null;
-          const season = player[seasonKey] as number | null;
-          const std = player[stdKey] as number | null;
+         // CRITICAL: No silent fallbacks — require matchup context + minutes data
+         if (!oppDefTier || !paceTier) {
+           console.log(`Skipping ${player.player_name}: missing def/pace tiers`);
+           continue;
+         }
+         if (!player.minutes_last_5_avg || !player.season_avg_min) {
+           console.log(`Skipping ${player.player_name}: missing minutes trends`);
+           continue;
+         }
 
-          // CRITICAL: Require real stats - skip if missing
-          if (!last5 || !season || last5 < 1) {
-            console.log(`Skipping ${player.player_name} ${stat.name}: missing stats`);
-            continue;
-          }
+         const minutesTrend = getMinutesTrend(
+           player.minutes_last_5_avg,
+           player.season_avg_min
+         );
 
           // Weighted projection
           const projected = last5 * 0.6 + season * 0.4;
@@ -665,13 +729,19 @@ serve(async (req) => {
             pace_tier: paceTier,
             minutes_trend: minutesTrend,
             data_completeness: player.data_completeness || 50,
-            source: player.stats_source || "SportsDataIO",
+            source: "SportsDataIO",
             volatility_score: volatilityTier,
             projected_value: projected,
             back_to_back: isB2B,
             home_game: isHome,
-            // CRITICAL: Store all stats used in probability calculation
+            // CRITICAL: Store all stats used in probability calculation (must be visible in UI)
             calibration_factors: {
+              player_id: player.player_id,
+              player_name: player.player_name,
+              team: player.team,
+              opponent,
+              game_date: today,
+
               last_5_avg: last5,
               season_avg: season,
               std: std,
@@ -680,8 +750,8 @@ serve(async (req) => {
               def_rank: oppDefRank,
               pace_rating: oppTeam?.pace_rating,
               injury_status: player.injury_status,
-              data_completeness: player.data_completeness,
-              stats_source: player.stats_source
+              data_completeness: player.data_completeness || 50,
+              stats_source: "SportsDataIO",
             },
           });
         }
