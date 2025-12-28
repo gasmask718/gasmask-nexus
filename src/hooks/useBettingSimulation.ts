@@ -133,6 +133,14 @@ export const useAddMarketLine = () => {
       line_value: number;
       over_under?: string;
       odds_or_payout: number;
+      // Calibration inputs
+      player_recent_avg?: number;
+      player_recent_std?: number;
+      player_season_avg?: number;
+      minutes_trend?: string;
+      opponent_def_tier?: string;
+      pace_tier?: string;
+      home_game?: boolean;
     }) => {
       const { data, error } = await supabase
         .from('market_lines')
@@ -193,6 +201,8 @@ export const useRunSimulation = () => {
         simulated_roi: number;
         volatility_score: number;
         status: 'simulated';
+        calibration_factors: any;
+        data_completeness: number;
       }> = [];
       
       // Helper to convert volatility string to numeric score
@@ -203,7 +213,18 @@ export const useRunSimulation = () => {
       };
       
       for (const line of lines || []) {
-        // Process all market types, not just player props
+        // Build calibration inputs from market line data
+        const calibration = {
+          player_recent_avg: line.player_recent_avg ?? undefined,
+          player_recent_std: line.player_recent_std ?? undefined,
+          player_season_avg: line.player_season_avg ?? undefined,
+          minutes_trend: line.minutes_trend as 'up' | 'flat' | 'down' | undefined,
+          opponent_def_tier: line.opponent_def_tier as 'low' | 'med' | 'high' | undefined,
+          pace_tier: line.pace_tier as 'slow' | 'avg' | 'fast' | undefined,
+          home_game: line.home_game ?? undefined,
+        };
+        
+        // Process all market types with calibration
         const input: PlayerPropInput = {
           player_name: line.player_name || line.event || 'Unknown',
           stat_type: line.stat_type || line.market_type || 'line',
@@ -211,12 +232,13 @@ export const useRunSimulation = () => {
           over_under: (line.over_under?.toLowerCase() || 'over') as 'over' | 'under',
           platform: line.platform,
           odds_or_payout: line.odds_or_payout || -110,
+          calibration,
         };
         
         const result = simulatePlayerProp(input);
         simulations.push({ input, result });
         
-        // Create simulated bet record with all required fields
+        // Create simulated bet record with all required fields including calibration
         const betDescription = line.player_name 
           ? `${line.event} - ${line.player_name} ${line.over_under || 'over'} ${line.line_value} ${line.stat_type || ''}`
           : `${line.event} - ${line.market_type} ${line.over_under || ''} ${line.line_value}`;
@@ -234,6 +256,8 @@ export const useRunSimulation = () => {
           simulated_roi: result.simulated_roi,
           volatility_score: volatilityToNumber(result.volatility_score),
           status: 'simulated' as const,
+          calibration_factors: result.calibration_factors,
+          data_completeness: result.data_completeness,
         });
       }
       
@@ -346,6 +370,8 @@ export const useSimulatePickemEntry = () => {
           edge: 0,
           recommendation: 'pass' as const,
           reasoning: [],
+          calibration_factors: [],
+          data_completeness: bet.data_completeness || 0,
         };
       });
       

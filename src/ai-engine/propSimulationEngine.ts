@@ -1,5 +1,15 @@
 // Prop Simulation Engine - Player Prop Intelligence
-// Deterministic, explainable simulation logic for player props
+// Deterministic, explainable simulation logic for player props with calibrated probabilities
+
+export interface CalibrationInputs {
+  player_recent_avg?: number;
+  player_recent_std?: number;
+  player_season_avg?: number;
+  minutes_trend?: 'up' | 'flat' | 'down';
+  opponent_def_tier?: 'low' | 'med' | 'high';
+  pace_tier?: 'slow' | 'avg' | 'fast';
+  home_game?: boolean;
+}
 
 export interface PlayerPropInput {
   player_name: string;
@@ -8,12 +18,20 @@ export interface PlayerPropInput {
   over_under: 'over' | 'under';
   platform: string;
   odds_or_payout: number;
-  // Optional context
+  // Optional context (legacy)
   recent_games?: number[];
   season_average?: number;
   home_game?: boolean;
   opponent_tier?: 'weak' | 'average' | 'strong';
   pace?: 'slow' | 'average' | 'fast';
+  // New calibration inputs
+  calibration?: CalibrationInputs;
+}
+
+export interface CalibrationFactor {
+  factor: string;
+  adjustment: number;
+  direction: 'up' | 'down' | 'neutral';
 }
 
 export interface SimulationResult {
@@ -25,6 +43,8 @@ export interface SimulationResult {
   edge: number;
   recommendation: 'strong_play' | 'lean' | 'pass' | 'avoid';
   reasoning: string[];
+  calibration_factors: CalibrationFactor[];
+  data_completeness: number;
 }
 
 export interface PickemPayout {
@@ -86,15 +106,91 @@ export const calculateBreakEven = (odds: number): number => {
   return oddsToImpliedProbability(odds);
 };
 
-// Simulate a single player prop
+// Calculate data completeness score (0-100)
+const calculateDataCompleteness = (input: PlayerPropInput): number => {
+  let score = 0;
+  const cal = input.calibration;
+  
+  if (cal?.player_recent_avg !== undefined) score += 25;
+  if (cal?.player_recent_std !== undefined) score += 15;
+  if (cal?.player_season_avg !== undefined) score += 20;
+  if (cal?.minutes_trend) score += 10;
+  if (cal?.opponent_def_tier) score += 10;
+  if (cal?.pace_tier) score += 10;
+  if (cal?.home_game !== undefined) score += 10;
+  
+  // Legacy inputs
+  if (input.recent_games && input.recent_games.length > 0) score = Math.max(score, 40);
+  if (input.season_average !== undefined) score = Math.max(score, 20);
+  
+  return Math.min(100, score);
+};
+
+// Calculate base probability from recent average vs line using normal distribution approximation
+const calculateBaseProbFromStats = (
+  recentAvg: number,
+  recentStd: number | undefined,
+  seasonAvg: number | undefined,
+  lineValue: number,
+  overUnder: 'over' | 'under'
+): { probability: number; reasoning: string } => {
+  // Blend recent and season averages (70% recent, 30% season if both available)
+  let blendedAvg = recentAvg;
+  if (seasonAvg !== undefined) {
+    blendedAvg = recentAvg * 0.7 + seasonAvg * 0.3;
+  }
+  
+  // Use provided std or estimate as 20% of average
+  const std = recentStd ?? (recentAvg * 0.2);
+  
+  // Calculate z-score
+  const zScore = (lineValue - blendedAvg) / (std || 1);
+  
+  // Approximate normal CDF using logistic function
+  // P(X > line) for over, P(X < line) for under
+  const probUnder = 1 / (1 + Math.exp(-1.7 * zScore));
+  const probability = overUnder === 'over' ? 1 - probUnder : probUnder;
+  
+  const reasoning = seasonAvg !== undefined
+    ? `Blended avg ${blendedAvg.toFixed(1)} (recent ${recentAvg.toFixed(1)}, season ${seasonAvg.toFixed(1)}) vs line ${lineValue}`
+    : `Recent avg ${recentAvg.toFixed(1)} (std ${std.toFixed(1)}) vs line ${lineValue}`;
+  
+  return { probability, reasoning };
+};
+
+// Simulate a single player prop with calibrated probability
 export const simulatePlayerProp = (input: PlayerPropInput): SimulationResult => {
   const reasoning: string[] = [];
+  const calibrationFactors: CalibrationFactor[] = [];
+  const cal = input.calibration;
+  
+  // Calculate data completeness first
+  const dataCompleteness = calculateDataCompleteness(input);
   
   // Base probability estimation
   let baseProbability = 0.5; // Start at 50%
   
-  // If we have recent games data, use it
-  if (input.recent_games && input.recent_games.length > 0) {
+  // PRIMARY: Use calibration inputs if available
+  if (cal?.player_recent_avg !== undefined) {
+    const statsResult = calculateBaseProbFromStats(
+      cal.player_recent_avg,
+      cal.player_recent_std,
+      cal.player_season_avg,
+      input.line_value,
+      input.over_under
+    );
+    baseProbability = statsResult.probability;
+    reasoning.push(statsResult.reasoning);
+    
+    const diff = baseProbability - 0.5;
+    calibrationFactors.push({
+      factor: 'Statistical Model',
+      adjustment: Math.round(diff * 100),
+      direction: diff > 0.01 ? 'up' : diff < -0.01 ? 'down' : 'neutral'
+    });
+  }
+  // FALLBACK: Use legacy recent_games if no calibration
+  else if (input.recent_games && input.recent_games.length > 0) {
     const recentAvg = input.recent_games.reduce((a, b) => a + b, 0) / input.recent_games.length;
     const hitRate = input.recent_games.filter(g => 
       input.over_under === 'over' ? g > input.line_value : g < input.line_value
@@ -104,8 +200,8 @@ export const simulatePlayerProp = (input: PlayerPropInput): SimulationResult => 
     reasoning.push(`Recent hit rate: ${Math.round(hitRate * 100)}% (last ${input.recent_games.length} games)`);
   }
   
-  // Season average adjustment
-  if (input.season_average !== undefined) {
+  // Season average adjustment (legacy)
+  if (input.season_average !== undefined && !cal?.player_season_avg) {
     const difference = input.season_average - input.line_value;
     const seasonFactor = input.over_under === 'over' 
       ? (difference > 0 ? 0.05 : -0.05)
@@ -115,14 +211,40 @@ export const simulatePlayerProp = (input: PlayerPropInput): SimulationResult => 
     reasoning.push(`Season avg: ${input.season_average.toFixed(1)} vs line ${input.line_value}`);
   }
   
-  // Context adjustments
-  if (input.home_game !== undefined) {
-    const homeAdj = input.home_game ? 0.02 : -0.02;
+  // CALIBRATION ADJUSTMENTS
+  
+  // Home/Away adjustment
+  const isHome = cal?.home_game ?? input.home_game;
+  if (isHome !== undefined) {
+    const homeAdj = isHome ? 0.02 : -0.02;
     baseProbability += homeAdj;
-    reasoning.push(input.home_game ? 'Home game (+2%)' : 'Away game (-2%)');
+    reasoning.push(isHome ? 'Home game (+2%)' : 'Away game (-2%)');
+    calibrationFactors.push({
+      factor: isHome ? 'Home Game' : 'Away Game',
+      adjustment: Math.round(homeAdj * 100),
+      direction: isHome ? 'up' : 'down'
+    });
   }
   
-  if (input.opponent_tier) {
+  // Opponent defense tier adjustment
+  if (cal?.opponent_def_tier) {
+    const defAdj = {
+      low: input.over_under === 'over' ? 0.02 : -0.02,   // Weak defense = easier to score
+      med: 0,
+      high: input.over_under === 'over' ? -0.02 : 0.02, // Strong defense = harder to score
+    }[cal.opponent_def_tier];
+    
+    baseProbability += defAdj;
+    reasoning.push(`Defense tier: ${cal.opponent_def_tier} (${defAdj >= 0 ? '+' : ''}${Math.round(defAdj * 100)}%)`);
+    if (defAdj !== 0) {
+      calibrationFactors.push({
+        factor: `${cal.opponent_def_tier === 'high' ? 'Strong' : 'Weak'} Defense`,
+        adjustment: Math.round(defAdj * 100),
+        direction: defAdj > 0 ? 'up' : 'down'
+      });
+    }
+  } else if (input.opponent_tier) {
+    // Legacy opponent tier
     const oppAdj = {
       weak: input.over_under === 'over' ? 0.05 : -0.05,
       average: 0,
@@ -132,7 +254,25 @@ export const simulatePlayerProp = (input: PlayerPropInput): SimulationResult => 
     reasoning.push(`Opponent tier: ${input.opponent_tier}`);
   }
   
-  if (input.pace) {
+  // Pace tier adjustment
+  if (cal?.pace_tier) {
+    const paceAdj = {
+      fast: input.over_under === 'over' ? 0.02 : -0.02,
+      avg: 0,
+      slow: input.over_under === 'over' ? -0.02 : 0.02,
+    }[cal.pace_tier];
+    
+    baseProbability += paceAdj;
+    reasoning.push(`Pace: ${cal.pace_tier} (${paceAdj >= 0 ? '+' : ''}${Math.round(paceAdj * 100)}%)`);
+    if (paceAdj !== 0) {
+      calibrationFactors.push({
+        factor: `${cal.pace_tier === 'fast' ? 'Fast' : 'Slow'} Pace`,
+        adjustment: Math.round(paceAdj * 100),
+        direction: paceAdj > 0 ? 'up' : 'down'
+      });
+    }
+  } else if (input.pace) {
+    // Legacy pace
     const paceAdj = {
       slow: input.over_under === 'over' ? -0.03 : 0.03,
       average: 0,
@@ -142,35 +282,83 @@ export const simulatePlayerProp = (input: PlayerPropInput): SimulationResult => 
     reasoning.push(`Game pace: ${input.pace}`);
   }
   
-  // Clamp probability to reasonable bounds
-  const estimatedProbability = Math.max(0.30, Math.min(0.70, baseProbability));
+  // Minutes trend adjustment
+  if (cal?.minutes_trend) {
+    const minAdj = {
+      up: input.over_under === 'over' ? 0.02 : -0.02,
+      flat: 0,
+      down: input.over_under === 'over' ? -0.02 : 0.02,
+    }[cal.minutes_trend];
+    
+    baseProbability += minAdj;
+    reasoning.push(`Minutes trend: ${cal.minutes_trend} (${minAdj >= 0 ? '+' : ''}${Math.round(minAdj * 100)}%)`);
+    if (minAdj !== 0) {
+      calibrationFactors.push({
+        factor: `Minutes ${cal.minutes_trend === 'up' ? 'Up' : 'Down'}`,
+        adjustment: Math.round(minAdj * 100),
+        direction: minAdj > 0 ? 'up' : 'down'
+      });
+    }
+  }
   
-  // Calculate break-even and edge
-  const breakEven = input.platform.toLowerCase().includes('prize') || input.platform.toLowerCase().includes('underdog')
-    ? 0.5 // Pick'em platforms are ~50% break-even per leg
-    : calculateBreakEven(input.odds_or_payout);
+  // Clamp probability to reasonable bounds (0.35 to 0.65 as specified)
+  const estimatedProbability = Math.max(0.35, Math.min(0.65, baseProbability));
   
+  // Calculate break-even probability
+  let breakEven: number;
+  const isPickem = input.platform.toLowerCase().includes('prize') || 
+                   input.platform.toLowerCase().includes('underdog');
+  
+  if (isPickem) {
+    // Pick'em platforms are ~50% break-even per leg
+    breakEven = 0.5;
+  } else {
+    // Sportsbook: calculate from American odds
+    breakEven = calculateBreakEven(input.odds_or_payout);
+  }
+  
+  // Calculate edge
   const edge = (estimatedProbability - breakEven) * 100;
   
-  // Calculate ROI
-  const simulatedRoi = edge / 100;
+  // Calculate simulated ROI properly
+  let simulatedRoi: number;
+  if (isPickem) {
+    // For pick'em: single leg at ~1.9x payout
+    const payout = 1.9;
+    simulatedRoi = (estimatedProbability * payout) - 1;
+  } else {
+    // For sportsbook: use actual odds to calculate payout
+    let payout: number;
+    if (input.odds_or_payout > 0) {
+      payout = 1 + (input.odds_or_payout / 100);
+    } else {
+      payout = 1 + (100 / Math.abs(input.odds_or_payout));
+    }
+    simulatedRoi = (estimatedProbability * payout) - 1;
+  }
   
-  // Confidence score (0-100)
+  // Confidence score (0-100) based on edge + data completeness
+  const edgeContribution = Math.abs(edge) * 3; // Each % edge adds 3 points
+  const dataContribution = dataCompleteness * 0.4; // Up to 40 points from data
   const confidenceScore = Math.round(
     Math.min(100, Math.max(0,
-      50 + // Base
-      (Math.abs(edge) * 5) + // Edge contribution
-      (input.recent_games && input.recent_games.length >= 5 ? 15 : 0) + // Data quality
-      (input.season_average !== undefined ? 10 : 0) // More data
+      20 + // Base
+      edgeContribution +
+      dataContribution
     ))
   );
   
   // Volatility assessment
   let volatilityScore: 'low' | 'medium' | 'high' = 'medium';
-  if (input.recent_games && input.recent_games.length >= 3) {
+  if (cal?.player_recent_std !== undefined && cal?.player_recent_avg !== undefined) {
+    const cv = cal.player_recent_std / cal.player_recent_avg; // Coefficient of variation
+    if (cv < 0.15) volatilityScore = 'low';
+    else if (cv > 0.30) volatilityScore = 'high';
+    reasoning.push(`Stat variance: ${volatilityScore} (CV: ${(cv * 100).toFixed(0)}%)`);
+  } else if (input.recent_games && input.recent_games.length >= 3) {
     const variance = calculateVariance(input.recent_games);
     const avgValue = input.recent_games.reduce((a, b) => a + b, 0) / input.recent_games.length;
-    const cv = Math.sqrt(variance) / avgValue; // Coefficient of variation
+    const cv = Math.sqrt(variance) / avgValue;
     
     if (cv < 0.15) volatilityScore = 'low';
     else if (cv > 0.30) volatilityScore = 'high';
@@ -199,6 +387,8 @@ export const simulatePlayerProp = (input: PlayerPropInput): SimulationResult => 
     edge: Math.round(edge * 10) / 10,
     recommendation,
     reasoning,
+    calibration_factors: calibrationFactors,
+    data_completeness: dataCompleteness,
   };
 };
 
