@@ -15226,6 +15226,111 @@ export type Database = {
         }
         Relationships: []
       }
+      nba_moneyline_predictions: {
+        Row: {
+          away_back_to_back: boolean | null
+          away_def_rating: number | null
+          away_implied_odds: number | null
+          away_injury_impact: number | null
+          away_net_rating: number | null
+          away_off_rating: number | null
+          away_pace: number | null
+          away_rest_days: number | null
+          away_team: string
+          away_win_probability: number | null
+          calibration_factors: Json | null
+          confidence_score: number | null
+          created_at: string | null
+          edge_vs_market: number | null
+          game_date: string
+          game_id: string
+          game_time: string | null
+          generated_at: string | null
+          home_back_to_back: boolean | null
+          home_def_rating: number | null
+          home_implied_odds: number | null
+          home_injury_impact: number | null
+          home_net_rating: number | null
+          home_off_rating: number | null
+          home_pace: number | null
+          home_rest_days: number | null
+          home_team: string
+          home_win_probability: number | null
+          id: string
+          predicted_winner: string | null
+          reasoning: string | null
+          recommendation: string | null
+        }
+        Insert: {
+          away_back_to_back?: boolean | null
+          away_def_rating?: number | null
+          away_implied_odds?: number | null
+          away_injury_impact?: number | null
+          away_net_rating?: number | null
+          away_off_rating?: number | null
+          away_pace?: number | null
+          away_rest_days?: number | null
+          away_team: string
+          away_win_probability?: number | null
+          calibration_factors?: Json | null
+          confidence_score?: number | null
+          created_at?: string | null
+          edge_vs_market?: number | null
+          game_date?: string
+          game_id: string
+          game_time?: string | null
+          generated_at?: string | null
+          home_back_to_back?: boolean | null
+          home_def_rating?: number | null
+          home_implied_odds?: number | null
+          home_injury_impact?: number | null
+          home_net_rating?: number | null
+          home_off_rating?: number | null
+          home_pace?: number | null
+          home_rest_days?: number | null
+          home_team: string
+          home_win_probability?: number | null
+          id?: string
+          predicted_winner?: string | null
+          reasoning?: string | null
+          recommendation?: string | null
+        }
+        Update: {
+          away_back_to_back?: boolean | null
+          away_def_rating?: number | null
+          away_implied_odds?: number | null
+          away_injury_impact?: number | null
+          away_net_rating?: number | null
+          away_off_rating?: number | null
+          away_pace?: number | null
+          away_rest_days?: number | null
+          away_team?: string
+          away_win_probability?: number | null
+          calibration_factors?: Json | null
+          confidence_score?: number | null
+          created_at?: string | null
+          edge_vs_market?: number | null
+          game_date?: string
+          game_id?: string
+          game_time?: string | null
+          generated_at?: string | null
+          home_back_to_back?: boolean | null
+          home_def_rating?: number | null
+          home_implied_odds?: number | null
+          home_injury_impact?: number | null
+          home_net_rating?: number | null
+          home_off_rating?: number | null
+          home_pace?: number | null
+          home_rest_days?: number | null
+          home_team?: string
+          home_win_probability?: number | null
+          id?: string
+          predicted_winner?: string | null
+          reasoning?: string | null
+          recommendation?: string | null
+        }
+        Relationships: []
+      }
       nba_player_stats: {
         Row: {
           created_at: string

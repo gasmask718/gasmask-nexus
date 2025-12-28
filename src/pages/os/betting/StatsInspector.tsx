@@ -11,10 +11,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   RefreshCw, AlertTriangle, CheckCircle, Database, Users, Calendar, 
-  XCircle, ChevronDown, Clock, Server, Shield, Activity, List, Filter, X, ChevronLeft, ChevronRight
+  XCircle, ChevronDown, Clock, Server, Shield, Activity, List, Filter, X, ChevronLeft, ChevronRight, TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Navigate } from 'react-router-dom';
+import NBAMoneylineLeans from '@/components/betting/NBAMoneylineLeans';
 
 interface PlayerStats {
   id: string;
@@ -897,8 +898,12 @@ const StatsInspector = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="all-props" className="w-full">
-        <TabsList className="grid grid-cols-6 w-full max-w-3xl">
+      <Tabs defaultValue="moneyline" className="w-full">
+        <TabsList className="grid grid-cols-7 w-full max-w-4xl">
+          <TabsTrigger value="moneyline">
+            <TrendingUp className="w-4 h-4 mr-2" />
+            Moneyline
+          </TabsTrigger>
           <TabsTrigger value="all-props">
             <List className="w-4 h-4 mr-2" />
             All Props
@@ -924,6 +929,11 @@ const StatsInspector = () => {
             Logs
           </TabsTrigger>
         </TabsList>
+
+        {/* MONEYLINE LEANS - Separate from props */}
+        <TabsContent value="moneyline">
+          <NBAMoneylineLeans />
+        </TabsContent>
 
         {/* ALL PROPS VIEW - Full dataset with pagination and filters */}
         <TabsContent value="all-props">
