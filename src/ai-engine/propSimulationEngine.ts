@@ -338,15 +338,34 @@ export const simulatePlayerProp = (input: PlayerPropInput): SimulationResult => 
   }
   
   // Confidence score (0-100) based on edge + data completeness
+  // Apply edge-based guardrails to prevent inflated confidence on marginal plays
+  const absEdge = Math.abs(edge) / 100; // Convert back to decimal (edge is in %)
+  
   const edgeContribution = Math.abs(edge) * 3; // Each % edge adds 3 points
   const dataContribution = dataCompleteness * 0.4; // Up to 40 points from data
-  const confidenceScore = Math.round(
+  let rawConfidence = Math.round(
     Math.min(100, Math.max(0,
       20 + // Base
       edgeContribution +
       dataContribution
     ))
   );
+  
+  // Apply edge-based caps: marginal plays cannot have high confidence
+  let confidenceScore: number;
+  if (absEdge < 0.01) {
+    // Edge < 1%: cap at 55
+    confidenceScore = Math.min(55, rawConfidence);
+  } else if (absEdge < 0.02) {
+    // Edge < 2%: cap at 70
+    confidenceScore = Math.min(70, rawConfidence);
+  } else if (absEdge < 0.03) {
+    // Edge < 3%: cap at 85
+    confidenceScore = Math.min(85, rawConfidence);
+  } else {
+    // Edge >= 3%: allow up to 99
+    confidenceScore = Math.min(99, rawConfidence);
+  }
   
   // Volatility assessment
   let volatilityScore: 'low' | 'medium' | 'high' = 'medium';
@@ -547,10 +566,10 @@ export const comparePlatforms = (
   };
 };
 
-// Generate confidence label
+// Generate confidence label (updated thresholds to match edge-based guardrails)
 export const getConfidenceLabel = (score: number): 'low' | 'medium' | 'high' => {
-  if (score >= 70) return 'high';
-  if (score >= 40) return 'medium';
+  if (score >= 85) return 'high';
+  if (score >= 55) return 'medium';
   return 'low';
 };
 

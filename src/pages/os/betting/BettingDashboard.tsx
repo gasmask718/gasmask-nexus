@@ -33,9 +33,10 @@ export default function BettingDashboard() {
   ];
 
   const getConfidenceBadge = (confidence: number) => {
-    if (confidence >= 70) return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
-    if (confidence >= 40) return "bg-blue-500/10 text-blue-600 border-blue-500/20";
-    return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+    if (confidence >= 85) return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
+    if (confidence >= 70) return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+    if (confidence >= 55) return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+    return "bg-muted text-muted-foreground border-muted";
   };
 
   const handleRunSimulation = () => {
