@@ -177,6 +177,42 @@ export type Database = {
           },
         ]
       }
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string
+          after: Json | null
+          before: Json | null
+          created_at: string
+          id: string
+          reason: string | null
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
       advisor_action_log: {
         Row: {
           action_label: string
@@ -3077,6 +3113,39 @@ export type Database = {
           severity_threshold?: string | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      bankrolls: {
+        Row: {
+          created_at: string
+          global_bankroll: number
+          id: string
+          max_pct_per_entry: number
+          max_pct_per_state_per_day: number
+          state_bankrolls: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          global_bankroll?: number
+          id?: string
+          max_pct_per_entry?: number
+          max_pct_per_state_per_day?: number
+          state_bankrolls?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          global_bankroll?: number
+          id?: string
+          max_pct_per_entry?: number
+          max_pct_per_state_per_day?: number
+          state_bankrolls?: Json
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -17088,6 +17157,113 @@ export type Database = {
           },
         ]
       }
+      pick_entries: {
+        Row: {
+          created_at: string
+          date: string
+          format_tag: string
+          id: string
+          line_value: number | null
+          locked_at: string | null
+          market: string
+          multiplier: number | null
+          notes: string | null
+          odds: number | null
+          opponent: string | null
+          platform: string
+          player: string | null
+          profit_loss: number
+          result: string | null
+          side: string | null
+          sport: string
+          stake: number
+          state: string
+          status: string
+          team: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          format_tag: string
+          id?: string
+          line_value?: number | null
+          locked_at?: string | null
+          market: string
+          multiplier?: number | null
+          notes?: string | null
+          odds?: number | null
+          opponent?: string | null
+          platform: string
+          player?: string | null
+          profit_loss?: number
+          result?: string | null
+          side?: string | null
+          sport: string
+          stake: number
+          state: string
+          status?: string
+          team?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          format_tag?: string
+          id?: string
+          line_value?: number | null
+          locked_at?: string | null
+          market?: string
+          multiplier?: number | null
+          notes?: string | null
+          odds?: number | null
+          opponent?: string | null
+          platform?: string
+          player?: string | null
+          profit_loss?: number
+          result?: string | null
+          side?: string | null
+          sport?: string
+          stake?: number
+          state?: string
+          status?: string
+          team?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pick_entries_platform_fkey"
+            columns: ["platform"]
+            isOneToOne: false
+            referencedRelation: "platforms"
+            referencedColumns: ["platform_key"]
+          },
+        ]
+      }
+      platforms: {
+        Row: {
+          is_active: boolean
+          platform_key: string
+          platform_name: string
+          platform_type: string
+        }
+        Insert: {
+          is_active?: boolean
+          platform_key: string
+          platform_name: string
+          platform_type: string
+        }
+        Update: {
+          is_active?: boolean
+          platform_key?: string
+          platform_name?: string
+          platform_type?: string
+        }
+        Relationships: []
+      }
       pod_ai_logs: {
         Row: {
           action: string
@@ -20311,6 +20487,48 @@ export type Database = {
         }
         Relationships: []
       }
+      state_rules: {
+        Row: {
+          created_at: string
+          disabled_formats: Json
+          disabled_platforms: Json
+          enabled_formats: Json
+          enabled_platforms: Json
+          id: string
+          is_active: boolean
+          state_code: string
+          tooltip_text: string | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          disabled_formats?: Json
+          disabled_platforms?: Json
+          enabled_formats?: Json
+          enabled_platforms?: Json
+          id?: string
+          is_active?: boolean
+          state_code: string
+          tooltip_text?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          disabled_formats?: Json
+          disabled_platforms?: Json
+          enabled_formats?: Json
+          enabled_platforms?: Json
+          id?: string
+          is_active?: boolean
+          state_code?: string
+          tooltip_text?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       store_ai_insights: {
         Row: {
           brand: Database["public"]["Enums"]["brand_type"] | null
@@ -23295,6 +23513,33 @@ export type Database = {
             referencedColumns: ["name"]
           },
         ]
+      }
+      user_state_profile: {
+        Row: {
+          created_at: string
+          last_state_update: string
+          state_source: string
+          updated_at: string
+          user_id: string
+          user_state: string
+        }
+        Insert: {
+          created_at?: string
+          last_state_update?: string
+          state_source?: string
+          updated_at?: string
+          user_id: string
+          user_state: string
+        }
+        Update: {
+          created_at?: string
+          last_state_update?: string
+          state_source?: string
+          updated_at?: string
+          user_id?: string
+          user_state?: string
+        }
+        Relationships: []
       }
       user_store_map: {
         Row: {
