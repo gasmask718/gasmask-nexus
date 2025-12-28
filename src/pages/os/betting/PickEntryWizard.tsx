@@ -41,7 +41,7 @@ export default function PickEntryWizard() {
     opponent: '',
     market: '',
     line_value: '',
-    side: '' as 'over' | 'under' | 'home' | 'away' | '',
+    side: '' as 'MORE' | 'LESS' | 'over' | 'under' | 'home' | 'away' | '',
     stake: '',
     odds: '',
     multiplier: '',
@@ -285,10 +285,27 @@ export default function PickEntryWizard() {
                   <Select value={formData.side} onValueChange={(v: any) => setFormData(prev => ({ ...prev, side: v }))}>
                     <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="over">Over</SelectItem>
-                      <SelectItem value="under">Under</SelectItem>
-                      <SelectItem value="home">Home</SelectItem>
-                      <SelectItem value="away">Away</SelectItem>
+                      {formData.format_tag === 'fantasy_pickem' ? (
+                        <>
+                          <SelectItem value="MORE">
+                            <span className="flex items-center gap-2">
+                              <span className="text-green-600">▲</span> MORE
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="LESS">
+                            <span className="flex items-center gap-2">
+                              <span className="text-red-600">▼</span> LESS
+                            </span>
+                          </SelectItem>
+                        </>
+                      ) : (
+                        <>
+                          <SelectItem value="over">Over</SelectItem>
+                          <SelectItem value="under">Under</SelectItem>
+                          <SelectItem value="home">Home</SelectItem>
+                          <SelectItem value="away">Away</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -382,7 +399,14 @@ export default function PickEntryWizard() {
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Market</span>
-                  <span className="font-medium">{formData.market} {formData.line_value} {formData.side}</span>
+                  <span className="font-medium flex items-center gap-1">
+                    {formData.market} {formData.line_value}{' '}
+                    {formData.side === 'MORE' && <span className="text-green-600">▲ MORE</span>}
+                    {formData.side === 'LESS' && <span className="text-red-600">▼ LESS</span>}
+                    {formData.side && !['MORE', 'LESS'].includes(formData.side) && (
+                      <span className="capitalize">({formData.side})</span>
+                    )}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Stake</span>

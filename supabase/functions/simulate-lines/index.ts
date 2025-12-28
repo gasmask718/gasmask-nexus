@@ -138,17 +138,20 @@ serve(async (req) => {
             impliedProb = 100 / (overOdds + 100);
           }
 
-          // Calculate edge
-          edge = (aiProb - impliedProb) * 100;
+        // Calculate edge
+        edge = (aiProb - impliedProb) * 100;
 
-          // Generate recommendation
-          if (edge > 5) {
-            recommendation = 'OVER';
-          } else if (edge < -5) {
-            recommendation = 'UNDER';
-          } else {
-            recommendation = 'PASS';
-          }
+        // Generate recommendation using MORE/LESS for fantasy pick'em platforms
+        const fantasyPlatforms = ['prizepicks', 'underdog', 'betr'];
+        const isFantasyPickem = fantasyPlatforms.includes(line.sportsbook?.toLowerCase() || '');
+        
+        if (edge > 5) {
+          recommendation = isFantasyPickem ? 'MORE' : 'OVER';
+        } else if (edge < -5) {
+          recommendation = isFantasyPickem ? 'LESS' : 'UNDER';
+        } else {
+          recommendation = 'PASS';
+        }
 
           // Update the sportsbook_lines with matched player
           await supabase

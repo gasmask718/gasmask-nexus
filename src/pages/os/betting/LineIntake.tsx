@@ -30,7 +30,8 @@ interface SportsbookLine {
 }
 
 const MARKET_TYPES = ['PTS', 'AST', 'REB', 'PRA', 'Moneyline', '3PM', 'STL', 'BLK', 'TO'];
-const SPORTSBOOKS = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet', 'Bet365', 'PrizePicks', 'Underdog', 'Other'];
+const SPORTSBOOKS = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet', 'Bet365', 'PrizePicks', 'Underdog', 'BETR', 'Other'];
+const FANTASY_PICKEM_PLATFORMS = ['prizepicks', 'underdog', 'betr'];
 
 const createEmptyLine = (): SportsbookLine => ({
   id: crypto.randomUUID(),
@@ -307,8 +308,8 @@ export default function LineIntake() {
               <TableHead>Player/Team</TableHead>
               <TableHead>Market</TableHead>
               <TableHead>Line</TableHead>
-              <TableHead>Over</TableHead>
-              <TableHead>Under</TableHead>
+              <TableHead>▲ More</TableHead>
+              <TableHead>▼ Less</TableHead>
               <TableHead>Book</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
@@ -319,8 +320,16 @@ export default function LineIntake() {
                 <TableCell className="font-medium">{line.player_or_team}</TableCell>
                 <TableCell><Badge variant="outline">{line.market_type}</Badge></TableCell>
                 <TableCell>{line.line_value}</TableCell>
-                <TableCell className="text-green-600">{line.over_odds}</TableCell>
-                <TableCell className="text-red-600">{line.under_odds}</TableCell>
+                <TableCell className="text-green-600">
+                  {FANTASY_PICKEM_PLATFORMS.includes(line.sportsbook.toLowerCase()) 
+                    ? `▲ ${line.over_odds}` 
+                    : line.over_odds}
+                </TableCell>
+                <TableCell className="text-red-600">
+                  {FANTASY_PICKEM_PLATFORMS.includes(line.sportsbook.toLowerCase()) 
+                    ? `▼ ${line.under_odds}` 
+                    : line.under_odds}
+                </TableCell>
                 <TableCell>{line.sportsbook}</TableCell>
                 <TableCell>
                   {line.isValid === false ? (
