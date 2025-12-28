@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Progress } from '@/components/ui/progress';
 import { Link } from 'react-router-dom';
 import { 
   RefreshCw, 
@@ -46,14 +45,15 @@ const NBADailyBoard = () => {
   const runPredictions = useRunNBAPredictions();
   const copyProp = useCopyPropToSimulated();
 
-  const getConfidenceBadge = (score: number) => {
-    if (score >= 65) return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
-    if (score >= 55) return "bg-blue-500/10 text-blue-600 border-blue-500/20";
-    if (score >= 45) return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+  const getConfidenceBadge = (score: number | null) => {
+    const s = score ?? 50;
+    if (s >= 65) return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
+    if (s >= 55) return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+    if (s >= 45) return "bg-amber-500/10 text-amber-600 border-amber-500/20";
     return "bg-muted text-muted-foreground border-muted";
   };
 
-  const getRecommendationBadge = (rec: string) => {
+  const getRecommendationBadge = (rec: string | null) => {
     switch (rec) {
       case 'strong_play': return "bg-emerald-500 text-white";
       case 'lean': return "bg-blue-500 text-white";
@@ -63,10 +63,11 @@ const NBADailyBoard = () => {
     }
   };
 
-  const getDataCompletenessColor = (completeness: number) => {
-    if (completeness >= 80) return "bg-emerald-500";
-    if (completeness >= 60) return "bg-blue-500";
-    if (completeness >= 40) return "bg-amber-500";
+  const getDataCompletenessColor = (completeness: number | null) => {
+    const c = completeness ?? 50;
+    if (c >= 80) return "bg-emerald-500";
+    if (c >= 60) return "bg-blue-500";
+    if (c >= 40) return "bg-amber-500";
     return "bg-red-500";
   };
 
@@ -79,11 +80,6 @@ const NBADailyBoard = () => {
               <span className="font-semibold">{prop.player_name}</span>
               <Badge variant="outline" className="text-xs">{prop.team}</Badge>
               <span className="text-xs text-muted-foreground">vs {prop.opponent}</span>
-              {prop.injury_status && prop.injury_status !== 'active' && (
-                <Badge variant="destructive" className="text-xs">
-                  {prop.injury_status.toUpperCase()}
-                </Badge>
-              )}
             </div>
             <div className="flex items-center gap-2 mb-2">
               <Badge className={prop.over_under === 'over' ? 'bg-emerald-500' : 'bg-red-500'}>
@@ -95,13 +91,13 @@ const NBADailyBoard = () => {
               </Badge>
             </div>
             <div className="flex items-center gap-4 text-sm">
-              <span>Prob: <strong>{((prop.estimated_probability || 0) * 100).toFixed(1)}%</strong></span>
-              <span className={(prop.edge || 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}>
-                Edge: <strong>{(prop.edge || 0) > 0 ? '+' : ''}{((prop.edge || 0) * 100).toFixed(1)}%</strong>
+              <span>Prob: <strong>{((prop.estimated_probability ?? 0) * 100).toFixed(1)}%</strong></span>
+              <span className={(prop.edge ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}>
+                Edge: <strong>{(prop.edge ?? 0) > 0 ? '+' : ''}{((prop.edge ?? 0) * 100).toFixed(1)}%</strong>
               </span>
-              <span>ROI: <strong>{((prop.simulated_roi || 0) * 100).toFixed(1)}%</strong></span>
-              <Badge variant="outline" className={getConfidenceBadge(prop.confidence_score || 50)}>
-                {prop.confidence_score || 50}% conf
+              <span>ROI: <strong>{((prop.simulated_roi ?? 0) * 100).toFixed(1)}%</strong></span>
+              <Badge variant="outline" className={getConfidenceBadge(prop.confidence_score)}>
+                {prop.confidence_score ?? 50}% conf
               </Badge>
             </div>
             
@@ -109,22 +105,20 @@ const NBADailyBoard = () => {
             <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Database className="h-3 w-3" />
-                <span>Source: {prop.stats_source || 'Unknown'}</span>
+                <span>Source: {prop.source || 'Unknown'}</span>
               </div>
               <div className="flex items-center gap-1">
-                <span>L5: {(prop.player_recent_avg || 0).toFixed(1)}</span>
-                <span>•</span>
-                <span>Season: {(prop.player_season_avg || 0).toFixed(1)}</span>
+                <span>Projected: {(prop.projected_value ?? 0).toFixed(1)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span>Data:</span>
                 <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                   <div 
-                    className={`h-full ${getDataCompletenessColor(prop.data_completeness || 50)}`}
-                    style={{ width: `${prop.data_completeness || 50}%` }}
+                    className={`h-full ${getDataCompletenessColor(prop.data_completeness)}`}
+                    style={{ width: `${prop.data_completeness ?? 50}%` }}
                   />
                 </div>
-                <span>{prop.data_completeness || 50}%</span>
+                <span>{prop.data_completeness ?? 50}%</span>
               </div>
             </div>
           </div>
@@ -145,10 +139,10 @@ const NBADailyBoard = () => {
                   </ul>
                   <div className="mt-2 pt-2 border-t border-border">
                     <p className="text-xs">
-                      <strong>Context:</strong> {prop.opponent_def_tier} defense, {prop.pace_tier} pace, mins {prop.minutes_trend}
+                      <strong>Context:</strong> {prop.opponent_def_tier || 'med'} defense, {prop.pace_tier || 'avg'} pace, mins {prop.minutes_trend || 'flat'}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Data completeness: {prop.data_completeness || 50}%
+                      Data completeness: {prop.data_completeness ?? 50}%
                     </p>
                   </div>
                 </TooltipContent>
@@ -191,12 +185,6 @@ const NBADailyBoard = () => {
             {refreshLog && (
               <span className="ml-2 text-xs">
                 • Last updated: {refreshLog.completed_at ? new Date(refreshLog.completed_at).toLocaleTimeString() : 'Never'}
-                {refreshLog.source && (
-                  <Badge variant="outline" className="ml-2 text-xs">
-                    <Database className="h-3 w-3 mr-1" />
-                    {refreshLog.source}
-                  </Badge>
-                )}
               </span>
             )}
           </p>
@@ -219,16 +207,14 @@ const NBADailyBoard = () => {
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">
                   <Activity className="h-4 w-4 text-muted-foreground" />
-                  <span>Games: <strong>{refreshLog.games_fetched || 0}</strong></span>
+                  <span>Games: <strong>{refreshLog.games_fetched ?? 0}</strong></span>
                 </div>
-                <div>Players: <strong>{refreshLog.players_updated || 0}</strong></div>
-                <div>Props: <strong>{refreshLog.props_generated || 0}</strong></div>
+                <div>Players: <strong>{refreshLog.players_updated ?? 0}</strong></div>
+                <div>Props: <strong>{refreshLog.props_generated ?? 0}</strong></div>
               </div>
-              {refreshLog.source && (
-                <Badge variant={refreshLog.source.includes('SportsDataIO') ? 'default' : 'secondary'}>
-                  {refreshLog.source.includes('SportsDataIO') ? '✓ Real Stats' : '⚠ Mock Data'}
-                </Badge>
-              )}
+              <Badge variant="secondary">
+                {refreshLog.status === 'complete' ? '✓ Ready' : refreshLog.status}
+              </Badge>
             </div>
           </CardContent>
         </Card>
