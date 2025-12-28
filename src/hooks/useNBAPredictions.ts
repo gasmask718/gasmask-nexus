@@ -213,7 +213,7 @@ export const useRunNBAPredictions = () => {
   return useMutation({
     mutationFn: async () => {
       // Step 1: Refresh stats
-      toast.info('Fetching NBA stats...');
+      toast.info('Fetching NBA stats from SportsDataIO...');
       const statsResponse = await supabase.functions.invoke('nba-stats-engine', {
         body: { action: 'refresh_stats' },
       });
@@ -222,16 +222,38 @@ export const useRunNBAPredictions = () => {
         throw new Error(statsResponse.error.message || 'Failed to refresh stats');
       }
       
+      // Check for API key requirement
+      if (statsResponse.data?.requires_api_key) {
+        throw new Error('SportsDataIO API key not configured. Please add SPORTSDATAIO_API_KEY in project secrets.');
+      }
+      
+      if (!statsResponse.data?.success) {
+        throw new Error(statsResponse.data?.error || 'Failed to fetch NBA stats');
+      }
+      
       console.log('Stats refreshed:', statsResponse.data);
       
+      // Check if there are games today
+      if (statsResponse.data?.games_fetched === 0) {
+        toast.warning('No NBA games scheduled today');
+        return {
+          stats: statsResponse.data,
+          props: { props_generated: 0 },
+        };
+      }
+      
       // Step 2: Generate props
-      toast.info('Generating predictions...');
+      toast.info('Generating predictions for real players...');
       const propsResponse = await supabase.functions.invoke('nba-stats-engine', {
         body: { action: 'generate_props' },
       });
       
       if (propsResponse.error) {
         throw new Error(propsResponse.error.message || 'Failed to generate props');
+      }
+      
+      if (!propsResponse.data?.success) {
+        throw new Error(propsResponse.data?.error || 'Failed to generate props');
       }
       
       console.log('Props generated:', propsResponse.data);
@@ -249,8 +271,9 @@ export const useRunNBAPredictions = () => {
       queryClient.invalidateQueries({ queryKey: ['nba-props-avoid'] });
       queryClient.invalidateQueries({ queryKey: ['nba-refresh-log'] });
       
+      const source = data.stats?.source || 'SportsDataIO';
       toast.success(
-        `NBA Predictions Ready: ${data.props?.props_generated || 0} props generated for ${data.stats?.games_fetched || 0} games`
+        `NBA Predictions Ready: ${data.props?.props_generated || 0} props for ${data.stats?.games_fetched || 0} games (${source})`
       );
     },
     onError: (error) => {

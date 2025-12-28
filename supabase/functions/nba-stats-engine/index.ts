@@ -86,6 +86,31 @@ function calculateProbability(
   return Math.max(0.35, Math.min(0.65, rawProb));
 }
 
+// Validate player identity - CRITICAL: No placeholder players allowed
+function isValidPlayer(player: any): boolean {
+  // Must have a numeric PlayerID from SportsDataIO
+  if (!player.PlayerID || typeof player.PlayerID !== 'number') {
+    console.log(`Invalid player: missing PlayerID`, player);
+    return false;
+  }
+  
+  // Must have real name (not position-based)
+  const name = player.Name || `${player.FirstName} ${player.LastName}`;
+  const invalidNames = ['PG Player', 'SG Player', 'SF Player', 'PF Player', 'C Player', 'Unknown Player', 'Unknown', 'TBD'];
+  if (!name || invalidNames.some(invalid => name.includes(invalid))) {
+    console.log(`Invalid player name: ${name}`);
+    return false;
+  }
+  
+  // Must have real team abbreviation
+  if (!player.Team || player.Team.length !== 3) {
+    console.log(`Invalid player team: ${player.Team}`);
+    return false;
+  }
+  
+  return true;
+}
+
 // Fetch today's games from SportsDataIO
 async function fetchTodaysGames(apiKey: string, dateStr: string) {
   try {
@@ -130,17 +155,36 @@ async function fetchPlayerGameLogs(apiKey: string, season: string) {
   }
 }
 
-// Process player game logs into stats
+// Fetch active NBA players
+async function fetchActivePlayers(apiKey: string) {
+  try {
+    const players = await fetchSportsDataIO(`/scores/json/Players`, apiKey);
+    return players || [];
+  } catch (error) {
+    console.error("Error fetching active players:", error);
+    return [];
+  }
+}
+
+// Process player game logs into stats - ONLY for validated real players
 function processPlayerFromLogs(
   player: any, 
   gameLogs: any[], 
   source: string
 ): any | null {
+  // CRITICAL: Validate player identity first
+  if (!isValidPlayer(player)) {
+    return null;
+  }
+
   const playerLogs = gameLogs
     .filter((log: any) => log.PlayerID === player.PlayerID)
     .sort((a: any, b: any) => new Date(b.Day).getTime() - new Date(a.Day).getTime());
   
-  if (playerLogs.length === 0) return null;
+  if (playerLogs.length === 0) {
+    console.log(`No game logs for player ${player.Name || player.FirstName}`);
+    return null;
+  }
   
   const last5 = playerLogs.slice(0, 5);
   const last10 = playerLogs.slice(0, 10);
@@ -189,10 +233,18 @@ function processPlayerFromLogs(
   
   const dataCompleteness = Math.min(100, Math.round((season.length / 40) * 100));
   
+  // Require minimum data completeness
+  if (dataCompleteness < 20) {
+    console.log(`Insufficient data for player ${player.Name || player.FirstName}: ${dataCompleteness}%`);
+    return null;
+  }
+  
+  const playerName = player.Name || `${player.FirstName} ${player.LastName}`;
+  
   return {
-    player_id: player.PlayerID?.toString() || '',
-    player_name: player.Name || `${player.FirstName} ${player.LastName}`,
-    team: player.Team || '',
+    player_id: player.PlayerID.toString(),
+    player_name: playerName.trim(),
+    team: player.Team,
     position: player.Position || '',
     last_5_games_avg_pts: pts.last5,
     last_5_games_avg_reb: reb.last5,
@@ -225,98 +277,6 @@ function processPlayerFromLogs(
   };
 }
 
-// Fallback mock data generator for when API is unavailable
-function generateMockNBAData(dateString: string) {
-  const seed = dateString.split("-").reduce((a, b) => a + parseInt(b), 0);
-  const rng = (offset: number) => {
-    const x = Math.sin(seed + offset) * 10000;
-    return x - Math.floor(x);
-  };
-
-  const teams = [
-    { abbr: "BOS", name: "Boston Celtics", defRank: 3, pace: 100.2 },
-    { abbr: "MIL", name: "Milwaukee Bucks", defRank: 8, pace: 101.5 },
-    { abbr: "PHI", name: "Philadelphia 76ers", defRank: 12, pace: 97.8 },
-    { abbr: "CLE", name: "Cleveland Cavaliers", defRank: 5, pace: 98.5 },
-    { abbr: "NYK", name: "New York Knicks", defRank: 7, pace: 99.2 },
-    { abbr: "MIA", name: "Miami Heat", defRank: 10, pace: 96.5 },
-    { abbr: "LAL", name: "Los Angeles Lakers", defRank: 14, pace: 100.8 },
-    { abbr: "DEN", name: "Denver Nuggets", defRank: 6, pace: 100.5 },
-    { abbr: "PHX", name: "Phoenix Suns", defRank: 16, pace: 101.0 },
-    { abbr: "GSW", name: "Golden State Warriors", defRank: 15, pace: 101.8 },
-  ];
-
-  const numGames = 3 + Math.floor(rng(1) * 3);
-  const shuffledTeams = [...teams].sort(() => rng(2) - 0.5);
-  const games = [];
-
-  for (let i = 0; i < Math.min(numGames, Math.floor(shuffledTeams.length / 2)); i++) {
-    games.push({
-      home_team: shuffledTeams[i * 2].abbr,
-      away_team: shuffledTeams[i * 2 + 1].abbr,
-      game_time: `${dateString}T${19 + i}:00:00Z`,
-    });
-  }
-
-  // Generate mock players
-  const mockPlayers = [
-    { name: "LeBron James", team: "LAL", pts: 25.5, reb: 7.2, ast: 8.1, pos: "SF" },
-    { name: "Stephen Curry", team: "GSW", pts: 29.2, reb: 4.5, ast: 6.3, pos: "PG" },
-    { name: "Jayson Tatum", team: "BOS", pts: 27.1, reb: 8.1, ast: 4.8, pos: "SF" },
-    { name: "Giannis Antetokounmpo", team: "MIL", pts: 31.2, reb: 11.5, ast: 5.9, pos: "PF" },
-    { name: "Nikola Jokic", team: "DEN", pts: 26.4, reb: 12.1, ast: 9.2, pos: "C" },
-    { name: "Kevin Durant", team: "PHX", pts: 28.5, reb: 6.8, ast: 5.2, pos: "SF" },
-    { name: "Joel Embiid", team: "PHI", pts: 33.1, reb: 10.2, ast: 4.1, pos: "C" },
-    { name: "Donovan Mitchell", team: "CLE", pts: 28.3, reb: 4.1, ast: 5.2, pos: "SG" },
-    { name: "Jalen Brunson", team: "NYK", pts: 26.1, reb: 3.5, ast: 6.5, pos: "PG" },
-    { name: "Jimmy Butler", team: "MIA", pts: 21.5, reb: 5.9, ast: 5.2, pos: "SF" },
-  ];
-
-  const teamsInGames = new Set<string>();
-  games.forEach(g => {
-    teamsInGames.add(g.home_team);
-    teamsInGames.add(g.away_team);
-  });
-
-  const players = mockPlayers
-    .filter(p => teamsInGames.has(p.team))
-    .map((p, i) => ({
-      player_id: `mock_${p.name.replace(/\s/g, '_')}`,
-      player_name: p.name,
-      team: p.team,
-      position: p.pos,
-      last_5_games_avg_pts: p.pts * (1 + (rng(i * 10 + 1) - 0.5) * 0.15),
-      last_5_games_avg_reb: p.reb * (1 + (rng(i * 10 + 2) - 0.5) * 0.15),
-      last_5_games_avg_ast: p.ast * (1 + (rng(i * 10 + 3) - 0.5) * 0.15),
-      last_5_games_avg_3pm: p.pts * 0.1,
-      last_5_games_avg_pra: p.pts + p.reb + p.ast,
-      last_10_games_avg_pts: p.pts,
-      last_10_games_avg_reb: p.reb,
-      last_10_games_avg_ast: p.ast,
-      last_10_games_avg_3pm: p.pts * 0.1,
-      last_10_games_avg_pra: p.pts + p.reb + p.ast,
-      season_avg_pts: p.pts,
-      season_avg_reb: p.reb,
-      season_avg_ast: p.ast,
-      season_avg_3pm: p.pts * 0.1,
-      season_avg_pra: p.pts + p.reb + p.ast,
-      season_avg_min: 34,
-      std_pts: p.pts * 0.2,
-      std_reb: p.reb * 0.25,
-      std_ast: p.ast * 0.3,
-      std_3pm: 1.2,
-      std_pra: (p.pts + p.reb + p.ast) * 0.15,
-      minutes_last_5_avg: 34 + (rng(i * 10 + 4) - 0.5) * 4,
-      usage_rate: 20 + rng(i * 10 + 5) * 10,
-      injury_status: rng(i * 10 + 6) < 0.9 ? "active" : "questionable",
-      stats_source: "Mock Data",
-      data_completeness: 75,
-      last_updated: new Date().toISOString()
-    }));
-
-  return { teams, games, players };
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -333,6 +293,19 @@ serve(async (req) => {
     
     console.log(`NBA Stats Engine: action=${action}, date=${today}, hasApiKey=${!!sportsDataIOKey}`);
 
+    // CRITICAL: Require API key - no mock data allowed
+    if (!sportsDataIOKey) {
+      console.error("SPORTSDATAIO_API_KEY not configured");
+      return new Response(JSON.stringify({
+        success: false,
+        error: "NBA data source not configured. Please add SPORTSDATAIO_API_KEY in project secrets.",
+        requires_api_key: true
+      }), { 
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
+
     if (action === "refresh_stats") {
       // Create refresh log
       const { data: logEntry, error: logError } = await supabase
@@ -341,211 +314,173 @@ serve(async (req) => {
           refresh_date: today,
           status: "running",
           started_at: new Date().toISOString(),
-          source: sportsDataIOKey ? "SportsDataIO" : "Mock Data"
+          source: "SportsDataIO"
         })
         .select()
         .single();
 
       if (logError) console.error("Log creation error:", logError);
 
-      let gamesData: any[] = [];
-      let playersData: any[] = [];
-      let teamsData: any[] = [];
-      let source = "Mock Data";
-
-      // Try to use SportsDataIO if API key is available
-      if (sportsDataIOKey) {
-        try {
-          console.log("Fetching real data from SportsDataIO...");
-          source = "SportsDataIO";
-          
-          // Get current season
-          const currentYear = new Date().getFullYear();
-          const currentMonth = new Date().getMonth();
-          const season = currentMonth >= 9 ? currentYear + 1 : currentYear;
-          
-          // Fetch today's games
-          const apiGames = await fetchTodaysGames(sportsDataIOKey, today);
-          console.log(`Found ${apiGames.length} games today from SportsDataIO`);
-          
-          if (apiGames.length === 0) {
-            // No games today, still update with real team stats
-            const teamStats = await fetchTeamSeasonStats(sportsDataIOKey, season.toString());
-            teamsData = teamStats.map((t: any, i: number) => ({
-              team_abbr: t.Team,
-              team_name: t.Name,
-              def_rank_overall: i + 1,
-              pace_rating: t.Possessions / t.Games || 100,
-              pace_tier: (t.Possessions / t.Games || 100) > 101 ? "fast" : (t.Possessions / t.Games || 100) < 98 ? "slow" : "avg",
-              pts_allowed_avg: t.OpponentScore / t.Games || 110,
-              last_updated: new Date().toISOString()
-            }));
-            
-            // Update log
-            if (logEntry) {
-              await supabase.from("nba_stats_refresh_log").update({
-                games_fetched: 0,
-                players_updated: 0,
-                teams_updated: teamsData.length,
-                status: "complete",
-                completed_at: new Date().toISOString(),
-                notes: "No games scheduled today",
-                source
-              }).eq("id", logEntry.id);
-            }
-            
-            return new Response(JSON.stringify({
-              success: true,
-              message: "No games scheduled today",
+      const source = "SportsDataIO";
+      
+      try {
+        console.log("Fetching real data from SportsDataIO...");
+        
+        // Get current season
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth();
+        const season = currentMonth >= 9 ? currentYear + 1 : currentYear;
+        
+        // Fetch today's games FIRST - this determines everything
+        const apiGames = await fetchTodaysGames(sportsDataIOKey, today);
+        console.log(`Found ${apiGames.length} games today from SportsDataIO`);
+        
+        if (apiGames.length === 0) {
+          // No games today - this is valid, just update log
+          if (logEntry) {
+            await supabase.from("nba_stats_refresh_log").update({
               games_fetched: 0,
               players_updated: 0,
-              teams_updated: teamsData.length,
-              source
-            }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+              teams_updated: 0,
+              status: "complete",
+              completed_at: new Date().toISOString(),
+              error_message: "No NBA games scheduled today"
+            }).eq("id", logEntry.id);
           }
           
-          // Process games
-          gamesData = apiGames.map((g: any) => ({
-            game_id: g.GameID?.toString() || `${today}_${g.HomeTeam}_${g.AwayTeam}`,
-            home_team: g.HomeTeam,
-            away_team: g.AwayTeam,
-            game_time: g.DateTime,
-            home_team_back_to_back: false,
-            away_team_back_to_back: false,
-            game_date: today,
-            status: g.Status || "Scheduled"
-          }));
-          
-          // Fetch team stats
-          const teamStats = await fetchTeamSeasonStats(sportsDataIOKey, season.toString());
-          const sortedByDefense = [...teamStats].sort((a: any, b: any) => 
-            (a.OpponentScore / a.Games || 110) - (b.OpponentScore / b.Games || 110)
-          );
-          
-          teamsData = sortedByDefense.map((t: any, i: number) => ({
-            team_abbr: t.Team,
-            team_name: t.Name,
-            def_rank_vs_pg: i + 1,
-            def_rank_vs_sg: i + 1,
-            def_rank_vs_sf: i + 1,
-            def_rank_vs_pf: i + 1,
-            def_rank_vs_c: i + 1,
-            def_rank_overall: i + 1,
-            pace_rating: t.Possessions / t.Games || 100,
-            pace_tier: (t.Possessions / t.Games || 100) > 101 ? "fast" : (t.Possessions / t.Games || 100) < 98 ? "slow" : "avg",
-            pts_allowed_avg: t.OpponentScore / t.Games || 110,
-            last_updated: new Date().toISOString()
-          }));
-          
-          // Get teams playing today
-          const teamsPlaying = new Set<string>();
-          gamesData.forEach(g => {
-            teamsPlaying.add(g.home_team);
-            teamsPlaying.add(g.away_team);
-          });
-          
-          // Fetch player season stats and game logs
-          const playerSeasonStats = await fetchPlayerSeasonStats(sportsDataIOKey, season.toString());
-          const gameLogs = await fetchPlayerGameLogs(sportsDataIOKey, season.toString());
-          
-          // Filter to players on teams playing today with significant minutes
-          const relevantPlayers = playerSeasonStats.filter((p: any) => 
-            teamsPlaying.has(p.Team) && p.Minutes > 15
-          );
-          
-          console.log(`Processing ${relevantPlayers.length} relevant players`);
-          
-          for (const player of relevantPlayers.slice(0, 100)) { // Limit for performance
-            const processed = processPlayerFromLogs(player, gameLogs, source);
-            if (processed && processed.season_avg_min > 15) {
-              playersData.push(processed);
-            }
-          }
-          
-        } catch (apiError) {
-          console.error("SportsDataIO API error, falling back to mock data:", apiError);
-          source = "Mock Data (API Error)";
-          const mockData = generateMockNBAData(today);
-          gamesData = mockData.games.map((g, i) => ({
-            game_id: `${today}_${g.home_team}_${g.away_team}`,
-            home_team: g.home_team,
-            away_team: g.away_team,
-            game_time: g.game_time,
-            home_team_back_to_back: false,
-            away_team_back_to_back: false,
-            game_date: today,
-            status: "scheduled"
-          }));
-          playersData = mockData.players;
-          teamsData = mockData.teams.map((t, i) => ({
-            team_abbr: t.abbr,
-            team_name: t.name,
-            def_rank_overall: t.defRank,
-            pace_rating: t.pace,
-            pace_tier: t.pace > 101 ? "fast" : t.pace < 98 ? "slow" : "avg",
-            last_updated: new Date().toISOString()
-          }));
+          return new Response(JSON.stringify({
+            success: true,
+            message: "No NBA games scheduled today",
+            games_fetched: 0,
+            players_updated: 0,
+            teams_updated: 0,
+            source
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-      } else {
-        // Use mock data
-        console.log("No API key, using mock data");
-        const mockData = generateMockNBAData(today);
-        gamesData = mockData.games.map((g, i) => ({
-          game_id: `${today}_${g.home_team}_${g.away_team}`,
-          home_team: g.home_team,
-          away_team: g.away_team,
-          game_time: g.game_time,
+        
+        // Get teams playing today
+        const teamsPlaying = new Set<string>();
+        apiGames.forEach((g: any) => {
+          if (g.HomeTeam) teamsPlaying.add(g.HomeTeam);
+          if (g.AwayTeam) teamsPlaying.add(g.AwayTeam);
+        });
+        console.log(`Teams playing today: ${Array.from(teamsPlaying).join(', ')}`);
+        
+        // Process games - ONLY real games from API
+        const gamesData = apiGames.map((g: any) => ({
+          game_id: g.GameID?.toString() || `${today}_${g.HomeTeam}_${g.AwayTeam}`,
+          home_team: g.HomeTeam,
+          away_team: g.AwayTeam,
+          game_time: g.DateTime,
           home_team_back_to_back: false,
           away_team_back_to_back: false,
           game_date: today,
-          status: "scheduled"
+          status: g.Status || "Scheduled"
         }));
-        playersData = mockData.players;
-        teamsData = mockData.teams.map((t, i) => ({
-          team_abbr: t.abbr,
-          team_name: t.name,
-          def_rank_overall: t.defRank,
-          pace_rating: t.pace,
-          pace_tier: t.pace > 101 ? "fast" : t.pace < 98 ? "slow" : "avg",
+        
+        // Fetch team stats
+        const teamStats = await fetchTeamSeasonStats(sportsDataIOKey, season.toString());
+        const sortedByDefense = [...teamStats].sort((a: any, b: any) => 
+          (a.OpponentScore / a.Games || 110) - (b.OpponentScore / b.Games || 110)
+        );
+        
+        const teamsData = sortedByDefense.map((t: any, i: number) => ({
+          team_abbr: t.Team,
+          team_name: t.Name,
+          def_rank_vs_pg: i + 1,
+          def_rank_vs_sg: i + 1,
+          def_rank_vs_sf: i + 1,
+          def_rank_vs_pf: i + 1,
+          def_rank_vs_c: i + 1,
+          def_rank_overall: i + 1,
+          pace_rating: t.Possessions / t.Games || 100,
+          pace_tier: (t.Possessions / t.Games || 100) > 101 ? "fast" : (t.Possessions / t.Games || 100) < 98 ? "slow" : "avg",
+          pts_allowed_avg: t.OpponentScore / t.Games || 110,
           last_updated: new Date().toISOString()
         }));
-      }
+        
+        // Fetch player season stats and game logs
+        const playerSeasonStats = await fetchPlayerSeasonStats(sportsDataIOKey, season.toString());
+        const gameLogs = await fetchPlayerGameLogs(sportsDataIOKey, season.toString());
+        
+        console.log(`Fetched ${playerSeasonStats.length} player season stats, ${gameLogs.length} game logs`);
+        
+        // Filter to players on teams playing today with significant minutes
+        // CRITICAL: Only include players that pass validation
+        const relevantPlayers = playerSeasonStats.filter((p: any) => 
+          teamsPlaying.has(p.Team) && 
+          p.Minutes > 15 &&
+          isValidPlayer(p)
+        );
+        
+        console.log(`Processing ${relevantPlayers.length} relevant validated players`);
+        
+        const playersData: any[] = [];
+        for (const player of relevantPlayers.slice(0, 100)) { // Limit for performance
+          const processed = processPlayerFromLogs(player, gameLogs, source);
+          if (processed && processed.season_avg_min > 15) {
+            playersData.push(processed);
+          }
+        }
+        
+        console.log(`Successfully processed ${playersData.length} players with complete stats`);
+        
+        // Upsert teams
+        for (const team of teamsData) {
+          await supabase.from("nba_team_stats").upsert(team, { onConflict: "team_abbr" });
+        }
 
-      // Upsert teams
-      for (const team of teamsData) {
-        await supabase.from("nba_team_stats").upsert(team, { onConflict: "team_abbr" });
-      }
+        // Upsert players
+        for (const player of playersData) {
+          await supabase.from("nba_player_stats").upsert(player, { onConflict: "player_id" });
+        }
 
-      // Upsert players
-      for (const player of playersData) {
-        await supabase.from("nba_player_stats").upsert(player, { onConflict: "player_id" });
-      }
+        // Insert today's games
+        await supabase.from("nba_games_today").delete().eq("game_date", today);
+        for (const game of gamesData) {
+          await supabase.from("nba_games_today").insert(game);
+        }
 
-      // Insert today's games
-      await supabase.from("nba_games_today").delete().eq("game_date", today);
-      for (const game of gamesData) {
-        await supabase.from("nba_games_today").insert(game);
-      }
+        // Update log
+        if (logEntry) {
+          await supabase.from("nba_stats_refresh_log").update({
+            games_fetched: gamesData.length,
+            players_updated: playersData.length,
+            teams_updated: teamsData.length,
+            status: "complete",
+            completed_at: new Date().toISOString()
+          }).eq("id", logEntry.id);
+        }
 
-      // Update log
-      if (logEntry) {
-        await supabase.from("nba_stats_refresh_log").update({
+        return new Response(JSON.stringify({
+          success: true,
           games_fetched: gamesData.length,
           players_updated: playersData.length,
           teams_updated: teamsData.length,
-          status: "complete",
-          completed_at: new Date().toISOString(),
           source
-        }).eq("id", logEntry.id);
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        
+      } catch (apiError) {
+        console.error("SportsDataIO API error:", apiError);
+        
+        // Update log with error
+        if (logEntry) {
+          await supabase.from("nba_stats_refresh_log").update({
+            status: "error",
+            error_message: apiError instanceof Error ? apiError.message : "API error",
+            completed_at: new Date().toISOString()
+          }).eq("id", logEntry.id);
+        }
+        
+        return new Response(JSON.stringify({
+          success: false,
+          error: "Failed to fetch NBA data from SportsDataIO",
+          details: apiError instanceof Error ? apiError.message : "Unknown API error"
+        }), { 
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        });
       }
-
-      return new Response(JSON.stringify({
-        success: true,
-        games_fetched: gamesData.length,
-        players_updated: playersData.length,
-        teams_updated: teamsData.length,
-        source
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (action === "generate_props") {
@@ -575,6 +510,29 @@ serve(async (req) => {
         .in("team", Array.from(teamsToday))
         .neq("injury_status", "out");
 
+      // CRITICAL: Filter out any invalid players that might have been stored
+      const validPlayers = (players || []).filter((p: any) => {
+        // Must have numeric player_id (not mock_*)
+        if (!p.player_id || p.player_id.startsWith('mock_')) {
+          console.log(`Skipping mock player: ${p.player_name}`);
+          return false;
+        }
+        // Must have real name
+        const invalidNames = ['PG Player', 'SG Player', 'SF Player', 'PF Player', 'C Player', 'Unknown Player'];
+        if (invalidNames.some(invalid => p.player_name?.includes(invalid))) {
+          console.log(`Skipping placeholder player: ${p.player_name}`);
+          return false;
+        }
+        // Must have stats source from SportsDataIO
+        if (!p.stats_source || p.stats_source.includes('Mock')) {
+          console.log(`Skipping mock data player: ${p.player_name}`);
+          return false;
+        }
+        return true;
+      });
+
+      console.log(`Generating props for ${validPlayers.length} validated players`);
+
       // Fetch team stats
       const { data: teamStats } = await supabase.from("nba_team_stats").select("*");
       const teamMap = new Map(teamStats?.map((t: any) => [t.team_abbr, t]) || []);
@@ -591,7 +549,7 @@ serve(async (req) => {
         { key: "pra", name: "PRA" },
       ];
 
-      for (const player of players || []) {
+      for (const player of validPlayers) {
         const game = games.find(
           (g: any) => g.home_team === player.team || g.away_team === player.team
         );
@@ -619,7 +577,11 @@ serve(async (req) => {
           const season = player[seasonKey] as number | null;
           const std = player[stdKey] as number | null;
 
-          if (!last5 || !season || last5 < 1) continue;
+          // CRITICAL: Require real stats - skip if missing
+          if (!last5 || !season || last5 < 1) {
+            console.log(`Skipping ${player.player_name} ${stat.name}: missing stats`);
+            continue;
+          }
 
           // Weighted projection
           const projected = last5 * 0.6 + season * 0.4;
@@ -639,11 +601,18 @@ serve(async (req) => {
           const edge = (probability - breakEven) * 100;
           const simulatedROI = edge / 100;
 
-          // Calculate confidence
+          // Calculate confidence - REDUCE for missing data
           let confidence = 50 + edge * 2;
           if (player.data_completeness) confidence += (player.data_completeness - 50) * 0.2;
           if (player.injury_status === "questionable") confidence -= 10;
           if (isB2B) confidence -= 5;
+          
+          // Additional confidence reduction for incomplete stats
+          let missingStats = 0;
+          if (!player.minutes_last_5_avg) missingStats++;
+          if (!oppTeam) missingStats++;
+          confidence -= missingStats * 5;
+          
           confidence = Math.max(30, Math.min(70, confidence));
 
           // Generate reasoning
@@ -696,17 +665,23 @@ serve(async (req) => {
             pace_tier: paceTier,
             minutes_trend: minutesTrend,
             data_completeness: player.data_completeness || 50,
-            source: player.stats_source || "Unknown",
+            source: player.stats_source || "SportsDataIO",
             volatility_score: volatilityTier,
             projected_value: projected,
             back_to_back: isB2B,
             home_game: isHome,
+            // CRITICAL: Store all stats used in probability calculation
             calibration_factors: {
-              last5_avg: last5,
+              last_5_avg: last5,
               season_avg: season,
               std: std,
+              minutes_l5: player.minutes_last_5_avg,
+              minutes_season: player.season_avg_min,
               def_rank: oppDefRank,
-              injury: player.injury_status
+              pace_rating: oppTeam?.pace_rating,
+              injury_status: player.injury_status,
+              data_completeness: player.data_completeness,
+              stats_source: player.stats_source
             },
           });
         }
@@ -727,6 +702,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         success: true,
         props_generated: propsGenerated.length,
+        validated_players: validPlayers.length,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
