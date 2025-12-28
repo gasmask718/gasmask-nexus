@@ -254,8 +254,29 @@ const MoneylineCard = ({ prediction, expanded, onToggle }: {
 const NBAMoneylineLeans = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [validationStatus, setValidationStatus] = useState<{
+    expectedCount: number | null;
+    mismatch: boolean;
+  }>({ expectedCount: null, mismatch: false });
   
   const today = useMemo(() => getEasternDate(), []);
+  
+  // Fetch expected game count from nba_games_today for validation
+  const { data: expectedGames } = useQuery({
+    queryKey: ['nba-games-today-count', today],
+    queryFn: async () => {
+      const { data, error, count } = await supabase
+        .from('nba_games_today')
+        .select('*', { count: 'exact' })
+        .eq('game_date', today);
+      
+      if (error) {
+        console.error('Error fetching expected games:', error);
+        return [];
+      }
+      return data || [];
+    }
+  });
   
   const { data: predictions, isLoading, refetch } = useQuery({
     queryKey: ['nba-moneyline-predictions', today],
@@ -267,8 +288,23 @@ const NBAMoneylineLeans = () => {
         .order('game_time', { ascending: true });
       
       if (error) throw error;
+      
+      // Validate count matches expected games
+      if (expectedGames) {
+        const expectedCount = expectedGames.length;
+        const actualCount = data?.length || 0;
+        const hasMismatch = expectedCount !== actualCount && expectedCount > 0;
+        
+        if (hasMismatch) {
+          console.warn(`[Moneyline Validation] Game count mismatch: Expected ${expectedCount}, got ${actualCount}`);
+        }
+        
+        setValidationStatus({ expectedCount, mismatch: hasMismatch });
+      }
+      
       return data as MoneylinePrediction[];
-    }
+    },
+    enabled: !!expectedGames // Only run after we have expected games
   });
 
   const generatePredictions = async () => {
@@ -318,7 +354,7 @@ const NBAMoneylineLeans = () => {
         
         {/* Summary badges */}
         {predictions && predictions.length > 0 && (
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
             {strongLeans.length > 0 && (
               <Badge className="bg-green-500/20 text-green-400">
                 {strongLeans.length} Strong Lean{strongLeans.length !== 1 ? 's' : ''}
@@ -335,10 +371,21 @@ const NBAMoneylineLeans = () => {
               </Badge>
             )}
             <span className="text-sm text-muted-foreground ml-2">
-              {predictions.length} total games
+              {predictions.length} of {validationStatus.expectedCount ?? '?'} games
             </span>
+            {validationStatus.mismatch && (
+              <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/50">
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                Count Mismatch
+              </Badge>
+            )}
           </div>
         )}
+        
+        {/* Date indicator */}
+        <div className="mt-2 text-xs text-muted-foreground">
+          Showing games for: {today} (Eastern Time)
+        </div>
       </CardHeader>
       
       <CardContent>
