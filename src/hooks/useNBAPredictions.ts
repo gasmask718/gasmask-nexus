@@ -43,6 +43,11 @@ export interface NBAProp {
   back_to_back: boolean | null;
   home_game: boolean | null;
   created_at: string;
+  // Stats visibility fields (extracted from calibration_factors for UI display)
+  last_5_avg?: number | null;
+  season_avg?: number | null;
+  last_5_minutes_avg?: number | null;
+  injury_status?: string | null;
 }
 
 export interface NBAStatsRefreshLog {

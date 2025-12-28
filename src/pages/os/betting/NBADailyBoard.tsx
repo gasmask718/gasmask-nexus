@@ -6,6 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Link } from 'react-router-dom';
 import { 
   RefreshCw, 
@@ -16,9 +19,10 @@ import {
   Zap, 
   Info, 
   CheckCircle2,
-  Database,
   ChevronLeft,
-  Activity
+  Activity,
+  Bug,
+  ChevronDown
 } from 'lucide-react';
 import { 
   useNBAGamesToday, 
@@ -31,9 +35,11 @@ import {
   useCopyPropToSimulated,
   NBAProp 
 } from '@/hooks/useNBAPredictions';
+import { NBAStatsDisplay, StatsDebugPanel } from '@/components/betting/NBAStatsDisplay';
 
 const NBADailyBoard = () => {
   const [activeTab, setActiveTab] = useState('top-props');
+  const [showStatsDebug, setShowStatsDebug] = useState(false);
   
   const { data: games, isLoading: gamesLoading } = useNBAGamesToday();
   const { data: topProps, isLoading: topLoading } = useTopAIProps(65);
@@ -63,107 +69,127 @@ const NBADailyBoard = () => {
     }
   };
 
-  const getDataCompletenessColor = (completeness: number | null) => {
-    const c = completeness ?? 50;
-    if (c >= 80) return "bg-emerald-500";
-    if (c >= 60) return "bg-blue-500";
-    if (c >= 40) return "bg-amber-500";
-    return "bg-red-500";
+  // Extract stats from calibration_factors for display consistency
+  const extractStats = (prop: NBAProp) => {
+    const factors = prop.calibration_factors as Record<string, any> | null;
+    return {
+      last5Avg: factors?.last_5_avg ?? factors?.player_recent_avg ?? prop.last_5_avg ?? null,
+      seasonAvg: factors?.season_avg ?? factors?.player_season_avg ?? prop.season_avg ?? null,
+      last5MinutesAvg: factors?.last_5_minutes_avg ?? factors?.minutes_l5 ?? null,
+      injuryStatus: factors?.injury_status ?? prop.injury_status ?? 'active',
+    };
   };
 
-  const PropCard = ({ prop, showAdd = true }: { prop: NBAProp; showAdd?: boolean }) => (
-    <Card className="mb-3">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-semibold">{prop.player_name}</span>
-              <Badge variant="outline" className="text-xs">{prop.team}</Badge>
-              <span className="text-xs text-muted-foreground">vs {prop.opponent}</span>
-            </div>
-            <div className="flex items-center gap-2 mb-2">
-              <Badge className={prop.over_under === 'over' ? 'bg-emerald-500' : 'bg-red-500'}>
-                {prop.over_under?.toUpperCase() || 'OVER'} {prop.line_value}
-              </Badge>
-              <span className="font-medium">{prop.stat_type}</span>
-              <Badge variant="outline" className={getRecommendationBadge(prop.recommendation)}>
-                {prop.recommendation?.replace('_', ' ') || 'pass'}
-              </Badge>
-            </div>
-            <div className="flex items-center gap-4 text-sm">
-              <span>Prob: <strong>{((prop.estimated_probability ?? 0) * 100).toFixed(1)}%</strong></span>
-              <span className={(prop.edge ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}>
-                Edge: <strong>{(prop.edge ?? 0) > 0 ? '+' : ''}{((prop.edge ?? 0) * 100).toFixed(1)}%</strong>
-              </span>
-              <span>ROI: <strong>{((prop.simulated_roi ?? 0) * 100).toFixed(1)}%</strong></span>
-              <Badge variant="outline" className={getConfidenceBadge(prop.confidence_score)}>
-                {prop.confidence_score ?? 50}% conf
-              </Badge>
-            </div>
-            
-            {/* Stats Source & Data Completeness */}
-            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <Database className="h-3 w-3" />
-                <span>Source: {prop.source || 'Unknown'}</span>
+  const PropCard = ({ prop, showAdd = true }: { prop: NBAProp; showAdd?: boolean }) => {
+    const [debugOpen, setDebugOpen] = useState(false);
+    const stats = extractStats(prop);
+    
+    return (
+      <Card className="mb-3">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-semibold">{prop.player_name}</span>
+                <Badge variant="outline" className="text-xs">{prop.team}</Badge>
+                <span className="text-xs text-muted-foreground">vs {prop.opponent}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span>Projected: {(prop.projected_value ?? 0).toFixed(1)}</span>
+              <div className="flex items-center gap-2 mb-2">
+                <Badge className={prop.over_under === 'over' ? 'bg-emerald-500' : 'bg-red-500'}>
+                  {prop.over_under?.toUpperCase() || 'OVER'} {prop.line_value}
+                </Badge>
+                <span className="font-medium">{prop.stat_type}</span>
+                <Badge variant="outline" className={getRecommendationBadge(prop.recommendation)}>
+                  {prop.recommendation?.replace('_', ' ') || 'pass'}
+                </Badge>
               </div>
-              <div className="flex items-center gap-2">
-                <span>Data:</span>
-                <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full ${getDataCompletenessColor(prop.data_completeness)}`}
-                    style={{ width: `${prop.data_completeness ?? 50}%` }}
-                  />
-                </div>
-                <span>{prop.data_completeness ?? 50}%</span>
+              <div className="flex items-center gap-4 text-sm mb-3">
+                <span>Prob: <strong>{((prop.estimated_probability ?? 0) * 100).toFixed(1)}%</strong></span>
+                <span className={(prop.edge ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}>
+                  Edge: <strong>{(prop.edge ?? 0) > 0 ? '+' : ''}{((prop.edge ?? 0) * 100).toFixed(1)}%</strong>
+                </span>
+                <span>ROI: <strong>{((prop.simulated_roi ?? 0) * 100).toFixed(1)}%</strong></span>
+                <Badge variant="outline" className={getConfidenceBadge(prop.confidence_score)}>
+                  {prop.confidence_score ?? 50}% conf
+                </Badge>
               </div>
+              
+              {/* Stats Display - These are the SAME values used in probability calculations */}
+              <NBAStatsDisplay
+                last5Avg={stats.last5Avg}
+                seasonAvg={stats.seasonAvg}
+                last5MinutesAvg={stats.last5MinutesAvg}
+                opponentDefTier={prop.opponent_def_tier}
+                paceTier={prop.pace_tier}
+                injuryStatus={stats.injuryStatus}
+                dataCompleteness={prop.data_completeness}
+                source={prop.source}
+                statType={prop.stat_type}
+              />
+
+              {/* Stats Debug Panel (owner-only toggle) */}
+              {showStatsDebug && (
+                <Collapsible open={debugOpen} onOpenChange={setDebugOpen} className="mt-2">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-muted-foreground">
+                      <Bug className="h-3 w-3 mr-1" />
+                      Stats Debug
+                      <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${debugOpen ? 'rotate-180' : ''}`} />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2">
+                    <StatsDebugPanel 
+                      calibrationFactors={prop.calibration_factors}
+                      source={prop.source}
+                      dataCompleteness={prop.data_completeness}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+            </div>
+            <div className="flex flex-col items-end gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Info className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="font-semibold mb-1">Why this prediction:</p>
+                    <ul className="text-xs space-y-1">
+                      {prop.reasoning?.map((r: string, i: number) => (
+                        <li key={i}>• {r}</li>
+                      )) || <li>• Analysis based on recent performance</li>}
+                    </ul>
+                    <div className="mt-2 pt-2 border-t border-border">
+                      <p className="text-xs">
+                        <strong>Context:</strong> {prop.opponent_def_tier || 'med'} defense, {prop.pace_tier || 'avg'} pace, mins {prop.minutes_trend || 'flat'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Data completeness: {prop.data_completeness ?? 50}%
+                      </p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              {showAdd && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => copyProp.mutate(prop)}
+                  disabled={copyProp.isPending}
+                >
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Add
+                </Button>
+              )}
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Info className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="font-semibold mb-1">Why this prediction:</p>
-                  <ul className="text-xs space-y-1">
-                    {prop.reasoning?.map((r: string, i: number) => (
-                      <li key={i}>• {r}</li>
-                    )) || <li>• Analysis based on recent performance</li>}
-                  </ul>
-                  <div className="mt-2 pt-2 border-t border-border">
-                    <p className="text-xs">
-                      <strong>Context:</strong> {prop.opponent_def_tier || 'med'} defense, {prop.pace_tier || 'avg'} pace, mins {prop.minutes_trend || 'flat'}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Data completeness: {prop.data_completeness ?? 50}%
-                    </p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            {showAdd && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => copyProp.mutate(prop)}
-                disabled={copyProp.isPending}
-              >
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Add
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   const isLoading = gamesLoading || topLoading || parlayLoading || avoidLoading || allLoading;
 
@@ -189,14 +215,28 @@ const NBADailyBoard = () => {
             )}
           </p>
         </div>
-        <Button 
-          onClick={() => runPredictions.mutate()} 
-          disabled={runPredictions.isPending}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${runPredictions.isPending ? 'animate-spin' : ''}`} />
-          {runPredictions.isPending ? 'Running...' : 'Run NBA Predictions'}
-        </Button>
+        <div className="flex items-center gap-4">
+          {/* Stats Debug Toggle (owner-only) */}
+          <div className="flex items-center gap-2">
+            <Switch 
+              id="stats-debug" 
+              checked={showStatsDebug} 
+              onCheckedChange={setShowStatsDebug}
+            />
+            <Label htmlFor="stats-debug" className="text-xs text-muted-foreground cursor-pointer">
+              <Bug className="h-3 w-3 inline mr-1" />
+              Stats Debug
+            </Label>
+          </div>
+          <Button 
+            onClick={() => runPredictions.mutate()} 
+            disabled={runPredictions.isPending}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${runPredictions.isPending ? 'animate-spin' : ''}`} />
+            {runPredictions.isPending ? 'Running...' : 'Run NBA Predictions'}
+          </Button>
+        </div>
       </div>
 
       {/* Stats Summary */}
