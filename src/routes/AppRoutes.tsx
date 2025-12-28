@@ -912,7 +912,8 @@ export default function AppRoutes() {
         <Route path="/os/funding" element={<FundingDashboard />} />
         <Route path="/os/grants" element={<GrantsDashboard />} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
-        <Route path="/os/sports-betting" element={<BettingDashboard />} />
+        <Route path="/os/sports-betting" element={<Navigate to="/os/sports-betting/analytics" replace />} />
+        <Route path="/os/sports-betting/dashboard" element={<BettingDashboard />} />
         <Route path="/os/sports-betting/nba" element={<NBADailyBoard />} />
         <Route path="/os/sports-betting/line-intake" element={<LineIntake />} />
         <Route path="/os/sports-betting/simulation" element={<SimulationPage />} />

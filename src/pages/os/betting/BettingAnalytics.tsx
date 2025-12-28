@@ -34,6 +34,11 @@ export default function BettingAnalytics() {
 
   return (
     <div className="space-y-6 p-6">
+      {/* Breadcrumb */}
+      <div className="text-sm text-muted-foreground">
+        Sports Betting &gt; <span className="text-foreground font-medium">Analytics</span>
+      </div>
+
       {/* Header */}
       <div className="flex items-center gap-3">
         <BarChart3 className="h-8 w-8 text-primary" />
