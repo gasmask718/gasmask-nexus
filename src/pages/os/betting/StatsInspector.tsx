@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   RefreshCw, AlertTriangle, CheckCircle, Database, Users, Calendar, 
-  XCircle, ChevronDown, Clock, Server, Shield, Activity
+  XCircle, ChevronDown, Clock, Server, Shield, Activity, List, Filter, X, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Navigate } from 'react-router-dom';
@@ -122,6 +124,393 @@ const FieldValue = ({ label, value, isRequired = false }: { label: string; value
           <span className="font-mono text-sm">{String(value ?? 'null')}</span>
         )}
       </div>
+    </div>
+  );
+};
+
+// ========================
+// ALL PROPS VIEW COMPONENT
+// ========================
+const PROPS_PER_PAGE = 50;
+
+interface AllPropsViewProps {
+  props: PropData[];
+  loading: boolean;
+}
+
+const AllPropsView = ({ props, loading }: AllPropsViewProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [playerFilter, setPlayerFilter] = useState('');
+  const [teamFilter, setTeamFilter] = useState('all');
+  const [statTypeFilter, setStatTypeFilter] = useState('all');
+  const [recommendationFilter, setRecommendationFilter] = useState('all');
+  const [minConfidence, setMinConfidence] = useState<number | ''>('');
+  const [maxConfidence, setMaxConfidence] = useState<number | ''>('');
+
+  // Get unique values for filters
+  const uniqueTeams = useMemo(() => {
+    const teams = new Set(props.map(p => p.team));
+    return Array.from(teams).sort();
+  }, [props]);
+
+  const uniqueStatTypes = useMemo(() => {
+    const types = new Set(props.map(p => p.stat_type));
+    return Array.from(types).sort();
+  }, [props]);
+
+  const uniqueRecommendations = useMemo(() => {
+    const recs = new Set(props.map(p => p.recommendation).filter(Boolean));
+    return Array.from(recs).sort();
+  }, [props]);
+
+  // Check if any filters are active
+  const hasActiveFilters = playerFilter !== '' || 
+    teamFilter !== 'all' || 
+    statTypeFilter !== 'all' || 
+    recommendationFilter !== 'all' ||
+    minConfidence !== '' ||
+    maxConfidence !== '';
+
+  // Clear all filters
+  const clearFilters = () => {
+    setPlayerFilter('');
+    setTeamFilter('all');
+    setStatTypeFilter('all');
+    setRecommendationFilter('all');
+    setMinConfidence('');
+    setMaxConfidence('');
+    setCurrentPage(1);
+  };
+
+  // Filter props
+  const filteredProps = useMemo(() => {
+    return props.filter(prop => {
+      if (playerFilter && !prop.player_name.toLowerCase().includes(playerFilter.toLowerCase())) {
+        return false;
+      }
+      if (teamFilter !== 'all' && prop.team !== teamFilter) {
+        return false;
+      }
+      if (statTypeFilter !== 'all' && prop.stat_type !== statTypeFilter) {
+        return false;
+      }
+      if (recommendationFilter !== 'all' && prop.recommendation !== recommendationFilter) {
+        return false;
+      }
+      if (minConfidence !== '' && prop.confidence_score < minConfidence) {
+        return false;
+      }
+      if (maxConfidence !== '' && prop.confidence_score > maxConfidence) {
+        return false;
+      }
+      return true;
+    });
+  }, [props, playerFilter, teamFilter, statTypeFilter, recommendationFilter, minConfidence, maxConfidence]);
+
+  // Paginate
+  const totalPages = Math.ceil(filteredProps.length / PROPS_PER_PAGE);
+  const paginatedProps = useMemo(() => {
+    const startIdx = (currentPage - 1) * PROPS_PER_PAGE;
+    return filteredProps.slice(startIdx, startIdx + PROPS_PER_PAGE);
+  }, [filteredProps, currentPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [playerFilter, teamFilter, statTypeFilter, recommendationFilter, minConfidence, maxConfidence]);
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="pt-6 flex items-center justify-center">
+          <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Filter Controls */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              <CardTitle className="text-lg">Filters</CardTitle>
+              {hasActiveFilters && (
+                <Badge variant="secondary" className="ml-2">
+                  Active
+                </Badge>
+              )}
+            </div>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="w-4 h-4 mr-1" />
+                Clear All
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Player Name</label>
+              <Input
+                placeholder="Search player..."
+                value={playerFilter}
+                onChange={(e) => setPlayerFilter(e.target.value)}
+                className="h-9"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Team</label>
+              <Select value={teamFilter} onValueChange={setTeamFilter}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="All Teams" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Teams</SelectItem>
+                  {uniqueTeams.map(team => (
+                    <SelectItem key={team} value={team}>{team}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Stat Type</label>
+              <Select value={statTypeFilter} onValueChange={setStatTypeFilter}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="All Stats" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Stats</SelectItem>
+                  {uniqueStatTypes.map(stat => (
+                    <SelectItem key={stat} value={stat}>{stat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Recommendation</label>
+              <Select value={recommendationFilter} onValueChange={setRecommendationFilter}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {uniqueRecommendations.map(rec => (
+                    <SelectItem key={rec} value={rec}>{rec}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Min Confidence</label>
+              <Input
+                type="number"
+                placeholder="0"
+                min={0}
+                max={100}
+                value={minConfidence}
+                onChange={(e) => setMinConfidence(e.target.value ? Number(e.target.value) : '')}
+                className="h-9"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Max Confidence</label>
+              <Input
+                type="number"
+                placeholder="100"
+                min={0}
+                max={100}
+                value={maxConfidence}
+                onChange={(e) => setMaxConfidence(e.target.value ? Number(e.target.value) : '')}
+                className="h-9"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Results Count & Pagination Info */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">
+            Showing {paginatedProps.length > 0 ? ((currentPage - 1) * PROPS_PER_PAGE) + 1 : 0}
+            –{Math.min(currentPage * PROPS_PER_PAGE, filteredProps.length)}
+          </span>
+          {' '}of{' '}
+          <span className="font-medium text-foreground">{filteredProps.length}</span>
+          {' '}props
+          {filteredProps.length !== props.length && (
+            <span className="text-muted-foreground"> (filtered from {props.length} total)</span>
+          )}
+        </div>
+        
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <span className="text-sm">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Props List */}
+      <Card>
+        <CardContent className="pt-4">
+          {paginatedProps.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {hasActiveFilters ? 'No props match your filters.' : 'No props available.'}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {paginatedProps.map((prop) => {
+                const cf = prop.calibration_factors || {};
+                return (
+                  <div
+                    key={prop.id}
+                    className="p-4 rounded-lg border bg-muted/20 hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold truncate">{prop.player_name}</span>
+                          <Badge variant="outline" className="shrink-0">{prop.team}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          vs {prop.opponent} | {prop.stat_type} {prop.line_value}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">Projected</p>
+                          <p className="font-mono font-medium">{prop.projected_value?.toFixed(1)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">Prob</p>
+                          <p className="font-mono font-medium">{(prop.estimated_probability * 100).toFixed(0)}%</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">Confidence</p>
+                          <Badge 
+                            variant={prop.confidence_score >= 70 ? 'default' : prop.confidence_score >= 50 ? 'secondary' : 'outline'}
+                          >
+                            {prop.confidence_score}%
+                          </Badge>
+                        </div>
+                        {prop.recommendation && (
+                          <Badge 
+                            variant={prop.recommendation.toLowerCase().includes('strong') ? 'default' : 'secondary'}
+                            className={prop.recommendation.toLowerCase().includes('over') ? 'bg-green-600' : prop.recommendation.toLowerCase().includes('under') ? 'bg-red-600' : ''}
+                          >
+                            {prop.recommendation}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    {/* Calibration factors preview */}
+                    <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-4 md:grid-cols-8 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">L5 Avg:</span>{' '}
+                        <span className="font-mono">{(cf.last_5_avg as number)?.toFixed(1) ?? '–'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Season:</span>{' '}
+                        <span className="font-mono">{(cf.season_avg as number)?.toFixed(1) ?? '–'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Min L5:</span>{' '}
+                        <span className="font-mono">{(cf.minutes_l5 as number)?.toFixed(0) ?? '–'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">STD:</span>{' '}
+                        <span className="font-mono">{(cf.std as number)?.toFixed(2) ?? '–'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Def Rank:</span>{' '}
+                        <span className="font-mono">{cf.def_rank as number ?? '–'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Pace:</span>{' '}
+                        <span className="font-mono">{(cf.pace_rating as number)?.toFixed(1) ?? '–'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Injury:</span>{' '}
+                        <span className="font-mono">{(cf.injury_status as string) || 'active'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Complete:</span>{' '}
+                        <span className="font-mono">{cf.data_completeness as number}%</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Bottom Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(1)}
+            disabled={currentPage === 1}
+          >
+            First
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Previous
+          </Button>
+          <span className="px-4 text-sm">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={currentPage === totalPages}
+          >
+            Last
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
@@ -508,8 +897,12 @@ const StatsInspector = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="raw" className="w-full">
-        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+      <Tabs defaultValue="all-props" className="w-full">
+        <TabsList className="grid grid-cols-6 w-full max-w-3xl">
+          <TabsTrigger value="all-props">
+            <List className="w-4 h-4 mr-2" />
+            All Props
+          </TabsTrigger>
           <TabsTrigger value="raw">
             <Server className="w-4 h-4 mr-2" />
             Raw API
@@ -531,6 +924,11 @@ const StatsInspector = () => {
             Logs
           </TabsTrigger>
         </TabsList>
+
+        {/* ALL PROPS VIEW - Full dataset with pagination and filters */}
+        <TabsContent value="all-props">
+          <AllPropsView props={props || []} loading={loadingProps} />
+        </TabsContent>
 
         {/* SECTION A: Raw API Data */}
         <TabsContent value="raw">
