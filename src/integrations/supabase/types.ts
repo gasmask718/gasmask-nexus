@@ -17159,8 +17159,10 @@ export type Database = {
       }
       pick_entries: {
         Row: {
+          actual_result_value: number | null
           created_at: string
           date: string
+          decision_source: string | null
           format_tag: string
           id: string
           line_value: number | null
@@ -17184,8 +17186,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          actual_result_value?: number | null
           created_at?: string
           date: string
+          decision_source?: string | null
           format_tag: string
           id?: string
           line_value?: number | null
@@ -17209,8 +17213,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          actual_result_value?: number | null
           created_at?: string
           date?: string
+          decision_source?: string | null
           format_tag?: string
           id?: string
           line_value?: number | null

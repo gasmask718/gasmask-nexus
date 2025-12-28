@@ -100,6 +100,7 @@ export default function PickEntryWizard() {
         odds: formData.odds ? parseFloat(formData.odds) : null,
         multiplier: formData.multiplier ? parseFloat(formData.multiplier) : null,
         notes: formData.notes || null,
+        decision_source: 'USER', // Always USER when entered manually
       });
 
       if (error) throw error;
