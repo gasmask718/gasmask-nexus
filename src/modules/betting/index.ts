@@ -12,13 +12,13 @@ import BettingAnalytics from '@/pages/os/betting/BettingAnalytics';
 import BettingWorkflow from '@/pages/os/betting/BettingWorkflow';
 
 const sidebarItems: SidebarItem[] = [
-  { path: '/os/sports-betting', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/os/sports-betting/analytics', label: 'Analytics', icon: BarChart3 },
+  { path: '/os/sports-betting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/os/sports-betting/workflow', label: 'Workflow', icon: Activity },
   { path: '/os/sports-betting/entries', label: 'Entries', icon: ClipboardList },
   { path: '/os/sports-betting/platforms', label: 'Platforms', icon: Building2 },
   { path: '/os/sports-betting/line-intake', label: 'Line Intake', icon: FileInput },
   { path: '/os/sports-betting/line-shopping', label: 'Line Shopping', icon: Search },
-  { path: '/os/sports-betting/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/os/sports-betting/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -30,7 +30,7 @@ export const BettingModule: DynastyModule = {
     basePath: '/os/sports-betting',
     icon: Trophy,
     color: 'orange',
-    permissions: ['admin'],
+    permissions: ['admin', 'user', 'employee', 'manager'],
     isEnabled: true,
     order: 30,
   },

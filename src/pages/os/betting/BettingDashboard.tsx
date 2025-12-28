@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Target, TrendingUp, DollarSign, Brain, BarChart3, Zap, Calculator, AlertTriangle, CheckCircle, Play, Loader2, FlaskConical, Shield, Info, Search } from "lucide-react";
+import { Trophy, Target, TrendingUp, DollarSign, Brain, BarChart3, Zap, Calculator, AlertTriangle, CheckCircle, Play, Loader2, FlaskConical, Shield, Info, Search, LineChart } from "lucide-react";
 import { useSimulatedBets, useSimulationRuns, useTodaysTopProps, useRunSimulation, useAllSimulatedBets } from '@/hooks/useBettingSimulation';
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -76,7 +76,13 @@ export default function BettingDashboard() {
           </h1>
           <p className="text-muted-foreground mt-1">Simulation-First Analytics & Decision Support</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Link to="/os/sports-betting/analytics">
+            <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">
+              <LineChart className="h-4 w-4 mr-2" />
+              Analytics
+            </Button>
+          </Link>
           <Link to="/os/sports-betting/nba">
             <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
               <Trophy className="h-4 w-4 mr-2" />
