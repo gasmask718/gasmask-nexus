@@ -3169,8 +3169,10 @@ export type Database = {
       bets_simulated: {
         Row: {
           bet_type: string
+          calibration_factors: Json | null
           confidence_score: number | null
           created_at: string | null
+          data_completeness: number | null
           description: string | null
           estimated_probability: number | null
           id: string
@@ -3184,8 +3186,10 @@ export type Database = {
         }
         Insert: {
           bet_type: string
+          calibration_factors?: Json | null
           confidence_score?: number | null
           created_at?: string | null
+          data_completeness?: number | null
           description?: string | null
           estimated_probability?: number | null
           id?: string
@@ -3199,8 +3203,10 @@ export type Database = {
         }
         Update: {
           bet_type?: string
+          calibration_factors?: Json | null
           confidence_score?: number | null
           created_at?: string | null
+          data_completeness?: number | null
           description?: string | null
           estimated_probability?: number | null
           id?: string
@@ -14481,14 +14487,21 @@ export type Database = {
           created_at: string | null
           event: string
           event_time: string | null
+          home_game: boolean | null
           id: string
           league: string | null
           line_value: number | null
           market_type: Database["public"]["Enums"]["market_type"]
+          minutes_trend: string | null
           odds_or_payout: number | null
+          opponent_def_tier: string | null
           over_under: string | null
+          pace_tier: string | null
           platform: string
           player_name: string | null
+          player_recent_avg: number | null
+          player_recent_std: number | null
+          player_season_avg: number | null
           sport: string
           stat_type: string | null
           updated_at: string | null
@@ -14497,14 +14510,21 @@ export type Database = {
           created_at?: string | null
           event: string
           event_time?: string | null
+          home_game?: boolean | null
           id?: string
           league?: string | null
           line_value?: number | null
           market_type: Database["public"]["Enums"]["market_type"]
+          minutes_trend?: string | null
           odds_or_payout?: number | null
+          opponent_def_tier?: string | null
           over_under?: string | null
+          pace_tier?: string | null
           platform: string
           player_name?: string | null
+          player_recent_avg?: number | null
+          player_recent_std?: number | null
+          player_season_avg?: number | null
           sport: string
           stat_type?: string | null
           updated_at?: string | null
@@ -14513,14 +14533,21 @@ export type Database = {
           created_at?: string | null
           event?: string
           event_time?: string | null
+          home_game?: boolean | null
           id?: string
           league?: string | null
           line_value?: number | null
           market_type?: Database["public"]["Enums"]["market_type"]
+          minutes_trend?: string | null
           odds_or_payout?: number | null
+          opponent_def_tier?: string | null
           over_under?: string | null
+          pace_tier?: string | null
           platform?: string
           player_name?: string | null
+          player_recent_avg?: number | null
+          player_recent_std?: number | null
+          player_season_avg?: number | null
           sport?: string
           stat_type?: string | null
           updated_at?: string | null

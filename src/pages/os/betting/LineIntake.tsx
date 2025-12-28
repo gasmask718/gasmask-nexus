@@ -24,6 +24,14 @@ export default function LineIntake() {
     line_value: '',
     over_under: 'over',
     odds_or_payout: '',
+    // Calibration inputs
+    player_recent_avg: '',
+    player_recent_std: '',
+    player_season_avg: '',
+    minutes_trend: '',
+    opponent_def_tier: '',
+    pace_tier: '',
+    home_game: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,6 +53,14 @@ export default function LineIntake() {
       line_value: parseFloat(formData.line_value),
       over_under: formData.over_under,
       odds_or_payout: parseFloat(formData.odds_or_payout) || -110,
+      // Calibration inputs
+      player_recent_avg: formData.player_recent_avg ? parseFloat(formData.player_recent_avg) : undefined,
+      player_recent_std: formData.player_recent_std ? parseFloat(formData.player_recent_std) : undefined,
+      player_season_avg: formData.player_season_avg ? parseFloat(formData.player_season_avg) : undefined,
+      minutes_trend: formData.minutes_trend || undefined,
+      opponent_def_tier: formData.opponent_def_tier || undefined,
+      pace_tier: formData.pace_tier || undefined,
+      home_game: formData.home_game === 'true' ? true : formData.home_game === 'false' ? false : undefined,
     });
 
     // Reset form
@@ -59,6 +75,13 @@ export default function LineIntake() {
       line_value: '',
       over_under: 'over',
       odds_or_payout: '',
+      player_recent_avg: '',
+      player_recent_std: '',
+      player_season_avg: '',
+      minutes_trend: '',
+      opponent_def_tier: '',
+      pace_tier: '',
+      home_game: '',
     });
   };
 
@@ -241,6 +264,107 @@ export default function LineIntake() {
                     American odds (e.g., -110) or payout multiplier (e.g., 1.9)
                   </p>
                 </div>
+
+                {/* Calibration Inputs Section */}
+                {isPlayerProp && (
+                  <>
+                    <div className="md:col-span-2 pt-4 border-t border-border/50">
+                      <p className="text-sm font-medium text-muted-foreground mb-3">📊 Calibration Inputs (Optional - improves accuracy)</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Recent Avg</Label>
+                      <Input 
+                        type="number"
+                        step="0.1"
+                        placeholder="e.g., 27.3"
+                        value={formData.player_recent_avg}
+                        onChange={(e) => setFormData(p => ({ ...p, player_recent_avg: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Recent Std Dev</Label>
+                      <Input 
+                        type="number"
+                        step="0.1"
+                        placeholder="e.g., 5.2"
+                        value={formData.player_recent_std}
+                        onChange={(e) => setFormData(p => ({ ...p, player_recent_std: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Season Avg</Label>
+                      <Input 
+                        type="number"
+                        step="0.1"
+                        placeholder="e.g., 25.8"
+                        value={formData.player_season_avg}
+                        onChange={(e) => setFormData(p => ({ ...p, player_season_avg: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Minutes Trend</Label>
+                      <Select 
+                        value={formData.minutes_trend} 
+                        onValueChange={(v) => setFormData(p => ({ ...p, minutes_trend: v }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="up">Up ↑</SelectItem>
+                          <SelectItem value="flat">Flat →</SelectItem>
+                          <SelectItem value="down">Down ↓</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Opponent Defense</Label>
+                      <Select 
+                        value={formData.opponent_def_tier} 
+                        onValueChange={(v) => setFormData(p => ({ ...p, opponent_def_tier: v }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low (Weak)</SelectItem>
+                          <SelectItem value="med">Medium</SelectItem>
+                          <SelectItem value="high">High (Strong)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Game Pace</Label>
+                      <Select 
+                        value={formData.pace_tier} 
+                        onValueChange={(v) => setFormData(p => ({ ...p, pace_tier: v }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="slow">Slow</SelectItem>
+                          <SelectItem value="avg">Average</SelectItem>
+                          <SelectItem value="fast">Fast</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Home/Away</Label>
+                      <Select 
+                        value={formData.home_game} 
+                        onValueChange={(v) => setFormData(p => ({ ...p, home_game: v }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true">Home</SelectItem>
+                          <SelectItem value="false">Away</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
               </div>
 
               <Button 
