@@ -429,11 +429,32 @@ serve(async (req) => {
         console.log(`Teams playing today: ${Array.from(teamsPlaying).join(', ')}`);
         
         // Process games - ONLY real games from API
+        // IMPORTANT: Normalize tipoff to a single internal UTC ISO format (ending in "Z")
+        const normalizeGameTimeUtcIso = (g: any): string | null => {
+          const raw = g?.DateTimeUTC ?? g?.GameTimeUTC ?? g?.StartTimeUTC ?? g?.DateTime;
+          if (!raw) return null;
+
+          let s = String(raw).trim();
+          // Normalize common non-ISO forms
+          s = s.replace(' ', 'T');
+          s = s.replace(/([+-]\d{2})$/, '$1:00');
+
+          // If timestamp has no timezone suffix, force UTC interpretation
+          if (!/Z$|[+-]\d{2}:?\d{2}$/.test(s)) {
+            s = `${s}Z`;
+          }
+
+          const d = new Date(s);
+          if (Number.isNaN(d.getTime())) return null;
+          return d.toISOString();
+        };
+
         const gamesData = apiGames.map((g: any) => ({
           game_id: g.GameID?.toString() || `${today}_${g.HomeTeam}_${g.AwayTeam}`,
           home_team: g.HomeTeam,
           away_team: g.AwayTeam,
-          game_time: g.DateTime,
+          // Prefer explicit UTC field when present, otherwise force UTC interpretation
+          game_time: normalizeGameTimeUtcIso(g),
           home_team_back_to_back: false,
           away_team_back_to_back: false,
           game_date: today,

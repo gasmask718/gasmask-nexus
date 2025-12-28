@@ -346,7 +346,12 @@ const NBADailyBoard = () => {
                 <Badge key={game.id} variant="outline" className="py-1 px-3">
                   {game.away_team} @ {game.home_team}
                   <span className="text-xs text-muted-foreground ml-2">
-                    {new Date(game.game_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(game.game_time).toLocaleTimeString('en-US', {
+                      timeZone: 'America/New_York',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                    })} ET
                   </span>
                 </Badge>
               ))}
