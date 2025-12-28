@@ -257,7 +257,11 @@ export default function EntriesList() {
                     <TableCell>
                       <span className="font-medium">{entry.market}</span>
                       {entry.line_value && <span className="text-muted-foreground ml-1">{entry.line_value}</span>}
-                      {entry.side && <span className="text-muted-foreground ml-1 capitalize">({entry.side})</span>}
+                      {entry.side === 'MORE' && <span className="ml-1 text-green-600 font-medium">▲ MORE</span>}
+                      {entry.side === 'LESS' && <span className="ml-1 text-red-600 font-medium">▼ LESS</span>}
+                      {entry.side && !['MORE', 'LESS'].includes(entry.side) && (
+                        <span className="text-muted-foreground ml-1 capitalize">({entry.side})</span>
+                      )}
                     </TableCell>
                     <TableCell>{entry.player || entry.team || '-'}</TableCell>
                     <TableCell className="text-right font-mono">${entry.stake}</TableCell>
@@ -307,7 +311,11 @@ export default function EntriesList() {
             <div className="space-y-2">
               <Label>Result</Label>
               <div className="flex gap-2">
-                {(['W', 'L', 'Push'] as const).map((r) => (
+                {/* Fantasy pick'em: No pushes */}
+                {(settleModal.entry?.format_tag === 'fantasy_pickem' 
+                  ? (['W', 'L'] as const) 
+                  : (['W', 'L', 'Push'] as const)
+                ).map((r) => (
                   <Button
                     key={r}
                     variant={settleModal.result === r ? 'default' : 'outline'}
