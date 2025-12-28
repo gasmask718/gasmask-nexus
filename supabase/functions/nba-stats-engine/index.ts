@@ -642,10 +642,44 @@ serve(async (req) => {
            continue;
          }
 
-         const minutesTrend = getMinutesTrend(
-           player.minutes_last_5_avg,
-           player.season_avg_min
-         );
+          const minutesTrend = getMinutesTrend(
+            player.minutes_last_5_avg,
+            player.season_avg_min
+          );
+
+        for (const stat of statTypes) {
+          // Get stat-specific values
+          let last5 = 0, season = 0, std = 0;
+          switch (stat.key) {
+            case "pts":
+              last5 = player.last_5_avg_pts || 0;
+              season = player.season_avg_pts || 0;
+              std = player.std_pts || season * 0.2;
+              break;
+            case "reb":
+              last5 = player.last_5_avg_reb || 0;
+              season = player.season_avg_reb || 0;
+              std = player.std_reb || season * 0.25;
+              break;
+            case "ast":
+              last5 = player.last_5_avg_ast || 0;
+              season = player.season_avg_ast || 0;
+              std = player.std_ast || season * 0.3;
+              break;
+            case "3pm":
+              last5 = player.last_5_avg_3pm || 0;
+              season = player.season_avg_3pm || 0;
+              std = player.std_3pm || season * 0.4;
+              break;
+            case "pra":
+              last5 = (player.last_5_avg_pts || 0) + (player.last_5_avg_reb || 0) + (player.last_5_avg_ast || 0);
+              season = (player.season_avg_pts || 0) + (player.season_avg_reb || 0) + (player.season_avg_ast || 0);
+              std = (player.std_pts || 0) + (player.std_reb || 0) + (player.std_ast || 0);
+              break;
+          }
+
+          // Skip if insufficient stats
+          if (last5 <= 0 && season <= 0) continue;
 
           // Weighted projection
           const projected = last5 * 0.6 + season * 0.4;
