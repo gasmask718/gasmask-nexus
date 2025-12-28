@@ -1,12 +1,14 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { Trophy, Target, BarChart3, Shield, LayoutDashboard } from 'lucide-react';
+import { Trophy, Target, BarChart3, Shield, LayoutDashboard, Search } from 'lucide-react';
 import BettingDashboard from '@/pages/os/betting/BettingDashboard';
+import StatsInspector from '@/pages/os/betting/StatsInspector';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/sports-betting', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/os/sports-betting/predictions', label: 'Predictions', icon: Target },
   { path: '/os/sports-betting/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/os/sports-betting/hedge', label: 'Hedge Calculator', icon: Shield },
+  { path: '/os/sports-betting/stats-inspector', label: 'Stats Inspector', icon: Search },
 ];
 
 export const BettingModule: DynastyModule = {
@@ -26,6 +28,7 @@ export const BettingModule: DynastyModule = {
     { path: '/predictions', component: BettingDashboard, label: 'Predictions', icon: Target, requiresAuth: true },
     { path: '/analytics', component: BettingDashboard, label: 'Analytics', icon: BarChart3, requiresAuth: true },
     { path: '/hedge', component: BettingDashboard, label: 'Hedge Calculator', icon: Shield, requiresAuth: true },
+    { path: '/stats-inspector', component: StatsInspector, label: 'Stats Inspector', icon: Search, requiresAuth: true },
   ],
   Dashboard: BettingDashboard,
   sidebarItems,
