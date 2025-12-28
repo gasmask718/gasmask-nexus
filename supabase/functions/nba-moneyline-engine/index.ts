@@ -171,8 +171,20 @@ serve(async (req) => {
 
     console.log("=== NBA Moneyline Engine Started ===");
 
-    // Step 1: Fetch today's games
-    const today = new Date().toISOString().split('T')[0];
+    // Step 1: Get today's date in Eastern Time (NBA's reference timezone)
+    const getEasternDate = (): string => {
+      const now = new Date();
+      // Format in Eastern Time
+      const etFormatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      return etFormatter.format(now); // Returns YYYY-MM-DD
+    };
+    
+    const today = getEasternDate();
     console.log(`Processing games for: ${today}`);
 
     const { data: gamesToday, error: gamesError } = await supabase
