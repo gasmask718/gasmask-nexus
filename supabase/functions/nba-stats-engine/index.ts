@@ -605,6 +605,108 @@ serve(async (req) => {
       }
     }
 
+    // NEW: Update game scores and winners for settlement
+    if (action === "update_scores") {
+      console.log("=== NBA STATS ENGINE: UPDATE_SCORES START ===");
+      
+      // Get the date to check (defaults to today, can also check yesterday)
+      const { date: requestDate } = await req.json().catch(() => ({}));
+      const checkDate = requestDate || today;
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split("T")[0];
+      
+      // Fetch games from both today and yesterday
+      const datesToCheck = [checkDate];
+      if (checkDate === today) {
+        datesToCheck.push(yesterdayStr);
+      }
+      
+      let totalUpdated = 0;
+      const updatedGames: any[] = [];
+      
+      for (const dateStr of datesToCheck) {
+        try {
+          // Fetch final box scores from SportsDataIO
+          const boxScores = await fetchSportsDataIO(`/stats/json/BoxScoresFinal/${dateStr}`, sportsDataIOKey);
+          
+          if (!boxScores || !Array.isArray(boxScores)) {
+            console.log(`No final box scores for ${dateStr}`);
+            continue;
+          }
+          
+          console.log(`Found ${boxScores.length} final games for ${dateStr}`);
+          
+          for (const game of boxScores) {
+            if (!game.Game) continue;
+            
+            const gameData = game.Game;
+            const gameId = gameData.GameID?.toString();
+            const homeTeam = gameData.HomeTeam;
+            const awayTeam = gameData.AwayTeam;
+            const homeScore = gameData.HomeTeamScore;
+            const awayScore = gameData.AwayTeamScore;
+            const status = gameData.Status || "Final";
+            
+            if (status !== "Final" || homeScore === null || awayScore === null) {
+              continue;
+            }
+            
+            const winner = homeScore > awayScore ? homeTeam : awayTeam;
+            
+            // Update the game in nba_games_today
+            const { error: updateError } = await supabase
+              .from("nba_games_today")
+              .update({
+                home_score: homeScore,
+                away_score: awayScore,
+                winner: winner,
+                status: "Final"
+              })
+              .eq("game_id", gameId);
+            
+            if (updateError) {
+              console.error(`Error updating game ${gameId}:`, updateError);
+              
+              // Try to match by teams instead
+              const { error: teamUpdateError } = await supabase
+                .from("nba_games_today")
+                .update({
+                  home_score: homeScore,
+                  away_score: awayScore,
+                  winner: winner,
+                  status: "Final"
+                })
+                .eq("home_team", homeTeam)
+                .eq("away_team", awayTeam)
+                .eq("game_date", dateStr);
+              
+              if (teamUpdateError) {
+                console.error(`Also failed team-based update:`, teamUpdateError);
+              } else {
+                totalUpdated++;
+                updatedGames.push({ home_team: homeTeam, away_team: awayTeam, winner, home_score: homeScore, away_score: awayScore });
+              }
+            } else {
+              totalUpdated++;
+              updatedGames.push({ game_id: gameId, home_team: homeTeam, away_team: awayTeam, winner, home_score: homeScore, away_score: awayScore });
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching scores for ${dateStr}:`, error);
+        }
+      }
+      
+      console.log(`=== NBA STATS ENGINE: UPDATE_SCORES COMPLETE - Updated ${totalUpdated} games ===`);
+      
+      return new Response(JSON.stringify({
+        success: true,
+        games_updated: totalUpdated,
+        updated_games: updatedGames,
+        dates_checked: datesToCheck
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (action === "generate_props") {
       console.log("=== NBA STATS ENGINE: GENERATE_PROPS START ===");
       
