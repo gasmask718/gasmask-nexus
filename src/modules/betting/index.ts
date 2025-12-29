@@ -8,11 +8,9 @@ import PlatformsDashboard from '@/pages/os/betting/PlatformsDashboard';
 import LineShopping from '@/pages/os/betting/LineShopping';
 import PickEntryWizard from '@/pages/os/betting/PickEntryWizard';
 import EntriesList from '@/pages/os/betting/EntriesList';
-import BettingAnalytics from '@/pages/os/betting/BettingAnalytics';
 import BettingWorkflow from '@/pages/os/betting/BettingWorkflow';
 
 const sidebarItems: SidebarItem[] = [
-  { path: '/os/sports-betting/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/os/sports-betting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/os/sports-betting/workflow', label: 'Workflow', icon: Activity },
   { path: '/os/sports-betting/entries', label: 'Entries', icon: ClipboardList },
@@ -42,7 +40,6 @@ export const BettingModule: DynastyModule = {
     { path: '/platforms', component: PlatformsDashboard, label: 'Platforms', icon: Building2, requiresAuth: true },
     { path: '/line-intake', component: LineIntake, label: 'Line Intake', icon: FileInput, requiresAuth: true },
     { path: '/line-shopping', component: LineShopping, label: 'Line Shopping', icon: Search, requiresAuth: true },
-    { path: '/analytics', component: BettingAnalytics, label: 'Analytics', icon: BarChart3, requiresAuth: true },
     { path: '/settings', component: BettingSettings, label: 'Settings', icon: Settings, requiresAuth: true },
     { path: '/stats-inspector', component: StatsInspector, label: 'Stats Inspector', icon: Search, requiresAuth: true },
   ],

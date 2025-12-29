@@ -8,6 +8,7 @@ import { useSimulatedBets, useSimulationRuns, useTodaysTopProps, useRunSimulatio
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from '@/integrations/supabase/client';
+import { AnalyticsPanel } from '@/components/betting/analytics/AnalyticsPanel';
 
 export default function BettingDashboard() {
   const [isOwner, setIsOwner] = useState(false);
@@ -77,12 +78,6 @@ export default function BettingDashboard() {
           <p className="text-muted-foreground mt-1">Simulation-First Analytics & Decision Support</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Link to="/os/sports-betting/analytics">
-            <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">
-              <LineChart className="h-4 w-4 mr-2" />
-              Analytics
-            </Button>
-          </Link>
           <Link to="/os/sports-betting/nba">
             <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
               <Trophy className="h-4 w-4 mr-2" />
@@ -161,13 +156,22 @@ export default function BettingDashboard() {
       )}
 
       {/* Main Content */}
-      <Tabs defaultValue="top-props" className="space-y-4">
+      <Tabs defaultValue="analytics" className="space-y-4">
         <TabsList className="bg-muted/50 backdrop-blur-sm">
+          <TabsTrigger value="analytics">
+            <LineChart className="h-4 w-4 mr-1.5" />
+            Analytics
+          </TabsTrigger>
           <TabsTrigger value="top-props">Top Simulated Props</TabsTrigger>
           <TabsTrigger value="all-sims">All Simulations ({totalSimulated})</TabsTrigger>
           <TabsTrigger value="avoid">Props to Avoid</TabsTrigger>
-          <TabsTrigger value="analytics">Quick Analytics</TabsTrigger>
+          <TabsTrigger value="quick-analytics">Quick Analytics</TabsTrigger>
         </TabsList>
+
+        {/* Analytics Panel - Embedded */}
+        <TabsContent value="analytics">
+          <AnalyticsPanel />
+        </TabsContent>
 
         {/* Top Props */}
         <TabsContent value="top-props" className="space-y-4">
@@ -330,7 +334,7 @@ export default function BettingDashboard() {
         </TabsContent>
 
         {/* Quick Analytics */}
-        <TabsContent value="analytics">
+        <TabsContent value="quick-analytics">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card className="border-border/50 backdrop-blur-sm">
               <CardHeader>
