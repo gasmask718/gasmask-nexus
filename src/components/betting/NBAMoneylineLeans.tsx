@@ -508,7 +508,8 @@ const NBAMoneylineLeans = () => {
       }
       
       const userState = userStateProfile?.user_state || 'NY';
-      const platform = userState === 'NY' ? 'DraftKings' : 'N/A';
+      // Use platform_key (slug) that matches the platforms table FK
+      const platformKey = userState === 'NY' ? 'draftkings' : 'fanduel';
       
       const entries = preds
         .filter(p => p.predicted_winner && p.recommendation !== 'avoid' && p.recommendation !== 'no_edge')
@@ -518,7 +519,7 @@ const NBAMoneylineLeans = () => {
             user_id: user.id,
             date: pred.game_date,
             state: userState,
-            platform,
+            platform: platformKey,
             sport: 'NBA',
             format_tag: 'sportsbook_prop',
             market: 'Moneyline',
