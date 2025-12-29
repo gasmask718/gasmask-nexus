@@ -12,6 +12,7 @@ import { EntryLedger } from '@/components/betting/analytics/EntryLedger';
 import { PerformanceInsights } from '@/components/betting/analytics/PerformanceInsights';
 import { ComplianceBanner } from '@/components/betting/analytics/ComplianceBanner';
 import { HistoricalPredictions } from '@/components/betting/analytics/HistoricalPredictions';
+import { ManualBackfill } from '@/components/betting/analytics/ManualBackfill';
 
 export default function BettingAnalytics() {
   const [filters, setFilters] = useState<FilterType>(DEFAULT_FILTERS);
@@ -92,12 +93,13 @@ export default function BettingAnalytics() {
 
           {/* Charts & Breakdowns */}
           <Tabs defaultValue="curve" className="space-y-4">
-            <TabsList>
+            <TabsList className="flex-wrap h-auto">
               <TabsTrigger value="curve">P/L Curve</TabsTrigger>
               <TabsTrigger value="confidence">Confidence Bands</TabsTrigger>
               <TabsTrigger value="breakdowns">Breakdowns</TabsTrigger>
               <TabsTrigger value="ledger">Entry Ledger</TabsTrigger>
               <TabsTrigger value="historical">Historical Predictions</TabsTrigger>
+              <TabsTrigger value="backfill">Manual Backfill</TabsTrigger>
             </TabsList>
 
             <TabsContent value="curve">
@@ -132,6 +134,10 @@ export default function BettingAnalytics() {
 
             <TabsContent value="historical">
               <HistoricalPredictions />
+            </TabsContent>
+
+            <TabsContent value="backfill">
+              <ManualBackfill />
             </TabsContent>
           </Tabs>
         </>

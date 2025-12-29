@@ -14566,6 +14566,87 @@ export type Database = {
           },
         ]
       }
+      manual_backfill_entries: {
+        Row: {
+          actual_stat_value: number | null
+          actual_winner: string | null
+          away_score: number | null
+          away_team: string | null
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          date: string
+          home_score: number | null
+          home_team: string | null
+          id: string
+          locked: boolean
+          market: string
+          notes: string | null
+          player_name: string | null
+          predicted_direction: string | null
+          predicted_side: string | null
+          prop_line: number | null
+          result: string
+          source: string
+          sport: string
+          stat_type: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_stat_value?: number | null
+          actual_winner?: string | null
+          away_score?: number | null
+          away_team?: string | null
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          date: string
+          home_score?: number | null
+          home_team?: string | null
+          id?: string
+          locked?: boolean
+          market: string
+          notes?: string | null
+          player_name?: string | null
+          predicted_direction?: string | null
+          predicted_side?: string | null
+          prop_line?: number | null
+          result: string
+          source?: string
+          sport?: string
+          stat_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_stat_value?: number | null
+          actual_winner?: string | null
+          away_score?: number | null
+          away_team?: string | null
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          home_score?: number | null
+          home_team?: string | null
+          id?: string
+          locked?: boolean
+          market?: string
+          notes?: string | null
+          player_name?: string | null
+          predicted_direction?: string | null
+          predicted_side?: string | null
+          prop_line?: number | null
+          result?: string
+          source?: string
+          sport?: string
+          stat_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       manual_call_logs: {
         Row: {
           business_id: string | null
