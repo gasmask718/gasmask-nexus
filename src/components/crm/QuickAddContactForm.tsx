@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useBusinessStore } from '@/stores/businessStore';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ interface QuickAddContactFormProps {
 }
 
 export const QuickAddContactForm = ({ onSuccess }: QuickAddContactFormProps) => {
-  const { selectedBusiness } = useBusinessStore();
+  const { selectedBusiness, fetchBusinesses, loading: businessLoading } = useBusinessStore();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -26,9 +26,22 @@ export const QuickAddContactForm = ({ onSuccess }: QuickAddContactFormProps) => 
     borough_id: '' as string,
   });
 
+  // Ensure businesses are fetched and one is selected
+  useEffect(() => {
+    fetchBusinesses();
+  }, [fetchBusinesses]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedBusiness?.id) return;
+    
+    if (!selectedBusiness?.id) {
+      toast({
+        title: 'No Business Selected',
+        description: 'Please select a business from the dropdown before adding a contact.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setLoading(true);
     try {
