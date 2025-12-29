@@ -1667,6 +1667,51 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_game_predictions: {
+        Row: {
+          ai_confidence_score: number | null
+          ai_predicted_probability: number | null
+          ai_predicted_winner: string
+          away_team: string
+          created_at: string
+          game_date: string
+          game_id: string
+          home_team: string
+          id: string
+          model_version: string | null
+          prediction_source: string | null
+          sport: string
+        }
+        Insert: {
+          ai_confidence_score?: number | null
+          ai_predicted_probability?: number | null
+          ai_predicted_winner: string
+          away_team: string
+          created_at?: string
+          game_date: string
+          game_id: string
+          home_team: string
+          id?: string
+          model_version?: string | null
+          prediction_source?: string | null
+          sport?: string
+        }
+        Update: {
+          ai_confidence_score?: number | null
+          ai_predicted_probability?: number | null
+          ai_predicted_winner?: string
+          away_team?: string
+          created_at?: string
+          game_date?: string
+          game_id?: string
+          home_team?: string
+          id?: string
+          model_version?: string | null
+          prediction_source?: string | null
+          sport?: string
+        }
+        Relationships: []
+      }
       ai_kpi_snapshots: {
         Row: {
           active_stores: number | null
@@ -17738,6 +17783,66 @@ export type Database = {
             columns: ["design_id"]
             isOneToOne: false
             referencedRelation: "pod_designs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prediction_evaluations: {
+        Row: {
+          ai_predicted_winner: string
+          ai_result: string
+          confirmation_id: string | null
+          confirmed_winner: string
+          evaluated_at: string
+          evaluated_by: string | null
+          game_date: string
+          game_id: string
+          id: string
+          notes: string | null
+          prediction_id: string | null
+          sport: string
+        }
+        Insert: {
+          ai_predicted_winner: string
+          ai_result: string
+          confirmation_id?: string | null
+          confirmed_winner: string
+          evaluated_at?: string
+          evaluated_by?: string | null
+          game_date: string
+          game_id: string
+          id?: string
+          notes?: string | null
+          prediction_id?: string | null
+          sport?: string
+        }
+        Update: {
+          ai_predicted_winner?: string
+          ai_result?: string
+          confirmation_id?: string | null
+          confirmed_winner?: string
+          evaluated_at?: string
+          evaluated_by?: string | null
+          game_date?: string
+          game_id?: string
+          id?: string
+          notes?: string | null
+          prediction_id?: string | null
+          sport?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_evaluations_confirmation_id_fkey"
+            columns: ["confirmation_id"]
+            isOneToOne: false
+            referencedRelation: "confirmed_game_winners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_evaluations_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "ai_game_predictions"
             referencedColumns: ["id"]
           },
         ]
