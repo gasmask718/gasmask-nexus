@@ -388,7 +388,7 @@ const SettledEntryCard = ({ entry }: { entry: MoneylineEntry }) => {
 const NBAMoneylineLeans = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState<'open' | 'settled'>('open');
+  const [activeTab, setActiveTab] = useState<'open' | 'settlement' | 'settled'>('open');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [settleDialogOpen, setSettleDialogOpen] = useState(false);
   const [settlingEntry, setSettlingEntry] = useState<{ entryId: string; prediction: MoneylinePrediction } | null>(null);
@@ -410,7 +410,9 @@ const NBAMoneylineLeans = () => {
     isSettling, 
     lastSettlementRun, 
     finalGamesCount, 
-    openEntriesCount 
+    openEntriesCount,
+    openEntries: allOpenEntries,
+    finalGames,
   } = useMoneylineSettlement();
   
   const today = useMemo(() => getEasternDate(), []);
@@ -826,11 +828,15 @@ const NBAMoneylineLeans = () => {
       
       <CardContent>
         {/* Tabs for Open/Settled */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'open' | 'settled')} className="mb-4">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'open' | 'settlement' | 'settled')} className="mb-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="open" className="gap-2">
               <Clock className="w-4 h-4" />
-              Open ({openEntries.length})
+              Today ({openEntries.length})
+            </TabsTrigger>
+            <TabsTrigger value="settlement" className="gap-2">
+              <Zap className="w-4 h-4" />
+              Settlement ({allOpenEntries.length})
             </TabsTrigger>
             <TabsTrigger value="settled" className="gap-2">
               <Trophy className="w-4 h-4" />
@@ -868,6 +874,97 @@ const NBAMoneylineLeans = () => {
                     onSettle={handleOpenSettle}
                   />
                 ))}
+              </div>
+            </ScrollArea>
+          )
+        ) : activeTab === 'settlement' ? (
+          // Settlement Tab - Show ALL open entries (date-agnostic) for settlement
+          allOpenEntries.length === 0 ? (
+            <div className="text-center py-8">
+              <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
+              <p className="text-muted-foreground font-medium">No unsettled games available for settlement.</p>
+              <p className="text-sm text-muted-foreground mt-1">All entries have been settled or no open entries exist.</p>
+            </div>
+          ) : (
+            <ScrollArea className="h-[500px]">
+              <div className="space-y-3">
+                {/* Group entries by date */}
+                {Object.entries(
+                  allOpenEntries.reduce((acc, entry) => {
+                    const date = entry.date;
+                    if (!acc[date]) acc[date] = [];
+                    acc[date].push(entry);
+                    return acc;
+                  }, {} as Record<string, typeof allOpenEntries>)
+                ).sort(([a], [b]) => b.localeCompare(a)).map(([date, entries]) => {
+                  // Find matching final games for this date
+                  const gamesForDate = finalGames.filter(g => g.game_date === date);
+                  
+                  return (
+                    <div key={date} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-muted-foreground">{format(new Date(date + 'T12:00:00'), 'EEEE, MMM d, yyyy')}</h4>
+                        <Badge variant="outline" className="text-xs">
+                          {entries.length} open • {gamesForDate.length} final
+                        </Badge>
+                      </div>
+                      {entries.map((entry) => {
+                        // Find matching final game
+                        const matchedGame = gamesForDate.find(game => {
+                          const entryTeam = entry.team?.toUpperCase();
+                          const entryOpponent = entry.opponent?.toUpperCase();
+                          const gameHome = game.home_team?.toUpperCase();
+                          const gameAway = game.away_team?.toUpperCase();
+                          return (entryTeam === gameHome && entryOpponent === gameAway) ||
+                                 (entryTeam === gameAway && entryOpponent === gameHome);
+                        });
+                        const isFinal = matchedGame && matchedGame.winner;
+                        
+                        return (
+                          <Card key={entry.id} className={`border-l-4 ${isFinal ? 'border-l-green-500' : 'border-l-yellow-500'}`}>
+                            <CardContent className="pt-4 pb-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <span className="font-medium text-primary">{entry.team}</span>
+                                    <span className="text-muted-foreground">vs</span>
+                                    <span className="font-medium">{entry.opponent}</span>
+                                    <Badge variant="outline" className="text-xs">
+                                      {entry.side}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <Badge className={isFinal ? 'bg-green-500/20 text-green-400 border-green-500/50' : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'}>
+                                      {isFinal ? 'Final' : 'In Progress / Pending'}
+                                    </Badge>
+                                    {matchedGame && matchedGame.home_score !== null && (
+                                      <span className="text-sm text-muted-foreground">
+                                        {matchedGame.away_team} {matchedGame.away_score} - {matchedGame.home_score} {matchedGame.home_team}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                {isFinal && matchedGame?.winner && (
+                                  <div className="flex flex-col items-end gap-1">
+                                    <Badge className={entry.team?.toUpperCase() === matchedGame.winner?.toUpperCase() 
+                                      ? 'bg-green-500/20 text-green-400 border-green-500/50' 
+                                      : 'bg-red-500/20 text-red-400 border-red-500/50'
+                                    }>
+                                      {entry.team?.toUpperCase() === matchedGame.winner?.toUpperCase() ? 'WIN' : 'LOSS'}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      Winner: {matchedGame.winner}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
             </ScrollArea>
           )
