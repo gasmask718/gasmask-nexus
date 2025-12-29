@@ -15641,6 +15641,72 @@ export type Database = {
         }
         Relationships: []
       }
+      nba_player_box_scores: {
+        Row: {
+          assists: number
+          blocks: number
+          created_at: string
+          dnp: boolean
+          game_date: string
+          game_id: string
+          id: string
+          minutes: number
+          opponent: string
+          player_id: string
+          player_name: string
+          points: number
+          pra: number | null
+          rebounds: number
+          steals: number
+          team: string
+          three_pointers_made: number
+          turnovers: number
+          updated_at: string
+        }
+        Insert: {
+          assists?: number
+          blocks?: number
+          created_at?: string
+          dnp?: boolean
+          game_date: string
+          game_id: string
+          id?: string
+          minutes?: number
+          opponent: string
+          player_id: string
+          player_name: string
+          points?: number
+          pra?: number | null
+          rebounds?: number
+          steals?: number
+          team: string
+          three_pointers_made?: number
+          turnovers?: number
+          updated_at?: string
+        }
+        Update: {
+          assists?: number
+          blocks?: number
+          created_at?: string
+          dnp?: boolean
+          game_date?: string
+          game_id?: string
+          id?: string
+          minutes?: number
+          opponent?: string
+          player_id?: string
+          player_name?: string
+          points?: number
+          pra?: number | null
+          rebounds?: number
+          steals?: number
+          team?: string
+          three_pointers_made?: number
+          turnovers?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       nba_player_stats: {
         Row: {
           created_at: string
@@ -18776,6 +18842,86 @@ export type Database = {
             columns: ["captured_by_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prop_settlement_audit_log: {
+        Row: {
+          box_score_id: string | null
+          comparison_result: string
+          created_at: string
+          dnp: boolean
+          entry_id: string
+          final_stat_value: number
+          game_date: string | null
+          game_id: string | null
+          id: string
+          line_value: number
+          minutes_played: number | null
+          notes: string | null
+          player_name: string
+          raw_box_score_data: Json | null
+          result: string
+          settled_at: string
+          settled_by: string | null
+          settlement_source: string | null
+          side: string
+          stat_type: string
+          user_id: string | null
+        }
+        Insert: {
+          box_score_id?: string | null
+          comparison_result: string
+          created_at?: string
+          dnp?: boolean
+          entry_id: string
+          final_stat_value: number
+          game_date?: string | null
+          game_id?: string | null
+          id?: string
+          line_value: number
+          minutes_played?: number | null
+          notes?: string | null
+          player_name: string
+          raw_box_score_data?: Json | null
+          result: string
+          settled_at?: string
+          settled_by?: string | null
+          settlement_source?: string | null
+          side: string
+          stat_type: string
+          user_id?: string | null
+        }
+        Update: {
+          box_score_id?: string | null
+          comparison_result?: string
+          created_at?: string
+          dnp?: boolean
+          entry_id?: string
+          final_stat_value?: number
+          game_date?: string | null
+          game_id?: string | null
+          id?: string
+          line_value?: number
+          minutes_played?: number | null
+          notes?: string | null
+          player_name?: string
+          raw_box_score_data?: Json | null
+          result?: string
+          settled_at?: string
+          settled_by?: string | null
+          settlement_source?: string | null
+          side?: string
+          stat_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prop_settlement_audit_log_box_score_id_fkey"
+            columns: ["box_score_id"]
+            isOneToOne: false
+            referencedRelation: "nba_player_box_scores"
             referencedColumns: ["id"]
           },
         ]
