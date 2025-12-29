@@ -44,23 +44,20 @@ export const useMoneylineSettlement = () => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const [lastSettlementRun, setLastSettlementRun] = useState<Date | null>(null);
 
-  // Fetch final games from today and yesterday
+  // Fetch ALL final games (date-agnostic - settlement looks at any completed game)
   const { data: finalGames, refetch: refetchFinalGames } = useQuery({
-    queryKey: ['nba-final-games'],
+    queryKey: ['nba-final-games-all'],
     queryFn: async (): Promise<GameWithScore[]> => {
-      const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      
-      const todayStr = today.toISOString().split('T')[0];
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      // Fetch all final games from the last 7 days to cover any unsettled entries
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
 
       const { data, error } = await supabase
         .from('nba_games_today')
         .select('id, game_id, home_team, away_team, game_date, status, home_score, away_score, winner')
         .eq('status', 'Final')
-        .gte('game_date', yesterdayStr)
-        .lte('game_date', todayStr);
+        .gte('game_date', sevenDaysAgoStr);
 
       if (error) {
         console.error('Error fetching final games:', error);
@@ -72,18 +69,14 @@ export const useMoneylineSettlement = () => {
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
-  // Fetch open moneyline entries
+  // Fetch ALL open moneyline entries (date-agnostic - status-based filtering only)
   const { data: openEntries, refetch: refetchOpenEntries } = useQuery({
-    queryKey: ['open-moneyline-entries'],
+    queryKey: ['open-moneyline-entries-all'],
     queryFn: async (): Promise<OpenMoneylineEntry[]> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
-      const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-
+      // Fetch ALL open entries regardless of date
       const { data, error } = await supabase
         .from('pick_entries')
         .select('id, user_id, date, team, opponent, side, status')
@@ -91,7 +84,7 @@ export const useMoneylineSettlement = () => {
         .eq('market', 'Moneyline')
         .eq('sport', 'NBA')
         .eq('status', 'open')
-        .gte('date', yesterdayStr);
+        .order('date', { ascending: false });
 
       if (error) {
         console.error('Error fetching open entries:', error);
@@ -132,8 +125,8 @@ export const useMoneylineSettlement = () => {
       await refetchOpenEntries();
 
       // Get fresh data
-      const freshFinalGames = queryClient.getQueryData<GameWithScore[]>(['nba-final-games']) || [];
-      const freshOpenEntries = queryClient.getQueryData<OpenMoneylineEntry[]>(['open-moneyline-entries']) || [];
+      const freshFinalGames = queryClient.getQueryData<GameWithScore[]>(['nba-final-games-all']) || [];
+      const freshOpenEntries = queryClient.getQueryData<OpenMoneylineEntry[]>(['open-moneyline-entries-all']) || [];
 
       console.log(`[Settlement] Final games available: ${freshFinalGames.length}, Open entries: ${freshOpenEntries.length}`);
 
@@ -220,9 +213,9 @@ export const useMoneylineSettlement = () => {
       }
       
       // Invalidate queries to refresh UI
-      queryClient.invalidateQueries({ queryKey: ['open-moneyline-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['open-moneyline-entries-all'] });
       queryClient.invalidateQueries({ queryKey: ['moneyline-entries'] });
-      queryClient.invalidateQueries({ queryKey: ['nba-final-games'] });
+      queryClient.invalidateQueries({ queryKey: ['nba-final-games-all'] });
       queryClient.invalidateQueries({ queryKey: ['betting-analytics'] });
       
       if (result.errors.length > 0) {
@@ -270,5 +263,7 @@ export const useMoneylineSettlement = () => {
     lastSettlementRun,
     finalGamesCount: finalGames?.length || 0,
     openEntriesCount: openEntries?.length || 0,
+    openEntries: openEntries || [],
+    finalGames: finalGames || [],
   };
 };
