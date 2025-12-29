@@ -1,15 +1,27 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Phone, MessageSquare, Mail, Users, ArrowUpRight, ArrowDownLeft, Plus, Clock, AlertCircle, Link2, Eye } from 'lucide-react';
-import { format } from 'date-fns';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
-import { toast } from 'sonner';
-import { InteractionDetailModal } from '@/components/store/InteractionDetailModal';
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Phone,
+  MessageSquare,
+  Mail,
+  Users,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Plus,
+  Clock,
+  AlertCircle,
+  Link2,
+  Eye,
+} from "lucide-react";
+import { format } from "date-fns";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useStoreMasterResolver } from "@/hooks/useStoreMasterResolver";
+import { toast } from "sonner";
+import { InteractionDetailModal } from "@/components/store/InteractionDetailModal";
 
 const CHANNEL_ICONS: Record<string, typeof Phone> = {
   CALL: Phone,
@@ -47,22 +59,23 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
   const [selectedInteraction, setSelectedInteraction] = useState<Interaction | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  const { 
-    storeMasterId, 
-    isLoading: resolving, 
-    needsCreation, 
+  const {
+    storeMasterId,
+    isLoading: resolving,
+    needsCreation,
     legacyStore,
     createStoreMaster,
-    isCreating 
+    isCreating,
   } = useStoreMasterResolver(storeId);
 
   const { data: interactions, isLoading } = useQuery({
-    queryKey: ['store-interactions', storeMasterId],
+    queryKey: ["store-interactions", storeMasterId],
     queryFn: async () => {
       if (!storeMasterId) return [];
       const { data, error } = await supabase
-        .from('contact_interactions')
-        .select(`
+        .from("contact_interactions")
+        .select(
+          `
           id,
           channel,
           direction,
@@ -74,9 +87,10 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
           follow_up_at,
           created_at,
           contact:store_contacts(id, name)
-        `)
-        .eq('store_id', storeMasterId)
-        .order('created_at', { ascending: false })
+        `,
+        )
+        .eq("store_id", storeMasterId)
+        .order("created_at", { ascending: false })
         .limit(5);
 
       if (error) throw error;
@@ -88,10 +102,10 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
   const handleCreateStoreMaster = async () => {
     try {
       const created = await createStoreMaster();
-      toast.success('Store Master record created');
+      toast.success("Store Master record created");
       onLogInteraction(created.id);
     } catch (error: any) {
-      toast.error('Failed to create store master: ' + error.message);
+      toast.error("Failed to create store master: " + error.message);
     }
   };
 
@@ -112,17 +126,13 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-muted-foreground" />
-            Recent Interactions
+            Recent Interactions1
           </CardTitle>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
-                  <Button 
-                    size="sm" 
-                    onClick={handleLogInteraction}
-                    disabled={!storeMasterId || resolving}
-                  >
+                  <Button size="sm" onClick={handleLogInteraction} disabled={!storeMasterId || resolving}>
                     <Plus className="h-4 w-4 mr-1" /> Log Interaction
                   </Button>
                 </span>
@@ -145,17 +155,11 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
               <AlertCircle className="h-10 w-10 mx-auto text-yellow-500" />
               <div>
                 <p className="text-sm font-medium">Link to Store Master</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Create a Store Master record to log interactions
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Create a Store Master record to log interactions</p>
               </div>
-              <Button 
-                size="sm" 
-                onClick={handleCreateStoreMaster}
-                disabled={isCreating}
-              >
+              <Button size="sm" onClick={handleCreateStoreMaster} disabled={isCreating}>
                 <Link2 className="h-4 w-4 mr-2" />
-                {isCreating ? 'Creating...' : `Create Store Master for "${legacyStore?.name}"`}
+                {isCreating ? "Creating..." : `Create Store Master for "${legacyStore?.name}"`}
               </Button>
             </div>
           ) : !storeMasterId ? (
@@ -182,7 +186,7 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-sm">{interaction.subject}</span>
                           <Badge variant="outline" className="text-xs">
-                            {interaction.direction === 'OUTBOUND' ? (
+                            {interaction.direction === "OUTBOUND" ? (
                               <ArrowUpRight className="h-3 w-3" />
                             ) : (
                               <ArrowDownLeft className="h-3 w-3" />
@@ -190,14 +194,15 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
                           </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {(interaction.contact as any)?.name} • {format(new Date(interaction.created_at), 'MMM d, h:mm a')}
+                          {(interaction.contact as any)?.name} •{" "}
+                          {format(new Date(interaction.created_at), "MMM d, h:mm a")}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {interaction.outcome && (
                         <Badge variant="secondary" className="text-xs">
-                          {interaction.outcome.replace(/_/g, ' ')}
+                          {interaction.outcome.replace(/_/g, " ")}
                         </Badge>
                       )}
                       <Eye className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -221,11 +226,7 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
         </CardContent>
       </Card>
 
-      <InteractionDetailModal
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-        interaction={selectedInteraction}
-      />
+      <InteractionDetailModal open={detailOpen} onOpenChange={setDetailOpen} interaction={selectedInteraction} />
     </>
   );
 }
