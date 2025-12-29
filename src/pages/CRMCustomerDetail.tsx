@@ -36,6 +36,18 @@ const CRMCustomerDetail = () => {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadType, setUploadType] = useState<'invoice' | 'receipt' | 'file'>('file');
   const [uploading, setUploading] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    city: '',
+    state: '',
+    zip: '',
+    business_type: '',
+    relationship_status: '',
+  });
 
   // Fetch customer data
   const { data: customer, isLoading: loadingCustomer } = useQuery({
@@ -250,6 +262,36 @@ const CRMCustomerDetail = () => {
     },
   });
 
+  // Update customer mutation
+  const updateCustomer = useMutation({
+    mutationFn: async (data: typeof editFormData) => {
+      const { error } = await supabase
+        .from('crm_customers')
+        .update({
+          name: data.name,
+          phone: data.phone,
+          email: data.email,
+          address: data.address,
+          city: data.city,
+          state: data.state,
+          zip: data.zip,
+          business_type: data.business_type,
+          relationship_status: data.relationship_status,
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Customer Updated", description: "Customer information has been updated successfully." });
+      queryClient.invalidateQueries({ queryKey: ['crm-customer', id] });
+      setEditModalOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   if (loadingCustomer) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -320,7 +362,23 @@ const CRMCustomerDetail = () => {
                 {getRelationshipBadge(customer.relationship_status)}
               </div>
             </div>
-            <Button variant="outline">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setEditFormData({
+                  name: customer.name || '',
+                  phone: customer.phone || '',
+                  email: customer.email || '',
+                  address: customer.address || '',
+                  city: customer.city || '',
+                  state: customer.state || '',
+                  zip: customer.zip || '',
+                  business_type: customer.business_type || '',
+                  relationship_status: customer.relationship_status || '',
+                });
+                setEditModalOpen(true);
+              }}
+            >
               <Edit className="mr-2 h-4 w-4" />
               Edit
             </Button>
@@ -778,6 +836,128 @@ const CRMCustomerDetail = () => {
               </Button>
               <Button type="submit" disabled={uploading}>
                 {uploading ? 'Uploading...' : 'Upload'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Customer Modal */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Customer</DialogTitle>
+          </DialogHeader>
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              updateCustomer.mutate(editFormData);
+            }} 
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Name</Label>
+              <Input 
+                id="edit-name" 
+                value={editFormData.name}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                required 
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">Phone</Label>
+                <Input 
+                  id="edit-phone" 
+                  value={editFormData.phone}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, phone: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input 
+                  id="edit-email" 
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-address">Address</Label>
+              <Input 
+                id="edit-address" 
+                value={editFormData.address}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, address: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-city">City</Label>
+                <Input 
+                  id="edit-city" 
+                  value={editFormData.city}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, city: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-state">State</Label>
+                <Input 
+                  id="edit-state" 
+                  value={editFormData.state}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, state: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-zip">ZIP</Label>
+                <Input 
+                  id="edit-zip" 
+                  value={editFormData.zip}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, zip: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-business-type">Business Type</Label>
+                <select
+                  id="edit-business-type"
+                  className="w-full p-2 border rounded-md bg-background"
+                  value={editFormData.business_type}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, business_type: e.target.value }))}
+                >
+                  <option value="">Select type</option>
+                  <option value="store">Store</option>
+                  <option value="wholesaler">Wholesaler</option>
+                  <option value="direct_buyer">Direct Buyer</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-relationship-status">Relationship Status</Label>
+                <select
+                  id="edit-relationship-status"
+                  className="w-full p-2 border rounded-md bg-background"
+                  value={editFormData.relationship_status}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, relationship_status: e.target.value }))}
+                >
+                  <option value="">Select status</option>
+                  <option value="active">Active</option>
+                  <option value="warm">Warm</option>
+                  <option value="cold">Cold</option>
+                  <option value="lost">Lost</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setEditModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateCustomer.isPending}>
+                {updateCustomer.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </form>
