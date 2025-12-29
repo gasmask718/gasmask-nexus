@@ -503,7 +503,9 @@ const NBAMoneylineLeans = () => {
   // Persist predictions mutation
   const persistPredictions = useMutation({
     mutationFn: async (preds: MoneylinePrediction[]) => {
-      if (!user?.id) throw new Error('User not authenticated');
+      if (!user?.id) {
+        throw new Error('User not authenticated. Please log in to save entries.');
+      }
       
       const userState = userStateProfile?.user_state || 'NY';
       const platform = userState === 'NY' ? 'DraftKings' : 'N/A';
@@ -523,7 +525,7 @@ const NBAMoneylineLeans = () => {
             team: pred.predicted_winner,
             opponent: isHomePick ? pred.away_team : pred.home_team,
             side: isHomePick ? 'HOME' : 'AWAY',
-            stake: 0, // No stake for AI leans
+            stake: 0,
             odds: null,
             multiplier: null,
             status: 'open',
@@ -535,16 +537,21 @@ const NBAMoneylineLeans = () => {
         });
       
       if (entries.length === 0) {
-        return { count: 0 };
+        return { count: 0, message: 'No valid predictions to save (all marked as avoid/no_edge)' };
       }
       
       // Check for existing entries to avoid duplicates
-      const { data: existing } = await supabase
+      const { data: existing, error: fetchError } = await supabase
         .from('pick_entries')
         .select('team, opponent, date')
         .eq('user_id', user.id)
         .eq('market', 'Moneyline')
         .eq('date', preds[0]?.game_date);
+      
+      if (fetchError) {
+        console.error('Error checking existing entries:', fetchError);
+        throw new Error(`Failed to check existing entries: ${fetchError.message}`);
+      }
       
       const existingSet = new Set(
         existing?.map(e => `${e.team}-${e.opponent}-${e.date}`) || []
@@ -558,24 +565,41 @@ const NBAMoneylineLeans = () => {
         return { count: 0, alreadySaved: true };
       }
       
-      const { error } = await supabase
-        .from('pick_entries')
-        .insert(newEntries);
+      // Log payload for debugging
+      console.log('Inserting moneyline entries:', JSON.stringify(newEntries, null, 2));
       
-      if (error) throw error;
+      const { data: insertedData, error } = await supabase
+        .from('pick_entries')
+        .insert(newEntries)
+        .select();
+      
+      if (error) {
+        console.error('Supabase insert error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          payload: newEntries
+        });
+        throw new Error(`Database error: ${error.message}${error.hint ? ` (Hint: ${error.hint})` : ''}`);
+      }
+      
+      console.log('Successfully inserted:', insertedData);
       return { count: newEntries.length };
     },
     onSuccess: (data) => {
       if (data.alreadySaved) {
         toast.info('Moneyline leans already saved for this date');
+      } else if (data.message) {
+        toast.info(data.message);
       } else if (data.count > 0) {
         toast.success(`Saved ${data.count} moneyline lean${data.count !== 1 ? 's' : ''} to entries`);
       }
       queryClient.invalidateQueries({ queryKey: ['moneyline-entries'] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Error persisting predictions:', error);
-      toast.error('Failed to save moneyline leans');
+      toast.error(error.message || 'Failed to save moneyline leans');
     }
   });
 
