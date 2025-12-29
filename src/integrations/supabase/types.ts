@@ -15283,40 +15283,49 @@ export type Database = {
       }
       nba_games_today: {
         Row: {
+          away_score: number | null
           away_team: string
           away_team_back_to_back: boolean | null
           created_at: string
           game_date: string
           game_id: string
           game_time: string | null
+          home_score: number | null
           home_team: string
           home_team_back_to_back: boolean | null
           id: string
           status: string | null
+          winner: string | null
         }
         Insert: {
+          away_score?: number | null
           away_team: string
           away_team_back_to_back?: boolean | null
           created_at?: string
           game_date?: string
           game_id: string
           game_time?: string | null
+          home_score?: number | null
           home_team: string
           home_team_back_to_back?: boolean | null
           id?: string
           status?: string | null
+          winner?: string | null
         }
         Update: {
+          away_score?: number | null
           away_team?: string
           away_team_back_to_back?: boolean | null
           created_at?: string
           game_date?: string
           game_id?: string
           game_time?: string | null
+          home_score?: number | null
           home_team?: string
           home_team_back_to_back?: boolean | null
           id?: string
           status?: string | null
+          winner?: string | null
         }
         Relationships: []
       }
@@ -17176,6 +17185,7 @@ export type Database = {
           player: string | null
           profit_loss: number
           result: string | null
+          settled_at: string | null
           side: string | null
           sport: string
           stake: number
@@ -17203,6 +17213,7 @@ export type Database = {
           player?: string | null
           profit_loss?: number
           result?: string | null
+          settled_at?: string | null
           side?: string | null
           sport: string
           stake: number
@@ -17230,6 +17241,7 @@ export type Database = {
           player?: string | null
           profit_loss?: number
           result?: string | null
+          settled_at?: string | null
           side?: string | null
           sport?: string
           stake?: number

@@ -12,14 +12,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useStateCompliance } from '@/hooks/useStateCompliance';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMoneylineSettlement } from '@/hooks/useMoneylineSettlement';
 import { format, subDays } from 'date-fns';
 import {
   RefreshCw, TrendingUp, TrendingDown, Minus, ChevronDown,
   Home, Plane, AlertTriangle, CheckCircle, XCircle, Info,
-  CalendarIcon, Trophy, Save, Clock
+  CalendarIcon, Trophy, Save, Clock, Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -402,6 +404,15 @@ const NBAMoneylineLeans = () => {
   const queryClient = useQueryClient();
   const showTimeDebug = isAdmin();
   
+  // Auto-settlement hook - runs on load and every 15 minutes
+  const { 
+    runSettlement, 
+    isSettling, 
+    lastSettlementRun, 
+    finalGamesCount, 
+    openEntriesCount 
+  } = useMoneylineSettlement();
+  
   const today = useMemo(() => getEasternDate(), []);
   const selectedDateStr = useMemo(() => format(selectedDate, 'yyyy-MM-dd'), [selectedDate]);
   const isToday = selectedDateStr === today;
@@ -767,9 +778,49 @@ const NBAMoneylineLeans = () => {
           </div>
         )}
         
-        {/* Date indicator */}
-        <div className="mt-2 text-xs text-muted-foreground">
-          Showing games for: {selectedDateStr} (Eastern Time)
+        {/* Date indicator and Settlement status */}
+        <div className="mt-2 flex items-center justify-between flex-wrap gap-2">
+          <span className="text-xs text-muted-foreground">
+            Showing games for: {selectedDateStr} (Eastern Time)
+          </span>
+          
+          {/* Auto-Settlement Indicator */}
+          <TooltipProvider>
+            <div className="flex items-center gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Zap className={`w-3 h-3 ${isSettling ? 'text-yellow-400 animate-pulse' : 'text-green-400'}`} />
+                    <span>Auto-settle</span>
+                    {lastSettlementRun && (
+                      <span className="text-muted-foreground/70">
+                        ({format(lastSettlementRun, 'h:mm a')})
+                      </span>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Auto-settlement runs every 15 minutes</p>
+                  <p className="text-xs text-muted-foreground">
+                    {finalGamesCount} final games | {openEntriesCount} open entries
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+              
+              {isAdmin() && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={runSettlement}
+                  disabled={isSettling}
+                  className="h-6 px-2 text-xs"
+                >
+                  <RefreshCw className={`w-3 h-3 mr-1 ${isSettling ? 'animate-spin' : ''}`} />
+                  {isSettling ? 'Settling...' : 'Run Now'}
+                </Button>
+              )}
+            </div>
+          </TooltipProvider>
         </div>
       </CardHeader>
       
