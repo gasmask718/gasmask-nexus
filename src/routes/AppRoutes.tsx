@@ -349,7 +349,6 @@ import HedgeCenter from '@/pages/os/betting/HedgeCenter';
 import OwnerInternal from '@/pages/os/betting/OwnerInternal';
 import NBADailyBoard from '@/pages/os/betting/NBADailyBoard';
 import StatsInspector from '@/pages/os/betting/StatsInspector';
-import BettingAnalytics from '@/pages/os/betting/BettingAnalytics';
 import BettingSettings from '@/pages/os/betting/BettingSettings';
 import BettingWorkflow from '@/pages/os/betting/BettingWorkflow';
 import PlatformsDashboard from '@/pages/os/betting/PlatformsDashboard';
@@ -912,7 +911,8 @@ export default function AppRoutes() {
         <Route path="/os/funding" element={<FundingDashboard />} />
         <Route path="/os/grants" element={<GrantsDashboard />} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
-        <Route path="/os/sports-betting" element={<Navigate to="/os/sports-betting/analytics" replace />} />
+        <Route path="/os/sports-betting" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
+        <Route path="/os/sports-betting/analytics" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/dashboard" element={<BettingDashboard />} />
         <Route path="/os/sports-betting/nba" element={<NBADailyBoard />} />
         <Route path="/os/sports-betting/line-intake" element={<LineIntake />} />
@@ -921,7 +921,6 @@ export default function AppRoutes() {
         <Route path="/os/sports-betting/hedge-center" element={<HedgeCenter />} />
         <Route path="/os/sports-betting/internal" element={<OwnerInternal />} />
         <Route path="/os/sports-betting/stats-inspector" element={<StatsInspector />} />
-        <Route path="/os/sports-betting/analytics" element={<BettingAnalytics />} />
         <Route path="/os/sports-betting/settings" element={<BettingSettings />} />
         <Route path="/os/sports-betting/workflow" element={<BettingWorkflow />} />
         <Route path="/os/sports-betting/platforms" element={<PlatformsDashboard />} />
