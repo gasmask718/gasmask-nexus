@@ -134,14 +134,9 @@ const SMART_NOTE_PROMPTS = [
 ];
 
 export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(var(--primary))' }: FullContactFormProps) => {
-  const { selectedBusiness, fetchBusinesses } = useBusinessStore();
+  const { selectedBusiness } = useBusinessStore();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
-
-  // Ensure businesses are fetched and one is selected on mount
-  useEffect(() => {
-    fetchBusinesses();
-  }, [fetchBusinesses]);
   const [addressValidationStatus, setAddressValidationStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
   
   // Add Neighborhood Modal state
