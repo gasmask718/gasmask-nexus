@@ -786,7 +786,7 @@ const StoreDetail = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
-                Quick Stats1
+                Quick Stats
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
