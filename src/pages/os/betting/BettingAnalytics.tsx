@@ -11,6 +11,7 @@ import { DailyPerformanceChart } from '@/components/betting/analytics/DailyPerfo
 import { EntryLedger } from '@/components/betting/analytics/EntryLedger';
 import { PerformanceInsights } from '@/components/betting/analytics/PerformanceInsights';
 import { ComplianceBanner } from '@/components/betting/analytics/ComplianceBanner';
+import { HistoricalPredictions } from '@/components/betting/analytics/HistoricalPredictions';
 
 export default function BettingAnalytics() {
   const [filters, setFilters] = useState<FilterType>(DEFAULT_FILTERS);
@@ -96,6 +97,7 @@ export default function BettingAnalytics() {
               <TabsTrigger value="confidence">Confidence Bands</TabsTrigger>
               <TabsTrigger value="breakdowns">Breakdowns</TabsTrigger>
               <TabsTrigger value="ledger">Entry Ledger</TabsTrigger>
+              <TabsTrigger value="historical">Historical Predictions</TabsTrigger>
             </TabsList>
 
             <TabsContent value="curve">
@@ -126,6 +128,10 @@ export default function BettingAnalytics() {
 
             <TabsContent value="ledger">
               <EntryLedger entries={entries || []} calculatePL={calculatePL} />
+            </TabsContent>
+
+            <TabsContent value="historical">
+              <HistoricalPredictions />
             </TabsContent>
           </Tabs>
         </>

@@ -8631,6 +8631,72 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_prediction_snapshots: {
+        Row: {
+          actual_winner: string | null
+          away_score: number | null
+          away_team: string
+          confidence_score: number | null
+          created_at: string
+          game_id: string
+          game_status: string | null
+          home_score: number | null
+          home_team: string
+          id: string
+          is_backfilled: boolean | null
+          model_version: string | null
+          predicted_win_probability: number | null
+          predicted_winner: string
+          result_linked_at: string | null
+          snapshot_date: string
+          sport: string
+          success: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          actual_winner?: string | null
+          away_score?: number | null
+          away_team: string
+          confidence_score?: number | null
+          created_at?: string
+          game_id: string
+          game_status?: string | null
+          home_score?: number | null
+          home_team: string
+          id?: string
+          is_backfilled?: boolean | null
+          model_version?: string | null
+          predicted_win_probability?: number | null
+          predicted_winner: string
+          result_linked_at?: string | null
+          snapshot_date: string
+          sport?: string
+          success?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          actual_winner?: string | null
+          away_score?: number | null
+          away_team?: string
+          confidence_score?: number | null
+          created_at?: string
+          game_id?: string
+          game_status?: string | null
+          home_score?: number | null
+          home_team?: string
+          id?: string
+          is_backfilled?: boolean | null
+          model_version?: string | null
+          predicted_win_probability?: number | null
+          predicted_winner?: string
+          result_linked_at?: string | null
+          snapshot_date?: string
+          sport?: string
+          success?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       data_import_jobs: {
         Row: {
           ai_cleaning_summary: Json | null
