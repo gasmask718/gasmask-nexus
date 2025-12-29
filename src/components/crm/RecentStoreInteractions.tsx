@@ -126,7 +126,7 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-muted-foreground" />
-            Recent Interactions1
+            Recent Interactions
           </CardTitle>
           <TooltipProvider>
             <Tooltip>
