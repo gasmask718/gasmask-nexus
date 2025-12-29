@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,9 +8,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useConfirmedWinners, ConfirmWinnerInput } from '@/hooks/useConfirmedWinners';
+import { useAIPredictionMemory, generateAIPrediction } from '@/hooks/useAIPredictionMemory';
 import { format, subDays } from 'date-fns';
 import {
-  Home, Plane, CheckCircle, XCircle, CalendarIcon, Shield
+  Home, Plane, CheckCircle, XCircle, CalendarIcon, Shield, Brain, Sparkles
 } from 'lucide-react';
 
 // Get today's date in Eastern Time
@@ -37,15 +38,38 @@ interface GameData {
   winner: string | null;
 }
 
+interface AIPredictionDisplay {
+  predictedWinner: string;
+  probability: number;
+  confidence: number;
+  isStored: boolean;
+}
+
+interface EvaluationDisplay {
+  aiResult: 'correct' | 'incorrect';
+  aiPredictedWinner: string;
+  confirmedWinner: string;
+}
+
 interface GameConfirmCardProps {
   game: GameData;
   confirmedWinner?: string;
   isConfirmed: boolean;
+  aiPrediction?: AIPredictionDisplay;
+  evaluation?: EvaluationDisplay;
   onConfirm: (winner: 'home' | 'away') => void;
   isConfirming: boolean;
 }
 
-const GameConfirmCard = ({ game, confirmedWinner, isConfirmed, onConfirm, isConfirming }: GameConfirmCardProps) => {
+const GameConfirmCard = ({ 
+  game, 
+  confirmedWinner, 
+  isConfirmed, 
+  aiPrediction,
+  evaluation,
+  onConfirm, 
+  isConfirming 
+}: GameConfirmCardProps) => {
   const [selectedWinner, setSelectedWinner] = useState<'home' | 'away' | null>(null);
   
   const isFinalStatus = game.status?.toLowerCase().includes('final') || 
@@ -106,15 +130,79 @@ const GameConfirmCard = ({ game, confirmedWinner, isConfirmed, onConfirm, isConf
             </div>
           </div>
 
+          {/* AI Prediction Display */}
+          <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
+            <div className="flex items-center gap-2 mb-2">
+              <Brain className="w-4 h-4 text-purple-400" />
+              <span className="text-sm font-medium text-purple-400">AI Prediction</span>
+              {aiPrediction?.isStored && (
+                <Badge variant="outline" className="text-xs border-purple-500/50 text-purple-400">
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  Stored
+                </Badge>
+              )}
+            </div>
+            {aiPrediction ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{aiPrediction.predictedWinner}</span>
+                  <Badge className="bg-purple-500/20 text-purple-300">
+                    {Math.round(aiPrediction.probability * 100)}% prob
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {Math.round(aiPrediction.confidence * 100)}% conf
+                  </Badge>
+                </div>
+              </div>
+            ) : (
+              <span className="text-sm text-muted-foreground">No AI prediction recorded</span>
+            )}
+          </div>
+
+          {/* Evaluation Result (after confirmation) */}
+          {evaluation && (
+            <div className={`p-3 rounded-lg border ${
+              evaluation.aiResult === 'correct' 
+                ? 'bg-green-500/10 border-green-500/30' 
+                : 'bg-red-500/10 border-red-500/30'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {evaluation.aiResult === 'correct' ? (
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-red-400" />
+                  )}
+                  <span className="text-sm font-medium">
+                    AI Pick: <span className={evaluation.aiResult === 'correct' ? 'text-green-400' : 'text-red-400'}>
+                      {evaluation.aiPredictedWinner}
+                    </span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Actual:</span>
+                  <span className="font-medium">{evaluation.confirmedWinner}</span>
+                  <Badge className={`${
+                    evaluation.aiResult === 'correct' 
+                      ? 'bg-green-500/20 text-green-400' 
+                      : 'bg-red-500/20 text-red-400'
+                  }`}>
+                    {evaluation.aiResult === 'correct' ? '✅ Correct' : '❌ Incorrect'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Score-based winner hint */}
-          {scoreBasedWinner && !isConfirmed && (
+          {scoreBasedWinner && !isConfirmed && !evaluation && (
             <div className="text-sm text-muted-foreground">
               Score indicates winner: <span className="text-primary font-medium">{scoreBasedWinner}</span>
             </div>
           )}
 
-          {/* Confirmed Winner Display */}
-          {isConfirmed && confirmedWinner && (
+          {/* Confirmed Winner Display (when no evaluation yet) */}
+          {isConfirmed && confirmedWinner && !evaluation && (
             <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/30">
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-green-400" />
@@ -208,9 +296,41 @@ export function WinnerConfirmation() {
     end: selectedDateStr 
   });
 
+  // Use AI prediction memory hook
+  const {
+    predictions,
+    evaluations,
+    isLoading: predictionsLoading,
+    getPredictionByGameId,
+    getEvaluationByGameId,
+    storePredictions,
+    evaluatePrediction,
+    stats: aiStats,
+  } = useAIPredictionMemory({
+    start: selectedDateStr,
+    end: selectedDateStr,
+  });
+
+  // Auto-store AI predictions for games on date change
+  useEffect(() => {
+    if (games && games.length > 0 && !predictionsLoading) {
+      const gamesWithoutPredictions = games.filter(g => !getPredictionByGameId(g.game_id));
+      if (gamesWithoutPredictions.length > 0) {
+        storePredictions.mutate(
+          gamesWithoutPredictions.map(g => ({
+            game_id: g.game_id,
+            game_date: g.game_date,
+            home_team: g.home_team,
+            away_team: g.away_team,
+          }))
+        );
+      }
+    }
+  }, [games, predictionsLoading, selectedDateStr]);
+
   // Stats
   const stats = useMemo(() => {
-    if (!games) return { total: 0, final: 0, confirmed: 0, pending: 0 };
+    if (!games) return { total: 0, final: 0, confirmed: 0, pending: 0, aiCorrect: 0, aiIncorrect: 0 };
     
     const final = games.filter(g => 
       g.status?.toLowerCase().includes('final') || 
@@ -219,16 +339,20 @@ export function WinnerConfirmation() {
     ).length;
     
     const confirmed = confirmedWinners?.length || 0;
+    const aiCorrect = evaluations?.filter(e => e.ai_result === 'correct').length || 0;
+    const aiIncorrect = evaluations?.filter(e => e.ai_result === 'incorrect').length || 0;
     
     return {
       total: games.length,
       final,
       confirmed,
-      pending: final - confirmed
+      pending: final - confirmed,
+      aiCorrect,
+      aiIncorrect,
     };
-  }, [games, confirmedWinners]);
+  }, [games, confirmedWinners, evaluations]);
 
-  const handleConfirmWinner = (game: GameData, winner: 'home' | 'away') => {
+  const handleConfirmWinner = async (game: GameData, winner: 'home' | 'away') => {
     const confirmedWinnerTeam = winner === 'home' ? game.home_team : game.away_team;
     
     const input: ConfirmWinnerInput = {
@@ -241,10 +365,56 @@ export function WinnerConfirmation() {
       confirmed_winner: confirmedWinnerTeam,
     };
     
-    confirmWinner.mutate(input);
+    // Confirm winner first
+    await confirmWinner.mutateAsync(input);
+    
+    // Then evaluate AI prediction
+    await evaluatePrediction.mutateAsync({
+      game_id: game.game_id,
+      game_date: game.game_date,
+      confirmed_winner: confirmedWinnerTeam,
+    });
   };
 
-  const isLoading = gamesLoading || confirmLoading;
+  const isLoading = gamesLoading || confirmLoading || predictionsLoading;
+
+  // Get AI prediction display for a game
+  const getAIPredictionDisplay = (game: GameData): AIPredictionDisplay | undefined => {
+    const storedPrediction = getPredictionByGameId(game.game_id);
+    
+    if (storedPrediction) {
+      return {
+        predictedWinner: storedPrediction.ai_predicted_winner,
+        probability: storedPrediction.ai_predicted_probability || 0,
+        confidence: storedPrediction.ai_confidence_score || 0,
+        isStored: true,
+      };
+    }
+    
+    // Generate on-the-fly if not stored
+    const generated = generateAIPrediction(game.home_team, game.away_team);
+    return {
+      predictedWinner: generated.ai_predicted_winner,
+      probability: generated.ai_predicted_probability,
+      confidence: generated.ai_confidence_score,
+      isStored: false,
+    };
+  };
+
+  // Get evaluation display for a game
+  const getEvaluationDisplay = (game: GameData): EvaluationDisplay | undefined => {
+    const evaluation = getEvaluationByGameId(game.game_id);
+    
+    if (evaluation) {
+      return {
+        aiResult: evaluation.ai_result,
+        aiPredictedWinner: evaluation.ai_predicted_winner,
+        confirmedWinner: evaluation.confirmed_winner,
+      };
+    }
+    
+    return undefined;
+  };
 
   return (
     <div className="space-y-4">
@@ -256,7 +426,7 @@ export function WinnerConfirmation() {
             Manual Winner Confirmation
           </h3>
           <p className="text-sm text-muted-foreground">
-            Confirm actual winners for historical games to enable learning
+            Confirm actual winners and evaluate AI predictions
           </p>
         </div>
         
@@ -280,7 +450,7 @@ export function WinnerConfirmation() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
         <Card className="bg-muted/30">
           <CardContent className="pt-4 pb-3 text-center">
             <p className="text-2xl font-bold">{stats.total}</p>
@@ -305,7 +475,41 @@ export function WinnerConfirmation() {
             <p className="text-xs text-muted-foreground">Pending</p>
           </CardContent>
         </Card>
+        <Card className="bg-green-500/10 border-green-500/30">
+          <CardContent className="pt-4 pb-3 text-center">
+            <p className="text-2xl font-bold text-green-400">{stats.aiCorrect}</p>
+            <p className="text-xs text-muted-foreground">AI Correct</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-red-500/10 border-red-500/30">
+          <CardContent className="pt-4 pb-3 text-center">
+            <p className="text-2xl font-bold text-red-400">{stats.aiIncorrect}</p>
+            <p className="text-xs text-muted-foreground">AI Incorrect</p>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* AI Accuracy Summary */}
+      {(stats.aiCorrect + stats.aiIncorrect) > 0 && (
+        <Card className="bg-purple-500/10 border-purple-500/30">
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Brain className="w-5 h-5 text-purple-400" />
+                <span className="font-medium text-purple-400">AI Accuracy for {format(selectedDate, 'MMM d')}</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm">
+                  {stats.aiCorrect}/{stats.aiCorrect + stats.aiIncorrect} correct
+                </span>
+                <Badge className="bg-purple-500/20 text-purple-300 text-lg px-3">
+                  {Math.round((stats.aiCorrect / (stats.aiCorrect + stats.aiIncorrect)) * 100)}%
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Games List */}
       {isLoading ? (
@@ -319,16 +523,21 @@ export function WinnerConfirmation() {
           <p className="text-sm text-muted-foreground mt-1">Try selecting a different date</p>
         </div>
       ) : (
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[500px]">
           <div className="space-y-3">
             {games.map((game) => {
               const confirmed = getConfirmedWinnerByGameId(game.game_id);
+              const aiPrediction = getAIPredictionDisplay(game);
+              const evaluation = getEvaluationDisplay(game);
+              
               return (
                 <GameConfirmCard
                   key={game.id}
                   game={game}
                   confirmedWinner={confirmed?.confirmed_winner}
                   isConfirmed={!!confirmed}
+                  aiPrediction={aiPrediction}
+                  evaluation={evaluation}
                   onConfirm={(winner) => handleConfirmWinner(game, winner)}
                   isConfirming={isConfirming}
                 />
@@ -341,14 +550,14 @@ export function WinnerConfirmation() {
       {/* Info */}
       <div className="p-3 bg-muted/30 rounded-lg border border-border">
         <div className="flex items-start gap-2">
-          <Shield className="w-4 h-4 text-muted-foreground mt-0.5" />
+          <Brain className="w-4 h-4 text-purple-400 mt-0.5" />
           <div className="text-xs text-muted-foreground">
-            <p className="font-medium mb-1">Winner Confirmation Guidelines</p>
+            <p className="font-medium mb-1">AI Prediction Memory</p>
             <ul className="list-disc list-inside space-y-0.5">
-              <li>Only games with Final status can have winners confirmed</li>
-              <li>Confirmed winners enable the system to learn from outcomes</li>
-              <li>Confirmations can be overwritten by admins if needed</li>
-              <li>All confirmations are logged for audit purposes</li>
+              <li>AI predictions are automatically stored for all games</li>
+              <li>When you confirm a winner, the system evaluates the AI's prediction</li>
+              <li>Results (correct/incorrect) are tracked for learning</li>
+              <li>Historical accuracy is used to improve future predictions</li>
             </ul>
           </div>
         </div>
