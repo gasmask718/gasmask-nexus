@@ -7516,6 +7516,66 @@ export type Database = {
           },
         ]
       }
+      confirmed_game_winners: {
+        Row: {
+          away_score: number | null
+          away_team: string
+          confirmation_source: string
+          confirmed_at: string
+          confirmed_by: string | null
+          confirmed_winner: string
+          created_at: string
+          game_date: string
+          game_id: string
+          home_score: number | null
+          home_team: string
+          id: string
+          notes: string | null
+          override_count: number
+          previous_winner: string | null
+          sport: string
+          updated_at: string
+        }
+        Insert: {
+          away_score?: number | null
+          away_team: string
+          confirmation_source?: string
+          confirmed_at?: string
+          confirmed_by?: string | null
+          confirmed_winner: string
+          created_at?: string
+          game_date: string
+          game_id: string
+          home_score?: number | null
+          home_team: string
+          id?: string
+          notes?: string | null
+          override_count?: number
+          previous_winner?: string | null
+          sport?: string
+          updated_at?: string
+        }
+        Update: {
+          away_score?: number | null
+          away_team?: string
+          confirmation_source?: string
+          confirmed_at?: string
+          confirmed_by?: string | null
+          confirmed_winner?: string
+          created_at?: string
+          game_date?: string
+          game_id?: string
+          home_score?: number | null
+          home_team?: string
+          id?: string
+          notes?: string | null
+          override_count?: number
+          previous_winner?: string | null
+          sport?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contact_interactions: {
         Row: {
           channel: string

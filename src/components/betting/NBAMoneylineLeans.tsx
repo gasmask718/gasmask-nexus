@@ -21,8 +21,9 @@ import { format, subDays } from 'date-fns';
 import {
   RefreshCw, TrendingUp, TrendingDown, Minus, ChevronDown,
   Home, Plane, AlertTriangle, CheckCircle, XCircle, Info,
-  CalendarIcon, Trophy, Save, Clock, Zap
+  CalendarIcon, Trophy, Save, Clock, Zap, Shield
 } from 'lucide-react';
+import WinnerConfirmation from './WinnerConfirmation';
 import { toast } from 'sonner';
 
 // Get today's date in Eastern Time (NBA's reference timezone)
@@ -388,7 +389,7 @@ const SettledEntryCard = ({ entry }: { entry: MoneylineEntry }) => {
 const NBAMoneylineLeans = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState<'open' | 'settlement' | 'settled'>('open');
+  const [activeTab, setActiveTab] = useState<'open' | 'settlement' | 'settled' | 'confirm'>('open');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [settleDialogOpen, setSettleDialogOpen] = useState(false);
   const [settlingEntry, setSettlingEntry] = useState<{ entryId: string; prediction: MoneylinePrediction } | null>(null);
@@ -827,9 +828,9 @@ const NBAMoneylineLeans = () => {
       </CardHeader>
       
       <CardContent>
-        {/* Tabs for Open/Settled */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'open' | 'settlement' | 'settled')} className="mb-4">
-          <TabsList className="grid w-full grid-cols-3">
+        {/* Tabs for Open/Settled/Confirm */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'open' | 'settlement' | 'settled' | 'confirm')} className="mb-4">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="open" className="gap-2">
               <Clock className="w-4 h-4" />
               Today ({openEntries.length})
@@ -841,6 +842,10 @@ const NBAMoneylineLeans = () => {
             <TabsTrigger value="settled" className="gap-2">
               <Trophy className="w-4 h-4" />
               Settled ({settledEntries.length})
+            </TabsTrigger>
+            <TabsTrigger value="confirm" className="gap-2">
+              <Shield className="w-4 h-4" />
+              Confirm Winners
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -968,7 +973,7 @@ const NBAMoneylineLeans = () => {
               </div>
             </ScrollArea>
           )
-        ) : (
+        ) : activeTab === 'settled' ? (
           // Settled Tab - Show settled entries
           settledEntries.length === 0 ? (
             <div className="text-center py-8">
@@ -985,6 +990,9 @@ const NBAMoneylineLeans = () => {
               </div>
             </ScrollArea>
           )
+        ) : (
+          // Confirm Winners Tab
+          <WinnerConfirmation />
         )}
         
         {/* Disclaimer */}
