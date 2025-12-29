@@ -124,7 +124,8 @@ export default function GrabbaCRM() {
 
       const storeIds = [...new Set(ordersWithStores?.map((o) => o.store_id).filter(Boolean))];
 
-      const selectFields = "id, name, phone, neighborhood, address, city, state, zip, tube_inventory_snapshot, companies(id, name)";
+      const selectFields =
+        "id, name, phone, neighborhood, address, city, state, zip, tube_inventory_snapshot, companies(id, name)";
 
       if (storeIds.length === 0) {
         const { data } = await supabase.from("stores").select(selectFields).limit(100);
@@ -381,8 +382,11 @@ export default function GrabbaCRM() {
     const fullAddress = addressParts.length > 0 ? addressParts.join(", ") : store.neighborhood;
 
     // Calculate inventory count
-    const inventoryCount = store.tube_inventory_snapshot 
-      ? Object.values(store.tube_inventory_snapshot as Record<string, number>).reduce((sum: number, val) => sum + (Number(val) || 0), 0)
+    const inventoryCount = store.tube_inventory_snapshot
+      ? Object.values(store.tube_inventory_snapshot as Record<string, number>).reduce(
+          (sum: number, val) => sum + (Number(val) || 0),
+          0,
+        )
       : 0;
 
     return (
@@ -634,7 +638,7 @@ export default function GrabbaCRM() {
           <div>
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
               <Building2 className="h-8 w-8 text-primary" />
-              Floor 1 — CRM & Stores 22
+              Floor 1 — CRM & Stores
             </h1>
             <p className="text-muted-foreground mt-1">
               All stores, wholesalers, customers, and companies for Grabba brands
