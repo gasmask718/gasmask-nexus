@@ -125,7 +125,7 @@ export default function GrabbaCRM() {
       const storeIds = [...new Set(ordersWithStores?.map((o) => o.store_id).filter(Boolean))];
 
       const selectFields =
-        "id, name, phone, neighborhood, address, city, state, zip, tube_inventory_snapshot, companies(id, name)";
+        "id, name, phone, neighborhood, address_street, address_city, address_state, address_zip, companies(id, name)";
 
       if (storeIds.length === 0) {
         const { data } = await supabase.from("stores").select(selectFields).limit(100);
@@ -136,6 +136,27 @@ export default function GrabbaCRM() {
 
       return data || [];
     },
+  });
+
+  // Fetch tube inventory for all stores
+  const allStoreIds = stores?.map((s: any) => s.id) || [];
+  const { data: tubeInventory } = useQuery({
+    queryKey: ["grabba-crm-tube-inventory", allStoreIds],
+    queryFn: async () => {
+      if (allStoreIds.length === 0) return {};
+      const { data } = await supabase
+        .from("store_tube_inventory")
+        .select("store_id, current_tubes_left")
+        .in("store_id", allStoreIds);
+      
+      // Aggregate by store_id
+      const inventoryMap: Record<string, number> = {};
+      data?.forEach((item: any) => {
+        inventoryMap[item.store_id] = (inventoryMap[item.store_id] || 0) + (item.current_tubes_left || 0);
+      });
+      return inventoryMap;
+    },
+    enabled: allStoreIds.length > 0,
   });
 
   // Fetch wholesalers
@@ -377,17 +398,12 @@ export default function GrabbaCRM() {
     const storeBrands = brandActivity?.[store.id] || [];
     const relScore = relationshipScores?.[store.id];
 
-    // Build full address
-    const addressParts = [store.address, store.city, store.state, store.zip].filter(Boolean);
+    // Build full address from correct column names
+    const addressParts = [store.address_street, store.address_city, store.address_state, store.address_zip].filter(Boolean);
     const fullAddress = addressParts.length > 0 ? addressParts.join(", ") : store.neighborhood;
 
-    // Calculate inventory count
-    const inventoryCount = store.tube_inventory_snapshot
-      ? Object.values(store.tube_inventory_snapshot as Record<string, number>).reduce(
-          (sum: number, val) => sum + (Number(val) || 0),
-          0,
-        )
-      : 0;
+    // Get inventory count from tubeInventory map
+    const inventoryCount = tubeInventory?.[store.id] || 0;
 
     return (
       <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-green-500/30 transition-all hover:shadow-lg">
