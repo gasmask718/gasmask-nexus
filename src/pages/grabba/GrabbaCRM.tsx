@@ -109,14 +109,16 @@ export default function GrabbaCRM() {
 
       const storeIds = [...new Set(ordersWithStores?.map(o => o.store_id).filter(Boolean))];
       
+      const storeFields = "id, name, phone, neighborhood, address, city, state, zip, tube_inventory_snapshot, companies(id, name)";
+      
       if (storeIds.length === 0) {
-        const { data } = await supabase.from("stores").select("*, companies(id, name)").limit(100);
+        const { data } = await supabase.from("stores").select(storeFields).limit(100);
         return data || [];
       }
 
       const { data } = await supabase
         .from("stores")
-        .select("*, companies(id, name)")
+        .select(storeFields)
         .in("id", storeIds);
 
       return data || [];
@@ -360,6 +362,15 @@ export default function GrabbaCRM() {
     const storeBrands = brandActivity?.[store.id] || [];
     const relScore = relationshipScores?.[store.id];
     
+    // Build full address
+    const addressParts = [store.address, store.city, store.state, store.zip].filter(Boolean);
+    const fullAddress = addressParts.join(', ');
+    
+    // Calculate inventory count from tube_inventory_snapshot
+    const inventoryCount = store.tube_inventory_snapshot 
+      ? Object.values(store.tube_inventory_snapshot as Record<string, number>).reduce((sum: number, val) => sum + (Number(val) || 0), 0)
+      : 0;
+    
     return (
       <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-green-500/30 transition-all hover:shadow-lg">
         <CardContent className="p-4">
@@ -379,7 +390,20 @@ export default function GrabbaCRM() {
                     {relScore.tier} ({relScore.score})
                   </span>
                 )}
+                {/* Inventory Count Badge */}
+                <Badge variant="secondary" className="bg-green-500/10 text-green-400 border-green-500/30">
+                  <Package className="h-3 w-3 mr-1" />
+                  {inventoryCount} units
+                </Badge>
               </div>
+              
+              {/* Address Row */}
+              {fullAddress && (
+                <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{fullAddress}</span>
+                </div>
+              )}
               
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                 {store.neighborhood && (
