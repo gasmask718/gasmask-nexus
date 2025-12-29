@@ -605,7 +605,7 @@ serve(async (req) => {
       }
     }
 
-    // NEW: Update game scores and winners for settlement
+    // Update game scores and winners for settlement + store player box scores
     if (action === "update_scores") {
       console.log("=== NBA STATS ENGINE: UPDATE_SCORES START ===");
       
@@ -623,6 +623,7 @@ serve(async (req) => {
       }
       
       let totalUpdated = 0;
+      let boxScoresStored = 0;
       const updatedGames: any[] = [];
       
       for (const dateStr of datesToCheck) {
@@ -691,17 +692,65 @@ serve(async (req) => {
               totalUpdated++;
               updatedGames.push({ game_id: gameId, home_team: homeTeam, away_team: awayTeam, winner, home_score: homeScore, away_score: awayScore });
             }
+
+            // CRITICAL: Store individual player box scores for prop settlement
+            if (game.PlayerGames && Array.isArray(game.PlayerGames)) {
+              const playerBoxScores = game.PlayerGames.map((pg: any) => {
+                const playerTeam = pg.Team || "";
+                const opponent = playerTeam === homeTeam ? awayTeam : homeTeam;
+                const minutes = pg.Minutes || 0;
+                const isDNP = minutes === 0;
+
+                return {
+                  game_id: gameId,
+                  game_date: dateStr,
+                  player_id: pg.PlayerID?.toString() || "",
+                  player_name: pg.Name || "",
+                  team: playerTeam,
+                  opponent: opponent,
+                  // FINAL BOX SCORE STATS - these are the ONLY source for prop settlement
+                  points: pg.Points || 0,
+                  rebounds: pg.Rebounds || 0,
+                  assists: pg.Assists || 0,
+                  three_pointers_made: pg.ThreePointersMade || 0,
+                  steals: pg.Steals || 0,
+                  blocks: pg.BlockedShots || 0,
+                  turnovers: pg.Turnovers || 0,
+                  minutes: minutes,
+                  dnp: isDNP,
+                  updated_at: new Date().toISOString(),
+                };
+              }).filter((ps: any) => ps.player_id && ps.player_name);
+
+              if (playerBoxScores.length > 0) {
+                // Upsert player box scores
+                const { error: boxScoreError } = await supabase
+                  .from("nba_player_box_scores")
+                  .upsert(playerBoxScores, { 
+                    onConflict: "game_id,player_id",
+                    ignoreDuplicates: false 
+                  });
+
+                if (boxScoreError) {
+                  console.error(`Error storing box scores for game ${gameId}:`, boxScoreError);
+                } else {
+                  boxScoresStored += playerBoxScores.length;
+                  console.log(`Stored ${playerBoxScores.length} player box scores for game ${gameId}`);
+                }
+              }
+            }
           }
         } catch (error) {
           console.error(`Error fetching scores for ${dateStr}:`, error);
         }
       }
       
-      console.log(`=== NBA STATS ENGINE: UPDATE_SCORES COMPLETE - Updated ${totalUpdated} games ===`);
+      console.log(`=== NBA STATS ENGINE: UPDATE_SCORES COMPLETE - Updated ${totalUpdated} games, stored ${boxScoresStored} player box scores ===`);
       
       return new Response(JSON.stringify({
         success: true,
         games_updated: totalUpdated,
+        box_scores_stored: boxScoresStored,
         updated_games: updatedGames,
         dates_checked: datesToCheck
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });

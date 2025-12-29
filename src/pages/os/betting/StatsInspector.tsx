@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner';
 import { Navigate } from 'react-router-dom';
 import NBAMoneylineLeans from '@/components/betting/NBAMoneylineLeans';
+import { PropSettlementAudit } from '@/components/betting/PropSettlementAudit';
 
 interface PlayerStats {
   id: string;
@@ -1267,6 +1268,11 @@ const StatsInspector = () => {
               </ScrollArea>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Prop Settlement */}
+        <TabsContent value="settlement">
+          <PropSettlementAudit />
         </TabsContent>
       </Tabs>
     </div>
