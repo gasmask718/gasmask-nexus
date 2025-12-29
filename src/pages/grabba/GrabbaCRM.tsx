@@ -8,10 +8,28 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { 
-  Users, Search, Phone, Mail, MapPin, Star, ExternalLink, MessageSquare, 
-  Package, Building2, Store, Truck, Award, DollarSign, FileText, ChevronRight,
-  Filter, X, Edit, Trash2, Heart
+import {
+  Users,
+  Search,
+  Phone,
+  Mail,
+  MapPin,
+  Star,
+  ExternalLink,
+  MessageSquare,
+  Package,
+  Building2,
+  Store,
+  Truck,
+  Award,
+  DollarSign,
+  FileText,
+  ChevronRight,
+  Filter,
+  X,
+  Edit,
+  Trash2,
+  Heart,
 } from "lucide-react";
 import { getRelationshipScoresForStores, RelationshipScore } from "@/services/crmInsightsService";
 import { useNavigate, Link } from "react-router-dom";
@@ -31,8 +49,8 @@ import { toast } from "sonner";
 // FLOOR 1 — CRM: All stores, wholesalers, customers, and companies for Grabba brands.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-type EntityType = 'all' | 'store' | 'wholesaler' | 'direct_customer';
-type ViewTab = 'companies' | 'stores' | 'ambassadors' | 'wholesalers';
+type EntityType = "all" | "store" | "wholesaler" | "direct_customer";
+type ViewTab = "companies" | "stores" | "ambassadors" | "wholesalers";
 
 export default function GrabbaCRM() {
   const navigate = useNavigate();
@@ -41,30 +59,30 @@ export default function GrabbaCRM() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<ViewTab>("companies");
   const [neighborhoodFilter, setNeighborhoodFilter] = useState<string>("all");
-  
+
   // CRUD Modal States
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
-  
+
   // CRUD Operations
   const companyCrud = useCrudOperations({
     table: "companies",
     queryKey: ["grabba-crm-companies"],
-    successMessages: { create: "Company created", update: "Company updated", delete: "Company deleted" }
+    successMessages: { create: "Company created", update: "Company updated", delete: "Company deleted" },
   });
-  
+
   const storeCrud = useCrudOperations({
     table: "stores",
     queryKey: ["grabba-crm-stores"],
-    successMessages: { create: "Store created", update: "Store updated", delete: "Store deleted" }
+    successMessages: { create: "Store created", update: "Store updated", delete: "Store deleted" },
   });
-  
+
   const wholesalerCrud = useCrudOperations({
     table: "wholesalers",
     queryKey: ["grabba-crm-wholesalers"],
-    successMessages: { create: "Wholesaler created", update: "Wholesaler updated", delete: "Wholesaler deleted" }
+    successMessages: { create: "Wholesaler created", update: "Wholesaler updated", delete: "Wholesaler deleted" },
   });
 
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -81,17 +99,14 @@ export default function GrabbaCRM() {
         .select("company_id, brand")
         .in("brand", brandsToQuery);
 
-      const companyIds = [...new Set(ordersWithCompanies?.map(o => o.company_id).filter(Boolean))];
-      
+      const companyIds = [...new Set(ordersWithCompanies?.map((o) => o.company_id).filter(Boolean))];
+
       if (companyIds.length === 0) {
         const { data } = await supabase.from("companies").select("*").limit(100);
         return data || [];
       }
 
-      const { data } = await supabase
-        .from("companies")
-        .select("*")
-        .in("id", companyIds);
+      const { data } = await supabase.from("companies").select("*").in("id", companyIds);
 
       return data || [];
     },
@@ -107,19 +122,14 @@ export default function GrabbaCRM() {
         .select("store_id, brand")
         .in("brand", brandsToQuery);
 
-      const storeIds = [...new Set(ordersWithStores?.map(o => o.store_id).filter(Boolean))];
-      
-      const storeFields = "id, name, phone, neighborhood, address, city, state, zip, tube_inventory_snapshot, companies(id, name)";
-      
+      const storeIds = [...new Set(ordersWithStores?.map((o) => o.store_id).filter(Boolean))];
+
       if (storeIds.length === 0) {
-        const { data } = await supabase.from("stores").select(storeFields).limit(100);
+        const { data } = await supabase.from("stores").select("*, companies(id, name)").limit(100);
         return data || [];
       }
 
-      const { data } = await supabase
-        .from("stores")
-        .select(storeFields)
-        .in("id", storeIds);
+      const { data } = await supabase.from("stores").select("*, companies(id, name)").in("id", storeIds);
 
       return data || [];
     },
@@ -129,10 +139,7 @@ export default function GrabbaCRM() {
   const { data: wholesalers, isLoading: wholesalersLoading } = useQuery({
     queryKey: ["grabba-crm-wholesalers"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("wholesalers")
-        .select("*")
-        .order("name");
+      const { data } = await supabase.from("wholesalers").select("*").order("name");
       return data || [];
     },
   });
@@ -156,7 +163,7 @@ export default function GrabbaCRM() {
   // Fetch neighborhoods for filter
   const neighborhoods = useMemo(() => {
     const hoods = new Set<string>();
-    companies?.forEach(c => c.neighborhood && hoods.add(c.neighborhood));
+    companies?.forEach((c) => c.neighborhood && hoods.add(c.neighborhood));
     stores?.forEach((s: any) => s.neighborhood && hoods.add(s.neighborhood));
     return Array.from(hoods).sort();
   }, [companies, stores]);
@@ -166,50 +173,52 @@ export default function GrabbaCRM() {
   // ═══════════════════════════════════════════════════════════════════════════════
 
   const filteredCompanies = useMemo(() => {
-    return companies?.filter(company => {
-      const matchesSearch = !searchQuery || 
+    return companies?.filter((company) => {
+      const matchesSearch =
+        !searchQuery ||
         company.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         company.default_city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         company.default_phone?.includes(searchQuery) ||
         company.neighborhood?.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       const matchesType = typeFilter === "all" || company.type === typeFilter;
       const matchesNeighborhood = neighborhoodFilter === "all" || company.neighborhood === neighborhoodFilter;
-      
+
       const companyBrands = brandActivity?.[company.id] || [];
       const matchesBrand = selectedBrand === "all" || companyBrands.includes(selectedBrand as GrabbaBrand);
-      
+
       return matchesSearch && matchesType && matchesBrand && matchesNeighborhood;
     });
   }, [companies, searchQuery, typeFilter, selectedBrand, neighborhoodFilter, brandActivity]);
 
   const filteredStores = useMemo(() => {
     return stores?.filter((store: any) => {
-      const matchesSearch = !searchQuery || 
+      const matchesSearch =
+        !searchQuery ||
         store.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         store.neighborhood?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         store.phone?.includes(searchQuery);
-      
+
       const storeBrands = brandActivity?.[store.id] || [];
       const matchesBrand = selectedBrand === "all" || storeBrands.includes(selectedBrand as GrabbaBrand);
       const matchesNeighborhood = neighborhoodFilter === "all" || store.neighborhood === neighborhoodFilter;
-      
+
       return matchesSearch && matchesBrand && matchesNeighborhood;
     });
   }, [stores, searchQuery, selectedBrand, neighborhoodFilter, brandActivity]);
 
   const filteredWholesalers = useMemo(() => {
-    return wholesalers?.filter(w => {
-      const matchesSearch = !searchQuery || 
-        w.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        w.phone?.includes(searchQuery);
+    return wholesalers?.filter((w) => {
+      const matchesSearch =
+        !searchQuery || w.name?.toLowerCase().includes(searchQuery.toLowerCase()) || w.phone?.includes(searchQuery);
       return matchesSearch;
     });
   }, [wholesalers, searchQuery]);
 
   const filteredAmbassadors = useMemo(() => {
     return ambassadors?.filter((a: any) => {
-      const matchesSearch = !searchQuery || 
+      const matchesSearch =
+        !searchQuery ||
         a.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         a.tracking_code?.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesSearch;
@@ -223,7 +232,8 @@ export default function GrabbaCRM() {
     setNeighborhoodFilter("all");
   };
 
-  const hasActiveFilters = selectedBrand !== "all" || typeFilter !== "all" || searchQuery || neighborhoodFilter !== "all";
+  const hasActiveFilters =
+    selectedBrand !== "all" || typeFilter !== "all" || searchQuery || neighborhoodFilter !== "all";
 
   // ═══════════════════════════════════════════════════════════════════════════════
   // ENTITY CARD COMPONENTS
@@ -231,27 +241,30 @@ export default function GrabbaCRM() {
 
   const CompanyCard = ({ company }: { company: any }) => {
     const companyBrands = brandActivity?.[company.id] || [];
-    
+
     return (
       <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-primary/30 transition-all hover:shadow-lg">
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
-                <Link 
+                <Link
                   to={`/companies/${company.id}`}
                   className="text-lg font-semibold text-foreground hover:text-primary transition-colors"
                 >
                   {company.name}
                 </Link>
-                <Badge variant="outline" className="capitalize">{company.type || 'store'}</Badge>
+                <Badge variant="outline" className="capitalize">
+                  {company.type || "store"}
+                </Badge>
               </div>
-              
+
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                 {company.neighborhood && (
                   <span className="flex items-center gap-1">
                     <MapPin className="h-3 w-3" />
-                    {company.neighborhood}{company.boro ? `, ${company.boro}` : ''}
+                    {company.neighborhood}
+                    {company.boro ? `, ${company.boro}` : ""}
                   </span>
                 )}
                 {company.default_phone && (
@@ -263,27 +276,25 @@ export default function GrabbaCRM() {
               </div>
 
               {/* Brand Pills */}
-              {companyBrands.length > 0 && (
-                <BrandBadgesRow brands={companyBrands as GrabbaBrand[]} className="mt-3" />
-              )}
+              {companyBrands.length > 0 && <BrandBadgesRow brands={companyBrands as GrabbaBrand[]} className="mt-3" />}
 
               {/* Entity Chain Links */}
               <div className="flex items-center gap-2 mt-3 text-xs">
-                <Link 
+                <Link
                   to={`/companies/${company.id}`}
                   className="flex items-center gap-1 text-muted-foreground hover:text-primary"
                 >
                   <Building2 className="h-3 w-3" /> Profile
                 </Link>
                 <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                <Link 
+                <Link
                   to={`/grabba/inventory?company=${company.id}`}
                   className="flex items-center gap-1 text-muted-foreground hover:text-primary"
                 >
                   <Package className="h-3 w-3" /> Orders
                 </Link>
                 <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                <Link 
+                <Link
                   to={`/unpaid-accounts?company=${company.id}`}
                   className="flex items-center gap-1 text-muted-foreground hover:text-primary"
                 >
@@ -295,13 +306,14 @@ export default function GrabbaCRM() {
             {/* Payment Reliability */}
             <div className="text-center px-3 border-l border-border shrink-0">
               <div className="flex items-center gap-0.5 text-amber-400">
-                {[1,2,3,4,5].map(i => (
-                  <Star key={i} className={`h-3 w-3 ${i <= (company.payment_reliability_score || 0) / 20 ? 'fill-current' : 'opacity-30'}`} />
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star
+                    key={i}
+                    className={`h-3 w-3 ${i <= (company.payment_reliability_score || 0) / 20 ? "fill-current" : "opacity-30"}`}
+                  />
                 ))}
               </div>
-              <span className="text-xs text-muted-foreground">
-                {company.payment_reliability_tier || 'Unrated'}
-              </span>
+              <span className="text-xs text-muted-foreground">{company.payment_reliability_tier || "Unrated"}</span>
             </div>
 
             {/* Quick Actions */}
@@ -309,10 +321,10 @@ export default function GrabbaCRM() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      className="h-8 w-8" 
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8"
                       onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/companies/${company.id}`);
@@ -327,10 +339,10 @@ export default function GrabbaCRM() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      className="h-8 w-8" 
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8"
                       onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/grabba/communication?company=${company.id}`);
@@ -351,7 +363,7 @@ export default function GrabbaCRM() {
 
   // V9: Fetch relationship scores for all stores
   const storeIds = useMemo(() => stores?.map((s: any) => s.id) || [], [stores]);
-  
+
   const { data: relationshipScores } = useQuery({
     queryKey: ["relationship-scores-batch", storeIds],
     queryFn: () => getRelationshipScoresForStores(storeIds),
@@ -361,16 +373,7 @@ export default function GrabbaCRM() {
   const StoreCard = ({ store }: { store: any }) => {
     const storeBrands = brandActivity?.[store.id] || [];
     const relScore = relationshipScores?.[store.id];
-    
-    // Build full address
-    const addressParts = [store.address, store.city, store.state, store.zip].filter(Boolean);
-    const fullAddress = addressParts.join(', ');
-    
-    // Calculate inventory count from tube_inventory_snapshot
-    const inventoryCount = store.tube_inventory_snapshot 
-      ? Object.values(store.tube_inventory_snapshot as Record<string, number>).reduce((sum: number, val) => sum + (Number(val) || 0), 0)
-      : 0;
-    
+
     return (
       <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-green-500/30 transition-all hover:shadow-lg">
         <CardContent className="p-4">
@@ -378,7 +381,7 @@ export default function GrabbaCRM() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
                 <Store className="h-4 w-4 text-green-500" />
-                <Link 
+                <Link
                   to={`/stores/${store.id}`}
                   className="text-lg font-semibold text-foreground hover:text-green-500 transition-colors"
                 >
@@ -390,21 +393,8 @@ export default function GrabbaCRM() {
                     {relScore.tier} ({relScore.score})
                   </span>
                 )}
-                {/* Inventory Count Badge */}
-                <Badge variant="secondary" className="bg-green-500/10 text-green-400 border-green-500/30">
-                  <Package className="h-3 w-3 mr-1" />
-                  {inventoryCount} units
-                </Badge>
               </div>
-              
-              {/* Address Row */}
-              {fullAddress && (
-                <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
-                  <MapPin className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{fullAddress}</span>
-                </div>
-              )}
-              
+
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                 {store.neighborhood && (
                   <span className="flex items-center gap-1">
@@ -419,29 +409,24 @@ export default function GrabbaCRM() {
                   </span>
                 )}
                 {store.companies?.name && (
-                  <Link 
-                    to={`/companies/${store.companies.id}`}
-                    className="flex items-center gap-1 hover:text-primary"
-                  >
+                  <Link to={`/companies/${store.companies.id}`} className="flex items-center gap-1 hover:text-primary">
                     <Building2 className="h-3 w-3" />
                     {store.companies.name}
                   </Link>
                 )}
               </div>
 
-              {storeBrands.length > 0 && (
-                <BrandBadgesRow brands={storeBrands as GrabbaBrand[]} className="mt-3" />
-              )}
+              {storeBrands.length > 0 && <BrandBadgesRow brands={storeBrands as GrabbaBrand[]} className="mt-3" />}
             </div>
 
             <div className="flex gap-1 shrink-0">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      className="h-8 w-8" 
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8"
                       onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/grabba/store-master/${store.id}`);
@@ -472,7 +457,7 @@ export default function GrabbaCRM() {
                 Wholesaler
               </Badge>
             </div>
-            
+
             <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
               {wholesaler.phone && (
                 <span className="flex items-center gap-1">
@@ -492,10 +477,10 @@ export default function GrabbaCRM() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  className="h-8 w-8" 
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
                   onClick={(e) => {
                     e.stopPropagation();
                     navigate(`/wholesaler/${wholesaler.id}`);
@@ -519,20 +504,17 @@ export default function GrabbaCRM() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
               <Award className="h-4 w-4 text-amber-500" />
-              <span className="text-lg font-semibold">{ambassador.profiles?.full_name || 'Ambassador'}</span>
-              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
-                {ambassador.tier}
-              </Badge>
+              <span className="text-lg font-semibold">{ambassador.profiles?.full_name || "Ambassador"}</span>
+              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">{ambassador.tier}</Badge>
             </div>
-            
+
             <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <FileText className="h-3 w-3" />
                 Code: {ambassador.tracking_code}
               </span>
               <span className="flex items-center gap-1">
-                <DollarSign className="h-3 w-3" />
-                ${ambassador.total_earnings?.toLocaleString() || '0'} earned
+                <DollarSign className="h-3 w-3" />${ambassador.total_earnings?.toLocaleString() || "0"} earned
               </span>
             </div>
           </div>
@@ -540,10 +522,10 @@ export default function GrabbaCRM() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  className="h-8 w-8" 
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
                   onClick={(e) => {
                     e.stopPropagation();
                     navigate(`/grabba/ambassadors`);
@@ -563,61 +545,61 @@ export default function GrabbaCRM() {
   // ═══════════════════════════════════════════════════════════════════════════════
   // CRUD HANDLERS
   // ═══════════════════════════════════════════════════════════════════════════════
-  
+
   const handleCreate = async (data: Record<string, unknown>) => {
-    if (activeTab === 'companies') {
+    if (activeTab === "companies") {
       await companyCrud.create(data);
-    } else if (activeTab === 'stores') {
+    } else if (activeTab === "stores") {
       await storeCrud.create(data);
-    } else if (activeTab === 'wholesalers') {
+    } else if (activeTab === "wholesalers") {
       await wholesalerCrud.create(data);
     }
   };
-  
+
   const handleEdit = async (data: Record<string, unknown>) => {
     if (!selectedEntity) return;
-    if (activeTab === 'companies') {
+    if (activeTab === "companies") {
       await companyCrud.update({ id: selectedEntity.id, ...data });
-    } else if (activeTab === 'stores') {
+    } else if (activeTab === "stores") {
       await storeCrud.update({ id: selectedEntity.id, ...data });
-    } else if (activeTab === 'wholesalers') {
+    } else if (activeTab === "wholesalers") {
       await wholesalerCrud.update({ id: selectedEntity.id, ...data });
     }
   };
-  
+
   const handleDelete = async () => {
     if (!selectedEntity) return;
-    if (activeTab === 'companies') {
+    if (activeTab === "companies") {
       await companyCrud.remove(selectedEntity.id);
-    } else if (activeTab === 'stores') {
+    } else if (activeTab === "stores") {
       await storeCrud.remove(selectedEntity.id);
-    } else if (activeTab === 'wholesalers') {
+    } else if (activeTab === "wholesalers") {
       await wholesalerCrud.remove(selectedEntity.id);
     }
   };
-  
+
   const openEditModal = (entity: any) => {
     setSelectedEntity(entity);
     setEditModalOpen(true);
   };
-  
+
   const openDeleteModal = (entity: any) => {
     setSelectedEntity(entity);
     setDeleteModalOpen(true);
   };
-  
+
   const getActiveFields = () => {
-    if (activeTab === 'companies') return companyFields;
-    if (activeTab === 'stores') return storeFields;
-    if (activeTab === 'wholesalers') return wholesalerFields;
+    if (activeTab === "companies") return companyFields;
+    if (activeTab === "stores") return storeFields;
+    if (activeTab === "wholesalers") return wholesalerFields;
     return companyFields;
   };
-  
+
   const getAddLabel = () => {
-    if (activeTab === 'companies') return '+New Company';
-    if (activeTab === 'stores') return '+New Store';
-    if (activeTab === 'wholesalers') return '+New Wholesaler';
-    return '+New';
+    if (activeTab === "companies") return "+New Company";
+    if (activeTab === "stores") return "+New Store";
+    if (activeTab === "wholesalers") return "+New Wholesaler";
+    return "+New";
   };
 
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -632,14 +614,14 @@ export default function GrabbaCRM() {
           <div>
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
               <Building2 className="h-8 w-8 text-primary" />
-              Floor 1 — CRM & Stores
+              Floor 1 — CRM & Stores 22
             </h1>
             <p className="text-muted-foreground mt-1">
               All stores, wholesalers, customers, and companies for Grabba brands
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {GRABBA_BRAND_IDS.map(brand => {
+            {GRABBA_BRAND_IDS.map((brand) => {
               const config = getBrandConfig(brand);
               return (
                 <Badge key={brand} className={config.pill}>
@@ -665,7 +647,7 @@ export default function GrabbaCRM() {
                     className="pl-10"
                   />
                 </div>
-                
+
                 <BrandFilterBar
                   selectedBrand={selectedBrand}
                   onBrandChange={setSelectedBrand}
@@ -695,8 +677,10 @@ export default function GrabbaCRM() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Neighborhoods</SelectItem>
-                    {neighborhoods.map(hood => (
-                      <SelectItem key={hood} value={hood}>{hood}</SelectItem>
+                    {neighborhoods.map((hood) => (
+                      <SelectItem key={hood} value={hood}>
+                        {hood}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -708,10 +692,10 @@ export default function GrabbaCRM() {
                 )}
 
                 <div className="ml-auto text-sm text-muted-foreground">
-                  {activeTab === 'companies' && `${filteredCompanies?.length || 0} companies`}
-                  {activeTab === 'stores' && `${filteredStores?.length || 0} stores`}
-                  {activeTab === 'wholesalers' && `${filteredWholesalers?.length || 0} wholesalers`}
-                  {activeTab === 'ambassadors' && `${filteredAmbassadors?.length || 0} ambassadors`}
+                  {activeTab === "companies" && `${filteredCompanies?.length || 0} companies`}
+                  {activeTab === "stores" && `${filteredStores?.length || 0} stores`}
+                  {activeTab === "wholesalers" && `${filteredWholesalers?.length || 0} wholesalers`}
+                  {activeTab === "ambassadors" && `${filteredAmbassadors?.length || 0} ambassadors`}
                 </div>
               </div>
             </div>
@@ -742,97 +726,89 @@ export default function GrabbaCRM() {
                 </TabsTrigger>
               </TabsList>
 
-          {/* Companies Tab */}
-          <TabsContent value="companies" className="space-y-3 mt-4">
-            {companiesLoading ? (
-              <Card className="p-8 text-center text-muted-foreground">Loading companies...</Card>
-            ) : filteredCompanies?.length === 0 ? (
-              <Card className="p-8 text-center text-muted-foreground">No companies found</Card>
-            ) : (
-              filteredCompanies?.map(company => (
-                <CompanyCard key={company.id} company={company} />
-              ))
-            )}
-          </TabsContent>
+              {/* Companies Tab */}
+              <TabsContent value="companies" className="space-y-3 mt-4">
+                {companiesLoading ? (
+                  <Card className="p-8 text-center text-muted-foreground">Loading companies...</Card>
+                ) : filteredCompanies?.length === 0 ? (
+                  <Card className="p-8 text-center text-muted-foreground">No companies found</Card>
+                ) : (
+                  filteredCompanies?.map((company) => <CompanyCard key={company.id} company={company} />)
+                )}
+              </TabsContent>
 
-          {/* Stores Tab */}
-          <TabsContent value="stores" className="space-y-3 mt-4">
-            {storesLoading ? (
-              <Card className="p-8 text-center text-muted-foreground">Loading stores...</Card>
-            ) : filteredStores?.length === 0 ? (
-              <Card className="p-8 text-center text-muted-foreground">No stores found</Card>
-            ) : (
-              filteredStores?.map((store: any) => (
-                <StoreCard key={store.id} store={store} />
-              ))
-            )}
-          </TabsContent>
+              {/* Stores Tab */}
+              <TabsContent value="stores" className="space-y-3 mt-4">
+                {storesLoading ? (
+                  <Card className="p-8 text-center text-muted-foreground">Loading stores...</Card>
+                ) : filteredStores?.length === 0 ? (
+                  <Card className="p-8 text-center text-muted-foreground">No stores found</Card>
+                ) : (
+                  filteredStores?.map((store: any) => <StoreCard key={store.id} store={store} />)
+                )}
+              </TabsContent>
 
-          {/* Wholesalers Tab */}
-          <TabsContent value="wholesalers" className="space-y-3 mt-4">
-            {wholesalersLoading ? (
-              <Card className="p-8 text-center text-muted-foreground">Loading wholesalers...</Card>
-            ) : filteredWholesalers?.length === 0 ? (
-              <Card className="p-8 text-center text-muted-foreground">No wholesalers found</Card>
-            ) : (
-              filteredWholesalers?.map(wholesaler => (
-                <WholesalerCard key={wholesaler.id} wholesaler={wholesaler} />
-              ))
-            )}
-          </TabsContent>
+              {/* Wholesalers Tab */}
+              <TabsContent value="wholesalers" className="space-y-3 mt-4">
+                {wholesalersLoading ? (
+                  <Card className="p-8 text-center text-muted-foreground">Loading wholesalers...</Card>
+                ) : filteredWholesalers?.length === 0 ? (
+                  <Card className="p-8 text-center text-muted-foreground">No wholesalers found</Card>
+                ) : (
+                  filteredWholesalers?.map((wholesaler) => (
+                    <WholesalerCard key={wholesaler.id} wholesaler={wholesaler} />
+                  ))
+                )}
+              </TabsContent>
 
-          {/* Ambassadors Tab */}
-          <TabsContent value="ambassadors" className="space-y-3 mt-4">
-            {ambassadorsLoading ? (
-              <Card className="p-8 text-center text-muted-foreground">Loading ambassadors...</Card>
-            ) : filteredAmbassadors?.length === 0 ? (
-              <Card className="p-8 text-center text-muted-foreground">No ambassadors found</Card>
-            ) : (
-              filteredAmbassadors?.map((ambassador: any) => (
-                <AmbassadorCard key={ambassador.id} ambassador={ambassador} />
-              ))
-            )}
-          </TabsContent>
+              {/* Ambassadors Tab */}
+              <TabsContent value="ambassadors" className="space-y-3 mt-4">
+                {ambassadorsLoading ? (
+                  <Card className="p-8 text-center text-muted-foreground">Loading ambassadors...</Card>
+                ) : filteredAmbassadors?.length === 0 ? (
+                  <Card className="p-8 text-center text-muted-foreground">No ambassadors found</Card>
+                ) : (
+                  filteredAmbassadors?.map((ambassador: any) => (
+                    <AmbassadorCard key={ambassador.id} ambassador={ambassador} />
+                  ))
+                )}
+              </TabsContent>
             </Tabs>
           </div>
-          
+
           {/* AI Insights Sidebar */}
           <div className="hidden lg:block">
             <AICRMInsights />
           </div>
         </div>
       </div>
-      
+
       {/* Floating Add Button */}
-      {activeTab !== 'ambassadors' && (
-        <GlobalAddButton
-          label={getAddLabel()}
-          onClick={() => setCreateModalOpen(true)}
-          variant="floating"
-        />
+      {activeTab !== "ambassadors" && (
+        <GlobalAddButton label={getAddLabel()} onClick={() => setCreateModalOpen(true)} variant="floating" />
       )}
-      
+
       {/* Create Modal */}
       <EntityModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        title={`Create ${activeTab === 'companies' ? 'Company' : activeTab === 'stores' ? 'Store' : 'Wholesaler'}`}
+        title={`Create ${activeTab === "companies" ? "Company" : activeTab === "stores" ? "Store" : "Wholesaler"}`}
         fields={getActiveFields()}
         onSubmit={handleCreate}
         mode="create"
       />
-      
+
       {/* Edit Modal */}
       <EntityModal
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
-        title={`Edit ${activeTab === 'companies' ? 'Company' : activeTab === 'stores' ? 'Store' : 'Wholesaler'}`}
+        title={`Edit ${activeTab === "companies" ? "Company" : activeTab === "stores" ? "Store" : "Wholesaler"}`}
         fields={getActiveFields()}
         defaultValues={selectedEntity || {}}
         onSubmit={handleEdit}
         mode="edit"
       />
-      
+
       {/* Delete Confirmation Modal */}
       <DeleteConfirmModal
         open={deleteModalOpen}
