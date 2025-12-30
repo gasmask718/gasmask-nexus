@@ -11,13 +11,12 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   RefreshCw, AlertTriangle, CheckCircle, Database, Users, Calendar, 
-  XCircle, ChevronDown, Clock, Server, Shield, Activity, List, Filter, X, ChevronLeft, ChevronRight, TrendingUp, Target
+  XCircle, ChevronDown, Clock, Server, Shield, Activity, List, Filter, X, ChevronLeft, ChevronRight, TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Navigate } from 'react-router-dom';
 import NBAMoneylineLeans from '@/components/betting/NBAMoneylineLeans';
 import { PropSettlementAudit } from '@/components/betting/PropSettlementAudit';
-import { PropFinalResults } from '@/components/betting/PropFinalResults';
 
 interface PlayerStats {
   id: string;
@@ -769,16 +768,18 @@ const StatsInspector = () => {
           <div className="flex items-center gap-2">
             <Shield className="w-6 h-6 text-primary" />
             <h1 className="text-2xl font-bold">NBA Stats Inspector</h1>
-            <Badge variant="outline" className="text-xs">OWNER ONLY</Badge>
+            <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-500">DEBUG ONLY</Badge>
           </div>
-          <p className="text-muted-foreground mt-1">Debug SportsDataIO data flow and prop eligibility</p>
+          <p className="text-muted-foreground mt-1">
+            Read-only debug view. For results, see <a href="/os/sports-betting/results" className="text-primary underline">Results Page</a>
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleRefreshStats} disabled={refreshing} variant="outline">
+          <Button onClick={handleRefreshStats} disabled={refreshing} variant="outline" size="sm">
             <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh Stats
           </Button>
-          <Button onClick={handleGenerateProps} disabled={refreshing}>
+          <Button onClick={handleGenerateProps} disabled={refreshing} variant="outline" size="sm">
             <Database className="w-4 h-4 mr-2" />
             Generate Props
           </Button>
@@ -901,7 +902,7 @@ const StatsInspector = () => {
       </div>
 
       <Tabs defaultValue="moneyline" className="w-full">
-        <TabsList className="grid grid-cols-8 w-full max-w-5xl">
+        <TabsList className="grid grid-cols-7 w-full max-w-4xl">
           <TabsTrigger value="moneyline">
             <TrendingUp className="w-4 h-4 mr-2" />
             Moneyline
@@ -909,10 +910,6 @@ const StatsInspector = () => {
           <TabsTrigger value="all-props">
             <List className="w-4 h-4 mr-2" />
             All Props
-          </TabsTrigger>
-          <TabsTrigger value="prop-results">
-            <Target className="w-4 h-4 mr-2" />
-            Prop Results
           </TabsTrigger>
           <TabsTrigger value="raw">
             <Server className="w-4 h-4 mr-2" />
@@ -932,7 +929,7 @@ const StatsInspector = () => {
           </TabsTrigger>
           <TabsTrigger value="settlement">
             <CheckCircle className="w-4 h-4 mr-2" />
-            Settlement
+            Admin
           </TabsTrigger>
         </TabsList>
 
@@ -944,11 +941,6 @@ const StatsInspector = () => {
         {/* ALL PROPS VIEW - Full dataset with pagination and filters */}
         <TabsContent value="all-props">
           <AllPropsView props={props || []} loading={loadingProps} />
-        </TabsContent>
-
-        {/* PROP FINAL RESULTS - Authoritative settled prop data */}
-        <TabsContent value="prop-results">
-          <PropFinalResults />
         </TabsContent>
 
         {/* SECTION A: Raw API Data */}
@@ -1280,8 +1272,21 @@ const StatsInspector = () => {
           </Card>
         </TabsContent>
 
-        {/* Prop Settlement */}
+        {/* Admin Settlement - Write operations for settling props */}
         <TabsContent value="settlement">
+          <Card className="border-amber-500/30 mb-4">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-2 text-amber-600">
+                <AlertTriangle className="h-5 w-5" />
+                <div>
+                  <p className="font-medium">Admin Settlement Controls</p>
+                  <p className="text-sm text-muted-foreground">
+                    These actions write to the immutable results ledger. Use with caution.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           <PropSettlementAudit />
         </TabsContent>
       </Tabs>
