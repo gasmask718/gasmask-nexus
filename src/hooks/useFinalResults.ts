@@ -45,6 +45,7 @@ export function useFinalResults(options: UseFinalResultsOptions = {}) {
         .from('final_results')
         .select('*')
         .eq('sport', sport)
+        .eq('is_valid', true) // Only read valid rows
         .order('game_date', { ascending: false })
         .order('settled_at', { ascending: false });
 
