@@ -334,7 +334,8 @@ serve(async (req) => {
     const sportsDataIOKey = Deno.env.get("SPORTSDATAIO_API_KEY");
     
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const { action } = await req.json();
+    const body = await req.json();
+    const { action } = body;
     const today = new Date().toISOString().split("T")[0];
     
     console.log(`NBA Stats Engine: action=${action}, date=${today}, hasApiKey=${!!sportsDataIOKey}`);
@@ -871,6 +872,263 @@ serve(async (req) => {
         
       } catch (error) {
         console.error('Settle results error:', error);
+        return new Response(JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }), { 
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        });
+      }
+    }
+
+    // ========== SETTLE PROPS ACTION ==========
+    // Automatically settles player props using ONLY BoxScoresFinal stats
+    if (action === "settle_props") {
+      console.log("=== NBA STATS ENGINE: SETTLE_PROPS START ===");
+      
+      const targetDate = body.date || new Date().toISOString().split('T')[0];
+      console.log(`Settling props for date: ${targetDate}`);
+      
+      try {
+        // 1. Fetch BoxScoresFinal for the target date - THE ONLY SOURCE OF TRUTH
+        const boxScoresData = await fetchSportsDataIO(
+          `/stats/json/BoxScoresFinal/${targetDate}`, 
+          sportsDataIOKey
+        );
+        
+        if (!boxScoresData || boxScoresData.length === 0) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'No final box scores available for this date'
+          }), { 
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" } 
+          });
+        }
+        
+        console.log(`Fetched ${boxScoresData.length} box scores`);
+        
+        // 2. Build lookup map: (GameID, PlayerID) -> PlayerGameStats
+        const playerStatsMap = new Map<string, any>();
+        const gameInfoMap = new Map<string, any>();
+        
+        for (const boxScore of boxScoresData) {
+          const game = boxScore.Game;
+          if (!game || game.Status !== 'Final') continue;
+          
+          gameInfoMap.set(String(game.GameID), game);
+          
+          // Process player stats from both teams
+          const allPlayers = [
+            ...(boxScore.HomeTeam?.Players || []),
+            ...(boxScore.AwayTeam?.Players || [])
+          ];
+          
+          for (const player of allPlayers) {
+            if (!player.PlayerID) continue;
+            const key = `${game.GameID}_${player.PlayerID}`;
+            playerStatsMap.set(key, {
+              ...player,
+              GameID: game.GameID,
+              GameDate: targetDate,
+              HomeTeam: game.HomeTeam,
+              AwayTeam: game.AwayTeam,
+            });
+          }
+        }
+        
+        console.log(`Built player stats map with ${playerStatsMap.size} entries`);
+        
+        // 3. Fetch AI prop predictions for this date (from nba_props_generated)
+        const { data: propPredictions, error: propsError } = await supabase
+          .from('nba_props_generated')
+          .select('*')
+          .eq('game_date', targetDate);
+        
+        if (propsError) {
+          console.error('Error fetching prop predictions:', propsError);
+          throw propsError;
+        }
+        
+        console.log(`Found ${propPredictions?.length || 0} prop predictions to settle`);
+        
+        if (!propPredictions || propPredictions.length === 0) {
+          return new Response(JSON.stringify({
+            success: true,
+            message: 'No prop predictions to settle for this date',
+            settled: 0
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        
+        // 4. Settle each prop prediction
+        let settledCount = 0;
+        let dnpCount = 0;
+        const errors: string[] = [];
+        const settledProps: any[] = [];
+        
+        for (const prop of propPredictions) {
+          try {
+            // Find player's box score stats by game_id + player_id
+            const lookupKey = `${prop.game_id}_${prop.player_id}`;
+            const playerStats = playerStatsMap.get(lookupKey);
+            const gameInfo = gameInfoMap.get(String(prop.game_id));
+            
+            // Determine final stat value based on stat_type
+            let finalStatValue: number | null = null;
+            let isDNP = false;
+            
+            if (!playerStats) {
+              // Player not in box score = DNP
+              isDNP = true;
+              finalStatValue = 0;
+              console.log(`DNP: ${prop.player_name} (${prop.stat_type}) - not in box score`);
+            } else if (playerStats.Minutes === 0 || playerStats.Minutes === null) {
+              // Zero minutes = DNP
+              isDNP = true;
+              finalStatValue = 0;
+              console.log(`DNP: ${prop.player_name} (${prop.stat_type}) - 0 minutes`);
+            } else {
+              // STRICT STAT MAPPING - ONLY final box score values
+              switch (prop.stat_type?.toUpperCase()) {
+                case 'PTS':
+                case 'POINTS':
+                  finalStatValue = playerStats.Points ?? 0;
+                  break;
+                case 'REB':
+                case 'REBOUNDS':
+                  finalStatValue = playerStats.Rebounds ?? 0;
+                  break;
+                case 'AST':
+                case 'ASSISTS':
+                  finalStatValue = playerStats.Assists ?? 0;
+                  break;
+                case 'PRA':
+                  finalStatValue = (playerStats.Points ?? 0) + 
+                                   (playerStats.Rebounds ?? 0) + 
+                                   (playerStats.Assists ?? 0);
+                  break;
+                case '3PM':
+                case 'THREES':
+                  finalStatValue = playerStats.ThreePointersMade ?? 0;
+                  break;
+                case 'STL':
+                case 'STEALS':
+                  finalStatValue = playerStats.Steals ?? 0;
+                  break;
+                case 'BLK':
+                case 'BLOCKS':
+                  finalStatValue = playerStats.BlockedShots ?? 0;
+                  break;
+                case 'TO':
+                case 'TURNOVERS':
+                  finalStatValue = playerStats.Turnovers ?? 0;
+                  break;
+                default:
+                  console.log(`Unknown stat type: ${prop.stat_type}`);
+                  finalStatValue = null;
+              }
+            }
+            
+            if (finalStatValue === null && !isDNP) {
+              errors.push(`${prop.player_name} ${prop.stat_type}: unknown stat type`);
+              continue;
+            }
+            
+            // Determine W/L result
+            const lineValue = Number(prop.line_value) || 0;
+            const side = prop.over_under?.toLowerCase() || 'over';
+            let result: 'W' | 'L' | 'Push' | 'DNP';
+            
+            if (isDNP) {
+              result = 'L'; // DNP defaults to loss
+            } else if (finalStatValue === lineValue) {
+              result = 'Push';
+            } else if (side === 'over') {
+              result = (finalStatValue ?? 0) > lineValue ? 'W' : 'L';
+            } else {
+              result = (finalStatValue ?? 0) < lineValue ? 'W' : 'L';
+            }
+            
+            const isCorrect = result === 'W';
+            
+            // Upsert into final_results
+            const finalResultRow = {
+              game_id: String(prop.game_id),
+              game_date: targetDate,
+              sport: 'NBA',
+              home_team: gameInfo?.HomeTeam || prop.team,
+              away_team: gameInfo?.AwayTeam || prop.opponent,
+              market_type: 'player_prop',
+              stat_type: prop.stat_type,
+              line_value: lineValue,
+              side: side,
+              player_id: String(prop.player_id),
+              player_name: prop.player_name,
+              team: prop.team,
+              opponent: prop.opponent,
+              ai_predicted_winner: side, // For props, this is over/under
+              actual_winner: result,
+              is_correct: isCorrect,
+              final_stat_value: finalStatValue,
+              stat_source: 'SportsDataIO_BoxScoresFinal',
+              dnp: isDNP,
+              ai_probability: prop.estimated_probability,
+              ai_confidence_score: prop.confidence_score,
+              model_version: 'v1',
+              prediction_source: 'ai',
+              settlement_source: 'automatic',
+              settled_at: new Date().toISOString(),
+            };
+            
+            const { error: upsertError } = await supabase
+              .from('final_results')
+              .upsert(finalResultRow, {
+                onConflict: 'game_id,player_id,stat_type,model_version',
+                ignoreDuplicates: false
+              });
+            
+            if (upsertError) {
+              console.error(`Error settling prop ${prop.player_name} ${prop.stat_type}:`, upsertError);
+              errors.push(`${prop.player_name} ${prop.stat_type}: ${upsertError.message}`);
+              continue;
+            }
+            
+            settledCount++;
+            if (isDNP) dnpCount++;
+            
+            settledProps.push({
+              player: prop.player_name,
+              stat: prop.stat_type,
+              line: lineValue,
+              side,
+              actual: finalStatValue,
+              result,
+              dnp: isDNP
+            });
+            
+            console.log(`Settled: ${prop.player_name} ${prop.stat_type} ${side} ${lineValue} -> Actual: ${finalStatValue} = ${result}`);
+            
+          } catch (err) {
+            console.error(`Exception settling prop:`, err);
+            errors.push(`${prop.player_name}: ${err}`);
+          }
+        }
+        
+        console.log(`=== NBA STATS ENGINE: SETTLE_PROPS COMPLETE - Settled ${settledCount} props (${dnpCount} DNP) ===`);
+        
+        return new Response(JSON.stringify({
+          success: true,
+          date: targetDate,
+          settled: settledCount,
+          dnp_count: dnpCount,
+          total_predictions: propPredictions.length,
+          sample_results: settledProps.slice(0, 10),
+          errors: errors.length > 0 ? errors : undefined
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        
+      } catch (error) {
+        console.error('Settle props error:', error);
         return new Response(JSON.stringify({
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error'

@@ -10615,6 +10615,8 @@ export type Database = {
           away_team: string
           confirmation_id: string | null
           created_at: string
+          dnp: boolean | null
+          final_stat_value: number | null
           game_date: string
           game_id: string
           home_score: number | null
@@ -10624,14 +10626,24 @@ export type Database = {
           invalidated_at: string | null
           is_correct: boolean | null
           is_valid: boolean | null
+          line_value: number | null
           locked_at: string | null
+          market_type: string | null
           model_version: string | null
+          opponent: string | null
+          pick_entry_id: string | null
+          player_id: string | null
+          player_name: string | null
           prediction_id: string | null
           prediction_source: string | null
           settled_at: string
           settled_by: string | null
           settlement_source: string | null
+          side: string | null
           sport: string
+          stat_source: string | null
+          stat_type: string | null
+          team: string | null
         }
         Insert: {
           actual_winner: string
@@ -10642,6 +10654,8 @@ export type Database = {
           away_team: string
           confirmation_id?: string | null
           created_at?: string
+          dnp?: boolean | null
+          final_stat_value?: number | null
           game_date: string
           game_id: string
           home_score?: number | null
@@ -10651,14 +10665,24 @@ export type Database = {
           invalidated_at?: string | null
           is_correct?: boolean | null
           is_valid?: boolean | null
+          line_value?: number | null
           locked_at?: string | null
+          market_type?: string | null
           model_version?: string | null
+          opponent?: string | null
+          pick_entry_id?: string | null
+          player_id?: string | null
+          player_name?: string | null
           prediction_id?: string | null
           prediction_source?: string | null
           settled_at?: string
           settled_by?: string | null
           settlement_source?: string | null
+          side?: string | null
           sport?: string
+          stat_source?: string | null
+          stat_type?: string | null
+          team?: string | null
         }
         Update: {
           actual_winner?: string
@@ -10669,6 +10693,8 @@ export type Database = {
           away_team?: string
           confirmation_id?: string | null
           created_at?: string
+          dnp?: boolean | null
+          final_stat_value?: number | null
           game_date?: string
           game_id?: string
           home_score?: number | null
@@ -10678,14 +10704,24 @@ export type Database = {
           invalidated_at?: string | null
           is_correct?: boolean | null
           is_valid?: boolean | null
+          line_value?: number | null
           locked_at?: string | null
+          market_type?: string | null
           model_version?: string | null
+          opponent?: string | null
+          pick_entry_id?: string | null
+          player_id?: string | null
+          player_name?: string | null
           prediction_id?: string | null
           prediction_source?: string | null
           settled_at?: string
           settled_by?: string | null
           settlement_source?: string | null
+          side?: string | null
           sport?: string
+          stat_source?: string | null
+          stat_type?: string | null
+          team?: string | null
         }
         Relationships: [
           {

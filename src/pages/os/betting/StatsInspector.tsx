@@ -11,12 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   RefreshCw, AlertTriangle, CheckCircle, Database, Users, Calendar, 
-  XCircle, ChevronDown, Clock, Server, Shield, Activity, List, Filter, X, ChevronLeft, ChevronRight, TrendingUp
+  XCircle, ChevronDown, Clock, Server, Shield, Activity, List, Filter, X, ChevronLeft, ChevronRight, TrendingUp, Target
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Navigate } from 'react-router-dom';
 import NBAMoneylineLeans from '@/components/betting/NBAMoneylineLeans';
 import { PropSettlementAudit } from '@/components/betting/PropSettlementAudit';
+import { PropFinalResults } from '@/components/betting/PropFinalResults';
 
 interface PlayerStats {
   id: string;
@@ -900,7 +901,7 @@ const StatsInspector = () => {
       </div>
 
       <Tabs defaultValue="moneyline" className="w-full">
-        <TabsList className="grid grid-cols-7 w-full max-w-4xl">
+        <TabsList className="grid grid-cols-8 w-full max-w-5xl">
           <TabsTrigger value="moneyline">
             <TrendingUp className="w-4 h-4 mr-2" />
             Moneyline
@@ -908,6 +909,10 @@ const StatsInspector = () => {
           <TabsTrigger value="all-props">
             <List className="w-4 h-4 mr-2" />
             All Props
+          </TabsTrigger>
+          <TabsTrigger value="prop-results">
+            <Target className="w-4 h-4 mr-2" />
+            Prop Results
           </TabsTrigger>
           <TabsTrigger value="raw">
             <Server className="w-4 h-4 mr-2" />
@@ -921,13 +926,13 @@ const StatsInspector = () => {
             <Database className="w-4 h-4 mr-2" />
             Database
           </TabsTrigger>
-          <TabsTrigger value="eligibility">
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Eligibility
-          </TabsTrigger>
           <TabsTrigger value="logs">
             <Clock className="w-4 h-4 mr-2" />
             Logs
+          </TabsTrigger>
+          <TabsTrigger value="settlement">
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Settlement
           </TabsTrigger>
         </TabsList>
 
@@ -939,6 +944,11 @@ const StatsInspector = () => {
         {/* ALL PROPS VIEW - Full dataset with pagination and filters */}
         <TabsContent value="all-props">
           <AllPropsView props={props || []} loading={loadingProps} />
+        </TabsContent>
+
+        {/* PROP FINAL RESULTS - Authoritative settled prop data */}
+        <TabsContent value="prop-results">
+          <PropFinalResults />
         </TabsContent>
 
         {/* SECTION A: Raw API Data */}
