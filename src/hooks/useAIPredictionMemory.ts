@@ -87,7 +87,10 @@ const TEAM_STRENGTHS: Record<string, number> = {
   "Washington Wizards": 0.38,
 };
 
-export function generateAIPrediction(homeTeam: string, awayTeam: string) {
+// INTERNAL ONLY - generate AI prediction based on team strengths
+// This should ONLY be called by storePredictions mutation when storing new predictions
+// NEVER call this directly from UI components to avoid prediction discrepancies
+function generateAIPrediction(homeTeam: string, awayTeam: string) {
   const homeStrength = TEAM_STRENGTHS[homeTeam] || 0.50;
   const awayStrength = TEAM_STRENGTHS[awayTeam] || 0.50;
   

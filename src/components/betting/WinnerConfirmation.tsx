@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useConfirmedWinners, ConfirmWinnerInput, ConfirmedWinner } from '@/hooks/useConfirmedWinners';
-import { useAIPredictionMemory, generateAIPrediction } from '@/hooks/useAIPredictionMemory';
+import { useAIPredictionMemory } from '@/hooks/useAIPredictionMemory';
 import { format, subDays } from 'date-fns';
 import {
   Home, Plane, CheckCircle, XCircle, CalendarIcon, Shield, Brain, Sparkles, Undo2, AlertTriangle
@@ -170,15 +170,15 @@ const GameConfirmCard = ({
             </div>
           </div>
 
-          {/* AI Prediction Display */}
+          {/* AI Prediction Display - Read-Only from stored predictions */}
           <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
             <div className="flex items-center gap-2 mb-2">
               <Brain className="w-4 h-4 text-purple-400" />
-              <span className="text-sm font-medium text-purple-400">AI Prediction</span>
+              <span className="text-sm font-medium text-purple-400">AI Prediction (Read-Only)</span>
               {aiPrediction?.isStored && (
                 <Badge variant="outline" className="text-xs border-purple-500/50 text-purple-400">
                   <Sparkles className="w-3 h-3 mr-1" />
-                  Stored
+                  Source of Truth
                 </Badge>
               )}
             </div>
@@ -195,7 +195,9 @@ const GameConfirmCard = ({
                 </div>
               </div>
             ) : (
-              <span className="text-sm text-muted-foreground">No AI prediction recorded</span>
+              <span className="text-sm text-muted-foreground italic">
+                No AI prediction recorded for this game
+              </span>
             )}
           </div>
 
@@ -491,7 +493,8 @@ export function WinnerConfirmation() {
 
   const isLoading = gamesLoading || confirmLoading || predictionsLoading;
 
-  // Get AI prediction display for a game
+  // Get AI prediction display for a game - ONLY from stored predictions
+  // NEVER generate on-the-fly as this could conflict with Settlement Engine
   const getAIPredictionDisplay = (game: GameData): AIPredictionDisplay | undefined => {
     const storedPrediction = getPredictionByGameId(game.game_id);
     
@@ -501,17 +504,13 @@ export function WinnerConfirmation() {
         probability: storedPrediction.ai_predicted_probability || 0,
         confidence: storedPrediction.ai_confidence_score || 0,
         isStored: true,
+        createdAt: storedPrediction.created_at,
       };
     }
     
-    // Generate on-the-fly if not stored
-    const generated = generateAIPrediction(game.home_team, game.away_team);
-    return {
-      predictedWinner: generated.ai_predicted_winner,
-      probability: generated.ai_predicted_probability,
-      confidence: generated.ai_confidence_score,
-      isStored: false,
-    };
+    // No stored prediction - return undefined (DO NOT GENERATE)
+    // This ensures Settlement Engine's stored predictions are the single source of truth
+    return undefined;
   };
 
   // Get evaluation display for a game
@@ -680,12 +679,13 @@ export function WinnerConfirmation() {
         <div className="flex items-start gap-2">
           <Brain className="w-4 h-4 text-purple-400 mt-0.5" />
           <div className="text-xs text-muted-foreground">
-            <p className="font-medium mb-1">AI Prediction Memory</p>
+            <p className="font-medium mb-1">Settlement Engine is the Source of Truth</p>
             <ul className="list-disc list-inside space-y-0.5">
-              <li>AI predictions are automatically stored for all games</li>
-              <li>When you confirm a winner, the system evaluates the AI's prediction</li>
-              <li>Results (correct/incorrect) are tracked for learning</li>
-              <li>Historical accuracy is used to improve future predictions</li>
+              <li>AI predictions are <strong>immutable</strong> once stored</li>
+              <li>This UI <strong>only displays</strong> stored predictions (read-only)</li>
+              <li>Predictions are <strong>never recomputed</strong> or inferred here</li>
+              <li>When you confirm a winner, the stored AI prediction is evaluated</li>
+              <li>If "No AI prediction recorded", the system cannot evaluate accuracy</li>
             </ul>
           </div>
         </div>
