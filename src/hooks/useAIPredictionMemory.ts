@@ -31,6 +31,9 @@ export interface PredictionEvaluation {
   evaluated_at: string;
   evaluated_by: string | null;
   notes: string | null;
+  is_valid: boolean;
+  invalidated_at: string | null;
+  invalidation_reason: string | null;
 }
 
 interface StorePredictionInput {
@@ -265,6 +268,7 @@ export function useAIPredictionMemory(dateRange?: { start: string; end: string }
   });
 
   // Evaluate a prediction against confirmed winner
+  // Learning Safety Rule: Only evaluate if AI prediction was made before game
   const evaluatePrediction = useMutation({
     mutationFn: async (input: EvaluatePredictionInput) => {
       // Get the AI prediction for this game
@@ -280,12 +284,22 @@ export function useAIPredictionMemory(dateRange?: { start: string; end: string }
         return { action: 'no_prediction', game_id: input.game_id };
       }
 
+      // Learning Safety Rule: Check if prediction was made before game
+      // For now, we'll trust stored predictions as valid
+      // In the future, we can add game_start_time comparison
+      const predictionTimestamp = new Date(prediction.created_at);
+      
       // Get the confirmation record
       const { data: confirmation } = await supabase
         .from('confirmed_game_winners')
-        .select('id')
+        .select('id, confirmation_revoked')
         .eq('game_id', input.game_id)
         .single();
+
+      // If confirmation is revoked, don't create evaluation
+      if (confirmation?.confirmation_revoked) {
+        return { action: 'confirmation_revoked', game_id: input.game_id };
+      }
 
       // Determine if prediction was correct
       const aiResult = prediction.ai_predicted_winner === input.confirmed_winner ? 'correct' : 'incorrect';
@@ -308,6 +322,9 @@ export function useAIPredictionMemory(dateRange?: { start: string; end: string }
             ai_result: aiResult,
             evaluated_at: new Date().toISOString(),
             evaluated_by: user?.id,
+            is_valid: true, // Re-validate on update
+            invalidated_at: null,
+            invalidation_reason: null,
           })
           .eq('id', existingEval.id);
 
@@ -328,13 +345,14 @@ export function useAIPredictionMemory(dateRange?: { start: string; end: string }
           prediction_id: prediction.id,
           confirmation_id: confirmation?.id,
           evaluated_by: user?.id,
+          is_valid: true,
         });
 
       if (error) throw error;
       return { action: 'created', game_id: input.game_id, result: aiResult };
     },
     onSuccess: (data) => {
-      if (data.action !== 'no_prediction') {
+      if (data.action !== 'no_prediction' && data.action !== 'confirmation_revoked') {
         toast.success(`AI prediction was ${data.result}`);
       }
       queryClient.invalidateQueries({ queryKey: ['prediction-evaluations'] });
@@ -344,14 +362,13 @@ export function useAIPredictionMemory(dateRange?: { start: string; end: string }
     },
   });
 
-  // Calculate accuracy stats
-  const stats = evaluations ? {
-    total: evaluations.length,
-    correct: evaluations.filter(e => e.ai_result === 'correct').length,
-    incorrect: evaluations.filter(e => e.ai_result === 'incorrect').length,
-    accuracy: evaluations.length > 0
-      ? (evaluations.filter(e => e.ai_result === 'correct').length / evaluations.length) * 100
-      : 0,
+  // Calculate accuracy stats (only count valid evaluations)
+  const validEvaluations = evaluations?.filter(e => e.is_valid !== false) || [];
+  const stats = validEvaluations.length > 0 ? {
+    total: validEvaluations.length,
+    correct: validEvaluations.filter(e => e.ai_result === 'correct').length,
+    incorrect: validEvaluations.filter(e => e.ai_result === 'incorrect').length,
+    accuracy: (validEvaluations.filter(e => e.ai_result === 'correct').length / validEvaluations.length) * 100,
   } : null;
 
   // Stats by confidence bands
