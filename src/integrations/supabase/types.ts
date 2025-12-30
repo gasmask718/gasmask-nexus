@@ -26497,6 +26497,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      backfill_final_results: { Args: never; Returns: number }
       can_access_brand: {
         Args: { _brand: string; _user_id: string }
         Returns: boolean
