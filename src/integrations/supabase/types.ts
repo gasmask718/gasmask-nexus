@@ -10605,6 +10605,87 @@ export type Database = {
         }
         Relationships: []
       }
+      final_results: {
+        Row: {
+          actual_winner: string
+          ai_confidence_score: number | null
+          ai_predicted_winner: string | null
+          ai_probability: number | null
+          away_score: number | null
+          away_team: string
+          confirmation_id: string | null
+          created_at: string
+          game_date: string
+          game_id: string
+          home_score: number | null
+          home_team: string
+          id: string
+          is_correct: boolean | null
+          model_version: string | null
+          prediction_id: string | null
+          settled_at: string
+          settled_by: string | null
+          sport: string
+        }
+        Insert: {
+          actual_winner: string
+          ai_confidence_score?: number | null
+          ai_predicted_winner?: string | null
+          ai_probability?: number | null
+          away_score?: number | null
+          away_team: string
+          confirmation_id?: string | null
+          created_at?: string
+          game_date: string
+          game_id: string
+          home_score?: number | null
+          home_team: string
+          id?: string
+          is_correct?: boolean | null
+          model_version?: string | null
+          prediction_id?: string | null
+          settled_at?: string
+          settled_by?: string | null
+          sport?: string
+        }
+        Update: {
+          actual_winner?: string
+          ai_confidence_score?: number | null
+          ai_predicted_winner?: string | null
+          ai_probability?: number | null
+          away_score?: number | null
+          away_team?: string
+          confirmation_id?: string | null
+          created_at?: string
+          game_date?: string
+          game_id?: string
+          home_score?: number | null
+          home_team?: string
+          id?: string
+          is_correct?: boolean | null
+          model_version?: string | null
+          prediction_id?: string | null
+          settled_at?: string
+          settled_by?: string | null
+          sport?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "final_results_confirmation_id_fkey"
+            columns: ["confirmation_id"]
+            isOneToOne: false
+            referencedRelation: "confirmed_game_winners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "final_results_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "ai_game_predictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_ai_insights: {
         Row: {
           created_at: string
