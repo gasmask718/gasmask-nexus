@@ -83,6 +83,7 @@ export function useAccuracyMetrics(filters: AccuracyFilters = DEFAULT_ACCURACY_F
       let query = supabase
         .from('final_results')
         .select('*')
+        .eq('is_valid', true) // Only read valid rows
         .gte('game_date', filters.dateFrom)
         .lte('game_date', filters.dateTo)
         .order('game_date', { ascending: true });

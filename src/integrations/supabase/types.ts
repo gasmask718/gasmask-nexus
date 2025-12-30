@@ -10620,11 +10620,17 @@ export type Database = {
           home_score: number | null
           home_team: string
           id: string
+          invalid_reason: string | null
+          invalidated_at: string | null
           is_correct: boolean | null
+          is_valid: boolean | null
+          locked_at: string | null
           model_version: string | null
           prediction_id: string | null
+          prediction_source: string | null
           settled_at: string
           settled_by: string | null
+          settlement_source: string | null
           sport: string
         }
         Insert: {
@@ -10641,11 +10647,17 @@ export type Database = {
           home_score?: number | null
           home_team: string
           id?: string
+          invalid_reason?: string | null
+          invalidated_at?: string | null
           is_correct?: boolean | null
+          is_valid?: boolean | null
+          locked_at?: string | null
           model_version?: string | null
           prediction_id?: string | null
+          prediction_source?: string | null
           settled_at?: string
           settled_by?: string | null
+          settlement_source?: string | null
           sport?: string
         }
         Update: {
@@ -10662,11 +10674,17 @@ export type Database = {
           home_score?: number | null
           home_team?: string
           id?: string
+          invalid_reason?: string | null
+          invalidated_at?: string | null
           is_correct?: boolean | null
+          is_valid?: boolean | null
+          locked_at?: string | null
           model_version?: string | null
           prediction_id?: string | null
+          prediction_source?: string | null
           settled_at?: string
           settled_by?: string | null
+          settlement_source?: string | null
           sport?: string
         }
         Relationships: [
