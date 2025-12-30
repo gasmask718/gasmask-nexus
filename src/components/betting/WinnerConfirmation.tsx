@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -378,6 +378,7 @@ const GameConfirmCard = ({
 };
 
 export function WinnerConfirmation() {
+  const queryClient = useQueryClient();
   const today = useMemo(() => getEasternDate(), []);
   const [selectedDate, setSelectedDate] = useState<Date>(() => subDays(new Date(), 1)); // Default to yesterday
   const selectedDateStr = useMemo(() => format(selectedDate, 'yyyy-MM-dd'), [selectedDate]);
@@ -412,7 +413,7 @@ export function WinnerConfirmation() {
     end: selectedDateStr 
   });
 
-  // Use AI prediction memory hook
+  // Use AI prediction memory hook (settlement is now automatic via DB trigger)
   const {
     predictions,
     evaluations,
@@ -420,7 +421,6 @@ export function WinnerConfirmation() {
     getPredictionByGameId,
     getEvaluationByGameId,
     storePredictions,
-    evaluatePrediction,
     stats: aiStats,
   } = useAIPredictionMemory({
     start: selectedDateStr,
@@ -481,15 +481,16 @@ export function WinnerConfirmation() {
       confirmed_winner: confirmedWinnerTeam,
     };
     
-    // Confirm winner first
+    // Only confirm winner - settlement is AUTOMATIC via DB trigger
+    // The trigger auto_settle_on_confirmation() handles:
+    // 1. Creating/updating final_results
+    // 2. Creating/updating prediction_evaluations
+    // 3. Computing is_correct based on immutable ai_game_predictions
     await confirmWinner.mutateAsync(input);
     
-    // Then evaluate AI prediction
-    await evaluatePrediction.mutateAsync({
-      game_id: game.game_id,
-      game_date: game.game_date,
-      confirmed_winner: confirmedWinnerTeam,
-    });
+    // Invalidate queries to refresh UI with auto-settled data
+    queryClient.invalidateQueries({ queryKey: ['prediction-evaluations'] });
+    queryClient.invalidateQueries({ queryKey: ['final-results'] });
   };
 
   const isLoading = gamesLoading || confirmLoading || predictionsLoading;
@@ -693,13 +694,13 @@ export function WinnerConfirmation() {
         <div className="flex items-start gap-2">
           <Brain className="w-4 h-4 text-purple-400 mt-0.5" />
           <div className="text-xs text-muted-foreground">
-            <p className="font-medium mb-1">Settlement Engine is the Source of Truth</p>
+            <p className="font-medium mb-1">Automatic Settlement (Backend-Driven)</p>
             <ul className="list-disc list-inside space-y-0.5">
-              <li>AI predictions are <strong>immutable</strong> once stored (locked_at timestamp)</li>
-              <li>This UI <strong>only displays</strong> stored predictions (read-only)</li>
-              <li>Predictions are <strong>never recomputed</strong> or inferred here</li>
-              <li>When you confirm a winner, the stored AI prediction is evaluated</li>
-              <li>If "No AI prediction recorded", the system cannot evaluate accuracy</li>
+              <li>This UI <strong>only confirms the winner</strong> — settlement is automatic</li>
+              <li>When you confirm, a DB trigger atomically settles the result</li>
+              <li>AI correctness is computed from immutable <code>ai_game_predictions</code></li>
+              <li>Results are stored in <code>final_results</code> table (authoritative)</li>
+              <li>No manual "Save Settlement" required — it happens instantly</li>
             </ul>
           </div>
         </div>
