@@ -102,6 +102,12 @@ export default function BettingDashboard() {
               Hedge
             </Button>
           </Link>
+          <Link to="/os/sports-betting/results">
+            <Button variant="outline">
+              <Trophy className="h-4 w-4 mr-2" />
+              Results
+            </Button>
+          </Link>
           {isOwner && (
             <Link to="/os/sports-betting/stats-inspector">
               <Button variant="outline" className="border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10">

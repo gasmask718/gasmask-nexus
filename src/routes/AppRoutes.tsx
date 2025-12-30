@@ -355,6 +355,7 @@ import PlatformsDashboard from '@/pages/os/betting/PlatformsDashboard';
 import LineShopping from '@/pages/os/betting/LineShopping';
 import PickEntryWizard from '@/pages/os/betting/PickEntryWizard';
 import EntriesList from '@/pages/os/betting/EntriesList';
+import BettingResultsPage from '@/pages/os/betting/ResultsPage';
 import BikerDashboard from '@/pages/os/biker/BikerDashboard';
 import ModuleDiagnosticsPage from '@/pages/ModuleDiagnosticsPage';
 
@@ -927,6 +928,7 @@ export default function AppRoutes() {
         <Route path="/os/sports-betting/line-shopping" element={<LineShopping />} />
         <Route path="/os/sports-betting/entries" element={<EntriesList />} />
         <Route path="/os/sports-betting/entries/new" element={<PickEntryWizard />} />
+        <Route path="/os/sports-betting/results" element={<BettingResultsPage />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
 
         {/* Legacy payouts aliases (keep old links working) */}
