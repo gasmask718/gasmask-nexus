@@ -23,9 +23,29 @@ export interface PredictionSnapshot {
   created_at: string;
 }
 
-// Simple prediction logic based on team strength (placeholder for real model)
-const generatePrediction = (homeTeam: string, awayTeam: string) => {
-  // Simple hash-based prediction for consistency
+// Fetch canonical prediction from ai_game_predictions table
+// This is the SINGLE SOURCE OF TRUTH for all AI predictions
+async function getCanonicalPrediction(gameId: string) {
+  const { data } = await supabase
+    .from('ai_game_predictions')
+    .select('ai_predicted_winner, ai_predicted_probability, ai_confidence_score, model_version')
+    .eq('game_id', gameId)
+    .maybeSingle();
+  
+  if (data) {
+    return {
+      predicted_winner: data.ai_predicted_winner,
+      predicted_win_probability: data.ai_predicted_probability,
+      confidence_score: data.ai_confidence_score,
+      model_version: data.model_version,
+    };
+  }
+  return null;
+}
+
+// Simple prediction logic - ONLY used when no canonical prediction exists
+// This generates a prediction and stores it in ai_game_predictions first
+async function generateAndStorePrediction(homeTeam: string, awayTeam: string, gameId: string, gameDate: string) {
   const teamStrengths: Record<string, number> = {
     "Boston Celtics": 0.72,
     "Oklahoma City Thunder": 0.70,
@@ -62,7 +82,6 @@ const generatePrediction = (homeTeam: string, awayTeam: string) => {
   const homeStrength = teamStrengths[homeTeam] || 0.50;
   const awayStrength = teamStrengths[awayTeam] || 0.50;
   
-  // Home court advantage ~3%
   const homeAdvantage = 0.03;
   const adjustedHomeStrength = homeStrength + homeAdvantage;
   
@@ -71,16 +90,31 @@ const generatePrediction = (homeTeam: string, awayTeam: string) => {
   
   const predictedWinner = homeWinProb >= 0.5 ? homeTeam : awayTeam;
   const winProbability = homeWinProb >= 0.5 ? homeWinProb : (1 - homeWinProb);
-  
-  // Confidence based on probability difference
   const confidence = Math.abs(homeWinProb - 0.5) * 2;
-  
+
+  // Store in canonical table first (will respect unique constraint)
+  await supabase
+    .from('ai_game_predictions')
+    .insert({
+      game_id: gameId,
+      game_date: gameDate,
+      sport: 'NBA',
+      home_team: homeTeam,
+      away_team: awayTeam,
+      ai_predicted_winner: predictedWinner,
+      ai_predicted_probability: Math.round(winProbability * 10000) / 10000,
+      ai_confidence_score: Math.round(confidence * 10000) / 10000,
+      model_version: 'v1',
+      prediction_source: 'ai',
+    });
+
   return {
     predicted_winner: predictedWinner,
     predicted_win_probability: Math.round(winProbability * 10000) / 10000,
     confidence_score: Math.round(confidence * 10000) / 10000,
+    model_version: 'v1',
   };
-};
+}
 
 export function usePredictionSnapshots(dateRange?: { start: string; end: string }) {
   const queryClient = useQueryClient();
@@ -108,6 +142,7 @@ export function usePredictionSnapshots(dateRange?: { start: string; end: string 
   });
 
   // Generate snapshots for a specific date
+  // Uses canonical ai_game_predictions as the source of truth
   const generateSnapshots = useMutation({
     mutationFn: async ({ date, games, isBackfill = false }: { 
       date: string; 
@@ -121,8 +156,19 @@ export function usePredictionSnapshots(dateRange?: { start: string; end: string 
       }>; 
       isBackfill?: boolean;
     }) => {
-      const snapshots = games.map(game => {
-        const prediction = generatePrediction(game.home_team, game.away_team);
+      const snapshots = await Promise.all(games.map(async game => {
+        // Try to get canonical prediction first
+        let prediction = await getCanonicalPrediction(game.game_id);
+        
+        // If no canonical prediction exists, generate and store one
+        if (!prediction) {
+          prediction = await generateAndStorePrediction(
+            game.home_team, 
+            game.away_team, 
+            game.game_id, 
+            date
+          );
+        }
         
         // Determine actual winner if game is final
         let actualWinner = null;
@@ -141,7 +187,7 @@ export function usePredictionSnapshots(dateRange?: { start: string; end: string 
           predicted_winner: prediction.predicted_winner,
           predicted_win_probability: prediction.predicted_win_probability,
           confidence_score: prediction.confidence_score,
-          model_version: "v1",
+          model_version: prediction.model_version || "v1",
           is_backfilled: isBackfill,
           actual_winner: actualWinner,
           home_score: game.home_score || null,
@@ -150,7 +196,7 @@ export function usePredictionSnapshots(dateRange?: { start: string; end: string 
           success,
           result_linked_at: actualWinner ? new Date().toISOString() : null,
         };
-      });
+      }));
 
       const { data, error } = await supabase
         .from("daily_prediction_snapshots")

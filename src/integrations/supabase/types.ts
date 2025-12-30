@@ -1678,6 +1678,7 @@ export type Database = {
           game_id: string
           home_team: string
           id: string
+          locked_at: string | null
           model_version: string | null
           prediction_source: string | null
           sport: string
@@ -1692,6 +1693,7 @@ export type Database = {
           game_id: string
           home_team: string
           id?: string
+          locked_at?: string | null
           model_version?: string | null
           prediction_source?: string | null
           sport?: string
@@ -1706,6 +1708,7 @@ export type Database = {
           game_id?: string
           home_team?: string
           id?: string
+          locked_at?: string | null
           model_version?: string | null
           prediction_source?: string | null
           sport?: string
