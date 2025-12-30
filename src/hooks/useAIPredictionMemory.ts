@@ -16,6 +16,7 @@ export interface AIPrediction {
   model_version: string | null;
   prediction_source: string;
   created_at: string;
+  locked_at: string | null;
 }
 
 export interface PredictionEvaluation {
@@ -174,21 +175,11 @@ export function useAIPredictionMemory(dateRange?: { start: string; end: string }
     return evaluations?.find(e => e.game_id === gameId);
   };
 
-  // Store a new AI prediction
+  // Store a new AI prediction (uses ON CONFLICT DO NOTHING - immutable once created)
   const storePrediction = useMutation({
     mutationFn: async (input: StorePredictionInput) => {
-      const { data: existing } = await supabase
-        .from('ai_game_predictions')
-        .select('id')
-        .eq('game_id', input.game_id)
-        .eq('game_date', input.game_date)
-        .single();
-
-      if (existing) {
-        // Already exists, skip
-        return { action: 'exists', game_id: input.game_id };
-      }
-
+      // Use INSERT with ON CONFLICT DO NOTHING - respects unique constraint
+      // This ensures predictions are NEVER overwritten
       const { error } = await supabase
         .from('ai_game_predictions')
         .insert({
@@ -202,17 +193,22 @@ export function useAIPredictionMemory(dateRange?: { start: string; end: string }
           ai_confidence_score: input.ai_confidence_score,
           model_version: input.model_version || 'v1',
           prediction_source: 'ai',
+          // locked_at is auto-set by trigger
         });
 
-      if (error) throw error;
-      return { action: 'created', game_id: input.game_id };
+      // Ignore unique constraint violations (prediction already exists)
+      if (error && error.code !== '23505') {
+        throw error;
+      }
+      
+      return { action: error?.code === '23505' ? 'exists' : 'created', game_id: input.game_id };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ai-predictions'] });
     },
   });
 
-  // Store predictions for multiple games
+  // Store predictions for multiple games (uses ON CONFLICT DO NOTHING - immutable)
   const storePredictions = useMutation({
     mutationFn: async (games: Array<{
       game_id: string;
@@ -220,23 +216,11 @@ export function useAIPredictionMemory(dateRange?: { start: string; end: string }
       home_team: string;
       away_team: string;
     }>) => {
-      // Get existing predictions
-      const gameIds = games.map(g => g.game_id);
-      const { data: existing } = await supabase
-        .from('ai_game_predictions')
-        .select('game_id')
-        .in('game_id', gameIds);
-
-      const existingGameIds = new Set(existing?.map(e => e.game_id) || []);
-
-      // Filter to only new games
-      const newGames = games.filter(g => !existingGameIds.has(g.game_id));
-      
-      if (newGames.length === 0) {
-        return { stored: 0, skipped: games.length };
+      if (games.length === 0) {
+        return { stored: 0, skipped: 0 };
       }
 
-      const predictionsToStore = newGames.map(game => {
+      const predictionsToStore = games.map(game => {
         const prediction = generateAIPrediction(game.home_team, game.away_team);
         return {
           game_id: game.game_id,
@@ -249,15 +233,27 @@ export function useAIPredictionMemory(dateRange?: { start: string; end: string }
           ai_confidence_score: prediction.ai_confidence_score,
           model_version: 'v1',
           prediction_source: 'ai',
+          // locked_at is auto-set by trigger
         };
       });
 
-      const { error } = await supabase
+      // Use INSERT with ON CONFLICT DO NOTHING to respect immutability
+      // This ensures existing predictions are NEVER modified
+      const { data, error } = await supabase
         .from('ai_game_predictions')
-        .insert(predictionsToStore);
+        .insert(predictionsToStore)
+        .select();
 
-      if (error) throw error;
-      return { stored: newGames.length, skipped: existingGameIds.size };
+      // Count how many were actually inserted
+      const stored = data?.length || 0;
+      const skipped = games.length - stored;
+
+      // Ignore unique constraint violations (some predictions already existed)
+      if (error && error.code !== '23505') {
+        throw error;
+      }
+
+      return { stored, skipped };
     },
     onSuccess: (data) => {
       if (data.stored > 0) {

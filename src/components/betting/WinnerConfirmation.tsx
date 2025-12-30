@@ -9,6 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useConfirmedWinners, ConfirmWinnerInput, ConfirmedWinner } from '@/hooks/useConfirmedWinners';
 import { useAIPredictionMemory } from '@/hooks/useAIPredictionMemory';
+import { PredictionTruthTableDebug } from './PredictionTruthTableDebug';
 import { format, subDays } from 'date-fns';
 import {
   Home, Plane, CheckCircle, XCircle, CalendarIcon, Shield, Brain, Sparkles, Undo2, AlertTriangle
@@ -674,6 +675,19 @@ export function WinnerConfirmation() {
         </ScrollArea>
       )}
 
+      {/* Truth Table Debug Panel (Admin Only) */}
+      {games && games.length > 0 && (
+        <PredictionTruthTableDebug 
+          selectedDate={selectedDateStr} 
+          games={games.map(g => ({
+            game_id: g.game_id,
+            home_team: g.home_team,
+            away_team: g.away_team,
+            game_date: g.game_date,
+          }))} 
+        />
+      )}
+
       {/* Info */}
       <div className="p-3 bg-muted/30 rounded-lg border border-border">
         <div className="flex items-start gap-2">
@@ -681,7 +695,7 @@ export function WinnerConfirmation() {
           <div className="text-xs text-muted-foreground">
             <p className="font-medium mb-1">Settlement Engine is the Source of Truth</p>
             <ul className="list-disc list-inside space-y-0.5">
-              <li>AI predictions are <strong>immutable</strong> once stored</li>
+              <li>AI predictions are <strong>immutable</strong> once stored (locked_at timestamp)</li>
               <li>This UI <strong>only displays</strong> stored predictions (read-only)</li>
               <li>Predictions are <strong>never recomputed</strong> or inferred here</li>
               <li>When you confirm a winner, the stored AI prediction is evaluated</li>
