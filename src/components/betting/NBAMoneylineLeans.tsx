@@ -23,7 +23,7 @@ import {
   Home, Plane, AlertTriangle, CheckCircle, XCircle, Info,
   CalendarIcon, Trophy, Save, Clock, Zap, Shield
 } from 'lucide-react';
-import WinnerConfirmation from './WinnerConfirmation';
+import SettledResults from './SettledResults';
 import { toast } from 'sonner';
 
 // Get today's date in Eastern Time (NBA's reference timezone)
@@ -153,16 +153,12 @@ const MoneylineCard = ({
   onToggle, 
   showTimeDebug,
   isPersisted,
-  entryId,
-  onSettle
 }: {
   prediction: MoneylinePrediction;
   expanded: boolean;
   onToggle: () => void;
   showTimeDebug: boolean;
   isPersisted: boolean;
-  entryId?: string;
-  onSettle?: (entryId: string, prediction: MoneylinePrediction) => void;
 }) => {
   const homeProb = prediction.home_win_probability ? (prediction.home_win_probability * 100).toFixed(1) : 'N/A';
   const awayProb = prediction.away_win_probability ? (prediction.away_win_probability * 100).toFixed(1) : 'N/A';
@@ -310,21 +306,6 @@ const MoneylineCard = ({
               </div>
             </div>
 
-            {/* Settle Button - only show if persisted and onSettle provided */}
-            {isPersisted && entryId && onSettle && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="mt-3 w-full"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSettle(entryId, prediction);
-                }}
-              >
-                <Trophy className="w-4 h-4 mr-2" />
-                Settle Result
-              </Button>
-            )}
             
             <div className="mt-3 text-xs text-muted-foreground flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
@@ -389,11 +370,8 @@ const SettledEntryCard = ({ entry }: { entry: MoneylineEntry }) => {
 const NBAMoneylineLeans = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState<'open' | 'settlement' | 'settled' | 'confirm'>('open');
+  const [activeTab, setActiveTab] = useState<'open' | 'settlement' | 'settled' | 'results'>('open');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [settleDialogOpen, setSettleDialogOpen] = useState(false);
-  const [settlingEntry, setSettlingEntry] = useState<{ entryId: string; prediction: MoneylinePrediction } | null>(null);
-  const [winnerInput, setWinnerInput] = useState<'home' | 'away' | null>(null);
   const [validationStatus, setValidationStatus] = useState<{
     expectedCount: number | null;
     mismatch: boolean;
@@ -618,34 +596,6 @@ const NBAMoneylineLeans = () => {
     }
   });
 
-  // Settle entry mutation
-  const settleEntry = useMutation({
-    mutationFn: async ({ entryId, result, profitLoss }: { entryId: string; result: 'W' | 'L' | 'P'; profitLoss: number }) => {
-      const { error } = await supabase
-        .from('pick_entries')
-        .update({
-          status: 'settled',
-          result,
-          profit_loss: profitLoss,
-          locked_at: new Date().toISOString()
-        })
-        .eq('id', entryId);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success('Entry settled successfully');
-      setSettleDialogOpen(false);
-      setSettlingEntry(null);
-      setWinnerInput(null);
-      queryClient.invalidateQueries({ queryKey: ['moneyline-entries'] });
-    },
-    onError: (error) => {
-      console.error('Error settling entry:', error);
-      toast.error('Failed to settle entry');
-    }
-  });
-
   const generatePredictions = async () => {
     setIsGenerating(true);
     try {
@@ -667,25 +617,6 @@ const NBAMoneylineLeans = () => {
     if (predictions && predictions.length > 0) {
       persistPredictions.mutate(predictions);
     }
-  };
-
-  const handleOpenSettle = (entryId: string, prediction: MoneylinePrediction) => {
-    setSettlingEntry({ entryId, prediction });
-    setSettleDialogOpen(true);
-  };
-
-  const handleConfirmSettle = () => {
-    if (!settlingEntry || winnerInput === null) return;
-    
-    const { entryId, prediction } = settlingEntry;
-    const actualWinner = winnerInput === 'home' ? prediction.home_team : prediction.away_team;
-    const predictedCorrectly = actualWinner === prediction.predicted_winner;
-    
-    settleEntry.mutate({
-      entryId,
-      result: predictedCorrectly ? 'W' : 'L',
-      profitLoss: predictedCorrectly ? 1 : -1 // 1 unit win/loss for tracking
-    });
   };
 
   // Filter by recommendation for summary
@@ -829,7 +760,7 @@ const NBAMoneylineLeans = () => {
       
       <CardContent>
         {/* Tabs for Open/Settled/Confirm */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'open' | 'settlement' | 'settled' | 'confirm')} className="mb-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'open' | 'settlement' | 'settled' | 'results')} className="mb-4">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="open" className="gap-2">
               <Clock className="w-4 h-4" />
@@ -843,9 +774,9 @@ const NBAMoneylineLeans = () => {
               <Trophy className="w-4 h-4" />
               Settled ({settledEntries.length})
             </TabsTrigger>
-            <TabsTrigger value="confirm" className="gap-2">
-              <Shield className="w-4 h-4" />
-              Confirm Winners
+            <TabsTrigger value="results" className="gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Final Results
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -875,8 +806,6 @@ const NBAMoneylineLeans = () => {
                     onToggle={() => setExpandedId(expandedId === prediction.id ? null : prediction.id)}
                     showTimeDebug={showTimeDebug}
                     isPersisted={!!predictionToEntryMap[prediction.id]}
-                    entryId={predictionToEntryMap[prediction.id]}
-                    onSettle={handleOpenSettle}
                   />
                 ))}
               </div>
@@ -991,8 +920,8 @@ const NBAMoneylineLeans = () => {
             </ScrollArea>
           )
         ) : (
-          // Confirm Winners Tab
-          <WinnerConfirmation />
+          // Final Results Tab - Read-only settled results
+          <SettledResults />
         )}
         
         {/* Disclaimer */}
@@ -1005,81 +934,12 @@ const NBAMoneylineLeans = () => {
                 <li>Separate model from player props - do not combine confidence scores</li>
                 <li>Maximum probability capped at 70% (conservative approach)</li>
                 <li>Based on team-level statistics: net rating, pace, rest, B2B status</li>
-                <li>Does not account for all injury scenarios</li>
+                <li>Results are automatically settled from final game scores</li>
               </ul>
             </div>
           </div>
         </div>
       </CardContent>
-
-      {/* Settlement Dialog */}
-      <Dialog open={settleDialogOpen} onOpenChange={setSettleDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Settle Moneyline Entry</DialogTitle>
-          </DialogHeader>
-          {settlingEntry && (
-            <div className="space-y-4">
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="font-medium">{settlingEntry.prediction.away_team} @ {settlingEntry.prediction.home_team}</p>
-                <p className="text-sm text-muted-foreground">
-                  Predicted: <span className="text-primary font-medium">{settlingEntry.prediction.predicted_winner}</span>
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Who won the game?</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    variant={winnerInput === 'away' ? 'default' : 'outline'}
-                    onClick={() => setWinnerInput('away')}
-                    className="w-full"
-                  >
-                    <Plane className="w-4 h-4 mr-2" />
-                    {settlingEntry.prediction.away_team}
-                  </Button>
-                  <Button
-                    variant={winnerInput === 'home' ? 'default' : 'outline'}
-                    onClick={() => setWinnerInput('home')}
-                    className="w-full"
-                  >
-                    <Home className="w-4 h-4 mr-2" />
-                    {settlingEntry.prediction.home_team}
-                  </Button>
-                </div>
-              </div>
-
-              {winnerInput !== null && (
-                <div className="p-3 bg-muted/50 rounded-lg border">
-                  {(winnerInput === 'home' && settlingEntry.prediction.predicted_winner === settlingEntry.prediction.home_team) ||
-                   (winnerInput === 'away' && settlingEntry.prediction.predicted_winner === settlingEntry.prediction.away_team) ? (
-                    <div className="flex items-center gap-2 text-green-400">
-                      <CheckCircle className="w-5 h-5" />
-                      <span className="font-medium">Prediction was CORRECT - Win</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-red-400">
-                      <XCircle className="w-5 h-5" />
-                      <span className="font-medium">Prediction was INCORRECT - Loss</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSettleDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleConfirmSettle} 
-              disabled={winnerInput === null || settleEntry.isPending}
-            >
-              {settleEntry.isPending ? 'Settling...' : 'Confirm Settlement'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 };

@@ -756,6 +756,131 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // ========== SETTLE RESULTS ACTION ==========
+    // Automatically settles games by deriving winners from final scores
+    // and populating confirmed_game_winners with confirmation_source = 'automatic'
+    if (action === "settle_results") {
+      console.log("=== NBA STATS ENGINE: SETTLE_RESULTS START ===");
+      
+      try {
+        // 1. Get all final games from the last 7 days
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+        
+        const { data: finalGames, error: gamesError } = await supabase
+          .from('nba_games_today')
+          .select('*')
+          .eq('status', 'Final')
+          .gte('game_date', sevenDaysAgoStr)
+          .not('winner', 'is', null);
+        
+        if (gamesError) {
+          console.error('Error fetching final games:', gamesError);
+          throw gamesError;
+        }
+        
+        console.log(`Found ${finalGames?.length || 0} final games to potentially settle`);
+        
+        if (!finalGames || finalGames.length === 0) {
+          return new Response(JSON.stringify({
+            success: true,
+            message: 'No final games to settle',
+            settled: 0
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        
+        // 2. Get existing confirmations to avoid duplicates
+        const gameIds = finalGames.map(g => g.game_id);
+        const { data: existingConfirmations } = await supabase
+          .from('confirmed_game_winners')
+          .select('game_id, confirmation_revoked')
+          .in('game_id', gameIds);
+        
+        const confirmedGameIds = new Set(
+          (existingConfirmations || [])
+            .filter(c => !c.confirmation_revoked)
+            .map(c => c.game_id)
+        );
+        
+        console.log(`Already confirmed: ${confirmedGameIds.size} games`);
+        
+        // 3. Process unconfirmed final games
+        let settledCount = 0;
+        const errors: string[] = [];
+        
+        for (const game of finalGames) {
+          if (confirmedGameIds.has(game.game_id)) {
+            continue; // Skip already confirmed
+          }
+          
+          // Derive winner from scores
+          const winner = game.winner || (
+            game.home_score > game.away_score ? game.home_team : game.away_team
+          );
+          
+          if (!winner) {
+            console.log(`Cannot determine winner for game ${game.game_id}`);
+            continue;
+          }
+          
+          try {
+            // Upsert into confirmed_game_winners with automatic source
+            const { error: upsertError } = await supabase
+              .from('confirmed_game_winners')
+              .upsert({
+                game_id: game.game_id,
+                game_date: game.game_date,
+                sport: 'NBA',
+                home_team: game.home_team,
+                away_team: game.away_team,
+                home_score: game.home_score,
+                away_score: game.away_score,
+                confirmed_winner: winner,
+                confirmation_source: 'automatic',
+                confirmed_at: new Date().toISOString(),
+                confirmation_revoked: false,
+              }, { 
+                onConflict: 'game_id,sport',
+                ignoreDuplicates: false
+              });
+            
+            if (upsertError) {
+              console.error(`Error settling game ${game.game_id}:`, upsertError);
+              errors.push(`${game.game_id}: ${upsertError.message}`);
+              continue;
+            }
+            
+            settledCount++;
+            console.log(`Settled: ${game.away_team} @ ${game.home_team} -> Winner: ${winner}`);
+          } catch (err) {
+            console.error(`Exception settling game ${game.game_id}:`, err);
+            errors.push(`${game.game_id}: ${err}`);
+          }
+        }
+        
+        console.log(`=== NBA STATS ENGINE: SETTLE_RESULTS COMPLETE - Settled ${settledCount} games ===`);
+        
+        return new Response(JSON.stringify({
+          success: true,
+          settled: settledCount,
+          already_confirmed: confirmedGameIds.size,
+          total_final_games: finalGames.length,
+          errors: errors.length > 0 ? errors : undefined
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        
+      } catch (error) {
+        console.error('Settle results error:', error);
+        return new Response(JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }), { 
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        });
+      }
+    }
+
     if (action === "generate_props") {
       console.log("=== NBA STATS ENGINE: GENERATE_PROPS START ===");
       
