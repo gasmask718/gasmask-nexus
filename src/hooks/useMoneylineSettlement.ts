@@ -120,6 +120,24 @@ export const useMoneylineSettlement = () => {
         result.errors.push(`Score update exception: ${err}`);
       }
 
+      // Step 1.5: Call settle_results to automatically confirm winners
+      try {
+        console.log('[Settlement] Running automatic winner confirmation...');
+        const { data: settleData, error: settleError } = await supabase.functions.invoke('nba-stats-engine', {
+          body: { action: 'settle_results' }
+        });
+
+        if (settleError) {
+          console.error('[Settlement] Error settling results:', settleError);
+          result.errors.push(`Failed to settle results: ${settleError.message}`);
+        } else {
+          console.log(`[Settlement] Auto-settled ${settleData?.settled || 0} games to final_results`);
+        }
+      } catch (err) {
+        console.error('[Settlement] Exception settling results:', err);
+        result.errors.push(`Settle results exception: ${err}`);
+      }
+
       // Step 2: Refetch final games after score update
       await refetchFinalGames();
       await refetchOpenEntries();
