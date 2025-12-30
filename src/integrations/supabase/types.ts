@@ -15680,6 +15680,69 @@ export type Database = {
         }
         Relationships: []
       }
+      moneyline_results: {
+        Row: {
+          actual_winner: string
+          ai_predicted_winner: string | null
+          ai_probability: number | null
+          away_score: number | null
+          away_team: string
+          confidence_score: number | null
+          created_at: string
+          game_date: string
+          game_id: string
+          home_score: number | null
+          home_team: string
+          id: string
+          locked_at: string | null
+          model_version: string | null
+          prediction_id: string | null
+          result: string | null
+          settled_at: string
+          sport: string
+        }
+        Insert: {
+          actual_winner: string
+          ai_predicted_winner?: string | null
+          ai_probability?: number | null
+          away_score?: number | null
+          away_team: string
+          confidence_score?: number | null
+          created_at?: string
+          game_date: string
+          game_id: string
+          home_score?: number | null
+          home_team: string
+          id?: string
+          locked_at?: string | null
+          model_version?: string | null
+          prediction_id?: string | null
+          result?: string | null
+          settled_at?: string
+          sport?: string
+        }
+        Update: {
+          actual_winner?: string
+          ai_predicted_winner?: string | null
+          ai_probability?: number | null
+          away_score?: number | null
+          away_team?: string
+          confidence_score?: number | null
+          created_at?: string
+          game_date?: string
+          game_id?: string
+          home_score?: number | null
+          home_team?: string
+          id?: string
+          locked_at?: string | null
+          model_version?: string | null
+          prediction_id?: string | null
+          result?: string | null
+          settled_at?: string
+          sport?: string
+        }
+        Relationships: []
+      }
       multi_language_content: {
         Row: {
           content_ar: string | null
@@ -19142,6 +19205,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      prop_results: {
+        Row: {
+          ai_predicted_side: string | null
+          confidence_score: number | null
+          created_at: string
+          dnp: boolean | null
+          final_stat_value: number | null
+          game_date: string
+          game_id: string
+          id: string
+          line_value: number
+          locked_at: string | null
+          model_version: string | null
+          opponent: string | null
+          pick_entry_id: string | null
+          player_id: string | null
+          player_name: string
+          result: string | null
+          settled_at: string
+          sport: string
+          stat_source: string | null
+          stat_type: string
+          team: string | null
+        }
+        Insert: {
+          ai_predicted_side?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          dnp?: boolean | null
+          final_stat_value?: number | null
+          game_date: string
+          game_id: string
+          id?: string
+          line_value: number
+          locked_at?: string | null
+          model_version?: string | null
+          opponent?: string | null
+          pick_entry_id?: string | null
+          player_id?: string | null
+          player_name: string
+          result?: string | null
+          settled_at?: string
+          sport?: string
+          stat_source?: string | null
+          stat_type: string
+          team?: string | null
+        }
+        Update: {
+          ai_predicted_side?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          dnp?: boolean | null
+          final_stat_value?: number | null
+          game_date?: string
+          game_id?: string
+          id?: string
+          line_value?: number
+          locked_at?: string | null
+          model_version?: string | null
+          opponent?: string | null
+          pick_entry_id?: string | null
+          player_id?: string | null
+          player_name?: string
+          result?: string | null
+          settled_at?: string
+          sport?: string
+          stat_source?: string | null
+          stat_type?: string
+          team?: string | null
+        }
+        Relationships: []
       }
       prop_settlement_audit_log: {
         Row: {

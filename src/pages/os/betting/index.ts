@@ -6,3 +6,4 @@ export { default as LineIntake } from './LineIntake';
 export { default as OwnerInternal } from './OwnerInternal';
 export { default as NBADailyBoard } from './NBADailyBoard';
 export { default as StatsInspector } from './StatsInspector';
+export { default as ResultsPage } from './ResultsPage';
