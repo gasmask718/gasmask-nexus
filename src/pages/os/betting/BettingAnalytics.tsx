@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BarChart3, Loader2, FileX } from 'lucide-react';
+import { BarChart3, Loader2, FileX, Target } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAnalyticsData, DEFAULT_FILTERS, AnalyticsFilters as FilterType } from '@/hooks/useAnalyticsData';
@@ -13,6 +13,7 @@ import { PerformanceInsights } from '@/components/betting/analytics/PerformanceI
 import { ComplianceBanner } from '@/components/betting/analytics/ComplianceBanner';
 import { HistoricalPredictions } from '@/components/betting/analytics/HistoricalPredictions';
 import { ManualBackfill } from '@/components/betting/analytics/ManualBackfill';
+import { AccuracyDashboard } from '@/components/betting/accuracy';
 
 export default function BettingAnalytics() {
   const [filters, setFilters] = useState<FilterType>(DEFAULT_FILTERS);
@@ -92,8 +93,12 @@ export default function BettingAnalytics() {
           <PerformanceInsights insights={insights} />
 
           {/* Charts & Breakdowns */}
-          <Tabs defaultValue="curve" className="space-y-4">
+          <Tabs defaultValue="accuracy" className="space-y-4">
             <TabsList className="flex-wrap h-auto">
+              <TabsTrigger value="accuracy" className="flex items-center gap-1">
+                <Target className="h-3 w-3" />
+                AI Accuracy
+              </TabsTrigger>
               <TabsTrigger value="curve">P/L Curve</TabsTrigger>
               <TabsTrigger value="confidence">Confidence Bands</TabsTrigger>
               <TabsTrigger value="breakdowns">Breakdowns</TabsTrigger>
@@ -101,6 +106,10 @@ export default function BettingAnalytics() {
               <TabsTrigger value="historical">Historical Predictions</TabsTrigger>
               <TabsTrigger value="backfill">Manual Backfill</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="accuracy">
+              <AccuracyDashboard />
+            </TabsContent>
 
             <TabsContent value="curve">
               <DailyPerformanceChart data={dailyPerformance} />
