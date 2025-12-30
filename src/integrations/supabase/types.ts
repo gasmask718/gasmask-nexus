@@ -7561,10 +7561,44 @@ export type Database = {
           },
         ]
       }
+      confirmation_audit_log: {
+        Row: {
+          action: string
+          admin_user_id: string | null
+          created_at: string | null
+          game_id: string
+          id: string
+          new_winner: string | null
+          previous_winner: string | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          admin_user_id?: string | null
+          created_at?: string | null
+          game_id: string
+          id?: string
+          new_winner?: string | null
+          previous_winner?: string | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string | null
+          created_at?: string | null
+          game_id?: string
+          id?: string
+          new_winner?: string | null
+          previous_winner?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       confirmed_game_winners: {
         Row: {
           away_score: number | null
           away_team: string
+          confirmation_revoked: boolean | null
           confirmation_source: string
           confirmed_at: string
           confirmed_by: string | null
@@ -7578,12 +7612,16 @@ export type Database = {
           notes: string | null
           override_count: number
           previous_winner: string | null
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
           sport: string
           updated_at: string
         }
         Insert: {
           away_score?: number | null
           away_team: string
+          confirmation_revoked?: boolean | null
           confirmation_source?: string
           confirmed_at?: string
           confirmed_by?: string | null
@@ -7597,12 +7635,16 @@ export type Database = {
           notes?: string | null
           override_count?: number
           previous_winner?: string | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
           sport?: string
           updated_at?: string
         }
         Update: {
           away_score?: number | null
           away_team?: string
+          confirmation_revoked?: boolean | null
           confirmation_source?: string
           confirmed_at?: string
           confirmed_by?: string | null
@@ -7616,6 +7658,9 @@ export type Database = {
           notes?: string | null
           override_count?: number
           previous_winner?: string | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
           sport?: string
           updated_at?: string
         }
@@ -17798,6 +17843,9 @@ export type Database = {
           game_date: string
           game_id: string
           id: string
+          invalidated_at: string | null
+          invalidation_reason: string | null
+          is_valid: boolean | null
           notes: string | null
           prediction_id: string | null
           sport: string
@@ -17812,6 +17860,9 @@ export type Database = {
           game_date: string
           game_id: string
           id?: string
+          invalidated_at?: string | null
+          invalidation_reason?: string | null
+          is_valid?: boolean | null
           notes?: string | null
           prediction_id?: string | null
           sport?: string
@@ -17826,6 +17877,9 @@ export type Database = {
           game_date?: string
           game_id?: string
           id?: string
+          invalidated_at?: string | null
+          invalidation_reason?: string | null
+          is_valid?: boolean | null
           notes?: string | null
           prediction_id?: string | null
           sport?: string

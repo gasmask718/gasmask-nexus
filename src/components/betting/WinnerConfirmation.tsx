@@ -7,12 +7,24 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useConfirmedWinners, ConfirmWinnerInput } from '@/hooks/useConfirmedWinners';
+import { useConfirmedWinners, ConfirmWinnerInput, ConfirmedWinner } from '@/hooks/useConfirmedWinners';
 import { useAIPredictionMemory, generateAIPrediction } from '@/hooks/useAIPredictionMemory';
 import { format, subDays } from 'date-fns';
 import {
-  Home, Plane, CheckCircle, XCircle, CalendarIcon, Shield, Brain, Sparkles
+  Home, Plane, CheckCircle, XCircle, CalendarIcon, Shield, Brain, Sparkles, Undo2, AlertTriangle
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 // Get today's date in Eastern Time
 const getEasternDate = (): string => {
@@ -43,38 +55,54 @@ interface AIPredictionDisplay {
   probability: number;
   confidence: number;
   isStored: boolean;
+  createdAt?: string;
 }
 
 interface EvaluationDisplay {
   aiResult: 'correct' | 'incorrect';
   aiPredictedWinner: string;
   confirmedWinner: string;
+  isValid?: boolean;
 }
 
 interface GameConfirmCardProps {
   game: GameData;
+  confirmationRecord?: ConfirmedWinner;
   confirmedWinner?: string;
   isConfirmed: boolean;
+  isRevoked: boolean;
   aiPrediction?: AIPredictionDisplay;
   evaluation?: EvaluationDisplay;
   onConfirm: (winner: 'home' | 'away') => void;
+  onUndo: (reason?: string) => void;
   isConfirming: boolean;
+  isUndoing: boolean;
 }
 
 const GameConfirmCard = ({ 
   game, 
+  confirmationRecord,
   confirmedWinner, 
   isConfirmed, 
+  isRevoked,
   aiPrediction,
   evaluation,
-  onConfirm, 
-  isConfirming 
+  onConfirm,
+  onUndo,
+  isConfirming,
+  isUndoing,
 }: GameConfirmCardProps) => {
   const [selectedWinner, setSelectedWinner] = useState<'home' | 'away' | null>(null);
+  const [undoReason, setUndoReason] = useState('');
   
   const isFinalStatus = game.status?.toLowerCase().includes('final') || 
                         game.status?.toLowerCase() === 'completed' ||
                         game.status?.toLowerCase() === 'f';
+
+  // Check if this is a manual confirmation that can be undone
+  const canUndo = isConfirmed && 
+                  confirmationRecord?.confirmation_source === 'manual_admin' && 
+                  !isRevoked;
 
   // Determine actual winner from scores if available
   const scoreBasedWinner = useMemo(() => {
@@ -90,8 +118,14 @@ const GameConfirmCard = ({
     }
   };
 
+  const handleUndoClick = () => {
+    onUndo(undoReason || undefined);
+    setUndoReason('');
+  };
+
   return (
     <Card className={`border-l-4 ${
+      isRevoked ? 'border-l-orange-500 bg-orange-500/5' :
       isConfirmed ? 'border-l-green-500 bg-green-500/5' : 
       isFinalStatus ? 'border-l-blue-500' : 'border-l-yellow-500'
     }`}>
@@ -121,7 +155,13 @@ const GameConfirmCard = ({
               <Badge variant="outline" className="text-xs">
                 {game.status}
               </Badge>
-              {isConfirmed && (
+              {isRevoked && (
+                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/50">
+                  <AlertTriangle className="w-3 h-3 mr-1" />
+                  Revoked
+                </Badge>
+              )}
+              {isConfirmed && !isRevoked && (
                 <Badge className="bg-green-500/20 text-green-400 border-green-500/50">
                   <CheckCircle className="w-3 h-3 mr-1" />
                   Confirmed
@@ -160,21 +200,27 @@ const GameConfirmCard = ({
           </div>
 
           {/* Evaluation Result (after confirmation) */}
-          {evaluation && (
+          {evaluation && !isRevoked && (
             <div className={`p-3 rounded-lg border ${
+              !evaluation.isValid ? 'bg-gray-500/10 border-gray-500/30' :
               evaluation.aiResult === 'correct' 
                 ? 'bg-green-500/10 border-green-500/30' 
                 : 'bg-red-500/10 border-red-500/30'
             }`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {evaluation.aiResult === 'correct' ? (
+                  {!evaluation.isValid ? (
+                    <AlertTriangle className="w-4 h-4 text-gray-400" />
+                  ) : evaluation.aiResult === 'correct' ? (
                     <CheckCircle className="w-4 h-4 text-green-400" />
                   ) : (
                     <XCircle className="w-4 h-4 text-red-400" />
                   )}
                   <span className="text-sm font-medium">
-                    AI Pick: <span className={evaluation.aiResult === 'correct' ? 'text-green-400' : 'text-red-400'}>
+                    AI Pick: <span className={
+                      !evaluation.isValid ? 'text-gray-400' :
+                      evaluation.aiResult === 'correct' ? 'text-green-400' : 'text-red-400'
+                    }>
                       {evaluation.aiPredictedWinner}
                     </span>
                   </span>
@@ -182,15 +228,37 @@ const GameConfirmCard = ({
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">Actual:</span>
                   <span className="font-medium">{evaluation.confirmedWinner}</span>
-                  <Badge className={`${
-                    evaluation.aiResult === 'correct' 
-                      ? 'bg-green-500/20 text-green-400' 
-                      : 'bg-red-500/20 text-red-400'
-                  }`}>
-                    {evaluation.aiResult === 'correct' ? '✅ Correct' : '❌ Incorrect'}
-                  </Badge>
+                  {!evaluation.isValid ? (
+                    <Badge className="bg-gray-500/20 text-gray-400">
+                      ⚠️ Invalidated
+                    </Badge>
+                  ) : (
+                    <Badge className={`${
+                      evaluation.aiResult === 'correct' 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {evaluation.aiResult === 'correct' ? '✅ Correct' : '❌ Incorrect'}
+                    </Badge>
+                  )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Revoked notice */}
+          {isRevoked && confirmationRecord && (
+            <div className="p-3 bg-orange-500/10 rounded-lg border border-orange-500/30">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-orange-400" />
+                <span className="text-sm font-medium text-orange-400">Confirmation Revoked</span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Previous winner: {confirmationRecord.confirmed_winner}
+                {confirmationRecord.revoke_reason && (
+                  <span> • Reason: {confirmationRecord.revoke_reason}</span>
+                )}
+              </p>
             </div>
           )}
 
@@ -201,23 +269,65 @@ const GameConfirmCard = ({
             </div>
           )}
 
-          {/* Confirmed Winner Display (when no evaluation yet) */}
-          {isConfirmed && confirmedWinner && !evaluation && (
+          {/* Confirmed Winner Display with Undo option */}
+          {isConfirmed && confirmedWinner && !evaluation && !isRevoked && (
             <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/30">
-              <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-green-400" />
-                <span className="text-sm font-medium">Winner Confirmed:</span>
-                <Badge className="bg-green-500/20 text-green-400">
-                  {confirmedWinner}
-                </Badge>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-green-400" />
+                  <span className="text-sm font-medium">Winner Confirmed:</span>
+                  <Badge className="bg-green-500/20 text-green-400">
+                    {confirmedWinner}
+                  </Badge>
+                </div>
+                {canUndo && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="text-orange-400 border-orange-400/50 hover:bg-orange-500/10">
+                        <Undo2 className="w-3 h-3 mr-1" />
+                        Undo
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Undo Winner Confirmation?</AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-3">
+                          <p>This will revoke the manual confirmation for this game.</p>
+                          <p>The AI evaluation will be invalidated and can be re-run after re-confirmation.</p>
+                          <div className="mt-4">
+                            <label className="text-sm font-medium">Reason (optional):</label>
+                            <Textarea
+                              value={undoReason}
+                              onChange={(e) => setUndoReason(e.target.value)}
+                              placeholder="e.g., Premature confirmation, AI prediction not yet logged..."
+                              className="mt-2"
+                            />
+                          </div>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleUndoClick}
+                          disabled={isUndoing}
+                          className="bg-orange-600 hover:bg-orange-700"
+                        >
+                          {isUndoing ? 'Undoing...' : 'Confirm Undo'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </div>
             </div>
           )}
 
-          {/* Confirm Winner Action - Only for Final games that aren't confirmed */}
-          {isFinalStatus && !isConfirmed && (
+          {/* Confirm Winner Action - For Final games that aren't confirmed OR have been revoked */}
+          {isFinalStatus && (!isConfirmed || isRevoked) && (
             <div className="space-y-2 pt-2 border-t border-border">
-              <p className="text-sm font-medium text-muted-foreground">Confirm Winner:</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                {isRevoked ? 'Re-confirm Winner:' : 'Confirm Winner:'}
+              </p>
               <div className="flex items-center gap-2">
                 <Button
                   variant={selectedWinner === 'away' ? 'default' : 'outline'}
@@ -245,7 +355,7 @@ const GameConfirmCard = ({
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <CheckCircle className="w-4 h-4 mr-1" />
-                  {isConfirming ? 'Confirming...' : 'Confirm'}
+                  {isConfirming ? 'Confirming...' : (isRevoked ? 'Re-confirm' : 'Confirm')}
                 </Button>
               </div>
             </div>
@@ -289,8 +399,11 @@ export function WinnerConfirmation() {
     confirmedWinners, 
     isLoading: confirmLoading, 
     confirmWinner, 
+    undoConfirmation,
     isConfirming,
-    getConfirmedWinnerByGameId 
+    isUndoing,
+    getConfirmedWinnerByGameId,
+    getConfirmationRecord,
   } = useConfirmedWinners({ 
     start: selectedDateStr, 
     end: selectedDateStr 
@@ -410,10 +523,19 @@ export function WinnerConfirmation() {
         aiResult: evaluation.ai_result,
         aiPredictedWinner: evaluation.ai_predicted_winner,
         confirmedWinner: evaluation.confirmed_winner,
+        isValid: (evaluation as any).is_valid !== false,
       };
     }
     
     return undefined;
+  };
+
+  // Handle undo confirmation
+  const handleUndoConfirmation = async (game: GameData, reason?: string) => {
+    await undoConfirmation.mutateAsync({
+      game_id: game.game_id,
+      reason,
+    });
   };
 
   return (
@@ -527,19 +649,25 @@ export function WinnerConfirmation() {
           <div className="space-y-3">
             {games.map((game) => {
               const confirmed = getConfirmedWinnerByGameId(game.game_id);
+              const confirmationRecord = getConfirmationRecord(game.game_id);
               const aiPrediction = getAIPredictionDisplay(game);
               const evaluation = getEvaluationDisplay(game);
+              const isRevoked = confirmationRecord?.confirmation_revoked === true;
               
               return (
                 <GameConfirmCard
                   key={game.id}
                   game={game}
+                  confirmationRecord={confirmationRecord}
                   confirmedWinner={confirmed?.confirmed_winner}
                   isConfirmed={!!confirmed}
+                  isRevoked={isRevoked}
                   aiPrediction={aiPrediction}
                   evaluation={evaluation}
                   onConfirm={(winner) => handleConfirmWinner(game, winner)}
+                  onUndo={(reason) => handleUndoConfirmation(game, reason)}
                   isConfirming={isConfirming}
+                  isUndoing={isUndoing}
                 />
               );
             })}
