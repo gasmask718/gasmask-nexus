@@ -23114,6 +23114,7 @@ export type Database = {
           notes_old: string | null
           notes_overview: string | null
           open_date: string | null
+          payment_type: Database["public"]["Enums"]["payment_type"] | null
           performance_score: number | null
           performance_tier: string | null
           phone: string | null
@@ -23181,6 +23182,7 @@ export type Database = {
           notes_old?: string | null
           notes_overview?: string | null
           open_date?: string | null
+          payment_type?: Database["public"]["Enums"]["payment_type"] | null
           performance_score?: number | null
           performance_tier?: string | null
           phone?: string | null
@@ -23248,6 +23250,7 @@ export type Database = {
           notes_old?: string | null
           notes_overview?: string | null
           open_date?: string | null
+          payment_type?: Database["public"]["Enums"]["payment_type"] | null
           performance_score?: number | null
           performance_tier?: string | null
           phone?: string | null
@@ -26988,6 +26991,7 @@ export type Database = {
       parlay_type: "sportsbook" | "pickem"
       payment_method: "cash" | "zelle" | "cashapp" | "venmo" | "other"
       payment_status: "unpaid" | "partial" | "paid" | "refunded" | "chargeback"
+      payment_type: "pays_upfront" | "bill_to_bill"
       property_type:
         | "single_family"
         | "multi_family"
@@ -27357,6 +27361,7 @@ export const Constants = {
       parlay_type: ["sportsbook", "pickem"],
       payment_method: ["cash", "zelle", "cashapp", "venmo", "other"],
       payment_status: ["unpaid", "partial", "paid", "refunded", "chargeback"],
+      payment_type: ["pays_upfront", "bill_to_bill"],
       property_type: [
         "single_family",
         "multi_family",
