@@ -13781,6 +13781,47 @@ export type Database = {
           },
         ]
       }
+      invoice_line_items: {
+        Row: {
+          brand: string | null
+          created_at: string
+          id: string
+          invoice_id: string
+          line_total: number
+          product_name: string
+          quantity: number
+          unit_price: number
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          id?: string
+          invoice_id: string
+          line_total: number
+          product_name: string
+          quantity?: number
+          unit_price: number
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          line_total?: number
+          product_name?: string
+          quantity?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount_paid: number
