@@ -23126,9 +23126,21 @@ export type Database = {
           special_information: string | null
           status: Database["public"]["Enums"]["store_status"] | null
           sticker_door: boolean | null
+          sticker_door_last_seen_at: string | null
+          sticker_door_note: string | null
+          sticker_door_put_on_at: string | null
+          sticker_door_taken_down_at: string | null
           sticker_instore: boolean | null
+          sticker_instore_last_seen_at: string | null
+          sticker_instore_note: string | null
+          sticker_instore_put_on_at: string | null
+          sticker_instore_taken_down_at: string | null
           sticker_last_seen_at: string | null
           sticker_phone: boolean | null
+          sticker_phone_last_seen_at: string | null
+          sticker_phone_note: string | null
+          sticker_phone_put_on_at: string | null
+          sticker_phone_taken_down_at: string | null
           sticker_status: Database["public"]["Enums"]["sticker_status"] | null
           sticker_taken_down: boolean | null
           sticker_taken_down_at: string | null
@@ -23181,9 +23193,21 @@ export type Database = {
           special_information?: string | null
           status?: Database["public"]["Enums"]["store_status"] | null
           sticker_door?: boolean | null
+          sticker_door_last_seen_at?: string | null
+          sticker_door_note?: string | null
+          sticker_door_put_on_at?: string | null
+          sticker_door_taken_down_at?: string | null
           sticker_instore?: boolean | null
+          sticker_instore_last_seen_at?: string | null
+          sticker_instore_note?: string | null
+          sticker_instore_put_on_at?: string | null
+          sticker_instore_taken_down_at?: string | null
           sticker_last_seen_at?: string | null
           sticker_phone?: boolean | null
+          sticker_phone_last_seen_at?: string | null
+          sticker_phone_note?: string | null
+          sticker_phone_put_on_at?: string | null
+          sticker_phone_taken_down_at?: string | null
           sticker_status?: Database["public"]["Enums"]["sticker_status"] | null
           sticker_taken_down?: boolean | null
           sticker_taken_down_at?: string | null
@@ -23236,9 +23260,21 @@ export type Database = {
           special_information?: string | null
           status?: Database["public"]["Enums"]["store_status"] | null
           sticker_door?: boolean | null
+          sticker_door_last_seen_at?: string | null
+          sticker_door_note?: string | null
+          sticker_door_put_on_at?: string | null
+          sticker_door_taken_down_at?: string | null
           sticker_instore?: boolean | null
+          sticker_instore_last_seen_at?: string | null
+          sticker_instore_note?: string | null
+          sticker_instore_put_on_at?: string | null
+          sticker_instore_taken_down_at?: string | null
           sticker_last_seen_at?: string | null
           sticker_phone?: boolean | null
+          sticker_phone_last_seen_at?: string | null
+          sticker_phone_note?: string | null
+          sticker_phone_put_on_at?: string | null
+          sticker_phone_taken_down_at?: string | null
           sticker_status?: Database["public"]["Enums"]["sticker_status"] | null
           sticker_taken_down?: boolean | null
           sticker_taken_down_at?: string | null
