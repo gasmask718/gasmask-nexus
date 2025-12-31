@@ -4,9 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Plus, User, Clock } from 'lucide-react';
+import { FileText, Plus, User, Clock, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { AddNoteModal } from './AddNoteModal';
+import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
 
 interface StoreNote {
   id: string;
@@ -26,12 +27,17 @@ interface StoreNotesSectionProps {
 
 export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps) {
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<StoreNote | null>(null);
   const [showAll, setShowAll] = useState(false);
   const queryClient = useQueryClient();
 
+  // Resolve storeId to store_master.id
+  const { storeMasterId, isLoading: resolving } = useStoreMasterResolver(storeId);
+
   const { data: notes, isLoading } = useQuery({
-    queryKey: ['store-notes', storeId],
+    queryKey: ['store-notes', storeMasterId],
     queryFn: async () => {
+      if (!storeMasterId) return [];
       const { data, error } = await supabase
         .from('store_notes')
         .select(`
@@ -42,21 +48,35 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
           created_by,
           profile:profiles(name)
         `)
-        .eq('store_id', storeId)
+        .eq('store_id', storeMasterId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data as StoreNote[];
     },
+    enabled: !!storeMasterId,
   });
 
   const handleNoteAdded = () => {
-    queryClient.invalidateQueries({ queryKey: ['store-notes', storeId] });
+    queryClient.invalidateQueries({ queryKey: ['store-notes', storeMasterId] });
+    setEditingNote(null);
+  };
+
+  const handleEditNote = (note: StoreNote) => {
+    setEditingNote(note);
+    setAddModalOpen(true);
+  };
+
+  const handleModalClose = (open: boolean) => {
+    setAddModalOpen(open);
+    if (!open) {
+      setEditingNote(null);
+    }
   };
 
   const displayedNotes = showAll ? notes : notes?.slice(0, 5);
 
-  if (isLoading) {
+  if (resolving || isLoading) {
     return (
       <Card className="glass-card border-border/50">
         <CardContent className="flex items-center justify-center py-8">
@@ -94,17 +114,30 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
               {displayedNotes?.map((note) => (
                 <div
                   key={note.id}
-                  className="p-4 rounded-lg bg-muted/30 border border-border/30 space-y-2"
+                  className="p-4 rounded-lg bg-muted/30 border border-border/30 space-y-3"
                 >
-                  <p className="text-sm whitespace-pre-wrap">{note.note_text}</p>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {format(new Date(note.created_at), 'MMM d, yyyy h:mm a')}
-                    </span>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm whitespace-pre-wrap flex-1">{note.note_text}</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 flex-shrink-0"
+                      onClick={() => handleEditNote(note)}
+                      title="Edit note"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-4 pt-2 border-t border-border/20">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <span>{format(new Date(note.created_at), 'MMM d, yyyy')}</span>
+                      <span className="text-muted-foreground font-normal">at</span>
+                      <span>{format(new Date(note.created_at), 'h:mm a')}</span>
+                    </div>
                     {(note.profile as any)?.name && (
-                      <span className="flex items-center gap-1">
-                        <User className="h-3 w-3" />
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto">
+                        <User className="h-3.5 w-3.5" />
                         {(note.profile as any).name}
                       </span>
                     )}
@@ -129,10 +162,11 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
 
       <AddNoteModal
         open={addModalOpen}
-        onOpenChange={setAddModalOpen}
+        onOpenChange={handleModalClose}
         storeId={storeId}
         storeName={storeName}
         onSuccess={handleNoteAdded}
+        editingNote={editingNote}
       />
     </>
   );

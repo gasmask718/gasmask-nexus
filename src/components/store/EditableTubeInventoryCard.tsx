@@ -13,9 +13,11 @@ import { toast } from 'sonner';
 
 // AUTHORITATIVE TUBE BRANDS - only these are valid
 export const VALID_TUBE_BRANDS = [
-  { id: 'gasmask', name: 'GasMask', color: '#FF0000' },
-  { id: 'hotmama', name: 'HotMama', color: '#FF4F9D' },
-  { id: 'hotscolatti', name: 'Hot Scolatti', color: '#FF7A00' },
+  { id: 'gasmask', name: 'GasMask Bags', color: '#EF4444' }, // red-500
+  { id: 'gasmasktubes', name: 'GasMask Tubes', color: '#3B82F6' }, // blue-500
+  { id: 'hotmama', name: 'HotMama', color: '#EC4899' }, // pink-500
+  { id: 'grabba', name: 'Grabba r us', color: '#A855F7' }, // purple-500
+  { id: 'hotscolatti', name: 'Hot Scolatti', color: '#F97316' }, // orange-500
 ] as const;
 
 interface TubeInventory {
@@ -97,14 +99,16 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
       const { data: { user } } = await supabase.auth.getUser();
       
       for (const update of updates) {
-        // Get existing record
+        // Get existing record - use most recent if multiple records exist
         const { data: existing } = await supabase
           .from('store_tube_inventory')
           .select('id')
           .eq('store_id', storeId)
           .eq('brand', update.brand)
-          .single();
-
+          .order('last_updated', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+          
         if (existing) {
           await supabase
             .from('store_tube_inventory')
@@ -253,7 +257,9 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
                         className="h-3 w-3 rounded-full"
                         style={{ backgroundColor: brand.color }}
                       />
-                      <span className="font-medium">{brand.name}</span>
+                      <span className="font-medium" style={{ color: brand.color }}>
+                        {brand.name}
+                      </span>
                       {hasChange && (
                         <Badge variant="secondary" className="text-xs">
                           Modified

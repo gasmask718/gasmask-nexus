@@ -5,11 +5,13 @@ import { GeocodingService } from "@/services/geocoding";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StorePerformanceTab } from "@/components/store/StorePerformanceTab";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import VisitLogModal from "@/components/VisitLogModal";
 import { InventoryPredictionCard } from "@/components/map/InventoryPredictionCard";
 import { CommunicationTimeline } from "@/components/CommunicationTimeline";
 import { CommunicationTimelineCRM } from "@/components/crm/CommunicationTimelineCRM";
@@ -27,13 +29,14 @@ import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StorePeopleSection } from "@/components/store/StorePeopleSection";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { StoreNotesSection } from "@/components/store/StoreNotesSection";
-import { AddNoteModal } from "@/components/store/AddNoteModal";
 import { StoreOperationsCard } from "@/components/store/StoreOperationsCard";
 import { EditableTubeInventoryCard } from "@/components/store/EditableTubeInventoryCard";
 import { StoreVisitInventoryCard } from "@/components/store/StoreVisitInventoryCard";
 import { StoreQuickActions } from "@/components/store/StoreQuickActions";
 import { RecentStoreInteractions } from "@/components/crm/RecentStoreInteractions";
-import { LogInteractionModal } from "@/components/crm/LogInteractionModal";
+import { UnifiedInteractionModal } from "@/components/store/UnifiedInteractionModal";
+import { InvoiceHistoryCard } from "@/components/store/InvoiceHistoryCard";
+import { ConnectedStoresCard } from "@/components/store/ConnectedStoresCard";
 import {
   MapPin,
   Phone,
@@ -49,6 +52,10 @@ import {
   Calendar,
   Navigation,
   Users,
+  Edit2,
+  Check,
+  X,
+  CreditCard,
 } from "lucide-react";
 import { toast } from "sonner";
 import { BulkCommunicationLogModal } from "@/components/communication/BulkCommunicationLogModal";
@@ -89,6 +96,8 @@ interface Store {
   sticker_last_seen_at: string | null;
   sticker_taken_down: boolean;
   sticker_taken_down_at: string | null;
+  connected_group_id: string | null;
+  payment_type: string | null;
 }
 
 interface ProductInventory {
@@ -127,14 +136,16 @@ const StoreDetail = () => {
   const [inventory, setInventory] = useState<ProductInventory[]>([]);
   const [visits, setVisits] = useState<VisitLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [visitModalOpen, setVisitModalOpen] = useState(false);
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
   const [bulkCommModalOpen, setBulkCommModalOpen] = useState(false);
-  const [interactionModalOpen, setInteractionModalOpen] = useState(false);
+  const [unifiedInteractionModalOpen, setUnifiedInteractionModalOpen] = useState(false);
   const [resolvedStoreMasterId, setResolvedStoreMasterId] = useState<string | null>(null);
   const [timelineRefresh, setTimelineRefresh] = useState(0);
   const [geocoding, setGeocoding] = useState(false);
-  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [isEditingQuickStats, setIsEditingQuickStats] = useState(false);
+  const [quickStatsResponsiveness, setQuickStatsResponsiveness] = useState<"call" | "text" | "both" | "none">("none");
+  const [quickStatsPaymentType, setQuickStatsPaymentType] = useState<"pays_upfront" | "bill_to_bill" | null>(null);
+  const [savingQuickStats, setSavingQuickStats] = useState(false);
 
   // Fetch store contacts for interaction modal
   const { data: storeContacts } = useQuery({
@@ -168,6 +179,8 @@ const StoreDetail = () => {
 
         if (storeError) throw storeError;
         setStore(storeData);
+        setQuickStatsResponsiveness((storeData.responsiveness as "call" | "text" | "both" | "none") || "none");
+        setQuickStatsPaymentType((storeData.payment_type as "pays_upfront" | "bill_to_bill") || null);
 
         await fetchInventoryAndVisits();
       } catch (error) {
@@ -319,6 +332,75 @@ const StoreDetail = () => {
     return type.replace(/([A-Z])/g, " $1").trim();
   };
 
+  const handleSaveQuickStats = async () => {
+    if (!store || !id) return;
+
+    setSavingQuickStats(true);
+    try {
+      const { error } = await supabase
+        .from("stores")
+        .update({ 
+          responsiveness: quickStatsResponsiveness as "call" | "text" | "both" | "none",
+          payment_type: quickStatsPaymentType,
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setStore({ ...store, responsiveness: quickStatsResponsiveness, payment_type: quickStatsPaymentType });
+      setIsEditingQuickStats(false);
+      toast.success("Quick stats updated");
+    } catch (error: any) {
+      console.error("Error updating quick stats:", error);
+      toast.error("Failed to update quick stats");
+    } finally {
+      setSavingQuickStats(false);
+    }
+  };
+
+  const handleCancelQuickStats = () => {
+    if (store) {
+      setQuickStatsResponsiveness((store.responsiveness as "call" | "text" | "both" | "none") || "none");
+      setQuickStatsPaymentType((store.payment_type as "pays_upfront" | "bill_to_bill") || null);
+    }
+    setIsEditingQuickStats(false);
+  };
+
+  const toggleResponsiveness = (type: "text" | "call") => {
+    const current = quickStatsResponsiveness;
+    let newValue: "call" | "text" | "both" | "none";
+
+    if (type === "text") {
+      if (current === "text" || current === "both") {
+        // Remove text, keep call if it exists
+        newValue = current === "both" ? "call" : "none";
+      } else {
+        // Add text
+        newValue = current === "call" ? "both" : "text";
+      }
+    } else {
+      // type === "call"
+      if (current === "call" || current === "both") {
+        // Remove call, keep text if it exists
+        newValue = current === "both" ? "text" : "none";
+      } else {
+        // Add call
+        newValue = current === "text" ? "both" : "call";
+      }
+    }
+
+    setQuickStatsResponsiveness(newValue);
+  };
+
+  const getResponsivenessStatus = (type: "text" | "call") => {
+    const current = isEditingQuickStats ? quickStatsResponsiveness : (store?.responsiveness as "call" | "text" | "both" | "none" | undefined) || "none";
+    if (type === "text") {
+      return current === "text" || current === "both";
+    } else {
+      return current === "call" || current === "both";
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -345,25 +427,13 @@ const StoreDetail = () => {
                 <Navigation className="h-4 w-4 mr-2" />
                 {geocoding ? "Geocoding..." : "Geocode Address"}
               </Button>
-              <Button variant="outline" className="border-border/50" onClick={() => setNoteModalOpen(true)}>
-                <FileText className="h-4 w-4 mr-2" />
-                Add Note
-              </Button>
-              <Button className="bg-primary hover:bg-primary-hover" onClick={() => setVisitModalOpen(true)}>
-                Log Visit
+              <Button className="bg-primary hover:bg-primary-hover" onClick={() => setUnifiedInteractionModalOpen(true)}>
+                Log Interaction
               </Button>
             </div>
           </div>
         </div>
       </div>
-
-      <VisitLogModal
-        open={visitModalOpen}
-        onOpenChange={setVisitModalOpen}
-        storeId={id || ""}
-        storeName={store.name}
-        onSuccess={fetchInventoryAndVisits}
-      />
 
       <CommunicationLogModal
         open={communicationModalOpen}
@@ -374,12 +444,16 @@ const StoreDetail = () => {
         onSuccess={() => setTimelineRefresh((prev) => prev + 1)}
       />
 
-      <AddNoteModal
-        open={noteModalOpen}
-        onOpenChange={setNoteModalOpen}
+      <UnifiedInteractionModal
+        open={unifiedInteractionModalOpen}
+        onOpenChange={setUnifiedInteractionModalOpen}
         storeId={id || ""}
         storeName={store.name}
-        onSuccess={() => {}}
+        storeContacts={storeContacts || []}
+        onSuccess={() => {
+          fetchInventoryAndVisits();
+          setTimelineRefresh((prev) => prev + 1);
+        }}
       />
 
       <BulkCommunicationLogModal
@@ -416,6 +490,14 @@ const StoreDetail = () => {
           {/* Notes Section */}
           <StoreNotesSection storeId={id || ""} storeName={store.name} />
 
+          {/* Connected Stores */}
+          <ConnectedStoresCard 
+            storeId={id || ""}
+            currentStoreName={store.name}
+            currentStoreGroupId={store.connected_group_id}
+            currentStoreOwnerName={store.primary_contact_name}
+          />
+
           {/* Tube Inventory - Editable with Brand Filter */}
           <EditableTubeInventoryCard storeId={id || ""} />
 
@@ -442,9 +524,12 @@ const StoreDetail = () => {
             storeId={id || ""}
             onLogInteraction={(resolvedId) => {
               setResolvedStoreMasterId(resolvedId);
-              setInteractionModalOpen(true);
+              setUnifiedInteractionModalOpen(true);
             }}
           />
+
+          {/* Invoice History */}
+          <InvoiceHistoryCard storeId={id || ""} />
 
           {/* Communication Stats & AI */}
           <div className="grid gap-6 md:grid-cols-2">
@@ -784,10 +869,43 @@ const StoreDetail = () => {
           {/* Quick Stats */}
           <Card className="glass-card border-border/50">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                Quick Stats
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Quick Stats
+                </CardTitle>
+                {!isEditingQuickStats ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditingQuickStats(true)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSaveQuickStats}
+                      disabled={savingQuickStats}
+                      className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCancelQuickStats}
+                      disabled={savingQuickStats}
+                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -796,23 +914,57 @@ const StoreDetail = () => {
               </div>
               <Separator />
               
-              {/* Responsiveness - Separated */}
+              {/* Responsiveness - Editable */}
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">Responsiveness</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
-                    <Mail className="h-4 w-4 text-blue-500" />
-                    <span className="text-xs">Text</span>
-                    <Badge variant="outline" className="ml-auto bg-green-500/10 text-green-600 border-green-500/30 text-xs">
-                      Yes
-                    </Badge>
+                  <div className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-blue-500" />
+                      <Label className="text-xs">Text</Label>
+                    </div>
+                    {isEditingQuickStats ? (
+                      <Switch
+                        checked={getResponsivenessStatus("text")}
+                        onCheckedChange={() => toggleResponsiveness("text")}
+                        disabled={savingQuickStats}
+                      />
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className={`ml-auto text-xs ${
+                          getResponsivenessStatus("text")
+                            ? "bg-green-500/10 text-green-600 border-green-500/30"
+                            : "bg-red-500/10 text-red-600 border-red-500/30"
+                        }`}
+                      >
+                        {getResponsivenessStatus("text") ? "Yes" : "No"}
+                      </Badge>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
-                    <Phone className="h-4 w-4 text-purple-500" />
-                    <span className="text-xs">Call</span>
-                    <Badge variant="outline" className="ml-auto bg-red-500/10 text-red-600 border-red-500/30 text-xs">
-                      No
-                    </Badge>
+                  <div className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-purple-500" />
+                      <Label className="text-xs">Call</Label>
+                    </div>
+                    {isEditingQuickStats ? (
+                      <Switch
+                        checked={getResponsivenessStatus("call")}
+                        onCheckedChange={() => toggleResponsiveness("call")}
+                        disabled={savingQuickStats}
+                      />
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className={`ml-auto text-xs ${
+                          getResponsivenessStatus("call")
+                            ? "bg-green-500/10 text-green-600 border-green-500/30"
+                            : "bg-red-500/10 text-red-600 border-red-500/30"
+                        }`}
+                      >
+                        {getResponsivenessStatus("call") ? "Yes" : "No"}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>
@@ -895,6 +1047,38 @@ const StoreDetail = () => {
               </div>
               <Separator />
               
+              {/* Payment Type */}
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Payment Type</p>
+                {isEditingQuickStats ? (
+                  <Select 
+                    value={quickStatsPaymentType || ""} 
+                    onValueChange={(value) => setQuickStatsPaymentType(value === "" ? null : value as "pays_upfront" | "bill_to_bill")}
+                    disabled={savingQuickStats}
+                  >
+                    <SelectTrigger className="w-full bg-background">
+                      <SelectValue placeholder="Select payment type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pays_upfront">Pays Upfront</SelectItem>
+                      <SelectItem value="bill_to_bill">Bill to Bill</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">
+                      {store.payment_type === "pays_upfront" 
+                        ? "Pays Upfront" 
+                        : store.payment_type === "bill_to_bill"
+                        ? "Bill to Bill"
+                        : "Not set"}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <Separator />
+              
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Member Since</p>
                 <div className="flex items-center gap-2 text-sm">
@@ -935,17 +1119,6 @@ const StoreDetail = () => {
         </div>
       </div>
 
-      {/* Log Interaction Modal - Uses resolved store_master.id */}
-      <LogInteractionModal
-        isOpen={interactionModalOpen}
-        onClose={() => {
-          setInteractionModalOpen(false);
-          setResolvedStoreMasterId(null);
-        }}
-        storeMasterId={resolvedStoreMasterId || undefined}
-        storeName={store.name}
-        storeContacts={storeContacts || []}
-      />
     </div>
   );
 };

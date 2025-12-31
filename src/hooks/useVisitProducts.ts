@@ -204,13 +204,15 @@ export function useUpdateStoreTubeInventory() {
       const { data: { user } } = await supabase.auth.getUser();
 
       for (const update of brandUpdates) {
-        // Get current inventory
+        // Get current inventory - use most recent if multiple records exist
         const { data: existing } = await supabase
           .from('store_tube_inventory')
           .select('id, current_tubes_left')
           .eq('store_id', storeId)
           .eq('brand', update.brand)
-          .single();
+          .order('last_updated', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
         if (existing) {
           // Update existing - ADD to current count

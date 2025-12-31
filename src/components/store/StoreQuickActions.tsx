@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Package, Phone, MapPin, FileText, MessageSquare } from 'lucide-react';
 import { UpdateInventoryModal } from './UpdateInventoryModal';
 import { CreateStoreInvoiceModal } from './CreateStoreInvoiceModal';
+import { UnifiedInteractionModal } from './UnifiedInteractionModal';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 interface StoreQuickActionsProps {
   storeId: string;
@@ -23,10 +24,24 @@ export function StoreQuickActions({
   onInventoryUpdated,
   onInvoiceCreated,
 }: StoreQuickActionsProps) {
-  const navigate = useNavigate();
   const [inventoryModalOpen, setInventoryModalOpen] = useState(false);
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [textModalOpen, setTextModalOpen] = useState(false);
   const [addingToRoute, setAddingToRoute] = useState(false);
+
+  // Fetch store contacts for text messaging
+  const { data: storeContacts } = useQuery({
+    queryKey: ['store-contacts-for-quick-actions', storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('store_contacts')
+        .select('id, name')
+        .eq('store_id', storeId);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!storeId,
+  });
 
   const handleCallStore = () => {
     if (storePhone) {
@@ -109,11 +124,7 @@ export function StoreQuickActions({
   };
 
   const handleSendMessage = () => {
-    if (storePhone) {
-      window.location.href = `sms:${storePhone}`;
-    } else {
-      toast.error('No phone number available for this store');
-    }
+    setTextModalOpen(true);
   };
 
   return (
@@ -185,6 +196,18 @@ export function StoreQuickActions({
         storeId={storeId}
         storeName={storeName}
         onSuccess={onInvoiceCreated}
+      />
+
+      <UnifiedInteractionModal
+        open={textModalOpen}
+        onOpenChange={setTextModalOpen}
+        storeId={storeId}
+        storeName={storeName}
+        storeContacts={storeContacts || []}
+        initialInteractionType="sms"
+        onSuccess={() => {
+          // Text sent successfully
+        }}
       />
     </>
   );

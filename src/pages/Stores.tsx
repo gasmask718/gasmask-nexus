@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag, Edit } from 'lucide-react';
+import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag, Edit, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface StoreContact {
@@ -46,6 +46,7 @@ interface Store {
   sticker_door: boolean;
   sticker_instore: boolean;
   sticker_phone: boolean;
+  payment_type: string | null;
   contacts: StoreContact[];
   tubeInventory: TubeInventory[];
 }
@@ -57,6 +58,7 @@ const Stores = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [tagFilter, setTagFilter] = useState<string>('all');
   const [stickerFilter, setStickerFilter] = useState<string>('all');
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all');
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [newStoreName, setNewStoreName] = useState('');
   const [isSavingStoreName, setIsSavingStoreName] = useState(false);
@@ -64,10 +66,10 @@ const Stores = () => {
   const { data: stores = [], isLoading } = useQuery({
     queryKey: ['stores-with-contacts'],
     queryFn: async () => {
-      // Fetch stores with sticker fields
+      // Fetch stores with sticker fields and payment type
       const { data: storesData, error: storesError } = await supabase
         .from('stores')
-        .select('id, name, type, address_street, address_city, address_state, address_zip, phone, status, tags, sells_flowers, sticker_status, sticker_door, sticker_instore, sticker_phone')
+        .select('id, name, type, address_street, address_city, address_state, address_zip, phone, status, tags, sells_flowers, sticker_status, sticker_door, sticker_instore, sticker_phone, payment_type')
         .order('name');
 
       if (storesError) throw storesError;
@@ -150,7 +152,13 @@ const Stores = () => {
       (stickerFilter === 'has_any' && (store.sticker_door || store.sticker_instore || store.sticker_phone)) ||
       (stickerFilter === 'no_sticker' && !store.sticker_door && !store.sticker_instore && !store.sticker_phone);
     
-    return matchesSearch && matchesStatus && matchesTag && matchesSticker;
+    // Payment type filter
+    const matchesPaymentType = 
+      paymentTypeFilter === 'all' || 
+      (paymentTypeFilter === 'not_set' && !store.payment_type) ||
+      (paymentTypeFilter !== 'not_set' && store.payment_type === paymentTypeFilter);
+    
+    return matchesSearch && matchesStatus && matchesTag && matchesSticker && matchesPaymentType;
   });
 
   const getStatusColor = (status: string) => {
@@ -178,6 +186,11 @@ const Stores = () => {
     hasAny: stores.filter(s => s.sticker_door || s.sticker_instore || s.sticker_phone).length,
     noSticker: stores.filter(s => !s.sticker_door && !s.sticker_instore && !s.sticker_phone).length,
   };
+  const paymentTypeCounts = {
+    paysUpfront: stores.filter(s => s.payment_type === 'pays_upfront').length,
+    billToBill: stores.filter(s => s.payment_type === 'bill_to_bill').length,
+    notSet: stores.filter(s => !s.payment_type).length,
+  };
 
   // Helper to get owners and workers from contacts
   const getOwners = (contacts: StoreContact[]) =>
@@ -195,12 +208,39 @@ const Stores = () => {
       return workerRoleKeywords.some(keyword => role.includes(keyword));
     });
 
-  const formatBrandName = (brand: string) =>
-    brand
+  const formatBrandName = (brand: string) => {
+    const normalized = brand.toLowerCase();
+    // Special case: gasmask should display as "gasmask bags"
+    if (normalized === 'gasmask' || (normalized.includes('gasmask') && !normalized.includes('gasmasktubes'))) {
+      return 'Gasmask Bags';
+    }
+    return brand
       .split(/[_\s-]+/)
       .filter(Boolean)
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ');
+  };
+
+  const getBrandColor = (brand: string) => {
+    const normalizedBrand = brand.toLowerCase();
+    // Check gasmasktubes first (before gasmask) since it contains "gasmask"
+    if (normalizedBrand.includes('gasmasktubes') || normalizedBrand === 'gasmasktubes') {
+      return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+    }
+    if (normalizedBrand.includes('gasmask')) {
+      return 'bg-red-500/10 text-red-500 border-red-500/20';
+    }
+    if (normalizedBrand.includes('hotmama')) {
+      return 'bg-pink-500/10 text-pink-500 border-pink-500/20';
+    }
+    if (normalizedBrand.includes('grabba') || normalizedBrand.includes('grabbar')) {
+      return 'bg-purple-500/10 text-purple-500 border-purple-500/20';
+    }
+    if (normalizedBrand.includes('hotscolatti') || normalizedBrand.includes('hotscolatti')) {
+      return 'bg-orange-500/10 text-orange-500 border-orange-500/20';
+    }
+    return 'bg-muted text-muted-foreground';
+  };
 
   const openEditStoreName = (store: Store) => {
     setEditingStore(store);
@@ -333,12 +373,26 @@ const Stores = () => {
             </SelectContent>
           </Select>
 
+          {/* Payment Type Filter */}
+          <Select value={paymentTypeFilter} onValueChange={setPaymentTypeFilter}>
+            <SelectTrigger className="w-48 bg-secondary/50 border-border/50">
+              <CreditCard className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Payment" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Payment Types</SelectItem>
+              <SelectItem value="pays_upfront">Pays Upfront ({paymentTypeCounts.paysUpfront})</SelectItem>
+              <SelectItem value="bill_to_bill">Bill to Bill ({paymentTypeCounts.billToBill})</SelectItem>
+              <SelectItem value="not_set">Not Set ({paymentTypeCounts.notSet})</SelectItem>
+            </SelectContent>
+          </Select>
+
           {/* Active Filters Display */}
-          {(tagFilter !== 'all' || stickerFilter !== 'all') && (
+          {(tagFilter !== 'all' || stickerFilter !== 'all' || paymentTypeFilter !== 'all') && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => { setTagFilter('all'); setStickerFilter('all'); }}
+              onClick={() => { setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); }}
               className="text-muted-foreground"
             >
               Clear filters
@@ -360,7 +414,20 @@ const Stores = () => {
             const cityStateZip = [store.address_city, store.address_state, store.address_zip]
               .filter(Boolean)
               .join(', ');
-            const sortedInventory = [...(store.tubeInventory || [])].sort((a, b) =>
+            // Group inventory by brand (case-insensitive) and sum counts
+            const inventoryByBrand = (store.tubeInventory || []).reduce((acc, item) => {
+              const brandKey = item.brand.toLowerCase();
+              if (!acc[brandKey]) {
+                acc[brandKey] = {
+                  brand: item.brand,
+                  totalCount: 0,
+                };
+              }
+              acc[brandKey].totalCount += Math.max(0, item.current_tubes_left ?? 0);
+              return acc;
+            }, {} as Record<string, { brand: string; totalCount: number }>);
+
+            const groupedInventory = Object.values(inventoryByBrand).sort((a, b) =>
               a.brand.localeCompare(b.brand)
             );
 
@@ -452,11 +519,11 @@ const Stores = () => {
                     </div>
                   </div>
 
-                  {sortedInventory.length > 0 && (
+                  {groupedInventory.length > 0 && (
                     <div className="flex flex-wrap gap-1">
-                      {sortedInventory.map(item => (
-                        <Badge key={item.id} variant="secondary" className="text-xs">
-                          {formatBrandName(item.brand)}: {Math.max(0, item.current_tubes_left ?? 0)}
+                      {groupedInventory.map((item, idx) => (
+                        <Badge key={`${item.brand}-${idx}`} className={`text-xs ${getBrandColor(item.brand)}`}>
+                          {formatBrandName(item.brand)}: {item.totalCount}
                         </Badge>
                       ))}
                     </div>
