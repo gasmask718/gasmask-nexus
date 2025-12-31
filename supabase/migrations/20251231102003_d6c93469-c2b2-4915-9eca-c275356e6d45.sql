@@ -1,0 +1,1 @@
+ALTER TYPE visit_type ADD VALUE 'order';

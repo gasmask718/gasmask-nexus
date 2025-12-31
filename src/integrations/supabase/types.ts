@@ -27106,7 +27106,12 @@ export type Database = {
         | "sports_betting_va"
         | "admin"
         | "owner"
-      visit_type: "delivery" | "inventoryCheck" | "coldLead" | "followUp"
+      visit_type:
+        | "delivery"
+        | "inventoryCheck"
+        | "coldLead"
+        | "followUp"
+        | "order"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -27477,7 +27482,13 @@ export const Constants = {
         "admin",
         "owner",
       ],
-      visit_type: ["delivery", "inventoryCheck", "coldLead", "followUp"],
+      visit_type: [
+        "delivery",
+        "inventoryCheck",
+        "coldLead",
+        "followUp",
+        "order",
+      ],
     },
   },
 } as const
