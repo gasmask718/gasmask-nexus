@@ -13783,41 +13783,61 @@ export type Database = {
       }
       invoice_line_items: {
         Row: {
-          brand: string | null
+          brand_id: string | null
+          brand_name: string | null
           created_at: string
           id: string
           invoice_id: string
-          line_total: number
-          product_name: string
+          product_id: string | null
+          product_name: string | null
           quantity: number
+          total: number
           unit_price: number
         }
         Insert: {
-          brand?: string | null
+          brand_id?: string | null
+          brand_name?: string | null
           created_at?: string
           id?: string
           invoice_id: string
-          line_total: number
-          product_name: string
+          product_id?: string | null
+          product_name?: string | null
           quantity?: number
+          total: number
           unit_price: number
         }
         Update: {
-          brand?: string | null
+          brand_id?: string | null
+          brand_name?: string | null
           created_at?: string
           id?: string
           invoice_id?: string
-          line_total?: number
-          product_name?: string
+          product_id?: string | null
+          product_name?: string | null
           quantity?: number
+          total?: number
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoice_line_items_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
