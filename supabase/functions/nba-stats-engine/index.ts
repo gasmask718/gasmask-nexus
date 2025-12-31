@@ -759,7 +759,8 @@ serve(async (req) => {
 
     // ========== SETTLE RESULTS ACTION ==========
     // Automatically settles games by deriving winners from final scores
-    // and populating confirmed_game_winners with confirmation_source = 'automatic'
+    // and populating BOTH confirmed_game_winners AND final_results
+    // AI predictions are attached at settlement time if they exist
     if (action === "settle_results") {
       console.log("=== NBA STATS ENGINE: SETTLE_RESULTS START ===");
       
@@ -791,8 +792,9 @@ serve(async (req) => {
           }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
         
-        // 2. Get existing confirmations to avoid duplicates
+        // 2. Get existing confirmations and final_results to avoid duplicates
         const gameIds = finalGames.map(g => g.game_id);
+        
         const { data: existingConfirmations } = await supabase
           .from('confirmed_game_winners')
           .select('game_id, confirmation_revoked')
@@ -804,17 +806,35 @@ serve(async (req) => {
             .map(c => c.game_id)
         );
         
-        console.log(`Already confirmed: ${confirmedGameIds.size} games`);
+        const { data: existingFinalResults } = await supabase
+          .from('final_results')
+          .select('game_id')
+          .in('game_id', gameIds)
+          .eq('market_type', 'moneyline');
         
-        // 3. Process unconfirmed final games
+        const finalResultsGameIds = new Set((existingFinalResults || []).map(r => r.game_id));
+        
+        console.log(`Already confirmed: ${confirmedGameIds.size} games, Already in final_results: ${finalResultsGameIds.size} games`);
+        
+        // 3. Fetch ALL AI predictions for these games (to attach at settlement time)
+        const { data: aiPredictions } = await supabase
+          .from('ai_game_predictions')
+          .select('*')
+          .in('game_id', gameIds);
+        
+        const predictionsByGameId = new Map(
+          (aiPredictions || []).map(p => [p.game_id, p])
+        );
+        
+        console.log(`Found ${predictionsByGameId.size} AI predictions to potentially attach`);
+        
+        // 4. Process ALL final games
         let settledCount = 0;
+        let finalResultsCount = 0;
+        let aiAttachedCount = 0;
         const errors: string[] = [];
         
         for (const game of finalGames) {
-          if (confirmedGameIds.has(game.game_id)) {
-            continue; // Skip already confirmed
-          }
-          
           // Derive winner from scores
           const winner = game.winner || (
             game.home_score > game.away_score ? game.home_team : game.away_team
@@ -825,11 +845,45 @@ serve(async (req) => {
             continue;
           }
           
+          const now = new Date().toISOString();
+          
           try {
-            // Upsert into confirmed_game_winners with automatic source
-            const { error: upsertError } = await supabase
-              .from('confirmed_game_winners')
-              .upsert({
+            // STEP A: Upsert into confirmed_game_winners (skip if already confirmed)
+            if (!confirmedGameIds.has(game.game_id)) {
+              const { error: upsertError } = await supabase
+                .from('confirmed_game_winners')
+                .upsert({
+                  game_id: game.game_id,
+                  game_date: game.game_date,
+                  sport: 'NBA',
+                  home_team: game.home_team,
+                  away_team: game.away_team,
+                  home_score: game.home_score,
+                  away_score: game.away_score,
+                  confirmed_winner: winner,
+                  confirmation_source: 'automatic',
+                  confirmed_at: now,
+                  confirmation_revoked: false,
+                }, { 
+                  onConflict: 'game_id',
+                  ignoreDuplicates: false
+                });
+              
+              if (upsertError) {
+                console.error(`Error settling game ${game.game_id} to confirmed_game_winners:`, upsertError);
+                errors.push(`${game.game_id}: ${upsertError.message}`);
+                continue;
+              }
+              settledCount++;
+              console.log(`Settled to confirmed_game_winners: ${game.away_team} @ ${game.home_team} -> Winner: ${winner}`);
+            }
+            
+            // STEP B: Insert into final_results with AI prediction attached (skip if already exists)
+            if (!finalResultsGameIds.has(game.game_id)) {
+              const aiPrediction = predictionsByGameId.get(game.game_id);
+              const hasAIPrediction = !!aiPrediction;
+              
+              const finalResultRow = {
                 game_id: game.game_id,
                 game_date: game.game_date,
                 sport: 'NBA',
@@ -837,35 +891,55 @@ serve(async (req) => {
                 away_team: game.away_team,
                 home_score: game.home_score,
                 away_score: game.away_score,
-                confirmed_winner: winner,
-                confirmation_source: 'automatic',
-                confirmed_at: new Date().toISOString(),
-                confirmation_revoked: false,
-              }, { 
-                onConflict: 'game_id,sport',
-                ignoreDuplicates: false
-              });
-            
-            if (upsertError) {
-              console.error(`Error settling game ${game.game_id}:`, upsertError);
-              errors.push(`${game.game_id}: ${upsertError.message}`);
-              continue;
+                actual_winner: winner,
+                // AI prediction fields - attached at settlement time, NULL if not found
+                ai_predicted_winner: aiPrediction?.ai_predicted_winner || null,
+                ai_probability: aiPrediction?.ai_predicted_probability || null,
+                ai_confidence_score: aiPrediction?.ai_confidence_score || null,
+                model_version: aiPrediction?.model_version || null,
+                prediction_id: aiPrediction?.id || null,
+                prediction_source: aiPrediction?.prediction_source || null,
+                locked_at: aiPrediction?.locked_at || null,
+                // Calculate if AI was correct (only if AI prediction exists)
+                is_correct: hasAIPrediction ? (aiPrediction.ai_predicted_winner === winner) : null,
+                // Settlement metadata
+                market_type: 'moneyline',
+                settlement_source: 'automatic',
+                settled_at: now,
+                is_valid: true,
+              };
+              
+              // Use insert (we already checked it doesn't exist)
+              const { error: finalResultError } = await supabase
+                .from('final_results')
+                .insert(finalResultRow);
+              
+              if (finalResultError) {
+                console.error(`Error inserting final_result for game ${game.game_id}:`, finalResultError);
+                errors.push(`final_results ${game.game_id}: ${finalResultError.message}`);
+              } else {
+                finalResultsCount++;
+                if (hasAIPrediction) aiAttachedCount++;
+                console.log(`Inserted final_result: ${game.away_team} @ ${game.home_team} | AI: ${hasAIPrediction ? aiPrediction.ai_predicted_winner : 'NONE'} | Actual: ${winner}`);
+              }
             }
             
-            settledCount++;
-            console.log(`Settled: ${game.away_team} @ ${game.home_team} -> Winner: ${winner}`);
           } catch (err) {
             console.error(`Exception settling game ${game.game_id}:`, err);
             errors.push(`${game.game_id}: ${err}`);
           }
         }
         
-        console.log(`=== NBA STATS ENGINE: SETTLE_RESULTS COMPLETE - Settled ${settledCount} games ===`);
+        console.log(`=== NBA STATS ENGINE: SETTLE_RESULTS COMPLETE ===`);
+        console.log(`Settled ${settledCount} to confirmed_game_winners, ${finalResultsCount} to final_results (${aiAttachedCount} with AI attached)`);
         
         return new Response(JSON.stringify({
           success: true,
-          settled: settledCount,
+          settled_confirmed: settledCount,
+          settled_final_results: finalResultsCount,
+          ai_predictions_attached: aiAttachedCount,
           already_confirmed: confirmedGameIds.size,
+          already_in_final_results: finalResultsGameIds.size,
           total_final_games: finalGames.length,
           errors: errors.length > 0 ? errors : undefined
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -877,7 +951,7 @@ serve(async (req) => {
           error: error instanceof Error ? error.message : 'Unknown error'
         }), { 
           status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
     }
