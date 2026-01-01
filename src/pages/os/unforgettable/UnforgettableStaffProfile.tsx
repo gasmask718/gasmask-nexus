@@ -3,9 +3,8 @@
  * 
  * SYSTEM LAW: Profiles represent people, not layouts.
  * A profile without an ID is a bug.
- * 
- * This page fetches real staff data by ID from the database.
- * Simulation data is only used when explicitly allowed AND no real data exists.
+ * Tabs are views into data, not decorations.
+ * If a tab doesn't query by staff ID, it is broken.
  */
 
 import { useState } from 'react';
@@ -15,15 +14,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   ArrowLeft, Phone, Mail, Calendar, DollarSign, Star, Clock, 
   MapPin, FileText, Edit, 
-  Award, TrendingUp, CheckCircle, AlertCircle, User, Briefcase, Loader2
+  Award, TrendingUp, AlertCircle, User, Briefcase, Loader2
 } from "lucide-react";
 import { useStaffMember } from '@/hooks/useUnforgettableStaff';
+import StaffEventsTab from '@/components/staff/tabs/StaffEventsTab';
+import StaffPaymentsTab from '@/components/staff/tabs/StaffPaymentsTab';
+import StaffPerformanceTab from '@/components/staff/tabs/StaffPerformanceTab';
+import StaffDocumentsTab from '@/components/staff/tabs/StaffDocumentsTab';
 
 export default function UnforgettableStaffProfile() {
   const navigate = useNavigate();
@@ -411,106 +413,33 @@ export default function UnforgettableStaffProfile() {
           </div>
         </TabsContent>
 
-        {/* Events Tab */}
+        {/* Events Tab - Real data driven by staff_id */}
         <TabsContent value="events" className="space-y-4">
-          <Card className="border-border/50">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-pink-500" />
-                Event History
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium mb-1">Events: {staff.events_completed ?? 0}</p>
-                <p className="text-sm">Event assignments coming soon</p>
-              </div>
-            </CardContent>
-          </Card>
+          <StaffEventsTab staffId={staffId!} />
         </TabsContent>
 
-        {/* Payments Tab */}
+        {/* Payments Tab - Real data driven by staff_id */}
         <TabsContent value="payments" className="space-y-4">
-          <Card className="border-border/50">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-emerald-500" />
-                Payment Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="p-4 rounded-lg bg-emerald-500/10">
-                  <p className="text-sm text-muted-foreground">Total Earnings</p>
-                  <p className="text-2xl font-bold text-emerald-600">
-                    ${(staff.total_earnings ?? 0).toLocaleString()}
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-blue-500/10">
-                  <p className="text-sm text-muted-foreground">Pay Rate</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {staff.pay_rate ? `$${staff.pay_rate}/${staff.pay_type === 'hourly' ? 'hr' : 'event'}` : '-'}
-                  </p>
-                </div>
-              </div>
-              <div className="text-center py-4 text-muted-foreground">
-                <p className="text-sm">Detailed payment history coming soon</p>
-              </div>
-            </CardContent>
-          </Card>
+          <StaffPaymentsTab 
+            staffId={staffId!} 
+            payRate={staff.pay_rate} 
+            payType={staff.pay_type} 
+          />
         </TabsContent>
 
-        {/* Performance Tab */}
+        {/* Performance Tab - Computed from real data */}
         <TabsContent value="performance" className="space-y-4">
-          <Card className="border-border/50">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-pink-500" />
-                Performance Metrics
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm">Overall Rating</span>
-                  <span className="text-sm font-medium">{staff.rating?.toFixed(1) ?? '-'} / 5.0</span>
-                </div>
-                <Progress value={staff.rating ? (staff.rating / 5) * 100 : 0} className="h-2" />
-              </div>
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm">Events Completed</span>
-                  <span className="text-sm font-medium">{staff.events_completed ?? 0}</span>
-                </div>
-                <Progress value={Math.min((staff.events_completed ?? 0) * 2, 100)} className="h-2" />
-              </div>
-              <div className="text-center py-4 text-muted-foreground">
-                <p className="text-sm">Additional performance metrics coming soon</p>
-              </div>
-            </CardContent>
-          </Card>
+          <StaffPerformanceTab 
+            staffId={staffId!}
+            rating={staff.rating}
+            eventsCompleted={staff.events_completed}
+            totalEarnings={staff.total_earnings}
+          />
         </TabsContent>
 
-        {/* Documents Tab */}
+        {/* Documents Tab - Staff-scoped documents */}
         <TabsContent value="documents" className="space-y-4">
-          <Card className="border-border/50">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <FileText className="h-4 w-4 text-pink-500" />
-                Documents & Files
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p>No documents uploaded yet</p>
-                <Button variant="outline" size="sm" className="mt-4">
-                  Upload Document
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <StaffDocumentsTab staffId={staffId!} />
         </TabsContent>
       </Tabs>
     </div>
