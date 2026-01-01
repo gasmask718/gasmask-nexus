@@ -136,30 +136,31 @@ const generateMockStaff = (categories: StaffCategory[]): UTStaffMember[] => {
 };
 
 // Hook: Fetch staff categories
-export function useStaffCategories() {
+export function useStaffCategories(businessSlug: string = 'unforgettable_times_usa') {
   const { simulationMode } = useSimulationMode();
 
   return useQuery({
-    queryKey: ['ut-staff-categories'],
+    queryKey: ['ut-staff-categories', businessSlug],
     queryFn: async (): Promise<StaffCategory[]> => {
       if (simulationMode) {
         return [
-          { id: 'sim-1', business_slug: 'unforgettable_times_usa', name: 'Security', description: 'Event security personnel', is_active: true, created_at: '', updated_at: '' },
-          { id: 'sim-2', business_slug: 'unforgettable_times_usa', name: 'Decorators', description: 'Event decoration specialists', is_active: true, created_at: '', updated_at: '' },
-          { id: 'sim-3', business_slug: 'unforgettable_times_usa', name: 'Bartenders', description: 'Beverage service professionals', is_active: true, created_at: '', updated_at: '' },
-          { id: 'sim-4', business_slug: 'unforgettable_times_usa', name: 'Host', description: 'Event hosts and hostesses', is_active: true, created_at: '', updated_at: '' },
-          { id: 'sim-5', business_slug: 'unforgettable_times_usa', name: 'Costume Wearers', description: 'Character performers and mascots', is_active: true, created_at: '', updated_at: '' },
-          { id: 'sim-6', business_slug: 'unforgettable_times_usa', name: 'Magicians', description: 'Magic and illusion performers', is_active: true, created_at: '', updated_at: '' },
-          { id: 'sim-7', business_slug: 'unforgettable_times_usa', name: 'Clowns', description: 'Clown entertainers', is_active: true, created_at: '', updated_at: '' },
-          { id: 'sim-8', business_slug: 'unforgettable_times_usa', name: 'Private Chefs', description: 'Personal and event chefs', is_active: true, created_at: '', updated_at: '' },
-          { id: 'sim-9', business_slug: 'unforgettable_times_usa', name: 'Catering Crews', description: 'Catering service teams', is_active: true, created_at: '', updated_at: '' },
-          { id: 'sim-10', business_slug: 'unforgettable_times_usa', name: 'DJ', description: 'Disc jockeys and music entertainment', is_active: true, created_at: '', updated_at: '' },
+          { id: 'sim-1', business_slug: businessSlug, name: 'Security', description: 'Event security personnel', is_active: true, created_at: '', updated_at: '' },
+          { id: 'sim-2', business_slug: businessSlug, name: 'Decorators', description: 'Event decoration specialists', is_active: true, created_at: '', updated_at: '' },
+          { id: 'sim-3', business_slug: businessSlug, name: 'Bartenders', description: 'Beverage service professionals', is_active: true, created_at: '', updated_at: '' },
+          { id: 'sim-4', business_slug: businessSlug, name: 'Host', description: 'Event hosts and hostesses', is_active: true, created_at: '', updated_at: '' },
+          { id: 'sim-5', business_slug: businessSlug, name: 'Costume Wearers', description: 'Character performers and mascots', is_active: true, created_at: '', updated_at: '' },
+          { id: 'sim-6', business_slug: businessSlug, name: 'Magicians', description: 'Magic and illusion performers', is_active: true, created_at: '', updated_at: '' },
+          { id: 'sim-7', business_slug: businessSlug, name: 'Clowns', description: 'Clown entertainers', is_active: true, created_at: '', updated_at: '' },
+          { id: 'sim-8', business_slug: businessSlug, name: 'Private Chefs', description: 'Personal and event chefs', is_active: true, created_at: '', updated_at: '' },
+          { id: 'sim-9', business_slug: businessSlug, name: 'Catering Crews', description: 'Catering service teams', is_active: true, created_at: '', updated_at: '' },
+          { id: 'sim-10', business_slug: businessSlug, name: 'DJ', description: 'Disc jockeys and music entertainment', is_active: true, created_at: '', updated_at: '' },
         ];
       }
 
       const { data, error } = await supabase
         .from('ut_staff_categories')
         .select('*')
+        .eq('business_slug', businessSlug)
         .eq('is_active', true)
         .order('name');
 
@@ -170,19 +171,19 @@ export function useStaffCategories() {
 }
 
 // Hook: Fetch staff categories with KPI cards joined
-export function useStaffCategoriesWithKPIs() {
+export function useStaffCategoriesWithKPIs(businessSlug: string = 'unforgettable_times_usa') {
   const { simulationMode } = useSimulationMode();
 
   return useQuery({
-    queryKey: ['ut-staff-categories-with-kpis'],
+    queryKey: ['ut-staff-categories-with-kpis', businessSlug],
     queryFn: async (): Promise<StaffCategoryWithKPI[]> => {
       if (simulationMode) {
         return [
-          { id: 'sim-1', business_slug: 'unforgettable_times_usa', name: 'Security', description: 'Event security personnel', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-1', staff_category_id: 'sim-1', business_slug: 'unforgettable_times_usa', total_staff: 12, active_shifts: 5, completed_events: 48, revenue_generated: 24000, performance_score: 4.5, status: 'active', created_at: '', updated_at: '' } },
-          { id: 'sim-2', business_slug: 'unforgettable_times_usa', name: 'Decorators', description: 'Event decoration specialists', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-2', staff_category_id: 'sim-2', business_slug: 'unforgettable_times_usa', total_staff: 8, active_shifts: 3, completed_events: 32, revenue_generated: 18500, performance_score: 4.8, status: 'active', created_at: '', updated_at: '' } },
-          { id: 'sim-3', business_slug: 'unforgettable_times_usa', name: 'Bartenders', description: 'Beverage service professionals', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-3', staff_category_id: 'sim-3', business_slug: 'unforgettable_times_usa', total_staff: 15, active_shifts: 8, completed_events: 67, revenue_generated: 42000, performance_score: 4.7, status: 'active', created_at: '', updated_at: '' } },
-          { id: 'sim-4', business_slug: 'unforgettable_times_usa', name: 'Host', description: 'Event hosts and hostesses', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-4', staff_category_id: 'sim-4', business_slug: 'unforgettable_times_usa', total_staff: 6, active_shifts: 2, completed_events: 25, revenue_generated: 12000, performance_score: 4.9, status: 'active', created_at: '', updated_at: '' } },
-          { id: 'sim-5', business_slug: 'unforgettable_times_usa', name: 'Costume Wearers', description: 'Character performers and mascots', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-5', staff_category_id: 'sim-5', business_slug: 'unforgettable_times_usa', total_staff: 10, active_shifts: 4, completed_events: 38, revenue_generated: 22000, performance_score: 4.6, status: 'active', created_at: '', updated_at: '' } },
+          { id: 'sim-1', business_slug: businessSlug, name: 'Security', description: 'Event security personnel', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-1', staff_category_id: 'sim-1', business_slug: businessSlug, total_staff: 12, active_shifts: 5, completed_events: 48, revenue_generated: 24000, performance_score: 4.5, status: 'active', created_at: '', updated_at: '' } },
+          { id: 'sim-2', business_slug: businessSlug, name: 'Decorators', description: 'Event decoration specialists', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-2', staff_category_id: 'sim-2', business_slug: businessSlug, total_staff: 8, active_shifts: 3, completed_events: 32, revenue_generated: 18500, performance_score: 4.8, status: 'active', created_at: '', updated_at: '' } },
+          { id: 'sim-3', business_slug: businessSlug, name: 'Bartenders', description: 'Beverage service professionals', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-3', staff_category_id: 'sim-3', business_slug: businessSlug, total_staff: 15, active_shifts: 8, completed_events: 67, revenue_generated: 42000, performance_score: 4.7, status: 'active', created_at: '', updated_at: '' } },
+          { id: 'sim-4', business_slug: businessSlug, name: 'Host', description: 'Event hosts and hostesses', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-4', staff_category_id: 'sim-4', business_slug: businessSlug, total_staff: 6, active_shifts: 2, completed_events: 25, revenue_generated: 12000, performance_score: 4.9, status: 'active', created_at: '', updated_at: '' } },
+          { id: 'sim-5', business_slug: businessSlug, name: 'Costume Wearers', description: 'Character performers and mascots', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-5', staff_category_id: 'sim-5', business_slug: businessSlug, total_staff: 10, active_shifts: 4, completed_events: 38, revenue_generated: 22000, performance_score: 4.6, status: 'active', created_at: '', updated_at: '' } },
         ];
       }
 
@@ -193,16 +194,26 @@ export function useStaffCategoriesWithKPIs() {
           *,
           kpi:ut_staff_category_kpis(*)
         `)
+        .eq('business_slug', businessSlug)
         .eq('is_active', true)
         .order('name');
 
       if (error) throw error;
 
-      // Transform the data - kpi comes as an array from the join, we need the first item
-      return (data || []).map((cat: Record<string, unknown>) => ({
-        ...cat,
-        kpi: Array.isArray(cat.kpi) && cat.kpi.length > 0 ? cat.kpi[0] : null,
-      })) as StaffCategoryWithKPI[];
+      // PostgREST may return the joined relation as either an object (1:1) or an array.
+      return (data || []).map((cat: Record<string, any>) => {
+        const rawKpi = cat.kpi;
+        const kpi = Array.isArray(rawKpi)
+          ? (rawKpi[0] ?? null)
+          : rawKpi && typeof rawKpi === 'object'
+            ? rawKpi
+            : null;
+
+        return {
+          ...cat,
+          kpi,
+        } as StaffCategoryWithKPI;
+      });
     },
   });
 }

@@ -57,7 +57,10 @@ export function StaffOperationsSection({ businessSlug }: StaffOperationsSectionP
   }
 
   return (
-    <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+    <Card
+      className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent"
+      data-staff-ops-section="true"
+    >
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Users className="h-5 w-5 text-primary" />

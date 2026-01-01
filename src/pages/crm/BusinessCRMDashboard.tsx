@@ -14,6 +14,7 @@ import { useCRMSimulation, useCRMSimulationStats } from '@/hooks/useCRMSimulatio
 import { useCRMEntityCounts } from '@/hooks/useCRMEntityCounts';
 import { BusinessContextGuard } from '@/components/crm/BusinessContextGuard';
 import { StaffOperationsSection, StaffOverviewWidget } from '@/components/crm/unforgettable';
+import { StaffCategoryKPICards } from '@/components/unforgettable/StaffCategoryKPICards';
 import CRMLayout from './CRMLayout';
 import {
   Building2, Users, Plus, Settings, ArrowLeft, ChevronRight,
@@ -142,6 +143,16 @@ export default function BusinessCRMDashboard() {
                   staffingGaps: 0,
                 }}
               />
+
+              {/* Staff Category KPI Cards (data-driven; never hides games/categories due to missing KPI) */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Staff Category KPIs</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <StaffCategoryKPICards />
+                </CardContent>
+              </Card>
             </div>
           )}
 
