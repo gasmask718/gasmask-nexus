@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ import { useStaffCategories, useCreateStaffCategory, useDeleteStaffCategory, Sta
 import { SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
+import { EditStaffCategoryModal } from '@/components/staff/EditStaffCategoryModal';
 
 export default function UnforgettableStaffCategories() {
   const navigate = useNavigate();
@@ -23,6 +24,10 @@ export default function UnforgettableStaffCategories() {
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
+  
+  // Edit state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [categoryToEdit, setCategoryToEdit] = useState<StaffCategory | null>(null);
   
   // Delete state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -47,6 +52,11 @@ export default function UnforgettableStaffCategories() {
     } catch (error) {
       // Error handled by mutation
     }
+  };
+
+  const handleEditClick = (category: StaffCategory) => {
+    setCategoryToEdit(category);
+    setEditModalOpen(true);
   };
 
   const handleDeleteClick = (category: StaffCategory) => {
@@ -163,7 +173,7 @@ export default function UnforgettableStaffCategories() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem disabled>
+                          <DropdownMenuItem onClick={() => handleEditClick(category)}>
                             <Edit className="h-4 w-4 mr-2" />
                             Edit Category
                           </DropdownMenuItem>
@@ -184,12 +194,19 @@ export default function UnforgettableStaffCategories() {
                 <p className="text-sm text-muted-foreground mb-4">
                   {category.description || 'No description provided'}
                 </p>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1" disabled>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                </div>
+                {isAdmin && (
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => handleEditClick(category)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -211,6 +228,14 @@ export default function UnforgettableStaffCategories() {
           </CardContent>
         </Card>
       )}
+
+      {/* Edit Category Modal */}
+      <EditStaffCategoryModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        category={categoryToEdit}
+        onDelete={handleDeleteClick}
+      />
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmModal
