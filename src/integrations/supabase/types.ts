@@ -24698,28 +24698,34 @@ export type Database = {
         Row: {
           business_slug: string
           created_at: string
+          deleted_at: string | null
           description: string | null
           id: string
           is_active: boolean
           name: string
+          system_default: boolean
           updated_at: string
         }
         Insert: {
           business_slug?: string
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
           name: string
+          system_default?: boolean
           updated_at?: string
         }
         Update: {
           business_slug?: string
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
           name?: string
+          system_default?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -26989,6 +26995,10 @@ export type Database = {
       soft_delete_contact: { Args: { contact_id: string }; Returns: undefined }
       soft_delete_record: {
         Args: { p_id: string; p_table: string }
+        Returns: undefined
+      }
+      soft_delete_staff_category: {
+        Args: { p_category_id: string }
         Returns: undefined
       }
       update_relationship_status: { Args: never; Returns: undefined }

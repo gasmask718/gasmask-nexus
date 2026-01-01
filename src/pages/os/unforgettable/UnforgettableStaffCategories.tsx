@@ -6,20 +6,31 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Loader2, Tag, Edit, Users } from 'lucide-react';
-import { useStaffCategories, useCreateStaffCategory } from '@/hooks/useUnforgettableStaff';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ArrowLeft, Plus, Loader2, Tag, Edit, Users, MoreVertical, Trash2 } from 'lucide-react';
+import { useStaffCategories, useCreateStaffCategory, useDeleteStaffCategory, StaffCategory } from '@/hooks/useUnforgettableStaff';
 import { SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
+import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 
 export default function UnforgettableStaffCategories() {
   const navigate = useNavigate();
   const { simulationMode } = useSimulationMode();
   const { data: categories, isLoading } = useStaffCategories();
   const createCategory = useCreateStaffCategory();
+  const deleteCategory = useDeleteStaffCategory();
   
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
+  
+  // Delete state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<StaffCategory | null>(null);
+
+  // TODO: Replace with actual role check from auth context
+  // For now, assuming admin access - in production this should check user role
+  const isAdmin = true; // This should come from useUserRole() or similar
 
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return;
@@ -36,6 +47,17 @@ export default function UnforgettableStaffCategories() {
     } catch (error) {
       // Error handled by mutation
     }
+  };
+
+  const handleDeleteClick = (category: StaffCategory) => {
+    setCategoryToDelete(category);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!categoryToDelete) return;
+    await deleteCategory.mutateAsync(categoryToDelete.id);
+    setCategoryToDelete(null);
   };
 
   return (
@@ -128,9 +150,34 @@ export default function UnforgettableStaffCategories() {
                       <CardTitle className="text-lg">{category.name}</CardTitle>
                     </div>
                   </div>
-                  <Badge variant="outline" className={category.is_active ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-500/10 text-gray-600'}>
-                    {category.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={category.is_active ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-500/10 text-gray-600'}>
+                      {category.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
+                    {/* Admin-only actions menu */}
+                    {isAdmin && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem disabled>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Category
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleDeleteClick(category)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Category
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -164,6 +211,20 @@ export default function UnforgettableStaffCategories() {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        title="Delete Staff Category"
+        description={
+          categoryToDelete
+            ? `This will remove "${categoryToDelete.name}" from active use. Staff assigned to this category will be unassigned. History and KPI data will be preserved but archived.`
+            : undefined
+        }
+        itemName={categoryToDelete?.name}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }
