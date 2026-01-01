@@ -1,4 +1,14 @@
-import { useState, useMemo } from 'react';
+/**
+ * UnforgettableStaffProfile
+ * 
+ * SYSTEM LAW: Profiles represent people, not layouts.
+ * A profile without an ID is a bug.
+ * 
+ * This page fetches real staff data by ID from the database.
+ * Simulation data is only used when explicitly allowed AND no real data exists.
+ */
+
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,127 +17,116 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   ArrowLeft, Phone, Mail, Calendar, DollarSign, Star, Clock, 
-  MapPin, FileText, Edit, CalendarPlus, 
-  Award, TrendingUp, CheckCircle, AlertCircle, User, Briefcase
+  MapPin, FileText, Edit, 
+  Award, TrendingUp, CheckCircle, AlertCircle, User, Briefcase, Loader2
 } from "lucide-react";
-import { 
-  STAFF_ROLES, 
-  STAFF_CATEGORIES,
-  STAFF_STATUSES,
-  STAFF_DEPARTMENTS,
-  EMPLOYMENT_TYPES,
-  getRoleDisplayName,
-  type UTStaffRole,
-  type UTStaffCategory,
-  type UTStaffStatus,
-  type UTEmploymentType
-} from '@/config/unforgettableStaffConfig';
-
-// Mock staff profile data
-const generateMockStaffProfile = (id: string) => {
-  const roleKeys = Object.keys(STAFF_ROLES) as UTStaffRole[];
-  const idx = parseInt(id.replace('staff-', '')) - 1 || 0;
-  const role = roleKeys[idx % roleKeys.length];
-  const roleInfo = STAFF_ROLES[role];
-  
-  const firstNames = ['Maria', 'Carlos', 'Jessica', 'David', 'Sofia', 'Michael', 'Angela', 'Roberto'];
-  const lastNames = ['Rodriguez', 'Martinez', 'Garcia', 'Johnson', 'Williams', 'Brown', 'Davis', 'Lopez'];
-  
-  const firstName = firstNames[idx % firstNames.length];
-  const lastName = lastNames[idx % lastNames.length];
-  
-  return {
-    id,
-    first_name: firstName,
-    last_name: lastName,
-    email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@unforgettable.com`,
-    phone: `(555) ${String(100 + idx).padStart(3, '0')}-${String(1000 + idx * 11).slice(0, 4)}`,
-    role,
-    category: roleInfo.defaultCategory,
-    employment_type: roleInfo.defaultEmploymentType,
-    status: 'active' as UTStaffStatus,
-    department: roleInfo.department,
-    hourly_rate: roleInfo.typicalHourlyRate?.min ? 
-      roleInfo.typicalHourlyRate.min + Math.random() * (roleInfo.typicalHourlyRate.max - roleInfo.typicalHourlyRate.min) : null,
-    event_rate: roleInfo.typicalEventRate?.min ? 
-      roleInfo.typicalEventRate.min + Math.random() * (roleInfo.typicalEventRate.max - roleInfo.typicalEventRate.min) : null,
-    events_completed: Math.floor(Math.random() * 50) + 5,
-    rating: 4 + Math.random(),
-    hire_date: new Date(2023, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString().split('T')[0],
-    total_earnings: Math.floor(Math.random() * 15000) + 2000,
-    address: '123 Event Way, Miami, FL 33101',
-    emergency_contact: 'John Doe - (555) 999-8888',
-    notes: 'Excellent team player, always punctual.',
-    certifications: roleInfo.requiredCertifications || [],
-    skills: ['Event Setup', 'Customer Service', 'Team Coordination'],
-    languages: ['English', 'Spanish'],
-    availability: {
-      monday: true,
-      tuesday: true,
-      wednesday: true,
-      thursday: true,
-      friday: true,
-      saturday: true,
-      sunday: false
-    },
-    upcoming_events: [
-      { id: 'evt-1', name: 'Garcia Wedding Reception', date: '2024-02-15', venue: 'Grand Ballroom', role: role },
-      { id: 'evt-2', name: 'Corporate Holiday Party', date: '2024-02-22', venue: 'Skyline Terrace', role: role },
-      { id: 'evt-3', name: 'Sweet 16 - Martinez', date: '2024-03-01', venue: 'Paradise Hall', role: role }
-    ],
-    past_events: [
-      { id: 'evt-10', name: 'Johnson Anniversary', date: '2024-01-20', venue: 'Ocean View', rating: 5, payout: 350 },
-      { id: 'evt-11', name: 'NYE Gala 2024', date: '2024-01-01', venue: 'Grand Ballroom', rating: 4.8, payout: 500 },
-      { id: 'evt-12', name: 'Williams Quinceañera', date: '2023-12-15', venue: 'Casa Bella', rating: 5, payout: 300 }
-    ],
-    payment_history: [
-      { id: 'pay-1', date: '2024-01-25', amount: 850, status: 'paid', events: 3 },
-      { id: 'pay-2', date: '2024-01-10', amount: 650, status: 'paid', events: 2 },
-      { id: 'pay-3', date: '2023-12-22', amount: 1200, status: 'paid', events: 4 }
-    ],
-    performance_metrics: {
-      punctuality: 98,
-      client_satisfaction: 96,
-      reliability: 95,
-      teamwork: 92
-    }
-  };
-};
+import { useStaffMember } from '@/hooks/useUnforgettableStaff';
 
 export default function UnforgettableStaffProfile() {
   const navigate = useNavigate();
   const { staffId } = useParams<{ staffId: string }>();
   const [activeTab, setActiveTab] = useState('overview');
 
-  const staff = useMemo(() => generateMockStaffProfile(staffId || 'staff-1'), [staffId]);
-  const roleInfo = STAFF_ROLES[staff.role];
-  const deptInfo = STAFF_DEPARTMENTS.find(d => d.id === staff.department);
-  const RoleIcon = roleInfo?.icon || User;
+  // Fetch real staff data by ID - this is the core fix
+  const { data: staff, isLoading, error } = useStaffMember(staffId);
 
-  const getStatusBadge = (status: UTStaffStatus) => {
-    const statusInfo = STAFF_STATUSES[status];
-    const colorMap: Record<string, string> = {
-      'bg-emerald-500': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-      'bg-gray-500': 'bg-gray-500/10 text-gray-600 border-gray-500/20',
-      'bg-amber-500': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-      'bg-blue-500': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-      'bg-red-500': 'bg-red-500/10 text-red-600 border-red-500/20'
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen p-6 space-y-6">
+        <Button variant="ghost" disabled className="mb-2">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Staff
+        </Button>
+        <Card className="border-border/50 overflow-hidden">
+          <div className="h-24 bg-gradient-to-r from-pink-600 to-purple-500" />
+          <CardContent className="relative pt-0 pb-6">
+            <div className="flex flex-col md:flex-row gap-6 -mt-12">
+              <Skeleton className="h-24 w-24 rounded-full" />
+              <div className="flex-1 pt-4 md:pt-8 space-y-4">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-32" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-6 w-24" />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
+        </div>
+      </div>
+    );
+  }
+
+  // Error or not found state
+  if (error || !staff) {
+    return (
+      <div className="min-h-screen p-6">
+        <Button 
+          variant="ghost" 
+          onClick={() => navigate('/os/unforgettable/staff')}
+          className="mb-6"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Staff
+        </Button>
+        <Card className="border-border/50">
+          <CardContent className="py-12 text-center">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Staff Member Not Found</h2>
+            <p className="text-muted-foreground mb-6">
+              {staffId 
+                ? `No staff member found with ID: ${staffId}`
+                : 'No staff ID provided in the URL'}
+            </p>
+            <Button 
+              onClick={() => navigate('/os/unforgettable/staff')}
+              className="bg-gradient-to-r from-pink-600 to-purple-500"
+            >
+              Return to Staff Directory
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Status badge styling
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'active': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+      'inactive': 'bg-gray-500/10 text-gray-600 border-gray-500/20',
+      'pending': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+      'on_leave': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+      'terminated': 'bg-red-500/10 text-red-600 border-red-500/20',
     };
-    return colorMap[statusInfo?.color || 'bg-gray-500'] || 'bg-muted text-muted-foreground';
+    return statusMap[status] || 'bg-muted text-muted-foreground';
   };
 
-  const getCategoryBadge = (category: UTStaffCategory) => {
-    const categoryInfo = STAFF_CATEGORIES[category];
-    const colorMap: Record<string, string> = {
-      'bg-blue-500': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-      'bg-purple-500': 'bg-purple-500/10 text-purple-600 border-purple-500/20',
-      'bg-amber-500': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-      'bg-emerald-500': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      'active': 'Active',
+      'inactive': 'Inactive',
+      'pending': 'Pending',
+      'on_leave': 'On Leave',
+      'terminated': 'Terminated',
     };
-    return colorMap[categoryInfo?.color || 'bg-gray-500'] || 'bg-muted text-muted-foreground';
+    return labels[status] || status;
   };
+
+  // Build full address
+  const fullAddress = [
+    staff.address_line_1,
+    staff.address_line_2,
+    staff.city && staff.state ? `${staff.city}, ${staff.state}` : staff.city || staff.state,
+    staff.zip
+  ].filter(Boolean).join(', ') || 'No address on file';
 
   return (
     <div className="min-h-screen p-6 space-y-6">
@@ -148,7 +147,7 @@ export default function UnforgettableStaffProfile() {
           <div className="flex flex-col md:flex-row gap-6 -mt-12">
             <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
               <AvatarFallback className="text-2xl bg-gradient-to-br from-pink-500 to-purple-500 text-white">
-                {staff.first_name[0]}{staff.last_name[0]}
+                {staff.first_name?.[0]}{staff.last_name?.[0]}
               </AvatarFallback>
             </Avatar>
             
@@ -157,39 +156,49 @@ export default function UnforgettableStaffProfile() {
                 <div>
                   <h1 className="text-2xl font-bold">{staff.first_name} {staff.last_name}</h1>
                   <div className="flex items-center gap-2 mt-1">
-                    <RoleIcon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">{getRoleDisplayName(staff.role)}</span>
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">
+                      {staff.category?.name || 'Uncategorized'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="outline" className={getStatusBadge(staff.status)}>
-                      {STAFF_STATUSES[staff.status]?.displayName}
+                    <Badge variant="outline" className={getStatusBadge(staff.status || 'active')}>
+                      {getStatusLabel(staff.status || 'active')}
                     </Badge>
-                    <Badge variant="outline" className={getCategoryBadge(staff.category)}>
-                      {STAFF_CATEGORIES[staff.category]?.displayName}
-                    </Badge>
-                    <Badge variant="secondary">
-                      {EMPLOYMENT_TYPES[staff.employment_type]?.displayName}
-                    </Badge>
+                    {staff.category && (
+                      <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/20">
+                        {staff.category.name}
+                      </Badge>
+                    )}
+                    {staff.pay_type && (
+                      <Badge variant="secondary">
+                        {staff.pay_type === 'hourly' ? 'Hourly' : 'Per Event'}
+                      </Badge>
+                    )}
                   </div>
                 </div>
                 
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => navigate(`/os/unforgettable/staff/${staffId}/call`)}
-                  >
-                    <Phone className="h-4 w-4 mr-2" />
-                    Call
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => navigate(`/os/unforgettable/staff/${staffId}/email`)}
-                  >
-                    <Mail className="h-4 w-4 mr-2" />
-                    Email
-                  </Button>
+                <div className="flex gap-2 flex-wrap">
+                  {staff.phone && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => window.open(`tel:${staff.phone}`)}
+                    >
+                      <Phone className="h-4 w-4 mr-2" />
+                      Call
+                    </Button>
+                  )}
+                  {staff.email && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => window.open(`mailto:${staff.email}`)}
+                    >
+                      <Mail className="h-4 w-4 mr-2" />
+                      Email
+                    </Button>
+                  )}
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -226,43 +235,53 @@ export default function UnforgettableStaffProfile() {
         <Card className="border-border/50">
           <CardContent className="p-4 text-center">
             <Calendar className="h-5 w-5 text-pink-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{staff.events_completed}</p>
+            <p className="text-2xl font-bold">{staff.events_completed ?? 0}</p>
             <p className="text-xs text-muted-foreground">Events Completed</p>
           </CardContent>
         </Card>
         <Card className="border-border/50">
           <CardContent className="p-4 text-center">
             <Star className="h-5 w-5 text-amber-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{staff.rating.toFixed(1)}</p>
+            <p className="text-2xl font-bold">{staff.rating?.toFixed(1) ?? '-'}</p>
             <p className="text-xs text-muted-foreground">Rating</p>
           </CardContent>
         </Card>
         <Card className="border-border/50">
           <CardContent className="p-4 text-center">
             <DollarSign className="h-5 w-5 text-emerald-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold">${staff.total_earnings.toLocaleString()}</p>
+            <p className="text-2xl font-bold">
+              ${(staff.total_earnings ?? 0).toLocaleString()}
+            </p>
             <p className="text-xs text-muted-foreground">Total Earnings</p>
           </CardContent>
         </Card>
         <Card className="border-border/50">
           <CardContent className="p-4 text-center">
             <Clock className="h-5 w-5 text-blue-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{staff.hourly_rate ? `$${staff.hourly_rate.toFixed(0)}` : 'N/A'}</p>
-            <p className="text-xs text-muted-foreground">Hourly Rate</p>
+            <p className="text-2xl font-bold">
+              {staff.pay_rate ? `$${staff.pay_rate}` : '-'}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {staff.pay_type === 'hourly' ? 'Hourly Rate' : 'Event Rate'}
+            </p>
           </CardContent>
         </Card>
         <Card className="border-border/50">
           <CardContent className="p-4 text-center">
             <TrendingUp className="h-5 w-5 text-purple-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{staff.event_rate ? `$${staff.event_rate.toFixed(0)}` : 'N/A'}</p>
-            <p className="text-xs text-muted-foreground">Event Rate</p>
+            <p className="text-2xl font-bold">
+              {staff.hire_date 
+                ? Math.floor((Date.now() - new Date(staff.hire_date).getTime()) / (1000 * 60 * 60 * 24 * 30))
+                : '-'}
+            </p>
+            <p className="text-xs text-muted-foreground">Months Employed</p>
           </CardContent>
         </Card>
         <Card className="border-border/50">
           <CardContent className="p-4 text-center">
             <Award className="h-5 w-5 text-rose-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{staff.certifications.length}</p>
-            <p className="text-xs text-muted-foreground">Certifications</p>
+            <p className="text-2xl font-bold">{staff.preferred_contact_method || '-'}</p>
+            <p className="text-xs text-muted-foreground">Contact Pref.</p>
           </CardContent>
         </Card>
       </div>
@@ -291,22 +310,26 @@ export default function UnforgettableStaffProfile() {
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-3">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{staff.email}</span>
+                  <span className="text-sm">{staff.email || 'No email on file'}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{staff.phone}</span>
+                  <span className="text-sm">{staff.phone || 'No phone on file'}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{staff.address}</span>
+                  <span className="text-sm">{fullAddress}</span>
                 </div>
                 <Separator />
                 <div className="flex items-center gap-3">
                   <AlertCircle className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">Emergency Contact</p>
-                    <p className="text-sm">{staff.emergency_contact}</p>
+                    <p className="text-sm">
+                      {staff.emergency_contact_name 
+                        ? `${staff.emergency_contact_name}${staff.emergency_contact_phone ? ` - ${staff.emergency_contact_phone}` : ''}`
+                        : 'No emergency contact on file'}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -322,92 +345,67 @@ export default function UnforgettableStaffProfile() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Department</span>
-                  <span className="text-sm font-medium">{deptInfo?.name || staff.department}</span>
+                  <span className="text-sm text-muted-foreground">Category</span>
+                  <span className="text-sm font-medium">{staff.category?.name || 'Uncategorized'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Role</span>
-                  <span className="text-sm font-medium">{getRoleDisplayName(staff.role)}</span>
+                  <span className="text-sm text-muted-foreground">Status</span>
+                  <span className="text-sm font-medium">{getStatusLabel(staff.status || 'active')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Employment Type</span>
-                  <span className="text-sm font-medium">{EMPLOYMENT_TYPES[staff.employment_type]?.displayName}</span>
+                  <span className="text-sm text-muted-foreground">Pay Type</span>
+                  <span className="text-sm font-medium">
+                    {staff.pay_type === 'hourly' ? 'Hourly' : staff.pay_type === 'per_event' ? 'Per Event' : staff.pay_type || '-'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Pay Rate</span>
+                  <span className="text-sm font-medium">
+                    {staff.pay_rate ? `$${staff.pay_rate}` : '-'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Hire Date</span>
-                  <span className="text-sm font-medium">{new Date(staff.hire_date).toLocaleDateString()}</span>
+                  <span className="text-sm font-medium">
+                    {staff.hire_date ? new Date(staff.hire_date).toLocaleDateString() : '-'}
+                  </span>
                 </div>
-                <Separator />
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">Certifications</p>
-                  <div className="flex flex-wrap gap-1">
-                    {staff.certifications.length > 0 ? (
-                      staff.certifications.map((cert, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">{cert}</Badge>
-                      ))
-                    ) : (
-                      <span className="text-xs text-muted-foreground">No certifications required</span>
-                    )}
-                  </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Date of Birth</span>
+                  <span className="text-sm font-medium">
+                    {staff.dob ? new Date(staff.dob).toLocaleDateString() : '-'}
+                  </span>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Availability */}
+            {/* Availability Notes */}
             <Card className="border-border/50">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-pink-500" />
-                  Weekly Availability
+                  Availability
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-7 gap-2">
-                  {Object.entries(staff.availability).map(([day, available]) => (
-                    <div key={day} className="text-center">
-                      <p className="text-xs text-muted-foreground capitalize">{day.slice(0, 3)}</p>
-                      <div className={`mt-1 p-2 rounded ${available ? 'bg-emerald-500/10' : 'bg-muted'}`}>
-                        {available ? (
-                          <CheckCircle className="h-4 w-4 text-emerald-500 mx-auto" />
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Off</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <p className="text-sm">
+                  {staff.availability_notes || 'No availability notes recorded'}
+                </p>
               </CardContent>
             </Card>
 
-            {/* Skills & Languages */}
+            {/* Notes */}
             <Card className="border-border/50">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Award className="h-4 w-4 text-pink-500" />
-                  Skills & Languages
+                  <FileText className="h-4 w-4 text-pink-500" />
+                  Notes
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">Skills</p>
-                  <div className="flex flex-wrap gap-1">
-                    {staff.skills.map((skill, i) => (
-                      <Badge key={i} variant="outline" className="text-xs">{skill}</Badge>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">Languages</p>
-                  <div className="flex flex-wrap gap-1">
-                    {staff.languages.map((lang, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">{lang}</Badge>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">Notes</p>
-                  <p className="text-sm">{staff.notes}</p>
-                </div>
+              <CardContent>
+                <p className="text-sm">
+                  {staff.notes || 'No notes recorded'}
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -415,56 +413,21 @@ export default function UnforgettableStaffProfile() {
 
         {/* Events Tab */}
         <TabsContent value="events" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-border/50">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-pink-500" />
-                  Upcoming Events ({staff.upcoming_events.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {staff.upcoming_events.map(event => (
-                  <div key={event.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer">
-                    <div>
-                      <p className="font-medium text-sm">{event.name}</p>
-                      <p className="text-xs text-muted-foreground">{event.venue}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{new Date(event.date).toLocaleDateString()}</p>
-                      <Badge variant="outline" className="text-xs">{getRoleDisplayName(event.role)}</Badge>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/50">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-emerald-500" />
-                  Past Events
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {staff.past_events.map(event => (
-                  <div key={event.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer">
-                    <div>
-                      <p className="font-medium text-sm">{event.name}</p>
-                      <p className="text-xs text-muted-foreground">{event.venue}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center gap-1 justify-end">
-                        <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
-                        <span className="text-sm">{event.rating}</span>
-                      </div>
-                      <p className="text-xs text-emerald-600">${event.payout}</p>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="border-border/50">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-pink-500" />
+                Event History
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p className="font-medium mb-1">Events: {staff.events_completed ?? 0}</p>
+                <p className="text-sm">Event assignments coming soon</p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Payments Tab */}
@@ -473,35 +436,26 @@ export default function UnforgettableStaffProfile() {
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-emerald-500" />
-                Payment History
+                Payment Summary
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border/50">
-                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Date</th>
-                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Amount</th>
-                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Events</th>
-                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {staff.payment_history.map(payment => (
-                      <tr key={payment.id} className="border-b border-border/30">
-                        <td className="p-3 text-sm">{new Date(payment.date).toLocaleDateString()}</td>
-                        <td className="p-3 text-sm font-medium text-emerald-600">${payment.amount}</td>
-                        <td className="p-3 text-sm">{payment.events} events</td>
-                        <td className="p-3">
-                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-                            {payment.status}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="p-4 rounded-lg bg-emerald-500/10">
+                  <p className="text-sm text-muted-foreground">Total Earnings</p>
+                  <p className="text-2xl font-bold text-emerald-600">
+                    ${(staff.total_earnings ?? 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-blue-500/10">
+                  <p className="text-sm text-muted-foreground">Pay Rate</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {staff.pay_rate ? `$${staff.pay_rate}/${staff.pay_type === 'hourly' ? 'hr' : 'event'}` : '-'}
+                  </p>
+                </div>
+              </div>
+              <div className="text-center py-4 text-muted-foreground">
+                <p className="text-sm">Detailed payment history coming soon</p>
               </div>
             </CardContent>
           </Card>
@@ -517,15 +471,23 @@ export default function UnforgettableStaffProfile() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {Object.entries(staff.performance_metrics).map(([metric, value]) => (
-                <div key={metric}>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm capitalize">{metric.replace('_', ' ')}</span>
-                    <span className="text-sm font-medium">{value}%</span>
-                  </div>
-                  <Progress value={value} className="h-2" />
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm">Overall Rating</span>
+                  <span className="text-sm font-medium">{staff.rating?.toFixed(1) ?? '-'} / 5.0</span>
                 </div>
-              ))}
+                <Progress value={staff.rating ? (staff.rating / 5) * 100 : 0} className="h-2" />
+              </div>
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm">Events Completed</span>
+                  <span className="text-sm font-medium">{staff.events_completed ?? 0}</span>
+                </div>
+                <Progress value={Math.min((staff.events_completed ?? 0) * 2, 100)} className="h-2" />
+              </div>
+              <div className="text-center py-4 text-muted-foreground">
+                <p className="text-sm">Additional performance metrics coming soon</p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
