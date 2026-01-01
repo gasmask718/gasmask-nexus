@@ -1,32 +1,44 @@
+/**
+ * useResolvedData Hook
+ * 
+ * Simple hook to resolve between real data and simulation data.
+ * Re-exports from useSimulationData for backwards compatibility.
+ */
+
 import { useMemo } from 'react';
-import { useSimulationMode } from '@/contexts/SimulationModeContext';
+import { useSimulationMode, useCanSimulate } from '@/contexts/SimulationModeContext';
 
 /**
  * Hook to resolve between real data and simulation data
  * Returns simulation data when:
- * - Simulation mode is ON AND real data is empty
+ * - Simulation mode is ON AND real data is empty AND business allows simulation
  * Returns real data when:
- * - Simulation mode is OFF OR real data has content
+ * - Real data has content
+ * - Business is a live/protected business
  */
 export function useResolvedData<T>(
   realData: T[] | undefined | null,
-  simulationData: T[]
+  simulationData: T[],
+  businessSlug?: string | null
 ): { data: T[]; isSimulated: boolean; isEmpty: boolean } {
   const { simulationMode } = useSimulationMode();
+  const { canSimulate } = useCanSimulate(businessSlug);
 
   return useMemo(() => {
     const hasRealData = Array.isArray(realData) && realData.length > 0;
     
+    // Always return real data if available
     if (hasRealData) {
       return { data: realData, isSimulated: false, isEmpty: false };
     }
     
-    if (simulationMode) {
+    // Only use simulation if allowed and mode is on
+    if (canSimulate && simulationMode) {
       return { data: simulationData, isSimulated: true, isEmpty: false };
     }
     
     return { data: [], isSimulated: false, isEmpty: true };
-  }, [realData, simulationData, simulationMode]);
+  }, [realData, simulationData, simulationMode, canSimulate]);
 }
 
 /**
@@ -34,9 +46,11 @@ export function useResolvedData<T>(
  */
 export function useResolvedValue<T>(
   realValue: T | undefined | null,
-  simulationValue: T
+  simulationValue: T,
+  businessSlug?: string | null
 ): { value: T; isSimulated: boolean } {
   const { simulationMode } = useSimulationMode();
+  const { canSimulate } = useCanSimulate(businessSlug);
 
   return useMemo(() => {
     const hasRealValue = realValue !== undefined && realValue !== null;
@@ -45,10 +59,10 @@ export function useResolvedValue<T>(
       return { value: realValue, isSimulated: false };
     }
     
-    if (simulationMode) {
+    if (canSimulate && simulationMode) {
       return { value: simulationValue, isSimulated: true };
     }
     
-    return { value: simulationValue, isSimulated: simulationMode };
-  }, [realValue, simulationValue, simulationMode]);
+    return { value: simulationValue, isSimulated: !canSimulate || !simulationMode };
+  }, [realValue, simulationValue, simulationMode, canSimulate]);
 }
