@@ -15,17 +15,20 @@ import {
   DollarSign, Calendar, FileText, Download, Plus,
   CheckCircle, Clock, AlertCircle, XCircle, Loader2, CreditCard
 } from "lucide-react";
-import { useStaffPayments, UTStaffPayment } from '@/hooks/useUnforgettableStaffTabs';
+import { useStaffPayments, UTStaffPayment, exportPaymentsToCSV } from '@/hooks/useUnforgettableStaffTabs';
 import { format, parseISO } from 'date-fns';
+import AddPaymentModal from './AddPaymentModal';
 
 interface StaffPaymentsTabProps {
   staffId: string;
+  staffName?: string;
   payRate?: number | null;
   payType?: string | null;
 }
 
-export default function StaffPaymentsTab({ staffId, payRate, payType }: StaffPaymentsTabProps) {
+export default function StaffPaymentsTab({ staffId, staffName, payRate, payType }: StaffPaymentsTabProps) {
   const { data: payments, isLoading, error } = useStaffPayments(staffId);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const getStatusBadge = (status: UTStaffPayment['status']) => {
     const config: Record<string, { class: string; icon: React.ReactNode; label: string }> = {
@@ -62,51 +65,34 @@ export default function StaffPaymentsTab({ staffId, payRate, payType }: StaffPay
 
   const getPaymentMethodLabel = (method: UTStaffPayment['payment_method']) => {
     const labels: Record<string, string> = {
-      cash: 'Cash',
-      check: 'Check',
-      direct_deposit: 'Direct Deposit',
-      venmo: 'Venmo',
-      zelle: 'Zelle',
-      paypal: 'PayPal',
-      other: 'Other',
+      cash: 'Cash', check: 'Check', direct_deposit: 'Direct Deposit',
+      venmo: 'Venmo', zelle: 'Zelle', paypal: 'PayPal', other: 'Other',
     };
     return labels[method || 'other'] || method || 'N/A';
+  };
+
+  const handleExportCSV = () => {
+    if (payments && payments.length > 0) {
+      exportPaymentsToCSV(payments, staffName || 'Staff');
+    }
   };
 
   if (isLoading) {
     return (
       <Card className="border-border/50">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-emerald-500" />
-            Payment History
-          </CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><DollarSign className="h-4 w-4 text-emerald-500" />Payment History</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Skeleton className="h-20 rounded-lg" />
-            <Skeleton className="h-20 rounded-lg" />
-          </div>
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-16 rounded-lg" />
-          ))}
+          <div className="grid grid-cols-2 gap-4"><Skeleton className="h-20 rounded-lg" /><Skeleton className="h-20 rounded-lg" /></div>
+          {[1, 2, 3].map((i) => (<Skeleton key={i} className="h-16 rounded-lg" />))}
         </CardContent>
       </Card>
     );
   }
 
   if (error) {
-    return (
-      <Card className="border-border/50">
-        <CardContent className="py-8 text-center">
-          <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">Failed to load payments</p>
-        </CardContent>
-      </Card>
-    );
+    return (<Card className="border-border/50"><CardContent className="py-8 text-center"><AlertCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" /><p className="text-sm text-muted-foreground">Failed to load payments</p></CardContent></Card>);
   }
 
-  // Calculate totals
   const paidPayments = payments?.filter(p => p.status === 'paid') || [];
   const pendingPayments = payments?.filter(p => p.status === 'pending' || p.status === 'processing') || [];
   const totalPaid = paidPayments.reduce((sum, p) => sum + p.amount, 0);
@@ -114,113 +100,49 @@ export default function StaffPaymentsTab({ staffId, payRate, payType }: StaffPay
 
   return (
     <div className="space-y-4">
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="h-4 w-4 text-emerald-500" />
-              <span className="text-xs text-muted-foreground">Total Paid</span>
-            </div>
-            <p className="text-2xl font-bold text-emerald-600">${totalPaid.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Clock className="h-4 w-4 text-amber-500" />
-              <span className="text-xs text-muted-foreground">Pending</span>
-            </div>
-            <p className="text-2xl font-bold text-amber-600">${totalPending.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <CreditCard className="h-4 w-4 text-blue-500" />
-              <span className="text-xs text-muted-foreground">Pay Rate</span>
-            </div>
-            <p className="text-2xl font-bold text-blue-600">
-              {payRate ? `$${payRate}` : '-'}
-              <span className="text-sm font-normal text-muted-foreground">
-                /{payType === 'hourly' ? 'hr' : 'event'}
-              </span>
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-4 w-4 text-pink-500" />
-              <span className="text-xs text-muted-foreground">Transactions</span>
-            </div>
-            <p className="text-2xl font-bold">{payments?.length || 0}</p>
-          </CardContent>
-        </Card>
+        <Card className="border-border/50"><CardContent className="p-4"><div className="flex items-center gap-2 mb-2"><DollarSign className="h-4 w-4 text-emerald-500" /><span className="text-xs text-muted-foreground">Total Paid</span></div><p className="text-2xl font-bold text-emerald-600">${totalPaid.toLocaleString()}</p></CardContent></Card>
+        <Card className="border-border/50"><CardContent className="p-4"><div className="flex items-center gap-2 mb-2"><Clock className="h-4 w-4 text-amber-500" /><span className="text-xs text-muted-foreground">Pending</span></div><p className="text-2xl font-bold text-amber-600">${totalPending.toLocaleString()}</p></CardContent></Card>
+        <Card className="border-border/50"><CardContent className="p-4"><div className="flex items-center gap-2 mb-2"><CreditCard className="h-4 w-4 text-blue-500" /><span className="text-xs text-muted-foreground">Pay Rate</span></div><p className="text-2xl font-bold text-blue-600">{payRate ? `$${payRate}` : '-'}<span className="text-sm font-normal text-muted-foreground">/{payType === 'hourly' ? 'hr' : 'event'}</span></p></CardContent></Card>
+        <Card className="border-border/50"><CardContent className="p-4"><div className="flex items-center gap-2 mb-2"><FileText className="h-4 w-4 text-pink-500" /><span className="text-xs text-muted-foreground">Transactions</span></div><p className="text-2xl font-bold">{payments?.length || 0}</p></CardContent></Card>
       </div>
 
-      {/* Actions */}
       <div className="flex gap-2">
-        <Button variant="outline" size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Payment
-        </Button>
-        <Button variant="outline" size="sm">
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
-        </Button>
+        <Button variant="outline" size="sm" onClick={() => setShowAddModal(true)}><Plus className="h-4 w-4 mr-2" />Add Payment</Button>
+        <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={!payments || payments.length === 0}><Download className="h-4 w-4 mr-2" />Export CSV</Button>
       </div>
 
-      {/* Payment History */}
       <Card className="border-border/50">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <FileText className="h-4 w-4 text-pink-500" />
-            Payment History
-          </CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4 text-pink-500" />Payment History</CardTitle></CardHeader>
         <CardContent>
           {!payments || payments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p className="font-medium mb-1">No payments yet</p>
               <p className="text-sm">Payment records will appear here after events.</p>
+              <Button variant="outline" size="sm" className="mt-4" onClick={() => setShowAddModal(true)}><Plus className="h-4 w-4 mr-2" />Add First Payment</Button>
             </div>
           ) : (
             <div className="space-y-3">
               {payments.map((payment) => (
-                <div
-                  key={payment.id}
-                  className="flex items-center gap-4 p-4 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors"
-                >
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center">
-                    <DollarSign className="h-5 w-5 text-emerald-500" />
-                  </div>
+                <div key={payment.id} className="flex items-center gap-4 p-4 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors">
+                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center"><DollarSign className="h-5 w-5 text-emerald-500" /></div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">${payment.amount.toLocaleString()}</span>
-                      {getPaymentTypeBadge(payment.payment_type)}
-                    </div>
+                    <div className="flex items-center gap-2"><span className="font-medium">${payment.amount.toLocaleString()}</span>{getPaymentTypeBadge(payment.payment_type)}</div>
                     <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {format(parseISO(payment.payment_date), 'MMM d, yyyy')}
-                      </span>
+                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{format(parseISO(payment.payment_date), 'MMM d, yyyy')}</span>
                       <span>{getPaymentMethodLabel(payment.payment_method)}</span>
-                      {payment.event && (
-                        <span className="truncate">{payment.event.event_name}</span>
-                      )}
+                      {payment.event && (<span className="truncate">{payment.event.event_name}</span>)}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {getStatusBadge(payment.status)}
-                  </div>
+                  <div className="flex items-center gap-2">{getStatusBadge(payment.status)}</div>
                 </div>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+      <AddPaymentModal open={showAddModal} onOpenChange={setShowAddModal} staffId={staffId} />
     </div>
   );
 }
