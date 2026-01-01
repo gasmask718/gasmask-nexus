@@ -6,8 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   PartyPopper, Calendar, Building2, Users, DollarSign, Truck, ShoppingBag, Star, Sparkles,
   UserCog, CalendarDays, FileText, ArrowRight, Clock, AlertTriangle, Phone, UserPlus, 
-  Headphones, Image, Gift, Camera
+  Headphones, Image, Gift, Camera, Tag
 } from "lucide-react";
+import { StaffCategoryKPICards } from "@/components/unforgettable/StaffCategoryKPICards";
 
 // Staff & Operations Quick Links - HARD REQUIREMENT: Always visible
 const STAFF_OPS_LINKS = [
@@ -238,6 +239,30 @@ export default function UnforgettableDashboard() {
               </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* STAFF CATEGORY KPI CARDS - Data-driven from database */}
+      <Card className="border-2 border-amber-500/30 bg-gradient-to-r from-amber-500/5 to-orange-500/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Tag className="h-5 w-5 text-amber-500" />
+            Staff Category KPIs
+            <Badge variant="outline" className="ml-auto text-xs bg-amber-500/10 text-amber-600 border-amber-500/30">
+              Live from Database
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-2 text-xs text-amber-600 hover:text-amber-700"
+              onClick={() => navigate('/os/unforgettable/staff/categories')}
+            >
+              Manage Categories <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <StaffCategoryKPICards />
         </CardContent>
       </Card>
 

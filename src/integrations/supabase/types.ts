@@ -24724,6 +24724,56 @@ export type Database = {
         }
         Relationships: []
       }
+      ut_staff_category_kpis: {
+        Row: {
+          active_shifts: number
+          business_slug: string
+          completed_events: number
+          created_at: string
+          id: string
+          performance_score: number | null
+          revenue_generated: number
+          staff_category_id: string
+          status: string
+          total_staff: number
+          updated_at: string
+        }
+        Insert: {
+          active_shifts?: number
+          business_slug: string
+          completed_events?: number
+          created_at?: string
+          id?: string
+          performance_score?: number | null
+          revenue_generated?: number
+          staff_category_id: string
+          status?: string
+          total_staff?: number
+          updated_at?: string
+        }
+        Update: {
+          active_shifts?: number
+          business_slug?: string
+          completed_events?: number
+          created_at?: string
+          id?: string
+          performance_score?: number | null
+          revenue_generated?: number
+          staff_category_id?: string
+          status?: string
+          total_staff?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_staff_category_kpis_staff_category_id_fkey"
+            columns: ["staff_category_id"]
+            isOneToOne: true
+            referencedRelation: "ut_staff_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       va_attempts: {
         Row: {
           answers: Json | null
