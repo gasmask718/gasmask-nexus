@@ -263,6 +263,43 @@ export function useCreateStaffCategory() {
   });
 }
 
+// Hook: Delete (soft-delete) staff category
+// Remove access, never erase history.
+export function useDeleteStaffCategory() {
+  const queryClient = useQueryClient();
+  const { simulationMode } = useSimulationMode();
+
+  return useMutation({
+    mutationFn: async (categoryId: string): Promise<void> => {
+      if (simulationMode) {
+        toast.success('Category deleted (simulation)');
+        return;
+      }
+
+      // Call the soft-delete function
+      const { error } = await supabase.rpc('soft_delete_staff_category', {
+        p_category_id: categoryId,
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      // Invalidate all related queries
+      queryClient.invalidateQueries({ queryKey: ['ut-staff-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['ut-staff-categories-with-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['ut-staff-list'] });
+      toast.success('Category deleted successfully');
+    },
+    onError: (error: Error) => {
+      if (error.message.includes('system default')) {
+        toast.error('Cannot delete system default category');
+      } else {
+        toast.error(`Failed to delete category: ${error.message}`);
+      }
+    },
+  });
+}
+
 // Hook: Fetch staff list
 export function useStaffList(filters?: { category_id?: string; state?: string; status?: string }) {
   const { simulationMode } = useSimulationMode();
