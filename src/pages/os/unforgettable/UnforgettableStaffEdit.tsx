@@ -107,8 +107,19 @@ export default function UnforgettableStaffEdit() {
     );
   }
 
+  // Valid enum values for ut_staff_status - must match Postgres enum exactly
+  const VALID_STATUS_VALUES = ['active', 'inactive', 'pending', 'on_leave', 'terminated'] as const;
+  type StaffStatus = typeof VALID_STATUS_VALUES[number];
+
   const onSubmit = async (formData: StaffFormData) => {
     if (!staffId) return;
+
+    // Validate status is a valid enum value (enums are contracts)
+    const status = formData.status as StaffStatus;
+    if (!VALID_STATUS_VALUES.includes(status)) {
+      console.error('Invalid status value:', formData.status);
+      return;
+    }
 
     try {
       await updateStaff.mutateAsync({
@@ -116,27 +127,28 @@ export default function UnforgettableStaffEdit() {
         data: {
           first_name: formData.firstName,
           last_name: formData.lastName,
-          email: formData.email || undefined,
+          email: formData.email || null,
           phone: formData.phone,
-          category_id: formData.categoryId,
-          dob: formData.dob,
+          category_id: formData.categoryId || null,
+          dob: formData.dob || null,
           address_line_1: formData.addressLine1,
-          address_line_2: formData.addressLine2 || undefined,
+          address_line_2: formData.addressLine2 || null,
           city: formData.city,
           state: formData.state,
           zip: formData.zip,
-          status: formData.status as 'active' | 'inactive' | 'pending' | 'on_leave' | 'terminated',
-          pay_type: formData.payType || undefined,
-          pay_rate: formData.payRate ? parseFloat(formData.payRate) : undefined,
-          preferred_contact_method: formData.preferredContactMethod || undefined,
-          availability_notes: formData.availabilityNotes || undefined,
-          emergency_contact_name: formData.emergencyContactName || undefined,
-          emergency_contact_phone: formData.emergencyContactPhone || undefined,
-          notes: formData.notes || undefined,
+          status: status, // Validated enum value
+          pay_type: formData.payType || null,
+          pay_rate: formData.payRate ? parseFloat(formData.payRate) : null,
+          preferred_contact_method: formData.preferredContactMethod || null,
+          availability_notes: formData.availabilityNotes || null,
+          emergency_contact_name: formData.emergencyContactName || null,
+          emergency_contact_phone: formData.emergencyContactPhone || null,
+          notes: formData.notes || null,
         },
       });
       navigate(`/os/unforgettable/staff/${staffId}`);
     } catch (error) {
+      console.error('Staff update error:', error);
       // Error handled by mutation
     }
   };

@@ -543,8 +543,13 @@ export function useCreateStaff() {
   });
 }
 
+// Valid enum values for ut_staff_status - must match Postgres enum exactly
+const VALID_STATUS_VALUES = ['active', 'inactive', 'pending', 'on_leave', 'terminated'] as const;
+type StaffStatus = typeof VALID_STATUS_VALUES[number];
+
 // Hook: Update staff member
 // Postgres does not guess types. If it expects a UUID, you must give it a UUID.
+// Enums are contracts. Labels are for humans — values are for Postgres.
 export function useUpdateStaff() {
   const queryClient = useQueryClient();
   const { simulationMode } = useSimulationMode();
@@ -570,14 +575,24 @@ export function useUpdateStaff() {
       if (data.city !== undefined) updatePayload.city = String(data.city);
       if (data.state !== undefined) updatePayload.state = String(data.state);
       if (data.zip !== undefined) updatePayload.zip = String(data.zip);
-      if (data.status !== undefined) updatePayload.status = data.status;
       if (data.preferred_contact_method !== undefined) updatePayload.preferred_contact_method = data.preferred_contact_method || null;
       if (data.pay_type !== undefined) updatePayload.pay_type = data.pay_type || null;
-      if (data.pay_rate !== undefined) updatePayload.pay_rate = data.pay_rate !== undefined ? Number(data.pay_rate) : null;
+      if (data.pay_rate !== undefined) updatePayload.pay_rate = data.pay_rate !== undefined && data.pay_rate !== null ? Number(data.pay_rate) : null;
       if (data.availability_notes !== undefined) updatePayload.availability_notes = data.availability_notes || null;
       if (data.emergency_contact_name !== undefined) updatePayload.emergency_contact_name = data.emergency_contact_name || null;
       if (data.emergency_contact_phone !== undefined) updatePayload.emergency_contact_phone = data.emergency_contact_phone || null;
       if (data.notes !== undefined) updatePayload.notes = data.notes || null;
+      
+      // Handle status: must be a valid enum value
+      if (data.status !== undefined) {
+        const status = data.status as string;
+        if (VALID_STATUS_VALUES.includes(status as StaffStatus)) {
+          updatePayload.status = status;
+        } else {
+          console.error('Invalid status value:', status, '- defaulting to active');
+          updatePayload.status = 'active';
+        }
+      }
       
       // Handle category_id: must be a valid UUID or null
       // If it's a simulation ID (starts with 'sim-'), set to null to avoid type errors
