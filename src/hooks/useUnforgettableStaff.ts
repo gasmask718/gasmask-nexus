@@ -263,6 +263,76 @@ export function useCreateStaffCategory() {
   });
 }
 
+// Hook: Update staff category
+// Editing a category must never reset performance history. Identity persists; labels evolve.
+export function useUpdateStaffCategory() {
+  const queryClient = useQueryClient();
+  const { simulationMode } = useSimulationMode();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { name?: string; description?: string; is_active?: boolean } }): Promise<StaffCategory> => {
+      if (simulationMode) {
+        toast.success('Category updated (simulation)');
+        return {
+          id,
+          business_slug: 'unforgettable_times_usa',
+          name: data.name || 'Updated Category',
+          description: data.description || null,
+          is_active: data.is_active ?? true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+      }
+
+      const { data: result, error } = await supabase
+        .from('ut_staff_categories')
+        .update({
+          name: data.name,
+          description: data.description,
+          is_active: data.is_active,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result as StaffCategory;
+    },
+    onSuccess: () => {
+      // Invalidate all category queries - KPI cards stay linked, label updates instantly
+      queryClient.invalidateQueries({ queryKey: ['ut-staff-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['ut-staff-categories-with-kpis'] });
+      toast.success('Category updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update category: ${error.message}`);
+    },
+  });
+}
+
+// Hook: Check for duplicate category name
+export function useCheckDuplicateCategoryName() {
+  return async (name: string, excludeId?: string): Promise<boolean> => {
+    const { data, error } = await supabase
+      .from('ut_staff_categories')
+      .select('id')
+      .eq('business_slug', 'unforgettable_times_usa')
+      .eq('name', name)
+      .eq('is_active', true)
+      .is('deleted_at', null);
+
+    if (error) return false;
+    
+    // If excluding an ID (for edit), filter it out
+    const matches = excludeId 
+      ? (data || []).filter(c => c.id !== excludeId)
+      : (data || []);
+    
+    return matches.length > 0;
+  };
+}
+
 // Hook: Delete (soft-delete) staff category
 // Remove access, never erase history.
 export function useDeleteStaffCategory() {
