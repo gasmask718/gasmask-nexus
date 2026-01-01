@@ -379,11 +379,86 @@ export function useStaffDocuments(staffId: string | undefined) {
   });
 }
 
+export function useUploadStaffDocument() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      staffId,
+      file,
+      documentName,
+      documentType,
+      expiryDate,
+      notes,
+    }: {
+      staffId: string;
+      file: File;
+      documentName: string;
+      documentType: UTStaffDocument['document_type'];
+      expiryDate?: string;
+      notes?: string;
+    }) => {
+      const businessSlug = 'unforgettable_times_usa';
+      const timestamp = Date.now();
+      const fileName = `${businessSlug}/${staffId}/${timestamp}_${file.name}`;
+
+      // Upload file to storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('ut-staff-documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('ut-staff-documents')
+        .getPublicUrl(fileName);
+
+      // Insert document record
+      const { data, error } = await supabase
+        .from('ut_staff_documents')
+        .insert({
+          staff_id: staffId,
+          business_slug: businessSlug,
+          document_name: documentName,
+          document_type: documentType,
+          file_url: urlData.publicUrl,
+          file_size: file.size,
+          mime_type: file.type,
+          uploaded_at: new Date().toISOString(),
+          expiry_date: expiryDate || null,
+          status: 'active',
+          notes: notes || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['ut-staff-documents', variables.staffId] });
+      toast.success('Document uploaded successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to upload document: ${error.message}`);
+    },
+  });
+}
+
 export function useDeleteStaffDocument() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, staffId }: { id: string; staffId: string }) => {
+    mutationFn: async ({ id, staffId, fileUrl }: { id: string; staffId: string; fileUrl?: string }) => {
+      // Delete file from storage if URL exists
+      if (fileUrl) {
+        const path = fileUrl.split('/ut-staff-documents/').pop();
+        if (path) {
+          await supabase.storage.from('ut-staff-documents').remove([path]);
+        }
+      }
+
       const { error } = await supabase
         .from('ut_staff_documents')
         .delete()
@@ -397,6 +472,89 @@ export function useDeleteStaffDocument() {
     },
     onError: (error: Error) => {
       toast.error(`Failed to delete document: ${error.message}`);
+    },
+  });
+}
+
+// ============================================
+// CSV EXPORT UTILITY
+// ============================================
+
+export function exportPaymentsToCSV(payments: UTStaffPayment[], staffName: string) {
+  const headers = ['Payment Date', 'Staff Name', 'Event Name', 'Amount', 'Method', 'Status', 'Notes'];
+  
+  const rows = payments.map(p => [
+    p.payment_date,
+    staffName,
+    p.event?.event_name || 'N/A',
+    p.amount.toString(),
+    p.payment_method || 'N/A',
+    p.status,
+    p.notes || ''
+  ]);
+
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  
+  const date = new Date().toISOString().split('T')[0];
+  link.setAttribute('href', url);
+  link.setAttribute('download', `UT_payments_${date}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  toast.success('CSV exported successfully');
+}
+
+// ============================================
+// RECALCULATE ATTENDANCE
+// ============================================
+
+export function useRecalculateAttendance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (staffId: string) => {
+      // Fetch all event assignments for this staff member
+      const { data: events, error } = await supabase
+        .from('ut_event_staff')
+        .select('status')
+        .eq('staff_id', staffId);
+
+      if (error) throw error;
+
+      // Calculate attendance metrics
+      const completedEvents = events?.filter(e => e.status === 'completed' || e.status === 'checked_in').length || 0;
+      const noShowEvents = events?.filter(e => e.status === 'no_show').length || 0;
+      const totalRelevantEvents = completedEvents + noShowEvents;
+      const attendanceRate = totalRelevantEvents > 0 ? (completedEvents / totalRelevantEvents) * 100 : 100;
+
+      // Update staff record with new attendance rate
+      const { error: updateError } = await supabase
+        .from('ut_staff')
+        .update({ 
+          rating: Math.round(attendanceRate) / 20, // Convert to 5-star scale
+        })
+        .eq('id', staffId);
+
+      if (updateError) throw updateError;
+
+      return { attendanceRate, completedEvents, noShowEvents };
+    },
+    onSuccess: (data, staffId) => {
+      queryClient.invalidateQueries({ queryKey: ['ut-staff-events', staffId] });
+      queryClient.invalidateQueries({ queryKey: ['ut-staff-member', staffId] });
+      toast.success(`Attendance recalculated: ${data.attendanceRate.toFixed(0)}%`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to recalculate: ${error.message}`);
     },
   });
 }
