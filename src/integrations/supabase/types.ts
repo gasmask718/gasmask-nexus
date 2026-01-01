@@ -24473,6 +24473,144 @@ export type Database = {
           },
         ]
       }
+      ut_event_staff: {
+        Row: {
+          actual_check_in: string | null
+          actual_check_out: string | null
+          amount_earned: number | null
+          created_at: string
+          event_id: string
+          hours_worked: number | null
+          id: string
+          notes: string | null
+          pay_rate_applied: number | null
+          role_at_event: string | null
+          scheduled_end: string | null
+          scheduled_start: string | null
+          staff_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_check_in?: string | null
+          actual_check_out?: string | null
+          amount_earned?: number | null
+          created_at?: string
+          event_id: string
+          hours_worked?: number | null
+          id?: string
+          notes?: string | null
+          pay_rate_applied?: number | null
+          role_at_event?: string | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          staff_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_check_in?: string | null
+          actual_check_out?: string | null
+          amount_earned?: number | null
+          created_at?: string
+          event_id?: string
+          hours_worked?: number | null
+          id?: string
+          notes?: string | null
+          pay_rate_applied?: number | null
+          role_at_event?: string | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          staff_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_event_staff_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "ut_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_event_staff_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "ut_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_events: {
+        Row: {
+          business_slug: string
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          end_time: string | null
+          event_date: string
+          event_name: string
+          event_type: string | null
+          id: string
+          notes: string | null
+          start_time: string | null
+          status: string
+          total_revenue: number | null
+          total_staff_needed: number | null
+          updated_at: string
+          venue_address: string | null
+          venue_name: string | null
+        }
+        Insert: {
+          business_slug?: string
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          end_time?: string | null
+          event_date: string
+          event_name: string
+          event_type?: string | null
+          id?: string
+          notes?: string | null
+          start_time?: string | null
+          status?: string
+          total_revenue?: number | null
+          total_staff_needed?: number | null
+          updated_at?: string
+          venue_address?: string | null
+          venue_name?: string | null
+        }
+        Update: {
+          business_slug?: string
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          end_time?: string | null
+          event_date?: string
+          event_name?: string
+          event_type?: string | null
+          id?: string
+          notes?: string | null
+          start_time?: string | null
+          status?: string
+          total_revenue?: number | null
+          total_staff_needed?: number | null
+          updated_at?: string
+          venue_address?: string | null
+          venue_name?: string | null
+        }
+        Relationships: []
+      }
       ut_staff: {
         Row: {
           address_line_1: string | null
@@ -24776,6 +24914,144 @@ export type Database = {
             columns: ["staff_category_id"]
             isOneToOne: true
             referencedRelation: "ut_staff_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_staff_documents: {
+        Row: {
+          business_slug: string
+          created_at: string
+          document_name: string
+          document_type: string
+          expiry_date: string | null
+          file_size: number | null
+          file_url: string | null
+          id: string
+          mime_type: string | null
+          notes: string | null
+          staff_id: string
+          status: string
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          business_slug?: string
+          created_at?: string
+          document_name: string
+          document_type: string
+          expiry_date?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          staff_id: string
+          status?: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          business_slug?: string
+          created_at?: string
+          document_name?: string
+          document_type?: string
+          expiry_date?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          staff_id?: string
+          status?: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_staff_documents_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "ut_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_staff_payments: {
+        Row: {
+          amount: number
+          business_slug: string
+          created_at: string
+          created_by: string | null
+          event_id: string | null
+          event_staff_id: string | null
+          id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string | null
+          payment_type: string
+          reference_number: string | null
+          staff_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          business_slug?: string
+          created_at?: string
+          created_by?: string | null
+          event_id?: string | null
+          event_staff_id?: string | null
+          id?: string
+          notes?: string | null
+          payment_date: string
+          payment_method?: string | null
+          payment_type?: string
+          reference_number?: string | null
+          staff_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          business_slug?: string
+          created_at?: string
+          created_by?: string | null
+          event_id?: string | null
+          event_staff_id?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          payment_type?: string
+          reference_number?: string | null
+          staff_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_staff_payments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "ut_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_staff_payments_event_staff_id_fkey"
+            columns: ["event_staff_id"]
+            isOneToOne: false
+            referencedRelation: "ut_event_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_staff_payments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "ut_staff"
             referencedColumns: ["id"]
           },
         ]
