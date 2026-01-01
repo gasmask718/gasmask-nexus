@@ -544,6 +544,7 @@ export function useCreateStaff() {
 }
 
 // Hook: Update staff member
+// Postgres does not guess types. If it expects a UUID, you must give it a UUID.
 export function useUpdateStaff() {
   const queryClient = useQueryClient();
   const { simulationMode } = useSimulationMode();
@@ -555,9 +556,55 @@ export function useUpdateStaff() {
         return { id, ...data } as unknown as UTStaffMember;
       }
 
+      // Build clean update payload with proper types
+      // Strip out any undefined values and ensure correct types
+      const updatePayload: Record<string, unknown> = {};
+      
+      if (data.first_name !== undefined) updatePayload.first_name = String(data.first_name);
+      if (data.last_name !== undefined) updatePayload.last_name = String(data.last_name);
+      if (data.email !== undefined) updatePayload.email = data.email || null;
+      if (data.phone !== undefined) updatePayload.phone = String(data.phone);
+      if (data.dob !== undefined) updatePayload.dob = data.dob || null;
+      if (data.address_line_1 !== undefined) updatePayload.address_line_1 = String(data.address_line_1);
+      if (data.address_line_2 !== undefined) updatePayload.address_line_2 = data.address_line_2 || null;
+      if (data.city !== undefined) updatePayload.city = String(data.city);
+      if (data.state !== undefined) updatePayload.state = String(data.state);
+      if (data.zip !== undefined) updatePayload.zip = String(data.zip);
+      if (data.status !== undefined) updatePayload.status = data.status;
+      if (data.preferred_contact_method !== undefined) updatePayload.preferred_contact_method = data.preferred_contact_method || null;
+      if (data.pay_type !== undefined) updatePayload.pay_type = data.pay_type || null;
+      if (data.pay_rate !== undefined) updatePayload.pay_rate = data.pay_rate !== undefined ? Number(data.pay_rate) : null;
+      if (data.availability_notes !== undefined) updatePayload.availability_notes = data.availability_notes || null;
+      if (data.emergency_contact_name !== undefined) updatePayload.emergency_contact_name = data.emergency_contact_name || null;
+      if (data.emergency_contact_phone !== undefined) updatePayload.emergency_contact_phone = data.emergency_contact_phone || null;
+      if (data.notes !== undefined) updatePayload.notes = data.notes || null;
+      
+      // Handle category_id: must be a valid UUID or null
+      // If it's a simulation ID (starts with 'sim-'), set to null to avoid type errors
+      if (data.category_id !== undefined) {
+        const categoryId = data.category_id;
+        if (!categoryId || categoryId.startsWith('sim-')) {
+          updatePayload.category_id = null;
+        } else {
+          // Validate UUID format before sending
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          if (uuidRegex.test(categoryId)) {
+            updatePayload.category_id = categoryId;
+          } else {
+            console.error('Invalid category_id format:', categoryId);
+            updatePayload.category_id = null;
+          }
+        }
+      }
+      
+      // Always set updated_at
+      updatePayload.updated_at = new Date().toISOString();
+
+      console.log('Updating staff with payload:', updatePayload);
+
       const { data: result, error } = await supabase
         .from('ut_staff')
-        .update(data as Record<string, unknown>)
+        .update(updatePayload)
         .eq('id', id)
         .select(`
           *,
@@ -565,7 +612,10 @@ export function useUpdateStaff() {
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
       return result as unknown as UTStaffMember;
     },
     onSuccess: (_, variables) => {
@@ -574,6 +624,7 @@ export function useUpdateStaff() {
       toast.success('Staff member updated successfully');
     },
     onError: (error: Error) => {
+      console.error('Staff update failed:', error);
       toast.error(`Failed to update staff: ${error.message}`);
     },
   });
