@@ -218,8 +218,7 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
       setDetailOpen(true);
     } else if (item.type === 'note') {
       // For notes, show a toast with the note text
-      toast.info(item.note_text, {
-        title: 'Note',
+      toast.info(`Note: ${item.note_text}`, {
         description: format(new Date(item.created_at), 'MMM d, yyyy h:mm a'),
       });
     } else if (item.type === 'visit') {
@@ -227,8 +226,7 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
       const visit = item;
       const visitTypeLabel = visit.visit_type?.replace(/([A-Z])/g, ' $1').trim() || 'Visit';
       const productCount = visit.products_delivered ? (Array.isArray(visit.products_delivered) ? visit.products_delivered.length : 1) : 0;
-      toast.info(visit.customer_response || 'Visit logged', {
-        title: visitTypeLabel,
+      toast.info(`${visitTypeLabel}: ${visit.customer_response || 'Visit logged'}`, {
         description: `${productCount > 0 ? `${productCount} product(s) • ` : ''}${format(new Date(visit.created_at), 'MMM d, yyyy h:mm a')}`,
       });
     }

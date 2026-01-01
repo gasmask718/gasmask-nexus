@@ -14,6 +14,26 @@ export interface StaffCategory {
   updated_at: string;
 }
 
+export interface StaffCategoryKPI {
+  id: string;
+  staff_category_id: string;
+  business_slug: string;
+  total_staff: number;
+  active_shifts: number;
+  completed_events: number;
+  revenue_generated: number;
+  performance_score: number | null;
+  status: 'active' | 'inactive' | 'archived';
+  created_at: string;
+  updated_at: string;
+  // Joined category info
+  category?: StaffCategory;
+}
+
+export interface StaffCategoryWithKPI extends StaffCategory {
+  kpi: StaffCategoryKPI | null;
+}
+
 export interface UTStaffMember {
   id: string;
   business_slug: string;
@@ -149,7 +169,45 @@ export function useStaffCategories() {
   });
 }
 
-// Hook: Create staff category
+// Hook: Fetch staff categories with KPI cards joined
+export function useStaffCategoriesWithKPIs() {
+  const { simulationMode } = useSimulationMode();
+
+  return useQuery({
+    queryKey: ['ut-staff-categories-with-kpis'],
+    queryFn: async (): Promise<StaffCategoryWithKPI[]> => {
+      if (simulationMode) {
+        return [
+          { id: 'sim-1', business_slug: 'unforgettable_times_usa', name: 'Security', description: 'Event security personnel', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-1', staff_category_id: 'sim-1', business_slug: 'unforgettable_times_usa', total_staff: 12, active_shifts: 5, completed_events: 48, revenue_generated: 24000, performance_score: 4.5, status: 'active', created_at: '', updated_at: '' } },
+          { id: 'sim-2', business_slug: 'unforgettable_times_usa', name: 'Decorators', description: 'Event decoration specialists', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-2', staff_category_id: 'sim-2', business_slug: 'unforgettable_times_usa', total_staff: 8, active_shifts: 3, completed_events: 32, revenue_generated: 18500, performance_score: 4.8, status: 'active', created_at: '', updated_at: '' } },
+          { id: 'sim-3', business_slug: 'unforgettable_times_usa', name: 'Bartenders', description: 'Beverage service professionals', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-3', staff_category_id: 'sim-3', business_slug: 'unforgettable_times_usa', total_staff: 15, active_shifts: 8, completed_events: 67, revenue_generated: 42000, performance_score: 4.7, status: 'active', created_at: '', updated_at: '' } },
+          { id: 'sim-4', business_slug: 'unforgettable_times_usa', name: 'Host', description: 'Event hosts and hostesses', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-4', staff_category_id: 'sim-4', business_slug: 'unforgettable_times_usa', total_staff: 6, active_shifts: 2, completed_events: 25, revenue_generated: 12000, performance_score: 4.9, status: 'active', created_at: '', updated_at: '' } },
+          { id: 'sim-5', business_slug: 'unforgettable_times_usa', name: 'Costume Wearers', description: 'Character performers and mascots', is_active: true, created_at: '', updated_at: '', kpi: { id: 'kpi-5', staff_category_id: 'sim-5', business_slug: 'unforgettable_times_usa', total_staff: 10, active_shifts: 4, completed_events: 38, revenue_generated: 22000, performance_score: 4.6, status: 'active', created_at: '', updated_at: '' } },
+        ];
+      }
+
+      // Query categories with their KPI cards joined
+      const { data, error } = await supabase
+        .from('ut_staff_categories')
+        .select(`
+          *,
+          kpi:ut_staff_category_kpis(*)
+        `)
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+
+      // Transform the data - kpi comes as an array from the join, we need the first item
+      return (data || []).map((cat: Record<string, unknown>) => ({
+        ...cat,
+        kpi: Array.isArray(cat.kpi) && cat.kpi.length > 0 ? cat.kpi[0] : null,
+      })) as StaffCategoryWithKPI[];
+    },
+  });
+}
+
+// Hook: Create staff category (KPI auto-created via database trigger)
 export function useCreateStaffCategory() {
   const queryClient = useQueryClient();
   const { simulationMode } = useSimulationMode();
@@ -183,7 +241,9 @@ export function useCreateStaffCategory() {
       return result as StaffCategory;
     },
     onSuccess: () => {
+      // Invalidate both category queries to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ['ut-staff-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['ut-staff-categories-with-kpis'] });
       toast.success('Category created successfully');
     },
     onError: (error: Error) => {
