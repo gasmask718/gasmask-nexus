@@ -29,6 +29,7 @@ import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StorePeopleSection } from "@/components/store/StorePeopleSection";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { StoreNotesSection } from "@/components/store/StoreNotesSection";
+import { OpportunitiesSection } from "@/components/store/OpportunitiesSection";
 import { StoreOperationsCard } from "@/components/store/StoreOperationsCard";
 import { EditableTubeInventoryCard } from "@/components/store/EditableTubeInventoryCard";
 import { StoreVisitInventoryCard } from "@/components/store/StoreVisitInventoryCard";
@@ -490,6 +491,9 @@ const StoreDetail = () => {
           {/* Notes Section */}
           <StoreNotesSection storeId={id || ""} storeName={store.name} />
 
+          {/* Opportunities Section */}
+          <OpportunitiesSection storeId={id || ""} storeName={store.name} />
+
           {/* Connected Stores */}
           <ConnectedStoresCard 
             storeId={id || ""}
@@ -646,30 +650,36 @@ const StoreDetail = () => {
 
           {/* Tabs for Inventory & History */}
           <Tabs defaultValue="inventory" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="inventory">
-                <Package className="h-4 w-4 mr-2" />
-                Inventory
+            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-1">
+              <TabsTrigger value="inventory" className="text-xs sm:text-sm">
+                <Package className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Inventory</span>
+                <span className="sm:hidden">Inv</span>
               </TabsTrigger>
-              <TabsTrigger value="performance">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Performance
+              <TabsTrigger value="performance" className="text-xs sm:text-sm">
+                <TrendingUp className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Performance</span>
+                <span className="sm:hidden">Perf</span>
               </TabsTrigger>
-              <TabsTrigger value="calls">
-                <Headphones className="h-4 w-4 mr-2" />
-                Calls
+              <TabsTrigger value="calls" className="text-xs sm:text-sm">
+                <Headphones className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Calls</span>
+                <span className="sm:hidden">Calls</span>
               </TabsTrigger>
-              <TabsTrigger value="route-coverage">
-                <MapPin className="h-4 w-4 mr-2" />
-                Coverage
+              <TabsTrigger value="route-coverage" className="text-xs sm:text-sm">
+                <MapPin className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Coverage</span>
+                <span className="sm:hidden">Cov</span>
               </TabsTrigger>
-              <TabsTrigger value="revenue">
-                <Flame className="h-4 w-4 mr-2" />
-                Revenue
+              <TabsTrigger value="revenue" className="text-xs sm:text-sm">
+                <Flame className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Revenue</span>
+                <span className="sm:hidden">Rev</span>
               </TabsTrigger>
-              <TabsTrigger value="history">
-                <Clock className="h-4 w-4 mr-2" />
-                History
+              <TabsTrigger value="history" className="text-xs sm:text-sm">
+                <Clock className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">History</span>
+                <span className="sm:hidden">Hist</span>
               </TabsTrigger>
             </TabsList>
 

@@ -91,25 +91,49 @@ export function LogInteractionModal({
       // Only use store_id if it's a valid store_master.id
       const validStoreId = validatedStore?.id || null;
       
-      const { error } = await supabase.from('contact_interactions').insert({
-        contact_id: selectedContactId || contactId,
-        store_id: validStoreId,
-        channel,
-        direction,
-        subject,
-        summary: summary || null,
-        outcome: outcome || null,
-        sentiment: sentiment || null,
-        next_action: nextAction || null,
-        follow_up_at: followUpAt ? new Date(followUpAt).toISOString() : null,
-      });
+      const { data: interactionData, error } = await supabase
+        .from('contact_interactions')
+        .insert({
+          contact_id: selectedContactId || contactId,
+          store_id: validStoreId,
+          channel,
+          direction,
+          subject,
+          summary: summary || null,
+          outcome: outcome || null,
+          sentiment: sentiment || null,
+          next_action: nextAction || null,
+          follow_up_at: followUpAt ? new Date(followUpAt).toISOString() : null,
+        })
+        .select('id')
+        .single();
+      
       if (error) throw error;
+
+      // TODO: Phase 2 - AI Extraction (commented out for now)
+      // Extract opportunities from interaction (async, don't block)
+      // if (interactionData?.id && validStoreId) {
+      //   const { extractOpportunitiesFromInteraction } = await import('@/services/opportunityExtractionService');
+      //   const interactionText = `${subject}${summary ? '. ' + summary : ''}`;
+      //   extractOpportunitiesFromInteraction(validStoreId, interactionData.id, interactionText, storeName)
+      //     .then((result) => {
+      //       if (result.saved > 0) {
+      //         queryClient.invalidateQueries({ queryKey: ['store-opportunities'] });
+      //       }
+      //     })
+      //     .catch((err) => {
+      //       console.error('Error extracting opportunities from interaction:', err);
+      //     });
+      // }
+
+      return interactionData;
     },
     onSuccess: () => {
       toast.success('Interaction logged successfully');
       queryClient.invalidateQueries({ queryKey: ['contact-interactions'] });
       queryClient.invalidateQueries({ queryKey: ['store-interactions'] });
       queryClient.invalidateQueries({ queryKey: ['store-master'] });
+      queryClient.invalidateQueries({ queryKey: ['store-opportunities'] });
       resetForm();
       onClose();
     },
