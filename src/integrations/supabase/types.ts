@@ -6627,6 +6627,178 @@ export type Database = {
         }
         Relationships: []
       }
+      change_control_audit: {
+        Row: {
+          action: string
+          actor_id: string
+          actor_role: string
+          change_list_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          actor_role: string
+          change_list_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          actor_role?: string
+          change_list_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_control_audit_change_list_id_fkey"
+            columns: ["change_list_id"]
+            isOneToOne: false
+            referencedRelation: "change_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      change_list_items: {
+        Row: {
+          ai_flag_reason: string | null
+          ai_flagged: boolean | null
+          change_list_id: string
+          change_note: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          field_name: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          requires_note: boolean | null
+          status: string
+        }
+        Insert: {
+          ai_flag_reason?: string | null
+          ai_flagged?: boolean | null
+          change_list_id: string
+          change_note?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          field_name: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          requires_note?: boolean | null
+          status?: string
+        }
+        Update: {
+          ai_flag_reason?: string | null
+          ai_flagged?: boolean | null
+          change_list_id?: string
+          change_note?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          field_name?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          requires_note?: boolean | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_list_items_change_list_id_fkey"
+            columns: ["change_list_id"]
+            isOneToOne: false
+            referencedRelation: "change_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      change_lists: {
+        Row: {
+          ai_risk_flags: Json | null
+          ai_risk_level: string | null
+          ai_scanned_at: string | null
+          approved_at: string | null
+          approved_by: string | null
+          committed_at: string | null
+          created_at: string
+          id: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          store_id: string
+          submitted_at: string | null
+          submitted_by: string
+          submitted_by_role: string
+          updated_at: string
+          visit_id: string | null
+        }
+        Insert: {
+          ai_risk_flags?: Json | null
+          ai_risk_level?: string | null
+          ai_scanned_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          committed_at?: string | null
+          created_at?: string
+          id?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          store_id: string
+          submitted_at?: string | null
+          submitted_by: string
+          submitted_by_role: string
+          updated_at?: string
+          visit_id?: string | null
+        }
+        Update: {
+          ai_risk_flags?: Json | null
+          ai_risk_level?: string | null
+          ai_scanned_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          committed_at?: string | null
+          created_at?: string
+          id?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          store_id?: string
+          submitted_at?: string | null
+          submitted_by?: string
+          submitted_by_role?: string
+          updated_at?: string
+          visit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_lists_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_lists_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "store_visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       closing_partners: {
         Row: {
           address: string | null
@@ -21481,6 +21653,69 @@ export type Database = {
           },
         ]
       }
+      store_brand_stickers: {
+        Row: {
+          authorized_retailer_sticker: boolean | null
+          brand_character_sticker: boolean | null
+          brand_id: string | null
+          brand_name: string
+          created_at: string
+          front_door_sticker: boolean | null
+          id: string
+          last_verified_at: string | null
+          last_verified_by: string | null
+          notes: string | null
+          store_id: string
+          telephone_number_sticker: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          authorized_retailer_sticker?: boolean | null
+          brand_character_sticker?: boolean | null
+          brand_id?: string | null
+          brand_name: string
+          created_at?: string
+          front_door_sticker?: boolean | null
+          id?: string
+          last_verified_at?: string | null
+          last_verified_by?: string | null
+          notes?: string | null
+          store_id: string
+          telephone_number_sticker?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          authorized_retailer_sticker?: boolean | null
+          brand_character_sticker?: boolean | null
+          brand_id?: string | null
+          brand_name?: string
+          created_at?: string
+          front_door_sticker?: boolean | null
+          id?: string
+          last_verified_at?: string | null
+          last_verified_by?: string | null
+          notes?: string | null
+          store_id?: string
+          telephone_number_sticker?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_brand_stickers_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_brand_stickers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_check_fields: {
         Row: {
           business_id: string
@@ -21661,11 +21896,16 @@ export type Database = {
           id: string
           influence_level: string | null
           is_primary: boolean | null
+          last_responded_at: string | null
           name: string
           notes: string | null
           phone: string | null
+          responsive_by_call: boolean | null
+          responsive_by_text: boolean | null
           role: string | null
           store_id: string
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
           can_receive_sms?: boolean | null
@@ -21674,11 +21914,16 @@ export type Database = {
           id?: string
           influence_level?: string | null
           is_primary?: boolean | null
+          last_responded_at?: string | null
           name: string
           notes?: string | null
           phone?: string | null
+          responsive_by_call?: boolean | null
+          responsive_by_text?: boolean | null
           role?: string | null
           store_id: string
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
           can_receive_sms?: boolean | null
@@ -21687,11 +21932,16 @@ export type Database = {
           id?: string
           influence_level?: string | null
           is_primary?: boolean | null
+          last_responded_at?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
+          responsive_by_call?: boolean | null
+          responsive_by_text?: boolean | null
           role?: string | null
           store_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {
@@ -22610,6 +22860,59 @@ export type Database = {
         }
         Relationships: []
       }
+      store_questionnaire: {
+        Row: {
+          clothing_size: string | null
+          created_at: string
+          id: string
+          interested_cleaning_service: boolean | null
+          last_verified_at: string | null
+          last_verified_by: string | null
+          security_level: string | null
+          sells_flowers: boolean | null
+          store_id: string
+          total_store_count: number | null
+          updated_at: string
+          wholesalers_used: string[] | null
+        }
+        Insert: {
+          clothing_size?: string | null
+          created_at?: string
+          id?: string
+          interested_cleaning_service?: boolean | null
+          last_verified_at?: string | null
+          last_verified_by?: string | null
+          security_level?: string | null
+          sells_flowers?: boolean | null
+          store_id: string
+          total_store_count?: number | null
+          updated_at?: string
+          wholesalers_used?: string[] | null
+        }
+        Update: {
+          clothing_size?: string | null
+          created_at?: string
+          id?: string
+          interested_cleaning_service?: boolean | null
+          last_verified_at?: string | null
+          last_verified_by?: string | null
+          security_level?: string | null
+          sells_flowers?: boolean | null
+          store_id?: string
+          total_store_count?: number | null
+          updated_at?: string
+          wholesalers_used?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_questionnaire_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_revenue_recommendations: {
         Row: {
           business_id: string | null
@@ -23118,6 +23421,68 @@ export type Database = {
             columns: ["vertical_id"]
             isOneToOne: false
             referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_visits: {
+        Row: {
+          amount_collected: number | null
+          completed_at: string | null
+          created_at: string
+          gps_lat: number | null
+          gps_lng: number | null
+          id: string
+          notes: string | null
+          payment_collected: boolean | null
+          role_type: string
+          started_at: string
+          status: string
+          store_id: string
+          updated_at: string
+          visit_type: string
+          visited_by: string
+        }
+        Insert: {
+          amount_collected?: number | null
+          completed_at?: string | null
+          created_at?: string
+          gps_lat?: number | null
+          gps_lng?: number | null
+          id?: string
+          notes?: string | null
+          payment_collected?: boolean | null
+          role_type: string
+          started_at?: string
+          status?: string
+          store_id: string
+          updated_at?: string
+          visit_type: string
+          visited_by: string
+        }
+        Update: {
+          amount_collected?: number | null
+          completed_at?: string | null
+          created_at?: string
+          gps_lat?: number | null
+          gps_lng?: number | null
+          id?: string
+          notes?: string | null
+          payment_collected?: boolean | null
+          role_type?: string
+          started_at?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+          visit_type?: string
+          visited_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_visits_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
             referencedColumns: ["id"]
           },
         ]
