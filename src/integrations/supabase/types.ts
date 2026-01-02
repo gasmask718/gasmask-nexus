@@ -22068,6 +22068,77 @@ export type Database = {
           },
         ]
       }
+      store_opportunities: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          detected_from_interaction_id: string | null
+          detected_from_note_id: string | null
+          id: string
+          is_completed: boolean
+          opportunity_text: string
+          source: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          detected_from_interaction_id?: string | null
+          detected_from_note_id?: string | null
+          id?: string
+          is_completed?: boolean
+          opportunity_text: string
+          source: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          detected_from_interaction_id?: string | null
+          detected_from_note_id?: string | null
+          id?: string
+          is_completed?: boolean
+          opportunity_text?: string
+          source?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_opportunities_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_opportunities_detected_from_interaction_id_fkey"
+            columns: ["detected_from_interaction_id"]
+            isOneToOne: false
+            referencedRelation: "contact_interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_opportunities_detected_from_note_id_fkey"
+            columns: ["detected_from_note_id"]
+            isOneToOne: false
+            referencedRelation: "store_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_opportunities_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_order_items: {
         Row: {
           created_at: string
