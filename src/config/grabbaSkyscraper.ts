@@ -414,6 +414,8 @@ export const FLOOR_ROUTE_MAP: Record<string, string[]> = {
     '/grabba/ai/tasks',
     '/grabba/ai/predict',
     '/grabba/ai/alerts',
+    '/grabba/change-control',
+    '/grabba/change-control/audit',
   ],
 };
 

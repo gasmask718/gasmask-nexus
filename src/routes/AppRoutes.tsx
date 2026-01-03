@@ -433,6 +433,8 @@ import GrabbaNeighborhoodPerformance from '@/pages/grabba/GrabbaNeighborhoodPerf
 import GrabbaClusterCommunications from '@/pages/grabba/GrabbaClusterCommunications';
 import GrabbaClusterAnalytics from '@/pages/grabba/GrabbaClusterAnalytics';
 import MemoryBackfill from '@/pages/grabba/MemoryBackfill';
+import ChangeControlCenter from '@/pages/grabba/ChangeControlCenter';
+import ChangeControlAudit from '@/pages/grabba/ChangeControlAudit';
 
 // AI
 import AIWorkforce from '@/pages/ai/Workforce';
@@ -1387,6 +1389,22 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee']}>
             <Layout><DailyBriefing /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
+      {/* Floor 9 — Change Control Center */}
+      <Route path="/grabba/change-control" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee']}>
+            <Layout><ChangeControlCenter /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/change-control/audit" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee']}>
+            <Layout><ChangeControlAudit /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
