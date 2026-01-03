@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,8 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag, Edit, CreditCard } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StoreContact {
   id: string;
@@ -54,6 +56,7 @@ interface Store {
 const Stores = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [tagFilter, setTagFilter] = useState<string>('all');
@@ -62,6 +65,78 @@ const Stores = () => {
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [newStoreName, setNewStoreName] = useState('');
   const [isSavingStoreName, setIsSavingStoreName] = useState(false);
+  
+  // Add Store Modal State
+  const [showAddStore, setShowAddStore] = useState(false);
+  const [newStoreData, setNewStoreData] = useState({
+    name: '',
+    type: 'retail',
+    address_street: '',
+    address_city: '',
+    address_state: 'NY',
+    address_zip: '',
+    phone: '',
+    status: 'prospect',
+    primary_contact_name: '',
+    notes: '',
+  });
+
+  const createStoreMutation = useMutation({
+    mutationFn: async (data: typeof newStoreData) => {
+      const { data: result, error } = await supabase
+        .from('stores')
+        .insert([{
+          name: data.name,
+          type: data.type as "bodega" | "gas_station" | "other" | "smoke_shop" | "wholesaler",
+          address_street: data.address_street || null,
+          address_city: data.address_city || null,
+          address_state: data.address_state || null,
+          address_zip: data.address_zip || null,
+          phone: data.phone || null,
+          status: data.status as "active" | "inactive" | "needsFollowUp" | "prospect",
+          primary_contact_name: data.primary_contact_name || null,
+        }])
+        .select()
+        .single();
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['stores-with-contacts'] });
+      toast.success('Store created successfully');
+      setShowAddStore(false);
+      resetNewStoreForm();
+      // Navigate to store profile
+      navigate(`/stores/${data.id}`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to create store: ${error.message}`);
+    },
+  });
+
+  const resetNewStoreForm = () => {
+    setNewStoreData({
+      name: '',
+      type: 'retail',
+      address_street: '',
+      address_city: '',
+      address_state: 'NY',
+      address_zip: '',
+      phone: '',
+      status: 'prospect',
+      primary_contact_name: '',
+      notes: '',
+    });
+  };
+
+  const handleCreateStore = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStoreData.name.trim()) {
+      toast.error('Store name is required');
+      return;
+    }
+    createStoreMutation.mutate(newStoreData);
+  };
 
   const { data: stores = [], isLoading } = useQuery({
     queryKey: ['stores-with-contacts'],
@@ -290,7 +365,7 @@ const Stores = () => {
             Manage your distribution network • {filteredStores.length} stores
           </p>
         </div>
-        <Button className="bg-primary hover:bg-primary-hover">
+        <Button className="bg-primary hover:bg-primary-hover" onClick={() => setShowAddStore(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Store
         </Button>
@@ -614,6 +689,150 @@ const Stores = () => {
               {isSavingStoreName ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Store Modal */}
+      <Dialog open={showAddStore} onOpenChange={(open) => {
+        if (!open && !createStoreMutation.isPending) {
+          setShowAddStore(false);
+          resetNewStoreForm();
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add New Store</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateStore} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label htmlFor="new-store-name">Store Name *</Label>
+                <Input
+                  id="new-store-name"
+                  value={newStoreData.name}
+                  onChange={(e) => setNewStoreData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Store name"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="new-store-type">Store Type</Label>
+                <Select
+                  value={newStoreData.type}
+                  onValueChange={(value) => setNewStoreData(prev => ({ ...prev, type: value }))}
+                >
+                  <SelectTrigger id="new-store-type">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="smoke_shop">Smoke Shop</SelectItem>
+                    <SelectItem value="bodega">Bodega</SelectItem>
+                    <SelectItem value="gas_station">Gas Station</SelectItem>
+                    <SelectItem value="wholesaler">Wholesaler</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="new-store-status">Status</Label>
+                <Select
+                  value={newStoreData.status}
+                  onValueChange={(value) => setNewStoreData(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger id="new-store-status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="prospect">Prospect</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="needsFollowUp">Needs Follow-up</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="new-store-contact">Primary Contact</Label>
+                <Input
+                  id="new-store-contact"
+                  value={newStoreData.primary_contact_name}
+                  onChange={(e) => setNewStoreData(prev => ({ ...prev, primary_contact_name: e.target.value }))}
+                  placeholder="Owner/Manager name"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="new-store-phone">Phone</Label>
+                <Input
+                  id="new-store-phone"
+                  value={newStoreData.phone}
+                  onChange={(e) => setNewStoreData(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="(555) 555-5555"
+                />
+              </div>
+
+              <div className="col-span-2">
+                <Label htmlFor="new-store-address">Street Address</Label>
+                <Input
+                  id="new-store-address"
+                  value={newStoreData.address_street}
+                  onChange={(e) => setNewStoreData(prev => ({ ...prev, address_street: e.target.value }))}
+                  placeholder="123 Main St"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="new-store-city">City</Label>
+                <Input
+                  id="new-store-city"
+                  value={newStoreData.address_city}
+                  onChange={(e) => setNewStoreData(prev => ({ ...prev, address_city: e.target.value }))}
+                  placeholder="City"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="new-store-state">State</Label>
+                  <Input
+                    id="new-store-state"
+                    value={newStoreData.address_state}
+                    onChange={(e) => setNewStoreData(prev => ({ ...prev, address_state: e.target.value }))}
+                    placeholder="NY"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new-store-zip">ZIP</Label>
+                  <Input
+                    id="new-store-zip"
+                    value={newStoreData.address_zip}
+                    onChange={(e) => setNewStoreData(prev => ({ ...prev, address_zip: e.target.value }))}
+                    placeholder="10001"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowAddStore(false);
+                  resetNewStoreForm();
+                }}
+                disabled={createStoreMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createStoreMutation.isPending || !newStoreData.name.trim()}>
+                {createStoreMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Create Store
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
