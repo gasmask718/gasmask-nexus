@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { SendMessageModal } from '@/components/communication/SendMessageModal';
 import SystemCheckpointBar from '@/components/system/SystemCheckpointBar';
 import { EmpireHealthMonitor } from '@/components/system/EmpireHealthMonitor';
+import { GlobalSimulationToggle } from '@/components/simulation/GlobalSimulationToggle';
+import { SimulationWatermark } from '@/components/simulation/SimulationWatermark';
 import { exportEmpireDataToExcel, exportOsBlueprintToJson } from '@/services/exportService';
 import '@/theme/departmentStyles.css';
 import { useLocation, Link } from 'react-router-dom';
@@ -735,6 +737,9 @@ const Layout = ({ children }: LayoutProps) => {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
+            {/* Global Simulation Toggle */}
+            <GlobalSimulationToggle variant="compact" />
+            
             {/* Export Buttons - Admin Only */}
             {isAdmin && (
               <div className="hidden lg:flex items-center gap-1">
@@ -806,7 +811,8 @@ const Layout = ({ children }: LayoutProps) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
+        <main className="flex-1 p-4 md:p-6 overflow-auto relative">
+          <SimulationWatermark />
           {children}
         </main>
       </div>

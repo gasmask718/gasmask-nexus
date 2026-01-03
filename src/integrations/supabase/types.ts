@@ -21323,6 +21323,42 @@ export type Database = {
           },
         ]
       }
+      simulation_mode_audit: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          new_mode: string
+          previous_mode: string | null
+          reason: string | null
+          user_id: string | null
+          user_role: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_mode: string
+          previous_mode?: string | null
+          reason?: string | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_mode?: string
+          previous_mode?: string | null
+          reason?: string | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Relationships: []
+      }
       simulation_runs: {
         Row: {
           created_at: string | null
@@ -22152,6 +22188,7 @@ export type Database = {
           has_expansion: boolean | null
           id: string
           influence_level: string | null
+          is_simulation: boolean | null
           language_preference: string | null
           languages: string[] | null
           loyalty_triggers: string[] | null
@@ -22192,6 +22229,7 @@ export type Database = {
           has_expansion?: boolean | null
           id?: string
           influence_level?: string | null
+          is_simulation?: boolean | null
           language_preference?: string | null
           languages?: string[] | null
           loyalty_triggers?: string[] | null
@@ -22232,6 +22270,7 @@ export type Database = {
           has_expansion?: boolean | null
           id?: string
           influence_level?: string | null
+          is_simulation?: boolean | null
           language_preference?: string | null
           languages?: string[] | null
           loyalty_triggers?: string[] | null
@@ -24119,6 +24158,33 @@ export type Database = {
           label?: string
           notes?: string | null
           version?: string | null
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          created_at: string
+          id: string
+          last_changed_at: string
+          last_changed_by: string | null
+          setting_key: string
+          setting_value: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_changed_at?: string
+          last_changed_by?: string | null
+          setting_key: string
+          setting_value?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_changed_at?: string
+          last_changed_by?: string | null
+          setting_key?: string
+          setting_value?: Json
         }
         Relationships: []
       }

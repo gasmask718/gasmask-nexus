@@ -1,78 +1,95 @@
 /**
- * SIMULATION MODE BANNER
+ * SIMULATION MODE BANNER — GLOBAL VISUAL ENFORCEMENT
  * 
- * Displays a prominent banner when simulation mode is active.
- * This prevents confusion - users always know if they're seeing demo data.
+ * 🧠👑 MASTER GENIUS PROMPT IMPLEMENTATION
+ * 
+ * Displays prominent banners for simulation and live modes.
+ * - Simulation: Orange warning banner with "DATA IS NOT REAL"
+ * - Live: Green confirmation banner with "PERMANENT CHANGES"
  */
 
-import { AlertTriangle, X, Settings } from 'lucide-react';
-import { useSimulationMode, SimulationModeState } from '@/contexts/SimulationModeContext';
+import { AlertTriangle, Shield, Lock, Unlock, X, Loader2 } from 'lucide-react';
+import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
 import { useState } from 'react';
 
 interface SimulationModeBannerProps {
   showControls?: boolean;
+  showLiveBanner?: boolean;
 }
 
-export function SimulationModeBanner({ showControls = true }: SimulationModeBannerProps) {
+export function SimulationModeBanner({ showControls = true, showLiveBanner = false }: SimulationModeBannerProps) {
   const { 
     simulationMode, 
-    modeState, 
-    source, 
-    setModeState, 
+    systemMode,
+    source,
+    isLoading,
     isLiveBusinessActive,
-    currentBusinessSlug 
+    canToggle
   } = useSimulationMode();
   const { isAdmin } = useUserRole();
   const [dismissed, setDismissed] = useState(false);
 
-  // Don't show if simulation is off
+  // Show loading state
+  if (isLoading) {
+    return null;
+  }
+
+  // Live mode banner (optional)
+  if (!simulationMode && showLiveBanner && !dismissed) {
+    return (
+      <div className="fixed top-0 left-0 right-0 z-50 bg-green-600 text-white px-4 py-2 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Shield className="h-5 w-5 flex-shrink-0" />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+              <span className="font-semibold">LIVE MODE</span>
+              <span className="text-sm opacity-90">
+                — REAL DATA • PERMANENT CHANGES
+              </span>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setDismissed(true)}
+            className="h-8 w-8 p-0 text-white hover:bg-green-500"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't show simulation banner if simulation is off
   if (!simulationMode || dismissed) {
     return null;
   }
 
-  const sourceLabel = source === 'env' ? 'Environment' : source === 'admin' ? 'Admin Toggle' : 'Forced Off';
+  const sourceLabel = source === 'database' ? 'System Setting' : 
+                      source === 'forced_live' ? 'Live Business' : 'Loading';
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-amber-950 px-4 py-2 shadow-lg">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-amber-950 px-4 py-2.5 shadow-lg">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <AlertTriangle className="h-5 w-5 flex-shrink-0" />
           <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-            <span className="font-semibold">SIMULATION MODE ACTIVE</span>
-            <span className="text-sm opacity-80">
-              — Live data is hidden. Source: {sourceLabel}
+            <span className="font-bold tracking-wide">SIMULATION MODE ACTIVE</span>
+            <span className="text-sm font-medium opacity-80">
+              — DATA IS NOT REAL
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Admin controls */}
-          {showControls && isAdmin() && (
-            <div className="flex items-center gap-2">
-              <Settings className="h-4 w-4 opacity-70" />
-              <Select 
-                value={modeState} 
-                onValueChange={(value) => setModeState(value as SimulationModeState)}
-              >
-                <SelectTrigger className="h-8 w-24 bg-amber-400 border-amber-600 text-amber-950">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto">Auto</SelectItem>
-                  <SelectItem value="on">On</SelectItem>
-                  <SelectItem value="off">Off</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Role indicator */}
+          {isAdmin() && (
+            <span className="text-xs bg-amber-400 px-2 py-1 rounded font-medium">
+              Admin View
+            </span>
           )}
 
           {/* Dismiss button */}
@@ -94,7 +111,16 @@ export function SimulationModeBanner({ showControls = true }: SimulationModeBann
  * Compact simulation indicator for use in headers/toolbars
  */
 export function SimulationIndicator() {
-  const { simulationMode, source, isLiveBusinessActive } = useSimulationMode();
+  const { simulationMode, isLoading } = useSimulationMode();
+
+  if (isLoading) {
+    return (
+      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-muted text-muted-foreground rounded-full">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        <span>Loading...</span>
+      </div>
+    );
+  }
 
   if (!simulationMode) {
     return null;
@@ -103,7 +129,7 @@ export function SimulationIndicator() {
   return (
     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 rounded-full">
       <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-      <span>Demo Mode</span>
+      <span>Simulation Mode</span>
     </div>
   );
 }
@@ -112,17 +138,52 @@ export function SimulationIndicator() {
  * Live data indicator - shows when real data is being displayed
  */
 export function LiveDataIndicator() {
-  const { simulationMode, isLiveBusinessActive } = useSimulationMode();
+  const { simulationMode, isLiveBusinessActive, isLoading } = useSimulationMode();
 
-  // Only show if simulation is off AND on a live business
-  if (simulationMode || !isLiveBusinessActive) {
+  if (isLoading) {
     return null;
   }
 
+  // Show if simulation is off
+  if (!simulationMode) {
+    return (
+      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded-full">
+        <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+        <span>Live Mode</span>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+/**
+ * Mode badge for compact display
+ */
+export function SystemModeBadge() {
+  const { simulationMode, isLoading, systemMode } = useSimulationMode();
+
+  if (isLoading) {
+    return (
+      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-muted rounded-full">
+        <Loader2 className="h-3 w-3 animate-spin" />
+      </div>
+    );
+  }
+
+  if (simulationMode) {
+    return (
+      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-amber-500 text-amber-950 rounded-full shadow-sm">
+        <span className="h-2 w-2 rounded-full bg-amber-950 animate-pulse" />
+        <span>SIMULATION</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded-full">
-      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-      <span>Live Data</span>
+    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-green-500 text-white rounded-full shadow-sm">
+      <Shield className="h-3 w-3" />
+      <span>LIVE</span>
     </div>
   );
 }
