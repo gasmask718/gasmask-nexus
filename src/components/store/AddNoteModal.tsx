@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Clock } from 'lucide-react';
 import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
-// import { extractOpportunitiesFromNote } from '@/services/opportunityExtractionService';
+import { extractOpportunitiesFromNote } from '@/services/opportunityExtractionService';
 
 interface StoreNote {
   id: string;
@@ -96,22 +96,21 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
 
       if (error) throw error;
 
-      // TODO: Phase 2 - AI Extraction (commented out for now)
       // Extract opportunities from the note (async, don't block)
-      // if (noteData?.id) {
-      //   extractOpportunitiesFromNote(masterId, noteData.id, noteText.trim(), storeName)
-      //     .then((result) => {
-      //       if (result.saved > 0) {
-      //         toast.success(`Found ${result.saved} opportunity${result.saved > 1 ? 'ies' : ''}`, {
-      //           description: 'Opportunities have been added automatically',
-      //         });
-      //       }
-      //     })
-      //     .catch((err) => {
-      //       console.error('Error extracting opportunities:', err);
-      //       // Don't show error to user, just log it
-      //     });
-      // }
+      if (noteData?.id) {
+        extractOpportunitiesFromNote(masterId, noteData.id, noteText.trim(), storeName)
+          .then((result) => {
+            if (result.saved > 0) {
+              toast.success(`Found ${result.saved} opportunity${result.saved > 1 ? 'ies' : ''}`, {
+                description: 'Opportunities have been added automatically',
+              });
+            }
+          })
+          .catch((err) => {
+            console.error('Error extracting opportunities:', err);
+            // Don't show error to user, just log it
+          });
+      }
 
       const formattedDateTime = format(now, 'MMM d, yyyy h:mm a');
       toast.success(`Note added at ${formattedDateTime}`, {

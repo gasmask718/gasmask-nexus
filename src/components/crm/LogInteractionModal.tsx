@@ -110,21 +110,20 @@ export function LogInteractionModal({
       
       if (error) throw error;
 
-      // TODO: Phase 2 - AI Extraction (commented out for now)
       // Extract opportunities from interaction (async, don't block)
-      // if (interactionData?.id && validStoreId) {
-      //   const { extractOpportunitiesFromInteraction } = await import('@/services/opportunityExtractionService');
-      //   const interactionText = `${subject}${summary ? '. ' + summary : ''}`;
-      //   extractOpportunitiesFromInteraction(validStoreId, interactionData.id, interactionText, storeName)
-      //     .then((result) => {
-      //       if (result.saved > 0) {
-      //         queryClient.invalidateQueries({ queryKey: ['store-opportunities'] });
-      //       }
-      //     })
-      //     .catch((err) => {
-      //       console.error('Error extracting opportunities from interaction:', err);
-      //     });
-      // }
+      if (interactionData?.id && validStoreId) {
+        const { extractOpportunitiesFromInteraction } = await import('@/services/opportunityExtractionService');
+        const interactionText = `${subject}${summary ? '. ' + summary : ''}`;
+        extractOpportunitiesFromInteraction(validStoreId, interactionData.id, interactionText, storeName)
+          .then((result) => {
+            if (result.saved > 0) {
+              queryClient.invalidateQueries({ queryKey: ['store-opportunities'] });
+            }
+          })
+          .catch((err) => {
+            console.error('Error extracting opportunities from interaction:', err);
+          });
+      }
 
       return interactionData;
     },

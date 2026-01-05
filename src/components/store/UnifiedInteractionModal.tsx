@@ -30,8 +30,7 @@ import { useCreateVisitProducts, useUpdateStoreTubeInventory, GRABBA_COMPANIES }
 import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
 import { format } from 'date-fns';
 import { PhotoUploadMultiple } from './PhotoUploadMultiple';
-// TODO: Phase 2 - AI Extraction (commented out for now)
-// import { extractOpportunitiesFromNote, extractOpportunitiesFromInteraction } from '@/services/opportunityExtractionService';
+import { extractOpportunitiesFromNote, extractOpportunitiesFromInteraction } from '@/services/opportunityExtractionService';
 
 const INTERACTION_TYPES = [
   { value: 'delivery', label: 'Delivery', icon: Package, requiresProducts: true },
@@ -313,10 +312,9 @@ export function UnifiedInteractionModal({
       }
 
       // 2. Create contact interaction if it's a communication type
-      // TODO: Phase 2 - AI Extraction (commented out for now)
-      // let interactionId: string | undefined;
+      let interactionId: string | undefined;
       if (isCommunicationType) {
-        const { error: interactionError } = await supabase
+        const { data: interactionData, error: interactionError } = await supabase
           .from('contact_interactions')
           .insert({
             contact_id: selectedContactId || contactId,
@@ -329,58 +327,59 @@ export function UnifiedInteractionModal({
             sentiment: sentiment || null,
             next_action: nextAction || null,
             follow_up_at: followUpAt ? new Date(followUpAt).toISOString() : null,
-          });
+          })
+          .select('id')
+          .single();
 
         if (interactionError) throw interactionError;
-        // interactionId = interactionData?.id;
+        interactionId = interactionData?.id;
 
-        // TODO: Phase 2 - AI Extraction (commented out for now)
         // Extract opportunities from interaction (async, don't block)
-        // if (interactionId) {
-        //   const interactionText = `${subject}${summary ? '. ' + summary : ''}`;
-        //   extractOpportunitiesFromInteraction(resolvedStoreMasterId, interactionId, interactionText, storeName)
-        //     .then((result) => {
-        //       if (result.saved > 0) {
-        //         queryClient.invalidateQueries({ queryKey: ['store-opportunities'] });
-        //       }
-        //     })
-        //     .catch((err) => {
-        //       console.error('Error extracting opportunities from interaction:', err);
-        //     });
-        // }
+        if (interactionId) {
+          const interactionText = `${subject}${summary ? '. ' + summary : ''}`;
+          extractOpportunitiesFromInteraction(resolvedStoreMasterId, interactionId, interactionText, storeName)
+            .then((result) => {
+              if (result.saved > 0) {
+                queryClient.invalidateQueries({ queryKey: ['store-opportunities'] });
+              }
+            })
+            .catch((err) => {
+              console.error('Error extracting opportunities from interaction:', err);
+            });
+        }
       }
 
       // 3. Create note if note text is provided (or if note-only type)
-      // TODO: Phase 2 - AI Extraction (commented out for now)
-      // let noteId: string | undefined;
+      let noteId: string | undefined;
       if (noteText.trim() || isNoteOnly) {
-        const { error: noteError } = await supabase
+        const { data: noteData, error: noteError } = await supabase
           .from('store_notes')
           .insert({
             store_id: resolvedStoreMasterId,
             note_text: noteText.trim(),
             created_by: user.id,
-          });
+          })
+          .select('id')
+          .single();
 
         if (noteError) throw noteError;
-        // noteId = noteData?.id;
+        noteId = noteData?.id;
 
-        // TODO: Phase 2 - AI Extraction (commented out for now)
         // Extract opportunities from note (async, don't block)
-        // if (noteId) {
-        //   extractOpportunitiesFromNote(resolvedStoreMasterId, noteId, noteText.trim(), storeName)
-        //     .then((result) => {
-        //       if (result.saved > 0) {
-        //         queryClient.invalidateQueries({ queryKey: ['store-opportunities'] });
-        //         toast.success(`Found ${result.saved} opportunity${result.saved > 1 ? 'ies' : ''}`, {
-        //           description: 'Opportunities have been added automatically',
-        //         });
-        //       }
-        //     })
-        //     .catch((err) => {
-        //       console.error('Error extracting opportunities from note:', err);
-        //     });
-        // }
+        if (noteId) {
+          extractOpportunitiesFromNote(resolvedStoreMasterId, noteId, noteText.trim(), storeName)
+            .then((result) => {
+              if (result.saved > 0) {
+                queryClient.invalidateQueries({ queryKey: ['store-opportunities'] });
+                toast.success(`Found ${result.saved} opportunity${result.saved > 1 ? 'ies' : ''}`, {
+                  description: 'Opportunities have been added automatically',
+                });
+              }
+            })
+            .catch((err) => {
+              console.error('Error extracting opportunities from note:', err);
+            });
+        }
       }
 
       // 4. Invalidate queries

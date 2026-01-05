@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { storeId, storeName, notesText, notesCount } = await req.json();
+    const { storeId, storeName, notesText, notesCount, extractOpportunitiesOnly } = await req.json();
 
     console.log(`[ProfileExtraction] Processing store: ${storeName} (${storeId})`);
     console.log(`[ProfileExtraction] Notes count: ${notesCount}`);
@@ -30,7 +30,34 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = `You are an expert CRM analyst for Grabba (tobacco leaf brands: GasMask, HotMama, Hot Scalati, Grabba R Us).
+    // If only extracting opportunities, use a focused prompt
+    const systemPrompt = extractOpportunitiesOnly
+      ? `You are an expert business opportunity detector for Grabba (tobacco leaf brands: GasMask, HotMama, Hot Scalati, Grabba R Us).
+
+Your task is to identify BUSINESS OPPORTUNITIES from customer notes and interactions. Look for:
+- Wholesaler opportunities: mentions of wanting to distribute, resell, or become a wholesaler
+- Additional stores: mentions of family having other stores, multiple locations, chains
+- New brands: interest in other brands, wanting different products
+- Flowers: interest in selling flowers
+- Expansion: opening new stores, expanding business
+
+Return ONLY valid JSON with this structure:
+{
+  "opportunities": {
+    "notes": ["array of opportunity statements - be specific and concise"]
+  },
+  "extraction_confidence": 0.0 to 1.0
+}
+
+Each opportunity should be a clear, actionable statement like:
+- "Wants to be a wholesaler"
+- "Family has additional stores"
+- "Wants other brands"
+- "Flowers wanted"
+- "Opening new store"
+
+Only include opportunities that are clearly mentioned or strongly implied.`
+      : `You are an expert CRM analyst for Grabba (tobacco leaf brands: GasMask, HotMama, Hot Scalati, Grabba R Us).
 
 Extract a structured profile from customer notes focusing on:
 1. Personal/relationship details (owner name, communication style, loyalty triggers)
@@ -70,7 +97,7 @@ Return ONLY valid JSON matching this structure:
     "notes": ["array of string warnings"]
   },
   "opportunities": {
-    "notes": ["array of opportunity statements"]
+    "notes": ["array of opportunity statements - be specific: 'Wants to be a wholesaler', 'Family has additional stores', 'Wants other brands', 'Flowers wanted', etc."]
   },
   "extraction_confidence": 0.0 to 1.0
 }`;
