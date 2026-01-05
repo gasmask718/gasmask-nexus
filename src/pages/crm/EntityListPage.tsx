@@ -51,19 +51,25 @@ export default function EntityListPage() {
   const { isSimulationMode, getEntityData } = useCRMSimulation(businessSlug || null);
 
   // Fetch real partners from database when NOT in simulation mode
-  const { data: realPartners = [], isLoading: isLoadingPartners } = useQuery({
-    queryKey: ['crm_partners', businessSlug, entityType],
+  const { data: realPartners = [], isLoading: isLoadingPartners, refetch: refetchPartners } = useQuery({
+    queryKey: ['crm_partners', businessSlug],
     queryFn: async () => {
       if (entityType !== 'partners') return [];
+      console.log('[EntityListPage] Fetching partners for', businessSlug, 'simulation:', isSimulationMode);
       const { data, error } = await supabase
         .from('crm_partners')
         .select('*')
         .eq('business_slug', businessSlug)
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error('[EntityListPage] Error fetching partners:', error);
+        throw error;
+      }
+      console.log('[EntityListPage] Fetched partners:', data?.length);
       return data || [];
     },
-    enabled: !isSimulationMode && entityType === 'partners',
+    enabled: entityType === 'partners' && !isSimulationMode,
+    staleTime: 0, // Always refetch when query is re-enabled
   });
 
   // Get simulation data for this entity type
