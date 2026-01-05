@@ -8422,6 +8422,72 @@ export type Database = {
           },
         ]
       }
+      crm_partners: {
+        Row: {
+          availability_rules: string | null
+          booking_link: string | null
+          business_slug: string
+          city: string | null
+          commission_rate: number | null
+          company_name: string
+          contact_name: string | null
+          contract_status: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          notes: string | null
+          partner_category: string
+          phone: string | null
+          pricing_range: string | null
+          service_area: string[] | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          availability_rules?: string | null
+          booking_link?: string | null
+          business_slug?: string
+          city?: string | null
+          commission_rate?: number | null
+          company_name: string
+          contact_name?: string | null
+          contract_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          partner_category: string
+          phone?: string | null
+          pricing_range?: string | null
+          service_area?: string[] | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          availability_rules?: string | null
+          booking_link?: string | null
+          business_slug?: string
+          city?: string | null
+          commission_rate?: number | null
+          company_name?: string
+          contact_name?: string | null
+          contract_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          partner_category?: string
+          phone?: string | null
+          pricing_range?: string | null
+          service_area?: string[] | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_personal_notes: {
         Row: {
           content: string | null

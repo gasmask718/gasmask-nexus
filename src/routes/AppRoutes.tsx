@@ -98,6 +98,7 @@ import CRMImportPage from '@/pages/crm/CRMImportPage';
 import CRMBackupPage from '@/pages/crm/CRMBackupPage';
 import EntityListPage from '@/pages/crm/EntityListPage';
 import EntityProfilePage from '@/pages/crm/EntityProfilePage';
+import EntityCreatePage from '@/pages/crm/EntityCreatePage';
 import CRMSettingsPage from '@/pages/crm/CRMSettingsPage';
 import CRMBrandPage from '@/pages/crm/BrandCRM';
 import CRMBrandStoreProfile from '@/pages/crm/BrandStoreProfile';
@@ -772,7 +773,7 @@ export default function AppRoutes() {
         <Route path="/crm/toptier-experience/customers/:customerId/edit" element={<TopTierEditCustomer />} />
         
         <Route path="/crm/:businessSlug/:entityType" element={<EntityListPage />} />
-        <Route path="/crm/:businessSlug/:entityType/new" element={<EntityProfilePage />} />
+        <Route path="/crm/:businessSlug/:entityType/new" element={<EntityCreatePage />} />
         <Route path="/crm/:businessSlug/:entityType/:recordId" element={<EntityProfilePage />} />
         
         {/* Legacy/store-based CRM routes (redirect to business-scoped) */}

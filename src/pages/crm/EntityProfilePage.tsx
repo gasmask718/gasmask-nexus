@@ -14,12 +14,14 @@ import { useCRMBlueprint, useProfileTabs } from '@/hooks/useCRMBlueprint';
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { ExtendedEntityType } from '@/config/crmBlueprints';
 import { MediaVault } from '@/components/crm/MediaVault';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import CRMLayout from './CRMLayout';
 import {
   ArrowLeft, Edit, Trash2, MoreHorizontal, Phone, Mail, MapPin,
   Calendar, Clock, User, Building2, Star, MessageCircle, FileText,
   Image, ListTodo, Activity, ExternalLink, Copy, Share2, ChevronRight,
-  Plus, Send, CheckCircle, XCircle
+  Plus, Send, CheckCircle, XCircle, Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -53,12 +55,31 @@ export default function EntityProfilePage() {
   const pipelineStages = getPipeline(entityType as ExtendedEntityType);
   const { isSimulationMode, getEntityData } = useCRMSimulation(businessSlug || null);
 
-  // Get entity data
+  // Fetch real partner from database when NOT in simulation mode
+  const { data: realPartner, isLoading: isLoadingPartner } = useQuery({
+    queryKey: ['crm_partner', recordId],
+    queryFn: async () => {
+      if (entityType !== 'partners' || !recordId) return null;
+      const { data, error } = await supabase
+        .from('crm_partners')
+        .select('*')
+        .eq('id', recordId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !isSimulationMode && entityType === 'partners' && !!recordId,
+  });
+
+  // Get entity data - use real data or simulation based on mode
   const entity = useMemo(() => {
+    if (entityType === 'partners' && !isSimulationMode) {
+      return realPartner;
+    }
     if (!isSimulationMode || !entityType) return null;
     const entities = getEntityData(entityType as ExtendedEntityType);
     return entities.find((e: any) => e.id === recordId) || entities[0] || null;
-  }, [isSimulationMode, entityType, recordId, getEntityData]);
+  }, [entityType, isSimulationMode, realPartner, recordId, getEntityData]);
 
   const renderIcon = (iconName: string, className = "h-5 w-5") => {
     const IconComponent = ICON_MAP[iconName];
@@ -93,6 +114,18 @@ export default function EntityProfilePage() {
     );
   }
 
+  // Loading state for real partner data
+  if (isLoadingPartner && entityType === 'partners' && !isSimulationMode) {
+    return (
+      <CRMLayout title="Loading...">
+        <Card className="p-12 text-center">
+          <Loader2 className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">Loading partner details...</p>
+        </Card>
+      </CRMLayout>
+    );
+  }
+
   if (!entity) {
     return (
       <CRMLayout title="Record Not Found">
@@ -111,7 +144,8 @@ export default function EntityProfilePage() {
     );
   }
 
-  const currentStage = pipelineStages.find(s => s.value === entity.status);
+  const entityStatus = entity.status || entity.contract_status;
+  const currentStage = pipelineStages.find(s => s.value === entityStatus);
 
   return (
     <CRMLayout title={`${getDisplayName(entity)} - ${entitySchema.label}`}>
