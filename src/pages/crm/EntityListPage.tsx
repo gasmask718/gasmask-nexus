@@ -14,12 +14,14 @@ import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeCon
 import { useCRMBlueprint } from '@/hooks/useCRMBlueprint';
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { ExtendedEntityType } from '@/config/crmBlueprints';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import CRMLayout from './CRMLayout';
 import {
   ArrowLeft, Plus, Search, Filter, Download, Upload,
   LayoutGrid, List, RefreshCw, MoreHorizontal, Eye, Edit, Trash2,
   Users, Building2, Star, Calendar, Phone, Mail, MapPin, ChevronRight,
-  Briefcase, UserCheck, MessageCircle, Image
+  Briefcase, UserCheck, MessageCircle, Image, Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -48,31 +50,58 @@ export default function EntityListPage() {
   const entitySchema = getEntitySchema(entityType as ExtendedEntityType);
   const { isSimulationMode, getEntityData } = useCRMSimulation(businessSlug || null);
 
+  // Fetch real partners from database when NOT in simulation mode
+  const { data: realPartners = [], isLoading: isLoadingPartners } = useQuery({
+    queryKey: ['crm_partners', businessSlug, entityType],
+    queryFn: async () => {
+      if (entityType !== 'partners') return [];
+      const { data, error } = await supabase
+        .from('crm_partners')
+        .select('*')
+        .eq('business_slug', businessSlug)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !isSimulationMode && entityType === 'partners',
+  });
+
   // Get simulation data for this entity type
   const simulationEntities = useMemo(() => {
     if (!isSimulationMode || !entityType) return [];
     return getEntityData(entityType as ExtendedEntityType);
   }, [isSimulationMode, entityType, getEntityData]);
 
+  // Use real data or simulation data based on mode
+  const entities = useMemo(() => {
+    if (entityType === 'partners' && !isSimulationMode) {
+      return realPartners;
+    }
+    return simulationEntities;
+  }, [entityType, isSimulationMode, realPartners, simulationEntities]);
+
   // Filter entities
   const filteredEntities = useMemo(() => {
-    let entities = simulationEntities;
+    let filtered = entities;
     
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      entities = entities.filter((e: any) => 
+      filtered = filtered.filter((e: any) => 
         Object.values(e).some(v => 
           typeof v === 'string' && v.toLowerCase().includes(term)
         )
       );
     }
     
+    // For partners, filter by contract_status; for others, filter by status
     if (statusFilter !== 'all') {
-      entities = entities.filter((e: any) => e.status === statusFilter);
+      filtered = filtered.filter((e: any) => 
+        e.status === statusFilter || e.contract_status === statusFilter
+      );
     }
     
-    return entities;
-  }, [simulationEntities, searchTerm, statusFilter]);
+    return filtered;
+  }, [entities, searchTerm, statusFilter]);
 
   // Get pipeline stages if available
   const pipelineStages = useMemo(() => {
@@ -83,11 +112,12 @@ export default function EntityListPage() {
   // Get unique statuses from data
   const uniqueStatuses = useMemo(() => {
     const statuses = new Set<string>();
-    simulationEntities.forEach((e: any) => {
+    entities.forEach((e: any) => {
       if (e.status) statuses.add(e.status);
+      if (e.contract_status) statuses.add(e.contract_status);
     });
     return Array.from(statuses);
-  }, [simulationEntities]);
+  }, [entities]);
 
   const renderIcon = (iconName: string, className = "h-5 w-5") => {
     const IconComponent = ICON_MAP[iconName];
@@ -233,7 +263,12 @@ export default function EntityListPage() {
         </div>
 
         {/* Entity List */}
-        {filteredEntities.length === 0 ? (
+        {isLoadingPartners && entityType === 'partners' && !isSimulationMode ? (
+          <Card className="p-12 text-center">
+            <Loader2 className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">Loading partners...</p>
+          </Card>
+        ) : filteredEntities.length === 0 ? (
           <Card className="p-12 text-center">
             <div 
               className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
