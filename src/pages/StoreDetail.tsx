@@ -176,9 +176,14 @@ const StoreDetail = () => {
 
       try {
         // Fetch store details
-        const { data: storeData, error: storeError } = await supabase.from("stores").select("*").eq("id", id).single();
+        const { data: storeData, error: storeError } = await supabase.from("stores").select("*").eq("id", id).maybeSingle();
 
         if (storeError) throw storeError;
+        if (!storeData) {
+          setStore(null);
+          setLoading(false);
+          return;
+        }
         setStore(storeData);
         setQuickStatsResponsiveness((storeData.responsiveness as "call" | "text" | "both" | "none") || "none");
         setQuickStatsPaymentType((storeData.payment_type as "pays_upfront" | "bill_to_bill") || null);
