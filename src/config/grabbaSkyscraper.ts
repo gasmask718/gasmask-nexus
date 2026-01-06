@@ -126,6 +126,19 @@ export const GRABBA_BRAND_CONFIG: Record<GrabbaBrand, {
   },
 };
 
+// Map frontend brand keys to database enum values
+export const BRAND_KEY_TO_ENUM_MAP: Record<GrabbaBrand, string> = {
+  gasmask: 'GasMask',
+  hotmama: 'HotMama',
+  scalati: 'HotScalati',
+  grabba: 'GrabbaRUs',
+};
+
+// Helper to get the database enum value from a brand key
+export const getBrandEnumValue = (brandKey: string): string => {
+  return BRAND_KEY_TO_ENUM_MAP[brandKey as GrabbaBrand] || brandKey;
+};
+
 // Helper to get brand config
 export const getBrandConfig = (brand: string) => {
   return GRABBA_BRAND_CONFIG[brand as GrabbaBrand] || GRABBA_BRAND_CONFIG.gasmask;
