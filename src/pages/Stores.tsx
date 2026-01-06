@@ -100,8 +100,8 @@ const Stores = () => {
           phone: data.phone || null,
           is_simulation: simulationMode, // Data isolation flag
         }])
-        .select()
-        .single();
+        .select('id')
+        .maybeSingle();
       if (error) throw error;
       return result;
     },
@@ -110,8 +110,10 @@ const Stores = () => {
       toast.success(simulationMode ? 'Store created (simulation)' : 'Store created successfully');
       setShowAddStore(false);
       resetNewStoreForm();
-      // Navigate to store profile
-      navigate(`/stores/${data.id}`);
+      // Navigate to store profile if we got an id back
+      if (data?.id) {
+        navigate(`/stores/${data.id}`);
+      }
     },
     onError: (error: Error) => {
       toast.error(`Failed to create store: ${error.message}`);
