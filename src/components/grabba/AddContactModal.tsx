@@ -219,35 +219,53 @@ export function AddContactModal({
       if (!storeBrandAccountId) {
         console.log('[AddContact] No store_brand_account found, attempting auto-heal...');
         
-        const { data: anyStore } = await supabase
-          .from('store_master')
-          .select('id')
-          .limit(1)
-          .single();
+        // First check if ANY store_brand_account exists for this brand
+        const brandEnumValue = getBrandEnumValue(brandKey) as 'GasMask' | 'GrabbaRUs' | 'HotMama' | 'HotScalati';
         
-        if (anyStore) {
-          const insertData = {
-            store_master_id: anyStore.id,
-            brand: getBrandEnumValue(brandKey) as 'GasMask' | 'GrabbaRUs' | 'HotMama' | 'HotScalati',
-            active_status: true,
-            loyalty_level: 'Bronze' as const,
-            credit_terms: 'COD' as const,
-            total_spent: 0
-          };
-          
-          const { data: newAccount, error: createError } = await supabase
-            .from('store_brand_accounts')
-            .insert([insertData])
+        const { data: existingAccount } = await supabase
+          .from('store_brand_accounts')
+          .select('id')
+          .eq('brand', brandEnumValue)
+          .limit(1)
+          .maybeSingle();
+        
+        if (existingAccount) {
+          // Reuse existing account
+          storeBrandAccountId = existingAccount.id;
+          console.log('[AddContact] Reusing existing store_brand_account:', storeBrandAccountId);
+        } else {
+          // No account exists for this brand, create one
+          const { data: anyStore } = await supabase
+            .from('store_master')
             .select('id')
+            .limit(1)
             .single();
           
-          if (createError) {
-            console.error('[AddContact] Auto-heal failed:', createError);
-            throw new Error('Failed to create brand account');
+          if (anyStore) {
+            const insertData = {
+              store_master_id: anyStore.id,
+              brand: brandEnumValue,
+              active_status: true,
+              loyalty_level: 'Bronze' as const,
+              credit_terms: 'COD' as const,
+              total_spent: 0
+            };
+            
+            // Use upsert to handle race conditions
+            const { data: newAccount, error: createError } = await supabase
+              .from('store_brand_accounts')
+              .upsert(insertData, { onConflict: 'store_master_id,brand' })
+              .select('id')
+              .single();
+            
+            if (createError) {
+              console.error('[AddContact] Auto-heal failed:', createError);
+              throw new Error('Failed to create brand account');
+            }
+            
+            storeBrandAccountId = newAccount?.id || null;
+            toast({ title: 'Repaired missing linkage. Contact saved.' });
           }
-          
-          storeBrandAccountId = newAccount?.id || null;
-          toast({ title: 'Repaired missing linkage. Contact saved.' });
         }
       }
 
