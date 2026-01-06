@@ -449,19 +449,6 @@ export default function BrandCRM() {
 
         {/* Stores Tab */}
         <TabsContent value="stores" className="space-y-3 mt-4">
-          {/* Build CRM Links Button - Always Visible */}
-          <div className="flex justify-end">
-            <Button 
-              onClick={() => autoLink()} 
-              variant="outline" 
-              className="gap-2"
-              disabled={isBuilding}
-            >
-              <RefreshCw className={`w-4 h-4 ${isBuilding ? 'animate-spin' : ''}`} />
-              Build CRM Links
-            </Button>
-          </div>
-          
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
