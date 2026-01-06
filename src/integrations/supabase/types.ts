@@ -23718,6 +23718,7 @@ export type Database = {
           email: string | null
           health_score: number | null
           id: string
+          is_simulation: boolean | null
           last_active_date: string | null
           last_performance_update: string | null
           last_visit_date: string | null
@@ -23786,6 +23787,7 @@ export type Database = {
           email?: string | null
           health_score?: number | null
           id?: string
+          is_simulation?: boolean | null
           last_active_date?: string | null
           last_performance_update?: string | null
           last_visit_date?: string | null
@@ -23854,6 +23856,7 @@ export type Database = {
           email?: string | null
           health_score?: number | null
           id?: string
+          is_simulation?: boolean | null
           last_active_date?: string | null
           last_performance_update?: string | null
           last_visit_date?: string | null
