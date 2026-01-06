@@ -202,6 +202,15 @@ export default function BrandCRM() {
           <Button onClick={() => refetch()} variant="outline" size="icon" disabled={isLoading}>
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
+          <Button 
+            onClick={() => autoLink()} 
+            variant="outline" 
+            disabled={isBuilding || isLoading}
+            className="gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${isBuilding ? 'animate-spin' : ''}`} />
+            Build CRM Links
+          </Button>
           <Button onClick={() => navigate('/grabba/crm')} variant="outline">
             <Building2 className="w-4 h-4 mr-2" />
             Back to Floor 1
@@ -606,27 +615,35 @@ export default function BrandCRM() {
             </div>
           ) : orders.length > 0 ? (
             orders.map((order: any) => (
-              <Card key={order.id}>
+              <Card key={order.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="space-y-1">
                       <div className="flex items-center gap-3">
                         <h3 className="font-semibold">
-                          {order.companies?.name || order.stores?.name || 'Unknown'}
+                          {order.store_master?.store_name || 'Unknown Store'}
                         </h3>
-                        <Badge variant="outline">{order.quantity} tubes</Badge>
+                        <Badge variant="outline">{order.tubes_total || 0} tubes</Badge>
+                        {order.boxes && <Badge variant="secondary">{order.boxes} boxes</Badge>}
                       </div>
-                      <div className="text-sm text-muted-foreground mt-1">
-                        {new Date(order.created_at).toLocaleDateString()}
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <MapPin className="w-3 h-3" />
+                        {order.store_master?.city || order.store_master?.neighborhood || 'N/A'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(order.created_at).toLocaleDateString()} • {order.delivery_method || 'Standard'}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-semibold">${order.total_amount?.toFixed(2) || '0.00'}</div>
-                      <Badge variant={order.status === 'delivered' ? 'default' : 'secondary'}>
-                        {order.status}
+                    <div className="text-right space-y-1">
+                      <div className="font-semibold text-lg">${Number(order.total || 0).toFixed(2)}</div>
+                      <Badge variant={order.status === 'delivered' ? 'default' : order.status === 'pending' ? 'secondary' : 'outline'}>
+                        {order.status || 'pending'}
                       </Badge>
                     </div>
                   </div>
+                  {order.notes && (
+                    <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">{order.notes}</p>
+                  )}
                 </CardContent>
               </Card>
             ))
@@ -656,7 +673,7 @@ export default function BrandCRM() {
                   <p className="text-sm text-muted-foreground">Avg Order Value</p>
                   <p className="text-2xl font-bold">
                     ${orders.length > 0 
-                      ? (orders.reduce((sum: number, o: any) => sum + (o.total_amount || 0), 0) / orders.length).toFixed(2)
+                      ? (orders.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) / orders.length).toFixed(2)
                       : '0.00'}
                   </p>
                 </div>

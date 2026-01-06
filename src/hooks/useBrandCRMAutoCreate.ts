@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { GrabbaBrand, GRABBA_BRAND_CONFIG } from '@/config/grabbaBrands';
-import { getBrandEnumValue } from '@/config/grabbaSkyscraper';
+import { getBrandEnumValue, getOrderBrandValue } from '@/config/grabbaSkyscraper';
 import { toast } from 'sonner';
 
 interface BrandInsights {
@@ -148,10 +148,14 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
       
       const { data, error } = await supabase
         .from('wholesale_orders')
-        .select('*, companies(name), stores(name)')
-        .eq('brand', brandKey)
+        .select(`
+          id, store_id, status, total, boxes, tubes_total, 
+          created_at, brand, notes, delivery_method,
+          store_master(store_name, address, city, neighborhood)
+        `)
+        .eq('brand', getOrderBrandValue(brandKey!))
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(100);
       
       if (error) {
         console.error('[BrandCRM] Error fetching orders:', error);
