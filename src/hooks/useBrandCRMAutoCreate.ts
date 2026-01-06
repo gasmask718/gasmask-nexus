@@ -226,8 +226,8 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
           store_master_id: sm.id,
           brand: getBrandEnumValue(brandKey),
           active_status: true,
-          loyalty_level: 'bronze',
-          credit_terms: 'cod',
+          loyalty_level: 'Bronze',
+          credit_terms: 'COD',
           total_spent: 0
         }));
 
