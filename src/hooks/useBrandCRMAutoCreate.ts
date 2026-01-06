@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { GrabbaBrand, GRABBA_BRAND_CONFIG } from '@/config/grabbaBrands';
 import { getBrandEnumValue } from '@/config/grabbaSkyscraper';
+import { toast } from 'sonner';
 
 interface BrandInsights {
   summary: string;
@@ -221,7 +222,6 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
 
       const newAccounts = (storeMasters || [])
         .filter(sm => !existingStoreIds.has(sm.id))
-        .slice(0, 50)
         .map(sm => ({
           store_master_id: sm.id,
           brand: getBrandEnumValue(brandKey),
@@ -246,8 +246,9 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
 
       return { created: newAccounts.length };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       console.log('[BrandCRM] Auto-heal complete, refreshing data...');
+      toast.success(`Successfully linked ${data.created} stores to ${brandLabel}!`);
       queryClient.invalidateQueries({ queryKey: ['brand-crm-accounts', brandKey] });
       queryClient.invalidateQueries({ queryKey: ['brand-crm-contacts', brandKey] });
       queryClient.invalidateQueries({ queryKey: ['brand-crm-orders', brandKey] });
