@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { PersonalNotesEditor } from './PersonalNotesEditor';
+import { getBrandEnumValue } from '@/config/grabbaSkyscraper';
 
 interface AdvancedContactModalProps {
   open: boolean;
@@ -287,7 +288,7 @@ export function AdvancedContactModal({
 
     const { error } = await supabase
       .from('custom_contact_roles')
-      .insert({ role_name: newRoleName, brand: brandLabel });
+      .insert({ role_name: newRoleName, brand: getBrandEnumValue(brandKey) });
 
     if (!error) {
       const newRole = { name: newRoleName, color: 'hsl(0, 0%, 50%)' };
@@ -351,7 +352,7 @@ export function AdvancedContactModal({
         if (anyStore) {
           const insertData = {
             store_master_id: anyStore.id,
-            brand: brandLabel as 'GasMask' | 'GrabbaRUs' | 'HotMama' | 'HotScalati',
+            brand: getBrandEnumValue(brandKey) as 'GasMask' | 'GrabbaRUs' | 'HotMama' | 'HotScalati',
             active_status: true,
             loyalty_level: 'Bronze' as const,
             credit_terms: 'COD' as const,
@@ -375,7 +376,7 @@ export function AdvancedContactModal({
 
       const contactData = {
         store_brand_account_id: storeBrandAccountId,
-        brand: brandLabel as any,
+        brand: getBrandEnumValue(brandKey) as any,
         contact_name: formData.contactName.trim(),
         contact_phone: formData.phone.trim() || null,
         contact_email: formData.email.trim() || null,
@@ -416,7 +417,7 @@ export function AdvancedContactModal({
         const storeLinks = formData.linkedStores.map(storeId => ({
           contact_id: contact.id,
           store_master_id: storeId,
-          brand: brandLabel,
+          brand: getBrandEnumValue(brandKey),
         }));
 
         await supabase

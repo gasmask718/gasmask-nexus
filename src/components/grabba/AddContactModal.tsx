@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
+import { getBrandEnumValue } from '@/config/grabbaSkyscraper';
 
 interface AddContactModalProps {
   open: boolean;
@@ -159,7 +160,7 @@ export function AddContactModal({
 
     const { error } = await supabase
       .from('custom_contact_roles')
-      .insert({ role_name: newRoleName, brand: brandLabel });
+      .insert({ role_name: newRoleName, brand: getBrandEnumValue(brandKey) });
 
     if (!error) {
       const newRole = { name: newRoleName, color: 'hsl(0, 0%, 50%)' };
@@ -227,7 +228,7 @@ export function AddContactModal({
         if (anyStore) {
           const insertData = {
             store_master_id: anyStore.id,
-            brand: brandLabel as 'GasMask' | 'GrabbaRUs' | 'HotMama' | 'HotScalati',
+            brand: getBrandEnumValue(brandKey) as 'GasMask' | 'GrabbaRUs' | 'HotMama' | 'HotScalati',
             active_status: true,
             loyalty_level: 'Bronze' as const,
             credit_terms: 'COD' as const,
@@ -258,7 +259,7 @@ export function AddContactModal({
         .from('brand_crm_contacts')
         .insert({
           store_brand_account_id: storeBrandAccountId,
-          brand: brandLabel as any,
+          brand: getBrandEnumValue(brandKey) as any,
           contact_name: formData.contactName.trim(),
           contact_phone: formData.phone.trim() || null,
           contact_email: formData.email.trim() || null,
@@ -286,7 +287,7 @@ export function AddContactModal({
         const storeLinks = formData.linkedStores.map(storeId => ({
           contact_id: contact.id,
           store_master_id: storeId,
-          brand: brandLabel,
+          brand: getBrandEnumValue(brandKey),
         }));
 
         const { error: linksError } = await supabase

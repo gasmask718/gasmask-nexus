@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { GrabbaBrand, GRABBA_BRAND_CONFIG } from '@/config/grabbaBrands';
+import { getBrandEnumValue } from '@/config/grabbaSkyscraper';
 
 interface BrandInsights {
   summary: string;
@@ -223,7 +224,7 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
         .slice(0, 50)
         .map(sm => ({
           store_master_id: sm.id,
-          brand: brandLabel,
+          brand: getBrandEnumValue(brandKey),
           active_status: true,
           loyalty_level: 'bronze',
           credit_terms: 'cod',
