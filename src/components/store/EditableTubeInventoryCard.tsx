@@ -5,9 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Package, Save, RefreshCw, Clock, Filter } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSimulationSafeMutation } from '@/hooks/useSimulationSafeMutation';
+import { useSimulationMode } from '@/contexts/SimulationModeContext';
+import { Package, Save, RefreshCw, Clock, Filter, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -34,6 +37,7 @@ interface EditableTubeInventoryCardProps {
 
 export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCardProps) {
   const queryClient = useQueryClient();
+  const { simulationMode } = useSimulationMode();
   const [filterBrand, setFilterBrand] = useState<string>('all');
   const [editedCounts, setEditedCounts] = useState<Record<string, number>>({});
   const [hasChanges, setHasChanges] = useState(false);
@@ -94,7 +98,7 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
     }
   }, [inventory]);
 
-  const saveMutation = useMutation({
+  const saveMutation = useSimulationSafeMutation({
     mutationFn: async (updates: { brand: string; count: number }[]) => {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -130,13 +134,17 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
             });
         }
       }
+      return updates;
     },
+    simulationMessage: 'Simulation Mode: Inventory changes not saved',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
-      toast.success('Tube inventory updated');
+      if (!simulationMode) {
+        queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
+      }
+      toast.success(simulationMode ? 'Inventory updated (simulation)' : 'Tube inventory updated');
       setHasChanges(false);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(`Failed to update: ${error.message}`);
     },
   });
@@ -209,6 +217,16 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Simulation Mode Warning */}
+        {simulationMode && (
+          <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-amber-600 dark:text-amber-400 text-sm">
+              Simulation Mode: Changes won't be saved
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Brand Filter */}
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
