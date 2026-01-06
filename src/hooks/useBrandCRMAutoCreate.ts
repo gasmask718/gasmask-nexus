@@ -66,7 +66,7 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
       const { data, error } = await supabase
         .from('store_brand_accounts')
         .select('*, store_master(*)')
-        .eq('brand', brandLabel as any);
+        .eq('brand', getBrandEnumValue(brandKey!) as any);
       
       if (error) {
         console.error('[BrandCRM] Error fetching accounts:', error);
@@ -89,7 +89,7 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
       const { data: contactsData, error: contactsError } = await supabase
         .from('brand_crm_contacts')
         .select('*')
-        .eq('brand', brandLabel as any)
+        .eq('brand', getBrandEnumValue(brandKey!) as any)
         .order('is_primary_contact', { ascending: false })
         .order('primary_role')
         .order('contact_name');
@@ -208,7 +208,7 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
       const { data: existingAccounts } = await supabase
         .from('store_brand_accounts')
         .select('store_master_id')
-        .eq('brand', brandLabel as any);
+        .eq('brand', getBrandEnumValue(brandKey!) as any);
 
       const existingStoreIds = new Set(existingAccounts?.map(a => a.store_master_id) || []);
 
