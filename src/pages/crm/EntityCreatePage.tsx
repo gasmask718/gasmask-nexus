@@ -9,14 +9,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCRMBlueprint } from '@/hooks/useCRMBlueprint';
 import { ExtendedEntityType, TOPTIER_PARTNER_CATEGORIES } from '@/config/crmBlueprints';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSimulationSafeMutation } from '@/hooks/useSimulationSafeMutation';
+import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { toast } from 'sonner';
 import CRMLayout from './CRMLayout';
-import { ArrowLeft, Save, Building2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Building2, Loader2, AlertTriangle } from 'lucide-react';
 
 // US States for dropdown
 const US_STATES = [
@@ -40,6 +43,7 @@ export default function EntityCreatePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { simulationMode } = useSimulationMode();
 
   // Get blueprint and entity schema
   const { blueprint, businessName, getEntitySchema } = useCRMBlueprint(businessSlug);
@@ -62,7 +66,7 @@ export default function EntityCreatePage() {
     notes: '',
   });
 
-  const createPartnerMutation = useMutation({
+  const createPartnerMutation = useSimulationSafeMutation({
     mutationFn: async (data: typeof formData) => {
       if (!user) throw new Error('Must be logged in');
       
@@ -91,7 +95,13 @@ export default function EntityCreatePage() {
       if (error) throw error;
       return result;
     },
+    simulationMessage: 'Simulation Mode: Partner not saved to database',
     onSuccess: (result) => {
+      if (simulationMode) {
+        toast.info('Partner created in simulation (not saved)');
+        navigate(`/crm/${businessSlug}/partners`);
+        return;
+      }
       toast.success('Partner created successfully!');
       queryClient.invalidateQueries({ queryKey: ['crm_partners'] });
       navigate(`/crm/${businessSlug}/partners/${result.id}`);
@@ -172,6 +182,16 @@ export default function EntityCreatePage() {
             <p className="text-muted-foreground text-sm">Create a new partner for {businessName}</p>
           </div>
         </div>
+
+        {/* Simulation Mode Warning */}
+        {simulationMode && (
+          <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-amber-600 dark:text-amber-400">
+              You are in <strong>Simulation Mode</strong>. Changes will not be saved to the database.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Form */}
         <Card>
