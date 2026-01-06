@@ -17,6 +17,7 @@ import { SimScenario, getSimulationScenario, SimulationState } from '@/lib/simul
 import { isLiveBusiness, LIVE_BUSINESSES } from '@/config/liveBusinesses';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useQueryClient } from '@tanstack/react-query';
 
 // System mode (database enforced)
 export type SystemMode = 'simulation' | 'live';
@@ -78,6 +79,9 @@ export function SimulationModeProvider({ children }: { children: ReactNode }) {
   
   // Get user role for permission checks
   const { isAdmin, role, loading: roleLoading } = useUserRole();
+  
+  // Query client for invalidating queries on mode change
+  const queryClient = useQueryClient();
 
   // Current business slug for enforcement
   const [currentBusinessSlug, setCurrentBusinessSlug] = useState<string | null>(() => {
@@ -159,6 +163,10 @@ export function SimulationModeProvider({ children }: { children: ReactNode }) {
           });
           setLastChangedBy(payload.new.last_changed_by);
           setLastChangedAt(payload.new.last_changed_at ? new Date(payload.new.last_changed_at) : null);
+          
+          // Invalidate all queries so they refetch with new simulation state
+          queryClient.invalidateQueries();
+          console.log('[SIMULATION] All queries invalidated after mode change');
         }
       )
       .subscribe();
@@ -230,6 +238,10 @@ export function SimulationModeProvider({ children }: { children: ReactNode }) {
       }
 
       // Log the audit entry (columns: action, user_role, previous_mode, new_mode, reason, metadata)
+      // Invalidate all queries immediately after successful mode change
+      queryClient.invalidateQueries();
+      console.log('[SIMULATION] Mode changed to', mode, '- all queries invalidated');
+
       await supabase.from('simulation_mode_audit').insert({
         action: 'mode_change',
         user_role: role,

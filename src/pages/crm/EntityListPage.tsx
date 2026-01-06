@@ -52,10 +52,10 @@ export default function EntityListPage() {
 
   // Fetch real partners from database when NOT in simulation mode
   const { data: realPartners = [], isLoading: isLoadingPartners, refetch: refetchPartners } = useQuery({
-    queryKey: ['crm_partners', businessSlug],
+    queryKey: ['crm_partners', businessSlug, simulationMode], // Include simulationMode in key
     queryFn: async () => {
       if (entityType !== 'partners') return [];
-      console.log('[EntityListPage] Fetching partners for', businessSlug, 'simulation:', isSimulationMode);
+      console.log('[EntityListPage] Fetching partners for', businessSlug, 'simulation:', simulationMode);
       const { data, error } = await supabase
         .from('crm_partners')
         .select('*')
@@ -68,23 +68,23 @@ export default function EntityListPage() {
       console.log('[EntityListPage] Fetched partners:', data?.length);
       return data || [];
     },
-    enabled: entityType === 'partners' && !isSimulationMode,
-    staleTime: 0, // Always refetch when query is re-enabled
+    enabled: entityType === 'partners' && !simulationMode, // Only fetch in live mode
+    staleTime: 0,
   });
 
   // Get simulation data for this entity type
   const simulationEntities = useMemo(() => {
-    if (!isSimulationMode || !entityType) return [];
+    if (!simulationMode || !entityType) return [];
     return getEntityData(entityType as ExtendedEntityType);
-  }, [isSimulationMode, entityType, getEntityData]);
+  }, [simulationMode, entityType, getEntityData]);
 
   // Use real data or simulation data based on mode
   const entities = useMemo(() => {
-    if (entityType === 'partners' && !isSimulationMode) {
+    if (entityType === 'partners' && !simulationMode) {
       return realPartners;
     }
     return simulationEntities;
-  }, [entityType, isSimulationMode, realPartners, simulationEntities]);
+  }, [entityType, simulationMode, realPartners, simulationEntities]);
 
   // Filter entities
   const filteredEntities = useMemo(() => {
@@ -175,7 +175,7 @@ export default function EntityListPage() {
                   {renderIcon(entitySchema.icon)}
                 </div>
                 <h1 className="text-2xl font-bold">{entitySchema.labelPlural}</h1>
-                {isSimulationMode && <SimulationBadge />}
+                {simulationMode && <SimulationBadge />}
               </div>
               <p className="text-muted-foreground text-sm ml-10">
                 {filteredEntities.length} records
@@ -269,7 +269,7 @@ export default function EntityListPage() {
         </div>
 
         {/* Entity List */}
-        {isLoadingPartners && entityType === 'partners' && !isSimulationMode ? (
+        {isLoadingPartners && entityType === 'partners' && !simulationMode ? (
           <Card className="p-12 text-center">
             <Loader2 className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />
             <p className="text-muted-foreground">Loading partners...</p>

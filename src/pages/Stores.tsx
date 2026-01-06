@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
+import { SIMULATION_STORES, SimulatedStore } from '@/lib/simulation/coreSimulationData';
 
 interface StoreContact {
   id: string;
@@ -57,6 +59,7 @@ const Stores = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { simulationMode } = useSimulationMode();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [tagFilter, setTagFilter] = useState<string>('all');
@@ -138,8 +141,9 @@ const Stores = () => {
     createStoreMutation.mutate(newStoreData);
   };
 
-  const { data: stores = [], isLoading } = useQuery({
-    queryKey: ['stores-with-contacts'],
+  // Fetch real stores from database (only when NOT in simulation mode)
+  const { data: realStores = [], isLoading } = useQuery({
+    queryKey: ['stores-with-contacts', simulationMode],
     queryFn: async () => {
       // Fetch stores with sticker fields and payment type
       const { data: storesData, error: storesError } = await supabase
@@ -195,7 +199,16 @@ const Stores = () => {
         tubeInventory: inventoryByStore[store.id] || [],
       }));
     },
+    enabled: !simulationMode, // Only fetch in live mode
   });
+
+  // Resolve between simulation and real data
+  const stores: Store[] = useMemo(() => {
+    if (simulationMode) {
+      return SIMULATION_STORES as unknown as Store[];
+    }
+    return realStores;
+  }, [simulationMode, realStores]);
 
   const availableStoreTags = Array.from(
     new Set(
@@ -360,9 +373,12 @@ const Stores = () => {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight">Stores</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-3xl font-bold tracking-tight">Stores</h2>
+            {simulationMode && <SimulationBadge />}
+          </div>
           <p className="text-muted-foreground">
-            Manage your distribution network • {filteredStores.length} stores
+            {simulationMode ? 'Demo stores preview' : 'Manage your distribution network'} • {filteredStores.length} stores
           </p>
         </div>
         <Button className="bg-primary hover:bg-primary-hover" onClick={() => setShowAddStore(true)}>
