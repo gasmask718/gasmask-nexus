@@ -14,7 +14,7 @@ import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag, Edit, 
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
-import { SIMULATION_STORES, SimulatedStore } from '@/lib/simulation/coreSimulationData';
+// Simulation data now comes from database with is_simulation=true (RLS handles filtering)
 
 interface StoreContact {
   id: string;
@@ -86,18 +86,19 @@ const Stores = () => {
 
   const createStoreMutation = useMutation({
     mutationFn: async (data: typeof newStoreData) => {
+      // Note: RLS policies automatically filter by is_simulation based on system_settings
+      // For stores table, we insert into store_master which has the is_simulation column
       const { data: result, error } = await supabase
-        .from('stores')
+        .from('store_master')
         .insert([{
-          name: data.name,
-          type: data.type as "bodega" | "gas_station" | "other" | "smoke_shop" | "wholesaler",
-          address_street: data.address_street || null,
-          address_city: data.address_city || null,
-          address_state: data.address_state || null,
-          address_zip: data.address_zip || null,
+          store_name: data.name,
+          store_type: data.type,
+          address: data.address_street || null,
+          city: data.address_city || null,
+          state: data.address_state || null,
+          zip: data.address_zip || null,
           phone: data.phone || null,
-          status: data.status as "active" | "inactive" | "needsFollowUp" | "prospect",
-          primary_contact_name: data.primary_contact_name || null,
+          is_simulation: simulationMode, // Data isolation flag
         }])
         .select()
         .single();
@@ -106,7 +107,7 @@ const Stores = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['stores-with-contacts'] });
-      toast.success('Store created successfully');
+      toast.success(simulationMode ? 'Store created (simulation)' : 'Store created successfully');
       setShowAddStore(false);
       resetNewStoreForm();
       // Navigate to store profile
@@ -141,74 +142,87 @@ const Stores = () => {
     createStoreMutation.mutate(newStoreData);
   };
 
-  // Fetch real stores from database (only when NOT in simulation mode)
-  const { data: realStores = [], isLoading } = useQuery({
+  // Fetch stores from database - RLS automatically filters by simulation mode
+  const { data: stores = [], isLoading } = useQuery({
     queryKey: ['stores-with-contacts', simulationMode],
     queryFn: async () => {
-      // Fetch stores with sticker fields and payment type
+      // Fetch from store_master - RLS handles simulation filtering automatically
       const { data: storesData, error: storesError } = await supabase
-        .from('stores')
-        .select('id, name, type, address_street, address_city, address_state, address_zip, phone, status, tags, sells_flowers, sticker_status, sticker_door, sticker_instore, sticker_phone, payment_type')
-        .order('name');
+        .from('store_master')
+        .select('id, store_name, store_type, address, city, state, zip, phone, is_simulation')
+        .order('store_name');
 
       if (storesError) throw storesError;
 
-      // Fetch all contacts for these stores
-      const storeIds = storesData?.map(s => s.id) || [];
+      // Map store_master fields to expected Store interface
+      const mappedStores = (storesData || []).map(store => ({
+        id: store.id,
+        name: store.store_name || '',
+        type: store.store_type || '',
+        address_street: store.address || '',
+        address_city: store.city || '',
+        address_state: store.state || '',
+        address_zip: store.zip || '',
+        phone: store.phone || '',
+        status: 'active', // Default status
+        tags: [] as string[],
+        sells_flowers: false,
+        sticker_status: '',
+        sticker_door: false,
+        sticker_instore: false,
+        sticker_phone: false,
+        payment_type: null,
+        contacts: [] as StoreContact[],
+        tubeInventory: [] as TubeInventory[],
+      }));
 
-      let contactsData: StoreContactRow[] = [];
+      // Fetch contacts for these stores
+      const storeIds = mappedStores.map(s => s.id);
+      
       if (storeIds.length) {
-        const { data, error } = await supabase
+        const { data: contactsData, error: contactsError } = await supabase
           .from('store_contacts')
           .select('id, store_id, name, role, phone, can_receive_sms, is_primary')
           .in('store_id', storeIds);
-        if (error) throw error;
-        contactsData = data || [];
-      }
-
-      let tubeInventoryData: TubeInventoryRow[] = [];
-      if (storeIds.length) {
-        const { data, error } = await supabase
+        
+        if (!contactsError && contactsData) {
+          const contactsByStore = contactsData.reduce((acc, contact) => {
+            if (!acc[contact.store_id]) acc[contact.store_id] = [];
+            acc[contact.store_id].push(contact);
+            return acc;
+          }, {} as Record<string, StoreContact[]>);
+          
+          mappedStores.forEach(store => {
+            store.contacts = contactsByStore[store.id] || [];
+          });
+        }
+        
+        // Fetch tube inventory
+        const { data: tubeData, error: tubeError } = await supabase
           .from('store_tube_inventory')
           .select('id, store_id, brand, current_tubes_left')
           .in('store_id', storeIds);
-        if (error) throw error;
-        tubeInventoryData = data || [];
+        
+        if (!tubeError && tubeData) {
+          const inventoryByStore = tubeData.reduce((acc, item) => {
+            if (!acc[item.store_id]) acc[item.store_id] = [];
+            acc[item.store_id].push({
+              id: item.id,
+              brand: item.brand,
+              current_tubes_left: item.current_tubes_left,
+            });
+            return acc;
+          }, {} as Record<string, TubeInventory[]>);
+          
+          mappedStores.forEach(store => {
+            store.tubeInventory = inventoryByStore[store.id] || [];
+          });
+        }
       }
 
-      // Map contacts to stores
-      const contactsByStore = contactsData.reduce((acc, contact) => {
-        if (!acc[contact.store_id]) acc[contact.store_id] = [];
-        acc[contact.store_id].push(contact);
-        return acc;
-      }, {} as Record<string, StoreContact[]>);
-
-      const inventoryByStore = tubeInventoryData.reduce((acc, item) => {
-        if (!acc[item.store_id]) acc[item.store_id] = [];
-        acc[item.store_id].push({
-          id: item.id,
-          brand: item.brand,
-          current_tubes_left: item.current_tubes_left,
-        });
-        return acc;
-      }, {} as Record<string, TubeInventory[]>);
-
-      return (storesData || []).map(store => ({
-        ...store,
-        contacts: contactsByStore[store.id] || [],
-        tubeInventory: inventoryByStore[store.id] || [],
-      }));
+      return mappedStores;
     },
-    enabled: !simulationMode, // Only fetch in live mode
   });
-
-  // Resolve between simulation and real data
-  const stores: Store[] = useMemo(() => {
-    if (simulationMode) {
-      return SIMULATION_STORES as unknown as Store[];
-    }
-    return realStores;
-  }, [simulationMode, realStores]);
 
   const availableStoreTags = Array.from(
     new Set(
