@@ -99,7 +99,7 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
   }, [inventory]);
 
   const saveMutation = useSimulationSafeMutation({
-    mutationFn: async (updates: { brand: string; count: number }[]) => {
+    mutationFn: async (updates: { brand: string; count: number }[], isSimulation: boolean) => {
       const { data: { user } } = await supabase.auth.getUser();
       
       for (const update of updates) {
@@ -120,6 +120,7 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
               current_tubes_left: update.count,
               last_updated: new Date().toISOString(),
               created_by: user?.id || 'system',
+              is_simulation: isSimulation,
             })
             .eq('id', existing.id);
         } else if (update.count > 0) {
@@ -131,16 +132,15 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
               brand: update.brand,
               current_tubes_left: update.count,
               created_by: user?.id || 'system',
+              is_simulation: isSimulation,
             });
         }
       }
       return updates;
     },
-    simulationMessage: 'Simulation Mode: Inventory changes not saved',
+    simulationMessage: 'Saving inventory to simulation database...',
     onSuccess: () => {
-      if (!simulationMode) {
-        queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
-      }
+      queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
       toast.success(simulationMode ? 'Inventory updated (simulation)' : 'Tube inventory updated');
       setHasChanges(false);
     },
@@ -217,12 +217,12 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Simulation Mode Warning */}
+        {/* Simulation Mode Info */}
         {simulationMode && (
-          <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            <AlertDescription className="text-amber-600 dark:text-amber-400 text-sm">
-              Simulation Mode: Changes won't be saved
+          <Alert variant="default" className="border-blue-500/50 bg-blue-500/10">
+            <AlertTriangle className="h-4 w-4 text-blue-500" />
+            <AlertDescription className="text-blue-600 dark:text-blue-400 text-sm">
+              Simulation Mode: Data isolated from live
             </AlertDescription>
           </Alert>
         )}

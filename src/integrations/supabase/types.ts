@@ -3614,6 +3614,7 @@ export type Database = {
           created_at: string | null
           delivery_summary: string | null
           id: string
+          is_simulation: boolean
           route_date: string
           store_master_id: string | null
           updated_at: string | null
@@ -3625,6 +3626,7 @@ export type Database = {
           created_at?: string | null
           delivery_summary?: string | null
           id?: string
+          is_simulation?: boolean
           route_date: string
           store_master_id?: string | null
           updated_at?: string | null
@@ -3636,6 +3638,7 @@ export type Database = {
           created_at?: string | null
           delivery_summary?: string | null
           id?: string
+          is_simulation?: boolean
           route_date?: string
           store_master_id?: string | null
           updated_at?: string | null
@@ -8087,6 +8090,7 @@ export type Database = {
           deleted_at: string | null
           email: string | null
           id: string
+          is_simulation: boolean
           last_contact_date: string | null
           name: string
           neighborhood_id: string | null
@@ -8119,6 +8123,7 @@ export type Database = {
           deleted_at?: string | null
           email?: string | null
           id?: string
+          is_simulation?: boolean
           last_contact_date?: string | null
           name: string
           neighborhood_id?: string | null
@@ -8151,6 +8156,7 @@ export type Database = {
           deleted_at?: string | null
           email?: string | null
           id?: string
+          is_simulation?: boolean
           last_contact_date?: string | null
           name?: string
           neighborhood_id?: string | null
@@ -8436,6 +8442,7 @@ export type Database = {
           created_by: string | null
           email: string | null
           id: string
+          is_simulation: boolean
           notes: string | null
           partner_category: string
           phone: string | null
@@ -8457,6 +8464,7 @@ export type Database = {
           created_by?: string | null
           email?: string | null
           id?: string
+          is_simulation?: boolean
           notes?: string | null
           partner_category: string
           phone?: string | null
@@ -8478,6 +8486,7 @@ export type Database = {
           created_by?: string | null
           email?: string | null
           id?: string
+          is_simulation?: boolean
           notes?: string | null
           partner_category?: string
           phone?: string | null
@@ -21998,6 +22007,7 @@ export type Database = {
           id: string
           influence_level: string | null
           is_primary: boolean | null
+          is_simulation: boolean
           last_responded_at: string | null
           name: string
           notes: string | null
@@ -22016,6 +22026,7 @@ export type Database = {
           id?: string
           influence_level?: string | null
           is_primary?: boolean | null
+          is_simulation?: boolean
           last_responded_at?: string | null
           name: string
           notes?: string | null
@@ -22034,6 +22045,7 @@ export type Database = {
           id?: string
           influence_level?: string | null
           is_primary?: boolean | null
+          is_simulation?: boolean
           last_responded_at?: string | null
           name?: string
           notes?: string | null
@@ -23450,6 +23462,7 @@ export type Database = {
           created_by: string | null
           current_tubes_left: number | null
           id: string
+          is_simulation: boolean
           last_updated: string | null
           store_id: string
         }
@@ -23458,6 +23471,7 @@ export type Database = {
           created_by?: string | null
           current_tubes_left?: number | null
           id?: string
+          is_simulation?: boolean
           last_updated?: string | null
           store_id: string
         }
@@ -23466,6 +23480,7 @@ export type Database = {
           created_by?: string | null
           current_tubes_left?: number | null
           id?: string
+          is_simulation?: boolean
           last_updated?: string | null
           store_id?: string
         }
@@ -27056,6 +27071,7 @@ export type Database = {
           delivery_method: string
           driver_id: string | null
           id: string
+          is_simulation: boolean
           notes: string | null
           order_date: string | null
           route_id: string | null
@@ -27081,6 +27097,7 @@ export type Database = {
           delivery_method?: string
           driver_id?: string | null
           id?: string
+          is_simulation?: boolean
           notes?: string | null
           order_date?: string | null
           route_id?: string | null
@@ -27106,6 +27123,7 @@ export type Database = {
           delivery_method?: string
           driver_id?: string | null
           id?: string
+          is_simulation?: boolean
           notes?: string | null
           order_date?: string | null
           route_id?: string | null
@@ -27784,6 +27802,7 @@ export type Database = {
         Returns: boolean
       }
       is_owner: { Args: { _user_id: string }; Returns: boolean }
+      is_simulation_mode: { Args: never; Returns: boolean }
       is_va: { Args: { _user_id: string }; Returns: boolean }
       log_audit_event: {
         Args: {

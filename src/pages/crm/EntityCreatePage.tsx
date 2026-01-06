@@ -67,7 +67,7 @@ export default function EntityCreatePage() {
   });
 
   const createPartnerMutation = useSimulationSafeMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (data: typeof formData, isSimulation: boolean) => {
       if (!user) throw new Error('Must be logged in');
       
       const { data: result, error } = await supabase
@@ -88,6 +88,7 @@ export default function EntityCreatePage() {
           notes: data.notes || null,
           business_slug: businessSlug,
           created_by: user.id,
+          is_simulation: isSimulation, // Data isolation flag
         })
         .select()
         .single();
@@ -95,14 +96,9 @@ export default function EntityCreatePage() {
       if (error) throw error;
       return result;
     },
-    simulationMessage: 'Simulation Mode: Partner not saved to database',
+    simulationMessage: 'Saving to simulation database...',
     onSuccess: (result) => {
-      if (simulationMode) {
-        toast.info('Partner created in simulation (not saved)');
-        navigate(`/crm/${businessSlug}/partners`);
-        return;
-      }
-      toast.success('Partner created successfully!');
+      toast.success(simulationMode ? 'Partner created (simulation)' : 'Partner created successfully!');
       queryClient.invalidateQueries({ queryKey: ['crm_partners'] });
       navigate(`/crm/${businessSlug}/partners/${result.id}`);
     },
@@ -183,12 +179,12 @@ export default function EntityCreatePage() {
           </div>
         </div>
 
-        {/* Simulation Mode Warning */}
+        {/* Simulation Mode Info */}
         {simulationMode && (
-          <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            <AlertDescription className="text-amber-600 dark:text-amber-400">
-              You are in <strong>Simulation Mode</strong>. Changes will not be saved to the database.
+          <Alert variant="default" className="border-blue-500/50 bg-blue-500/10">
+            <AlertTriangle className="h-4 w-4 text-blue-500" />
+            <AlertDescription className="text-blue-600 dark:text-blue-400">
+              <strong>Simulation Mode:</strong> Data saved here is isolated from live data.
             </AlertDescription>
           </Alert>
         )}
