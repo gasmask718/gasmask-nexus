@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CommunicationWidget } from '@/components/communication/CommunicationWidget';
+import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
+import { getSimulationDashboardStats } from '@/lib/simulation/coreSimulationData';
 import {
   Store, 
   TrendingUp, 
@@ -19,6 +21,7 @@ interface Stats {
 }
 
 const Dashboard = () => {
+  const { simulationMode, isLoading: isSimLoading } = useSimulationMode();
   const [stats, setStats] = useState<Stats>({
     activeStores: 0,
     totalStores: 0,
@@ -29,6 +32,15 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
+      // If simulation mode is ON, use demo data
+      if (simulationMode) {
+        const simStats = getSimulationDashboardStats();
+        setStats(simStats);
+        setLoading(false);
+        return;
+      }
+
+      // Live mode: fetch from database
       try {
         const [storesRes, productsRes, routesRes] = await Promise.all([
           supabase.from('stores').select('id, status', { count: 'exact' }),
@@ -51,8 +63,11 @@ const Dashboard = () => {
       }
     };
 
-    fetchStats();
-  }, []);
+    // Wait for simulation mode to load before fetching
+    if (!isSimLoading) {
+      fetchStats();
+    }
+  }, [simulationMode, isSimLoading]);
 
   const statCards = [
     {
@@ -90,9 +105,12 @@ const Dashboard = () => {
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Command Center</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-3xl font-bold tracking-tight">Command Center</h2>
+          {simulationMode && <SimulationBadge />}
+        </div>
         <p className="text-muted-foreground">
-          Real-time operations dashboard for GasMask Universe
+          {simulationMode ? 'Demo data preview' : 'Real-time operations dashboard for GasMask Universe'}
         </p>
       </div>
 
