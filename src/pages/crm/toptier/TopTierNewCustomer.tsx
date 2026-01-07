@@ -151,7 +151,8 @@ export default function TopTierNewCustomer() {
             state: data.primary_state,
             city: data.cities || null,
             notes: data.sales_notes || null,
-            relationship_status: data.vip_flag ? 'vip' : data.customer_type || 'new',
+            // IMPORTANT: must match DB constraint crm_customers_relationship_status_check
+            relationship_status: 'active',
           })
           .select()
           .single();
@@ -182,9 +183,16 @@ export default function TopTierNewCustomer() {
       }
     } catch (error: any) {
       console.error('Error creating customer:', error);
+      const isRelationshipStatusConstraint =
+        error?.code === '23514' &&
+        typeof error?.message === 'string' &&
+        error.message.includes('crm_customers_relationship_status_check');
+
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create customer. Please try again.',
+        description: isRelationshipStatusConstraint
+          ? 'Customer could not be saved because Relationship Status was invalid. Please try again.'
+          : (error.message || 'Failed to create customer. Please try again.'),
         variant: 'destructive',
       });
     } finally {
