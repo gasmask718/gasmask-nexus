@@ -4,7 +4,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,10 @@ import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeCon
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { useResolvedData } from '@/hooks/useResolvedData';
 import { supabase } from '@/integrations/supabase/client';
+import PartnerEditModal from '@/components/crm/toptier/PartnerEditModal';
+import CreateDealModal from '@/components/crm/toptier/CreateDealModal';
+import MediaUploadModal from '@/components/crm/toptier/MediaUploadModal';
+import AssetUploadModal from '@/components/crm/toptier/AssetUploadModal';
 import {
   PartnerOverviewTab,
   PartnerDealsTab,
@@ -33,8 +37,15 @@ import {
 
 export default function TopTierPartnerProfile() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { partnerId } = useParams<{ partnerId: string }>();
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Modal states
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreateDealModalOpen, setIsCreateDealModalOpen] = useState(false);
+  const [isMediaUploadModalOpen, setIsMediaUploadModalOpen] = useState(false);
+  const [isAssetUploadModalOpen, setIsAssetUploadModalOpen] = useState(false);
   
   const { simulationMode } = useSimulationMode();
   const { getEntityData } = useCRMSimulation('toptier-experience');
@@ -190,11 +201,11 @@ export default function TopTierPartnerProfile() {
           
           {/* Header Actions */}
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => navigate(`/crm/toptier-experience/partners/profile/${partnerId}/edit`)}>
+            <Button variant="outline" onClick={() => setIsEditModalOpen(true)}>
               <Edit className="h-4 w-4 mr-2" />
               Edit Partner
             </Button>
-            <Button variant="outline" onClick={() => navigate(`/crm/toptier-experience/deals/new?partnerId=${partnerId}`)}>
+            <Button variant="outline" onClick={() => setIsCreateDealModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create Deal
             </Button>
@@ -202,7 +213,7 @@ export default function TopTierPartnerProfile() {
               <MessageSquare className="h-4 w-4 mr-2" />
               Log Interaction
             </Button>
-            <Button variant="outline" onClick={() => setActiveTab('assets')}>
+            <Button variant="outline" onClick={() => setIsAssetUploadModalOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
               Upload Asset
             </Button>
@@ -309,6 +320,32 @@ export default function TopTierPartnerProfile() {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      <PartnerEditModal
+        partner={partner}
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['crm_partner', partnerId] })}
+      />
+      
+      <CreateDealModal
+        partner={partner}
+        open={isCreateDealModalOpen}
+        onOpenChange={setIsCreateDealModalOpen}
+      />
+      
+      <MediaUploadModal
+        partnerId={partnerId || ''}
+        open={isMediaUploadModalOpen}
+        onOpenChange={setIsMediaUploadModalOpen}
+      />
+      
+      <AssetUploadModal
+        partnerId={partnerId || ''}
+        open={isAssetUploadModalOpen}
+        onOpenChange={setIsAssetUploadModalOpen}
+      />
     </div>
   );
 }
