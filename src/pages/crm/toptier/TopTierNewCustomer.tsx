@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { useQueryClient } from '@tanstack/react-query';
 import * as z from 'zod';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ import {
 import { US_STATES, TOPTIER_PARTNER_CATEGORIES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 // Form validation schema
 const customerFormSchema = z.object({
@@ -67,6 +69,7 @@ type CustomerFormValues = z.infer<typeof customerFormSchema>;
 
 export default function TopTierNewCustomer() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { simulationMode } = useSimulationMode();
   const [saving, setSaving] = useState(false);
   const [saveAction, setSaveAction] = useState<'profile' | 'booking' | 'interaction' | null>(null);
@@ -137,17 +140,50 @@ export default function TopTierNewCustomer() {
             break;
         }
       } else {
-        // Real save to database would happen here
+        // Save to database
+        const { data: newCustomer, error } = await supabase
+          .from('crm_customers')
+          .insert({
+            name: data.full_name,
+            phone: formattedPhone,
+            email: data.email,
+            state: data.primary_state,
+            city: data.cities || null,
+            notes: data.sales_notes || null,
+            relationship_status: data.vip_flag ? 'vip' : data.customer_type || 'new',
+          })
+          .select()
+          .single();
+        
+        if (error) throw error;
+        
+        // Invalidate queries to refresh lists
+        queryClient.invalidateQueries({ queryKey: ['toptier-customers'] });
+        
         toast({
           title: '✅ Customer Created',
           description: `${data.full_name} has been added successfully`,
         });
-        navigate('/crm/toptier-experience/customers');
+        
+        switch (action) {
+          case 'profile':
+            navigate(`/crm/toptier-experience/customers/${newCustomer.id}`);
+            break;
+          case 'booking':
+            navigate(`/crm/toptier-experience/deals/new?customerId=${newCustomer.id}`);
+            break;
+          case 'interaction':
+            navigate(`/crm/toptier-experience/customers/${newCustomer.id}?tab=interactions`);
+            break;
+          default:
+            navigate('/crm/toptier-experience/customers');
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error creating customer:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create customer. Please try again.',
+        description: error.message || 'Failed to create customer. Please try again.',
         variant: 'destructive',
       });
     } finally {

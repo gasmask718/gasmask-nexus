@@ -3,6 +3,7 @@
  */
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   ArrowLeft, Search, Eye, Plus, Users, DollarSign, 
   MapPin, Star, Crown, UserPlus, TrendingUp, Calendar,
-  Instagram, ExternalLink, Cake
+  Instagram, ExternalLink, Cake, Loader2
 } from 'lucide-react';
 import { US_STATES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
@@ -19,6 +20,7 @@ import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { useResolvedData } from '@/hooks/useResolvedData';
 import { CommunicationActions } from '@/components/crm/toptier/CommunicationActions';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 // Generate simulated customers
 const generateSimulatedCustomers = () => {
@@ -129,9 +131,52 @@ export default function TopTierCustomers() {
   const { simulationMode } = useSimulationMode();
   const { getEntityData } = useCRMSimulation('toptier-experience');
   
-  // Use simulated customers
+  // Fetch real customers from database
+  const { data: dbCustomers, isLoading: isLoadingCustomers } = useQuery({
+    queryKey: ['toptier-customers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_customers')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !simulationMode,
+  });
+  
+  // Transform DB customers to match expected format
+  const transformedDbCustomers = useMemo(() => {
+    if (!dbCustomers) return [];
+    return dbCustomers.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      email: c.email,
+      phone: c.phone,
+      primary_state: c.state || '',
+      cities: c.city ? [c.city] : [],
+      preferred_categories: [],
+      total_bookings: 0,
+      lifetime_spend: c.total_lifetime_value || 0,
+      customer_type: c.relationship_status === 'vip' ? 'vip' : 
+                     c.relationship_status === 'returning' ? 'returning' : 'new',
+      dob: '',
+      social_instagram: '',
+      social_tiktok: '',
+      social_twitter: '',
+      social_facebook: '',
+      has_social: false,
+      last_booking_date: c.last_order_date,
+      created_at: c.created_at,
+    }));
+  }, [dbCustomers]);
+  
+  // Use simulated customers in simulation mode, real data otherwise
   const simulatedCustomers = useMemo(() => generateSimulatedCustomers(), []);
-  const { data: customers, isSimulated } = useResolvedData([], simulatedCustomers);
+  const { data: customers, isSimulated } = useResolvedData(
+    transformedDbCustomers, 
+    simulatedCustomers
+  );
 
   // Filter customers
   const filteredCustomers = useMemo(() => {
