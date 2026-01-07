@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { GRABBA_BRAND_IDS, type GrabbaBrand } from '@/config/grabbaSkyscraper';
+import { useSimulationMode } from '@/contexts/SimulationModeContext';
 
 // Use canonical brand IDs
 const GRABBA_BRANDS = [...GRABBA_BRAND_IDS];
@@ -12,8 +13,10 @@ const GRABBA_BRANDS = [...GRABBA_BRAND_IDS];
 
 // Fetch companies with brand activity
 export function useGrabbaCompanies(brandFilter: GrabbaBrand[] = [...GRABBA_BRANDS]) {
+  const { simulationMode } = useSimulationMode();
+  
   return useQuery({
-    queryKey: ['grabba-companies', brandFilter],
+    queryKey: ['grabba-companies', brandFilter, simulationMode],
     queryFn: async () => {
       // Get companies that have orders with selected Grabba brands
       const { data: ordersWithCompanies } = await supabase
@@ -24,15 +27,20 @@ export function useGrabbaCompanies(brandFilter: GrabbaBrand[] = [...GRABBA_BRAND
       const companyIds = [...new Set(ordersWithCompanies?.map(o => o.company_id).filter(Boolean))];
       
       if (companyIds.length === 0) {
-        // Fallback: get all companies
-        const { data } = await supabase.from('companies').select('*').limit(100);
+        // Fallback: get all companies filtered by simulation mode
+        const { data } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('is_simulation', simulationMode)
+          .limit(100);
         return data || [];
       }
 
       const { data } = await supabase
         .from('companies')
         .select('*')
-        .in('id', companyIds);
+        .in('id', companyIds)
+        .eq('is_simulation', simulationMode);
 
       return data || [];
     },

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Building2, Search, Store, Truck, User, Phone, MapPin } from 'lucide-react';
+import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 
 const typeBadgeColors: Record<string, string> = {
   store: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
@@ -26,14 +27,16 @@ export default function Companies() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const { simulationMode } = useSimulationMode();
 
   const { data: companies, isLoading } = useQuery({
-    queryKey: ['companies', typeFilter],
+    queryKey: ['companies', typeFilter, simulationMode],
     queryFn: async () => {
       try {
         let query = supabase
           .from('companies')
           .select('*')
+          .eq('is_simulation', simulationMode)
           .order('name', { ascending: true });
 
         if (typeFilter && typeFilter !== 'all') {
@@ -90,6 +93,7 @@ export default function Companies() {
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Building2 className="h-6 w-6" />
               Companies
+              {simulationMode && <SimulationBadge />}
             </h1>
             <p className="text-muted-foreground">All customers: stores, wholesalers, and direct buyers</p>
           </div>
