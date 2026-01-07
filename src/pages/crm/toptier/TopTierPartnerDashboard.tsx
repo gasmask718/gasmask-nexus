@@ -209,7 +209,7 @@ export default function TopTierPartnerDashboard() {
   };
 
   const handleViewAllPartners = () => {
-    navigate("/crm/toptier-experience/partner");
+    navigate("/crm/toptier-experience/partners/all");
   };
 
   const handleViewByState = () => {
