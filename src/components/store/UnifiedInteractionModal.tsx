@@ -501,19 +501,25 @@ export function UnifiedInteractionModal({
           </div>
 
           {/* Contact Selector (for communication types) */}
-          {isCommunicationType && !contactId && storeContacts && storeContacts.length > 0 && (
+          {isCommunicationType && !contactId && (
             <div className="space-y-2">
               <Label>Contact {!isFollowUpType && '*'}</Label>
-              <Select value={selectedContactId} onValueChange={setSelectedContactId}>
-                <SelectTrigger className="bg-secondary/50 border-border/50">
-                  <SelectValue placeholder="Select contact" />
-                </SelectTrigger>
-                <SelectContent>
-                  {storeContacts.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {storeContacts && storeContacts.length > 0 ? (
+                <Select value={selectedContactId} onValueChange={setSelectedContactId}>
+                  <SelectTrigger className="bg-secondary/50 border-border/50">
+                    <SelectValue placeholder="Select contact" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {storeContacts.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm text-muted-foreground py-2">
+                  No contacts available for this store. {!isFollowUpType && 'Add a contact first.'}
+                </p>
+              )}
             </div>
           )}
 
