@@ -265,6 +265,12 @@ const CRMCustomerDetail = () => {
   // Update customer mutation
   const updateCustomer = useMutation({
     mutationFn: async (data: typeof editFormData) => {
+      // Validate relationship_status against allowed values
+      const validStatuses = ['active', 'warm', 'cold', 'lost'];
+      const safeStatus = validStatuses.includes(data.relationship_status)
+        ? data.relationship_status
+        : 'active';
+
       const { error } = await supabase
         .from('crm_customers')
         .update({
@@ -276,7 +282,7 @@ const CRMCustomerDetail = () => {
           state: data.state,
           zip: data.zip,
           business_type: data.business_type,
-          relationship_status: data.relationship_status,
+          relationship_status: safeStatus,
         })
         .eq('id', id);
       
@@ -288,7 +294,17 @@ const CRMCustomerDetail = () => {
       setEditModalOpen(false);
     },
     onError: (error: any) => {
-      toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+      const isConstraintError =
+        error?.code === '23514' &&
+        typeof error?.message === 'string' &&
+        error.message.includes('crm_customers_relationship_status_check');
+      toast({
+        title: "Update Failed",
+        description: isConstraintError
+          ? 'Invalid relationship status. Please select Active, Warm, Cold, or Lost.'
+          : error.message,
+        variant: "destructive",
+      });
     },
   });
 
