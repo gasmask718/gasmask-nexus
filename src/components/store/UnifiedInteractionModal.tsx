@@ -141,8 +141,9 @@ export function UnifiedInteractionModal({
   const selectedType = INTERACTION_TYPES.find(t => t.value === interactionType);
   const requiresProducts = selectedType?.requiresProducts || false;
   const isVisitType = ['delivery', 'inventoryCheck', 'order'].includes(interactionType);
-  const isCommunicationType = ['call', 'sms', 'whatsapp', 'email', 'inPerson'].includes(interactionType);
+  const isCommunicationType = ['call', 'sms', 'whatsapp', 'email', 'inPerson', 'followUp'].includes(interactionType);
   const isNoteOnly = interactionType === 'note';
+  const isFollowUpType = interactionType === 'followUp';
 
   // Auto-set channel based on interaction type
   const getChannelFromType = (type: string): string => {
@@ -152,6 +153,7 @@ export function UnifiedInteractionModal({
       'whatsapp': 'WHATSAPP',
       'email': 'EMAIL',
       'inPerson': 'IN_PERSON',
+      'followUp': 'CALL',
     };
     return mapping[type] || 'CALL';
   };
@@ -201,6 +203,11 @@ export function UnifiedInteractionModal({
 
     if (isCommunicationType && !subject.trim()) {
       toast.error('Please enter a subject');
+      return;
+    }
+
+    if (isFollowUpType && !followUpAt) {
+      toast.error('Please set a follow-up date');
       return;
     }
 
@@ -709,13 +716,22 @@ export function UnifiedInteractionModal({
               </div>
 
               <div className="space-y-2">
-                <Label>Follow-up Date</Label>
+                <Label className="flex items-center gap-1">
+                  Follow-up Date
+                  {isFollowUpType && <span className="text-destructive">*</span>}
+                </Label>
                 <Input
                   type="datetime-local"
                   value={followUpAt}
                   onChange={(e) => setFollowUpAt(e.target.value)}
-                  className="bg-secondary/50 border-border/50"
+                  className={`bg-secondary/50 border-border/50 ${isFollowUpType && !followUpAt ? 'border-primary ring-1 ring-primary/30' : ''}`}
+                  required={isFollowUpType}
                 />
+                {isFollowUpType && !followUpAt && (
+                  <p className="text-xs text-muted-foreground">
+                    Set when this follow-up should occur
+                  </p>
+                )}
               </div>
             </>
           )}
