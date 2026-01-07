@@ -825,7 +825,7 @@ export default function GrabbaCRM() {
       </div>
 
       {/* Task Checklist Section */}
-      <TaskChecklistSection businessSlug="grabba" show2026Goals={true} />
+      <TaskChecklistSection businessSlug="grabba" show2026Goals={false} />
 
       {/* Floating Add Button */}
       {activeTab !== "ambassadors" && (

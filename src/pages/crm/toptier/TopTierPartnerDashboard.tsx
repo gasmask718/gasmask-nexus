@@ -376,7 +376,7 @@ export default function TopTierPartnerDashboard() {
       )}
 
       {/* Task Checklist Section */}
-      <TaskChecklistSection businessSlug="toptier_experience" show2026Goals={true} />
+      <TaskChecklistSection businessSlug="toptier_experience" show2026Goals={false} />
     </div>
   );
 }
