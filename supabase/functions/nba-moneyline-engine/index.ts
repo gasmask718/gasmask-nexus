@@ -206,8 +206,9 @@ serve(async (req) => {
 
     console.log(`Found ${gamesToday.length} games today`);
 
-    // Step 2: Fetch team standings/stats
-    const standings = await fetchSportsDataIO("/scores/json/Standings/2025", apiKey);
+    // Step 2: Fetch team standings/stats for current season (2025-2026 = "2026")
+    const currentSeason = "2026";
+    const standings = await fetchSportsDataIO(`/scores/json/Standings/${currentSeason}`, apiKey);
     console.log(`Fetched standings for ${standings?.length || 0} teams`);
 
     // Build team lookup map
