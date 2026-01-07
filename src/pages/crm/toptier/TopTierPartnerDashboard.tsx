@@ -49,15 +49,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Icon mapping for partner categories
 const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
-  car_decor_promo: Car,
-  // exotic_rental_car_promo removed
-  room_decor_promo: Home,
-  helicopter_promo: Plane,
-  private_chef_promo: ChefHat,
-  black_trucks_promo: Truck,
-  sprinter_van_promo: Bus,
-  party_bus_promo: PartyPopper,
-  security_promo: Shield,
+  car_decor: Car,
+  exotic_rental_car: Sparkles,
+  room_decor: Home,
+  helicopter: Plane,
+  private_chef: ChefHat,
+  black_trucks: Truck,
+  sprinter_van: Bus,
+  party_bus: PartyPopper,
+  security: Shield,
   hotel_rooms: Hotel,
   luxury_residences: Castle,
   eventspaces_rooftop: Building,
@@ -72,15 +72,15 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
 
 // Color mapping for categories
 const CATEGORY_COLORS: Record<string, string> = {
-  car_decor_promo: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  // exotic_rental_car_promo removed
-  room_decor_promo: "bg-pink-500/10 text-pink-500 border-pink-500/20",
-  helicopter_promo: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
-  private_chef_promo: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-  black_trucks_promo: "bg-gray-500/10 text-gray-500 border-gray-500/20",
-  sprinter_van_promo: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
-  party_bus_promo: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-  security_promo: "bg-red-500/10 text-red-500 border-red-500/20",
+  car_decor: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  exotic_rental_car: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+  room_decor: "bg-pink-500/10 text-pink-500 border-pink-500/20",
+  helicopter: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
+  private_chef: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+  black_trucks: "bg-gray-500/10 text-gray-500 border-gray-500/20",
+  sprinter_van: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
+  party_bus: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+  security: "bg-red-500/10 text-red-500 border-red-500/20",
   hotel_rooms: "bg-teal-500/10 text-teal-500 border-teal-500/20",
   luxury_residences: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   eventspaces_rooftop: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
@@ -129,36 +129,32 @@ export default function TopTierPartnerDashboard() {
             (p: any) => p.state === stateFilter || (p.service_area && p.service_area.includes(stateFilter)),
           );
 
-    return (
-      TOPTIER_PARTNER_CATEGORIES
-        // Filter out 'other' AND 'exotic_rental_car_promo'
-        .filter((cat) => cat.value !== "other" && cat.value !== "exotic_rental_car_promo")
-        .map((category) => {
-          const categoryPartners = filteredPartners.filter((p: any) => p.partner_category === category.value);
-          const uniqueStates = new Set<string>();
+    return TOPTIER_PARTNER_CATEGORIES.filter((cat) => cat.value !== "other")
+      .map((category) => {
+        const categoryPartners = filteredPartners.filter((p: any) => p.partner_category === category.value);
+        const uniqueStates = new Set<string>();
 
-          categoryPartners.forEach((p: any) => {
-            if (p.state) uniqueStates.add(p.state);
-            if (p.service_area) {
-              p.service_area.forEach((s: string) => uniqueStates.add(s));
-            }
-          });
+        categoryPartners.forEach((p: any) => {
+          if (p.state) uniqueStates.add(p.state);
+          if (p.service_area) {
+            p.service_area.forEach((s: string) => uniqueStates.add(s));
+          }
+        });
 
-          const activePartners = categoryPartners.filter((p: any) => p.contract_status === "active");
+        const activePartners = categoryPartners.filter((p: any) => p.contract_status === "active");
 
-          return {
-            ...category,
-            totalPartners: categoryPartners.length,
-            activePartners: activePartners.length,
-            statesCovered: uniqueStates.size,
-            states: Array.from(uniqueStates),
-          };
-        })
-        .filter((cat) => {
-          if (!searchTerm) return true;
-          return cat.label.toLowerCase().includes(searchTerm.toLowerCase());
-        })
-    );
+        return {
+          ...category,
+          totalPartners: categoryPartners.length,
+          activePartners: activePartners.length,
+          statesCovered: uniqueStates.size,
+          states: Array.from(uniqueStates),
+        };
+      })
+      .filter((cat) => {
+        if (!searchTerm) return true;
+        return cat.label.toLowerCase().includes(searchTerm.toLowerCase());
+      });
   }, [partners, stateFilter, searchTerm]);
 
   // Calculate total stats
