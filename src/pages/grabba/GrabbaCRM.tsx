@@ -32,7 +32,8 @@ import {
   Heart,
 } from "lucide-react";
 import { getRelationshipScoresForStores, RelationshipScore } from "@/services/crmInsightsService";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useParams } from "react-router-dom";
+import { TaskChecklistSection } from "@/components/crm/TaskChecklistSection";
 import { GRABBA_BRAND_IDS, GRABBA_BRAND_CONFIG, getBrandConfig, type GrabbaBrand } from "@/config/grabbaSkyscraper";
 import { BrandFilterBar, BrandBadgesRow } from "@/components/grabba/BrandFilterBar";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
@@ -822,6 +823,9 @@ export default function GrabbaCRM() {
           </div>
         </div>
       </div>
+
+      {/* Task Checklist Section */}
+      <TaskChecklistSection businessSlug="grabba" show2026Goals={true} />
 
       {/* Floating Add Button */}
       {activeTab !== "ambassadors" && (

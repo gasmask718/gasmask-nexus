@@ -20,6 +20,7 @@ import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { useResolvedData } from '@/hooks/useResolvedData';
+import { TaskChecklistSection } from '@/components/crm/TaskChecklistSection';
 
 // Icon mapping for partner categories
 const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
@@ -373,6 +374,9 @@ export default function TopTierPartnerDashboard() {
           </Button>
         </Card>
       )}
+
+      {/* Task Checklist Section */}
+      <TaskChecklistSection businessSlug="toptier_experience" show2026Goals={true} />
     </div>
   );
 }
