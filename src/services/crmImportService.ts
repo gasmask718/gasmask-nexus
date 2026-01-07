@@ -123,8 +123,8 @@ export async function importContacts(
 
       // Check for duplicates if skipDuplicates is enabled
       if (options.skipDuplicates && contactData.phone) {
-        const { data: existing } = await supabase
-          .from('crm_contacts')
+        const { data: existing } = await (supabase as any)
+          .from('brand_crm_contacts')
           .select('id')
           .eq('business_id', options.businessId)
           .eq('phone', contactData.phone)
@@ -134,8 +134,8 @@ export async function importContacts(
         if (existing) {
           if (options.updateExisting) {
             // Update existing contact
-            const { error } = await supabase
-              .from('crm_contacts')
+            const { error } = await (supabase as any)
+              .from('brand_crm_contacts')
               .update(contactData)
               .eq('id', existing.id);
             
@@ -151,8 +151,8 @@ export async function importContacts(
       }
 
       // Insert new contact
-      const { error } = await supabase
-        .from('crm_contacts')
+      const { error } = await (supabase as any)
+        .from('brand_crm_contacts')
         .insert(contactData);
 
       if (error) throw error;
