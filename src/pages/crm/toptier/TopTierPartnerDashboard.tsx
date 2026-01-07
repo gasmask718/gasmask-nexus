@@ -39,6 +39,7 @@ import {
   ArrowRight,
   TrendingUp,
   Filter,
+  Pencil,
 } from "lucide-react";
 import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from "@/config/crmBlueprints";
 import { useSimulationMode, SimulationBadge } from "@/contexts/SimulationModeContext";
@@ -46,6 +47,8 @@ import { useCRMSimulation } from "@/hooks/useCRMSimulation";
 import { useResolvedData } from "@/hooks/useResolvedData";
 import { TaskChecklistSection } from "@/components/crm/TaskChecklistSection";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
+import { CategoryKPIEditModal } from "@/components/toptier/CategoryKPIEditModal";
 
 // Icon mapping for partner categories
 const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
@@ -96,6 +99,12 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function TopTierPartnerDashboard() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
+  
+  // Permission check - only admin/owner can edit category KPIs
+  const { role, isAdmin } = useUserRole();
+  const canEditKPI = isAdmin() || role === "owner";
   const [stateFilter, setStateFilter] = useState<string>("all");
 
   const { simulationMode } = useSimulationMode();
@@ -367,11 +376,28 @@ export default function TopTierPartnerDashboard() {
                   <div className={`p-2 rounded-lg border ${colorClasses}`}>
                     <IconComponent className="h-5 w-5" />
                   </div>
-                  {category.totalPartners > 0 && (
-                    <Badge variant="secondary" className="text-xs">
-                      {category.activePartners} active
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {canEditKPI && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingCategory(category);
+                          setEditModalOpen(true);
+                        }}
+                        title="Edit category settings"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    {category.totalPartners > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {category.activePartners} active
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <CardTitle className="text-sm font-medium mt-2 line-clamp-2">{category.label}</CardTitle>
               </CardHeader>
@@ -436,6 +462,18 @@ export default function TopTierPartnerDashboard() {
 
       {/* Task Checklist Section */}
       <TaskChecklistSection businessSlug="toptier_experience" show2026Goals={false} />
+
+      {/* Category KPI Edit Modal - Admin/Owner only */}
+      <CategoryKPIEditModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        category={editingCategory}
+        onSave={(updated) => {
+          // Local state update only - does not modify KPI calculations
+          console.log("[TopTier CRM] Category metadata updated:", updated);
+          setEditingCategory(null);
+        }}
+      />
     </div>
   );
 }
