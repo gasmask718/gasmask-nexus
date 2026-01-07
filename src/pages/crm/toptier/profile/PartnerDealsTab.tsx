@@ -83,7 +83,10 @@ export default function PartnerDealsTab({ partner, isSimulated, bookings: simula
 
   // Summary stats
   const totalDeals = filteredBookings.length;
-  const totalValue = filteredBookings.reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0);
+  const totalValue = filteredBookings.reduce(
+    (sum: number, b: any) => sum + (b.booking_value || b.total_amount || 0),
+    0
+  );
   const avgValue = totalDeals > 0 ? Math.round(totalValue / totalDeals) : 0;
 
   const handleCreateDeal = () => {
@@ -231,7 +234,7 @@ export default function PartnerDealsTab({ partner, isSimulated, bookings: simula
                     <TableCell>{booking.customer_name}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs">
-                        {booking.partner_categories?.[0] || 'General'}
+                        {booking.category || booking.partner_categories?.[0] || 'General'}
                       </Badge>
                     </TableCell>
                     <TableCell>
