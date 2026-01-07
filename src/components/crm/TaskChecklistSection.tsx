@@ -167,11 +167,57 @@ export function TaskChecklistSection({
     },
   });
 
+  // Business-specific 2026 goals templates
+  const getDefaultGoalsForBusiness = (slug: string | undefined): Array<{ title: string; description: string }> => {
+    if (slug === 'the_playboxxx') {
+      return [
+        { title: 'Schedule content (social media & website) - 30 days', description: 'Plan and schedule content across all platforms' },
+        { title: 'Promo videos', description: 'Create promotional video content for marketing' },
+        { title: 'Model customer service & onboarding', description: 'Improve model onboarding experience' },
+        { title: 'Run ads daily', description: 'Consistent daily ad campaigns' },
+        { title: 'Celebration videos', description: 'Create celebration/milestone content' },
+        { title: 'Subscribers', description: 'Focus on subscriber growth and retention' },
+        { title: 'Merch', description: 'Launch and promote merchandise line' },
+        { title: 'Night life', description: 'Expand night life partnerships and content' },
+      ];
+    }
+    if (slug === 'toptier') {
+      return [
+        { title: 'Expand partner network to new states', description: 'Add 5+ new state partners' },
+        { title: 'Increase booking conversion rate', description: 'Target 40%+ conversion' },
+        { title: 'Launch 3 new promo categories', description: 'Expand service offerings' },
+        { title: 'Improve customer satisfaction to 95%', description: 'Focus on service quality' },
+      ];
+    }
+    if (slug === 'funding_company') {
+      return [
+        { title: 'Process 500+ funding applications', description: 'Increase application volume' },
+        { title: 'Reduce application processing time', description: 'Target 48-hour turnaround' },
+        { title: 'Expand funding product offerings', description: 'Add 2 new funding types' },
+        { title: 'Achieve 90% client satisfaction', description: 'Focus on client experience' },
+      ];
+    }
+    if (slug === 'unforgettabletimes') {
+      return [
+        { title: 'Host 100+ events', description: 'Increase event bookings' },
+        { title: 'Expand vendor network', description: 'Add 50+ new vendor partners' },
+        { title: 'Launch corporate event packages', description: 'Target B2B market' },
+        { title: 'Improve event satisfaction to 95%', description: 'Focus on client experience' },
+      ];
+    }
+    // Default generic goals
+    return [
+      { title: 'Increase customer base by 30%', description: 'Focus on customer acquisition and retention' },
+      { title: 'Improve customer satisfaction scores', description: 'Target 90%+ satisfaction rating' },
+      { title: 'Expand to new markets', description: 'Identify and enter 3 new market segments' },
+    ];
+  };
+
   // Get 2026 Goals tasks (default tasks)
   const get2026GoalsTasks = (): TaskItem[] => {
     if (!show2026Goals) return [];
     
-    // Check if we have custom tasks for this business
+    // Check if we have custom tasks passed as props
     const businessSpecificTasks = customTasks.map((task, index) => ({
       id: `goal-2026-${index}`,
       title: task.title,
@@ -185,46 +231,23 @@ export function TaskChecklistSection({
       business_id: effectiveBusiness?.id || '',
     }));
 
-    // Default 2026 goals if no custom tasks
+    // Use custom tasks if provided, otherwise use business-specific defaults
     if (businessSpecificTasks.length === 0) {
-      return [
-        {
-          id: 'goal-2026-1',
-          title: 'Increase customer base by 30%',
-          description: 'Focus on customer acquisition and retention',
-          status: 'Open',
-          category: '2026-goals',
-          created_at: new Date().toISOString(),
-          completed_at: null,
-          due_date: null,
-          created_by: null,
-          business_id: effectiveBusiness?.id || '',
-        },
-        {
-          id: 'goal-2026-2',
-          title: 'Improve customer satisfaction scores',
-          description: 'Target 90%+ satisfaction rating',
-          status: 'Open',
-          category: '2026-goals',
-          created_at: new Date().toISOString(),
-          completed_at: null,
-          due_date: null,
-          created_by: null,
-          business_id: effectiveBusiness?.id || '',
-        },
-        {
-          id: 'goal-2026-3',
-          title: 'Expand to new markets',
-          description: 'Identify and enter 3 new market segments',
-          status: 'Open',
-          category: '2026-goals',
-          created_at: new Date().toISOString(),
-          completed_at: null,
-          due_date: null,
-          created_by: null,
-          business_id: effectiveBusiness?.id || '',
-        },
-      ];
+      const businessSlugForGoals = businessSlug || currentBusiness?.slug;
+      const defaultGoals = getDefaultGoalsForBusiness(businessSlugForGoals);
+      
+      return defaultGoals.map((goal, index) => ({
+        id: `goal-2026-${index}`,
+        title: goal.title,
+        description: goal.description,
+        status: 'Open',
+        category: '2026-goals',
+        created_at: new Date().toISOString(),
+        completed_at: null,
+        due_date: null,
+        created_by: null,
+        business_id: effectiveBusiness?.id || '',
+      }));
     }
 
     return businessSpecificTasks;
