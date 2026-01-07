@@ -3,6 +3,7 @@
  */
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,12 +14,17 @@ import { ArrowLeft, Save, Calendar, DollarSign, Users, Building2 } from 'lucide-
 import { US_STATES, TOPTIER_PARTNER_CATEGORIES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { toast } from 'sonner';
+import { DatePicker, TimePicker } from '@/components/ui/datetime-picker';
 
 export default function TopTierNewDeal() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { simulationMode } = useSimulationMode();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Auto-populate current date/time
+  const now = new Date();
+  const defaultTime = `${now.getHours().toString().padStart(2, '0')}:${Math.floor(now.getMinutes() / 30) * 30 === 0 ? '00' : '30'}`;
 
   // Pre-fill from query params
   const [formData, setFormData] = useState({
@@ -29,8 +35,8 @@ export default function TopTierNewDeal() {
     category: searchParams.get('category') || '',
     state: searchParams.get('state') || '',
     city: '',
-    event_date: '',
-    event_time: '',
+    event_date: now,
+    event_time: defaultTime,
     booking_value: '',
     deposit_amount: '',
     commission_rate: '10',
@@ -39,7 +45,7 @@ export default function TopTierNewDeal() {
     special_requests: '',
   });
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -62,9 +68,11 @@ export default function TopTierNewDeal() {
       if (action === 'view') {
         navigate(`/crm/toptier-experience/deals/deal_new`);
       } else if (action === 'another') {
+        const resetNow = new Date();
+        const resetTime = `${resetNow.getHours().toString().padStart(2, '0')}:${Math.floor(resetNow.getMinutes() / 30) * 30 === 0 ? '00' : '30'}`;
         setFormData({
           customer_id: '', customer_name: '', partner_id: '', partner_name: '',
-          category: '', state: '', city: '', event_date: '', event_time: '',
+          category: '', state: '', city: '', event_date: resetNow, event_time: resetTime,
           booking_value: '', deposit_amount: '', commission_rate: '10',
           status: 'pending', notes: '', special_requests: '',
         });
@@ -174,21 +182,19 @@ export default function TopTierNewDeal() {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="event_date">Event Date *</Label>
-            <Input
-              id="event_date"
-              type="date"
+            <Label>Event Date *</Label>
+            <DatePicker
               value={formData.event_date}
-              onChange={(e) => handleChange('event_date', e.target.value)}
+              onChange={(date) => handleChange('event_date', date || new Date())}
+              placeholder="Select event date"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="event_time">Event Time</Label>
-            <Input
-              id="event_time"
-              type="time"
+            <Label>Event Time</Label>
+            <TimePicker
               value={formData.event_time}
-              onChange={(e) => handleChange('event_time', e.target.value)}
+              onChange={(time) => handleChange('event_time', time)}
+              placeholder="Select event time"
             />
           </div>
           <div className="space-y-2">

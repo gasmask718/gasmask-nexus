@@ -15,6 +15,7 @@ import { US_STATES, TOPTIER_PARTNER_CATEGORIES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { toast } from 'sonner';
 import { differenceInYears, format } from 'date-fns';
+import { DatePicker } from '@/components/ui/datetime-picker';
 
 export default function TopTierEditCustomer() {
   const navigate = useNavigate();
@@ -208,16 +209,14 @@ export default function TopTierEditCustomer() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="dob">Date of Birth</Label>
+            <Label>Date of Birth</Label>
             <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Cake className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="dob"
-                  type="date"
+              <div className="flex-1">
+                <DatePicker
                   value={formData.dob}
-                  onChange={(e) => handleChange('dob', e.target.value)}
-                  className="pl-10"
+                  onChange={(date) => handleChange('dob', date ? date.toISOString().split('T')[0] : '')}
+                  placeholder="Select date of birth"
+                  maxDate={new Date()}
                 />
               </div>
               {formData.dob && (

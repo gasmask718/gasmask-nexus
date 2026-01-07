@@ -25,6 +25,7 @@ import { US_STATES, TOPTIER_PARTNER_CATEGORIES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { DatePicker } from '@/components/ui/datetime-picker';
 
 // Form validation schema
 const customerFormSchema = z.object({
@@ -318,10 +319,12 @@ export default function TopTierNewCustomer() {
                   <FormItem>
                     <FormLabel>Date of Birth</FormLabel>
                     <FormControl>
-                      <div className="relative">
-                        <Cake className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input type="date" className="pl-10" {...field} />
-                      </div>
+                      <DatePicker
+                        value={field.value}
+                        onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')}
+                        placeholder="Select date of birth"
+                        maxDate={new Date()}
+                      />
                     </FormControl>
                     <FormDescription>Used for birthday offers and age verification</FormDescription>
                     <FormMessage />

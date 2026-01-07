@@ -13,6 +13,7 @@ import { ArrowLeft, Save, Megaphone, DollarSign, Calendar, Target } from 'lucide
 import { TOPTIER_PARTNER_CATEGORIES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { toast } from 'sonner';
+import { DatePicker } from '@/components/ui/datetime-picker';
 
 export default function TopTierNewCampaign() {
   const navigate = useNavigate();
@@ -159,21 +160,19 @@ export default function TopTierNewCampaign() {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="start_date">Start Date</Label>
-            <Input
-              id="start_date"
-              type="date"
+            <Label>Start Date</Label>
+            <DatePicker
               value={formData.start_date}
-              onChange={(e) => handleChange('start_date', e.target.value)}
+              onChange={(date) => handleChange('start_date', date ? date.toISOString().split('T')[0] : '')}
+              placeholder="Select start date"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="end_date">End Date</Label>
-            <Input
-              id="end_date"
-              type="date"
+            <Label>End Date</Label>
+            <DatePicker
               value={formData.end_date}
-              onChange={(e) => handleChange('end_date', e.target.value)}
+              onChange={(date) => handleChange('end_date', date ? date.toISOString().split('T')[0] : '')}
+              placeholder="Select end date"
             />
           </div>
         </CardContent>

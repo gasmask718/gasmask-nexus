@@ -25,6 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSimulationSafeMutation } from '@/hooks/useSimulationSafeMutation';
+import { DatePicker } from '@/components/ui/datetime-picker';
 
 // Business Types
 const BUSINESS_TYPES = [
@@ -687,30 +688,20 @@ export default function TopTierAddPartner() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="startDate"
-                      type="date"
-                      className="pl-9"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                    />
-                  </div>
+                  <Label>Start Date</Label>
+                  <DatePicker
+                    value={startDate}
+                    onChange={(date) => setStartDate(date ? date.toISOString().split('T')[0] : '')}
+                    placeholder="Select start date"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="renewalDate">Renewal Date</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="renewalDate"
-                      type="date"
-                      className="pl-9"
-                      value={renewalDate}
-                      onChange={(e) => setRenewalDate(e.target.value)}
-                    />
-                  </div>
+                  <Label>Renewal Date</Label>
+                  <DatePicker
+                    value={renewalDate}
+                    onChange={(date) => setRenewalDate(date ? date.toISOString().split('T')[0] : '')}
+                    placeholder="Select renewal date"
+                  />
                 </div>
               </div>
 
