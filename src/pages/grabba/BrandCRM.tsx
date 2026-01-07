@@ -62,21 +62,7 @@ export default function BrandCRM() {
     refetch
   } = useBrandCRMAutoCreate(brandKey as GrabbaBrand);
 
-  // Auto-trigger linking on first load if no data
-  const [autoLinkAttempted, setAutoLinkAttempted] = useState(false);
-  
-  useEffect(() => {
-    if (!isLoading && !hasData && !autoLinkAttempted && brandConfig) {
-      setAutoLinkAttempted(true);
-      console.log(`[BrandCRM] No data found, attempting auto-link for ${brandConfig.label}...`);
-      autoLink().catch(console.error);
-    }
-  }, [isLoading, hasData, autoLinkAttempted, brandConfig, autoLink]);
-
-  // Reset autoLinkAttempted when brand changes
-  useEffect(() => {
-    setAutoLinkAttempted(false);
-  }, [brandKey]);
+  // Manual linking only - no auto-connect on page load
 
   // Handle brand switching
   const handleBrandChange = (newBrand: string) => {
