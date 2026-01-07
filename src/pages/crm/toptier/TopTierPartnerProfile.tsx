@@ -4,6 +4,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,12 +12,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ArrowLeft, Edit, ExternalLink, MapPin, 
   Percent, Building2, Plus, MessageSquare, Upload,
-  CheckCircle, AlertCircle, Clock
+  CheckCircle, AlertCircle, Clock, Loader2
 } from 'lucide-react';
 import { TOPTIER_PARTNER_CATEGORIES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { useResolvedData } from '@/hooks/useResolvedData';
+import { supabase } from '@/integrations/supabase/client';
 import {
   PartnerOverviewTab,
   PartnerDealsTab,
@@ -37,19 +39,41 @@ export default function TopTierPartnerProfile() {
   const { simulationMode } = useSimulationMode();
   const { getEntityData } = useCRMSimulation('toptier-experience');
   
-  // Get data
+  // Fetch real partner from database using canonical partnerId
+  const { data: realPartner, isLoading: isLoadingPartner } = useQuery({
+    queryKey: ['crm_partner', partnerId, simulationMode],
+    queryFn: async () => {
+      if (!partnerId) return null;
+      const { data, error } = await supabase
+        .from('crm_partners')
+        .select('*')
+        .eq('id', partnerId)
+        .eq('business_slug', 'toptier-experience')
+        .eq('is_simulation', simulationMode)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!partnerId,
+  });
+  
+  // Get simulated data
   const simulatedPartners = getEntityData('partner');
   const simulatedBookings = getEntityData('booking');
   const simulatedCampaigns = getEntityData('promo_campaign');
   
-  const { data: partners, isSimulated } = useResolvedData([], simulatedPartners);
+  // Resolve partner: prefer real data, fallback to simulated
+  const { data: allPartners, isSimulated } = useResolvedData(
+    realPartner ? [realPartner] : [], 
+    simulatedPartners
+  );
   const { data: bookings } = useResolvedData([], simulatedBookings);
   const { data: campaigns } = useResolvedData([], simulatedCampaigns);
 
-  // Find the partner
+  // Find the partner from resolved data
   const partner = useMemo(() => {
-    return partners.find((p: any) => p.id === partnerId);
-  }, [partners, partnerId]);
+    return allPartners.find((p: any) => p.id === partnerId);
+  }, [allPartners, partnerId]);
 
   // Get category info
   const categoryInfo = TOPTIER_PARTNER_CATEGORIES.find(c => c.value === partner?.partner_category);
@@ -82,6 +106,25 @@ export default function TopTierPartnerProfile() {
         return <Badge variant="outline">{status}</Badge>;
     }
   };
+
+  // Show loading state while fetching partner data
+  if (isLoadingPartner) {
+    return (
+      <div className="space-y-6">
+        <Button variant="ghost" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <Card className="p-8 text-center">
+          <Loader2 className="h-12 w-12 mx-auto text-muted-foreground mb-4 animate-spin" />
+          <h3 className="font-medium mb-2">Loading partner...</h3>
+          <p className="text-sm text-muted-foreground">
+            Retrieving partner profile data
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   if (!partner) {
     return (

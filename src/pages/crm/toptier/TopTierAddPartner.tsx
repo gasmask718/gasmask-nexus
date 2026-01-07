@@ -169,7 +169,8 @@ export default function TopTierAddPartner() {
     onSuccess: (result) => {
       toast.success(simulationMode ? 'Partner created (simulation)' : 'Partner created successfully!');
       queryClient.invalidateQueries({ queryKey: ['crm_partners'] });
-      navigate(`/crm/toptier-experience/partners/${result.id}`);
+      // Navigate to the correct profile route using the canonical partner ID
+      navigate(`/crm/toptier-experience/partners/profile/${result.id}`);
     },
     onError: (error: Error) => {
       console.error('Error creating partner:', error);
