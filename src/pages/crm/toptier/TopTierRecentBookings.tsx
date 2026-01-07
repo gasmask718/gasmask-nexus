@@ -3,6 +3,7 @@
  */
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,12 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   ArrowLeft, Search, Eye, Calendar, DollarSign, Users, 
   Building2, MapPin, Filter, TrendingUp, Clock, CheckCircle,
-  XCircle, AlertCircle
+  XCircle, AlertCircle, Plus
 } from 'lucide-react';
 import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { useResolvedData } from '@/hooks/useResolvedData';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
 export default function TopTierRecentBookings() {
@@ -28,11 +30,26 @@ export default function TopTierRecentBookings() {
 
   const { simulationMode } = useSimulationMode();
   const { getEntityData } = useCRMSimulation('toptier-experience');
-  
+
+  // Fetch real partners for enrichment
+  const { data: realPartners = [] } = useQuery({
+    queryKey: ['crm_partners', 'toptier-experience', simulationMode],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_partners')
+        .select('id, company_name')
+        .eq('business_slug', 'toptier-experience')
+        .eq('is_simulation', simulationMode);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Use simulated booking data (no crm_bookings table exists yet)
   const simulatedBookings = getEntityData('booking');
   const simulatedPartners = getEntityData('partner');
-  const { data: bookings, isSimulated } = useResolvedData([], simulatedBookings);
-  const { data: partners } = useResolvedData([], simulatedPartners);
+  const { data: bookings, isSimulated } = useResolvedData([], simulatedBookings, 'toptier-experience');
+  const { data: partners } = useResolvedData(realPartners, simulatedPartners, 'toptier-experience');
 
   // Enhanced bookings with full partner info
   const enrichedBookings = useMemo(() => {
@@ -121,11 +138,15 @@ export default function TopTierRecentBookings() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">Recent Bookings</h1>
+              <h1 className="text-2xl font-bold">All Bookings</h1>
               {isSimulated && <SimulationBadge />}
             </div>
             <p className="text-muted-foreground">All bookings across TopTier Experience</p>
           </div>
+          <Button onClick={() => navigate('/crm/toptier-experience/deals/new')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Booking
+          </Button>
         </div>
       </div>
 

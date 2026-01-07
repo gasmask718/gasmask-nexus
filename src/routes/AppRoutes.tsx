@@ -90,7 +90,7 @@ import GlobalCRMDashboard from '@/pages/crm/GlobalCRMDashboard';
 import BusinessCRMDashboard from '@/pages/crm/BusinessCRMDashboard';
 import CRMRouter from '@/pages/crm/CRMRouter';
 import DynamicCRMPage from '@/pages/crm/DynamicCRMPage';
-import { TopTierPartnerDashboard, TopTierPartnerCategoryPage, TopTierPartnerProfile, TopTierPartnersByState, TopTierAddPartner, TopTierRecentBookings, TopTierCustomerRequests, TopTierRequestDetail, TopTierPartnerEdit, TopTierDealDetail, TopTierCampaignDetail, TopTierInteractionDetail, TopTierContactDetail, TopTierAssetDetail, TopTierNoteDetail, TopTierAnalyticsDeals, TopTierAnalyticsRevenue, TopTierAnalyticsCommissions, TopTierAllContacts, TopTierInteractionsHub, TopTierCustomers, TopTierCustomerProfile, TopTierNewCustomer, TopTierEditCustomer, TopTierVIPCustomers, TopTierReturningCustomers, TopTierNewCustomers, TopTierCustomerBookings, TopTierCustomerValue } from '@/pages/crm/toptier';
+import { TopTierPartnerDashboard, TopTierPartnerCategoryPage, TopTierPartnerProfile, TopTierPartnersByState, TopTierAddPartner, TopTierRecentBookings, TopTierCustomerRequests, TopTierRequestDetail, TopTierPartnerEdit, TopTierDealDetail, TopTierCampaignDetail, TopTierInteractionDetail, TopTierContactDetail, TopTierAssetDetail, TopTierNoteDetail, TopTierAnalyticsDeals, TopTierAnalyticsRevenue, TopTierAnalyticsCommissions, TopTierAllContacts, TopTierInteractionsHub, TopTierCustomers, TopTierCustomerProfile, TopTierNewCustomer, TopTierEditCustomer, TopTierVIPCustomers, TopTierReturningCustomers, TopTierNewCustomers, TopTierCustomerBookings, TopTierCustomerValue, TopTierAllPartners, TopTierNewDeal, TopTierDeals } from '@/pages/crm/toptier';
 import AddBusinessPage from '@/pages/crm/AddBusinessPage';
 import CRMDataPage from '@/pages/crm/CRMDataPage';
 import CRMExportPage from '@/pages/crm/CRMExportPage';
@@ -721,6 +721,7 @@ export default function AppRoutes() {
         
         {/* TopTier Partner CRM Routes */}
         <Route path="/crm/toptier-experience/partners" element={<TopTierPartnerDashboard />} />
+        <Route path="/crm/toptier-experience/partners/all" element={<TopTierAllPartners />} />
         <Route path="/crm/toptier-experience/partners/new" element={<TopTierAddPartner />} />
         <Route path="/crm/toptier-experience/partner/new" element={<TopTierAddPartner />} />
         <Route path="/crm/toptier-experience/partners/states" element={<TopTierPartnersByState />} />
@@ -740,9 +741,12 @@ export default function AppRoutes() {
         <Route path="/crm/toptier-experience/partners/profile/:partnerId/media" element={<TopTierPartnerProfile />} />
         <Route path="/crm/toptier-experience/partners/profile/:partnerId/media/:assetId" element={<TopTierAssetDetail />} />
         <Route path="/crm/toptier-experience/partners/:category" element={<TopTierPartnerCategoryPage />} />
+        <Route path="/crm/toptier-experience/deals" element={<TopTierDeals />} />
+        <Route path="/crm/toptier-experience/deals/new" element={<TopTierNewDeal />} />
         <Route path="/crm/toptier-experience/deals/:dealId" element={<TopTierDealDetail />} />
         <Route path="/crm/toptier-experience/campaigns/:campaignId" element={<TopTierCampaignDetail />} />
         <Route path="/crm/toptier-experience/bookings" element={<TopTierRecentBookings />} />
+        <Route path="/crm/toptier-experience/bookings/new" element={<TopTierNewDeal />} />
         <Route path="/crm/toptier-experience/bookings/recent" element={<TopTierRecentBookings />} />
         <Route path="/crm/toptier-experience/requests" element={<TopTierCustomerRequests />} />
         <Route path="/crm/toptier-experience/requests/new" element={<TopTierCustomerRequests />} />
