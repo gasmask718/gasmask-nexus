@@ -3,6 +3,7 @@
  */
 import { useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,37 +11,12 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ArrowLeft, Search, Eye, Plus, Calendar, DollarSign, 
-  MapPin, Users, Building2, Filter
+  MapPin, Users, Building2, Filter, Loader2
 } from 'lucide-react';
 import { US_STATES, TOPTIER_PARTNER_CATEGORIES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { format } from 'date-fns';
-
-// Generate simulated deals
-const generateSimulatedDeals = () => {
-  const customers = ['Marcus Johnson', 'Sophia Williams', 'David Chen', 'Ashley Rodriguez', 'Michael Davis'];
-  const partners = ['Miami Luxury Cars', 'LA Yacht Club', 'Vegas Helicopter Tours', 'NYC Event Space', 'Atlanta Security'];
-  const categories = ['exotic_rental_car_promo', 'yachts', 'helicopter_promo', 'eventspaces_rooftop', 'security_promo'];
-  const states = ['FL', 'CA', 'NV', 'NY', 'GA'];
-  const cities = ['Miami', 'Los Angeles', 'Las Vegas', 'New York', 'Atlanta'];
-  const statuses = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
-
-  return Array.from({ length: 20 }, (_, i) => ({
-    id: `deal_${i + 1}`,
-    customer_name: customers[i % customers.length],
-    customer_id: `cust_${(i % customers.length) + 1}`,
-    partner_name: partners[i % partners.length],
-    partner_id: `partner_${(i % partners.length) + 1}`,
-    category: categories[i % categories.length],
-    state: states[i % states.length],
-    city: cities[i % cities.length],
-    event_date: new Date(Date.now() + (i - 10) * 24 * 60 * 60 * 1000).toISOString(),
-    booking_value: Math.floor(Math.random() * 15000) + 2000,
-    commission: Math.floor(Math.random() * 2000) + 200,
-    status: statuses[i % statuses.length],
-    created_at: new Date(Date.now() - i * 2 * 24 * 60 * 60 * 1000).toISOString(),
-  }));
-};
+import { supabase } from '@/integrations/supabase/client';
 
 export default function TopTierDeals() {
   const navigate = useNavigate();
@@ -53,12 +29,28 @@ export default function TopTierDeals() {
   const [customerFilter] = useState<string>(searchParams.get('customer') || 'all');
 
   const { simulationMode } = useSimulationMode();
-  const deals = useMemo(() => generateSimulatedDeals(), []);
+
+  // Fetch deals from database
+  const { data: deals = [], isLoading } = useQuery({
+    queryKey: ['toptier-deals', simulationMode],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_deals')
+        .select('*')
+        .eq('business_slug', 'toptier-experience')
+        .eq('is_simulation', simulationMode)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const isSimulated = simulationMode;
 
   // Filter deals
   const filteredDeals = useMemo(() => {
-    return deals.filter((deal) => {
+    return deals.filter((deal: any) => {
       const matchesSearch = searchTerm === '' ||
         deal.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         deal.partner_name?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -68,17 +60,17 @@ export default function TopTierDeals() {
       const matchesPartner = partnerFilter === 'all' || deal.partner_id === partnerFilter;
       const matchesCustomer = customerFilter === 'all' || deal.customer_id === customerFilter;
       return matchesSearch && matchesState && matchesCategory && matchesStatus && matchesPartner && matchesCustomer;
-    }).sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
+    }).sort((a: any, b: any) => new Date(b.event_date || b.created_at).getTime() - new Date(a.event_date || a.created_at).getTime());
   }, [deals, searchTerm, stateFilter, categoryFilter, statusFilter, partnerFilter, customerFilter]);
 
   // Stats
   const stats = useMemo(() => ({
     total: filteredDeals.length,
-    pending: filteredDeals.filter(d => d.status === 'pending').length,
-    confirmed: filteredDeals.filter(d => d.status === 'confirmed').length,
-    completed: filteredDeals.filter(d => d.status === 'completed').length,
-    totalValue: filteredDeals.reduce((sum, d) => sum + d.booking_value, 0),
-    totalCommission: filteredDeals.reduce((sum, d) => sum + d.commission, 0),
+    pending: filteredDeals.filter((d: any) => d.status === 'pending').length,
+    confirmed: filteredDeals.filter((d: any) => d.status === 'confirmed').length,
+    completed: filteredDeals.filter((d: any) => d.status === 'completed').length,
+    totalValue: filteredDeals.reduce((sum: number, d: any) => sum + (d.booking_value || 0), 0),
+    totalCommission: filteredDeals.reduce((sum: number, d: any) => sum + (d.commission_amount || 0), 0),
   }), [filteredDeals]);
 
   const getStatusBadge = (status: string) => {
@@ -95,6 +87,14 @@ export default function TopTierDeals() {
   const getCategoryLabel = (value: string) => {
     return TOPTIER_PARTNER_CATEGORIES.find(c => c.value === value)?.label || value;
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -297,7 +297,7 @@ export default function TopTierDeals() {
                         {format(new Date(deal.event_date), 'MMM d, yyyy')}
                       </td>
                       <td className="py-3 px-4 text-right font-medium text-green-600">
-                        ${deal.booking_value.toLocaleString()}
+                        ${(deal.booking_value || 0).toLocaleString()}
                       </td>
                       <td className="py-3 px-4">
                         {getStatusBadge(deal.status)}
