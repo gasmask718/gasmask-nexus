@@ -140,19 +140,16 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
     enabled: !!brandLabel
   });
 
-  // Fetch brand orders
+  // Fetch brand orders (two-step query - no FK relationship)
   const { data: orders, isLoading: ordersLoading } = useQuery({
     queryKey: ['brand-crm-orders', brandKey],
     queryFn: async () => {
       if (!brandKey) return [];
       
-      const { data, error } = await supabase
+      // Step 1: Fetch orders
+      const { data: ordersData, error } = await supabase
         .from('wholesale_orders')
-        .select(`
-          id, store_id, status, total, boxes, tubes_total, 
-          created_at, brand, notes, delivery_method,
-          store_master(store_name, address, city, neighborhood)
-        `)
+        .select('id, store_id, status, total, boxes, tubes_total, created_at, brand, notes, delivery_method')
         .eq('brand', getOrderBrandValue(brandKey!))
         .order('created_at', { ascending: false })
         .limit(100);
@@ -161,8 +158,28 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
         console.error('[BrandCRM] Error fetching orders:', error);
         return [];
       }
+
+      if (!ordersData || ordersData.length === 0) return [];
+
+      // Step 2: Get unique store IDs and fetch store data
+      const storeIds = [...new Set(ordersData.map(o => o.store_id).filter(Boolean))] as string[];
       
-      return data || [];
+      if (storeIds.length === 0) {
+        return ordersData.map(order => ({ ...order, store_master: null }));
+      }
+
+      const { data: storesData } = await supabase
+        .from('store_master')
+        .select('id, store_name, address, city')
+        .in('id', storeIds);
+
+      // Step 3: Merge store data into orders
+      const storeMap = new Map((storesData || []).map(s => [s.id, s]));
+      
+      return ordersData.map(order => ({
+        ...order,
+        store_master: order.store_id ? storeMap.get(order.store_id) || null : null
+      }));
     },
     enabled: !!brandKey
   });
