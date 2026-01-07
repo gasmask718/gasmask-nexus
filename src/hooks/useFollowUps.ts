@@ -203,3 +203,59 @@ export function useRescheduleFollowUp() {
     onError: () => toast.error('Failed to reschedule follow-up'),
   });
 }
+
+export interface FollowUpWithStore extends FollowUpQueueItem {
+  store?: {
+    id: string;
+    name: string;
+    address?: string;
+  } | null;
+}
+
+export function useFollowUpsByDateRange(startDate: Date, endDate: Date) {
+  return useQuery({
+    queryKey: [QUERY_KEY, 'by-date-range', startDate.toISOString(), endDate.toISOString()],
+    queryFn: async (): Promise<FollowUpWithStore[]> => {
+      const client = supabase as any;
+      const { data, error } = await client
+        .from('follow_up_queue')
+        .select(`
+          *,
+          store:store_master(id, name, address),
+          business:businesses(id, name),
+          vertical:brand_verticals(id, name, slug)
+        `)
+        .gte('due_at', startDate.toISOString())
+        .lte('due_at', endDate.toISOString())
+        .in('status', ['pending', 'overdue', 'in_progress'])
+        .order('due_at', { ascending: true })
+        .order('priority', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
+
+export function useAllActiveFollowUps() {
+  return useQuery({
+    queryKey: [QUERY_KEY, 'all-active'],
+    queryFn: async (): Promise<FollowUpWithStore[]> => {
+      const client = supabase as any;
+      const { data, error } = await client
+        .from('follow_up_queue')
+        .select(`
+          *,
+          store:store_master(id, name, address),
+          business:businesses(id, name),
+          vertical:brand_verticals(id, name, slug)
+        `)
+        .in('status', ['pending', 'overdue', 'in_progress'])
+        .order('due_at', { ascending: true })
+        .order('priority', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
