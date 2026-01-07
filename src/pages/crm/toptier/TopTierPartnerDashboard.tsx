@@ -4,6 +4,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeCon
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { useResolvedData } from '@/hooks/useResolvedData';
 import { TaskChecklistSection } from '@/components/crm/TaskChecklistSection';
+import { supabase } from '@/integrations/supabase/client';
 
 // Icon mapping for partner categories
 const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
@@ -76,9 +78,24 @@ export default function TopTierPartnerDashboard() {
   const { simulationMode } = useSimulationMode();
   const { getEntityData } = useCRMSimulation('toptier-experience');
   
+  // Fetch real partners from database
+  const { data: realPartners = [] } = useQuery({
+    queryKey: ['crm_partners', 'toptier-experience', simulationMode],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_partners')
+        .select('*')
+        .eq('business_slug', 'toptier-experience')
+        .eq('is_simulation', simulationMode)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // Get partner data (real or simulated)
   const simulatedPartners = getEntityData('partner');
-  const { data: partners, isSimulated } = useResolvedData([], simulatedPartners);
+  const { data: partners, isSimulated } = useResolvedData(realPartners, simulatedPartners, 'toptier-experience');
 
   // Calculate category stats
   const categoryStats = useMemo(() => {
