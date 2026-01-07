@@ -1,118 +1,56 @@
-# Fix: Build CRM Links - Fully Functional
+# CRM Customization Implementation - Progress
 
-## Problem Summary
+## Completed Tasks ✅
 
-The "Build CRM Links" button in Brand CRM is partially working but has several issues:
+### Phase 1: Fix CRM Import Service
+- ✅ Updated `src/services/crmImportService.ts` to use `brand_crm_contacts` instead of `crm_contacts`
 
-1. **Limited Store Linking**: Currently slices to only 50 stores max (line 224: `.slice(0, 50)`)
-2. **No User Feedback**: No toast/notification after successful linking
-3. **No Await on refetch**: Query invalidation may not trigger immediate UI update
-4. **Existing One Store Only**: For Grabba R Us brand, only 1 store is linked out of 148 available
+### Phase 2: Database Migrations
+- ✅ Created `crm_import_logs` table for tracking import history
+- ✅ Created `brand_kpi_overrides` table for custom KPI values
 
-## Current Database State
-- 148 stores in `store_master`
-- 1 `store_brand_accounts` for GrabbaRUs
-- 6 `store_brand_accounts` for HotScalati
-- Missing links for: GasMask, HotMama
+### Phase 3: Business-Specific Customizations
+- ✅ Updated `PLAYBOXXX_BLUEPRINT` in `src/config/crmBlueprints.ts`:
+  - Added `customer` to enabled entity types
+  - Added `country` field as select dropdown with countries (US, Colombia, Brazil, etc.)
+  - Added individual social media fields: instagram_handle, instagram_followers, twitter_handle, twitter_followers, tiktok_handle, tiktok_followers, onlyfans_handle, onlyfans_subscribers
+  - Added `email` field to contact section
+  - Added `total_followers` calculated field
 
-## Root Cause Analysis
+### Phase 4: KPI Edit Functionality
+- ✅ Created `src/components/crm/KPIEditModal.tsx` component
+- ✅ Updated `src/pages/crm/BusinessCRMDashboard.tsx`:
+  - Added edit button on KPI cards (visible on hover)
+  - Integrated KPIEditModal
+  - Added state for managing modal and refresh
 
-The `useBrandCRMAutoCreate.ts` hook has the following issues:
+### Phase 5: Store References Audit  
+- ✅ Updated `BusinessCRMDashboard.tsx`:
+  - Filter KPI tiles to exclude store-related KPIs for non-store businesses
+  - Filter Entity Types grid to exclude 'store' for non-store businesses
+  - Quick Add section follows same filtering
 
-### Issue 1: Artificial Limit (Line 224)
-```typescript
-.slice(0, 50) // Only links first 50 stores
-```
+## Remaining Items 📋
 
-### Issue 2: No User Feedback
-After successful linking, there's no toast notification to confirm success.
+### Not Yet Implemented:
+1. **TOPTIER**: Verify booking pipeline stages in forms
+2. **FUNDING COMPANY**: Add task templates to `FUNDING_BLUEPRINT`
+3. **Import Page Enhancements**: Add duplicate detection, import history view, progress tracking
+4. **2026 Goals Auto-Creation**: For PLAYBOXXX when none exist
 
-### Issue 3: Inefficient Query Invalidation
-The `onSuccess` callback invalidates queries but doesn't await refetch, potentially causing stale UI.
+## Business-Specific Configuration Status
 
-## Solution Plan
+| Business | showStores | Status |
+|----------|-----------|--------|
+| TopTier Experience | false ✅ | Partners, Customers, Influencers enabled |
+| USA Funding | false ✅ | Clients, Applications enabled |
+| Unforgettable Times | false ✅ | Vendors, Staff, Event Halls enabled |
+| The PlayBoxxx | false ✅ | Models, Influencers, Collabs enabled + social fields |
+| Grabba brands | true ✅ | Store-based CRM |
 
-### File: `src/hooks/useBrandCRMAutoCreate.ts`
+## Files Modified
 
-**Change 1: Remove or increase the 50-store limit**
-- Line 224: Remove `.slice(0, 50)` or increase to `.slice(0, 200)` to match the query limit
-
-**Change 2: Add toast notification import and success message**
-- Add import for toast from sonner
-- Add toast.success() in onSuccess callback
-
-**Change 3: Await refetch in onSuccess**
-- Use `await refetchAccounts()` after query invalidation
-
-**Change 4: Return refetch functions for manual refresh**
-- Already returning `refetch` function which calls both `refetchAccounts()` and `refetchContacts()`
-
-### Implementation Steps
-
-1. **Remove the 50-store slice limit** (line 224)
-   - Change from: `.slice(0, 50)`
-   - Change to: Remove this line entirely (will use the 200 limit from the query)
-
-2. **Add toast notification** (line 249-255)
-   - Import `toast` from 'sonner' at the top
-   - Add `toast.success()` with count of stores linked
-
-3. **Improve onSuccess callback** (lines 249-255)
-   - Add toast feedback
-   - Keep existing query invalidation
-
-### Code Changes Preview
-
-**Before (lines 222-232):**
-```typescript
-const newAccounts = (storeMasters || [])
-  .filter(sm => !existingStoreIds.has(sm.id))
-  .slice(0, 50)  // <-- REMOVE THIS
-  .map(sm => ({...}));
-```
-
-**After:**
-```typescript
-const newAccounts = (storeMasters || [])
-  .filter(sm => !existingStoreIds.has(sm.id))
-  .map(sm => ({...}));
-```
-
-**Before (lines 249-255):**
-```typescript
-onSuccess: () => {
-  console.log('[BrandCRM] Auto-heal complete, refreshing data...');
-  queryClient.invalidateQueries({ queryKey: ['brand-crm-accounts', brandKey] });
-  // ...more invalidations
-}
-```
-
-**After:**
-```typescript
-onSuccess: (data) => {
-  console.log('[BrandCRM] Auto-heal complete, refreshing data...');
-  toast.success(`Successfully linked ${data.created} stores to ${brandLabel}!`);
-  queryClient.invalidateQueries({ queryKey: ['brand-crm-accounts', brandKey] });
-  // ...more invalidations
-}
-```
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/hooks/useBrandCRMAutoCreate.ts` | Remove 50-store limit, add toast import and success notification |
-
-## Expected Result
-
-After implementation:
-- Clicking "Build CRM Links" will link ALL available stores (up to 200) for the selected brand
-- User sees a toast notification: "Successfully linked X stores to [Brand Name]!"
-- Stores tab immediately displays all linked stores
-- Stats card updates to show correct count
-
-## Critical Files for Implementation
-
-- `src/hooks/useBrandCRMAutoCreate.ts` - Main hook with autoLink mutation to modify
-- `src/pages/grabba/BrandCRM.tsx` - Page that uses the hook (no changes needed)
-- `src/config/grabbaSkyscraper.ts` - Brand enum mappings (reference only)
+- `src/services/crmImportService.ts` - Fixed table references
+- `src/config/crmBlueprints.ts` - PLAYBOXXX social/country fields
+- `src/pages/crm/BusinessCRMDashboard.tsx` - KPI edit, store filtering
+- `src/components/crm/KPIEditModal.tsx` - New component

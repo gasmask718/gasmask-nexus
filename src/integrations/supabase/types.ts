@@ -3942,6 +3942,47 @@ export type Database = {
           },
         ]
       }
+      brand_kpi_overrides: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          custom_value: number | null
+          id: string
+          kpi_key: string
+          notes: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          custom_value?: number | null
+          id?: string
+          kpi_key: string
+          notes?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          custom_value?: number | null
+          id?: string
+          kpi_key?: string
+          notes?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_kpi_overrides_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_tasks: {
         Row: {
           business_id: string
@@ -8355,6 +8396,59 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_import_logs: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          created_by: string | null
+          errors: Json | null
+          failed_count: number | null
+          field_mapping: Json | null
+          file_name: string | null
+          id: string
+          import_type: string
+          success_count: number | null
+          total_rows: number | null
+          warnings: Json | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          errors?: Json | null
+          failed_count?: number | null
+          field_mapping?: Json | null
+          file_name?: string | null
+          id?: string
+          import_type: string
+          success_count?: number | null
+          total_rows?: number | null
+          warnings?: Json | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          errors?: Json | null
+          failed_count?: number | null
+          field_mapping?: Json | null
+          file_name?: string | null
+          id?: string
+          import_type?: string
+          success_count?: number | null
+          total_rows?: number | null
+          warnings?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_import_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
