@@ -21,6 +21,10 @@ import {
 import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSimulationSafeMutation } from '@/hooks/useSimulationSafeMutation';
 
 // Business Types
 const BUSINESS_TYPES = [
@@ -78,7 +82,8 @@ const AVAILABILITY_STATUSES = [
 export default function TopTierAddPartner() {
   const navigate = useNavigate();
   const { simulationMode } = useSimulationMode();
-  const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [expandedSections, setExpandedSections] = useState(['overview', 'coverage', 'pricing', 'contact']);
 
   // Form State - Partner Overview
@@ -127,6 +132,51 @@ export default function TopTierAddPartner() {
     );
   };
 
+  // Create partner mutation with database save
+  const createPartnerMutation = useSimulationSafeMutation({
+    mutationFn: async (_data: void, isSimulation: boolean) => {
+      if (!user) throw new Error('Must be logged in');
+      
+      const { data: result, error } = await supabase
+        .from('crm_partners')
+        .insert({
+          company_name: partnerName,
+          contact_name: contactName || null,
+          phone: contactPhone || null,
+          email: contactEmail || null,
+          partner_category: partnerCategory,
+          state: primaryState || null,
+          city: citiesCovered || null,
+          commission_rate: commissionRate ? parseFloat(commissionRate) : null,
+          contract_status: contractStatus || 'draft',
+          pricing_range: pricingMin && pricingMax 
+            ? `$${pricingMin} - $${pricingMax}` 
+            : null,
+          availability_rules: availabilityStatus || null,
+          booking_link: bookingLink || null,
+          notes: internalNotes || null,
+          business_slug: 'toptier-experience',
+          created_by: user.id,
+          is_simulation: isSimulation,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result;
+    },
+    simulationMessage: 'Saving partner to simulation database...',
+    onSuccess: (result) => {
+      toast.success(simulationMode ? 'Partner created (simulation)' : 'Partner created successfully!');
+      queryClient.invalidateQueries({ queryKey: ['crm_partners'] });
+      navigate(`/crm/toptier-experience/partners/${result.id}`);
+    },
+    onError: (error: Error) => {
+      console.error('Error creating partner:', error);
+      toast.error(`Failed to create partner: ${error.message}`);
+    },
+  });
+
   const handleSave = async () => {
     // Validation
     if (!partnerName.trim()) {
@@ -142,25 +192,7 @@ export default function TopTierAddPartner() {
       return;
     }
 
-    setSaving(true);
-    
-    try {
-      if (simulationMode) {
-        // Simulation mode - just show success
-        await new Promise(resolve => setTimeout(resolve, 800));
-        toast.success('Partner created successfully (Simulation Mode)');
-        navigate('/crm/toptier-experience/partners');
-      } else {
-        // TODO: Real API call to save partner
-        await new Promise(resolve => setTimeout(resolve, 800));
-        toast.success('Partner created successfully');
-        navigate('/crm/toptier-experience/partners');
-      }
-    } catch (error) {
-      toast.error('Failed to create partner');
-    } finally {
-      setSaving(false);
-    }
+    createPartnerMutation.mutate();
   };
 
   const categoryInfo = TOPTIER_PARTNER_CATEGORIES.find(c => c.value === partnerCategory);
@@ -199,8 +231,8 @@ export default function TopTierAddPartner() {
             <Button variant="outline" onClick={() => navigate(-1)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? (
+            <Button onClick={handleSave} disabled={createPartnerMutation.isPending}>
+              {createPartnerMutation.isPending ? (
                 <>Saving...</>
               ) : (
                 <>
@@ -814,8 +846,8 @@ export default function TopTierAddPartner() {
               <Button variant="outline" onClick={() => navigate(-1)}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving...' : 'Save Partner'}
+              <Button onClick={handleSave} disabled={createPartnerMutation.isPending}>
+                {createPartnerMutation.isPending ? 'Saving...' : 'Save Partner'}
               </Button>
             </div>
           </div>
