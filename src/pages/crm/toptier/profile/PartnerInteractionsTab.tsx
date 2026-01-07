@@ -13,9 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { 
   Plus, PhoneCall, Mail, MessageCircle, Video, 
-  StickyNote, Calendar, Clock, User, Send, ArrowRight
+  StickyNote, Calendar as CalendarIcon, Clock, User, Send, ArrowRight
 } from 'lucide-react';
 import { SimulationBadge, EmptyStateWithGuidance } from '@/contexts/SimulationModeContext';
 import { format } from 'date-fns';
@@ -49,7 +51,7 @@ export default function PartnerInteractionsTab({ partner, isSimulated }: Partner
     type: 'call',
     direction: 'outbound',
     message: '',
-    followUpDate: ''
+    followUpDate: undefined as Date | undefined
   });
 
   // Simulated interactions with realistic chat threads
@@ -166,7 +168,7 @@ export default function PartnerInteractionsTab({ partner, isSimulated }: Partner
     };
 
     setInteractions([interaction, ...interactions]);
-    setNewInteraction({ type: 'call', direction: 'outbound', message: '', followUpDate: '' });
+    setNewInteraction({ type: 'call', direction: 'outbound', message: '', followUpDate: undefined });
     setIsAddDialogOpen(false);
   };
 
@@ -259,11 +261,29 @@ export default function PartnerInteractionsTab({ partner, isSimulated }: Partner
                 </div>
                 <div className="space-y-2">
                   <Label>Follow-up Date (Optional)</Label>
-                  <Input
-                    type="date"
-                    value={newInteraction.followUpDate}
-                    onChange={(e) => setNewInteraction({...newInteraction, followUpDate: e.target.value})}
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !newInteraction.followUpDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newInteraction.followUpDate ? format(newInteraction.followUpDate, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={newInteraction.followUpDate}
+                        onSelect={(date) => setNewInteraction({...newInteraction, followUpDate: date})}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
               <DialogFooter>
