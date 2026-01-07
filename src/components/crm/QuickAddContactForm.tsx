@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useBusinessStore } from '@/stores/businessStore';
 import { supabase } from '@/integrations/supabase/client';
+import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +17,7 @@ interface QuickAddContactFormProps {
 
 export const QuickAddContactForm = ({ onSuccess }: QuickAddContactFormProps) => {
   const { selectedBusiness } = useBusinessStore();
+  const { simulationMode } = useSimulationMode();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -42,6 +44,7 @@ export const QuickAddContactForm = ({ onSuccess }: QuickAddContactFormProps) => 
         borough_id: formData.borough_id || null,
         relationship_status: 'active',
         last_contact_date: new Date().toISOString(),
+        is_simulation: simulationMode,
       });
 
       if (error) throw error;

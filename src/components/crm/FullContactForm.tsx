@@ -171,14 +171,13 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
     notes: '',
   });
 
-  // Fetch companies filtered by simulation mode
+  // Fetch all companies (show all regardless of simulation mode)
   const { data: companies = [], refetch: refetchCompanies } = useQuery({
-    queryKey: ['companies-for-contact', simulationMode],
+    queryKey: ['companies-for-contact'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
         .select('id, name, type')
-        .eq('is_simulation', simulationMode)
         .order('name');
       if (error) throw error;
       return data || [];
@@ -443,6 +442,7 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
         notes: formData.notes.trim() || null,
         relationship_status: 'active',
         last_contact_date: new Date().toISOString(),
+        is_simulation: simulationMode,
       };
 
       if (editingContact?.id) {
