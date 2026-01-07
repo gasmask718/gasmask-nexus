@@ -90,15 +90,15 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
     <>
       <Card className="glass-card border-border/50">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            Notes
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <FileText className="h-6 w-6 text-primary" />
+            ALL NOTES
             {notes && notes.length > 0 && (
-              <Badge variant="secondary" className="ml-2">{notes.length}</Badge>
+              <Badge variant="secondary" className="ml-2 text-base px-2 py-1">{notes.length}</Badge>
             )}
           </CardTitle>
-          <Button size="sm" onClick={() => setAddModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" />
+          <Button size="lg" onClick={() => setAddModalOpen(true)} className="text-base h-11">
+            <Plus className="h-5 w-5 mr-2" />
             Add Note
           </Button>
         </CardHeader>
@@ -106,7 +106,7 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
           {!notes || notes.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>No notes yet</p>
+              <p className="text-base">No notes yet</p>
               <p className="text-sm mt-1">Add your first note to keep track of important information</p>
             </div>
           ) : (
@@ -117,20 +117,20 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
                   className="p-4 rounded-lg bg-muted/30 border border-border/30 space-y-3"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm whitespace-pre-wrap flex-1">{note.note_text}</p>
+                    <p className="text-base whitespace-pre-wrap flex-1">{note.note_text}</p>
                     <Button
                       variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 flex-shrink-0"
+                      size="lg"
+                      className="h-10 w-10 p-0 flex-shrink-0"
                       onClick={() => handleEditNote(note)}
                       title="Edit note"
                     >
-                      <Pencil className="h-4 w-4" />
+                      <Pencil className="h-5 w-5" />
                     </Button>
                   </div>
                   <div className="flex items-center gap-4 pt-2 border-t border-border/20">
-                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                      <Clock className="h-4 w-4 text-primary" />
+                    <div className="flex items-center gap-2 text-base font-medium text-foreground">
+                      <Clock className="h-5 w-5 text-primary" />
                       <span>{format(new Date(note.created_at), 'MMM d, yyyy')}</span>
                       <span className="text-muted-foreground font-normal">at</span>
                       <span>{format(new Date(note.created_at), 'h:mm a')}</span>
@@ -148,11 +148,11 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
               {notes.length > 5 && (
                 <Button 
                   variant="ghost" 
-                  size="sm" 
-                  className="w-full"
+                  size="lg" 
+                  className="w-full text-base h-12"
                   onClick={() => setShowAll(!showAll)}
                 >
-                  {showAll ? 'Show less' : `View all ${notes.length} notes`}
+                  {showAll ? 'Show Less' : `View All ${notes.length} Notes`}
                 </Button>
               )}
             </div>

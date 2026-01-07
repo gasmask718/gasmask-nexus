@@ -15,10 +15,11 @@ import { useBusiness } from '@/contexts/BusinessContext';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useCRMBlueprint, useAvailableEntityTypes } from '@/hooks/useCRMBlueprint';
 import CRMLayout from './CRMLayout';
+import { importCRMData, type ImportResult } from '@/services/crmImportService';
 import * as XLSX from 'xlsx';
 import {
   Upload, ArrowLeft, FileSpreadsheet, FileJson, Building2,
-  Check, AlertCircle, Loader2, X, FileUp, Eye,
+  Check, AlertCircle, Loader2, X, FileUp, Eye, CheckCircle2, XCircle,
 } from 'lucide-react';
 
 interface ImportPreview {
@@ -41,6 +42,8 @@ export default function CRMImportPage() {
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [fieldMapping, setFieldMapping] = useState<Record<string, string>>({});
+  const [allRows, setAllRows] = useState<any[]>([]);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -62,10 +65,14 @@ export default function CRMImportPage() {
             const rows = Array.isArray(jsonData) ? jsonData : [jsonData];
             const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
             
+            // Filter out empty rows
+            const validRows = rows.filter(row => Object.values(row).some(v => v !== null && v !== undefined && v !== ''));
+            
+            setAllRows(validRows);
             setPreview({
               headers,
-              rows: rows.slice(0, 5),
-              totalRows: rows.length,
+              rows: validRows.slice(0, 5),
+              totalRows: validRows.length,
             });
           } else {
             // Excel/CSV
@@ -75,18 +82,23 @@ export default function CRMImportPage() {
             
             if (jsonData.length > 0) {
               const headers = jsonData[0] as string[];
-              const rows = jsonData.slice(1, 6).map(row => {
+              // Parse all rows for import
+              const allRowsData = jsonData.slice(1).map(row => {
                 const obj: Record<string, any> = {};
                 headers.forEach((h, i) => {
                   obj[h] = (row as any[])[i];
                 });
                 return obj;
-              });
+              }).filter(row => Object.values(row).some(v => v !== null && v !== undefined && v !== ''));
+              
+              // Preview rows (first 5)
+              const previewRows = allRowsData.slice(0, 5);
 
+              setAllRows(allRowsData);
               setPreview({
                 headers,
-                rows,
-                totalRows: jsonData.length - 1,
+                rows: previewRows,
+                totalRows: allRowsData.length,
               });
             }
           }
@@ -110,35 +122,70 @@ export default function CRMImportPage() {
   }, []);
 
   const handleImport = async () => {
-    if (!selectedEntityType || !preview) {
-      toast.error('Please select an entity type and upload a file');
+    if (!selectedEntityType || !preview || !currentBusiness) {
+      toast.error('Please select an entity type, upload a file, and ensure a business is selected');
       return;
     }
 
-    if (preview.totalRows === 0) {
+    if (allRows.length === 0) {
       toast.error('No data to import');
+      return;
+    }
+
+    // Validate field mapping
+    const requiredFields = selectedSchema?.fields.filter(f => f.required).map(f => f.key) || [];
+    const mappedFields = Object.values(fieldMapping).filter(v => v && v !== '__skip__');
+    const missingRequired = requiredFields.filter(f => !mappedFields.includes(f));
+    
+    if (missingRequired.length > 0) {
+      toast.error(`Missing required field mappings: ${missingRequired.join(', ')}`);
       return;
     }
 
     setIsImporting(true);
     setImportProgress(0);
+    setImportResult(null);
 
     try {
-      // Simulate import progress
-      for (let i = 0; i <= 100; i += 10) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-        setImportProgress(i);
+      // Import data using the service
+      const result = await importCRMData(allRows, {
+        businessId: currentBusiness.id,
+        entityType: selectedEntityType,
+        fieldMapping,
+        skipDuplicates: true,
+        updateExisting: false,
+      });
+
+      setImportResult(result);
+      setImportProgress(100);
+
+      if (result.success > 0) {
+        toast.success(`Successfully imported ${result.success} records`);
+      }
+      
+      if (result.failed > 0) {
+        toast.warning(`${result.failed} records failed to import. Check details below.`);
       }
 
-      toast.success(`Successfully imported ${preview.totalRows} records to ${selectedEntityType}`);
-      
-      // Reset state
-      setFile(null);
-      setPreview(null);
-      setFieldMapping({});
-      setImportProgress(0);
-    } catch (error) {
-      toast.error('Import failed. Please try again.');
+      // Reset file and preview after successful import
+      if (result.failed === 0) {
+        setTimeout(() => {
+          setFile(null);
+          setPreview(null);
+          setAllRows([]);
+          setFieldMapping({});
+          setImportProgress(0);
+          setImportResult(null);
+        }, 3000);
+      }
+    } catch (error: any) {
+      toast.error(`Import failed: ${error.message || 'Unknown error'}`);
+      setImportResult({
+        success: 0,
+        failed: allRows.length,
+        errors: [error.message || 'Unknown error'],
+        warnings: [],
+      });
     } finally {
       setIsImporting(false);
     }
@@ -147,7 +194,10 @@ export default function CRMImportPage() {
   const clearFile = () => {
     setFile(null);
     setPreview(null);
+    setAllRows([]);
     setFieldMapping({});
+    setImportResult(null);
+    setImportProgress(0);
   };
 
   // No business selected
@@ -425,6 +475,49 @@ export default function CRMImportPage() {
                   <p className="text-xs text-muted-foreground text-center">
                     Complete all steps above to import
                   </p>
+                )}
+
+                {/* Import Results */}
+                {importResult && (
+                  <div className="space-y-3 pt-4 border-t">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Import Results</span>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <span className="text-sm text-green-600">{importResult.success} succeeded</span>
+                        {importResult.failed > 0 && (
+                          <>
+                            <XCircle className="h-4 w-4 text-red-500 ml-2" />
+                            <span className="text-sm text-red-600">{importResult.failed} failed</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {importResult.errors.length > 0 && (
+                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                        <p className="text-xs font-medium text-red-600">Errors:</p>
+                        {importResult.errors.slice(0, 10).map((error, i) => (
+                          <p key={i} className="text-xs text-muted-foreground">{error}</p>
+                        ))}
+                        {importResult.errors.length > 10 && (
+                          <p className="text-xs text-muted-foreground">... and {importResult.errors.length - 10} more</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {importResult.warnings.length > 0 && (
+                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                        <p className="text-xs font-medium text-amber-600">Warnings:</p>
+                        {importResult.warnings.slice(0, 10).map((warning, i) => (
+                          <p key={i} className="text-xs text-muted-foreground">{warning}</p>
+                        ))}
+                        {importResult.warnings.length > 10 && (
+                          <p className="text-xs text-muted-foreground">... and {importResult.warnings.length - 10} more</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>

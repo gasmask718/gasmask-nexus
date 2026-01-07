@@ -3,17 +3,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Clock } from 'lucide-react';
+import { CalendarIcon, Clock } from 'lucide-react';
 import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
 import { extractOpportunitiesFromNote } from '@/services/opportunityExtractionService';
+import { cn } from '@/lib/utils';
 
 interface StoreNote {
   id: string;
   note_text: string;
+  created_at?: string;
 }
 
 interface AddNoteModalProps {
@@ -29,6 +33,7 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
   const { user } = useAuth();
   const [noteText, setNoteText] = useState('');
   const [saving, setSaving] = useState(false);
+  const [noteDate, setNoteDate] = useState<Date | undefined>(new Date());
   
   // Resolve storeId to store_master.id
   const {
@@ -40,12 +45,19 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
     isCreating,
   } = useStoreMasterResolver(storeId);
 
-  // Load note text when editing
+  // Load note text and date when editing
   useEffect(() => {
     if (editingNote) {
       setNoteText(editingNote.note_text);
+      // Use the note's created_at date if available, otherwise use current date
+      if (editingNote.created_at) {
+        setNoteDate(new Date(editingNote.created_at));
+      } else {
+        setNoteDate(new Date());
+      }
     } else {
       setNoteText('');
+      setNoteDate(new Date());
     }
   }, [editingNote, open]);
 
@@ -83,13 +95,22 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
   const saveNote = async (masterId: string) => {
     setSaving(true);
     try {
-      const now = new Date();
+      // Use selected date or current date
+      const selectedDate = noteDate || new Date();
+      // Set time to current time if date is in the past, or use selected date's time
+      const dateToUse = new Date(selectedDate);
+      if (dateToUse < new Date()) {
+        // For past dates, set time to end of day (23:59:59)
+        dateToUse.setHours(23, 59, 59, 999);
+      }
+      
       const { data: noteData, error } = await supabase
         .from('store_notes')
         .insert({
           store_id: masterId,
           note_text: noteText.trim(),
           created_by: user?.id,
+          created_at: dateToUse.toISOString(),
         })
         .select('id')
         .single();
@@ -112,9 +133,9 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
           });
       }
 
-      const formattedDateTime = format(now, 'MMM d, yyyy h:mm a');
-      toast.success(`Note added at ${formattedDateTime}`, {
-        description: 'Your note has been saved with date and time',
+      const formattedDateTime = format(dateToUse, 'MMM d, yyyy h:mm a');
+      toast.success(`Note added for ${formattedDateTime}`, {
+        description: 'Your note has been saved with the selected date',
       });
       setNoteText('');
       onOpenChange(false);
@@ -132,10 +153,19 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
     
     setSaving(true);
     try {
+      // Use selected date or keep existing date
+      const selectedDate = noteDate || new Date();
+      const dateToUse = new Date(selectedDate);
+      if (dateToUse < new Date()) {
+        // For past dates, set time to end of day
+        dateToUse.setHours(23, 59, 59, 999);
+      }
+      
       const { error } = await supabase
         .from('store_notes')
         .update({
           note_text: noteText.trim(),
+          created_at: dateToUse.toISOString(),
         })
         .eq('id', editingNote.id);
 
@@ -171,19 +201,48 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
             </div>
           )} */}
           <div className="space-y-2">
-            <Label>Note</Label>
+            <Label className="text-base font-semibold">Note</Label>
             <Textarea
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
               placeholder="Enter your note here..."
               rows={5}
-              className="resize-none"
+              className="resize-none text-base"
             />
           </div>
-          {/* <div className="text-xs text-muted-foreground flex items-center gap-1.5 pt-2 border-t">
-            <Clock className="h-3 w-3" />
-            <span>Date and time will be saved automatically: {format(new Date(), 'MMM d, yyyy h:mm a')}</span>
-          </div> */}
+          
+          <div className="space-y-2">
+            <Label className="text-base font-semibold flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5 text-primary" />
+              Date
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal text-base h-12",
+                    !noteDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-3 h-5 w-5" />
+                  {noteDate ? format(noteDate, "PPP") : "Pick a date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={noteDate}
+                  onSelect={setNoteDate}
+                  initialFocus
+                  className="text-base"
+                />
+              </PopoverContent>
+            </Popover>
+            <p className="text-sm text-muted-foreground">
+              You can pick any date, including old dates
+            </p>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

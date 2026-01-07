@@ -46,27 +46,27 @@ export interface CRMTypeConfig {
 
 // Pre-configured business types
 export const CRM_TYPE_CONFIGS: Record<string, CRMTypeConfig> = {
-  // TOPTIER - Store-based tobacco/smoke shop distribution
+  // TOPTIER - Partner/Customer/Influencer based promotional services (NO STORES)
   'toptier': {
-    type: 'store_based',
+    type: 'service_based',
     label: 'TOPTIER',
-    description: 'Store-based distribution CRM',
-    showStores: true,
+    description: 'Partner and influencer-based promotional services CRM',
+    showStores: false,
     showCompanies: true,
     showContacts: true,
     showDeals: true,
     showInvoices: true,
-    showInventory: true,
-    showRoutes: true,
+    showInventory: false,
+    showRoutes: false,
     showAmbassadors: true,
-    primaryEntity: 'store',
+    primaryEntity: 'contact',
     entityLabels: {
-      store: 'Store',
-      company: 'Wholesaler',
-      contact: 'Contact',
-      deal: 'Order',
+      store: 'Partner',
+      company: 'Partner Company',
+      contact: 'Customer/Influencer',
+      deal: 'Booking/Promo',
     },
-    contactTypes: ['owner', 'manager', 'worker', 'buyer'],
+    contactTypes: ['partner', 'customer', 'influencer', 'vendor'],
     showMediaGallery: true,
     showVoiceNotes: true,
     showNotes: true,
@@ -127,11 +127,11 @@ export const CRM_TYPE_CONFIGS: Record<string, CRMTypeConfig> = {
     showInteractions: true,
   },
   
-  // The Playboxx - Entertainment/service CRM
+  // The Playboxx - Model/content company CRM (NO STORES)
   'playboxx': {
     type: 'entertainment',
     label: 'The Playboxx',
-    description: 'Entertainment services CRM',
+    description: 'Model and content company CRM with models, influencers, and subscribers',
     showStores: false,
     showCompanies: true,
     showContacts: true,
@@ -143,11 +143,38 @@ export const CRM_TYPE_CONFIGS: Record<string, CRMTypeConfig> = {
     primaryEntity: 'contact',
     entityLabels: {
       store: 'Location',
-      company: 'Partner',
-      contact: 'Member',
-      deal: 'Booking',
+      company: 'Supplier/Partner',
+      contact: 'Model/Influencer/Subscriber',
+      deal: 'Collab/Booking',
     },
-    contactTypes: ['member', 'vip', 'host', 'promoter', 'talent'],
+    contactTypes: ['model', 'influencer', 'subscriber', 'ambassador', 'cameraman', 'hair_nails_makeup', 'supplier'],
+    showMediaGallery: true,
+    showVoiceNotes: true,
+    showNotes: true,
+    showInteractions: true,
+  },
+  
+  // Alias for the-playboxxx slug
+  'the_playboxxx': {
+    type: 'entertainment',
+    label: 'The Playboxx',
+    description: 'Model and content company CRM with models, influencers, and subscribers',
+    showStores: false,
+    showCompanies: true,
+    showContacts: true,
+    showDeals: true,
+    showInvoices: true,
+    showInventory: false,
+    showRoutes: false,
+    showAmbassadors: true,
+    primaryEntity: 'contact',
+    entityLabels: {
+      store: 'Location',
+      company: 'Supplier/Partner',
+      contact: 'Model/Influencer/Subscriber',
+      deal: 'Collab/Booking',
+    },
+    contactTypes: ['model', 'influencer', 'subscriber', 'ambassador', 'cameraman', 'hair_nails_makeup', 'supplier'],
     showMediaGallery: true,
     showVoiceNotes: true,
     showNotes: true,
@@ -185,7 +212,11 @@ export const CRM_TYPE_CONFIGS: Record<string, CRMTypeConfig> = {
 // Helper to get config for a business
 export function getCRMConfig(businessSlug?: string | null, businessModel?: string | null): CRMTypeConfig {
   if (businessSlug) {
-    const slug = businessSlug.toLowerCase().replace(/\s+/g, '_');
+    const slug = businessSlug.toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_');
+    // Handle specific slug variations
+    if (slug === 'the_playboxxx' || slug === 'playboxxx') {
+      return CRM_TYPE_CONFIGS['the_playboxxx'] || CRM_TYPE_CONFIGS['playboxx'];
+    }
     if (CRM_TYPE_CONFIGS[slug]) {
       return CRM_TYPE_CONFIGS[slug];
     }
@@ -199,7 +230,11 @@ export function getCRMConfig(businessSlug?: string | null, businessModel?: strin
     if (model.includes('event') || model.includes('entertainment')) {
       return CRM_TYPE_CONFIGS['unforgettable_times'];
     }
-    if (model.includes('store') || model.includes('retail') || model.includes('distribution')) {
+    if (model.includes('playboxx') || model.includes('model') || model.includes('content')) {
+      return CRM_TYPE_CONFIGS['the_playboxxx'] || CRM_TYPE_CONFIGS['playboxx'];
+    }
+    // TOPTIER is now service-based, not store-based
+    if (model.includes('toptier') || model.includes('promo') || model.includes('partner')) {
       return CRM_TYPE_CONFIGS['toptier'];
     }
   }

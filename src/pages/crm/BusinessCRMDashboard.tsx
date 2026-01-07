@@ -15,6 +15,7 @@ import { useCRMEntityCounts } from '@/hooks/useCRMEntityCounts';
 import { BusinessContextGuard } from '@/components/crm/BusinessContextGuard';
 import { StaffOperationsSection, StaffOverviewWidget } from '@/components/crm/unforgettable';
 import { StaffCategoryKPICards } from '@/components/unforgettable/StaffCategoryKPICards';
+import { TaskChecklistSection } from '@/components/crm/TaskChecklistSection';
 import CRMLayout from './CRMLayout';
 import {
   Building2, Users, Plus, Settings, ArrowLeft, ChevronRight,
@@ -181,6 +182,26 @@ export default function BusinessCRMDashboard() {
               ))}
             </div>
           )}
+
+          {/* Task Checklist Section */}
+          <TaskChecklistSection
+            businessSlug={businessSlug}
+            show2026Goals={true}
+            customTasks={
+              normalizedBusinessSlug === 'the-playboxxx' || normalizedBusinessSlug === 'the_playboxxx'
+                ? [
+                    { title: 'Schedule content (social media & website) - 30 days', category: '2026-goals' },
+                    { title: 'Promo videos', category: '2026-goals' },
+                    { title: 'Model customer service & onboarding', category: '2026-goals' },
+                    { title: 'Run ads daily', category: '2026-goals' },
+                    { title: 'Celebration videos', category: '2026-goals' },
+                    { title: 'Subscribers', category: '2026-goals' },
+                    { title: 'Merch', category: '2026-goals' },
+                    { title: 'Night life', category: '2026-goals' },
+                  ]
+                : []
+            }
+          />
 
           {/* Entity Types Grid */}
           <Card>
