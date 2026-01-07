@@ -2,32 +2,55 @@
  * TopTier Partner Dashboard
  * KPI grid with each partner category as its own card
  */
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Building2, Users, MapPin, Search, Plus, Eye, 
-  Car, Sparkles, Home, Plane, ChefHat, Truck, Bus, 
-  PartyPopper, Shield, Hotel, Castle, Building, Camera, 
-  Ticket, Ship, Waves, Utensils, Music, MoreHorizontal,
-  ArrowRight, TrendingUp, Filter
-} from 'lucide-react';
-import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from '@/config/crmBlueprints';
-import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
-import { useCRMSimulation } from '@/hooks/useCRMSimulation';
-import { useResolvedData } from '@/hooks/useResolvedData';
-import { TaskChecklistSection } from '@/components/crm/TaskChecklistSection';
-import { supabase } from '@/integrations/supabase/client';
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Building2,
+  Users,
+  MapPin,
+  Search,
+  Plus,
+  Eye,
+  Car,
+  Sparkles,
+  Home,
+  Plane,
+  ChefHat,
+  Truck,
+  Bus,
+  PartyPopper,
+  Shield,
+  Hotel,
+  Castle,
+  Building,
+  Camera,
+  Ticket,
+  Ship,
+  Waves,
+  Utensils,
+  Music,
+  MoreHorizontal,
+  ArrowRight,
+  TrendingUp,
+  Filter,
+} from "lucide-react";
+import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from "@/config/crmBlueprints";
+import { useSimulationMode, SimulationBadge } from "@/contexts/SimulationModeContext";
+import { useCRMSimulation } from "@/hooks/useCRMSimulation";
+import { useResolvedData } from "@/hooks/useResolvedData";
+import { TaskChecklistSection } from "@/components/crm/TaskChecklistSection";
+import { supabase } from "@/integrations/supabase/client";
 
 // Icon mapping for partner categories
 const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
   car_decor_promo: Car,
-  exotic_rental_car_promo: Sparkles,
+  // exotic_rental_car_promo removed
   room_decor_promo: Home,
   helicopter_promo: Plane,
   private_chef_promo: ChefHat,
@@ -49,87 +72,93 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
 
 // Color mapping for categories
 const CATEGORY_COLORS: Record<string, string> = {
-  car_decor_promo: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  exotic_rental_car_promo: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
-  room_decor_promo: 'bg-pink-500/10 text-pink-500 border-pink-500/20',
-  helicopter_promo: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20',
-  private_chef_promo: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-  black_trucks_promo: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
-  sprinter_van_promo: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
-  party_bus_promo: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-  security_promo: 'bg-red-500/10 text-red-500 border-red-500/20',
-  hotel_rooms: 'bg-teal-500/10 text-teal-500 border-teal-500/20',
-  luxury_residences: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
-  eventspaces_rooftop: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-  photography_videography: 'bg-violet-500/10 text-violet-500 border-violet-500/20',
-  amusementparks_affiliate: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
-  yachts: 'bg-sky-500/10 text-sky-500 border-sky-500/20',
-  car_jetskis: 'bg-blue-400/10 text-blue-400 border-blue-400/20',
-  restaurant_decor_reservations: 'bg-lime-500/10 text-lime-500 border-lime-500/20',
-  club_lounge_package: 'bg-fuchsia-500/10 text-fuchsia-500 border-fuchsia-500/20',
-  other: 'bg-gray-400/10 text-gray-400 border-gray-400/20',
+  car_decor_promo: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  // exotic_rental_car_promo removed
+  room_decor_promo: "bg-pink-500/10 text-pink-500 border-pink-500/20",
+  helicopter_promo: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
+  private_chef_promo: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+  black_trucks_promo: "bg-gray-500/10 text-gray-500 border-gray-500/20",
+  sprinter_van_promo: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
+  party_bus_promo: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+  security_promo: "bg-red-500/10 text-red-500 border-red-500/20",
+  hotel_rooms: "bg-teal-500/10 text-teal-500 border-teal-500/20",
+  luxury_residences: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  eventspaces_rooftop: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  photography_videography: "bg-violet-500/10 text-violet-500 border-violet-500/20",
+  amusementparks_affiliate: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+  yachts: "bg-sky-500/10 text-sky-500 border-sky-500/20",
+  car_jetskis: "bg-blue-400/10 text-blue-400 border-blue-400/20",
+  restaurant_decor_reservations: "bg-lime-500/10 text-lime-500 border-lime-500/20",
+  club_lounge_package: "bg-fuchsia-500/10 text-fuchsia-500 border-fuchsia-500/20",
+  other: "bg-gray-400/10 text-gray-400 border-gray-400/20",
 };
 
 export default function TopTierPartnerDashboard() {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [stateFilter, setStateFilter] = useState<string>('all');
-  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [stateFilter, setStateFilter] = useState<string>("all");
+
   const { simulationMode } = useSimulationMode();
-  const { getEntityData } = useCRMSimulation('toptier-experience');
-  
+  const { getEntityData } = useCRMSimulation("toptier-experience");
+
   // Fetch real partners from database
   const { data: realPartners = [] } = useQuery({
-    queryKey: ['crm_partners', 'toptier-experience', simulationMode],
+    queryKey: ["crm_partners", "toptier-experience", simulationMode],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('crm_partners')
-        .select('*')
-        .eq('business_slug', 'toptier-experience')
-        .eq('is_simulation', simulationMode)
-        .order('created_at', { ascending: false });
+        .from("crm_partners")
+        .select("*")
+        .eq("business_slug", "toptier-experience")
+        .eq("is_simulation", simulationMode)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];
     },
   });
 
   // Get partner data (real or simulated)
-  const simulatedPartners = getEntityData('partner');
-  const { data: partners, isSimulated } = useResolvedData(realPartners, simulatedPartners, 'toptier-experience');
+  const simulatedPartners = getEntityData("partner");
+  const { data: partners, isSimulated } = useResolvedData(realPartners, simulatedPartners, "toptier-experience");
 
   // Calculate category stats
   const categoryStats = useMemo(() => {
-    const filteredPartners = stateFilter === 'all' 
-      ? partners 
-      : partners.filter((p: any) => 
-          p.state === stateFilter || 
-          (p.service_area && p.service_area.includes(stateFilter))
-        );
+    const filteredPartners =
+      stateFilter === "all"
+        ? partners
+        : partners.filter(
+            (p: any) => p.state === stateFilter || (p.service_area && p.service_area.includes(stateFilter)),
+          );
 
-    return TOPTIER_PARTNER_CATEGORIES.filter(cat => cat.value !== 'other').map(category => {
-      const categoryPartners = filteredPartners.filter((p: any) => p.partner_category === category.value);
-      const uniqueStates = new Set<string>();
-      
-      categoryPartners.forEach((p: any) => {
-        if (p.state) uniqueStates.add(p.state);
-        if (p.service_area) {
-          p.service_area.forEach((s: string) => uniqueStates.add(s));
-        }
-      });
+    return (
+      TOPTIER_PARTNER_CATEGORIES
+        // Filter out 'other' AND 'exotic_rental_car_promo'
+        .filter((cat) => cat.value !== "other" && cat.value !== "exotic_rental_car_promo")
+        .map((category) => {
+          const categoryPartners = filteredPartners.filter((p: any) => p.partner_category === category.value);
+          const uniqueStates = new Set<string>();
 
-      const activePartners = categoryPartners.filter((p: any) => p.contract_status === 'active');
+          categoryPartners.forEach((p: any) => {
+            if (p.state) uniqueStates.add(p.state);
+            if (p.service_area) {
+              p.service_area.forEach((s: string) => uniqueStates.add(s));
+            }
+          });
 
-      return {
-        ...category,
-        totalPartners: categoryPartners.length,
-        activePartners: activePartners.length,
-        statesCovered: uniqueStates.size,
-        states: Array.from(uniqueStates),
-      };
-    }).filter(cat => {
-      if (!searchTerm) return true;
-      return cat.label.toLowerCase().includes(searchTerm.toLowerCase());
-    });
+          const activePartners = categoryPartners.filter((p: any) => p.contract_status === "active");
+
+          return {
+            ...category,
+            totalPartners: categoryPartners.length,
+            activePartners: activePartners.length,
+            statesCovered: uniqueStates.size,
+            states: Array.from(uniqueStates),
+          };
+        })
+        .filter((cat) => {
+          if (!searchTerm) return true;
+          return cat.label.toLowerCase().includes(searchTerm.toLowerCase());
+        })
+    );
   }, [partners, stateFilter, searchTerm]);
 
   // Calculate total stats
@@ -142,7 +171,7 @@ export default function TopTierPartnerDashboard() {
       }
     });
 
-    const activePartners = partners.filter((p: any) => p.contract_status === 'active');
+    const activePartners = partners.filter((p: any) => p.contract_status === "active");
     const categoriesWithPartners = new Set(partners.map((p: any) => p.partner_category));
 
     return {
@@ -158,11 +187,11 @@ export default function TopTierPartnerDashboard() {
   };
 
   const handleViewAllPartners = () => {
-    navigate('/crm/toptier-experience/partner');
+    navigate("/crm/toptier-experience/partner");
   };
 
   const handleViewByState = () => {
-    navigate('/crm/toptier-experience/partners/states');
+    navigate("/crm/toptier-experience/partners/states");
   };
 
   return (
@@ -177,11 +206,11 @@ export default function TopTierPartnerDashboard() {
           <p className="text-muted-foreground">Manage your experience partners across all categories</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => navigate('/crm/toptier-experience/bookings')}>
+          <Button variant="outline" onClick={() => navigate("/crm/toptier-experience/bookings")}>
             <Eye className="h-4 w-4 mr-2" />
             Recent Bookings
           </Button>
-          <Button variant="outline" onClick={() => navigate('/crm/toptier-experience/customers')}>
+          <Button variant="outline" onClick={() => navigate("/crm/toptier-experience/customers")}>
             <Users className="h-4 w-4 mr-2" />
             Customers
           </Button>
@@ -193,14 +222,16 @@ export default function TopTierPartnerDashboard() {
             <Users className="h-4 w-4 mr-2" />
             All Partners
           </Button>
-          <Button onClick={() => {
-            console.log('[CRM] Add New Customer button clicked', { route: '/crm/toptier-experience/customers/new' });
-            navigate('/crm/toptier-experience/customers/new');
-          }}>
+          <Button
+            onClick={() => {
+              console.log("[CRM] Add New Customer button clicked", { route: "/crm/toptier-experience/customers/new" });
+              navigate("/crm/toptier-experience/customers/new");
+            }}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Customer
           </Button>
-          <Button onClick={() => navigate('/crm/toptier-experience/partner/new')}>
+          <Button onClick={() => navigate("/crm/toptier-experience/partner/new")}>
             <Plus className="h-4 w-4 mr-2" />
             Add Partner
           </Button>
@@ -209,7 +240,10 @@ export default function TopTierPartnerDashboard() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border-cyan-500/20 cursor-pointer hover:shadow-lg transition-shadow" onClick={handleViewAllPartners}>
+        <Card
+          className="bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border-cyan-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={handleViewAllPartners}
+        >
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -220,8 +254,11 @@ export default function TopTierPartnerDashboard() {
             </div>
           </CardContent>
         </Card>
-        
-        <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20 cursor-pointer hover:shadow-lg transition-shadow" onClick={handleViewAllPartners}>
+
+        <Card
+          className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={handleViewAllPartners}
+        >
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -233,7 +270,10 @@ export default function TopTierPartnerDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20 cursor-pointer hover:shadow-lg transition-shadow" onClick={handleViewByState}>
+        <Card
+          className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={handleViewByState}
+        >
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -257,7 +297,10 @@ export default function TopTierPartnerDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/crm/toptier-experience/bookings')}>
+        <Card
+          className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => navigate("/crm/toptier-experience/bookings")}
+        >
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -269,7 +312,10 @@ export default function TopTierPartnerDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-rose-500/10 to-rose-500/5 border-rose-500/20 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/crm/toptier-experience/requests')}>
+        <Card
+          className="bg-gradient-to-br from-rose-500/10 to-rose-500/5 border-rose-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => navigate("/crm/toptier-experience/requests")}
+        >
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -299,8 +345,10 @@ export default function TopTierPartnerDashboard() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All States</SelectItem>
-            {US_STATES.map(state => (
-              <SelectItem key={state.value} value={state.value}>{state.label}</SelectItem>
+            {US_STATES.map((state) => (
+              <SelectItem key={state.value} value={state.value}>
+                {state.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -313,9 +361,9 @@ export default function TopTierPartnerDashboard() {
           const colorClasses = CATEGORY_COLORS[category.value] || CATEGORY_COLORS.other;
 
           return (
-            <Card 
+            <Card
               key={category.value}
-              className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] ${category.totalPartners === 0 ? 'opacity-60' : ''}`}
+              className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] ${category.totalPartners === 0 ? "opacity-60" : ""}`}
               onClick={() => handleCategoryClick(category.value)}
             >
               <CardHeader className="pb-2">
@@ -329,9 +377,7 @@ export default function TopTierPartnerDashboard() {
                     </Badge>
                   )}
                 </div>
-                <CardTitle className="text-sm font-medium mt-2 line-clamp-2">
-                  {category.label}
-                </CardTitle>
+                <CardTitle className="text-sm font-medium mt-2 line-clamp-2">{category.label}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -345,7 +391,7 @@ export default function TopTierPartnerDashboard() {
                   </div>
                   {category.statesCovered > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {category.states.slice(0, 4).map(state => (
+                      {category.states.slice(0, 4).map((state) => (
                         <Badge key={state} variant="outline" className="text-xs">
                           {state}
                         </Badge>
@@ -357,9 +403,9 @@ export default function TopTierPartnerDashboard() {
                       )}
                     </div>
                   )}
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="w-full mt-2 text-primary"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -383,9 +429,9 @@ export default function TopTierPartnerDashboard() {
           <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="font-medium mb-2">No categories found</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            {searchTerm ? 'Try adjusting your search' : 'Add partners to see categories'}
+            {searchTerm ? "Try adjusting your search" : "Add partners to see categories"}
           </p>
-          <Button onClick={() => navigate('/crm/toptier-experience/partner/new')}>
+          <Button onClick={() => navigate("/crm/toptier-experience/partner/new")}>
             <Plus className="h-4 w-4 mr-2" />
             Add First Partner
           </Button>
