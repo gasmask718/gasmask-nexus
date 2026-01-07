@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   ArrowLeft, Search, Eye, Calendar, DollarSign, Users, 
   Building2, MapPin, Filter, TrendingUp, Clock, CheckCircle,
-  XCircle, AlertCircle, Plus
+  XCircle, AlertCircle, Plus, Loader2
 } from 'lucide-react';
 import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
