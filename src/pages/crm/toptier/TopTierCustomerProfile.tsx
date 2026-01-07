@@ -3,6 +3,7 @@
  */
 import { useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,13 +13,14 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
   ArrowLeft, Eye, Edit, Phone, Mail, MapPin, Calendar,
   DollarSign, Crown, TrendingUp, UserPlus, Building2,
-  MessageSquare, FileText, Folder, Plus, Clock, CheckCircle
+  MessageSquare, FileText, Folder, Plus, Clock, CheckCircle, Loader2
 } from 'lucide-react';
 import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
-// Generate simulated customer data
+// Generate simulated customer data (fallback for simulation mode)
 const generateCustomerData = (customerId: string) => {
   const names = [
     'Marcus Johnson', 'Sophia Williams', 'David Chen', 'Ashley Rodriguez',
@@ -109,10 +111,48 @@ export default function TopTierCustomerProfile() {
   const [activeTab, setActiveTab] = useState('overview');
   
   const { simulationMode } = useSimulationMode();
-  
-  // Get customer data
-  const customer = useMemo(() => generateCustomerData(customerId || 'cust_1'), [customerId]);
-  const bookings = useMemo(() => generateCustomerBookings(customerId || 'cust_1', customer.total_bookings), [customerId, customer.total_bookings]);
+
+  // Fetch real customer from database
+  const { data: dbCustomer, isLoading: isLoadingCustomer, error: customerError } = useQuery({
+    queryKey: ['toptier-customer', customerId],
+    queryFn: async () => {
+      if (!customerId) return null;
+      const { data, error } = await supabase
+        .from('crm_customers')
+        .select('*')
+        .eq('id', customerId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !simulationMode && !!customerId,
+  });
+
+  // Transform DB customer to expected format, or use simulated data
+  const customer = useMemo(() => {
+    if (simulationMode || !dbCustomer) {
+      return generateCustomerData(customerId || 'cust_1');
+    }
+    // Map DB customer to profile format
+    return {
+      id: dbCustomer.id,
+      name: dbCustomer.name || 'Unknown',
+      email: dbCustomer.email || '',
+      phone: dbCustomer.phone || '',
+      primary_state: dbCustomer.state || '',
+      cities: dbCustomer.city ? [dbCustomer.city] : [],
+      preferred_categories: [],
+      total_bookings: 0,
+      lifetime_spend: dbCustomer.total_lifetime_value || 0,
+      customer_type: dbCustomer.relationship_status === 'vip' ? 'vip' :
+                     dbCustomer.relationship_status === 'returning' ? 'returning' : 'new',
+      last_booking_date: dbCustomer.last_order_date || new Date().toISOString(),
+      created_at: dbCustomer.created_at || new Date().toISOString(),
+      notes: dbCustomer.notes || '',
+    };
+  }, [dbCustomer, simulationMode, customerId]);
+
+  const bookings = useMemo(() => generateCustomerBookings(customerId || 'cust_1', customer.total_bookings || 3), [customerId, customer.total_bookings]);
   const partnersUsed = useMemo(() => generatePartnersUsed(customerId || 'cust_1'), [customerId]);
   const interactions = useMemo(() => generateInteractions(customerId || 'cust_1'), [customerId]);
   const notes = useMemo(() => generateNotes(customerId || 'cust_1'), [customerId]);
@@ -142,6 +182,37 @@ export default function TopTierCustomerProfile() {
       default: return <MessageSquare className="h-4 w-4" />;
     }
   };
+
+  // Loading state
+  if (isLoadingCustomer && !simulationMode) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Error or not found state
+  if (!simulationMode && !dbCustomer && !isLoadingCustomer) {
+    return (
+      <div className="space-y-6">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="w-fit"
+          onClick={() => navigate('/crm/toptier-experience/customers')}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Customers
+        </Button>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-center text-muted-foreground">Customer not found.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
