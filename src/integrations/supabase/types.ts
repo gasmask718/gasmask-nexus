@@ -3945,6 +3945,7 @@ export type Database = {
       brand_tasks: {
         Row: {
           business_id: string
+          category: string | null
           completed_at: string | null
           contact_id: string | null
           created_at: string
@@ -3958,6 +3959,7 @@ export type Database = {
         }
         Insert: {
           business_id: string
+          category?: string | null
           completed_at?: string | null
           contact_id?: string | null
           created_at?: string
@@ -3971,6 +3973,7 @@ export type Database = {
         }
         Update: {
           business_id?: string
+          category?: string | null
           completed_at?: string | null
           contact_id?: string | null
           created_at?: string

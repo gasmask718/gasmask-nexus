@@ -23,6 +23,7 @@ interface BrandTask {
   store_id: string | null;
   contact_id: string | null;
   created_at: string;
+  category: string;
 }
 
 interface BrandTasksPanelProps {
@@ -47,6 +48,7 @@ export function BrandTasksPanel({
   isAdding,
 }: BrandTasksPanelProps) {
   const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newTask, setNewTask] = useState({
     title: "",
@@ -54,10 +56,12 @@ export function BrandTasksPanel({
     store_id: "",
     contact_id: "",
     due_date: "",
+    category: "General",
   });
 
   const filteredTasks = tasks.filter((t) => 
-    statusFilter === "all" || t.status === statusFilter
+    (statusFilter === "all" || t.status === statusFilter) &&
+    (categoryFilter === "all" || t.category === categoryFilter)
   );
 
   const handleSubmit = async () => {
@@ -68,8 +72,9 @@ export function BrandTasksPanel({
       store_id: newTask.store_id === '__none__' ? null : (newTask.store_id || null),
       contact_id: newTask.contact_id === '__none__' ? null : (newTask.contact_id || null),
       due_date: newTask.due_date || null,
+      category: newTask.category,
     });
-    setNewTask({ title: "", description: "", store_id: "", contact_id: "", due_date: "" });
+    setNewTask({ title: "", description: "", store_id: "", contact_id: "", due_date: "", category: "General" });
     setShowAddDialog(false);
   };
 
@@ -95,6 +100,17 @@ export function BrandTasksPanel({
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Tasks & Follow-ups</CardTitle>
           <div className="flex items-center gap-2">
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="2026 Goals">2026 Goals</SelectItem>
+                <SelectItem value="General">General</SelectItem>
+                <SelectItem value="Follow-up">Follow-up</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="Status" />
@@ -186,14 +202,32 @@ export function BrandTasksPanel({
                       </Select>
                     </div>
                   </div>
-                  <div>
-                    <Label htmlFor="due_date">Due Date</Label>
-                    <Input
-                      id="due_date"
-                      type="date"
-                      value={newTask.due_date}
-                      onChange={(e) => setNewTask((p) => ({ ...p, due_date: e.target.value }))}
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="due_date">Due Date</Label>
+                      <Input
+                        id="due_date"
+                        type="date"
+                        value={newTask.due_date}
+                        onChange={(e) => setNewTask((p) => ({ ...p, due_date: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>Category</Label>
+                      <Select 
+                        value={newTask.category} 
+                        onValueChange={(v) => setNewTask((p) => ({ ...p, category: v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="2026 Goals">2026 Goals</SelectItem>
+                          <SelectItem value="General">General</SelectItem>
+                          <SelectItem value="Follow-up">Follow-up</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
@@ -220,6 +254,7 @@ export function BrandTasksPanel({
             <TableHeader>
               <TableRow>
                 <TableHead>Task</TableHead>
+                <TableHead>Category</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Due</TableHead>
                 <TableHead>Source</TableHead>
@@ -238,6 +273,11 @@ export function BrandTasksPanel({
                         </p>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">
+                      {task.category || "General"}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={getStatusColor(task.status)}>

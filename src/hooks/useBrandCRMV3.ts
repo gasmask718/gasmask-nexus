@@ -24,6 +24,7 @@ interface BrandTask {
   created_at: string;
   completed_at: string | null;
   created_by: string;
+  category: string;
 }
 
 interface BrandInsight {
@@ -164,6 +165,7 @@ export function useBrandCRMV3(businessId: string | undefined) {
         status: task.status || "Open",
         due_date: task.due_date,
         created_by: task.created_by || "User",
+        category: task.category || "General",
       });
       if (error) throw error;
     },
@@ -280,6 +282,7 @@ export function useBrandCRMV3(businessId: string | undefined) {
           contact_id: task.contactId || null,
           status: "Open",
           created_by: "AI",
+          category: task.category || "General",
         });
       }
 
