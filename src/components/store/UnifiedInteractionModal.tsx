@@ -358,7 +358,7 @@ export function UnifiedInteractionModal({
               store_id: resolvedStoreMasterId,
               reason: subject || 'Follow-up scheduled',
               recommended_action: actionMap[channel] || 'manual_call',
-              priority: 50,
+              priority: 3,
               due_at: new Date(followUpAt).toISOString(),
               status: 'pending',
               context: {
