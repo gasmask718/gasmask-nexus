@@ -18,6 +18,7 @@ import {
   Eye,
   FileText,
   Package,
+  CalendarClock,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -306,6 +307,12 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
                                 <ArrowDownLeft className="h-3 w-3" />
                               )}
                             </Badge>
+                            {interaction.follow_up_at && (
+                              <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/30">
+                                <CalendarClock className="h-3 w-3 mr-1" />
+                                {format(new Date(interaction.follow_up_at), "MMM d")}
+                              </Badge>
+                            )}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {(interaction.contact as any)?.name} •{" "}
