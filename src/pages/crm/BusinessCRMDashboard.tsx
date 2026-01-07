@@ -16,10 +16,12 @@ import { BusinessContextGuard } from '@/components/crm/BusinessContextGuard';
 import { StaffOperationsSection, StaffOverviewWidget } from '@/components/crm/unforgettable';
 import { StaffCategoryKPICards } from '@/components/unforgettable/StaffCategoryKPICards';
 import { TaskChecklistSection } from '@/components/crm/TaskChecklistSection';
+import { KPIEditModal } from '@/components/crm/KPIEditModal';
 import CRMLayout from './CRMLayout';
 import {
   Building2, Users, Plus, Settings, ArrowLeft, ChevronRight,
-  LayoutGrid, Activity, Briefcase, RefreshCw, AlertTriangle
+  LayoutGrid, Activity, Briefcase, RefreshCw, AlertTriangle,
+  Edit
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
@@ -34,6 +36,10 @@ export default function BusinessCRMDashboard() {
 
   const normalizedBusinessSlug = (businessSlug || '').toLowerCase().trim();
   const isUnforgettableTimesUSA = normalizedBusinessSlug === 'unforgettable_times_usa';
+  
+  // KPI Edit Modal State
+  const [editingKPI, setEditingKPI] = useState<typeof blueprint.kpiConfig[0] | null>(null);
+  const [kpiRefreshKey, setKpiRefreshKey] = useState(0);
   
   // Get blueprint for this business
   const { blueprint, businessName, businessId, isLoading: blueprintLoading } = useCRMBlueprint(businessSlug);
@@ -157,13 +163,21 @@ export default function BusinessCRMDashboard() {
             </div>
           )}
 
-          {/* KPI Tiles */}
+          {/* KPI Tiles - Filter out store-related KPIs for non-store businesses */}
           {blueprint.kpiConfig.length > 0 && (
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-              {blueprint.kpiConfig.map((kpi) => (
+              {blueprint.kpiConfig
+                .filter(kpi => {
+                  // If this business has showStores enabled, show all KPIs
+                  if (blueprint.features.showStores) return true;
+                  // Otherwise, filter out store-related KPIs
+                  const storeRelatedKeys = ['stores', 'active_stores', 'tubes_in_field', 'unpaid_balance', 'deliveries_today'];
+                  return !storeRelatedKeys.includes(kpi.key) && kpi.entityType !== 'store';
+                })
+                .map((kpi) => (
                 <Card 
                   key={kpi.key}
-                  className={`p-4 cursor-pointer hover:shadow-md transition-all border ${getVariantClasses(kpi.variant)}`}
+                  className={`p-4 cursor-pointer hover:shadow-md transition-all border ${getVariantClasses(kpi.variant)} group relative`}
                   onClick={() => kpi.clickable && navigate(`/crm/${businessSlug}/${kpi.entityType}`)}
                 >
                   <div className="flex items-center justify-between">
@@ -176,7 +190,20 @@ export default function BusinessCRMDashboard() {
                         <p className="text-2xl font-bold">{getKPIValue(kpi)}</p>
                       </div>
                     </div>
-                    {kpi.clickable && <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingKPI(kpi);
+                        }}
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                      </Button>
+                      {kpi.clickable && <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -213,7 +240,14 @@ export default function BusinessCRMDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-                {entityTypes.map((entity) => {
+                {entityTypes
+                  .filter(entity => {
+                    // If this business has showStores enabled, show all entity types
+                    if (blueprint.features.showStores) return true;
+                    // Otherwise, filter out store-related entity types
+                    return entity.key !== 'store';
+                  })
+                  .map((entity) => {
                   const count = getEntityCount(entity.key);
                   return (
                     <Card
@@ -293,7 +327,10 @@ export default function BusinessCRMDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-2 grid-cols-2">
-                  {entityTypes.slice(0, 6).map((entity) => (
+                  {entityTypes
+                    .filter(entity => blueprint.features.showStores || entity.key !== 'store')
+                    .slice(0, 6)
+                    .map((entity) => (
                     <Button
                       key={entity.key}
                       variant="outline"
@@ -346,6 +383,18 @@ export default function BusinessCRMDashboard() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* KPI Edit Modal */}
+          {editingKPI && businessId && (
+            <KPIEditModal
+              isOpen={!!editingKPI}
+              onClose={() => setEditingKPI(null)}
+              kpi={editingKPI}
+              businessId={businessId}
+              calculatedValue={getKPIValue(editingKPI)}
+              onSave={() => setKpiRefreshKey(prev => prev + 1)}
+            />
           )}
         </div>
       </CRMLayout>
