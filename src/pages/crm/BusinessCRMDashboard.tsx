@@ -213,7 +213,7 @@ export default function BusinessCRMDashboard() {
           {/* Task Checklist Section */}
           <TaskChecklistSection
             businessSlug={businessSlug}
-            show2026Goals={true}
+            show2026Goals={false}
             customTasks={
               normalizedBusinessSlug === 'the-playboxxx' || normalizedBusinessSlug === 'the_playboxxx'
                 ? [
