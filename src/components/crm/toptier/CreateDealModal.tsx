@@ -15,6 +15,8 @@ import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useSimulationMode } from '@/contexts/SimulationModeContext';
 
 interface CreateDealModalProps {
   partner: any;
@@ -25,6 +27,7 @@ interface CreateDealModalProps {
 
 export default function CreateDealModal({ partner, open, onOpenChange, onSuccess }: CreateDealModalProps) {
   const queryClient = useQueryClient();
+  const { simulationMode } = useSimulationMode();
   
   const [formData, setFormData] = useState({
     booking_name: '',
@@ -39,29 +42,44 @@ export default function CreateDealModal({ partner, open, onOpenChange, onSuccess
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      // For now, simulate all deal creations since the crm_bookings table structure 
-      // may differ from what we need. This provides the UI functionality.
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const newDeal = {
-        id: `deal-${Date.now()}`,
-        booking_name: data.booking_name,
-        customer_name: data.customer_name,
-        customer_email: data.customer_email,
-        customer_phone: data.customer_phone,
-        event_date: data.event_date?.toISOString(),
-        total_amount: data.total_amount,
-        status: data.status,
-        notes: data.notes,
-        linked_partners: [partner.id],
-        partner_categories: [partner.partner_category],
-      };
-      
+      if (simulationMode) {
+        // Simulate for simulation mode
+        await new Promise(resolve => setTimeout(resolve, 300));
+        return { id: `deal-sim-${Date.now()}` };
+      }
+
+      // Insert into database
+      const { data: newDeal, error } = await supabase
+        .from('crm_deals')
+        .insert({
+          business_slug: 'toptier-experience',
+          customer_name: data.customer_name,
+          customer_email: data.customer_email || null,
+          customer_phone: data.customer_phone || null,
+          partner_id: partner?.id || null,
+          partner_name: partner?.company_name || null,
+          category: partner?.partner_category || null,
+          state: partner?.state || null,
+          city: partner?.city || null,
+          event_date: data.event_date?.toISOString() || null,
+          booking_value: data.total_amount || 0,
+          commission_rate: partner?.commission_rate || 10,
+          status: data.status,
+          notes: data.notes || null,
+          is_simulation: false,
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
       return newDeal;
     },
     onSuccess: () => {
       toast.success('Deal created successfully');
-      queryClient.invalidateQueries({ queryKey: ['partner-deals', partner.id] });
+      // Invalidate all relevant queries
+      queryClient.invalidateQueries({ queryKey: ['toptier-deals'] });
+      queryClient.invalidateQueries({ queryKey: ['crm_deals'] });
+      queryClient.invalidateQueries({ queryKey: ['partner-deals', partner?.id] });
       setFormData({
         booking_name: '',
         customer_name: '',

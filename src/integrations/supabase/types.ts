@@ -8340,6 +8340,92 @@ export type Database = {
           },
         ]
       }
+      crm_deals: {
+        Row: {
+          booking_value: number | null
+          business_slug: string
+          category: string | null
+          city: string | null
+          commission_amount: number | null
+          commission_rate: number | null
+          created_at: string
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string
+          customer_phone: string | null
+          deposit_amount: number | null
+          event_date: string | null
+          event_time: string | null
+          id: string
+          is_simulation: boolean | null
+          notes: string | null
+          partner_id: string | null
+          partner_name: string | null
+          special_requests: string | null
+          state: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          booking_value?: number | null
+          business_slug?: string
+          category?: string | null
+          city?: string | null
+          commission_amount?: number | null
+          commission_rate?: number | null
+          created_at?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          deposit_amount?: number | null
+          event_date?: string | null
+          event_time?: string | null
+          id?: string
+          is_simulation?: boolean | null
+          notes?: string | null
+          partner_id?: string | null
+          partner_name?: string | null
+          special_requests?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          booking_value?: number | null
+          business_slug?: string
+          category?: string | null
+          city?: string | null
+          commission_amount?: number | null
+          commission_rate?: number | null
+          created_at?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          deposit_amount?: number | null
+          event_date?: string | null
+          event_time?: string | null
+          id?: string
+          is_simulation?: boolean | null
+          notes?: string | null
+          partner_id?: string | null
+          partner_name?: string | null
+          special_requests?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deals_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "crm_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_exports: {
         Row: {
           business_id: string

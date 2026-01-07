@@ -3,6 +3,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,10 +13,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { 
   Plus, Search, Filter, Eye, Edit, Trash2,
   Calendar, DollarSign, TrendingUp, CheckCircle,
-  Clock, AlertCircle, Building2
+  Clock, AlertCircle, Building2, Loader2
 } from 'lucide-react';
 import { SimulationBadge, EmptyStateWithGuidance } from '@/contexts/SimulationModeContext';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { useSimulationMode } from '@/contexts/SimulationModeContext';
 
 interface PartnerDealsTabProps {
   partner: any;
@@ -23,22 +26,45 @@ interface PartnerDealsTabProps {
   bookings: any[];
 }
 
-export default function PartnerDealsTab({ partner, isSimulated, bookings }: PartnerDealsTabProps) {
+export default function PartnerDealsTab({ partner, isSimulated, bookings: simulatedBookings }: PartnerDealsTabProps) {
   const navigate = useNavigate();
   const { partnerId } = useParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
+  const { simulationMode } = useSimulationMode();
+
+  // Fetch real deals from database for this partner
+  const { data: realDeals = [], isLoading } = useQuery({
+    queryKey: ['partner-deals', partnerId, simulationMode],
+    queryFn: async () => {
+      if (!partnerId) return [];
+      const { data, error } = await supabase
+        .from('crm_deals')
+        .select('*')
+        .eq('partner_id', partnerId)
+        .eq('business_slug', 'toptier-experience')
+        .eq('is_simulation', simulationMode)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!partnerId,
+  });
+
+  // Combine real deals with simulated bookings (prefer real data)
+  const allBookings = realDeals.length > 0 ? realDeals : simulatedBookings;
 
   const filteredBookings = useMemo(() => {
-    return bookings.filter((booking: any) => {
+    return allBookings.filter((booking: any) => {
       const matchesSearch = !searchTerm || 
         booking.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.id?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [bookings, searchTerm, statusFilter]);
+  }, [allBookings, searchTerm, statusFilter]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -74,13 +100,21 @@ export default function PartnerDealsTab({ partner, isSimulated, bookings }: Part
     navigate(`/crm/toptier-experience/deals/${dealId}/edit`);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           Deals / Bookings
-          {isSimulated && <SimulationBadge />}
+          {(isSimulated || realDeals.length === 0) && <SimulationBadge />}
         </h2>
         <Button onClick={handleCreateDeal}>
           <Plus className="h-4 w-4 mr-2" />
@@ -204,10 +238,10 @@ export default function PartnerDealsTab({ partner, isSimulated, bookings }: Part
                       {booking.event_date ? format(new Date(booking.event_date), 'MMM d, yyyy') : '-'}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      ${(booking.total_amount || 0).toLocaleString()}
+                      ${(booking.booking_value || booking.total_amount || 0).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right text-green-600">
-                      ${Math.round((booking.total_amount || 0) * (partner.commission_rate || 10) / 100).toLocaleString()}
+                      ${(booking.commission_amount || Math.round((booking.booking_value || booking.total_amount || 0) * (partner.commission_rate || 10) / 100)).toLocaleString()}
                     </TableCell>
                     <TableCell>{getStatusBadge(booking.status)}</TableCell>
                     <TableCell className="text-right">

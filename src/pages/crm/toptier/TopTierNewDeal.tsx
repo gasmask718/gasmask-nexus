@@ -3,6 +3,7 @@
  */
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,9 +16,11 @@ import { US_STATES, TOPTIER_PARTNER_CATEGORIES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { toast } from 'sonner';
 import { DatePicker, TimePicker } from '@/components/ui/datetime-picker';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function TopTierNewDeal() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { simulationMode } = useSimulationMode();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,7 +33,7 @@ export default function TopTierNewDeal() {
   const [formData, setFormData] = useState({
     customer_id: searchParams.get('customer_id') || '',
     customer_name: searchParams.get('customer_name') || '',
-    partner_id: searchParams.get('partner_id') || '',
+    partner_id: searchParams.get('partner_id') || searchParams.get('partnerId') || '',
     partner_name: searchParams.get('partner_name') || '',
     category: searchParams.get('category') || '',
     state: searchParams.get('state') || '',
@@ -50,7 +53,7 @@ export default function TopTierNewDeal() {
   };
 
   const handleSubmit = async (action: 'view' | 'another' | 'close') => {
-    if (!formData.customer_name || !formData.partner_name || !formData.event_date) {
+    if (!formData.customer_name || !formData.event_date) {
       toast.error('Please fill in required fields');
       return;
     }
@@ -58,15 +61,51 @@ export default function TopTierNewDeal() {
     setIsSubmitting(true);
 
     try {
+      let newDealId: string | null = null;
+
       if (simulationMode) {
         toast.success('Deal created (Simulation Mode)');
+        newDealId = `deal_sim_${Date.now()}`;
       } else {
-        // Real DB insert would go here
+        // Insert into crm_deals table
+        const { data, error } = await supabase
+          .from('crm_deals')
+          .insert({
+            business_slug: 'toptier-experience',
+            customer_id: formData.customer_id || null,
+            customer_name: formData.customer_name,
+            partner_id: formData.partner_id || null,
+            partner_name: formData.partner_name || null,
+            category: formData.category || null,
+            state: formData.state || null,
+            city: formData.city || null,
+            event_date: formData.event_date?.toISOString(),
+            event_time: formData.event_time || null,
+            booking_value: parseFloat(formData.booking_value) || 0,
+            deposit_amount: parseFloat(formData.deposit_amount) || 0,
+            commission_rate: parseFloat(formData.commission_rate) || 10,
+            status: formData.status,
+            notes: formData.notes || null,
+            special_requests: formData.special_requests || null,
+            is_simulation: false,
+          })
+          .select('id')
+          .single();
+
+        if (error) throw error;
+        newDealId = data?.id;
         toast.success('Deal created successfully');
       }
 
-      if (action === 'view') {
-        navigate(`/crm/toptier-experience/deals/deal_new`);
+      // Invalidate queries to refresh deal lists
+      queryClient.invalidateQueries({ queryKey: ['toptier-deals'] });
+      queryClient.invalidateQueries({ queryKey: ['crm_deals'] });
+      if (formData.partner_id) {
+        queryClient.invalidateQueries({ queryKey: ['partner-deals', formData.partner_id] });
+      }
+
+      if (action === 'view' && newDealId) {
+        navigate(`/crm/toptier-experience/deals/${newDealId}`);
       } else if (action === 'another') {
         const resetNow = new Date();
         const resetTime = `${resetNow.getHours().toString().padStart(2, '0')}:${Math.floor(resetNow.getMinutes() / 30) * 30 === 0 ? '00' : '30'}`;
@@ -79,8 +118,9 @@ export default function TopTierNewDeal() {
       } else {
         navigate('/crm/toptier-experience/deals');
       }
-    } catch (error) {
-      toast.error('Failed to create deal');
+    } catch (error: any) {
+      console.error('Failed to create deal:', error);
+      toast.error(error.message || 'Failed to create deal');
     } finally {
       setIsSubmitting(false);
     }

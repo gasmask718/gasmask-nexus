@@ -333,6 +333,7 @@ export default function TopTierPartnerProfile() {
         partner={partner}
         open={isCreateDealModalOpen}
         onOpenChange={setIsCreateDealModalOpen}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['partner-deals', partnerId] })}
       />
       
       <MediaUploadModal
