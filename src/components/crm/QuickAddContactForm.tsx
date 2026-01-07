@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useBusinessStore } from '@/stores/businessStore';
 import { supabase } from '@/integrations/supabase/client';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
@@ -18,6 +19,7 @@ interface QuickAddContactFormProps {
 export const QuickAddContactForm = ({ onSuccess }: QuickAddContactFormProps) => {
   const { selectedBusiness } = useBusinessStore();
   const { simulationMode } = useSimulationMode();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -48,6 +50,11 @@ export const QuickAddContactForm = ({ onSuccess }: QuickAddContactFormProps) => 
       });
 
       if (error) throw error;
+
+      // Invalidate relevant queries to refresh contact lists
+      queryClient.invalidateQueries({ queryKey: ['crm-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['toptier-customers'] });
+      queryClient.invalidateQueries({ queryKey: ['crm_contacts'] });
 
       toast({
         title: 'Contact Added',
