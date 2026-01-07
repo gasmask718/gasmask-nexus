@@ -102,6 +102,10 @@ export default function TopTierPartnerDashboard() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   
+  // Local state for category metadata overrides (display name, targets, visibility)
+  // This does NOT affect KPI calculations - only display metadata
+  const [categoryOverrides, setCategoryOverrides] = useState<Record<string, { label?: string; targetPartners?: number; targetStates?: number; isVisible?: boolean }>>({});
+  
   // Permission check - only admin/owner can edit category KPIs
   const { role, isAdmin } = useUserRole();
   const canEditKPI = isAdmin() || role === "owner";
@@ -129,7 +133,8 @@ export default function TopTierPartnerDashboard() {
   const simulatedPartners = getEntityData("partner");
   const { data: partners, isSimulated } = useResolvedData(realPartners, simulatedPartners, "toptier-experience");
 
-  // Calculate category stats
+  // Calculate category stats - applies metadata overrides for display only
+  // KPI calculations (totalPartners, activePartners, statesCovered) remain unchanged
   const categoryStats = useMemo(() => {
     const filteredPartners =
       stateFilter === "all"
@@ -151,9 +156,19 @@ export default function TopTierPartnerDashboard() {
         });
 
         const activePartners = categoryPartners.filter((p: any) => p.contract_status === "active");
+        
+        // Apply metadata overrides (display only - does not affect KPI calculations)
+        const override = categoryOverrides[category.value];
 
         return {
           ...category,
+          // Override display label if set
+          label: override?.label ?? category.label,
+          // Metadata targets (display only)
+          targetPartners: override?.targetPartners ?? 10,
+          targetStates: override?.targetStates ?? 5,
+          isVisible: override?.isVisible ?? true,
+          // KPI calculations - unchanged
           totalPartners: categoryPartners.length,
           activePartners: activePartners.length,
           statesCovered: uniqueStates.size,
@@ -161,10 +176,12 @@ export default function TopTierPartnerDashboard() {
         };
       })
       .filter((cat) => {
+        // Filter by visibility setting
+        if (cat.isVisible === false) return false;
         if (!searchTerm) return true;
         return cat.label.toLowerCase().includes(searchTerm.toLowerCase());
       });
-  }, [partners, stateFilter, searchTerm]);
+  }, [partners, stateFilter, searchTerm, categoryOverrides]);
 
   // Calculate total stats
   const totalStats = useMemo(() => {
@@ -469,8 +486,16 @@ export default function TopTierPartnerDashboard() {
         onOpenChange={setEditModalOpen}
         category={editingCategory}
         onSave={(updated) => {
-          // Local state update only - does not modify KPI calculations
-          console.log("[TopTier CRM] Category metadata updated:", updated);
+          // Update local state with new metadata - triggers re-render via categoryOverrides dependency
+          setCategoryOverrides((prev) => ({
+            ...prev,
+            [updated.value]: {
+              label: updated.label,
+              targetPartners: updated.targetPartners,
+              targetStates: updated.targetStates,
+              isVisible: updated.isVisible,
+            },
+          }));
           setEditingCategory(null);
         }}
       />
