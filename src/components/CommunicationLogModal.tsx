@@ -119,6 +119,30 @@ export function CommunicationLogModal({
           .insert(reminderData);
 
         if (reminderError) console.error('Error creating reminder:', reminderError);
+
+        // Also create follow_up_queue entry for stores
+        if (entityType === 'store') {
+          const actionMap: Record<string, string> = {
+            'call': 'manual_call',
+            'sms': 'manual_text',
+            'email': 'manual_text',
+            'visit': 'manual_call',
+          };
+
+          const { error: followUpQueueError } = await supabase
+            .from('follow_up_queue')
+            .insert({
+              store_id: entityId,
+              reason: notes.trim().substring(0, 100),
+              recommended_action: actionMap[channel] || 'manual_call',
+              priority: 50,
+              due_at: followUpDate.toISOString(),
+              status: 'pending',
+              context: { channel, notes: notes.trim() },
+            });
+
+          if (followUpQueueError) console.error('Error creating follow-up queue entry:', followUpQueueError);
+        }
       }
 
       toast.success('Communication logged');

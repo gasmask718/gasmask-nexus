@@ -334,6 +334,37 @@ export function UnifiedInteractionModal({
         if (interactionError) throw interactionError;
         interactionId = interactionData?.id;
 
+        // Create follow-up queue entry if follow-up date is set
+        if (followUpAt && resolvedStoreMasterId) {
+          const actionMap: Record<string, string> = {
+            'CALL': 'manual_call',
+            'SMS': 'manual_text',
+            'WHATSAPP': 'manual_text',
+            'EMAIL': 'manual_text',
+            'IN_PERSON': 'manual_call',
+          };
+          
+          const { error: followUpError } = await supabase
+            .from('follow_up_queue')
+            .insert({
+              store_id: resolvedStoreMasterId,
+              reason: subject || 'Follow-up scheduled',
+              recommended_action: actionMap[channel] || 'manual_call',
+              priority: 50,
+              due_at: new Date(followUpAt).toISOString(),
+              status: 'pending',
+              context: {
+                interaction_id: interactionId,
+                notes: summary || '',
+                contact_id: selectedContactId || contactId,
+              },
+            });
+
+          if (followUpError) {
+            console.error('Error creating follow-up queue entry:', followUpError);
+          }
+        }
+
         // Extract opportunities from interaction (async, don't block)
         if (interactionId) {
           const interactionText = `${subject}${summary ? '. ' + summary : ''}`;
@@ -391,6 +422,7 @@ export function UnifiedInteractionModal({
       queryClient.invalidateQueries({ queryKey: ['store-visit-products'] });
       queryClient.invalidateQueries({ queryKey: ['store-visit-inventory'] });
       queryClient.invalidateQueries({ queryKey: ['store-opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['follow-up-queue'] });
 
       const formattedDateTime = format(now, 'MMM d, yyyy h:mm a');
       toast.success(`Interaction logged at ${formattedDateTime}`, {
