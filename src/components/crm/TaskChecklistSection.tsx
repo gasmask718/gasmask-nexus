@@ -31,13 +31,16 @@ import { useBusiness } from '@/contexts/BusinessContext';
 interface TaskItem {
   id: string;
   title: string;
-  description?: string;
-  completed: boolean;
-  due_date?: string;
-  assigned_to?: string;
-  category: string;
+  description: string | null;
+  status: string;
+  due_date: string | null;
+  created_by: string | null;
+  category: string | null;
   created_at: string;
-  updated_at: string;
+  completed_at: string | null;
+  business_id: string;
+  store_id?: string | null;
+  contact_id?: string | null;
 }
 
 interface TaskChecklistSectionProps {
@@ -85,20 +88,19 @@ export function TaskChecklistSection({
 
   // Fetch tasks
   const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['crm-tasks', effectiveBusiness?.id],
+    queryKey: ['brand-tasks', effectiveBusiness?.id],
     queryFn: async () => {
       if (!effectiveBusiness?.id) return [];
       
-      const { data, error } = await (supabase as any)
-        .from('crm_tasks')
+      const { data, error } = await supabase
+        .from('brand_tasks')
         .select('*')
         .eq('business_id', effectiveBusiness.id)
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) {
-        // Table might not exist yet, return empty array
-        if (error.code === '42P01') return [];
+        console.error('Error fetching tasks:', error);
         throw error;
       }
       return (data || []) as TaskItem[];
@@ -109,18 +111,18 @@ export function TaskChecklistSection({
   // Toggle task completion
   const toggleTaskMutation = useMutation({
     mutationFn: async ({ taskId, completed }: { taskId: string; completed: boolean }) => {
-      const { error } = await (supabase as any)
-        .from('crm_tasks')
+      const { error } = await supabase
+        .from('brand_tasks')
         .update({ 
-          completed,
-          updated_at: new Date().toISOString(),
+          status: completed ? 'Done' : 'Open',
+          completed_at: completed ? new Date().toISOString() : null,
         })
         .eq('id', taskId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crm-tasks', effectiveBusiness?.id] });
+      queryClient.invalidateQueries({ queryKey: ['brand-tasks', effectiveBusiness?.id] });
     },
   });
 
@@ -134,35 +136,30 @@ export function TaskChecklistSection({
         throw new Error('Task title is required');
       }
 
-      const { data, error } = await (supabase as any)
-        .from('crm_tasks')
+      const { data, error } = await supabase
+        .from('brand_tasks')
         .insert({
           business_id: effectiveBusiness.id,
           title: newTaskTitle.trim(),
           description: newTaskDescription.trim() || null,
           due_date: newTaskDueDate || null,
-          category: newTaskCategory,
-          completed: false,
+          category: newTaskCategory || 'General',
+          status: 'Open',
+          created_by: 'User',
         })
         .select()
         .single();
 
-      if (error) {
-        // Handle table not existing
-        if (error.code === '42P01') {
-          throw new Error('Tasks table not found. Please run the database migration first.');
-        }
-        throw error;
-      }
+      if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crm-tasks', effectiveBusiness?.id] });
+      queryClient.invalidateQueries({ queryKey: ['brand-tasks', effectiveBusiness?.id] });
       setIsAddingTask(false);
       setNewTaskTitle('');
       setNewTaskDescription('');
       setNewTaskDueDate('');
-      setNewTaskCategory('general');
+      setNewTaskCategory('General');
       toast.success('Task added successfully');
     },
     onError: (error: Error) => {
@@ -178,11 +175,14 @@ export function TaskChecklistSection({
     const businessSpecificTasks = customTasks.map((task, index) => ({
       id: `goal-2026-${index}`,
       title: task.title,
-      description: task.description,
-      completed: false,
+      description: task.description || null,
+      status: 'Open',
       category: task.category || '2026-goals',
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      completed_at: null,
+      due_date: null,
+      created_by: null,
+      business_id: effectiveBusiness?.id || '',
     }));
 
     // Default 2026 goals if no custom tasks
@@ -192,28 +192,37 @@ export function TaskChecklistSection({
           id: 'goal-2026-1',
           title: 'Increase customer base by 30%',
           description: 'Focus on customer acquisition and retention',
-          completed: false,
+          status: 'Open',
           category: '2026-goals',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          completed_at: null,
+          due_date: null,
+          created_by: null,
+          business_id: effectiveBusiness?.id || '',
         },
         {
           id: 'goal-2026-2',
           title: 'Improve customer satisfaction scores',
           description: 'Target 90%+ satisfaction rating',
-          completed: false,
+          status: 'Open',
           category: '2026-goals',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          completed_at: null,
+          due_date: null,
+          created_by: null,
+          business_id: effectiveBusiness?.id || '',
         },
         {
           id: 'goal-2026-3',
           title: 'Expand to new markets',
           description: 'Identify and enter 3 new market segments',
-          completed: false,
+          status: 'Open',
           category: '2026-goals',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          completed_at: null,
+          due_date: null,
+          created_by: null,
+          business_id: effectiveBusiness?.id || '',
         },
       ];
     }
@@ -223,7 +232,7 @@ export function TaskChecklistSection({
 
   // Combine database tasks with 2026 goals
   const allTasks = [...tasks, ...get2026GoalsTasks()];
-  const completedCount = allTasks.filter(t => t.completed).length;
+  const completedCount = allTasks.filter(t => t.status === 'Done').length;
   const totalCount = allTasks.length;
   const progressPercentage = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
@@ -235,14 +244,15 @@ export function TaskChecklistSection({
     return acc;
   }, {} as Record<string, TaskItem[]>);
 
-  const handleToggleTask = (taskId: string, currentStatus: boolean) => {
+  const handleToggleTask = (taskId: string, currentStatus: string) => {
     // For 2026 goals (temporary tasks), just show a message
     if (taskId.startsWith('goal-2026-')) {
       toast.info('2026 Goals are reference items. Add them as actual tasks to track completion.');
       return;
     }
 
-    toggleTaskMutation.mutate({ taskId, completed: !currentStatus });
+    const isDone = currentStatus === 'Done';
+    toggleTaskMutation.mutate({ taskId, completed: !isDone });
   };
 
   const handleAddTask = () => {
@@ -369,7 +379,7 @@ export function TaskChecklistSection({
                 <Target className="h-4 w-4 text-muted-foreground" />
                 <h4 className="text-sm font-medium capitalize">{category.replace(/-/g, ' ')}</h4>
                 <Badge variant="secondary" className="text-xs">
-                  {categoryTasks.filter(t => t.completed).length}/{categoryTasks.length}
+                  {categoryTasks.filter(t => t.status === 'Done').length}/{categoryTasks.length}
                 </Badge>
               </div>
               <div className="space-y-2 pl-6">
@@ -377,6 +387,7 @@ export function TaskChecklistSection({
                   const isReferenceTask = task.id.startsWith('goal-2026-');
                   const isDisabled = isReferenceTask || !effectiveBusiness?.id;
                   const isRealTask = !isReferenceTask && effectiveBusiness?.id;
+                  const isDone = task.status === 'Done';
                   
                   return (
                     <div
@@ -387,15 +398,15 @@ export function TaskChecklistSection({
                       onClick={(e) => {
                         // Only toggle if clicking on the row, not the checkbox itself
                         if (isRealTask && (e.target as HTMLElement).tagName !== 'BUTTON') {
-                          handleToggleTask(task.id, task.completed);
+                          handleToggleTask(task.id, task.status);
                         }
                       }}
                     >
                       <Checkbox
-                        checked={task.completed}
-                        onCheckedChange={(checked) => {
+                        checked={isDone}
+                        onCheckedChange={() => {
                           if (isRealTask) {
-                            handleToggleTask(task.id, task.completed);
+                            handleToggleTask(task.id, task.status);
                           }
                         }}
                         disabled={isDisabled}
@@ -409,7 +420,7 @@ export function TaskChecklistSection({
                         <div className="flex items-center gap-2">
                           <p
                             className={`text-sm ${
-                              task.completed ? 'line-through text-muted-foreground' : 'font-medium'
+                              isDone ? 'line-through text-muted-foreground' : 'font-medium'
                             }`}
                           >
                             {task.title}
@@ -430,10 +441,10 @@ export function TaskChecklistSection({
                               {new Date(task.due_date).toLocaleDateString()}
                             </div>
                           )}
-                          {task.assigned_to && (
+                          {task.created_by && (
                             <div className="flex items-center gap-1">
                               <User className="h-3 w-3" />
-                              Assigned
+                              {task.created_by}
                             </div>
                           )}
                         </div>
