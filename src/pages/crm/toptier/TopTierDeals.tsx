@@ -257,29 +257,37 @@ export default function TopTierDeals() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <Users className="h-4 w-4 text-muted-foreground" />
-                          <span 
-                            className="text-primary hover:underline cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/crm/toptier-experience/customers/${deal.customer_id}`);
-                            }}
-                          >
-                            {deal.customer_name}
-                          </span>
+                          {deal.customer_id ? (
+                            <span
+                              className="text-primary hover:underline cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/crm/toptier-experience/customers/${deal.customer_id}`);
+                              }}
+                            >
+                              {deal.customer_name}
+                            </span>
+                          ) : (
+                            <span>{deal.customer_name}</span>
+                          )}
                         </div>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-muted-foreground" />
-                          <span 
-                            className="text-primary hover:underline cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/crm/toptier-experience/partners/profile/${deal.partner_id}`);
-                            }}
-                          >
-                            {deal.partner_name}
-                          </span>
+                          {deal.partner_id ? (
+                            <span
+                              className="text-primary hover:underline cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/crm/toptier-experience/partners/profile/${deal.partner_id}`);
+                              }}
+                            >
+                              {deal.partner_name}
+                            </span>
+                          ) : (
+                            <span>{deal.partner_name || '—'}</span>
+                          )}
                         </div>
                       </td>
                       <td className="py-3 px-4">
@@ -294,7 +302,7 @@ export default function TopTierDeals() {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        {format(new Date(deal.event_date), 'MMM d, yyyy')}
+                        {deal.event_date ? format(new Date(deal.event_date), 'MMM d, yyyy') : '-'}
                       </td>
                       <td className="py-3 px-4 text-right font-medium text-green-600">
                         ${(deal.booking_value || 0).toLocaleString()}

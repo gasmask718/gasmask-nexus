@@ -45,20 +45,35 @@ export default function TopTierRecentBookings() {
     },
   });
 
-  // Use simulated booking data (no crm_bookings table exists yet)
+  // Fetch real deals/bookings
+  const { data: realDeals = [], isLoading: isLoadingDeals } = useQuery({
+    queryKey: ['toptier-deals', simulationMode],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_deals')
+        .select('*')
+        .eq('business_slug', 'toptier-experience')
+        .eq('is_simulation', simulationMode)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Resolved data (prefer real)
   const simulatedBookings = getEntityData('booking');
   const simulatedPartners = getEntityData('partner');
-  const { data: bookings, isSimulated } = useResolvedData([], simulatedBookings, 'toptier-experience');
+  const { data: bookings, isSimulated } = useResolvedData(realDeals, simulatedBookings, 'toptier-experience');
   const { data: partners } = useResolvedData(realPartners, simulatedPartners, 'toptier-experience');
 
   // Enhanced bookings with full partner info
   const enrichedBookings = useMemo(() => {
     return bookings.map((booking: any) => {
-      const linkedPartnerIds = booking.linked_partners || [];
-      const linkedPartnerDetails = linkedPartnerIds.map((pId: string) => 
-        partners.find((p: any) => p.id === pId)
-      ).filter(Boolean);
-      
+      const linkedPartnerIds = booking.linked_partners || (booking.partner_id ? [booking.partner_id] : []);
+      const linkedPartnerDetails = linkedPartnerIds
+        .map((pId: string) => partners.find((p: any) => p.id === pId))
+        .filter(Boolean);
+
       return {
         ...booking,
         partnerDetails: linkedPartnerDetails,
@@ -68,26 +83,32 @@ export default function TopTierRecentBookings() {
 
   // Filter bookings
   const filteredBookings = useMemo(() => {
-    return enrichedBookings.filter((booking: any) => {
-      const matchesSearch = searchTerm === '' ||
-        booking.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.id?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesState = stateFilter === 'all' || booking.state === stateFilter;
-      const matchesCategory = categoryFilter === 'all' || 
-        booking.partner_categories?.includes(categoryFilter);
-      const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
-      return matchesSearch && matchesState && matchesCategory && matchesStatus;
-    }).sort((a: any, b: any) => 
-      new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
-    );
+    return enrichedBookings
+      .filter((booking: any) => {
+        const matchesSearch =
+          searchTerm === '' ||
+          booking.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          booking.id?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesState = stateFilter === 'all' || booking.state === stateFilter;
+        const bookingCategory = booking.category || booking.partner_categories?.[0];
+        const matchesCategory = categoryFilter === 'all' || bookingCategory === categoryFilter;
+        const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
+        return matchesSearch && matchesState && matchesCategory && matchesStatus;
+      })
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.event_date || b.created_at || 0).getTime() -
+          new Date(a.event_date || a.created_at || 0).getTime()
+      );
   }, [enrichedBookings, searchTerm, stateFilter, categoryFilter, statusFilter]);
 
   // Calculate stats
   const stats = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const todayBookings = bookings.filter((b: any) => {
+      if (!b.event_date) return false;
       const eventDate = new Date(b.event_date);
       eventDate.setHours(0, 0, 0, 0);
       return eventDate.getTime() === today.getTime();
@@ -95,7 +116,10 @@ export default function TopTierRecentBookings() {
 
     const confirmed = bookings.filter((b: any) => b.status === 'confirmed');
     const pending = bookings.filter((b: any) => b.status === 'pending');
-    const totalValue = bookings.reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0);
+    const totalValue = bookings.reduce(
+      (sum: number, b: any) => sum + (b.booking_value || b.total_amount || 0),
+      0
+    );
 
     return {
       total: bookings.length,
@@ -120,6 +144,14 @@ export default function TopTierRecentBookings() {
         return <Badge variant="outline">{status}</Badge>;
     }
   };
+
+  if (isLoadingDeals) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -315,7 +347,7 @@ export default function TopTierRecentBookings() {
                       </td>
                       <td className="py-3 px-4">
                         <Badge variant="secondary" className="text-xs">
-                          {TOPTIER_PARTNER_CATEGORIES.find(c => c.value === booking.partner_categories?.[0])?.label || 'N/A'}
+                          {TOPTIER_PARTNER_CATEGORIES.find((c) => c.value === (booking.category || booking.partner_categories?.[0]))?.label || 'N/A'}
                         </Badge>
                       </td>
                       <td className="py-3 px-4">
@@ -325,10 +357,10 @@ export default function TopTierRecentBookings() {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        {format(new Date(booking.event_date), 'MMM d, yyyy')}
+                        {booking.event_date ? format(new Date(booking.event_date), 'MMM d, yyyy') : '-'}
                       </td>
                       <td className="py-3 px-4 text-right font-medium">
-                        ${(booking.total_amount || 0).toLocaleString()}
+                        ${(booking.booking_value || booking.total_amount || 0).toLocaleString()}
                       </td>
                       <td className="py-3 px-4">
                         {getStatusBadge(booking.status)}
