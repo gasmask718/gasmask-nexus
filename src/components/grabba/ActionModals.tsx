@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { GRABBA_BRAND_IDS } from '@/config/grabbaSkyscraper';
 import { Package, Truck, DollarSign, MessageSquare, Mail, Phone, MapPin, Users, Factory } from 'lucide-react';
 import { format } from 'date-fns';
+import { useSimulationMode } from '@/contexts/SimulationModeContext';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -138,6 +139,7 @@ export function CreateOrderModal({ isOpen, onClose, onSubmit, initialData, isLoa
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function CreateInvoiceModal({ isOpen, onClose, onSubmit, initialData, isLoading }: ActionModalProps) {
+  const { simulationMode } = useSimulationMode();
   const [formData, setFormData] = useState({
     company_id: initialData?.company_id || '',
     brand: initialData?.brand || 'grabba',
@@ -146,9 +148,13 @@ export function CreateInvoiceModal({ isOpen, onClose, onSubmit, initialData, isL
   });
 
   const { data: companies } = useQuery({
-    queryKey: ['companies-list'],
+    queryKey: ['companies-list', simulationMode],
     queryFn: async () => {
-      const { data } = await supabase.from('companies').select('id, name').limit(100);
+      const { data } = await supabase
+        .from('companies')
+        .select('id, name')
+        .eq('is_simulation', simulationMode)
+        .limit(100);
       return data || [];
     },
     enabled: isOpen,

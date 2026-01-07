@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useBusinessStore } from '@/stores/businessStore';
 import { supabase } from '@/integrations/supabase/client';
+import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -135,6 +136,7 @@ const SMART_NOTE_PROMPTS = [
 
 export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(var(--primary))' }: FullContactFormProps) => {
   const { selectedBusiness } = useBusinessStore();
+  const { simulationMode } = useSimulationMode();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [addressValidationStatus, setAddressValidationStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
@@ -169,13 +171,14 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
     notes: '',
   });
 
-  // Fetch companies
+  // Fetch companies filtered by simulation mode
   const { data: companies = [], refetch: refetchCompanies } = useQuery({
-    queryKey: ['companies-for-contact'],
+    queryKey: ['companies-for-contact', simulationMode],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
         .select('id, name, type')
+        .eq('is_simulation', simulationMode)
         .order('name');
       if (error) throw error;
       return data || [];
@@ -364,6 +367,7 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
         .insert({
           name: newCompanyName.trim(),
           type: newCompanyType,
+          is_simulation: simulationMode,
         })
         .select()
         .single();

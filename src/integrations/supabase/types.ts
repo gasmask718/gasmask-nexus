@@ -7621,6 +7621,7 @@ export type Database = {
           default_state: string | null
           health_score: number | null
           id: string
+          is_simulation: boolean | null
           name: string
           neighborhood: string | null
           notes: string | null
@@ -7646,6 +7647,7 @@ export type Database = {
           default_state?: string | null
           health_score?: number | null
           id?: string
+          is_simulation?: boolean | null
           name: string
           neighborhood?: string | null
           notes?: string | null
@@ -7671,6 +7673,7 @@ export type Database = {
           default_state?: string | null
           health_score?: number | null
           id?: string
+          is_simulation?: boolean | null
           name?: string
           neighborhood?: string | null
           notes?: string | null
