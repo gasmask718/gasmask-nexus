@@ -50,9 +50,9 @@ export default function EntityListPage() {
   const entitySchema = getEntitySchema(entityType as ExtendedEntityType);
   const { isSimulationMode, getEntityData } = useCRMSimulation(businessSlug || null);
 
-  // Fetch real partners from database when NOT in simulation mode
+  // Fetch partners from database - filter by simulation mode
   const { data: realPartners = [], isLoading: isLoadingPartners, refetch: refetchPartners } = useQuery({
-    queryKey: ['crm_partners', businessSlug, simulationMode], // Include simulationMode in key
+    queryKey: ['crm_partners', businessSlug, simulationMode],
     queryFn: async () => {
       if (entityType !== 'partners') return [];
       console.log('[EntityListPage] Fetching partners for', businessSlug, 'simulation:', simulationMode);
@@ -60,6 +60,7 @@ export default function EntityListPage() {
         .from('crm_partners')
         .select('*')
         .eq('business_slug', businessSlug)
+        .eq('is_simulation', simulationMode)
         .order('created_at', { ascending: false });
       if (error) {
         console.error('[EntityListPage] Error fetching partners:', error);
@@ -68,7 +69,7 @@ export default function EntityListPage() {
       console.log('[EntityListPage] Fetched partners:', data?.length);
       return data || [];
     },
-    enabled: entityType === 'partners' && !simulationMode, // Only fetch in live mode
+    enabled: entityType === 'partners',
     staleTime: 0,
   });
 
@@ -78,13 +79,13 @@ export default function EntityListPage() {
     return getEntityData(entityType as ExtendedEntityType);
   }, [simulationMode, entityType, getEntityData]);
 
-  // Use real data or simulation data based on mode
+  // Use real data for partners, simulation data for other entities
   const entities = useMemo(() => {
-    if (entityType === 'partners' && !simulationMode) {
+    if (entityType === 'partners') {
       return realPartners;
     }
     return simulationEntities;
-  }, [entityType, simulationMode, realPartners, simulationEntities]);
+  }, [entityType, realPartners, simulationEntities]);
 
   // Filter entities
   const filteredEntities = useMemo(() => {
