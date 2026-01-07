@@ -4,13 +4,16 @@
  */
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useCRMBlueprint, useAvailableEntityTypes } from '@/hooks/useCRMBlueprint';
@@ -18,14 +21,25 @@ import CRMLayout from './CRMLayout';
 import { importCRMData, type ImportResult } from '@/services/crmImportService';
 import * as XLSX from 'xlsx';
 import {
-  Upload, ArrowLeft, FileSpreadsheet, FileJson, Building2,
-  Check, AlertCircle, Loader2, X, FileUp, Eye, CheckCircle2, XCircle,
+  Upload, ArrowLeft, FileSpreadsheet, Building2,
+  AlertCircle, Loader2, X, FileUp, Eye, CheckCircle2, XCircle,
+  History, Clock, FileText,
 } from 'lucide-react';
 
 interface ImportPreview {
   headers: string[];
   rows: any[];
   totalRows: number;
+}
+
+interface ImportLogEntry {
+  id: string;
+  import_type: string;
+  file_name: string | null;
+  total_rows: number | null;
+  success_count: number | null;
+  failed_count: number | null;
+  created_at: string;
 }
 
 export default function CRMImportPage() {
@@ -547,9 +561,88 @@ export default function CRMImportPage() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Import History */}
+            <ImportHistoryCard businessId={currentBusiness?.id} />
           </div>
         </div>
       </div>
     </CRMLayout>
+  );
+}
+
+// Import History Card Component
+function ImportHistoryCard({ businessId }: { businessId?: string }) {
+  const { data: importLogs = [], isLoading } = useQuery({
+    queryKey: ['import-history', businessId],
+    queryFn: async () => {
+      if (!businessId) return [];
+      const { data, error } = await supabase
+        .from('crm_import_logs')
+        .select('id, import_type, file_name, total_rows, success_count, failed_count, created_at')
+        .eq('business_id', businessId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) {
+        console.error('Error fetching import logs:', error);
+        return [];
+      }
+      return (data || []) as ImportLogEntry[];
+    },
+    enabled: !!businessId,
+  });
+
+  if (!businessId) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <History className="h-4 w-4" />
+          Import History
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading history...</p>
+        ) : importLogs.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No import history yet</p>
+        ) : (
+          <ScrollArea className="h-48">
+            <div className="space-y-3">
+              {importLogs.map((log) => (
+                <div key={log.id} className="flex items-start gap-3 p-2 rounded-lg bg-muted/50">
+                  <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {log.file_name || log.import_type}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline" className="text-xs">
+                        {log.import_type}
+                      </Badge>
+                      {log.success_count != null && (
+                        <span className="text-xs text-green-600">
+                          {log.success_count} ✓
+                        </span>
+                      )}
+                      {log.failed_count != null && log.failed_count > 0 && (
+                        <span className="text-xs text-red-600">
+                          {log.failed_count} ✗
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      {new Date(log.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        )}
+      </CardContent>
+    </Card>
   );
 }
