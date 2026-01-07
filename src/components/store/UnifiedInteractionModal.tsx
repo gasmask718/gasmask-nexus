@@ -211,7 +211,8 @@ export function UnifiedInteractionModal({
       return;
     }
 
-    if (isCommunicationType && !selectedContactId && !contactId) {
+    // Contact is required for communication types EXCEPT follow-ups
+    if (isCommunicationType && !isFollowUpType && !selectedContactId && !contactId) {
       toast.error('Please select a contact');
       return;
     }
@@ -502,7 +503,7 @@ export function UnifiedInteractionModal({
           {/* Contact Selector (for communication types) */}
           {isCommunicationType && !contactId && storeContacts && storeContacts.length > 0 && (
             <div className="space-y-2">
-              <Label>Contact *</Label>
+              <Label>Contact {!isFollowUpType && '*'}</Label>
               <Select value={selectedContactId} onValueChange={setSelectedContactId}>
                 <SelectTrigger className="bg-secondary/50 border-border/50">
                   <SelectValue placeholder="Select contact" />
