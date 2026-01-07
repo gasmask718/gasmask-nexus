@@ -27,7 +27,7 @@ const ENTITY_COUNT_CONFIG: Partial<Record<ExtendedEntityType, {
   funding_application: { table: 'crm_deals', businessIdField: 'business_id', additionalFilters: { deal_type: 'funding_application' } },
   collab: { table: 'crm_deals', businessIdField: 'business_id', additionalFilters: { deal_type: 'collab' } },
   promo_campaign: { table: 'ai_call_campaigns', businessIdField: 'business_id' },
-  task: { table: 'crm_tasks', businessIdField: 'business_id' },
+  task: { table: 'brand_tasks', businessIdField: 'business_id' },
   note: { table: 'crm_notes', businessIdField: 'entity_id' },
   interaction: { table: 'crm_interactions', businessIdField: 'business_id' },
   asset: { table: 'crm_assets', businessIdField: 'business_id' },
