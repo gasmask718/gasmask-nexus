@@ -53,7 +53,7 @@ export const CommunicationStats = ({ entityType, entityId }: CommunicationStatsP
           subject,
           summary,
           created_at,
-          created_by_user:profiles(name)
+          created_by_user_id
         `)
         .eq('store_id', entityId)
         .order('created_at', { ascending: false });

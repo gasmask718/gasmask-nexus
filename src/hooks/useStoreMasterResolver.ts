@@ -38,7 +38,7 @@ export function useStoreMasterResolver(storeId: string | undefined | null) {
         .from('store_master')
         .select('id, store_name, address, city, state')
         .eq('id', storeId)
-        .single();
+        .maybeSingle();
       return data;
     },
     enabled: !!storeId,
@@ -53,7 +53,7 @@ export function useStoreMasterResolver(storeId: string | undefined | null) {
         .from('stores')
         .select('name, address_street, address_city, address_state, address_zip, phone, email, type, primary_contact_name')
         .eq('id', storeId)
-        .single();
+        .maybeSingle();
       return data;
     },
     enabled: !!storeId && !directMatch,
@@ -76,7 +76,7 @@ export function useStoreMasterResolver(storeId: string | undefined | null) {
         query = query.ilike('address', `%${legacyStore.address_street.substring(0, 20)}%`);
       }
       
-      const { data } = await query.limit(1).single();
+      const { data } = await query.limit(1).maybeSingle();
       return data;
     },
     enabled: !!legacyStore && !directMatch,
