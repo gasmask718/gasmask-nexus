@@ -1,64 +1,154 @@
 /**
  * TopTier Partner Edit Page
- * Full edit form for partner details
+ * Full edit form for partner details with database persistence
  */
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Save, Building2 } from 'lucide-react';
+import { ArrowLeft, Save, Building2, Loader2 } from 'lucide-react';
 import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
-import { useCRMSimulation } from '@/hooks/useCRMSimulation';
-import { useResolvedData } from '@/hooks/useResolvedData';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function TopTierPartnerEdit() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { partnerId } = useParams<{ partnerId: string }>();
   
   const { simulationMode } = useSimulationMode();
-  const { getEntityData } = useCRMSimulation('toptier-experience');
+  const [isSaving, setIsSaving] = useState(false);
   
-  const simulatedPartners = getEntityData('partner');
-  const { data: partners, isSimulated } = useResolvedData([], simulatedPartners);
-  
-  const partner = useMemo(() => {
-    return partners.find((p: any) => p.id === partnerId);
-  }, [partners, partnerId]);
+  // Fetch real partner from database using canonical partnerId
+  const { data: partner, isLoading: isLoadingPartner } = useQuery({
+    queryKey: ['crm_partner_edit', partnerId, simulationMode],
+    queryFn: async () => {
+      if (!partnerId) return null;
+      const { data, error } = await supabase
+        .from('crm_partners')
+        .select('*')
+        .eq('id', partnerId)
+        .eq('business_slug', 'toptier-experience')
+        .eq('is_simulation', simulationMode)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!partnerId,
+  });
 
   const [formData, setFormData] = useState({
-    company_name: partner?.company_name || '',
-    partner_category: partner?.partner_category || '',
-    state: partner?.state || '',
-    city: partner?.city || '',
-    pricing_range: partner?.pricing_range || '',
-    commission_rate: partner?.commission_rate || 10,
-    contract_status: partner?.contract_status || 'pending',
-    contact_name: partner?.contact_name || '',
-    phone: partner?.phone || '',
-    email: partner?.email || '',
-    booking_link: partner?.booking_link || '',
-    availability_rules: partner?.availability_rules || '',
-    notes: partner?.notes || '',
+    company_name: '',
+    partner_category: '',
+    state: '',
+    city: '',
+    pricing_range: '',
+    commission_rate: 10,
+    contract_status: 'pending',
+    contact_name: '',
+    phone: '',
+    email: '',
+    booking_link: '',
+    availability_rules: '',
+    notes: '',
   });
+
+  // Initialize form data when partner is loaded
+  useEffect(() => {
+    if (partner) {
+      setFormData({
+        company_name: partner.company_name || '',
+        partner_category: partner.partner_category || '',
+        state: partner.state || '',
+        city: partner.city || '',
+        pricing_range: partner.pricing_range || '',
+        commission_rate: partner.commission_rate ?? 10,
+        contract_status: partner.contract_status || 'pending',
+        contact_name: partner.contact_name || '',
+        phone: partner.phone || '',
+        email: partner.email || '',
+        booking_link: partner.booking_link || '',
+        availability_rules: partner.availability_rules || '',
+        notes: partner.notes || '',
+      });
+    }
+  }, [partner]);
 
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    if (isSimulated) {
+  const handleSave = async () => {
+    if (!partnerId) return;
+
+    if (simulationMode) {
       toast.info('Changes not saved in Simulation Mode');
-    } else {
-      toast.success('Partner updated successfully');
+      navigate(`/crm/toptier-experience/partners/profile/${partnerId}`);
+      return;
     }
-    navigate(`/crm/toptier-experience/partners/profile/${partnerId}`);
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('crm_partners')
+        .update({
+          company_name: formData.company_name,
+          partner_category: formData.partner_category,
+          state: formData.state,
+          city: formData.city,
+          pricing_range: formData.pricing_range,
+          commission_rate: formData.commission_rate,
+          contract_status: formData.contract_status,
+          contact_name: formData.contact_name,
+          phone: formData.phone,
+          email: formData.email,
+          booking_link: formData.booking_link,
+          availability_rules: formData.availability_rules,
+          notes: formData.notes,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', partnerId);
+
+      if (error) throw error;
+
+      // Invalidate queries to refresh profile data
+      queryClient.invalidateQueries({ queryKey: ['crm_partner', partnerId] });
+      queryClient.invalidateQueries({ queryKey: ['crm_partner_edit', partnerId] });
+      
+      toast.success('Partner updated successfully');
+      navigate(`/crm/toptier-experience/partners/profile/${partnerId}`);
+    } catch (error) {
+      console.error('Failed to update partner:', error);
+      toast.error('Failed to save changes. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  // Loading state
+  if (isLoadingPartner) {
+    return (
+      <div className="space-y-6">
+        <Button variant="ghost" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <Card className="p-8 text-center">
+          <Loader2 className="h-12 w-12 mx-auto text-muted-foreground mb-4 animate-spin" />
+          <h3 className="font-medium mb-2">Loading partner...</h3>
+          <p className="text-sm text-muted-foreground">
+            Retrieving partner data for editing
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   if (!partner) {
     return (
@@ -88,13 +178,17 @@ export default function TopTierPartnerEdit() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               Edit Partner
-              {isSimulated && <SimulationBadge />}
+              {simulationMode && <SimulationBadge />}
             </h1>
             <p className="text-muted-foreground">{partner.company_name}</p>
           </div>
         </div>
-        <Button onClick={handleSave}>
-          <Save className="h-4 w-4 mr-2" />
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
           Save Changes
         </Button>
       </div>
