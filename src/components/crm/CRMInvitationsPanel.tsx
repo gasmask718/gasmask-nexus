@@ -32,7 +32,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { useCRMInvitations, useRevokeCRMInvite, type CRMInvitation } from '@/hooks/useCRMAccess';
+import { useCRMInvitations, useRevokeCRMInvite, useResendCRMInvite, type CRMInvitation } from '@/hooks/useCRMAccess';
 import { InviteUserModal } from './InviteUserModal';
 import { toast } from 'sonner';
 
@@ -42,6 +42,7 @@ export function CRMInvitationsPanel() {
 
   const { data: invitations = [], isLoading, refetch } = useCRMInvitations();
   const revokeInvite = useRevokeCRMInvite();
+  const resendInvite = useResendCRMInvite();
 
   const filteredInvitations = invitations.filter((inv) =>
     inv.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -74,7 +75,7 @@ export function CRMInvitationsPanel() {
   };
 
   const handleCopyToken = (token: string) => {
-    const inviteUrl = `${window.location.origin}/accept-invite?token=${token}`;
+    const inviteUrl = `${window.location.origin}/crm/accept-invite?token=${token}`;
     navigator.clipboard.writeText(inviteUrl);
     toast.success('Invite link copied to clipboard');
   };
@@ -82,6 +83,10 @@ export function CRMInvitationsPanel() {
   const handleRevoke = async (invitation: CRMInvitation) => {
     if (invitation.status !== 'pending') return;
     await revokeInvite.mutateAsync(invitation.id);
+  };
+
+  const handleResend = async (invitation: CRMInvitation) => {
+    await resendInvite.mutateAsync(invitation);
   };
 
   return (
@@ -207,9 +212,19 @@ export function CRMInvitationsPanel() {
                                 </DropdownMenuItem>
                               </>
                             )}
-                            {invitation.status !== 'pending' && (
+                            {(invitation.status === 'expired' || invitation.status === 'revoked') && (
+                              <DropdownMenuItem 
+                                onClick={() => handleResend(invitation)}
+                                disabled={resendInvite.isPending}
+                              >
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Send New Invitation
+                              </DropdownMenuItem>
+                            )}
+                            {invitation.status === 'accepted' && (
                               <DropdownMenuItem disabled>
-                                No actions available
+                                <CheckCircle2 className="h-4 w-4 mr-2" />
+                                Already Accepted
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>

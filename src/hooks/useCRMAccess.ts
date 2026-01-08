@@ -223,6 +223,52 @@ export function useRevokeCRMInvite() {
   });
 }
 
+// Hook to resend an expired or revoked invitation
+export function useResendCRMInvite() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (invitation: CRMInvitation) => {
+      // Mark old invitation as expired if not already
+      if (invitation.status === 'pending') {
+        await supabase
+          .from('crm_invitations')
+          .update({ status: 'expired' })
+          .eq('id', invitation.id);
+      }
+
+      // Get assignments for the invitation
+      const assignments = invitation.assignments || [];
+      if (assignments.length === 0) {
+        throw new Error('No CRM assignments found for this invitation');
+      }
+
+      // Create new invitation via the edge function
+      const { data: response, error } = await supabase.functions.invoke('send-crm-invite', {
+        body: {
+          email: invitation.email,
+          crmAssignments: assignments.map(a => ({
+            crmId: a.crm_id,
+            accessRole: a.access_role,
+          })),
+          notes: invitation.notes || `Re-invitation (original: ${invitation.id})`,
+        },
+      });
+
+      if (error) throw error;
+      if (response.error) throw new Error(response.error);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['crm-invitations'] });
+      toast.success('New invitation sent successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to resend invitation');
+    },
+  });
+}
+
 // Hook to update CRM access
 export function useUpdateCRMAccess() {
   const queryClient = useQueryClient();

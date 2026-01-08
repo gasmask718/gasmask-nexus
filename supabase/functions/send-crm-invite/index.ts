@@ -1,5 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,13 +25,14 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get the user from the auth header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
+        JSON.stringify({ error: "Unauthorized - No authorization header" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -40,8 +42,9 @@ serve(async (req) => {
     );
 
     if (authError || !user) {
+      console.error("Auth error:", authError);
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
+        JSON.stringify({ error: "Unauthorized - Invalid token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -60,11 +63,31 @@ serve(async (req) => {
     const body: InviteRequest = await req.json();
     const { email, crmAssignments, notes } = body;
 
-    if (!email || !crmAssignments || crmAssignments.length === 0) {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
       return new Response(
-        JSON.stringify({ error: "Email and at least one CRM assignment are required" }),
+        JSON.stringify({ error: "Invalid email address format" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    if (!crmAssignments || crmAssignments.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "At least one CRM assignment is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate access roles
+    const validRoles = ['view', 'edit', 'admin'];
+    for (const assignment of crmAssignments) {
+      if (!validRoles.includes(assignment.accessRole)) {
+        return new Response(
+          JSON.stringify({ error: `Invalid access role: ${assignment.accessRole}` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Check if there's already a pending invitation for this email
@@ -73,7 +96,7 @@ serve(async (req) => {
       .select('id')
       .eq('email', email.toLowerCase())
       .eq('status', 'pending')
-      .single();
+      .maybeSingle();
 
     if (existingInvite) {
       return new Response(
@@ -82,13 +105,31 @@ serve(async (req) => {
       );
     }
 
-    // Create the invitation
+    // Validate that all CRM IDs exist
+    const crmIds = crmAssignments.map(a => a.crmId);
+    const { data: validCrms, error: crmValidationError } = await supabase
+      .from('businesses')
+      .select('id, name')
+      .in('id', crmIds);
+
+    if (crmValidationError || !validCrms || validCrms.length !== crmIds.length) {
+      return new Response(
+        JSON.stringify({ error: "One or more CRM IDs are invalid" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Create the invitation with 7-day expiry
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
     const { data: invitation, error: inviteError } = await supabase
       .from('crm_invitations')
       .insert({
         email: email.toLowerCase(),
         invited_by: user.id,
         notes,
+        expires_at: expiresAt.toISOString(),
       })
       .select()
       .single();
@@ -122,28 +163,75 @@ serve(async (req) => {
       );
     }
 
-    // Get CRM names for the email
-    const crmIds = crmAssignments.map(a => a.crmId);
-    const { data: crms } = await supabase
-      .from('businesses')
-      .select('id, name')
-      .in('id', crmIds);
+    // Build CRM names for email
+    const crmNames = validCrms.map(c => c.name).join(', ');
 
-    const crmNames = crms?.map(c => c.name).join(', ') || 'CRM Access';
+    // Generate the acceptance URL (use the project's frontend URL)
+    // The frontend URL is derived from the Supabase URL project ID
+    const projectId = supabaseUrl.match(/https:\/\/([^.]+)\./)?.[1] || '';
+    const acceptUrl = `https://${projectId}.lovableproject.com/crm/accept-invite?token=${invitation.invite_token}`;
 
-    // Generate the acceptance URL
-    const acceptUrl = `${supabaseUrl.replace('.supabase.co', '')}/accept-invite?token=${invitation.invite_token}`;
+    // Send email if Resend API key is configured
+    let emailSent = false;
+    if (resendApiKey) {
+      try {
+        const resend = new Resend(resendApiKey);
+        
+        const { error: emailError } = await resend.emails.send({
+          from: "TopTier CRM <onboarding@resend.dev>",
+          to: [email.toLowerCase()],
+          subject: "You've been invited to access CRM",
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h1 style="color: #1a1a2e; font-size: 24px; margin-bottom: 20px;">You're Invited!</h1>
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.5;">
+                You have been invited to access the following CRM systems:
+              </p>
+              <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <strong style="color: #1a1a2e;">${crmNames}</strong>
+              </div>
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.5;">
+                Click the button below to accept your invitation and get started:
+              </p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${acceptUrl}" 
+                   style="display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: 500;">
+                  Accept Invitation
+                </a>
+              </div>
+              <p style="color: #888; font-size: 14px; margin-top: 30px;">
+                This invitation will expire in 7 days.
+              </p>
+              <p style="color: #888; font-size: 12px;">
+                If you didn't expect this invitation, you can safely ignore this email.
+              </p>
+            </div>
+          `,
+        });
 
-    // TODO: Send email using a service like Resend
-    // For now, we'll just log and return the invite token
-    console.log(`📧 CRM Invite created for ${email}`);
+        if (emailError) {
+          console.error("Email sending error:", emailError);
+        } else {
+          emailSent = true;
+          console.log(`📧 Email sent successfully to ${email}`);
+        }
+      } catch (emailErr) {
+        console.error("Failed to send email:", emailErr);
+      }
+    } else {
+      console.log("⚠️ RESEND_API_KEY not configured - email not sent");
+    }
+
+    console.log(`✅ CRM Invite created for ${email}`);
     console.log(`   Token: ${invitation.invite_token}`);
     console.log(`   CRMs: ${crmNames}`);
     console.log(`   Accept URL: ${acceptUrl}`);
+    console.log(`   Email sent: ${emailSent}`);
 
     return new Response(
       JSON.stringify({
         success: true,
+        emailSent,
         invitation: {
           id: invitation.id,
           email: invitation.email,
@@ -151,7 +239,10 @@ serve(async (req) => {
           expiresAt: invitation.expires_at,
           crmAssignments: crmAssignments,
         },
-        message: `Invitation sent to ${email} for access to: ${crmNames}`,
+        acceptUrl,
+        message: emailSent 
+          ? `Invitation email sent to ${email} for access to: ${crmNames}`
+          : `Invitation created for ${email}. Email not sent (Resend not configured). Share the link manually.`,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
