@@ -199,11 +199,12 @@ const Stores = () => {
           });
         }
         
-        // Fetch tube inventory
+        // Fetch tube inventory (exclude legacy hotscolatti, show only light/dark variants)
         const { data: tubeData, error: tubeError } = await supabase
           .from('store_tube_inventory')
           .select('id, store_id, brand, current_tubes_left')
-          .in('store_id', storeIds);
+          .in('store_id', storeIds)
+          .neq('brand', 'hotscolatti');
         
         if (!tubeError && tubeData) {
           const inventoryByStore = tubeData.reduce((acc, item) => {
