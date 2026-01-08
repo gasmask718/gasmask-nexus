@@ -20,7 +20,7 @@ export function RouteIntelligence({ storeId }: RouteIntelligenceProps) {
           *,
           driver:profiles!routes_generated_driver_id_fkey(name)
         `)
-        .contains("stops", [storeId])
+        .contains("stops", JSON.stringify([storeId]))
         .order("created_at", { ascending: false })
         .limit(5);
 
