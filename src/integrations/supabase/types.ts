@@ -14413,6 +14413,7 @@ export type Database = {
           partial_amount: number | null
           payment_method: string | null
           payment_status: string
+          received_by: string | null
           store_id: string | null
           subtotal: number | null
           tax: number | null
@@ -14437,6 +14438,7 @@ export type Database = {
           partial_amount?: number | null
           payment_method?: string | null
           payment_status?: string
+          received_by?: string | null
           store_id?: string | null
           subtotal?: number | null
           tax?: number | null
@@ -14461,6 +14463,7 @@ export type Database = {
           partial_amount?: number | null
           payment_method?: string | null
           payment_status?: string
+          received_by?: string | null
           store_id?: string | null
           subtotal?: number | null
           tax?: number | null
