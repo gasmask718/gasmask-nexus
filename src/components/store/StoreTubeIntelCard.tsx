@@ -13,6 +13,10 @@ const brandColors: Record<string, string> = {
   grabba: 'bg-orange-500',
   gasmask: 'bg-purple-500',
   fronto: 'bg-green-500',
+  'hotscolatti-light': 'bg-amber-400',
+  'hotscolatti-dark': 'bg-amber-800',
+  hotmama: 'bg-pink-500',
+  gasmasktubes: 'bg-purple-600',
 };
 
 export function StoreTubeIntelCard({ storeId }: StoreTubeIntelCardProps) {
@@ -23,6 +27,7 @@ export function StoreTubeIntelCard({ storeId }: StoreTubeIntelCardProps) {
         .from('store_tube_inventory')
         .select('*')
         .eq('store_id', storeId)
+        .neq('brand', 'hotscolatti') // Exclude legacy hotscolatti, show only light/dark variants
         .order('brand');
       
       if (error) throw error;
