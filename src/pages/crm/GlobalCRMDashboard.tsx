@@ -15,7 +15,7 @@ import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeCon
 import CRMLayout from './CRMLayout';
 import {
   Building2, Search, Plus, Settings, RefreshCw, LayoutGrid, List, ChevronRight,
-  Users, Briefcase, Calendar, Star
+  Users, Briefcase, Calendar, Star, UserPlus
 } from 'lucide-react';
 
 interface BusinessCard {
@@ -83,6 +83,10 @@ export default function GlobalCRMDashboard() {
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/crm/user-access')}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              User Access
             </Button>
             <Button variant="outline" onClick={() => navigate('/crm/settings')}>
               <Settings className="h-4 w-4 mr-2" />
