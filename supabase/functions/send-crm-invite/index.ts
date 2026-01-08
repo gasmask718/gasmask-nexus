@@ -26,7 +26,19 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const frontendBaseUrl = Deno.env.get("FRONTEND_BASE_URL");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Validate FRONTEND_BASE_URL is configured before proceeding
+    if (!frontendBaseUrl) {
+      console.error("❌ FRONTEND_BASE_URL environment variable is not configured");
+      return new Response(
+        JSON.stringify({ 
+          error: "Server configuration error: FRONTEND_BASE_URL is not configured. Please contact your administrator." 
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Get the user from the auth header
     const authHeader = req.headers.get("Authorization");
@@ -166,10 +178,9 @@ serve(async (req) => {
     // Build CRM names for email
     const crmNames = validCrms.map(c => c.name).join(', ');
 
-    // Generate the acceptance URL
-    // Use LOVABLE_PROJECT_ID env variable, fallback to parsing from request origin
-    const lovableProjectId = Deno.env.get("VITE_SUPABASE_PROJECT_ID") || 'wpczgwxsriezaubncuom';
-    const acceptUrl = `https://${lovableProjectId}.lovableproject.com/crm/accept-invite?token=${invitation.invite_token}`;
+    // Generate the acceptance URL using the configured frontend base URL
+    const normalizedBaseUrl = frontendBaseUrl.replace(/\/$/, ''); // Remove trailing slash if present
+    const acceptUrl = `${normalizedBaseUrl}/crm/accept-invite?token=${invitation.invite_token}`;
 
     // Send email if Resend API key is configured
     let emailSent = false;
