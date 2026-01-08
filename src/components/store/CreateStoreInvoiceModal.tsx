@@ -419,35 +419,6 @@ export function CreateStoreInvoiceModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Bulk Mode Toggle */}
-          <div className="flex items-center space-x-2 p-3 rounded-lg bg-secondary/30 border">
-            <Checkbox
-              id="bulkMode"
-              checked={bulkMode}
-              onCheckedChange={(checked) => {
-                setBulkMode(checked === true);
-                if (!checked) setSelectedStoreIds([]);
-              }}
-            />
-            <Label
-              htmlFor="bulkMode"
-              className="text-sm font-medium leading-none cursor-pointer"
-            >
-              Create same invoice for multiple stores
-            </Label>
-          </div>
-
-          {/* Bulk Store Selection */}
-          {bulkMode && (
-            <div className="space-y-2 p-4 rounded-lg bg-primary/10 border border-primary/20">
-              <Label>Select Stores</Label>
-              <BulkStoreSelector
-                selectedStoreIds={selectedStoreIds}
-                onSelectionChange={setSelectedStoreIds}
-                excludeStoreId={storeId}
-              />
-            </div>
-          )}
 
           {/* Product Selection */}
           <div className="space-y-3 p-4 rounded-lg bg-secondary/30 border border-dashed">
