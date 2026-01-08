@@ -166,10 +166,10 @@ serve(async (req) => {
     // Build CRM names for email
     const crmNames = validCrms.map(c => c.name).join(', ');
 
-    // Generate the acceptance URL (use the project's frontend URL)
-    // The frontend URL is derived from the Supabase URL project ID
-    const projectId = supabaseUrl.match(/https:\/\/([^.]+)\./)?.[1] || '';
-    const acceptUrl = `https://${projectId}.lovableproject.com/crm/accept-invite?token=${invitation.invite_token}`;
+    // Generate the acceptance URL
+    // Use LOVABLE_PROJECT_ID env variable, fallback to parsing from request origin
+    const lovableProjectId = Deno.env.get("VITE_SUPABASE_PROJECT_ID") || 'wpczgwxsriezaubncuom';
+    const acceptUrl = `https://${lovableProjectId}.lovableproject.com/crm/accept-invite?token=${invitation.invite_token}`;
 
     // Send email if Resend API key is configured
     let emailSent = false;
