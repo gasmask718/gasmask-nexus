@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Save, User, MapPin, Settings, Shield, Globe, Instagram, Twitter, Facebook, Cake, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Save, User, MapPin, Settings, Shield, Globe, Instagram, Twitter, Facebook, Cake, ExternalLink, Heart } from 'lucide-react';
 import { US_STATES, TOPTIER_PARTNER_CATEGORIES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { toast } from 'sonner';
@@ -478,6 +478,39 @@ export default function TopTierEditCustomer() {
               onCheckedChange={(checked) => handleChange('is_vip', checked)}
             />
             <Label htmlFor="is_vip" className="cursor-pointer">Mark as VIP Customer</Label>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Personal Preferences */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Heart className="h-5 w-5" />
+            Personal Preferences
+          </CardTitle>
+          <CardDescription>
+            Optional personalization details
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="favorite_color">Favorite Color</Label>
+            <Input
+              id="favorite_color"
+              value={formData.favorite_color}
+              onChange={(e) => handleChange('favorite_color', e.target.value)}
+              placeholder="e.g., Blue, Red, Gold"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="favorite_song">Favorite Song / Music Genre</Label>
+            <Input
+              id="favorite_song"
+              value={formData.favorite_song}
+              onChange={(e) => handleChange('favorite_song', e.target.value)}
+              placeholder="e.g., Jazz, R&B, Hip Hop"
+            />
           </div>
         </CardContent>
       </Card>
