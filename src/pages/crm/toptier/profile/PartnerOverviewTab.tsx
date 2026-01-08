@@ -1,22 +1,27 @@
 /**
  * Partner Overview Tab - Full page view with edit capability and communication actions
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { 
   Edit, ExternalLink, Phone, Mail, MapPin, 
   DollarSign, Percent, Calendar, Building2,
   User, Link2, CheckCircle, AlertCircle, Clock,
-  TrendingUp, Eye
+  TrendingUp, Eye, Loader2
 } from 'lucide-react';
 import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from '@/config/crmBlueprints';
-import { SimulationBadge } from '@/contexts/SimulationModeContext';
+import { SimulationBadge, useSimulationMode } from '@/contexts/SimulationModeContext';
 import { CommunicationActions } from '@/components/crm/toptier/CommunicationActions';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface PartnerOverviewTabProps {
   partner: any;
@@ -28,6 +33,9 @@ interface PartnerOverviewTabProps {
 export default function PartnerOverviewTab({ partner, isSimulated, bookings, campaigns }: PartnerOverviewTabProps) {
   const navigate = useNavigate();
   const { partnerId } = useParams();
+  const queryClient = useQueryClient();
+  const { simulationMode } = useSimulationMode();
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
   
   const categoryInfo = TOPTIER_PARTNER_CATEGORIES.find(c => c.value === partner?.partner_category);
   
@@ -48,6 +56,36 @@ export default function PartnerOverviewTab({ partner, isSimulated, bookings, cam
     }
   };
 
+  // Toggle active/inactive status
+  const handleStatusToggle = async () => {
+    if (simulationMode) {
+      toast.info('Status changes are not persisted in simulation mode');
+      return;
+    }
+    
+    setIsTogglingStatus(true);
+    const newStatus = partner.contract_status === 'active' ? 'inactive' : 'active';
+    
+    try {
+      const { error } = await supabase
+        .from('crm_partners')
+        .update({ contract_status: newStatus })
+        .eq('id', partnerId);
+      
+      if (error) throw error;
+      
+      toast.success(`Partner marked as ${newStatus}`);
+      queryClient.invalidateQueries({ queryKey: ['crm_partner', partnerId] });
+      queryClient.invalidateQueries({ queryKey: ['crm_partners'] });
+    } catch (error: any) {
+      toast.error(`Failed to update status: ${error.message}`);
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  };
+
+  const isActive = partner.contract_status === 'active';
+
   // Calculate KPIs
   const totalDeals = bookings.length;
   const totalRevenue = bookings.reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0);
@@ -61,10 +99,28 @@ export default function PartnerOverviewTab({ partner, isSimulated, bookings, cam
           Overview
           {isSimulated && <SimulationBadge />}
         </h2>
-        <Button onClick={() => navigate(`/crm/toptier-experience/partners/profile/${partnerId}/edit`)}>
-          <Edit className="h-4 w-4 mr-2" />
-          Edit Overview
-        </Button>
+        <div className="flex items-center gap-4">
+          {/* Active/Inactive Toggle */}
+          <div className="flex items-center gap-2 border rounded-lg px-3 py-2">
+            <Label htmlFor="partner-status" className="text-sm text-muted-foreground cursor-pointer">
+              {isActive ? 'Active' : 'Inactive'}
+            </Label>
+            {isTogglingStatus ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Switch
+                id="partner-status"
+                checked={isActive}
+                onCheckedChange={handleStatusToggle}
+                disabled={isTogglingStatus}
+              />
+            )}
+          </div>
+          <Button onClick={() => navigate(`/crm/toptier-experience/partners/profile/${partnerId}/edit`)}>
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Overview
+          </Button>
+        </div>
       </div>
 
       {/* KPI Summary */}

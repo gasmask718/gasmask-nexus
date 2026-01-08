@@ -4,6 +4,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from '@/config/crmBlueprints';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { useResolvedData } from '@/hooks/useResolvedData';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function TopTierPartnersByState() {
   const navigate = useNavigate();
@@ -25,9 +27,24 @@ export default function TopTierPartnersByState() {
   const { simulationMode } = useSimulationMode();
   const { getEntityData } = useCRMSimulation('toptier-experience');
   
-  // Get partner data
+  // Fetch real partners from database
+  const { data: realPartners = [] } = useQuery({
+    queryKey: ['crm_partners', 'toptier-experience', simulationMode],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_partners')
+        .select('*')
+        .eq('business_slug', 'toptier-experience')
+        .eq('is_simulation', simulationMode)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  
+  // Get simulated partner data
   const simulatedPartners = getEntityData('partner');
-  const { data: partners, isSimulated } = useResolvedData([], simulatedPartners);
+  const { data: partners, isSimulated } = useResolvedData(realPartners, simulatedPartners, 'toptier-experience');
 
   // Calculate state coverage
   const stateCoverage = useMemo(() => {
