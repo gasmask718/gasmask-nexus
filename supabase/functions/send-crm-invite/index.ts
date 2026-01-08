@@ -189,7 +189,7 @@ serve(async (req) => {
         const resend = new Resend(resendApiKey);
         
         const { error: emailError } = await resend.emails.send({
-          from: "TopTier CRM <onboarding@resend.dev>",
+          from: "Lovable <onboarding@resend.dev>",
           to: [email.toLowerCase()],
           subject: "You've been invited to access CRM",
           html: `
