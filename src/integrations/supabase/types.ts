@@ -8272,6 +8272,8 @@ export type Database = {
           created_by: string | null
           dialect_preference: string | null
           email: string | null
+          favorite_color: string | null
+          favorite_song: string | null
           formality_level: string | null
           id: string
           language_preference: string | null
@@ -8294,6 +8296,8 @@ export type Database = {
           created_by?: string | null
           dialect_preference?: string | null
           email?: string | null
+          favorite_color?: string | null
+          favorite_song?: string | null
           formality_level?: string | null
           id?: string
           language_preference?: string | null
@@ -8316,6 +8320,8 @@ export type Database = {
           created_by?: string | null
           dialect_preference?: string | null
           email?: string | null
+          favorite_color?: string | null
+          favorite_song?: string | null
           formality_level?: string | null
           id?: string
           language_preference?: string | null

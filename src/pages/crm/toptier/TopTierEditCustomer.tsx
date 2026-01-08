@@ -49,6 +49,8 @@ export default function TopTierEditCustomer() {
     sales_notes: '',
     preferences: '',
     is_vip: false,
+    favorite_color: '',
+    favorite_song: '',
   });
 
   useEffect(() => {
@@ -79,6 +81,8 @@ export default function TopTierEditCustomer() {
         sales_notes: 'Prefers luxury experiences, repeat customer',
         preferences: 'Likes yacht trips, has used our exotic car rentals multiple times',
         is_vip: true,
+        favorite_color: 'Blue',
+        favorite_song: 'Jazz',
       });
       setIsLoading(false);
     }, 500);

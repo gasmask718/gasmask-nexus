@@ -56,6 +56,8 @@ const generateCustomerData = (customerId: string) => {
     last_booking_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     created_at: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
     notes: 'Prefers luxury SUVs and yacht packages. Has expressed interest in helicopter tours.',
+    favorite_color: 'Blue',
+    favorite_song: 'Hip-Hop',
   };
 };
 
@@ -149,6 +151,8 @@ export default function TopTierCustomerProfile() {
       last_booking_date: dbCustomer.last_order_date || new Date().toISOString(),
       created_at: dbCustomer.created_at || new Date().toISOString(),
       notes: dbCustomer.notes || '',
+      favorite_color: (dbCustomer as any).favorite_color || '',
+      favorite_song: (dbCustomer as any).favorite_song || '',
     };
   }, [dbCustomer, simulationMode, customerId]);
 
@@ -390,6 +394,28 @@ export default function TopTierCustomerProfile() {
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">Last Booking</p>
                   <p className="font-medium">{format(new Date(customer.last_booking_date), 'MMMM d, yyyy')}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Personal Preferences Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-lg">🎨</span>
+                  Personal Preferences
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Favorite Color</p>
+                    <p className="font-medium">{customer.favorite_color || <span className="text-muted-foreground italic">Not set</span>}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Favorite Song / Music Genre</p>
+                    <p className="font-medium">{customer.favorite_song || <span className="text-muted-foreground italic">Not set</span>}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
