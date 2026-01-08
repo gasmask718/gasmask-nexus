@@ -50,25 +50,44 @@ export default function AcceptCRMInvite() {
         body: { token }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Parse error message from edge function
+        const errorBody = error.message || 'Failed to accept invitation';
+        console.error('Accept invite error:', error);
+        
+        if (errorBody.includes('expired')) {
+          setStatus('expired');
+          setMessage('This invitation has expired. Please request a new invitation.');
+        } else if (errorBody.includes('already been accepted')) {
+          setStatus('error');
+          setMessage('This invitation has already been used.');
+        } else if (errorBody.includes('different email')) {
+          setStatus('error');
+          setMessage('This invitation was sent to a different email address. Please sign in with the correct account.');
+        } else {
+          setStatus('error');
+          setMessage(errorBody);
+        }
+        return;
+      }
 
-      if (data.success) {
+      if (data?.success) {
         setStatus('success');
         setMessage(data.message || 'Invitation accepted successfully!');
-        setAssignedCrms(data.crmAccess?.map((a: any) => a.crm_id) || []);
+        setAssignedCrms(data.grantedAccess?.map((a: any) => a.crmName) || []);
         toast.success('CRM access granted!');
-      } else {
-        if (data.error?.includes('expired')) {
+      } else if (data?.error) {
+        if (data.error.includes('expired')) {
           setStatus('expired');
         } else {
           setStatus('error');
         }
-        setMessage(data.error || 'Failed to accept invitation');
+        setMessage(data.error);
       }
     } catch (err: any) {
       console.error('Accept invite error:', err);
       setStatus('error');
-      setMessage(err.message || 'An unexpected error occurred');
+      setMessage(err.message || 'An unexpected error occurred. Please try again.');
     }
   };
 
