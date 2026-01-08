@@ -14599,11 +14599,13 @@ export type Database = {
           description: string | null
           icon: string | null
           id: string
+          is_archived: boolean | null
           is_system: boolean | null
           name: string
           slug: string
           sort_order: number | null
           updated_at: string
+          visible_roles: string[] | null
         }
         Insert: {
           business_id?: string | null
@@ -14611,11 +14613,13 @@ export type Database = {
           description?: string | null
           icon?: string | null
           id?: string
+          is_archived?: boolean | null
           is_system?: boolean | null
           name: string
           slug: string
           sort_order?: number | null
           updated_at?: string
+          visible_roles?: string[] | null
         }
         Update: {
           business_id?: string | null
@@ -14623,11 +14627,13 @@ export type Database = {
           description?: string | null
           icon?: string | null
           id?: string
+          is_archived?: boolean | null
           is_system?: boolean | null
           name?: string
           slug?: string
           sort_order?: number | null
           updated_at?: string
+          visible_roles?: string[] | null
         }
         Relationships: [
           {
@@ -14650,14 +14656,18 @@ export type Database = {
           description: string | null
           drilldown_filters: Json | null
           drilldown_path: string | null
+          editable_roles: string[] | null
           entity_type: string
           icon: string | null
           id: string
           is_active: boolean | null
+          is_archived: boolean | null
           name: string
+          preview_sql: string | null
           slug: string
           sort_order: number | null
           updated_at: string
+          visible_roles: string[] | null
         }
         Insert: {
           business_id?: string | null
@@ -14669,14 +14679,18 @@ export type Database = {
           description?: string | null
           drilldown_filters?: Json | null
           drilldown_path?: string | null
+          editable_roles?: string[] | null
           entity_type: string
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_archived?: boolean | null
           name: string
+          preview_sql?: string | null
           slug: string
           sort_order?: number | null
           updated_at?: string
+          visible_roles?: string[] | null
         }
         Update: {
           business_id?: string | null
@@ -14688,14 +14702,18 @@ export type Database = {
           description?: string | null
           drilldown_filters?: Json | null
           drilldown_path?: string | null
+          editable_roles?: string[] | null
           entity_type?: string
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_archived?: boolean | null
           name?: string
+          preview_sql?: string | null
           slug?: string
           sort_order?: number | null
           updated_at?: string
+          visible_roles?: string[] | null
         }
         Relationships: [
           {

@@ -30,3 +30,4 @@ export { default as TopTierCustomerValue } from './TopTierCustomerValue';
 export { default as TopTierAllPartners } from './TopTierAllPartners';
 export { default as TopTierNewDeal } from './TopTierNewDeal';
 export { default as TopTierDeals } from './TopTierDeals';
+export { default as TopTierKPIManagement } from './TopTierKPIManagement';
