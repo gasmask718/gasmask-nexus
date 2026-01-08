@@ -14410,6 +14410,7 @@ export type Database = {
           notes: string | null
           order_id: string | null
           paid_at: string | null
+          partial_amount: number | null
           payment_method: string | null
           payment_status: string
           store_id: string | null
@@ -14433,6 +14434,7 @@ export type Database = {
           notes?: string | null
           order_id?: string | null
           paid_at?: string | null
+          partial_amount?: number | null
           payment_method?: string | null
           payment_status?: string
           store_id?: string | null
@@ -14456,6 +14458,7 @@ export type Database = {
           notes?: string | null
           order_id?: string | null
           paid_at?: string | null
+          partial_amount?: number | null
           payment_method?: string | null
           payment_status?: string
           store_id?: string | null
