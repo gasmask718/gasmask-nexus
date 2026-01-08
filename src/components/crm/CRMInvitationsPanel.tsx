@@ -190,45 +190,67 @@ export function CRMInvitationsPanel() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
+                        <div className="flex items-center gap-1">
+                          {/* Show direct Resend button for expired/revoked */}
+                          {(invitation.status === 'expired' || invitation.status === 'revoked') && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleResend(invitation)}
+                              disabled={resendInvite.isPending}
+                              className="gap-1"
+                            >
+                              <RefreshCw className={`h-3 w-3 ${resendInvite.isPending ? 'animate-spin' : ''}`} />
+                              Resend
                             </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {invitation.status === 'pending' && (
-                              <>
-                                <DropdownMenuItem onClick={() => handleCopyToken(invitation.invite_token)}>
-                                  <Copy className="h-4 w-4 mr-2" />
-                                  Copy Invite Link
-                                </DropdownMenuItem>
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {invitation.status === 'pending' && (
+                                <>
+                                  <DropdownMenuItem onClick={() => handleCopyToken(invitation.invite_token)}>
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    Copy Invite Link
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleResend(invitation)}
+                                    disabled={resendInvite.isPending}
+                                  >
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                    Resend Invitation
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleRevoke(invitation)}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Revoke Invitation
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              {(invitation.status === 'expired' || invitation.status === 'revoked') && (
                                 <DropdownMenuItem 
-                                  onClick={() => handleRevoke(invitation)}
-                                  className="text-destructive"
+                                  onClick={() => handleResend(invitation)}
+                                  disabled={resendInvite.isPending}
                                 >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Revoke Invitation
+                                  <RefreshCw className="h-4 w-4 mr-2" />
+                                  Resend Invitation
                                 </DropdownMenuItem>
-                              </>
-                            )}
-                            {(invitation.status === 'expired' || invitation.status === 'revoked') && (
-                              <DropdownMenuItem 
-                                onClick={() => handleResend(invitation)}
-                                disabled={resendInvite.isPending}
-                              >
-                                <RefreshCw className="h-4 w-4 mr-2" />
-                                Send New Invitation
-                              </DropdownMenuItem>
-                            )}
-                            {invitation.status === 'accepted' && (
-                              <DropdownMenuItem disabled>
-                                <CheckCircle2 className="h-4 w-4 mr-2" />
-                                Already Accepted
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              )}
+                              {invitation.status === 'accepted' && (
+                                <DropdownMenuItem disabled>
+                                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                                  Already Accepted
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
