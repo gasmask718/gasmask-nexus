@@ -5,19 +5,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Phone, MessageSquare, Star, User, Eye } from 'lucide-react';
+import { Users, Plus, Phone, MessageSquare, Star, User, Eye, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { AddContactModal } from './AddContactModal';
+import { EditStoreContactModal } from './EditStoreContactModal';
 
 interface StoreContact {
   id: string;
   store_id: string;
   name: string;
-  role: string;
-  phone: string;
-  is_primary: boolean;
-  can_receive_sms: boolean;
+  role: string | null;
+  phone: string | null;
+  email: string | null;
+  is_primary: boolean | null;
+  can_receive_sms: boolean | null;
   created_at: string;
+  influence_level: string | null;
+  notes: string | null;
+  responsive_by_call: boolean | null;
+  responsive_by_text: boolean | null;
 }
 
 interface StoreContactsSectionProps {
@@ -39,6 +45,8 @@ const ROLE_LABELS: Record<string, string> = {
 
 export function StoreContactsSection({ storeId, storeName }: StoreContactsSectionProps) {
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<StoreContact | null>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -78,6 +86,17 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
   const handleContactAdded = () => {
     queryClient.invalidateQueries({ queryKey: ['store-contacts', storeId] });
     setAddModalOpen(false);
+  };
+
+  const handleEditContact = (contact: StoreContact) => {
+    setEditingContact(contact);
+    setEditModalOpen(true);
+  };
+
+  const handleContactUpdated = () => {
+    queryClient.invalidateQueries({ queryKey: ['store-contacts', storeId] });
+    queryClient.invalidateQueries({ queryKey: ['store-owner', storeId] });
+    setEditingContact(null);
   };
 
   if (isLoading) {
@@ -132,9 +151,11 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Badge variant="secondary" className="text-xs">
-                          {ROLE_LABELS[contact.role] || contact.role}
-                        </Badge>
+                        {contact.role && (
+                          <Badge variant="secondary" className="text-xs">
+                            {ROLE_LABELS[contact.role] || contact.role}
+                          </Badge>
+                        )}
                         {contact.phone && <span>{contact.phone}</span>}
                       </div>
                     </div>
@@ -161,6 +182,14 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                     <Button
                       size="sm"
                       variant="ghost"
+                      onClick={() => handleEditContact(contact)}
+                      title="Edit Contact"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
                       onClick={() => navigate(`/crm/store-contact/${contact.id}`)}
                       title="View Profile"
                     >
@@ -180,6 +209,13 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
         storeId={storeId}
         storeName={storeName}
         onSuccess={handleContactAdded}
+      />
+
+      <EditStoreContactModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        contact={editingContact}
+        onSuccess={handleContactUpdated}
       />
     </>
   );
