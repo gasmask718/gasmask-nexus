@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { MapPin, Phone, Mail, MessageSquare, Edit, Building, Plus, X, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -51,6 +52,8 @@ interface Store {
   sticker_phone: boolean | null;
   sticker_taken_down: boolean | null;
   sticker_taken_down_at?: string | null;
+  notes?: string | null;
+  type?: string;
 }
 
 interface StoreContactInfoCardProps {
@@ -59,6 +62,7 @@ interface StoreContactInfoCardProps {
 }
 
 type ContactFormData = {
+  name: string;
   phone: string;
   alt_phone: string;
   email: string;
@@ -72,9 +76,12 @@ type ContactFormData = {
   sticker_instore: boolean;
   sticker_phone: boolean;
   sticker_taken_down: boolean;
+  primary_contact_name: string;
+  notes: string;
 };
 
 const createInitialFormData = (store: Store): ContactFormData => ({
+  name: store.name || '',
   phone: store.phone || '',
   alt_phone: store.alt_phone || '',
   email: store.email || '',
@@ -90,6 +97,8 @@ const createInitialFormData = (store: Store): ContactFormData => ({
   sticker_status: isStickerStatus(store.sticker_status)
     ? store.sticker_status
     : deriveStickerStatus(Boolean(store.sticker_door), Boolean(store.sticker_instore)),
+  primary_contact_name: store.primary_contact_name || '',
+  notes: store.notes || '',
 });
 
 export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardProps) {
@@ -197,6 +206,7 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
     try {
       const stickerStatus = deriveStickerStatus(formData.sticker_door, formData.sticker_instore);
       const updates: Record<string, unknown> = {
+        name: formData.name || null,
         phone: formData.phone || null,
         alt_phone: formData.alt_phone || null,
         email: formData.email || null,
@@ -210,6 +220,8 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
         sticker_instore: formData.sticker_instore,
         sticker_phone: formData.sticker_phone,
         sticker_taken_down: formData.sticker_taken_down,
+        primary_contact_name: formData.primary_contact_name || null,
+        notes: formData.notes || null,
       };
 
       if (store.sticker_taken_down !== formData.sticker_taken_down) {
@@ -455,6 +467,28 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
             <DialogTitle>Edit Contact Information</DialogTitle>
           </DialogHeader>
           <div className="flex-1 space-y-4 overflow-y-auto py-4 pr-1">
+            {/* Store Name */}
+            <div className="space-y-2">
+              <Label>Store Name</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Store name"
+              />
+            </div>
+
+            {/* Primary Contact */}
+            <div className="space-y-2">
+              <Label>Primary Contact Name</Label>
+              <Input
+                value={formData.primary_contact_name}
+                onChange={(e) => setFormData({ ...formData, primary_contact_name: e.target.value })}
+                placeholder="Owner or main contact name"
+              />
+            </div>
+
+            <Separator />
+
             <div className="space-y-2">
               <Label>Store Telephone (Call Only)</Label>
               <Input
@@ -596,6 +630,19 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                 value={formData.address_zip}
                 onChange={(e) => setFormData({ ...formData, address_zip: e.target.value })}
                 placeholder="10001"
+              />
+            </div>
+
+            <Separator />
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label>Store Notes</Label>
+              <Textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Additional notes about the store..."
+                rows={3}
               />
             </div>
           </div>
