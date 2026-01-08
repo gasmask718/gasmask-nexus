@@ -64,6 +64,10 @@ const customerFormSchema = z.object({
   sales_notes: z.string().optional(),
   preferences: z.string().optional(),
   vip_flag: z.boolean().optional(),
+  
+  // Personal Preferences
+  favorite_color: z.string().optional(),
+  favorite_song: z.string().optional(),
 });
 
 type CustomerFormValues = z.infer<typeof customerFormSchema>;
@@ -102,6 +106,8 @@ export default function TopTierNewCustomer() {
       sales_notes: '',
       preferences: '',
       vip_flag: false,
+      favorite_color: '',
+      favorite_song: '',
     },
   });
 
@@ -151,6 +157,8 @@ export default function TopTierNewCustomer() {
             state: data.primary_state,
             city: data.cities || null,
             notes: data.sales_notes || null,
+            favorite_color: data.favorite_color || null,
+            favorite_song: data.favorite_song || null,
             // IMPORTANT: must match DB constraint crm_customers_relationship_status_check
             relationship_status: 'active',
           })
@@ -616,7 +624,48 @@ export default function TopTierNewCustomer() {
             </CardContent>
           </Card>
 
-          {/* Section 4: Consent & Compliance */}
+          {/* Section 4: Personal Preferences */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-lg">🎨</span>
+                Personal Preferences
+              </CardTitle>
+              <CardDescription>Optional personalization details</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="favorite_color"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Favorite Color</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Blue, Red, Purple" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="favorite_song"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Favorite Song / Music Genre</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Jazz, Hip-Hop, or specific song" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Section 5: Consent & Compliance */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
