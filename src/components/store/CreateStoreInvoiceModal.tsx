@@ -80,7 +80,7 @@ export function CreateStoreInvoiceModal({
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const [paymentMethod, setPaymentMethod] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [invoiceDate, setInvoiceDate] = useState<Date | undefined>(new Date());
   const [notes, setNotes] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<'unpaid' | 'partial' | 'paid'>('unpaid');
@@ -253,7 +253,7 @@ export function CreateStoreInvoiceModal({
           total_amount: total,
           payment_method: paymentMethod || null,
           payment_status: paymentStatus,
-          due_date: dueDate || null,
+          due_date: dueDate ? dueDate.toISOString().split('T')[0] : null,
           paid_at: paymentStatus === 'paid' || paymentStatus === 'partial' ? invoiceDateToUse : null,
           partial_amount: paymentStatus === 'partial' ? partialAmountNum : null,
           received_by: receivedByName || null,
@@ -385,7 +385,7 @@ export function CreateStoreInvoiceModal({
     setSelectedProductId('');
     setQuantity(1);
     setPaymentMethod('');
-    setDueDate('');
+    setDueDate(undefined);
     setInvoiceDate(new Date()); // Reset to today
     setNotes('');
     setPaymentStatus('unpaid');
@@ -628,11 +628,14 @@ export function CreateStoreInvoiceModal({
 
           {/* Due Date */}
           <div className="space-y-2">
-            <Label>Due Date</Label>
-            <Input
-              type="date"
+            <Label className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Due Date
+            </Label>
+            <DatePicker
               value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
+              onChange={setDueDate}
+              placeholder="Select due date"
             />
           </div>
 
