@@ -14586,6 +14586,128 @@ export type Database = {
           },
         ]
       }
+      kpi_categories: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_system: boolean | null
+          name: string
+          slug: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_system?: boolean | null
+          name: string
+          slug: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_system?: boolean | null
+          name?: string
+          slug?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_categories_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpi_definitions: {
+        Row: {
+          business_id: string | null
+          category_id: string | null
+          color: string | null
+          condition_config: Json | null
+          condition_type: string
+          created_at: string
+          description: string | null
+          drilldown_filters: Json | null
+          drilldown_path: string | null
+          entity_type: string
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          slug: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          category_id?: string | null
+          color?: string | null
+          condition_config?: Json | null
+          condition_type: string
+          created_at?: string
+          description?: string | null
+          drilldown_filters?: Json | null
+          drilldown_path?: string | null
+          entity_type: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          slug: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          category_id?: string | null
+          color?: string | null
+          condition_config?: Json | null
+          condition_type?: string
+          created_at?: string
+          description?: string | null
+          drilldown_filters?: Json | null
+          drilldown_path?: string | null
+          entity_type?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          slug?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_definitions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kpi_definitions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       land_bank: {
         Row: {
           acres: number | null
