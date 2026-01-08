@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Phone, MessageSquare, Mail, Users, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { DatePicker, TimePicker } from '@/components/ui/datetime-picker';
 
 const CHANNELS = [
   { value: 'CALL', label: 'Phone Call', icon: Phone },
@@ -299,11 +300,33 @@ export function LogInteractionModal({
           {/* Follow-up Date */}
           <div className="space-y-2">
             <Label>Follow-up Date</Label>
-            <Input
-              type="datetime-local"
-              value={followUpAt}
-              onChange={(e) => setFollowUpAt(e.target.value)}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <DatePicker
+                value={followUpAt ? new Date(followUpAt) : undefined}
+                onChange={(date) => {
+                  if (date) {
+                    const timePart = followUpAt ? followUpAt.slice(11, 16) : '09:00';
+                    setFollowUpAt(`${date.toISOString().slice(0, 10)}T${timePart}`);
+                  } else {
+                    setFollowUpAt('');
+                  }
+                }}
+                placeholder="Pick a date"
+              />
+              <TimePicker
+                value={followUpAt ? followUpAt.slice(11, 16) : ''}
+                onChange={(time) => {
+                  if (followUpAt) {
+                    const datePart = followUpAt.slice(0, 10);
+                    setFollowUpAt(`${datePart}T${time}`);
+                  } else {
+                    const today = new Date().toISOString().slice(0, 10);
+                    setFollowUpAt(`${today}T${time}`);
+                  }
+                }}
+                placeholder="Select time"
+              />
+            </div>
           </div>
 
           <DialogFooter>

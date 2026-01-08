@@ -1,15 +1,19 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Navigation, Clock, MapPin, TrendingUp } from "lucide-react";
+import { AddToRouteModal } from "./AddToRouteModal";
 
 interface RouteIntelligenceProps {
   storeId: string;
+  storeName?: string;
 }
 
-export function RouteIntelligence({ storeId }: RouteIntelligenceProps) {
+export function RouteIntelligence({ storeId, storeName }: RouteIntelligenceProps) {
+  const [addToRouteModalOpen, setAddToRouteModalOpen] = useState(false);
   // Fetch recent routes for this store
   const { data: routeHistory } = useQuery({
     queryKey: ["store-route-history", storeId],
@@ -147,10 +151,21 @@ export function RouteIntelligence({ storeId }: RouteIntelligenceProps) {
           </div>
         </div>
 
-        <Button variant="outline" className="w-full">
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={() => setAddToRouteModalOpen(true)}
+        >
           <Navigation className="mr-2 h-4 w-4" />
           Add to Route Request
         </Button>
+
+        <AddToRouteModal
+          open={addToRouteModalOpen}
+          onOpenChange={setAddToRouteModalOpen}
+          storeId={storeId}
+          storeName={storeName}
+        />
 
         {routeHistory && routeHistory.length > 0 && (
           <div className="space-y-2">

@@ -25,6 +25,19 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useStoreMasterResolver } from "@/hooks/useStoreMasterResolver";
 import { toast } from "sonner";
 import { InteractionDetailModal } from "@/components/store/InteractionDetailModal";
+import { NoteDetailModal } from "@/components/store/NoteDetailModal";
+import { VisitDetailModal } from "@/components/store/VisitDetailModal";
+
+// Helper function to determine source from role
+const getSourceFromRole = (role?: string | null): string => {
+  if (!role) return "System";
+  const roleLower = role.toLowerCase();
+  if (roleLower === 'va' || roleLower.includes('va')) return "VA";
+  if (roleLower === 'biker' || roleLower === 'driver') return "Biker";
+  if (roleLower === 'admin' || roleLower === 'owner') return "Admin";
+  if (roleLower.includes('ai') || roleLower === 'ai') return "AI";
+  return "User";
+};
 
 const CHANNEL_ICONS: Record<string, typeof Phone> = {
   CALL: Phone,
@@ -46,9 +59,14 @@ interface Interaction {
   next_action: string | null;
   follow_up_at: string | null;
   created_at: string;
+  created_by_user_id?: string | null;
   contact?: {
     id: string;
     name: string;
+  } | null;
+  creator?: {
+    name: string;
+    role?: string;
   } | null;
 }
 
@@ -59,6 +77,7 @@ interface StoreNote {
   created_by: string | null;
   profile?: {
     name: string;
+    role?: string;
   } | null;
 }
 
@@ -72,6 +91,7 @@ interface VisitLog {
   products_delivered: any;
   user?: {
     name: string;
+    role?: string;
   } | null;
 }
 
@@ -89,6 +109,10 @@ interface RecentStoreInteractionsProps {
 export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }: RecentStoreInteractionsProps) {
   const [selectedInteraction, setSelectedInteraction] = useState<Interaction | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<StoreNote | null>(null);
+  const [noteDetailOpen, setNoteDetailOpen] = useState(false);
+  const [selectedVisit, setSelectedVisit] = useState<VisitLog | null>(null);
+  const [visitDetailOpen, setVisitDetailOpen] = useState(false);
 
   const {
     storeMasterId,
@@ -117,6 +141,7 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
           next_action,
           follow_up_at,
           created_at,
+          created_by_user_id,
           contact:store_contacts(id, name)
         `,
         )
@@ -124,8 +149,27 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
         .order("created_at", { ascending: false })
         .limit(10);
 
+      // Fetch creator profiles separately since created_by_user_id references auth.users
+      // We need to join through profiles table where profiles.id = auth.users.id
+      if (data && data.length > 0) {
+        const userIds = data.map((i: any) => i.created_by_user_id).filter(Boolean) as string[];
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, name, role")
+            .in("id", userIds);
+          
+          const profileMap = new Map(profiles?.map((p: any) => [p.id, p]) || []);
+          data.forEach((interaction: any) => {
+            if (interaction.created_by_user_id) {
+              interaction.creator = profileMap.get(interaction.created_by_user_id) || null;
+            }
+          });
+        }
+      }
+
       if (error) throw error;
-      return (data as Interaction[]).map(i => ({ ...i, type: 'interaction' as const }));
+      return (data as any[]).map(i => ({ ...i, type: 'interaction' as const }));
     },
     enabled: !!storeMasterId,
   });
@@ -142,7 +186,7 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
           note_text,
           created_at,
           created_by,
-          profile:profiles(name)
+          profile:profiles(name, role)
         `,
         )
         .eq("store_id", storeMasterId)
@@ -171,7 +215,7 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
           customer_response,
           cash_collected,
           products_delivered,
-          user:profiles(name)
+          user:profiles(name, role)
         `,
         )
         .eq("store_id", storeId)
@@ -218,18 +262,13 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
       setSelectedInteraction(interaction);
       setDetailOpen(true);
     } else if (item.type === 'note') {
-      // For notes, show a toast with the note text
-      toast.info(`Note: ${item.note_text}`, {
-        description: format(new Date(item.created_at), 'MMM d, yyyy h:mm a'),
-      });
+      // Open note detail modal
+      setSelectedNote(item);
+      setNoteDetailOpen(true);
     } else if (item.type === 'visit') {
-      // For visits, show visit details
-      const visit = item;
-      const visitTypeLabel = visit.visit_type?.replace(/([A-Z])/g, ' $1').trim() || 'Visit';
-      const productCount = visit.products_delivered ? (Array.isArray(visit.products_delivered) ? visit.products_delivered.length : 1) : 0;
-      toast.info(`${visitTypeLabel}: ${visit.customer_response || 'Visit logged'}`, {
-        description: `${productCount > 0 ? `${productCount} product(s) • ` : ''}${format(new Date(visit.created_at), 'MMM d, yyyy h:mm a')}`,
-      });
+      // Open visit detail modal
+      setSelectedVisit(item);
+      setVisitDetailOpen(true);
     }
   };
 
@@ -318,6 +357,9 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
                             {(interaction.contact as any)?.name} •{" "}
                             {format(new Date(interaction.created_at), "MMM d, h:mm a")}
                           </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {(interaction.creator as any)?.name || 'System'} • {getSourceFromRole((interaction.creator as any)?.role)}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -326,7 +368,17 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
                             {interaction.outcome.replace(/_/g, " ")}
                           </Badge>
                         )}
-                        <Eye className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleInteractionClick(item);
+                          }}
+                        >
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        </Button>
                       </div>
                     </div>
                   );
@@ -351,7 +403,7 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
                             {note.note_text}
                           </div>
                           <div className="text-xs text-muted-foreground mt-1">
-                            {(note.profile as any)?.name || 'System'} •{" "}
+                            {(note.profile as any)?.name || 'System'} • {getSourceFromRole((note.profile as any)?.role)} •{" "}
                             {format(new Date(note.created_at), "MMM d, h:mm a")}
                           </div>
                         </div>
@@ -382,7 +434,7 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
                             {visit.customer_response || (productCount > 0 ? `${productCount} product(s) delivered` : 'Visit logged')}
                           </div>
                           <div className="text-xs text-muted-foreground mt-1">
-                            {(visit.user as any)?.name || 'System'} •{" "}
+                            {(visit.user as any)?.name || 'System'} • {getSourceFromRole((visit.user as any)?.role)} •{" "}
                             {format(new Date(visit.created_at), "MMM d, h:mm a")}
                           </div>
                         </div>
@@ -410,6 +462,8 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
       </Card>
 
       <InteractionDetailModal open={detailOpen} onOpenChange={setDetailOpen} interaction={selectedInteraction} />
+      <NoteDetailModal open={noteDetailOpen} onOpenChange={setNoteDetailOpen} note={selectedNote} />
+      <VisitDetailModal open={visitDetailOpen} onOpenChange={setVisitDetailOpen} visit={selectedVisit} />
     </>
   );
 }

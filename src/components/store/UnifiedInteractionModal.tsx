@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { 
   Package, 
@@ -31,6 +32,7 @@ import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
 import { format } from 'date-fns';
 import { PhotoUploadMultiple } from './PhotoUploadMultiple';
 import { extractOpportunitiesFromNote, extractOpportunitiesFromInteraction } from '@/services/opportunityExtractionService';
+import { DatePicker, TimePicker } from '@/components/ui/datetime-picker';
 
 const INTERACTION_TYPES = [
   { value: 'delivery', label: 'Delivery', icon: Package, requiresProducts: true },
@@ -107,6 +109,7 @@ export function UnifiedInteractionModal({
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
   const [cashCollected, setCashCollected] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [isPaid, setIsPaid] = useState(false);
   
   // Communication fields
   const [selectedContactId, setSelectedContactId] = useState(contactId || '');
@@ -117,7 +120,8 @@ export function UnifiedInteractionModal({
   const [outcome, setOutcome] = useState('');
   const [sentiment, setSentiment] = useState('');
   const [nextAction, setNextAction] = useState('');
-  const [followUpAt, setFollowUpAt] = useState('');
+  const [followUpAt, setFollowUpAt] = useState<Date | undefined>(undefined);
+  const [followUpTime, setFollowUpTime] = useState<string>('');
   
   // Note field
   const [noteText, setNoteText] = useState('');
@@ -210,6 +214,17 @@ export function UnifiedInteractionModal({
       toast.error('Please set a follow-up date');
       return;
     }
+    
+    // Combine date and time for follow-up
+    let followUpDateTime: string | null = null;
+    if (followUpAt) {
+      const date = followUpAt instanceof Date ? followUpAt : new Date(followUpAt);
+      if (followUpTime) {
+        const [hours, minutes] = followUpTime.split(':');
+        date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+      }
+      followUpDateTime = date.toISOString();
+    }
 
     // Contact is required for communication types EXCEPT follow-ups
     if (isCommunicationType && !isFollowUpType && !selectedContactId && !contactId) {
@@ -258,13 +273,28 @@ export function UnifiedInteractionModal({
           'order': 'order',
         };
 
+        // For orders, determine cash_collected based on payment status
+        let finalCashCollected: number | null = null;
+        if (interactionType === 'order') {
+          if (isPaid) {
+            // If marked as paid, use the cash collected amount (or 0 if not specified)
+            finalCashCollected = cashCollected ? parseFloat(cashCollected) : 0;
+          } else {
+            // If marked as unpaid, set to 0 or null
+            finalCashCollected = null;
+          }
+        } else {
+          // For other visit types, use cash collected as entered
+          finalCashCollected = cashCollected ? parseFloat(cashCollected) : null;
+        }
+
         const { data: visitData, error: visitError } = await supabase
           .from('visit_logs')
           .insert([{
             store_id: storeId,
             user_id: user.id,
             visit_type: visitTypeMap[interactionType] as any,
-            cash_collected: cashCollected ? parseFloat(cashCollected) : null,
+            cash_collected: finalCashCollected,
             payment_method: paymentMethod as any || null,
             customer_response: summary || noteText || null,
             products_delivered: productsDeliveredJson as any,
@@ -334,7 +364,7 @@ export function UnifiedInteractionModal({
             outcome: outcome || null,
             sentiment: sentiment || null,
             next_action: nextAction || null,
-            follow_up_at: followUpAt ? new Date(followUpAt).toISOString() : null,
+            follow_up_at: followUpDateTime,
           })
           .select('id')
           .single();
@@ -343,7 +373,7 @@ export function UnifiedInteractionModal({
         interactionId = interactionData?.id;
 
         // Create follow-up queue entry if follow-up date is set
-        if (followUpAt && resolvedStoreMasterId) {
+        if (followUpDateTime && resolvedStoreMasterId) {
           const actionMap: Record<string, string> = {
             'CALL': 'manual_call',
             'SMS': 'manual_text',
@@ -359,7 +389,7 @@ export function UnifiedInteractionModal({
               reason: subject || 'Follow-up scheduled',
               recommended_action: actionMap[channel] || 'manual_call',
               priority: 3,
-              due_at: new Date(followUpAt).toISOString(),
+              due_at: followUpDateTime,
               status: 'pending',
               context: {
                 interaction_id: interactionId,
@@ -431,6 +461,7 @@ export function UnifiedInteractionModal({
       queryClient.invalidateQueries({ queryKey: ['store-visit-inventory'] });
       queryClient.invalidateQueries({ queryKey: ['store-opportunities'] });
       queryClient.invalidateQueries({ queryKey: ['follow-up-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['store-orders-history', storeId] });
 
       const formattedDateTime = format(now, 'MMM d, yyyy h:mm a');
       toast.success(`Interaction logged at ${formattedDateTime}`, {
@@ -453,6 +484,7 @@ export function UnifiedInteractionModal({
     setSelectedProducts([]);
     setCashCollected('');
     setPaymentMethod('');
+    setIsPaid(false);
     setSelectedContactId(contactId || '');
     setChannel('CALL');
     setDirection('OUTBOUND');
@@ -461,7 +493,8 @@ export function UnifiedInteractionModal({
     setOutcome('');
     setSentiment('');
     setNextAction('');
-    setFollowUpAt('');
+    setFollowUpAt(undefined);
+    setFollowUpTime('');
     setNoteText('');
     setPhotos([]);
   };
@@ -586,9 +619,34 @@ export function UnifiedInteractionModal({
                   <h3 className="font-semibold">Payment Details</h3>
                 </div>
                 
+                {/* Payment Status Toggle (for orders) */}
+                {interactionType === 'order' && (
+                  <div className="flex items-center space-x-2 p-3 rounded-lg bg-secondary/30 border">
+                    <Checkbox
+                      id="isPaid"
+                      checked={isPaid}
+                      onCheckedChange={(checked) => setIsPaid(checked === true)}
+                    />
+                    <Label 
+                      htmlFor="isPaid" 
+                      className="text-sm font-medium cursor-pointer flex-1"
+                    >
+                      Order is Paid
+                    </Label>
+                    <Badge variant={isPaid ? "default" : "outline"} className={isPaid ? "bg-green-500" : ""}>
+                      {isPaid ? "Paid" : "Unpaid"}
+                    </Badge>
+                  </div>
+                )}
+                
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="cashCollected">Cash Collected ($)</Label>
+                    <Label htmlFor="cashCollected">
+                      Cash Collected ($)
+                      {interactionType === 'order' && !isPaid && (
+                        <span className="text-xs text-muted-foreground ml-2">(optional for unpaid orders)</span>
+                      )}
+                    </Label>
                     <Input
                       id="cashCollected"
                       type="number"
@@ -597,6 +655,7 @@ export function UnifiedInteractionModal({
                       value={cashCollected}
                       onChange={(e) => setCashCollected(e.target.value)}
                       className="bg-secondary/50 border-border/50"
+                      disabled={interactionType === 'order' && !isPaid}
                     />
                   </div>
                   
@@ -727,13 +786,19 @@ export function UnifiedInteractionModal({
                   Follow-up Date
                   {isFollowUpType && <span className="text-destructive">*</span>}
                 </Label>
-                <Input
-                  type="datetime-local"
-                  value={followUpAt}
-                  onChange={(e) => setFollowUpAt(e.target.value)}
-                  className={`bg-secondary/50 border-border/50 ${isFollowUpType && !followUpAt ? 'border-primary ring-1 ring-primary/30' : ''}`}
-                  required={isFollowUpType}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <DatePicker
+                    value={followUpAt}
+                    onChange={setFollowUpAt}
+                    placeholder="Pick a date"
+                    className={isFollowUpType && !followUpAt ? 'border-primary ring-1 ring-primary/30' : ''}
+                  />
+                  <TimePicker
+                    value={followUpTime}
+                    onChange={setFollowUpTime}
+                    placeholder="Select time"
+                  />
+                </div>
                 {isFollowUpType && !followUpAt && (
                   <p className="text-xs text-muted-foreground">
                     Set when this follow-up should occur

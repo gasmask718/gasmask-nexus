@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Package } from 'lucide-react';
+import { VALID_TUBE_BRANDS } from './EditableTubeInventoryCard';
 
 interface UpdateInventoryModalProps {
   open: boolean;
@@ -24,7 +25,15 @@ interface UpdateInventoryModalProps {
   onSuccess?: () => void;
 }
 
-const BRANDS = ['grabba', 'gasmask', 'fronto'];
+// Use the same brands as Tube Inventory, including HotScolatti Light and Dark
+const BRANDS = [
+  { id: 'gasmask', name: 'GasMask Bags' },
+  { id: 'gasmasktubes', name: 'GasMask Tubes' },
+  { id: 'hotmama', name: 'HotMama' },
+  { id: 'grabba', name: 'Grabba r us' },
+  { id: 'hotscolatti-light', name: 'Hot Scolatti Light' },
+  { id: 'hotscolatti-dark', name: 'Hot Scolatti Dark' },
+];
 
 export function UpdateInventoryModal({
   open,
@@ -137,9 +146,9 @@ export function UpdateInventoryModal({
                 <SelectValue placeholder="Select brand" />
               </SelectTrigger>
               <SelectContent>
-                {BRANDS.map((b) => (
-                  <SelectItem key={b} value={b} className="capitalize">
-                    {b}
+                {BRANDS.map((brand) => (
+                  <SelectItem key={brand.id} value={brand.id}>
+                    {brand.name}
                   </SelectItem>
                 ))}
               </SelectContent>

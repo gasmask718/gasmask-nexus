@@ -1,10 +1,22 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, DollarSign, Calendar, Package } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { FileText, DollarSign, Calendar, Package, Plus, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface Invoice {
   id: string;
@@ -23,9 +35,15 @@ interface Invoice {
 
 interface InvoiceHistoryCardProps {
   storeId: string;
+  onCreateInvoice?: () => void;
 }
 
-export function InvoiceHistoryCard({ storeId }: InvoiceHistoryCardProps) {
+export function InvoiceHistoryCard({ storeId, onCreateInvoice }: InvoiceHistoryCardProps) {
+  const queryClient = useQueryClient();
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [newStatus, setNewStatus] = useState<string>('');
+
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['store-invoices', storeId],
     queryFn: async () => {
@@ -40,6 +58,83 @@ export function InvoiceHistoryCard({ storeId }: InvoiceHistoryCardProps) {
     },
     enabled: !!storeId,
   });
+
+  const togglePaymentStatusMutation = useMutation({
+    mutationFn: async ({ invoiceId, newStatus }: { invoiceId: string; newStatus: string }) => {
+      const updateData: any = {
+        payment_status: newStatus,
+      };
+
+      if (newStatus === 'paid') {
+        updateData.paid_at = new Date().toISOString();
+      } else {
+        updateData.paid_at = null;
+      }
+
+      const { error } = await supabase
+        .from('invoices')
+        .update(updateData)
+        .eq('id', invoiceId);
+
+      if (error) throw error;
+
+      // Try to find and update corresponding order in visit_logs
+      // We'll search for orders with matching invoice number or created around the same time
+      const invoice = invoices.find(inv => inv.id === invoiceId);
+      if (invoice) {
+        // Find orders created around the same time as the invoice
+        const invoiceDate = new Date(invoice.created_at);
+        const startDate = new Date(invoiceDate.getTime() - 60000); // 1 minute before
+        const endDate = new Date(invoiceDate.getTime() + 60000); // 1 minute after
+
+        const { data: matchingOrders } = await supabase
+          .from('visit_logs')
+          .select('id')
+          .eq('store_id', storeId)
+          .eq('visit_type', 'order')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString());
+
+        if (matchingOrders && matchingOrders.length > 0) {
+          // Update the most recent matching order
+          const orderToUpdate = matchingOrders[0];
+          await supabase
+            .from('visit_logs')
+            .update({
+              cash_collected: newStatus === 'paid' ? invoice.total_amount : null,
+            })
+            .eq('id', orderToUpdate.id);
+        }
+      }
+    },
+    onSuccess: () => {
+      toast.success(`Invoice status updated to ${newStatus}`);
+      queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['store-orders-history', storeId] });
+      setConfirmDialogOpen(false);
+      setSelectedInvoice(null);
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update status: ${error.message}`);
+    },
+  });
+
+  const handleToggleStatus = (invoice: Invoice) => {
+    const currentStatus = invoice.payment_status;
+    const nextStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
+    setSelectedInvoice(invoice);
+    setNewStatus(nextStatus);
+    setConfirmDialogOpen(true);
+  };
+
+  const handleConfirmToggle = () => {
+    if (selectedInvoice) {
+      togglePaymentStatusMutation.mutate({
+        invoiceId: selectedInvoice.id,
+        newStatus,
+      });
+    }
+  };
 
   const totalPaid = invoices
     .filter(inv => inv.payment_status === 'paid')
@@ -83,10 +178,22 @@ export function InvoiceHistoryCard({ storeId }: InvoiceHistoryCardProps) {
   return (
     <Card className="glass-card border-border/50">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary" />
-          Invoice History
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            Invoice History
+          </CardTitle>
+          {onCreateInvoice && (
+            <Button
+              onClick={onCreateInvoice}
+              size="sm"
+              className="bg-primary hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Invoice
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Money Tracking Summary */}
@@ -124,7 +231,9 @@ export function InvoiceHistoryCard({ storeId }: InvoiceHistoryCardProps) {
                       <span className="font-medium">{invoice.invoice_number}</span>
                       <Badge
                         variant="outline"
-                        className={`text-xs ${getStatusColor(invoice.payment_status)}`}
+                        className={`text-xs cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(invoice.payment_status)}`}
+                        onClick={() => handleToggleStatus(invoice)}
+                        title={`Click to mark as ${invoice.payment_status === 'paid' ? 'unpaid' : 'paid'}`}
                       >
                         {invoice.payment_status}
                       </Badge>
@@ -177,6 +286,42 @@ export function InvoiceHistoryCard({ storeId }: InvoiceHistoryCardProps) {
           </div>
         )}
       </CardContent>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change Payment Status?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to mark invoice <strong>{selectedInvoice?.invoice_number}</strong> as <strong>{newStatus}</strong>?
+              {newStatus === 'paid' && (
+                <span className="block mt-2 text-green-600">
+                  This will record the payment and update the totals.
+                </span>
+              )}
+              {newStatus === 'unpaid' && (
+                <span className="block mt-2 text-yellow-600">
+                  This will remove the payment record and update the totals.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={togglePaymentStatusMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmToggle}
+              disabled={togglePaymentStatusMutation.isPending}
+            >
+              {togglePaymentStatusMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

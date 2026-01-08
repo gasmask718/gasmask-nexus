@@ -153,6 +153,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/crm/contacts', label: 'CRM Contacts', icon: User },
         { path: '/crm/customers', label: 'CRM Customers', icon: Users },
         { path: '/crm/follow-ups', label: 'Follow-Ups', icon: Clock },
+        { path: '/opportunities', label: 'All Opportunities', icon: Target },
       ],
     },
     {

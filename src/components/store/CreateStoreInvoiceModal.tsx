@@ -16,8 +16,12 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { FileText, Plus, X, Package, Loader2 } from 'lucide-react';
+import { FileText, Plus, X, Package, Loader2, Calendar, User, Camera, Upload as UploadIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { DatePicker } from '@/components/ui/datetime-picker';
+import { PhotoUploadMultiple } from './PhotoUploadMultiple';
+import { BulkStoreSelector } from './BulkStoreSelector';
+import { GRABBA_COMPANY_IDS } from '@/hooks/useVisitProducts';
 
 interface CreateStoreInvoiceModalProps {
   open: boolean;
@@ -77,16 +81,24 @@ export function CreateStoreInvoiceModal({
   const [quantity, setQuantity] = useState<number>(1);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [invoiceDate, setInvoiceDate] = useState<Date | undefined>(new Date());
   const [notes, setNotes] = useState('');
-  const [markAsPaid, setMarkAsPaid] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'unpaid' | 'partial' | 'paid'>('unpaid');
+  const [partialAmount, setPartialAmount] = useState('');
+  const [receivedByName, setReceivedByName] = useState('');
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
 
-  // Fetch all brands
+  // Fetch only Grabba brands (filter by company_id)
   const { data: brands = [], isLoading: brandsLoading } = useQuery({
-    queryKey: ['invoice-brands'],
+    queryKey: ['invoice-brands-grabba'],
     queryFn: async () => {
+      const grabbaCompanyIds = Object.values(GRABBA_COMPANY_IDS);
       const { data, error } = await supabase
         .from('brands')
-        .select('id, name, color')
+        .select('id, name, color, company_id')
+        .in('company_id', grabbaCompanyIds)
         .order('name');
       if (error) throw error;
       return data as Brand[];
@@ -215,31 +227,51 @@ export function CreateStoreInvoiceModal({
       const invoiceNumber = generateInvoiceNumber();
       const brandSummary = [...new Set(lineItems.map(i => i.brand_name))].join(', ');
 
-      // Create invoice
-      const { data: invoice, error: invoiceError } = await supabase
-        .from('invoices')
-        .insert({
-          store_id: storeId,
+      // Use invoice date for backdating, or current date if not specified
+      const invoiceDateToUse = invoiceDate ? invoiceDate.toISOString() : new Date().toISOString();
+      
+      // Calculate payment amounts
+      const partialAmountNum = partialAmount ? parseFloat(partialAmount) : 0;
+      const paidAmount = paymentStatus === 'paid' ? total : (paymentStatus === 'partial' ? partialAmountNum : 0);
+
+      // Determine which stores to create invoices for
+      const storesToProcess = bulkMode && selectedStoreIds.length > 0 
+        ? selectedStoreIds 
+        : [storeId];
+
+      // Create invoices for all selected stores
+      const createdInvoices = [];
+      for (const targetStoreId of storesToProcess) {
+        // Create invoice
+        const { data: invoice, error: invoiceError } = await supabase
+          .from('invoices')
+          .insert({
+            store_id: targetStoreId,
           invoice_number: invoiceNumber,
           subtotal,
           tax,
           total,
           total_amount: total,
           payment_method: paymentMethod || null,
-          payment_status: markAsPaid ? 'paid' : 'unpaid',
+          payment_status: paymentStatus,
           due_date: dueDate || null,
-          paid_at: markAsPaid ? new Date().toISOString() : null,
+          paid_at: paymentStatus === 'paid' || paymentStatus === 'partial' ? invoiceDateToUse : null,
+          partial_amount: paymentStatus === 'partial' ? partialAmountNum : null,
+          received_by: receivedByName || null,
+          delivery_photos: photos.length > 0 ? photos : null,
           notes: notes || null,
           brand: brandSummary,
           created_by: user?.id || 'manual',
+          created_at: invoiceDateToUse, // Use invoice date for backdating
         })
-        .select('id')
-        .single();
+          .select('id')
+          .single();
 
-      if (invoiceError) throw invoiceError;
+        if (invoiceError) throw invoiceError;
+        if (invoice) createdInvoices.push(invoice);
 
-      // Create invoice line items
-      if (invoice && lineItems.length > 0) {
+        // Create invoice line items
+        if (invoice && lineItems.length > 0) {
         const lineItemsData = lineItems.map(item => ({
           invoice_id: invoice.id,
           brand_id: item.brand_id,
@@ -264,40 +296,81 @@ export function CreateStoreInvoiceModal({
             // Don't fail invoice creation if line items fail
           }
         } catch (err) {
-          console.error('Error creating invoice line items:', err);
-          // Don't fail invoice creation if line items fail
+            console.error('Error creating invoice line items:', err);
+            // Don't fail invoice creation if line items fail
+          }
         }
-      }
 
-      // Create contact interaction for Recent Interactions
-      if (storeContacts && user) {
+        // Create contact interaction for Recent Interactions
+        if (storeContacts && user) {
         const { error: interactionError } = await supabase
           .from('contact_interactions')
           .insert({
             contact_id: storeContacts,
-            store_id: storeId,
+            store_id: targetStoreId,
             channel: 'OTHER',
             direction: 'OUTBOUND',
             subject: `Invoice Created: ${invoiceNumber}`,
-            summary: `Invoice created for ${storeName}. Total: $${total.toFixed(2)}. Products: ${brandSummary}`,
+            summary: `Invoice created. Total: $${total.toFixed(2)}. Products: ${brandSummary}`,
             outcome: 'SUCCESS',
             created_by_user_id: user.id,
           });
         
-        // Don't fail invoice creation if interaction logging fails
-        if (interactionError) {
-          console.error('Failed to log interaction:', interactionError);
+          // Don't fail invoice creation if interaction logging fails
+          if (interactionError) {
+            console.error('Failed to log interaction:', interactionError);
+          }
+        }
+
+        // Create visit_log entry with visit_type='order' so it appears in Order History
+        if (invoice && user) {
+        try {
+          // Prepare products_delivered JSON from line items
+          const productsDeliveredJson = lineItems.map(item => ({
+            brand_id: item.brand_id,
+            brand_name: item.brand_name,
+            product_id: item.product_id,
+            product_name: item.product_name,
+            quantity: item.quantity,
+            unit_type: 'standard',
+          }));
+
+          const { error: visitLogError } = await supabase
+            .from('visit_logs')
+            .insert({
+              store_id: targetStoreId,
+              user_id: user.id,
+              visit_type: 'order',
+              visit_datetime: invoiceDateToUse, // Use invoice date for backdating
+              cash_collected: paidAmount > 0 ? paidAmount : null,
+              payment_method: paymentMethod as any || null,
+              customer_response: notes || `Invoice ${invoiceNumber}${receivedByName ? ` - Received by: ${receivedByName}` : ''}`,
+              products_delivered: productsDeliveredJson as any,
+              delivery_photos: photos.length > 0 ? photos as any : null,
+            });
+
+          if (visitLogError) {
+            console.error('Failed to create order entry in visit_logs:', visitLogError);
+            // Don't fail invoice creation if visit log creation fails
+          }
+        } catch (err) {
+            console.error('Error creating order entry in visit_logs:', err);
+            // Don't fail invoice creation if visit log creation fails
+          }
         }
       }
 
-      return invoice;
+      return createdInvoices[0] || null;
     },
     onSuccess: (data) => {
-      toast.success('Invoice created successfully');
+      const count = bulkMode && selectedStoreIds.length > 0 ? selectedStoreIds.length : 1;
+      toast.success(`${count} invoice${count > 1 ? 's' : ''} created successfully`);
       queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
       queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
       queryClient.invalidateQueries({ queryKey: ['contact-interactions'] });
       queryClient.invalidateQueries({ queryKey: ['store-interactions'] });
+      queryClient.invalidateQueries({ queryKey: ['store-orders-history', storeId] }); // Refresh Order History
+      queryClient.invalidateQueries({ queryKey: ['visit-logs'] });
       resetForm();
       onOpenChange(false);
       onSuccess?.(data.id);
@@ -314,8 +387,14 @@ export function CreateStoreInvoiceModal({
     setQuantity(1);
     setPaymentMethod('');
     setDueDate('');
+    setInvoiceDate(new Date()); // Reset to today
     setNotes('');
-    setMarkAsPaid(false);
+    setPaymentStatus('unpaid');
+    setPartialAmount('');
+    setReceivedByName('');
+    setPhotos([]);
+    setBulkMode(false);
+    setSelectedStoreIds([]);
   };
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
@@ -341,6 +420,36 @@ export function CreateStoreInvoiceModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Bulk Mode Toggle */}
+          <div className="flex items-center space-x-2 p-3 rounded-lg bg-secondary/30 border">
+            <Checkbox
+              id="bulkMode"
+              checked={bulkMode}
+              onCheckedChange={(checked) => {
+                setBulkMode(checked === true);
+                if (!checked) setSelectedStoreIds([]);
+              }}
+            />
+            <Label
+              htmlFor="bulkMode"
+              className="text-sm font-medium leading-none cursor-pointer"
+            >
+              Create same invoice for multiple stores
+            </Label>
+          </div>
+
+          {/* Bulk Store Selection */}
+          {bulkMode && (
+            <div className="space-y-2 p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <Label>Select Stores</Label>
+              <BulkStoreSelector
+                selectedStoreIds={selectedStoreIds}
+                onSelectionChange={setSelectedStoreIds}
+                excludeStoreId={storeId}
+              />
+            </div>
+          )}
+
           {/* Product Selection */}
           <div className="space-y-3 p-4 rounded-lg bg-secondary/30 border border-dashed">
             <div className="flex items-center gap-2">
@@ -531,6 +640,22 @@ export function CreateStoreInvoiceModal({
             </Select>
           </div>
 
+          {/* Invoice Date (for backdating) */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Invoice Date
+            </Label>
+            <DatePicker
+              value={invoiceDate}
+              onChange={setInvoiceDate}
+              placeholder="Pick a date to backdate"
+            />
+            <p className="text-xs text-muted-foreground">
+              Select a date to backdate this invoice when transferring old orders
+            </p>
+          </div>
+
           {/* Due Date */}
           <div className="space-y-2">
             <Label>Due Date</Label>
@@ -552,19 +677,88 @@ export function CreateStoreInvoiceModal({
             />
           </div>
 
-          {/* Mark as Paid */}
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="markAsPaid"
-              checked={markAsPaid}
-              onCheckedChange={(checked) => setMarkAsPaid(checked === true)}
+          {/* Payment Status */}
+          <div className="space-y-2">
+            <Label>Payment Status</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={paymentStatus === 'unpaid' ? 'default' : 'outline'}
+                onClick={() => {
+                  setPaymentStatus('unpaid');
+                  setPartialAmount('');
+                }}
+                className="flex-1"
+              >
+                Unpaid
+              </Button>
+              <Button
+                type="button"
+                variant={paymentStatus === 'partial' ? 'default' : 'outline'}
+                onClick={() => setPaymentStatus('partial')}
+                className="flex-1"
+              >
+                Partial
+              </Button>
+              <Button
+                type="button"
+                variant={paymentStatus === 'paid' ? 'default' : 'outline'}
+                onClick={() => {
+                  setPaymentStatus('paid');
+                  setPartialAmount('');
+                }}
+                className="flex-1"
+              >
+                Paid
+              </Button>
+            </div>
+            {paymentStatus === 'partial' && (
+              <div className="space-y-2 pt-2">
+                <Label>Partial Payment Amount ($)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max={total}
+                  value={partialAmount}
+                  onChange={(e) => setPartialAmount(e.target.value)}
+                  placeholder="Enter partial amount"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Remaining: ${(total - (parseFloat(partialAmount) || 0)).toFixed(2)}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Received By */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Received By (Person Name)
+            </Label>
+            <Input
+              value={receivedByName}
+              onChange={(e) => setReceivedByName(e.target.value)}
+              placeholder="Enter name of person who received the order"
             />
-            <label
-              htmlFor="markAsPaid"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Mark as paid now
-            </label>
+          </div>
+
+          {/* Photo Upload */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Camera className="h-4 w-4" />
+              Delivery Photos
+            </Label>
+            <PhotoUploadMultiple
+              photos={photos}
+              onChange={setPhotos}
+              maxPhotos={5}
+              folder="invoice-delivery-photos"
+            />
+            <p className="text-xs text-muted-foreground">
+              Take photos of who received the delivery
+            </p>
           </div>
 
           <div className="flex gap-3 pt-2">

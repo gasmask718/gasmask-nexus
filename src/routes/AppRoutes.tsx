@@ -37,6 +37,7 @@ import ExecutiveReports from '@/pages/ExecutiveReports';
 import Territories from '@/pages/Territories';
 import RevenueBrain from '@/pages/RevenueBrain';
 import OpportunityRadar from '@/pages/OpportunityRadar';
+import MasterOpportunities from '@/pages/MasterOpportunities';
 import MissionsHQ from '@/pages/MissionsHQ';
 import Communications from '@/pages/Communications';
 import Templates from '@/pages/Templates';
@@ -695,6 +696,7 @@ export default function AppRoutes() {
         <Route path="/sales/prospects/:id" element={<SalesProspectDetail />} />
         <Route path="/sales/report" element={<SalesReport />} />
         <Route path="/ops/opportunity-radar" element={<OpportunityRadar />} />
+        <Route path="/opportunities" element={<MasterOpportunities />} />
         <Route path="/payouts/ambassadors" element={<AmbassadorPayouts />} />
         <Route path="/payouts/bikers" element={<BikerPayouts />} />
         <Route path="/billing" element={<Billing />} />

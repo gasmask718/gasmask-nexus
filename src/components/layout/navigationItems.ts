@@ -23,6 +23,7 @@ export const navigationItems = [
   { to: '/territories', icon: Map, label: 'Territories', roles: ['admin', 'csr'] },
   { to: '/analytics/revenue-brain', icon: Brain, label: 'Revenue Brain', roles: ['admin'] },
   { to: '/ops/opportunity-radar', icon: Radar, label: 'Opportunity Radar', roles: ['admin', 'csr'] },
+  { to: '/opportunities', icon: Target, label: 'All Opportunities', roles: ['admin', 'csr', 'va'] },
   { to: '/ai/meta', icon: Brain, label: 'Meta-AI Supervisor', roles: ['admin'] },
   { to: '/expansion/regions', icon: MapPin, label: 'Territory Regions', roles: ['admin'] },
   { to: '/expansion/heatmap', icon: Map, label: 'Expansion Heatmap', roles: ['admin'] },

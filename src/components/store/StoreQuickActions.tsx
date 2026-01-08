@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, Phone, MapPin, FileText, MessageSquare } from 'lucide-react';
+import { Package, Phone, MapPin, FileText, MessageSquare, Mail } from 'lucide-react';
 import { UpdateInventoryModal } from './UpdateInventoryModal';
 import { CreateStoreInvoiceModal } from './CreateStoreInvoiceModal';
 import { UnifiedInteractionModal } from './UnifiedInteractionModal';
+import { LogInteractionAfterCallModal } from './LogInteractionAfterCallModal';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -27,27 +28,42 @@ export function StoreQuickActions({
   const [inventoryModalOpen, setInventoryModalOpen] = useState(false);
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [textModalOpen, setTextModalOpen] = useState(false);
+  const [callLogModalOpen, setCallLogModalOpen] = useState(false);
+  const [textLogModalOpen, setTextLogModalOpen] = useState(false);
+  const [emailLogModalOpen, setEmailLogModalOpen] = useState(false);
+  const [lastActionType, setLastActionType] = useState<'call' | 'text' | 'email' | null>(null);
   const [addingToRoute, setAddingToRoute] = useState(false);
 
-  // Fetch store contacts for text messaging
+  // Fetch store contacts with phone and email
   const { data: storeContacts } = useQuery({
     queryKey: ['store-contacts-for-quick-actions', storeId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('store_contacts')
-        .select('id, name')
-        .eq('store_id', storeId);
+        .select('id, name, phone, email')
+        .eq('store_id', storeId)
+        .order('is_primary', { ascending: false });
       if (error) throw error;
       return data || [];
     },
     enabled: !!storeId,
   });
 
+  // Get primary contact or first contact
+  const primaryContact = storeContacts?.[0];
+  const contactPhone = primaryContact?.phone || storePhone;
+  const contactEmail = primaryContact?.email;
+
   const handleCallStore = () => {
-    if (storePhone) {
+    if (contactPhone) {
       // Open phone dialer
-      window.location.href = `tel:${storePhone}`;
-      toast.success(`Calling ${storeName}`);
+      window.location.href = `tel:${contactPhone}`;
+      toast.success(`Calling ${primaryContact?.name || storeName}...`);
+      // Open modal to log the interaction after call
+      setLastActionType('call');
+      setTimeout(() => {
+        setCallLogModalOpen(true);
+      }, 500); // Small delay to allow call to initiate
     } else {
       toast.error('No phone number available for this store');
     }
@@ -123,8 +139,36 @@ export function StoreQuickActions({
     }
   };
 
-  const handleSendMessage = () => {
-    setTextModalOpen(true);
+  const handleSendText = () => {
+    if (contactPhone) {
+      // Open SMS app
+      window.location.href = `sms:${contactPhone}`;
+      toast.success(`Opening SMS to ${primaryContact?.name || storeName}...`);
+      // Open modal to log the interaction after text
+      setLastActionType('text');
+      setTimeout(() => {
+        setTextLogModalOpen(true);
+      }, 500);
+    } else {
+      toast.error('No phone number available for this store');
+    }
+  };
+
+  const handleSendEmail = () => {
+    if (contactEmail) {
+      // Open email client with contact email
+      window.location.href = `mailto:${contactEmail}?subject=Regarding ${storeName}`;
+      toast.success(`Opening email to ${primaryContact?.name || storeName}...`);
+    } else {
+      // Open email client without pre-filled recipient
+      window.location.href = `mailto:?subject=Regarding ${storeName}`;
+      toast.success('Opening email client...');
+    }
+    // Open modal to log the interaction after email
+    setLastActionType('email');
+    setTimeout(() => {
+      setEmailLogModalOpen(true);
+    }, 500);
   };
 
   return (
@@ -147,6 +191,7 @@ export function StoreQuickActions({
             variant="outline"
             className="w-full justify-start"
             onClick={handleCallStore}
+            disabled={!contactPhone}
           >
             <Phone className="h-4 w-4 mr-2" />
             Call Store
@@ -155,10 +200,20 @@ export function StoreQuickActions({
           <Button
             variant="outline"
             className="w-full justify-start"
-            onClick={handleSendMessage}
+            onClick={handleSendText}
+            disabled={!contactPhone}
           >
             <MessageSquare className="h-4 w-4 mr-2" />
             Send Text
+          </Button>
+
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={handleSendEmail}
+          >
+            <Mail className="h-4 w-4 mr-2" />
+            Send Email
           </Button>
 
           <Button
@@ -207,6 +262,54 @@ export function StoreQuickActions({
         initialInteractionType="sms"
         onSuccess={() => {
           // Text sent successfully
+        }}
+      />
+
+      {/* Log Interaction After Call */}
+      <LogInteractionAfterCallModal
+        open={callLogModalOpen}
+        onOpenChange={setCallLogModalOpen}
+        storeId={storeId}
+        storeName={storeName}
+        contactId={primaryContact?.id}
+        contactName={primaryContact?.name}
+        storeContacts={storeContacts || []}
+        actionType="call"
+        onSuccess={() => {
+          setCallLogModalOpen(false);
+          setLastActionType(null);
+        }}
+      />
+
+      {/* Log Interaction After Text */}
+      <LogInteractionAfterCallModal
+        open={textLogModalOpen}
+        onOpenChange={setTextLogModalOpen}
+        storeId={storeId}
+        storeName={storeName}
+        contactId={primaryContact?.id}
+        contactName={primaryContact?.name}
+        storeContacts={storeContacts || []}
+        actionType="text"
+        onSuccess={() => {
+          setTextLogModalOpen(false);
+          setLastActionType(null);
+        }}
+      />
+
+      {/* Log Interaction After Email */}
+      <LogInteractionAfterCallModal
+        open={emailLogModalOpen}
+        onOpenChange={setEmailLogModalOpen}
+        storeId={storeId}
+        storeName={storeName}
+        contactId={primaryContact?.id}
+        contactName={primaryContact?.name}
+        storeContacts={storeContacts || []}
+        actionType="email"
+        onSuccess={() => {
+          setEmailLogModalOpen(false);
+          setLastActionType(null);
         }}
       />
     </>

@@ -9,6 +9,17 @@ import { format } from 'date-fns';
 import { AddNoteModal } from './AddNoteModal';
 import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
 
+// Helper function to determine source from role
+const getSourceFromRole = (role?: string | null): string => {
+  if (!role) return "System";
+  const roleLower = role.toLowerCase();
+  if (roleLower === 'va' || roleLower.includes('va')) return "VA";
+  if (roleLower === 'biker' || roleLower === 'driver') return "Biker";
+  if (roleLower === 'admin' || roleLower === 'owner') return "Admin";
+  if (roleLower.includes('ai') || roleLower === 'ai') return "AI";
+  return "User";
+};
+
 interface StoreNote {
   id: string;
   store_id: string;
@@ -17,6 +28,7 @@ interface StoreNote {
   created_by: string | null;
   profile?: {
     name: string;
+    role?: string;
   } | null;
 }
 
@@ -46,7 +58,7 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
           note_text,
           created_at,
           created_by,
-          profile:profiles(name)
+          profile:profiles(name, role)
         `)
         .eq('store_id', storeMasterId)
         .order('created_at', { ascending: false });
@@ -129,18 +141,23 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
                     </Button>
                   </div>
                   <div className="flex items-center gap-4 pt-2 border-t border-border/20">
-                    <div className="flex items-center gap-2 text-base font-medium text-foreground">
-                      <Clock className="h-5 w-5 text-primary" />
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <Clock className="h-4 w-4 text-primary" />
                       <span>{format(new Date(note.created_at), 'MMM d, yyyy')}</span>
                       <span className="text-muted-foreground font-normal">at</span>
                       <span>{format(new Date(note.created_at), 'h:mm a')}</span>
                     </div>
-                    {(note.profile as any)?.name && (
-                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto">
-                        <User className="h-3.5 w-3.5" />
-                        {(note.profile as any).name}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2 ml-auto">
+                      {(note.profile as any)?.name && (
+                        <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                          <User className="h-3.5 w-3.5" />
+                          {(note.profile as any).name}
+                        </span>
+                      )}
+                      <Badge variant="outline" className="text-xs">
+                        {getSourceFromRole((note.profile as any)?.role)}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
               ))}

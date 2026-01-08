@@ -11,7 +11,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSimulationSafeMutation } from '@/hooks/useSimulationSafeMutation';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { Package, Save, RefreshCw, Clock, Filter, AlertTriangle } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
 
 // AUTHORITATIVE TUBE BRANDS - only these are valid
@@ -20,7 +20,8 @@ export const VALID_TUBE_BRANDS = [
   { id: 'gasmasktubes', name: 'GasMask Tubes', color: '#3B82F6' }, // blue-500
   { id: 'hotmama', name: 'HotMama', color: '#EC4899' }, // pink-500
   { id: 'grabba', name: 'Grabba r us', color: '#A855F7' }, // purple-500
-  { id: 'hotscolatti', name: 'Hot Scolatti', color: '#F97316' }, // orange-500
+  { id: 'hotscolatti-light', name: 'Hot Scolatti Light', color: '#FBBF24' }, // amber-400
+  { id: 'hotscolatti-dark', name: 'Hot Scolatti Dark', color: '#92400E' }, // amber-800
 ] as const;
 
 interface TubeInventory {
@@ -171,7 +172,9 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
   };
 
   const filteredBrands = filterBrand === 'all' 
-    ? VALID_TUBE_BRANDS 
+    ? VALID_TUBE_BRANDS.filter(b => b.id !== 'hotscolatti-light' && b.id !== 'hotscolatti-dark')
+    : filterBrand === 'hotscolatti'
+    ? VALID_TUBE_BRANDS.filter(b => b.id === 'hotscolatti-light' || b.id === 'hotscolatti-dark')
     : VALID_TUBE_BRANDS.filter(b => b.id === filterBrand);
 
   const totalTubes = Object.values(editedCounts).reduce((sum, count) => sum + count, 0);
@@ -237,11 +240,18 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Brands</SelectItem>
-              {VALID_TUBE_BRANDS.map(brand => (
-                <SelectItem key={brand.id} value={brand.id}>
-                  {brand.name}
-                </SelectItem>
-              ))}
+              {VALID_TUBE_BRANDS.map(brand => {
+                // Skip individual HotScolatti variants in filter - they're grouped
+                if (brand.id === 'hotscolatti-light' || brand.id === 'hotscolatti-dark') {
+                  return null;
+                }
+                return (
+                  <SelectItem key={brand.id} value={brand.id}>
+                    {brand.name}
+                  </SelectItem>
+                );
+              })}
+              <SelectItem value="hotscolatti">Hot Scolatti (Both)</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -261,6 +271,11 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
             {/* Editable brand breakdown */}
             <div className="space-y-2">
               {filteredBrands.map((brand) => {
+                // Skip HotScolatti variants - they'll be shown in a grouped section
+                if (brand.id === 'hotscolatti-light' || brand.id === 'hotscolatti-dark') {
+                  return null;
+                }
+
                 const count = editedCounts[brand.id] ?? 0;
                 const originalItem = inventory?.find(i => i.brand === brand.id);
                 const hasChange = originalItem ? count !== originalItem.current_tubes_left : count > 0;
@@ -270,16 +285,23 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
                     key={brand.id}
                     className="flex items-center justify-between p-3 rounded-lg bg-secondary/30"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div
-                        className="h-3 w-3 rounded-full"
+                        className="h-3 w-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: brand.color }}
                       />
-                      <span className="font-medium" style={{ color: brand.color }}>
-                        {brand.name}
-                      </span>
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="font-medium" style={{ color: brand.color }}>
+                          {brand.name}
+                        </span>
+                        {originalItem?.last_updated && (
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {format(new Date(originalItem.last_updated), 'MMM d, h:mm a')}
+                          </span>
+                        )}
+                      </div>
                       {hasChange && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs flex-shrink-0">
                           Modified
                         </Badge>
                       )}
@@ -297,6 +319,60 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
                   </div>
                 );
               })}
+
+              {/* HotScolatti Light and Dark grouped section */}
+              {(filterBrand === 'all' || filterBrand === 'hotscolatti' || filterBrand === 'hotscolatti-light' || filterBrand === 'hotscolatti-dark') && (
+                <div className="space-y-2 p-3 rounded-lg border-2 border-amber-500/30 bg-amber-500/5">
+                  <div className="text-sm font-semibold text-amber-600 mb-2">Hot Scolatti</div>
+                  {['hotscolatti-light', 'hotscolatti-dark'].map((brandId) => {
+                    const brand = VALID_TUBE_BRANDS.find(b => b.id === brandId);
+                    if (!brand) return null;
+
+                    const count = editedCounts[brand.id] ?? 0;
+                    const originalItem = inventory?.find(i => i.brand === brand.id);
+                    const hasChange = originalItem ? count !== originalItem.current_tubes_left : count > 0;
+
+                    return (
+                      <div
+                        key={brand.id}
+                        className="flex items-center justify-between p-2 rounded-lg bg-secondary/30 ml-4"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div
+                            className="h-3 w-3 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: brand.color }}
+                          />
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="font-medium" style={{ color: brand.color }}>
+                              {brand.name}
+                            </span>
+                            {originalItem?.last_updated && (
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                {format(new Date(originalItem.last_updated), 'MMM d, h:mm a')}
+                              </span>
+                            )}
+                          </div>
+                          {hasChange && (
+                            <Badge variant="secondary" className="text-xs flex-shrink-0">
+                              Modified
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={count}
+                            onChange={(e) => handleCountChange(brand.id, e.target.value)}
+                            className="w-24 h-9 text-right bg-background"
+                          />
+                          <span className="text-sm text-muted-foreground">tubes</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Last updated */}

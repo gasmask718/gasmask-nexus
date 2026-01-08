@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Package, Plus, Trash2, X } from 'lucide-react';
+import { Package, Plus, Trash2, X, Edit } from 'lucide-react';
 import { GRABBA_COMPANIES, useProductsByBrand, type ProductOption } from '@/hooks/useVisitProducts';
+import { useNavigate } from 'react-router-dom';
 
 export interface SelectedProduct {
   id: string;
@@ -32,6 +33,7 @@ const STANDARD_QUANTITIES = [
 ];
 
 export function VisitProductSelector({ selectedProducts, onChange }: VisitProductSelectorProps) {
+  const navigate = useNavigate();
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [quantityType, setQuantityType] = useState<'standard' | 'custom'>('standard');
@@ -130,7 +132,19 @@ export function VisitProductSelector({ selectedProducts, onChange }: VisitProduc
           {/* Product Selector */}
           {selectedBrand && (
             <div className="space-y-2">
-              <Label>Select Product</Label>
+              <div className="flex items-center justify-between">
+                <Label>Select Product</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => navigate('/products')}
+                >
+                  <Edit className="h-3 w-3 mr-1" />
+                  Edit Products
+                </Button>
+              </div>
               <Select 
                 value={selectedProduct || ''} 
                 onValueChange={setSelectedProduct}

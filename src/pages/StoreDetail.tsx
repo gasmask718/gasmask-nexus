@@ -37,6 +37,8 @@ import { StoreQuickActions } from "@/components/store/StoreQuickActions";
 import { RecentStoreInteractions } from "@/components/crm/RecentStoreInteractions";
 import { UnifiedInteractionModal } from "@/components/store/UnifiedInteractionModal";
 import { InvoiceHistoryCard } from "@/components/store/InvoiceHistoryCard";
+import { OrderHistoryCard } from "@/components/store/OrderHistoryCard";
+import { CreateStoreInvoiceModal } from "@/components/store/CreateStoreInvoiceModal";
 import { ConnectedStoresCard } from "@/components/store/ConnectedStoresCard";
 import {
   MapPin,
@@ -127,8 +129,20 @@ interface VisitLog {
   customer_response: string;
   user: {
     name: string;
+    role?: string;
   };
 }
+
+// Helper function to determine source from role
+const getSourceFromRole = (role?: string | null): string => {
+  if (!role) return "System";
+  const roleLower = role.toLowerCase();
+  if (roleLower === 'va' || roleLower.includes('va')) return "VA";
+  if (roleLower === 'biker' || roleLower === 'driver') return "Biker";
+  if (roleLower === 'admin' || roleLower === 'owner') return "Admin";
+  if (roleLower.includes('ai') || roleLower === 'ai') return "AI";
+  return "User";
+};
 
 const StoreDetail = () => {
   const { id } = useParams();
@@ -140,6 +154,8 @@ const StoreDetail = () => {
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
   const [bulkCommModalOpen, setBulkCommModalOpen] = useState(false);
   const [unifiedInteractionModalOpen, setUnifiedInteractionModalOpen] = useState(false);
+  const [unifiedInteractionModalType, setUnifiedInteractionModalType] = useState<string>('delivery');
+  const [createInvoiceModalOpen, setCreateInvoiceModalOpen] = useState(false);
   const [resolvedStoreMasterId, setResolvedStoreMasterId] = useState<string | null>(null);
   const [timelineRefresh, setTimelineRefresh] = useState(0);
   const [geocoding, setGeocoding] = useState(false);
@@ -269,7 +285,7 @@ const StoreDetail = () => {
           cash_collected,
           payment_method,
           customer_response,
-          user:profiles(name)
+          user:profiles(name, role)
         `,
         )
         .eq("store_id", id)
@@ -452,13 +468,30 @@ const StoreDetail = () => {
 
       <UnifiedInteractionModal
         open={unifiedInteractionModalOpen}
-        onOpenChange={setUnifiedInteractionModalOpen}
+        onOpenChange={(open) => {
+          setUnifiedInteractionModalOpen(open);
+          if (!open) {
+            setUnifiedInteractionModalType('delivery'); // Reset to default when closed
+          }
+        }}
         storeId={id || ""}
         storeName={store.name}
         storeContacts={storeContacts || []}
+        initialInteractionType={unifiedInteractionModalType as any}
         onSuccess={() => {
           fetchInventoryAndVisits();
           setTimelineRefresh((prev) => prev + 1);
+          // Order history will be refreshed automatically via query invalidation in UnifiedInteractionModal
+        }}
+      />
+
+      <CreateStoreInvoiceModal
+        open={createInvoiceModalOpen}
+        onOpenChange={setCreateInvoiceModalOpen}
+        storeId={id || ""}
+        storeName={store.name}
+        onSuccess={() => {
+          // Order history will refresh automatically via query invalidation
         }}
       />
 
@@ -537,8 +570,20 @@ const StoreDetail = () => {
             }}
           />
 
+          {/* Order History */}
+          <OrderHistoryCard 
+            storeId={id || ""} 
+            onCreateOrder={() => {
+              setUnifiedInteractionModalType('order');
+              setUnifiedInteractionModalOpen(true);
+            }}
+          />
+
           {/* Invoice History */}
-          <InvoiceHistoryCard storeId={id || ""} />
+          <InvoiceHistoryCard 
+            storeId={id || ""} 
+            onCreateInvoice={() => setCreateInvoiceModalOpen(true)}
+          />
 
           {/* Communication Stats & AI */}
           <div className="grid gap-6 md:grid-cols-2">
@@ -555,7 +600,7 @@ const StoreDetail = () => {
           <AIRelationshipHealth entityType="store" entityId={id || ""} />
 
           {/* Route Intelligence */}
-          <RouteIntelligence storeId={id || ""} />
+          <RouteIntelligence storeId={id || ""} storeName={store?.name} />
 
           {/* Replenishment AI */}
           <ReplenishmentAI storeId={id || ""} />
@@ -622,7 +667,7 @@ const StoreDetail = () => {
           )}
 
           {/* Communication Timeline */}
-          <Card className="glass-card border-border/50">
+          {/* <Card className="glass-card border-border/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
@@ -651,7 +696,7 @@ const StoreDetail = () => {
             <CardContent>
               <CommunicationTimelineCRM storeId={id || ""} />
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* Tabs for Inventory & History */}
           <Tabs defaultValue="inventory" className="w-full">
@@ -847,7 +892,9 @@ const StoreDetail = () => {
                             <Badge variant="outline" className="text-xs capitalize">
                               {formatVisitType(visit.visit_type)}
                             </Badge>
-                            <p className="text-sm text-muted-foreground">by {visit.user.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              by {visit.user.name} • {getSourceFromRole(visit.user.role)}
+                            </p>
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-medium">{new Date(visit.visit_datetime).toLocaleDateString()}</p>
