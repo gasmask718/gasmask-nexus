@@ -100,6 +100,8 @@ import EntityListPage from '@/pages/crm/EntityListPage';
 import EntityProfilePage from '@/pages/crm/EntityProfilePage';
 import EntityCreatePage from '@/pages/crm/EntityCreatePage';
 import CRMSettingsPage from '@/pages/crm/CRMSettingsPage';
+import CRMUserAccessPage from '@/pages/crm/CRMUserAccessPage';
+import AcceptCRMInvite from '@/pages/crm/AcceptCRMInvite';
 import CRMBrandPage from '@/pages/crm/BrandCRM';
 import CRMBrandStoreProfile from '@/pages/crm/BrandStoreProfile';
 import CRMCustomerNew from '@/pages/CRMCustomerNew';
@@ -712,6 +714,8 @@ export default function AppRoutes() {
         <Route path="/crm/data/import" element={<CRMImportPage />} />
         <Route path="/crm/data/backup" element={<CRMBackupPage />} />
         <Route path="/crm/settings" element={<CRMSettingsPage />} />
+        <Route path="/crm/user-access" element={<CRMUserAccessPage />} />
+        <Route path="/crm/accept-invite" element={<AcceptCRMInvite />} />
         <Route path="/crm/global" element={<GlobalCRMDashboard />} />
         <Route path="/crm/legacy" element={<GlobalCRM />} />
         
