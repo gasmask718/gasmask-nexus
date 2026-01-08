@@ -8614,6 +8614,81 @@ export type Database = {
           },
         ]
       }
+      crm_invitation_assignments: {
+        Row: {
+          access_role: Database["public"]["Enums"]["crm_access_role"]
+          crm_id: string
+          id: string
+          invitation_id: string
+        }
+        Insert: {
+          access_role?: Database["public"]["Enums"]["crm_access_role"]
+          crm_id: string
+          id?: string
+          invitation_id: string
+        }
+        Update: {
+          access_role?: Database["public"]["Enums"]["crm_access_role"]
+          crm_id?: string
+          id?: string
+          invitation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_invitation_assignments_crm_id_fkey"
+            columns: ["crm_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_invitation_assignments_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "crm_invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by_user_id: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invite_token: string
+          invited_by: string
+          notes: string | null
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by_user_id?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          invited_by: string
+          notes?: string | null
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by_user_id?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          invited_by?: string
+          notes?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       crm_partners: {
         Row: {
           availability_rules: string | null
@@ -8793,6 +8868,50 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_user_access: {
+        Row: {
+          access_role: Database["public"]["Enums"]["crm_access_role"]
+          crm_id: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          revoked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_role?: Database["public"]["Enums"]["crm_access_role"]
+          crm_id: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          revoked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_role?: Database["public"]["Enums"]["crm_access_role"]
+          crm_id?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          revoked_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_user_access_crm_id_fkey"
+            columns: ["crm_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -27902,12 +28021,20 @@ export type Database = {
         Args: { _brand_id: string; _user_id: string }
         Returns: boolean
       }
+      can_access_crm: {
+        Args: { _crm_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_access_own_or_admin: {
         Args: { _owner_id: string; _user_id: string }
         Returns: boolean
       }
       can_access_store: {
         Args: { _store_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_edit_crm: {
+        Args: { _crm_id: string; _user_id: string }
         Returns: boolean
       }
       can_manage_org: {
@@ -27982,6 +28109,10 @@ export type Database = {
       }
       is_business_member: {
         Args: { _business_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_crm_admin: {
+        Args: { _crm_id: string; _user_id: string }
         Returns: boolean
       }
       is_developer: { Args: { _user_id: string }; Returns: boolean }
@@ -28100,6 +28231,7 @@ export type Database = {
         | "other"
       brand_type: "GasMask" | "HotMama" | "GrabbaRUs" | "HotScalati"
       credit_terms_type: "COD" | "NET7" | "NET14" | "NET30"
+      crm_access_role: "view" | "edit" | "admin"
       fulfillment_type:
         | "delivery"
         | "pickup"
@@ -28463,6 +28595,7 @@ export const Constants = {
       ],
       brand_type: ["GasMask", "HotMama", "GrabbaRUs", "HotScalati"],
       credit_terms_type: ["COD", "NET7", "NET14", "NET30"],
+      crm_access_role: ["view", "edit", "admin"],
       fulfillment_type: [
         "delivery",
         "pickup",
