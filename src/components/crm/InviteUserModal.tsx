@@ -35,6 +35,13 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
 
   const sendInvite = useSendCRMInvite();
 
+  // Email validation helper
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const isValidEmail = email.trim().length > 0 && emailRegex.test(email.trim());
+  
+  // Form validity check
+  const isFormValid = isValidEmail && assignments.length > 0;
+
   // Fetch all businesses (CRMs)
   const { data: businesses = [], isLoading: businessesLoading } = useQuery({
     queryKey: ['invite-modal-businesses'],
@@ -84,19 +91,14 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
   };
 
   const handleSubmit = async () => {
-    if (!email.trim()) {
-      toast.error('Please enter an email address');
-      return;
-    }
-
-    if (assignments.length === 0) {
-      toast.error('Please assign at least one CRM');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast.error('Please enter a valid email address');
+    if (!isFormValid) {
+      if (!email.trim()) {
+        toast.error('Please enter an email address');
+      } else if (!isValidEmail) {
+        toast.error('Please enter a valid email address');
+      } else if (assignments.length === 0) {
+        toast.error('Please assign at least one CRM');
+      }
       return;
     }
 
@@ -301,7 +303,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={sendInvite.isPending || !email || assignments.length === 0}
+            disabled={sendInvite.isPending || !isFormValid}
           >
             {sendInvite.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Send Invitation
