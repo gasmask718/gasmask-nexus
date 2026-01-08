@@ -100,7 +100,8 @@ export function BulkStoreSelector({
                 >
                   <Checkbox
                     checked={selectedStoreIds.includes(store.id)}
-                    onCheckedChange={() => handleToggleStore(store.id)}
+                    onCheckedChange={() => {}}
+                    onClick={(e) => e.stopPropagation()}
                   />
                   <Store className="h-4 w-4 text-muted-foreground" />
                   <Label className="flex-1 cursor-pointer text-sm">
