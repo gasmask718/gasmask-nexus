@@ -37,6 +37,7 @@ export function StoreTubeInventoryCard({ storeId, onAddCount }: StoreTubeInvento
         .from('store_tube_inventory')
         .select('*')
         .eq('store_id', storeId)
+        .neq('brand', 'hotscolatti') // Exclude legacy hotscolatti, show only light/dark variants
         .order('brand');
       
       if (error) throw error;
