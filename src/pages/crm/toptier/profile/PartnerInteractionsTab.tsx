@@ -205,7 +205,7 @@ export default function PartnerInteractionsTab({ partner, isSimulated }: Partner
         </h2>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => console.log('Add follow-up task')}>
-            <Calendar className="h-4 w-4 mr-2" />
+            <CalendarIcon className="h-4 w-4 mr-2" />
             Add Follow-Up
           </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

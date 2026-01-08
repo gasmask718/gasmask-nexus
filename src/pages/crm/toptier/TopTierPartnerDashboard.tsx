@@ -123,6 +123,7 @@ export default function TopTierPartnerDashboard() {
         .select("*")
         .eq("business_slug", "toptier-experience")
         .eq("is_simulation", simulationMode)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];

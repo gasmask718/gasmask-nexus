@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { SimulationBadge, EmptyStateWithGuidance } from '@/contexts/SimulationModeContext';
 import { format } from 'date-fns';
+import AssetUploadModal from '@/components/crm/toptier/AssetUploadModal';
 
 interface PartnerAssetsTabProps {
   partner: any;
@@ -25,6 +26,7 @@ export default function PartnerAssetsTab({ partner, isSimulated }: PartnerAssets
   const { partnerId } = useParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   // Simulated assets
   const [assets] = useState([
@@ -69,15 +71,7 @@ export default function PartnerAssetsTab({ partner, isSimulated }: PartnerAssets
   };
 
   const handleUploadAsset = () => {
-    // Open file upload dialog
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    input.onchange = (e: any) => {
-      const files = e.target.files;
-      console.log('Files to upload:', files);
-    };
-    input.click();
+    setUploadModalOpen(true);
   };
 
   const handleViewAsset = (assetId: string) => {
@@ -203,6 +197,13 @@ export default function PartnerAssetsTab({ partner, isSimulated }: PartnerAssets
           ))}
         </div>
       )}
+
+      {/* Upload Modal */}
+      <AssetUploadModal
+        partnerId={partnerId || partner?.id || ''}
+        open={uploadModalOpen}
+        onOpenChange={setUploadModalOpen}
+      />
     </div>
   );
 }

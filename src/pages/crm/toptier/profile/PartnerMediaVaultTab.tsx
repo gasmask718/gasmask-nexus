@@ -18,6 +18,7 @@ import {
 import { SimulationBadge } from '@/contexts/SimulationModeContext';
 import { format } from 'date-fns';
 import EmptyStateWithGuidance from '@/components/crm/EmptyStateWithGuidance';
+import MediaUploadModal from '@/components/crm/toptier/MediaUploadModal';
 
 interface PartnerMediaVaultTabProps {
   partner: any;
@@ -55,6 +56,7 @@ export default function PartnerMediaVaultTab({ partner, isSimulated }: PartnerMe
   const [activeFolder, setActiveFolder] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   // Generate simulated media assets
   const mediaAssets: MediaAsset[] = useMemo(() => {
@@ -134,8 +136,7 @@ export default function PartnerMediaVaultTab({ partner, isSimulated }: PartnerMe
   }, [mediaAssets]);
 
   const handleUpload = () => {
-    console.log('Opening upload dialog...');
-    // TODO: Implement file upload
+    setUploadModalOpen(true);
   };
 
   const handleViewAsset = (assetId: string) => {
@@ -408,6 +409,13 @@ export default function PartnerMediaVaultTab({ partner, isSimulated }: PartnerMe
           )}
         </div>
       </div>
+
+      {/* Upload Modal */}
+      <MediaUploadModal
+        partnerId={partnerId || partner?.id || ''}
+        open={uploadModalOpen}
+        onOpenChange={setUploadModalOpen}
+      />
     </div>
   );
 }
