@@ -36,14 +36,14 @@ export const FollowUpAIRecommendation = ({ storeId, onSendMessage }: FollowUpAIR
       // 1. Check for unpaid orders
       const { data: unpaidOrders } = await supabase
         .from('visit_logs')
-        .select('id, cash_collected, total_amount, created_at')
+        .select('id, cash_collected, created_at')
         .eq('store_id', storeId)
         .eq('visit_type', 'order')
         .or('cash_collected.is.null,cash_collected.eq.0');
 
       if (unpaidOrders && unpaidOrders.length > 0) {
         const totalUnpaid = unpaidOrders.reduce((sum, order) => {
-          return sum + (Number(order.total_amount) || Number(order.cash_collected) || 0);
+          return sum + (Number(order.cash_collected) || 0);
         }, 0);
         
         reasons.push({
@@ -78,11 +78,11 @@ export const FollowUpAIRecommendation = ({ storeId, onSendMessage }: FollowUpAIR
       // 3. Check for low tube counts
       const { data: tubeInventory } = await supabase
         .from('store_tube_inventory')
-        .select('brand, tube_count')
+        .select('brand, current_tubes_left')
         .eq('store_id', storeId);
 
       if (tubeInventory) {
-        const lowTubes = tubeInventory.filter(inv => (inv.tube_count || 0) < 20);
+        const lowTubes = tubeInventory.filter(inv => (inv.current_tubes_left || 0) < 20);
         if (lowTubes.length > 0) {
           reasons.push({
             type: 'low_tubes',

@@ -90,18 +90,17 @@ export function CreateStoreInvoiceModal({
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
 
-  // Fetch only Grabba brands (filter by company_id)
+  // Fetch Grabba brands
   const { data: brands = [], isLoading: brandsLoading } = useQuery({
     queryKey: ['invoice-brands-grabba'],
     queryFn: async () => {
-      const grabbaCompanyIds = Object.values(GRABBA_COMPANY_IDS);
       const { data, error } = await supabase
         .from('brands')
-        .select('id, name, color, company_id')
-        .in('company_id', grabbaCompanyIds)
+        .select('id, name, color')
+        .eq('active', true)
         .order('name');
       if (error) throw error;
-      return data as Brand[];
+      return (data || []) as Brand[];
     },
   });
 
