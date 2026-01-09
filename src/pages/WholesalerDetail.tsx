@@ -25,7 +25,7 @@ export default function WholesalerDetail() {
         .from('wholesale_hubs')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
