@@ -97,9 +97,9 @@ export default function GrabbaCRM() {
   // DATA QUERIES
   // ═══════════════════════════════════════════════════════════════════════════════
 
-  // Fetch companies with Grabba activity
+  // Fetch companies with Grabba activity - filter by simulation mode
   const { data: companies, isLoading: companiesLoading } = useQuery({
-    queryKey: ["grabba-crm-companies", selectedBrand],
+    queryKey: ["grabba-crm-companies", selectedBrand, simulationMode],
     queryFn: async () => {
       const brandsToQuery = getBrandQuery();
       const { data: ordersWithCompanies } = await supabase
@@ -110,10 +110,11 @@ export default function GrabbaCRM() {
       const companyIds = [...new Set(ordersWithCompanies?.map((o) => o.company_id).filter(Boolean))];
 
       // Always fetch all companies, but prioritize those with orders
-      // This ensures newly created companies appear in the list
+      // Filter by simulation mode to keep LIVE and SIMULATION data separate
       const { data: allCompanies } = await supabase
         .from("companies")
         .select("*")
+        .eq("is_simulation", simulationMode)
         .order("created_at", { ascending: false })
         .limit(500);
       
@@ -162,11 +163,15 @@ export default function GrabbaCRM() {
     enabled: allStoreIds.length > 0,
   });
 
-  // Fetch wholesalers
+  // Fetch wholesalers - filter by simulation mode
   const { data: wholesalers, isLoading: wholesalersLoading } = useQuery({
-    queryKey: ["grabba-crm-wholesalers"],
+    queryKey: ["grabba-crm-wholesalers", simulationMode],
     queryFn: async () => {
-      const { data } = await supabase.from("wholesalers").select("*").order("name");
+      const { data } = await supabase
+        .from("wholesalers")
+        .select("*")
+        .eq("is_simulation", simulationMode)
+        .order("name");
       return data || [];
     },
   });
