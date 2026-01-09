@@ -1,27 +1,15 @@
-import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useEditableEntity } from '@/hooks/useEditableEntity';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { PaymentScoreBadge } from '@/components/company/PaymentScoreBadge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ArrowLeft, MapPin, Phone, Mail, Store, Truck, User, Pencil, Loader2 } from 'lucide-react';
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEditableEntity } from "@/hooks/useEditableEntity";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { PaymentScoreBadge } from "@/components/company/PaymentScoreBadge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, MapPin, Phone, Mail, Store, Truck, User, Pencil, Loader2 } from "lucide-react";
 
 interface CompanyData {
   id: string;
@@ -45,15 +33,15 @@ interface CompanyHeaderEditableProps {
 }
 
 const typeLabels: Record<string, string> = {
-  store: 'Store',
-  wholesaler: 'Wholesaler',
-  direct_customer: 'Direct Customer',
+  store: "Store",
+  wholesaler: "Wholesaler",
+  direct_customer: "Direct Customer",
 };
 
 const typeBadgeColors: Record<string, string> = {
-  store: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  wholesaler: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  direct_customer: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+  store: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  wholesaler: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+  direct_customer: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
 };
 
 const typeIcons: Record<string, React.ReactNode> = {
@@ -66,73 +54,73 @@ export function CompanyHeaderEditable({ company, onNavigateBack }: CompanyHeader
   const queryClient = useQueryClient();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: company.name || '',
-    type: company.type || 'store',
-    neighborhood: company.neighborhood || '',
-    default_city: company.default_city || '',
-    default_state: company.default_state || '',
-    boro: company.boro || '',
-    default_phone: company.default_phone || '',
-    default_email: company.default_email || '',
+    name: company.name || "",
+    type: company.type || "store",
+    neighborhood: company.neighborhood || "",
+    default_city: company.default_city || "",
+    default_state: company.default_state || "",
+    boro: company.boro || "",
+    default_phone: company.default_phone || "",
+    default_email: company.default_email || "",
     sells_flowers: company.sells_flowers || false,
-    rpa_status: company.rpa_status || 'none',
+    rpa_status: company.rpa_status || "none",
   });
-  
+
   const { updateMultipleFields, isSaving } = useEditableEntity({
-    entity: 'companies',
+    entity: "companies",
     entityId: company.id,
     onUpdate: () => {
-      queryClient.invalidateQueries({ queryKey: ['company', company.id] });
+      queryClient.invalidateQueries({ queryKey: ["company", company.id] });
     },
   });
 
   const handleOpenEdit = () => {
     setFormData({
-      name: company.name || '',
-      type: company.type || 'store',
-      neighborhood: company.neighborhood || '',
-      default_city: company.default_city || '',
-      default_state: company.default_state || '',
-      boro: company.boro || '',
-      default_phone: company.default_phone || '',
-      default_email: company.default_email || '',
+      name: company.name || "",
+      type: company.type || "store",
+      neighborhood: company.neighborhood || "",
+      default_city: company.default_city || "",
+      default_state: company.default_state || "",
+      boro: company.boro || "",
+      default_phone: company.default_phone || "",
+      default_email: company.default_email || "",
       sells_flowers: company.sells_flowers || false,
-      rpa_status: company.rpa_status || 'none',
+      rpa_status: company.rpa_status || "none",
     });
     setIsEditOpen(true);
   };
 
   const handleSave = async () => {
     const updates: Record<string, { newValue: any; oldValue?: any }> = {};
-    
+
     if (formData.name !== company.name) {
       updates.name = { newValue: formData.name, oldValue: company.name };
     }
     if (formData.type !== company.type) {
       updates.type = { newValue: formData.type, oldValue: company.type };
     }
-    if (formData.neighborhood !== (company.neighborhood || '')) {
+    if (formData.neighborhood !== (company.neighborhood || "")) {
       updates.neighborhood = { newValue: formData.neighborhood || null, oldValue: company.neighborhood };
     }
-    if (formData.default_city !== (company.default_city || '')) {
+    if (formData.default_city !== (company.default_city || "")) {
       updates.default_city = { newValue: formData.default_city || null, oldValue: company.default_city };
     }
-    if (formData.default_state !== (company.default_state || '')) {
+    if (formData.default_state !== (company.default_state || "")) {
       updates.default_state = { newValue: formData.default_state || null, oldValue: company.default_state };
     }
-    if (formData.boro !== (company.boro || '')) {
+    if (formData.boro !== (company.boro || "")) {
       updates.boro = { newValue: formData.boro || null, oldValue: company.boro };
     }
-    if (formData.default_phone !== (company.default_phone || '')) {
+    if (formData.default_phone !== (company.default_phone || "")) {
       updates.default_phone = { newValue: formData.default_phone || null, oldValue: company.default_phone };
     }
-    if (formData.default_email !== (company.default_email || '')) {
+    if (formData.default_email !== (company.default_email || "")) {
       updates.default_email = { newValue: formData.default_email || null, oldValue: company.default_email };
     }
     if (formData.sells_flowers !== (company.sells_flowers || false)) {
       updates.sells_flowers = { newValue: formData.sells_flowers, oldValue: company.sells_flowers };
     }
-    if (formData.rpa_status !== (company.rpa_status || 'none')) {
+    if (formData.rpa_status !== (company.rpa_status || "none")) {
       updates.rpa_status = { newValue: formData.rpa_status, oldValue: company.rpa_status };
     }
 
@@ -159,13 +147,13 @@ export function CompanyHeaderEditable({ company, onNavigateBack }: CompanyHeader
               {/* Name & Type Row */}
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold">{company.name}</h1>
-                <Badge className={typeBadgeColors[company.type] || 'bg-muted'}>
+                <Badge className={typeBadgeColors[company.type] || "bg-muted"}>
                   {typeIcons[company.type]}
                   <span className="ml-1">{typeLabels[company.type] || company.type}</span>
                 </Badge>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={handleOpenEdit}
                   className="text-muted-foreground hover:text-foreground"
                 >
@@ -173,7 +161,7 @@ export function CompanyHeaderEditable({ company, onNavigateBack }: CompanyHeader
                   Edit
                 </Button>
               </div>
-              
+
               {/* Location Row */}
               <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                 {(company.default_city || company.neighborhood) && (
@@ -196,7 +184,7 @@ export function CompanyHeaderEditable({ company, onNavigateBack }: CompanyHeader
                   </span>
                 )}
               </div>
-              
+
               {/* Tags Row */}
               <div className="flex items-center gap-2 flex-wrap">
                 {company.sells_flowers && (
@@ -204,7 +192,7 @@ export function CompanyHeaderEditable({ company, onNavigateBack }: CompanyHeader
                     🌸 Sells Flowers
                   </Badge>
                 )}
-                {company.rpa_status === 'rpa' && (
+                {company.rpa_status === "rpa" && (
                   <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
                     🚚 RPA Active
                   </Badge>
@@ -215,9 +203,9 @@ export function CompanyHeaderEditable({ company, onNavigateBack }: CompanyHeader
 
           {/* Right: Payment Reliability Score */}
           <div className="lg:w-64 shrink-0">
-            <PaymentScoreBadge 
-              score={company.payment_reliability_score || 50} 
-              tier={company.payment_reliability_tier || 'middle'} 
+            <PaymentScoreBadge
+              score={company.payment_reliability_score || 50}
+              tier={company.payment_reliability_tier || "middle"}
             />
           </div>
         </div>
@@ -229,7 +217,7 @@ export function CompanyHeaderEditable({ company, onNavigateBack }: CompanyHeader
           <DialogHeader>
             <DialogTitle>Edit Company Details</DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             {/* Company Name */}
             <div className="space-y-2">
@@ -244,10 +232,7 @@ export function CompanyHeaderEditable({ company, onNavigateBack }: CompanyHeader
             {/* Type */}
             <div className="space-y-2">
               <Label>Type</Label>
-              <Select 
-                value={formData.type} 
-                onValueChange={(value) => setFormData({ ...formData, type: value })}
-              >
+              <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -270,7 +255,7 @@ export function CompanyHeaderEditable({ company, onNavigateBack }: CompanyHeader
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="boro">Boro</Label>
+                <Label htmlFor="boro">Borough</Label>
                 <Input
                   id="boro"
                   value={formData.boro}
@@ -331,8 +316,8 @@ export function CompanyHeaderEditable({ company, onNavigateBack }: CompanyHeader
             {/* RPA Status */}
             <div className="space-y-2">
               <Label>RPA Status</Label>
-              <Select 
-                value={formData.rpa_status} 
+              <Select
+                value={formData.rpa_status}
                 onValueChange={(value) => setFormData({ ...formData, rpa_status: value })}
               >
                 <SelectTrigger>
