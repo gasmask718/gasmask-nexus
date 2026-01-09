@@ -88,6 +88,19 @@ const commissionPermissions: EntityFieldPermissions = {
   paid_at: { editable: true, roles: ['admin', 'manager'] },
 };
 
+const companyPermissions: EntityFieldPermissions = {
+  name: { editable: true, roles: ['admin', 'manager'] },
+  type: { editable: true, roles: ['admin', 'manager'] },
+  neighborhood: { editable: true, roles: ['admin', 'manager', 'csr'] },
+  default_city: { editable: true, roles: ['admin', 'manager', 'csr'] },
+  default_state: { editable: true, roles: ['admin', 'manager', 'csr'] },
+  default_phone: { editable: true, roles: ['admin', 'manager', 'csr'] },
+  default_email: { editable: true, roles: ['admin', 'manager', 'csr'] },
+  sells_flowers: { editable: true, roles: ['admin', 'manager'] },
+  rpa_status: { editable: true, roles: ['admin', 'manager'] },
+  notes: { editable: true, roles: ['admin', 'manager', 'csr'] },
+};
+
 const entityPermissions: Record<DrillDownEntity, EntityFieldPermissions> = {
   stores: storePermissions,
   invoices: invoicePermissions,
@@ -98,6 +111,7 @@ const entityPermissions: Record<DrillDownEntity, EntityFieldPermissions> = {
   orders: orderPermissions,
   routes: routePermissions,
   commissions: commissionPermissions,
+  companies: companyPermissions,
 };
 
 export function canEditField(

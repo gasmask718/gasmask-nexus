@@ -142,6 +142,20 @@ const entityFieldConfigs: Record<DrillDownEntity, FieldConfig[]> = {
     { key: 'paid_at', label: 'Paid Date', type: 'date' },
     { key: 'notes', label: 'Notes', type: 'textarea' },
   ],
+  companies: [
+    { key: 'name', label: 'Company Name', type: 'text' },
+    { key: 'type', label: 'Type', type: 'dropdown', options: [
+      { value: 'store', label: 'Store' },
+      { value: 'wholesaler', label: 'Wholesaler' },
+      { value: 'direct_customer', label: 'Direct Customer' },
+    ]},
+    { key: 'default_phone', label: 'Phone', type: 'text' },
+    { key: 'default_email', label: 'Email', type: 'text' },
+    { key: 'neighborhood', label: 'Neighborhood', type: 'text' },
+    { key: 'default_city', label: 'City', type: 'text' },
+    { key: 'default_state', label: 'State', type: 'text' },
+    { key: 'notes', label: 'Notes', type: 'textarea' },
+  ],
 };
 
 export function EntityDrawer({

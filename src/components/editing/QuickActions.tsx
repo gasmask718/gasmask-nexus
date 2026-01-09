@@ -66,6 +66,11 @@ const entityActions: Record<DrillDownEntity, ActionConfig[]> = {
     { icon: FileText, label: 'Generate Receipt', action: 'generate_receipt' },
     { icon: StickyNote, label: 'Add Note', action: 'add_note' },
   ],
+  companies: [
+    { icon: FileText, label: 'Create Invoice', action: 'create_invoice' },
+    { icon: MessageSquare, label: 'Send Message', action: 'send_message' },
+    { icon: StickyNote, label: 'Add Note', action: 'add_note' },
+  ],
 };
 
 export function QuickActions({ entity, entityId, entityData, onAction }: QuickActionsProps) {

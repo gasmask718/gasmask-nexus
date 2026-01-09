@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,7 @@ import { NeighborhoodIntelligence } from '@/components/company/NeighborhoodIntel
 import { TubeIntelligencePanel } from '@/components/company/TubeIntelligencePanel';
 import { PaymentScoreBadge } from '@/components/company/PaymentScoreBadge';
 import { PaymentSummaryPanel } from '@/components/company/PaymentSummaryPanel';
+import { CompanyHeaderEditable } from '@/components/company/CompanyHeaderEditable';
 import { SendMessageModal } from '@/components/communication/SendMessageModal';
 import { toast } from 'sonner';
 import { 
@@ -407,68 +408,11 @@ export default function CompanyProfile() {
 
   return (
     <div className="space-y-6">
-        {/* === CUSTOMER HEADER === */}
-        <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-xl p-6 border border-slate-700/50">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-            {/* Left: Company Info */}
-            <div className="flex items-start gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="text-2xl font-bold">{company.name}</h1>
-                  <Badge className={typeBadgeColors[company.type] || 'bg-muted'}>
-                    {typeIcons[company.type]}
-                    <span className="ml-1">{typeLabels[company.type] || company.type}</span>
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
-                  {(company.default_city || company.neighborhood) && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      {company.neighborhood || company.default_city}
-                      {(company.boro || company.default_state) && ` • ${company.boro || company.default_state}`}
-                    </span>
-                  )}
-                  {company.default_phone && (
-                    <span className="flex items-center gap-1">
-                      <Phone className="h-4 w-4" />
-                      {company.default_phone}
-                    </span>
-                  )}
-                  {company.default_email && (
-                    <span className="flex items-center gap-1">
-                      <Mail className="h-4 w-4" />
-                      {company.default_email}
-                    </span>
-                  )}
-                </div>
-                {/* Tags */}
-                <div className="flex items-center gap-2 mt-3 flex-wrap">
-                  {company.sells_flowers && (
-                    <Badge variant="secondary" className="bg-pink-500/10 text-pink-400 border-pink-500/30">
-                      🌸 Sells Flowers
-                    </Badge>
-                  )}
-                  {company.rpa_status === 'rpa' && (
-                    <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
-                      🚚 RPA Active
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Payment Reliability Score */}
-            <div className="lg:w-64 shrink-0">
-              <PaymentScoreBadge 
-                score={company.payment_reliability_score || 50} 
-                tier={company.payment_reliability_tier || 'middle'} 
-              />
-            </div>
-          </div>
-        </div>
+        {/* === CUSTOMER HEADER (EDITABLE) === */}
+        <CompanyHeaderEditable 
+          company={company} 
+          onNavigateBack={() => navigate(-1)} 
+        />
 
         {/* === LIVE TUBE INVENTORY (MANUAL COUNTS) === */}
         <div className="w-full p-5 rounded-xl bg-gradient-to-br from-slate-900/60 to-slate-800/40 border border-border/40 backdrop-blur-md">

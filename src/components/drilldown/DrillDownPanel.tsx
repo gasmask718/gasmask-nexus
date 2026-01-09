@@ -50,6 +50,7 @@ const entityIcons: Record<DrillDownEntity, React.ElementType> = {
   orders: DollarSign,
   ambassadors: Users,
   commissions: DollarSign,
+  companies: Store,
 };
 
 const entityToPanelType: Record<DrillDownEntity, PanelType> = {
@@ -62,6 +63,7 @@ const entityToPanelType: Record<DrillDownEntity, PanelType> = {
   orders: 'orders',
   ambassadors: 'ambassadors',
   commissions: 'commissions',
+  companies: 'stores',
 };
 
 export function DrillDownPanel({ 
