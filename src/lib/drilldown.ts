@@ -1,6 +1,6 @@
 // Drilldown URL builder and parser utilities
 
-export type DrillDownEntity = 'stores' | 'invoices' | 'deliveries' | 'inventory' | 'drivers' | 'routes' | 'orders' | 'ambassadors' | 'commissions';
+export type DrillDownEntity = 'stores' | 'invoices' | 'deliveries' | 'inventory' | 'drivers' | 'routes' | 'orders' | 'ambassadors' | 'commissions' | 'companies';
 
 export interface DrillDownFilters {
   status?: string;
@@ -79,6 +79,7 @@ export function getEntityTitle(entity: DrillDownEntity): string {
     orders: 'Orders',
     ambassadors: 'Ambassadors',
     commissions: 'Commissions',
+    companies: 'Companies',
   };
   return titles[entity] || entity;
 }
@@ -97,6 +98,7 @@ export function getEntityTable(entity: DrillDownEntity): string {
     orders: 'wholesale_orders',
     ambassadors: 'ambassadors',
     commissions: 'ambassador_commissions',
+    companies: 'companies',
   };
   return tables[entity] || entity;
 }

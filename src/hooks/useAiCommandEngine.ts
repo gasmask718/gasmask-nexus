@@ -365,6 +365,7 @@ async function fetchEntityIds(
     orders: 'wholesale_orders',
     ambassadors: 'ambassadors',
     commissions: 'ambassador_commissions',
+    companies: 'companies',
   };
 
   const tableName = tableMap[entityType];
@@ -531,6 +532,7 @@ async function executeStatusUpdateAction(
       orders: 'wholesale_orders',
       ambassadors: 'ambassadors',
       commissions: 'ambassador_commissions',
+      companies: 'companies',
     };
 
     const tableName = tableMap[plan.entityType];
