@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useEditableEntity } from "@/hooks/useEditableEntity";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,17 @@ import { PaymentScoreBadge } from "@/components/company/PaymentScoreBadge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, MapPin, Phone, Mail, Store, Truck, User, Pencil, Loader2 } from "lucide-react";
+
+interface Borough {
+  id: string;
+  name: string;
+}
+
+interface Neighborhood {
+  id: string;
+  name: string;
+  borough_id: string;
+}
 
 interface CompanyData {
   id: string;
@@ -66,6 +78,34 @@ export function CompanyHeaderEditable({ company, onNavigateBack }: CompanyHeader
     rpa_status: company.rpa_status || "none",
   });
 
+  // Fetch boroughs
+  const { data: boroughs = [] } = useQuery({
+    queryKey: ["boroughs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("boroughs")
+        .select("id, name")
+        .order("name");
+      if (error) throw error;
+      return data as Borough[];
+    },
+  });
+
+  // Fetch neighborhoods filtered by selected borough
+  const selectedBorough = boroughs.find(b => b.name === formData.boro);
+  const { data: neighborhoods = [] } = useQuery({
+    queryKey: ["neighborhoods", selectedBorough?.id],
+    queryFn: async () => {
+      let query = supabase.from("neighborhoods").select("id, name, borough_id").order("name");
+      if (selectedBorough?.id) {
+        query = query.eq("borough_id", selectedBorough.id);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as Neighborhood[];
+    },
+  });
+
   const { updateMultipleFields, isSaving } = useEditableEntity({
     entity: "companies",
     entityId: company.id,
@@ -88,6 +128,10 @@ export function CompanyHeaderEditable({ company, onNavigateBack }: CompanyHeader
       rpa_status: company.rpa_status || "none",
     });
     setIsEditOpen(true);
+  };
+
+  const handleBoroughChange = (boroughName: string) => {
+    setFormData({ ...formData, boro: boroughName, neighborhood: "" });
   };
 
   const handleSave = async () => {
@@ -247,20 +291,40 @@ export function CompanyHeaderEditable({ company, onNavigateBack }: CompanyHeader
             {/* Location */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="neighborhood">Neighborhood</Label>
-                <Input
-                  id="neighborhood"
-                  value={formData.neighborhood}
-                  onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
-                />
+                <Label>Borough</Label>
+                <Select 
+                  value={formData.boro} 
+                  onValueChange={handleBoroughChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select borough..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border z-50">
+                    {boroughs.map((borough) => (
+                      <SelectItem key={borough.id} value={borough.name}>
+                        {borough.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="boro">Borough</Label>
-                <Input
-                  id="boro"
-                  value={formData.boro}
-                  onChange={(e) => setFormData({ ...formData, boro: e.target.value })}
-                />
+                <Label>Neighborhood</Label>
+                <Select 
+                  value={formData.neighborhood} 
+                  onValueChange={(value) => setFormData({ ...formData, neighborhood: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select neighborhood..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border z-50">
+                    {neighborhoods.map((neighborhood) => (
+                      <SelectItem key={neighborhood.id} value={neighborhood.name}>
+                        {neighborhood.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
