@@ -219,18 +219,6 @@ export default function CompanyProfile() {
 
       const storeIds = storesForCompany?.map(s => s.id) || [];
 
-      // If no stores found, return empty defaults
-      if (storeIds.length === 0) {
-        return {
-          totalTubes: 0,
-          totalBoxes: 0,
-          estimatedInventory: 0,
-          etaPrediction: 0,
-          liveBrandInventory: [],
-          storeCount: 0,
-        };
-      }
-
       // 2. Fetch live inventory across all stores
       const { data: liveTubeData } = await supabase
         .from('store_tube_inventory')
