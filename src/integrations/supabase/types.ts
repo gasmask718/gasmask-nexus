@@ -27912,6 +27912,7 @@ export type Database = {
           deleted_at: string | null
           email: string | null
           id: string
+          is_simulation: boolean | null
           name: string
           phone: string | null
           status: string | null
@@ -27925,6 +27926,7 @@ export type Database = {
           deleted_at?: string | null
           email?: string | null
           id?: string
+          is_simulation?: boolean | null
           name: string
           phone?: string | null
           status?: string | null
@@ -27938,6 +27940,7 @@ export type Database = {
           deleted_at?: string | null
           email?: string | null
           id?: string
+          is_simulation?: boolean | null
           name?: string
           phone?: string | null
           status?: string | null
