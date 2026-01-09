@@ -10,12 +10,15 @@ interface CrudOptions {
     update?: string;
     delete?: string;
   };
+  /** When true, automatically adds is_simulation field based on current simulation mode */
+  simulationMode?: boolean;
 }
 
 export function useCrudOperations({
   table,
   queryKey,
   successMessages = {},
+  simulationMode,
 }: CrudOptions) {
   const queryClient = useQueryClient();
 
@@ -23,10 +26,15 @@ export function useCrudOperations({
     mutationFn: async (data: Record<string, unknown>) => {
       // Get current user ID to set created_by for RLS
       const { data: { user } } = await supabase.auth.getUser();
-      const insertData = {
+      const insertData: Record<string, unknown> = {
         ...data,
         created_by: user?.id || null, // Set created_by for ownership tracking
       };
+      
+      // Add is_simulation flag if simulationMode is provided (keeps live/simulation data separate)
+      if (simulationMode !== undefined) {
+        insertData.is_simulation = simulationMode;
+      }
       
       const { data: result, error } = await (supabase as any)
         .from(table)
