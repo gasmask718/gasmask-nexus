@@ -8,17 +8,24 @@ const brandOptions = [
 
 export const storeFields: FieldConfig[] = [
   { name: 'name', label: 'Store Name', type: 'text', required: true, placeholder: 'Enter store name' },
-  { name: 'address', label: 'Address', type: 'text', placeholder: 'Street address' },
-  { name: 'neighborhood', label: 'Neighborhood', type: 'text', placeholder: 'e.g., Bronx, Brooklyn' },
+  { name: 'address_street', label: 'Street Address', type: 'text', placeholder: 'Street address' },
+  { name: 'address_city', label: 'City', type: 'text', placeholder: 'City' },
+  { name: 'address_state', label: 'State', type: 'text', placeholder: 'NY' },
+  { name: 'address_zip', label: 'ZIP Code', type: 'text', placeholder: '10001' },
   { name: 'phone', label: 'Phone', type: 'phone', placeholder: '(555) 123-4567' },
   { name: 'email', label: 'Email', type: 'email', placeholder: 'store@example.com' },
   { name: 'type', label: 'Store Type', type: 'select', options: [
-    { value: 'retail', label: 'Retail' },
-    { value: 'wholesale', label: 'Wholesale' },
-    { value: 'convenience', label: 'Convenience' },
+    { value: 'bodega', label: 'Bodega' },
     { value: 'smoke_shop', label: 'Smoke Shop' },
+    { value: 'gas_station', label: 'Gas Station' },
+    { value: 'wholesaler', label: 'Wholesaler' },
+    { value: 'other', label: 'Other' },
   ]},
-  { name: 'is_active', label: 'Active', type: 'switch', defaultValue: true },
+  { name: 'status', label: 'Status', type: 'select', defaultValue: 'active', options: [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'pending', label: 'Pending' },
+  ]},
 ];
 
 export const companyFields: FieldConfig[] = [
