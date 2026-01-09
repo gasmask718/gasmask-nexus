@@ -45,6 +45,7 @@ import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
 import { useCrudOperations } from "@/hooks/useCrudOperations";
 import { companyFields, storeFields, wholesalerFields } from "@/config/entityFieldConfigs";
 import { toast } from "sonner";
+import { useSimulationMode } from "@/contexts/SimulationModeContext";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FLOOR 1 — CRM: All stores, wholesalers, customers, and companies for Grabba brands.
@@ -113,18 +114,22 @@ export default function GrabbaCRM() {
     },
   });
 
-  // Fetch stores - now always fetches all stores, not just those with orders
+  // Simulation mode context
+  const { simulationMode } = useSimulationMode();
+
+  // Fetch stores - filter by simulation mode
   const { data: stores, isLoading: storesLoading, refetch: refetchStores } = useQuery({
-    queryKey: ["grabba-crm-stores", selectedBrand],
+    queryKey: ["grabba-crm-stores", selectedBrand, simulationMode],
     queryFn: async () => {
       const selectFields =
-        "id, name, phone, neighborhood, address_street, address_city, address_state, address_zip, companies(id, name), created_at";
+        "id, name, phone, neighborhood, address_street, address_city, address_state, address_zip, companies(id, name), created_at, is_simulation";
 
-      // Always fetch all stores ordered by creation date (newest first)
+      // Filter stores by simulation mode
       const { data } = await supabase
         .from("stores")
         .select(selectFields)
         .is("deleted_at", null)
+        .eq("is_simulation", simulationMode)
         .order("created_at", { ascending: false })
         .limit(500);
 
