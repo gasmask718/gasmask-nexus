@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -22,9 +23,19 @@ export function useCrudOperations({
 }: CrudOptions) {
   const queryClient = useQueryClient();
 
+  // Use a ref to always get the current simulationMode value
+  // This fixes the stale closure issue where simulationMode is captured at hook creation time
+  const simulationModeRef = useRef(simulationMode);
+  useEffect(() => {
+    simulationModeRef.current = simulationMode;
+  }, [simulationMode]);
+
   const createMutation = useMutation({
     mutationFn: async (data: Record<string, unknown>) => {
+      // Get the CURRENT simulation mode value, not the stale closure value
+      const currentSimulationMode = simulationModeRef.current;
       console.log(`useCrudOperations: Creating in table "${table}" with data:`, data);
+      console.log(`useCrudOperations: Current simulation mode:`, currentSimulationMode);
       // Get current user ID to set created_by for RLS
       const { data: { user } } = await supabase.auth.getUser();
       const insertData: Record<string, unknown> = {
@@ -33,8 +44,8 @@ export function useCrudOperations({
       };
       
       // Add is_simulation flag if simulationMode is provided (keeps live/simulation data separate)
-      if (simulationMode !== undefined) {
-        insertData.is_simulation = simulationMode;
+      if (currentSimulationMode !== undefined) {
+        insertData.is_simulation = currentSimulationMode;
       }
       
       const { data: result, error } = await (supabase as any)
