@@ -148,10 +148,11 @@ const Stores = () => {
   const { data: stores = [], isLoading } = useQuery({
     queryKey: ['stores-with-contacts', simulationMode],
     queryFn: async () => {
-      // Fetch from store_master - RLS handles simulation filtering automatically
+      // Fetch from store_master - explicitly filter by simulation mode
       const { data: storesData, error: storesError } = await supabase
         .from('store_master')
         .select('id, store_name, store_type, address, city, state, zip, phone, is_simulation')
+        .eq('is_simulation', simulationMode)
         .order('store_name');
 
       if (storesError) throw storesError;
