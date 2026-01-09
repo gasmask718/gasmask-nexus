@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,6 +52,7 @@ const brandGradients: Record<string, string> = {
 export default function CompanyProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { simulationMode } = useSimulationMode();
   const [activeTab, setActiveTab] = useState('overview');
   const [brandFilter, setBrandFilter] = useState<string>('all');
   const [messageModalOpen, setMessageModalOpen] = useState(false);
@@ -203,13 +205,14 @@ export default function CompanyProfile() {
 
   // UNIFIED INVENTORY QUERY: Fetches stores, live inventory, and calculates automated metrics
   const { data: inventoryData } = useQuery({
-    queryKey: ['unified-inventory', id],
+    queryKey: ['unified-inventory', id, simulationMode],
     queryFn: async () => {
-      // 1. Fetch all stores for this company
+      // 1. Fetch all stores for this company (filtered by simulation mode)
       const { data: storesForCompany } = await supabase
         .from('stores')
         .select('id, name')
-        .eq('company_id', id!);
+        .eq('company_id', id!)
+        .eq('is_simulation', simulationMode);
 
       const storeIds = storesForCompany?.map(s => s.id) || [];
 
@@ -225,11 +228,12 @@ export default function CompanyProfile() {
         };
       }
 
-      // 2. Fetch live inventory across all stores
+      // 2. Fetch live inventory across all stores (filtered by simulation mode)
       const { data: liveTubeData } = await supabase
         .from('store_tube_inventory')
         .select('*')
         .in('store_id', storeIds)
+        .eq('is_simulation', simulationMode)
         .order('last_updated', { ascending: false });
 
       // 3. Consolidate live inventory by brand (use latest entry per brand)
@@ -357,19 +361,19 @@ export default function CompanyProfile() {
       gradient: 'from-pink-500/30 to-rose-600/30 border-pink-500/50',
       pillClass: 'bg-pink-500/20 text-pink-300 border-pink-500/40'
     },
-    hotscolati: { 
+    hotscolatti: { 
       label: 'HotScolati', 
       gradient: 'from-amber-500/30 to-yellow-600/30 border-amber-500/50',
       pillClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40'
     },
-    grabba_r_us: { 
+    grabba: { 
       label: 'Grabba R Us', 
       gradient: 'from-emerald-500/30 to-green-600/30 border-emerald-500/50',
       pillClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
     },
   };
 
-  const allBrands = ['gasmask', 'hotmama', 'hotscolati', 'grabba_r_us'];
+  const allBrands = ['gasmask', 'hotmama', 'hotscolatti', 'grabba'];
 
   if (companyLoading) {
     return (
