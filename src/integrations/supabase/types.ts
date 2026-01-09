@@ -27904,6 +27904,7 @@ export type Database = {
       }
       wholesalers: {
         Row: {
+          address: string | null
           company_id: string | null
           contact_name: string | null
           created_at: string | null
@@ -27915,6 +27916,7 @@ export type Database = {
           status: string | null
         }
         Insert: {
+          address?: string | null
           company_id?: string | null
           contact_name?: string | null
           created_at?: string | null
@@ -27926,6 +27928,7 @@ export type Database = {
           status?: string | null
         }
         Update: {
+          address?: string | null
           company_id?: string | null
           contact_name?: string | null
           created_at?: string | null
