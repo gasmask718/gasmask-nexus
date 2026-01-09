@@ -140,11 +140,13 @@ export const routeFields: FieldConfig[] = [
 
 export const wholesalerFields: FieldConfig[] = [
   { name: 'name', label: 'Wholesaler Name', type: 'text', required: true, placeholder: 'Company name' },
+  { name: 'contact_name', label: 'Contact Name', type: 'text', placeholder: 'Primary contact' },
   { name: 'phone', label: 'Phone', type: 'phone', placeholder: '(555) 123-4567' },
   { name: 'email', label: 'Email', type: 'email', placeholder: 'contact@wholesaler.com' },
-  { name: 'address', label: 'Address', type: 'text', placeholder: 'Business address' },
-  { name: 'is_active', label: 'Active', type: 'switch', defaultValue: true },
-  { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Additional notes...' },
+  { name: 'status', label: 'Status', type: 'select', defaultValue: 'active', options: [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+  ]},
 ];
 
 export const communicationLogFields: FieldConfig[] = [
