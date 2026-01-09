@@ -517,7 +517,7 @@ export default function GrabbaCRM() {
                   className="h-8 w-8"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/wholesaler/${wholesaler.id}`);
+                    navigate(`/wholesale/${wholesaler.id}`);
                   }}
                 >
                   <ExternalLink className="h-4 w-4" />
