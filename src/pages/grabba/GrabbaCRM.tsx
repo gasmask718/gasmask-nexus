@@ -113,27 +113,20 @@ export default function GrabbaCRM() {
     },
   });
 
-  // Fetch stores
-  const { data: stores, isLoading: storesLoading } = useQuery({
+  // Fetch stores - now always fetches all stores, not just those with orders
+  const { data: stores, isLoading: storesLoading, refetch: refetchStores } = useQuery({
     queryKey: ["grabba-crm-stores", selectedBrand],
     queryFn: async () => {
-      const brandsToQuery = getBrandQuery();
-      const { data: ordersWithStores } = await supabase
-        .from("wholesale_orders")
-        .select("store_id, brand")
-        .in("brand", brandsToQuery);
-
-      const storeIds = [...new Set(ordersWithStores?.map((o) => o.store_id).filter(Boolean))];
-
       const selectFields =
-        "id, name, phone, neighborhood, address_street, address_city, address_state, address_zip, companies(id, name)";
+        "id, name, phone, neighborhood, address_street, address_city, address_state, address_zip, companies(id, name), created_at";
 
-      if (storeIds.length === 0) {
-        const { data } = await supabase.from("stores").select(selectFields).limit(100);
-        return data || [];
-      }
-
-      const { data } = await supabase.from("stores").select(selectFields).in("id", storeIds);
+      // Always fetch all stores ordered by creation date (newest first)
+      const { data } = await supabase
+        .from("stores")
+        .select(selectFields)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(500);
 
       return data || [];
     },
@@ -592,6 +585,8 @@ export default function GrabbaCRM() {
       await companyCrud.create(data);
     } else if (activeTab === "stores") {
       await storeCrud.create(data);
+      // Explicitly refetch stores list after creation
+      refetchStores();
     } else if (activeTab === "wholesalers") {
       await wholesalerCrud.create(data);
     }
