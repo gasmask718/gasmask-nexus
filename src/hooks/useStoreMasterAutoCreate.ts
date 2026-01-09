@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useCallback } from 'react';
+import { useSimulationMode } from '@/contexts/SimulationModeContext';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
@@ -59,6 +60,7 @@ interface LegacyStore {
 
 export function useStoreMasterAutoCreate(storeId: string | undefined) {
   const queryClient = useQueryClient();
+  const { simulationMode } = useSimulationMode();
 
   // ═══════════════════════════════════════════════════════════════════════════════
   // STEP 1: Direct lookup in store_master table
@@ -170,7 +172,7 @@ export function useStoreMasterAutoCreate(storeId: string | undefined) {
     mutationFn: async (legacy: LegacyStore | null): Promise<StoreMasterRecord> => {
       console.log('[StoreMasterAutoCreate] Step 4: Creating new store_master record...');
       
-      // Prepare insert data with defaults
+      // Prepare insert data with defaults - include is_simulation based on current mode
       const insertData = {
         store_name: legacy?.name || `Store ${storeId?.slice(0, 8) || 'Unknown'}`,
         address: legacy?.address_street || 'Address Pending',
@@ -190,6 +192,7 @@ export function useStoreMasterAutoCreate(storeId: string | undefined) {
         influence_level: 'medium',
         risk_score: 'low',
         nickname: null,
+        is_simulation: simulationMode, // Keep live/simulation data separate
       };
       
       const { data, error } = await supabase
@@ -253,6 +256,7 @@ export function useStoreMasterAutoCreate(storeId: string | undefined) {
         influence_level: 'medium',
         risk_score: 'low',
         nickname: null,
+        is_simulation: simulationMode, // Keep live/simulation data separate
       };
       
       const { data, error } = await supabase
@@ -373,8 +377,9 @@ export async function createStoreMasterForNewStore(storeData: {
   email?: string;
   type?: string;
   ownerName?: string;
+  isSimulation?: boolean; // Keep live/simulation data separate
 }): Promise<{ id: string; store_name: string } | null> {
-  console.log('[createStoreMasterForNewStore] Creating store_master for new store:', storeData.name);
+  console.log('[createStoreMasterForNewStore] Creating store_master for new store:', storeData.name, 'isSimulation:', storeData.isSimulation);
   
   const { data, error } = await supabase
     .from('store_master')
@@ -396,6 +401,7 @@ export async function createStoreMasterForNewStore(storeData: {
       expansion_notes: null,
       influence_level: 'medium',
       risk_score: 'low',
+      is_simulation: storeData.isSimulation ?? false, // Default to live data
     })
     .select('id, store_name')
     .single();

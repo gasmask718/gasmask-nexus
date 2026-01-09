@@ -68,23 +68,29 @@ export default function GrabbaCRM() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
 
-  // CRUD Operations
+  // Simulation mode context - define early so CRUD can use it
+  const { simulationMode } = useSimulationMode();
+
+  // CRUD Operations - pass simulationMode to keep data separate
   const companyCrud = useCrudOperations({
     table: "companies",
     queryKey: ["grabba-crm-companies"],
     successMessages: { create: "Company created", update: "Company updated", delete: "Company deleted" },
+    simulationMode,
   });
 
   const storeCrud = useCrudOperations({
     table: "stores",
     queryKey: ["grabba-crm-stores"],
     successMessages: { create: "Store created", update: "Store updated", delete: "Store deleted" },
+    simulationMode,
   });
 
   const wholesalerCrud = useCrudOperations({
     table: "wholesalers",
     queryKey: ["grabba-crm-wholesalers"],
     successMessages: { create: "Wholesaler created", update: "Wholesaler updated", delete: "Wholesaler deleted" },
+    simulationMode,
   });
 
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -113,9 +119,6 @@ export default function GrabbaCRM() {
       return data || [];
     },
   });
-
-  // Simulation mode context
-  const { simulationMode } = useSimulationMode();
 
   // Fetch stores - filter by simulation mode
   const { data: stores, isLoading: storesLoading, refetch: refetchStores } = useQuery({
