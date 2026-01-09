@@ -111,7 +111,7 @@ export function GlobalSearch({ className, placeholder = "Search across all entit
     const routes: Record<string, string> = {
       company: `/companies/${result.id}`,
       store: `/stores/${result.id}`,
-      wholesaler: `/wholesaler/${result.id}`,
+      wholesaler: `/wholesale/${result.id}`,
       driver: `/grabba/deliveries`,
       ambassador: `/grabba/ambassadors`,
     };
