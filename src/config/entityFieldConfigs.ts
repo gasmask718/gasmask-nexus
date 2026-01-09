@@ -143,6 +143,7 @@ export const wholesalerFields: FieldConfig[] = [
   { name: 'contact_name', label: 'Contact Name', type: 'text', placeholder: 'Primary contact' },
   { name: 'phone', label: 'Phone', type: 'phone', placeholder: '(555) 123-4567' },
   { name: 'email', label: 'Email', type: 'email', placeholder: 'contact@wholesaler.com' },
+  { name: 'address', label: 'Address', type: 'text', placeholder: 'Business address' },
   { name: 'status', label: 'Status', type: 'select', defaultValue: 'active', options: [
     { value: 'active', label: 'Active' },
     { value: 'inactive', label: 'Inactive' },
