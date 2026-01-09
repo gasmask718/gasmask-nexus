@@ -24,6 +24,7 @@ export function useCrudOperations({
 
   const createMutation = useMutation({
     mutationFn: async (data: Record<string, unknown>) => {
+      console.log(`useCrudOperations: Creating in table "${table}" with data:`, data);
       // Get current user ID to set created_by for RLS
       const { data: { user } } = await supabase.auth.getUser();
       const insertData: Record<string, unknown> = {
@@ -41,15 +42,28 @@ export function useCrudOperations({
         .insert(insertData)
         .select()
         .single();
-      if (error) throw error;
+      
+      if (error) {
+        console.error(`useCrudOperations: Insert error for table "${table}":`, error);
+        throw error;
+      }
+      
+      console.log(`useCrudOperations: Insert successful for table "${table}":`, result);
       return result;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey });
+    onSuccess: (result) => {
+      console.log(`useCrudOperations: onSuccess called for table "${table}"`);
+      // Invalidate all queries that start with the queryKey (handles partial matches)
+      queryClient.invalidateQueries({ queryKey, exact: false });
+      console.log(`useCrudOperations: Invalidated queries for key:`, queryKey);
       toast.success(successMessages.create || "Item created successfully");
+      return result;
     },
-    onError: (error: Error) => {
-      toast.error(`Failed to create: ${error.message}`);
+    onError: (error: any) => {
+      console.error(`useCrudOperations: onError called for table "${table}":`, error);
+      const errorMessage = error?.message || error?.error_description || error?.details || "Unknown error";
+      console.error(`useCrudOperations: Error message: ${errorMessage}`);
+      toast.error(`Failed to create: ${errorMessage}`);
     },
   });
 

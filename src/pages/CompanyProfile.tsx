@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -374,22 +373,18 @@ export default function CompanyProfile() {
 
   if (companyLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
     );
   }
 
   if (!company) {
     return (
-      <Layout>
-        <div className="flex flex-col items-center justify-center h-96 gap-4">
-          <p className="text-muted-foreground">Company not found</p>
-          <Button onClick={() => navigate(-1)}>Go Back</Button>
-        </div>
-      </Layout>
+      <div className="flex flex-col items-center justify-center h-96 gap-4">
+        <p className="text-muted-foreground">Company not found</p>
+        <Button onClick={() => navigate(-1)}>Go Back</Button>
+      </div>
     );
   }
 
@@ -407,8 +402,7 @@ export default function CompanyProfile() {
   const recentOrders = filteredOrders?.slice(0, 5) || [];
 
   return (
-    <Layout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* === CUSTOMER HEADER === */}
         <div className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 rounded-xl p-6 border border-slate-700/50">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
@@ -1176,6 +1170,5 @@ export default function CompanyProfile() {
           defaultEntityId={id}
         />
       </div>
-    </Layout>
   );
 }

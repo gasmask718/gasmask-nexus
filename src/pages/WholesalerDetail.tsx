@@ -1,12 +1,11 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Mail, Phone, MapPin, Star, MessageSquare, Package, Headphones } from "lucide-react";
+import { Building2, Mail, Phone, MapPin, Star, MessageSquare, Package, Headphones, ArrowLeft } from "lucide-react";
 import { CommunicationTimeline } from "@/components/CommunicationTimeline";
 import { CommunicationStats } from "@/components/communication/CommunicationStats";
 import { CommunicationLogModal } from "@/components/CommunicationLogModal";
@@ -16,14 +15,27 @@ import { useState } from "react";
 
 export default function WholesalerDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [logModalOpen, setLogModalOpen] = useState(false);
 
   const { data: wholesaler, isLoading } = useQuery({
     queryKey: ['wholesaler', id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('wholesale_hubs')
-        .select('*')
+        .from('wholesalers')
+        .select(`
+          *,
+          company:companies(
+            id,
+            name,
+            default_billing_address,
+            default_city,
+            default_state,
+            default_phone,
+            default_email,
+            notes
+          )
+        `)
         .eq('id', id)
         .maybeSingle();
 
@@ -48,41 +60,36 @@ export default function WholesalerDetail() {
 
   if (isLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-[60vh]">
-          <div className="text-muted-foreground">Loading wholesaler...</div>
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="text-muted-foreground">Loading wholesaler...</div>
+      </div>
     );
   }
 
   if (!wholesaler) {
     return (
-      <Layout>
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold">Wholesaler not found</h2>
-        </div>
-      </Layout>
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold">Wholesaler not found</h2>
+      </div>
     );
   }
 
   return (
-    <Layout>
+    <div>
       <div className="container mx-auto px-4 py-8 space-y-6">
         {/* Header */}
         <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">{wholesaler.name}</h1>
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <h1 className="text-3xl font-bold">{wholesaler.name}</h1>
+            </div>
             <div className="flex items-center gap-2">
               <Badge variant={wholesaler.status === 'active' ? 'default' : 'secondary'}>
                 {wholesaler.status}
               </Badge>
-              {wholesaler.rating && (
-                <div className="flex items-center gap-1">
-                  <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-                  <span className="text-sm font-medium">{wholesaler.rating}/5</span>
-                </div>
-              )}
             </div>
           </div>
           <div className="flex gap-2">
@@ -100,9 +107,9 @@ export default function WholesalerDetail() {
             <div className="text-2xl font-bold">{products?.length || 0}</div>
           </Card>
           <Card className="p-4">
-            <div className="text-sm text-muted-foreground">Rating</div>
-            <div className="text-2xl font-bold">
-              {wholesaler.rating ? `${wholesaler.rating}/5` : 'N/A'}
+            <div className="text-sm text-muted-foreground">Contact</div>
+            <div className="text-sm font-medium">
+              {wholesaler.contact_name || 'N/A'}
             </div>
           </Card>
           <Card className="p-4">
@@ -129,21 +136,27 @@ export default function WholesalerDetail() {
                 <span>{wholesaler.phone}</span>
               </div>
             )}
-            {wholesaler.address_street && (
+            {(wholesaler.company?.default_billing_address || wholesaler.company?.default_city) && (
               <div className="flex items-start gap-2 md:col-span-2">
                 <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                 <div>
-                  <div>{wholesaler.address_street}</div>
-                  <div>
-                    {wholesaler.address_city}, {wholesaler.address_state} {wholesaler.address_zip}
-                  </div>
+                  {wholesaler.company?.default_billing_address && (
+                    <div>{wholesaler.company.default_billing_address}</div>
+                  )}
+                  {(wholesaler.company?.default_city || wholesaler.company?.default_state) && (
+                    <div>
+                      {wholesaler.company?.default_city}
+                      {wholesaler.company?.default_city && wholesaler.company?.default_state && ', '}
+                      {wholesaler.company?.default_state}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
           </div>
-          {wholesaler.notes && (
+          {wholesaler.company?.notes && (
             <div className="mt-4 pt-4 border-t">
-              <p className="text-sm text-muted-foreground">{wholesaler.notes}</p>
+              <p className="text-sm text-muted-foreground">{wholesaler.company.notes}</p>
             </div>
           )}
         </Card>
@@ -228,6 +241,6 @@ export default function WholesalerDetail() {
         entityName={wholesaler.name}
         onSuccess={() => setLogModalOpen(false)}
       />
-    </Layout>
+    </div>
   );
 }

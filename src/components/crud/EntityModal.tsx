@@ -105,13 +105,25 @@ export function EntityModal({
   }, [open]); // Only reset when modal opens, not on every defaultValues change
 
   const handleSubmit = async (data: Record<string, any>) => {
+    console.log("EntityModal: Form submitted, validation passed. Data:", data);
     setSubmitting(true);
     try {
-      await onSubmit(data);
+      // Clean up empty strings - convert to null for optional fields
+      const cleanedData = Object.entries(data).reduce((acc, [key, value]) => {
+        acc[key] = value === '' ? null : value;
+        return acc;
+      }, {} as Record<string, any>);
+      
+      console.log("EntityModal: Cleaned data:", cleanedData);
+      await onSubmit(cleanedData);
+      console.log("EntityModal: Submit successful");
+      // Only close modal and reset form on success
       onOpenChange(false);
       form.reset();
     } catch (error) {
-      console.error("Submit error:", error);
+      console.error("EntityModal: Submit error:", error);
+      // Re-throw error to ensure it's handled properly
+      throw error;
     } finally {
       setSubmitting(false);
     }
@@ -239,7 +251,9 @@ export function EntityModal({
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(handleSubmit, (errors) => {
+          console.error("EntityModal: Form validation errors:", errors);
+        })} className="space-y-4">
           {fields.map(renderField)}
           <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

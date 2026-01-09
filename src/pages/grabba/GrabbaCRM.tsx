@@ -33,7 +33,6 @@ import {
 } from "lucide-react";
 import { getRelationshipScoresForStores, RelationshipScore } from "@/services/crmInsightsService";
 import { useNavigate, Link, useParams } from "react-router-dom";
-import { TaskChecklistSection } from "@/components/crm/TaskChecklistSection";
 import { GRABBA_BRAND_IDS, GRABBA_BRAND_CONFIG, getBrandConfig, type GrabbaBrand } from "@/config/grabbaSkyscraper";
 import { BrandFilterBar, BrandBadgesRow } from "@/components/grabba/BrandFilterBar";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
@@ -74,7 +73,7 @@ export default function GrabbaCRM() {
   // CRUD Operations - pass simulationMode to keep data separate
   const companyCrud = useCrudOperations({
     table: "companies",
-    queryKey: ["grabba-crm-companies"],
+    queryKey: ["grabba-crm-companies"], // This will invalidate all queries starting with this key
     successMessages: { create: "Company created", update: "Company updated", delete: "Company deleted" },
     simulationMode,
   });
@@ -109,14 +108,15 @@ export default function GrabbaCRM() {
 
       const companyIds = [...new Set(ordersWithCompanies?.map((o) => o.company_id).filter(Boolean))];
 
-      if (companyIds.length === 0) {
-        const { data } = await supabase.from("companies").select("*").limit(100);
-        return data || [];
-      }
-
-      const { data } = await supabase.from("companies").select("*").in("id", companyIds);
-
-      return data || [];
+      // Always fetch all companies, but prioritize those with orders
+      // This ensures newly created companies appear in the list
+      const { data: allCompanies } = await supabase
+        .from("companies")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      
+      return allCompanies || [];
     },
   });
 
@@ -640,10 +640,10 @@ export default function GrabbaCRM() {
   };
 
   const getAddLabel = () => {
-    if (activeTab === "companies") return "+New Company";
-    if (activeTab === "stores") return "+New Store";
-    if (activeTab === "wholesalers") return "+New Wholesaler";
-    return "+New";
+    if (activeTab === "companies") return "New Company";
+    if (activeTab === "stores") return "New Store";
+    if (activeTab === "wholesalers") return "New Wholesaler";
+    return "New";
   };
 
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -827,8 +827,6 @@ export default function GrabbaCRM() {
         </div>
       </div>
 
-      {/* Task Checklist Section */}
-      <TaskChecklistSection businessSlug="grabba" show2026Goals={false} />
 
       {/* Floating Add Button */}
       {activeTab !== "ambassadors" && (
