@@ -27908,6 +27908,7 @@ export type Database = {
           company_id: string | null
           contact_name: string | null
           created_at: string | null
+          created_by: string | null
           deleted_at: string | null
           email: string | null
           id: string
@@ -27920,6 +27921,7 @@ export type Database = {
           company_id?: string | null
           contact_name?: string | null
           created_at?: string | null
+          created_by?: string | null
           deleted_at?: string | null
           email?: string | null
           id?: string
@@ -27932,6 +27934,7 @@ export type Database = {
           company_id?: string | null
           contact_name?: string | null
           created_at?: string | null
+          created_by?: string | null
           deleted_at?: string | null
           email?: string | null
           id?: string
