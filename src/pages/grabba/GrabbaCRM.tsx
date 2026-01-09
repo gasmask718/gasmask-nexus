@@ -60,6 +60,7 @@ export default function GrabbaCRM() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<ViewTab>("companies");
   const [neighborhoodFilter, setNeighborhoodFilter] = useState<string>("all");
+  const [cityFilter, setCityFilter] = useState<string>("all");
 
   // CRUD Modal States
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -186,12 +187,24 @@ export default function GrabbaCRM() {
   const { data: brandActivity } = useGrabbaBrandActivity();
   const { data: brandCounts } = useGrabbaBrandCounts();
 
-  // Fetch neighborhoods for filter
+  // Fetch neighborhoods for filter - includes all neighborhoods
   const neighborhoods = useMemo(() => {
     const hoods = new Set<string>();
     companies?.forEach((c) => c.neighborhood && hoods.add(c.neighborhood));
     stores?.forEach((s: any) => s.neighborhood && hoods.add(s.neighborhood));
     return Array.from(hoods).sort();
+  }, [companies, stores]);
+
+  // Fetch cities for filter
+  const cities = useMemo(() => {
+    const citySet = new Set<string>();
+    companies?.forEach((c) => {
+      if (c.default_city) citySet.add(c.default_city);
+    });
+    stores?.forEach((s: any) => {
+      if (s.address_city) citySet.add(s.address_city);
+    });
+    return Array.from(citySet).sort();
   }, [companies, stores]);
 
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -209,13 +222,14 @@ export default function GrabbaCRM() {
 
       const matchesType = typeFilter === "all" || company.type === typeFilter;
       const matchesNeighborhood = neighborhoodFilter === "all" || company.neighborhood === neighborhoodFilter;
+      const matchesCity = cityFilter === "all" || company.default_city === cityFilter;
 
       const companyBrands = brandActivity?.[company.id] || [];
       const matchesBrand = selectedBrand === "all" || companyBrands.includes(selectedBrand as GrabbaBrand);
 
-      return matchesSearch && matchesType && matchesBrand && matchesNeighborhood;
+      return matchesSearch && matchesType && matchesBrand && matchesNeighborhood && matchesCity;
     });
-  }, [companies, searchQuery, typeFilter, selectedBrand, neighborhoodFilter, brandActivity]);
+  }, [companies, searchQuery, typeFilter, selectedBrand, neighborhoodFilter, cityFilter, brandActivity]);
 
   const filteredStores = useMemo(() => {
     return stores?.filter((store: any) => {
@@ -256,10 +270,11 @@ export default function GrabbaCRM() {
     setTypeFilter("all");
     setSearchQuery("");
     setNeighborhoodFilter("all");
+    setCityFilter("all");
   };
 
   const hasActiveFilters =
-    selectedBrand !== "all" || typeFilter !== "all" || searchQuery || neighborhoodFilter !== "all";
+    selectedBrand !== "all" || typeFilter !== "all" || searchQuery || neighborhoodFilter !== "all" || cityFilter !== "all";
 
   // ═══════════════════════════════════════════════════════════════════════════════
   // ENTITY CARD COMPONENTS
@@ -724,6 +739,20 @@ export default function GrabbaCRM() {
                     {neighborhoods.map((hood) => (
                       <SelectItem key={hood} value={hood}>
                         {hood}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={cityFilter} onValueChange={setCityFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="City" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Cities</SelectItem>
+                    {cities.map((city) => (
+                      <SelectItem key={city} value={city}>
+                        {city}
                       </SelectItem>
                     ))}
                   </SelectContent>
