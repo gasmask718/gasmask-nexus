@@ -309,22 +309,12 @@ export function CompanyHeaderEditable({ company, onNavigateBack }: CompanyHeader
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Neighborhood</Label>
-                <Select 
-                  value={formData.neighborhood} 
-                  onValueChange={(value) => setFormData({ ...formData, neighborhood: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select neighborhood..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-border z-50">
-                    {neighborhoods.map((neighborhood) => (
-                      <SelectItem key={neighborhood.id} value={neighborhood.name}>
-                        {neighborhood.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="neighborhood">Neighborhood</Label>
+                <Input
+                  id="neighborhood"
+                  value={formData.neighborhood}
+                  onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
+                />
               </div>
             </div>
 
