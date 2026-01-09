@@ -41,11 +41,13 @@ const typeIcons: Record<string, React.ReactNode> = {
   direct_customer: <User className="h-4 w-4" />,
 };
 
+// Consistent brand colors matching tube inventory in store details page
+// Colors: GasMask Bags (red-500), GasMask Tubes (blue-500), HotMama (pink-500), Grabba R Us (purple-500), Hotscolati Light (amber-400), Hotscolati Dark (amber-800)
 const brandGradients: Record<string, string> = {
-  gasmask: 'from-red-600/20 to-red-900/20 border-red-500/30',
-  hotmama: 'from-rose-400/20 to-rose-600/20 border-rose-500/30',
-  hotscolati: 'from-red-700/20 to-red-950/20 border-red-700/30',
-  grabba_r_us: 'from-purple-500/20 to-pink-500/20 border-purple-500/30',
+  gasmask: 'from-red-500/20 to-red-600/20 border-red-500/30', // #EF4444 red-500
+  hotmama: 'from-pink-500/20 to-pink-600/20 border-pink-500/30', // #EC4899 pink-500
+  hotscolati: 'from-amber-400/20 to-amber-500/20 border-amber-400/30', // Light: #FBBF24 amber-400, Dark: #92400E amber-800
+  grabba_r_us: 'from-purple-500/20 to-purple-600/20 border-purple-500/30', // #A855F7 purple-500
 };
 
 export default function CompanyProfile() {
@@ -201,29 +203,17 @@ export default function CompanyProfile() {
     enabled: !!id,
   });
 
-  // UNIFIED INVENTORY QUERY: Fetches stores, live inventory, and calculates automated metrics
+  // UNIFIED INVENTORY QUERY: Connected to company_id for accuracy - matches TubeMathEngine logic
   const { data: inventoryData } = useQuery({
     queryKey: ['unified-inventory', id],
     queryFn: async () => {
-      // 1. Fetch all stores for this company
+      // 1. Fetch all stores for this company (for live inventory)
       const { data: storesForCompany } = await supabase
         .from('stores')
         .select('id, name')
         .eq('company_id', id!);
 
       const storeIds = storesForCompany?.map(s => s.id) || [];
-
-      // If no stores found, return empty defaults
-      if (storeIds.length === 0) {
-        return {
-          totalTubes: 0,
-          totalBoxes: 0,
-          estimatedInventory: 0,
-          etaPrediction: 0,
-          liveBrandInventory: [],
-          storeCount: 0,
-        };
-      }
 
       // 2. Fetch live inventory across all stores
       const { data: liveTubeData } = await supabase
@@ -242,11 +232,12 @@ export default function CompanyProfile() {
       }
       const liveBrandInventory = Array.from(liveBrandMap.values());
 
-      // 4. Fetch wholesale orders for all stores
+      // 4. Fetch wholesale orders DIRECTLY by company_id (not through stores) for accuracy
+      // This ensures consistency with TubeMathEngine which also uses company_id
       const { data: tubeOrders } = await supabase
         .from('wholesale_orders')
         .select('*')
-        .in('store_id', storeIds)
+        .eq('company_id', id!)
         .order('created_at', { ascending: true });
 
       // 5. If no orders, return with live inventory but empty metrics
@@ -261,7 +252,7 @@ export default function CompanyProfile() {
         };
       }
 
-      // 6. Automated ETA & inventory calculation
+      // 6. Automated ETA & inventory calculation (matching TubeMathEngine logic)
       const totalTubes = tubeOrders.reduce(
         (sum, o) => sum + (o.tubes_total || (o.boxes || 0) * 100),
         0
@@ -345,27 +336,27 @@ export default function CompanyProfile() {
     return { fullBoxes, remainder, fractionLabel };
   };
 
-  // Brand display configs for Live Inventory
+  // Brand display configs for Live Inventory - matching tube inventory colors from store details page
   const liveBrandConfig: Record<string, { label: string; gradient: string; pillClass: string }> = {
     gasmask: { 
       label: 'GasMask', 
-      gradient: 'from-red-600/30 to-red-900/30 border-red-500/50',
+      gradient: 'from-red-500/30 to-red-600/30 border-red-500/50', // #EF4444 red-500
       pillClass: 'bg-red-500/20 text-red-300 border-red-500/40'
     },
     hotmama: { 
       label: 'HotMama', 
-      gradient: 'from-pink-500/30 to-rose-600/30 border-pink-500/50',
+      gradient: 'from-pink-500/30 to-pink-600/30 border-pink-500/50', // #EC4899 pink-500
       pillClass: 'bg-pink-500/20 text-pink-300 border-pink-500/40'
     },
     hotscolati: { 
       label: 'HotScolati', 
-      gradient: 'from-amber-500/30 to-yellow-600/30 border-amber-500/50',
-      pillClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+      gradient: 'from-amber-400/30 to-amber-500/30 border-amber-400/50', // Light: #FBBF24 amber-400, Dark: #92400E amber-800
+      pillClass: 'bg-amber-400/20 text-amber-300 border-amber-400/40'
     },
     grabba_r_us: { 
       label: 'Grabba R Us', 
-      gradient: 'from-emerald-500/30 to-green-600/30 border-emerald-500/50',
-      pillClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+      gradient: 'from-purple-500/30 to-purple-600/30 border-purple-500/50', // #A855F7 purple-500
+      pillClass: 'bg-purple-500/20 text-purple-300 border-purple-500/40'
     },
   };
 

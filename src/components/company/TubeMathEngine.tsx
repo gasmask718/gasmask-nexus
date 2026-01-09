@@ -11,11 +11,13 @@ interface TubeMathEngineProps {
   companyId: string;
 }
 
+// Consistent brand colors matching tube inventory in store details page
+// Colors: GasMask Bags (red-500), HotMama (pink-500), Hotscolati (amber-400/800), Grabba R Us (purple-500)
 const brandColors: Record<string, string> = {
-  gasmask: "bg-red-600",
-  hotmama: "bg-rose-400",
-  hotscolati: "bg-red-700",
-  grabba_r_us: "bg-purple-500",
+  gasmask: "bg-red-500", // #EF4444 red-500
+  hotmama: "bg-pink-500", // #EC4899 pink-500
+  hotscolati: "bg-amber-400", // Light: #FBBF24 amber-400, Dark: #92400E amber-800
+  grabba_r_us: "bg-purple-500", // #A855F7 purple-500
 };
 
 export function TubeMathEngine({ companyId }: TubeMathEngineProps) {
