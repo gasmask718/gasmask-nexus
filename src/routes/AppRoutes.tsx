@@ -297,6 +297,7 @@ import { ProcurementDashboard, SuppliersPage as ProcurementSuppliersPage, Suppli
 import { WarehouseDashboard } from '@/pages/os/warehouse';
 import { InventoryDashboard, ProductsPage, ProductDetailPage, WarehousesPage, WarehouseDetailPage, SuppliersPage as InventorySuppliersPage, SupplierDetailPage as InventorySupplierDetailPage, PurchaseOrdersPage as InventoryPurchaseOrdersPage, NewPurchaseOrderPage as InventoryNewPurchaseOrderPage, PurchaseOrderDetailPage, StockLevelsPage, MovementsPage, ProcurementPage, InsightsPage, NeighborhoodIntelligencePage } from '@/pages/os/inventory';
 import ProductConversions from '@/pages/os/ProductConversions';
+import OSLayout from '@/pages/os/OSLayout';
 import StoreInventoryPage from '@/pages/os/inventory/StoreInventoryPage';
 import InventoryAuditLogPage from '@/pages/os/inventory/InventoryAuditLogPage';
 import { LiveTubesDetailPage, BoxesSoldDetailPage, LowStockDetailPage } from '@/pages/os/inventory/dashboard';
@@ -883,7 +884,17 @@ export default function AppRoutes() {
         <Route path="/os/inventory/dashboard/low-stock" element={<LowStockDetailPage />} />
         <Route path="/os/inventory/store-inventory" element={<StoreInventoryPage />} />
         <Route path="/os/inventory/audit" element={<InventoryAuditLogPage />} />
-        <Route path="/os/product-conversions" element={<ProductConversions />} />
+
+        <Route path="/os" element={<OSLayout />}>
+          <Route
+            path="product-conversions"
+            element={
+              <RequireRole allowedRoles={['admin']} showLocked>
+                <ProductConversions />
+              </RequireRole>
+            }
+          />
+        </Route>
 
         {/* Dynasty OS Business Units */}
         <Route path="/os/toptier" element={<TopTierDashboard />} />
