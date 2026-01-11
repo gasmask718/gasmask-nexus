@@ -7,6 +7,12 @@
 // PARTNER PROMO CATEGORIES (TopTier specific)
 // ============================================
 export const TOPTIER_PARTNER_CATEGORIES = [
+  // === CORE PARTNER NETWORK CATEGORIES (NEW) ===
+  { value: "drivers", label: "Drivers", icon: "Car", isNetworkCategory: true },
+  { value: "things_to_do", label: "Things To Do", icon: "Sparkles", isNetworkCategory: true },
+  { value: "private_jet", label: "Private Jet", icon: "Plane", isNetworkCategory: true },
+  
+  // === EXISTING PARTNER CATEGORIES ===
   { value: "car_decor_promo", label: "Car Decor", icon: "Car" },
   { value: "exotic_rental_car_promo", label: "Exotic Rental Car", icon: "Sparkles" },
   { value: "room_decor_promo", label: "Room Decor", icon: "Home" },
@@ -31,6 +37,11 @@ export const TOPTIER_PARTNER_CATEGORIES = [
   },
   { value: "other", label: "Other / Custom", icon: "MoreHorizontal" },
 ] as const;
+
+// Helper to get network categories (Drivers, Things To Do, Private Jet)
+export const TOPTIER_NETWORK_CATEGORIES = TOPTIER_PARTNER_CATEGORIES.filter(
+  (cat) => 'isNetworkCategory' in cat && cat.isNetworkCategory
+);
 
 // Alias for backwards compatibility
 export const TOPTIER_PROMO_CATEGORIES = TOPTIER_PARTNER_CATEGORIES;

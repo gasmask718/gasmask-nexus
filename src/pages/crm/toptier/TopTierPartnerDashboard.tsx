@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Building2,
   Users,
@@ -44,7 +43,7 @@ import {
   Pencil,
   LayoutDashboard,
 } from "lucide-react";
-import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from "@/config/crmBlueprints";
+import { TOPTIER_PARTNER_CATEGORIES, TOPTIER_NETWORK_CATEGORIES, US_STATES } from "@/config/crmBlueprints";
 import { useSimulationMode, SimulationBadge } from "@/contexts/SimulationModeContext";
 import { useCRMSimulation } from "@/hooks/useCRMSimulation";
 import { useResolvedData } from "@/hooks/useResolvedData";
@@ -52,19 +51,34 @@ import { TaskChecklistSection } from "@/components/crm/TaskChecklistSection";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { CategoryKPIEditModal } from "@/components/toptier/CategoryKPIEditModal";
-import { TopTierCommandDashboard } from "@/components/toptier/TopTierCommandDashboard";
+import { DriversModal, ExperiencesModal, JetsModal } from "@/components/toptier/modals";
+import { useTopTierKPIs } from "@/hooks/toptier/useTopTierKPIs";
 
 // Icon mapping for partner categories
 const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
+  // Network categories
+  drivers: Car,
+  things_to_do: Sparkles,
+  private_jet: Plane,
+  // Existing categories
   car_decor: Car,
+  car_decor_promo: Car,
   exotic_rental_car: Sparkles,
+  exotic_rental_car_promo: Sparkles,
   room_decor: Home,
+  room_decor_promo: Home,
   helicopter: Plane,
+  helicopter_promo: Plane,
   private_chef: ChefHat,
+  private_chef_promo: ChefHat,
   black_trucks: Truck,
+  black_trucks_promo: Truck,
   sprinter_van: Bus,
+  sprinter_van_promo: Bus,
   party_bus: PartyPopper,
+  party_bus_promo: PartyPopper,
   security: Shield,
+  security_promo: Shield,
   hotel_rooms: Hotel,
   luxury_residences: Castle,
   eventspaces_rooftop: Building,
@@ -79,15 +93,29 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
 
 // Color mapping for categories
 const CATEGORY_COLORS: Record<string, string> = {
+  // Network categories - highlighted
+  drivers: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  things_to_do: "bg-violet-500/10 text-violet-500 border-violet-500/20",
+  private_jet: "bg-sky-500/10 text-sky-500 border-sky-500/20",
+  // Existing categories
   car_decor: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  car_decor_promo: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   exotic_rental_car: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+  exotic_rental_car_promo: "bg-purple-500/10 text-purple-500 border-purple-500/20",
   room_decor: "bg-pink-500/10 text-pink-500 border-pink-500/20",
+  room_decor_promo: "bg-pink-500/10 text-pink-500 border-pink-500/20",
   helicopter: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
+  helicopter_promo: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
   private_chef: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+  private_chef_promo: "bg-orange-500/10 text-orange-500 border-orange-500/20",
   black_trucks: "bg-gray-500/10 text-gray-500 border-gray-500/20",
+  black_trucks_promo: "bg-gray-500/10 text-gray-500 border-gray-500/20",
   sprinter_van: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
+  sprinter_van_promo: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
   party_bus: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+  party_bus_promo: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
   security: "bg-red-500/10 text-red-500 border-red-500/20",
+  security_promo: "bg-red-500/10 text-red-500 border-red-500/20",
   hotel_rooms: "bg-teal-500/10 text-teal-500 border-teal-500/20",
   luxury_residences: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   eventspaces_rooftop: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
@@ -105,7 +133,11 @@ export default function TopTierPartnerDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"operations" | "partners">("operations");
+  
+  // Network category modal states
+  const [driversModalOpen, setDriversModalOpen] = useState(false);
+  const [experiencesModalOpen, setExperiencesModalOpen] = useState(false);
+  const [jetsModalOpen, setJetsModalOpen] = useState(false);
   
   // Local state for category metadata overrides (display name, targets, visibility)
   // This does NOT affect KPI calculations - only display metadata
@@ -137,6 +169,9 @@ export default function TopTierPartnerDashboard() {
   // Get partner data (real or simulated)
   const simulatedPartners = getEntityData("partner");
   const { data: partners, isSimulated } = useResolvedData(realPartners, simulatedPartners, "toptier-experience");
+  
+  // Get KPI data for network categories (Drivers, Things To Do, Private Jet)
+  const { driversKPIs, experiencesKPIs, jetsKPIs } = useTopTierKPIs();
 
   // Calculate category stats - applies metadata overrides for display only
   // KPI calculations (totalPartners, activePartners, statesCovered) remain unchanged
@@ -248,266 +283,366 @@ export default function TopTierPartnerDashboard() {
         </div>
       </div>
 
-      {/* Main Tabs - Partner Network (Source of Truth) vs Partner Categories */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "operations" | "partners")} className="space-y-6">
-        <TabsList className="grid w-full max-w-lg grid-cols-2">
-          <TabsTrigger value="operations" className="flex items-center gap-2">
-            <LayoutDashboard className="h-4 w-4" />
-            Partner Network
-          </TabsTrigger>
-          <TabsTrigger value="partners" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            Partner Categories
-          </TabsTrigger>
-        </TabsList>
+      {/* Partner Quick Actions */}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={handleViewByState}>
+          <MapPin className="h-4 w-4 mr-2" />
+          View by State
+        </Button>
+        <Button variant="outline" onClick={handleViewAllPartners}>
+          <Users className="h-4 w-4 mr-2" />
+          All Partners
+        </Button>
+        <Button onClick={() => navigate("/crm/toptier-experience/partner/new")}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Partner
+        </Button>
+      </div>
 
-        {/* PARTNER NETWORK TAB - Drivers, Things To Do, Private Jet - EDITABLE ENTITIES */}
-        <TabsContent value="operations" className="space-y-6">
-          <div className="bg-muted/30 border rounded-lg p-4 mb-4">
-            <p className="text-sm text-muted-foreground">
-              <strong>Partner Network</strong> — Manage your drivers, experiences (Things To Do), and private jets. 
-              Click any card to view details or add new entries. KPIs are derived from these entities.
-            </p>
-          </div>
-          <TopTierCommandDashboard />
-        </TabsContent>
-
-        {/* PARTNER CATEGORIES TAB - Existing partner grid by category */}
-        <TabsContent value="partners" className="space-y-6">
-          {/* Partner Quick Actions */}
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={handleViewByState}>
-              <MapPin className="h-4 w-4 mr-2" />
-              View by State
-            </Button>
-            <Button variant="outline" onClick={handleViewAllPartners}>
-              <Users className="h-4 w-4 mr-2" />
-              All Partners
-            </Button>
-            <Button onClick={() => navigate("/crm/toptier-experience/partner/new")}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Partner
-            </Button>
-          </div>
-
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-            <Card
-              className="bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border-cyan-500/20 cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={handleViewAllPartners}
-            >
-              <CardContent className="pt-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Partners</p>
-                    <p className="text-3xl font-bold">{totalStats.totalPartners}</p>
-                  </div>
-                  <Building2 className="h-8 w-8 text-cyan-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card
-              className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20 cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={handleViewAllPartners}
-            >
-              <CardContent className="pt-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Active Contracts</p>
-                    <p className="text-3xl font-bold">{totalStats.activePartners}</p>
-                  </div>
-                  <TrendingUp className="h-8 w-8 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card
-              className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20 cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={handleViewByState}
-            >
-              <CardContent className="pt-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">States Covered</p>
-                    <p className="text-3xl font-bold">{totalStats.statesCovered}</p>
-                  </div>
-                  <MapPin className="h-8 w-8 text-purple-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
-              <CardContent className="pt-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Active Categories</p>
-                    <p className="text-3xl font-bold">{totalStats.categoriesActive}</p>
-                  </div>
-                  <Filter className="h-8 w-8 text-amber-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card
-              className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20 cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate("/crm/toptier-experience/bookings")}
-            >
-              <CardContent className="pt-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Recent Bookings</p>
-                    <p className="text-3xl font-bold">{isSimulated ? 24 : 0}</p>
-                  </div>
-                  <Eye className="h-8 w-8 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card
-              className="bg-gradient-to-br from-rose-500/10 to-rose-500/5 border-rose-500/20 cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate("/crm/toptier-experience/requests")}
-            >
-              <CardContent className="pt-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">New Requests</p>
-                    <p className="text-3xl font-bold">{isSimulated ? 8 : 0}</p>
-                  </div>
-                  <Users className="h-8 w-8 text-rose-500" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Filters */}
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search categories..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <Card
+          className="bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border-cyan-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={handleViewAllPartners}
+        >
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Partners</p>
+                <p className="text-3xl font-bold">{totalStats.totalPartners}</p>
+              </div>
+              <Building2 className="h-8 w-8 text-cyan-500" />
             </div>
-            <Select value={stateFilter} onValueChange={setStateFilter}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Filter by state" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All States</SelectItem>
-                {US_STATES.map((state) => (
-                  <SelectItem key={state.value} value={state.value}>
-                    {state.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Category KPI Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {categoryStats.map((category) => {
-              const IconComponent = CATEGORY_ICONS[category.value] || Building2;
-              const colorClasses = CATEGORY_COLORS[category.value] || CATEGORY_COLORS.other;
+        <Card
+          className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={handleViewAllPartners}
+        >
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Active Contracts</p>
+                <p className="text-3xl font-bold">{totalStats.activePartners}</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
 
-              return (
-                <Card
-                  key={category.value}
-                  className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] ${category.totalPartners === 0 ? "opacity-60" : ""}`}
-                  onClick={() => handleCategoryClick(category.value)}
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between">
-                      <div className={`p-2 rounded-lg border ${colorClasses}`}>
-                        <IconComponent className="h-5 w-5" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {canEditKPI && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingCategory(category);
-                              setEditModalOpen(true);
-                            }}
-                            title="Edit category settings"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
-                        {category.totalPartners > 0 && (
-                          <Badge variant="secondary" className="text-xs">
-                            {category.activePartners} active
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <CardTitle className="text-sm font-medium mt-2 line-clamp-2">{category.label}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Total Partners</span>
-                        <span className="font-bold text-lg">{category.totalPartners}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">States Covered</span>
-                        <span className="font-medium">{category.statesCovered}</span>
-                      </div>
-                      {category.statesCovered > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {category.states.slice(0, 4).map((state) => (
-                            <Badge key={state} variant="outline" className="text-xs">
-                              {state}
-                            </Badge>
-                          ))}
-                          {category.states.length > 4 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{category.states.length - 4}
-                            </Badge>
-                          )}
-                        </div>
-                      )}
+        <Card
+          className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={handleViewByState}
+        >
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">States Covered</p>
+                <p className="text-3xl font-bold">{totalStats.statesCovered}</p>
+              </div>
+              <MapPin className="h-8 w-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Active Categories</p>
+                <p className="text-3xl font-bold">{totalStats.categoriesActive}</p>
+              </div>
+              <Filter className="h-8 w-8 text-amber-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => navigate("/crm/toptier-experience/bookings")}
+        >
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Recent Bookings</p>
+                <p className="text-3xl font-bold">{isSimulated ? 24 : 0}</p>
+              </div>
+              <Eye className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="bg-gradient-to-br from-rose-500/10 to-rose-500/5 border-rose-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => navigate("/crm/toptier-experience/requests")}
+        >
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">New Requests</p>
+                <p className="text-3xl font-bold">{isSimulated ? 8 : 0}</p>
+              </div>
+              <Users className="h-8 w-8 text-rose-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ========================== */}
+      {/* NETWORK CATEGORIES SECTION - DRIVERS, THINGS TO DO, PRIVATE JET */}
+      {/* These are the 3 new categories that are manageable from Partner Categories */}
+      {/* ========================== */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <LayoutDashboard className="h-5 w-5" />
+          Network Categories
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* DRIVERS Category Card */}
+          <Card 
+            className="cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/20"
+            onClick={() => setDriversModalOpen(true)}
+          >
+            <CardHeader className="pb-2">
+              <div className="flex items-start justify-between">
+                <div className="p-2 rounded-lg border bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                  <Car className="h-5 w-5" />
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {driversKPIs.find(k => k.id === 'total_drivers')?.value || 0} total
+                </Badge>
+              </div>
+              <CardTitle className="text-sm font-medium mt-2">Drivers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">On Duty</span>
+                  <span className="font-bold">{driversKPIs.find(k => k.id === 'drivers_on_duty')?.value || 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Available</span>
+                  <span className="font-bold">{driversKPIs.find(k => k.id === 'drivers_available')?.value || 0}</span>
+                </div>
+                <Button variant="ghost" size="sm" className="w-full mt-2 text-primary">
+                  <Eye className="h-4 w-4 mr-2" />
+                  Manage Drivers
+                  <ArrowRight className="h-4 w-4 ml-auto" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* THINGS TO DO Category Card */}
+          <Card 
+            className="cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] bg-gradient-to-br from-violet-500/10 to-violet-500/5 border-violet-500/20"
+            onClick={() => setExperiencesModalOpen(true)}
+          >
+            <CardHeader className="pb-2">
+              <div className="flex items-start justify-between">
+                <div className="p-2 rounded-lg border bg-violet-500/10 text-violet-500 border-violet-500/20">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {experiencesKPIs.find(k => k.id === 'total_experiences')?.value || 0} total
+                </Badge>
+              </div>
+              <CardTitle className="text-sm font-medium mt-2">Things To Do</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Active</span>
+                  <span className="font-bold">{experiencesKPIs.find(k => k.id === 'active_experiences')?.value || 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Featured</span>
+                  <span className="font-bold">{experiencesKPIs.find(k => k.id === 'featured_experiences')?.value || 0}</span>
+                </div>
+                <Button variant="ghost" size="sm" className="w-full mt-2 text-primary">
+                  <Eye className="h-4 w-4 mr-2" />
+                  Manage Experiences
+                  <ArrowRight className="h-4 w-4 ml-auto" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* PRIVATE JET Category Card */}
+          <Card 
+            className="cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] bg-gradient-to-br from-sky-500/10 to-sky-500/5 border-sky-500/20"
+            onClick={() => setJetsModalOpen(true)}
+          >
+            <CardHeader className="pb-2">
+              <div className="flex items-start justify-between">
+                <div className="p-2 rounded-lg border bg-sky-500/10 text-sky-500 border-sky-500/20">
+                  <Plane className="h-5 w-5" />
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {jetsKPIs.find(k => k.id === 'total_jets')?.value || 0} total
+                </Badge>
+              </div>
+              <CardTitle className="text-sm font-medium mt-2">Private Jet</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Available</span>
+                  <span className="font-bold">{jetsKPIs.find(k => k.id === 'available_jets')?.value || 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">In Flight</span>
+                  <span className="font-bold">{jetsKPIs.find(k => k.id === 'jets_in_flight')?.value || 0}</span>
+                </div>
+                <Button variant="ghost" size="sm" className="w-full mt-2 text-primary">
+                  <Eye className="h-4 w-4 mr-2" />
+                  Manage Jets
+                  <ArrowRight className="h-4 w-4 ml-auto" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search categories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="w-full md:w-[200px]">
+            <SelectValue placeholder="Filter by state" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All States</SelectItem>
+            {US_STATES.map((state) => (
+              <SelectItem key={state.value} value={state.value}>
+                {state.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Partner Categories Section Header */}
+      <h2 className="text-lg font-semibold flex items-center gap-2">
+        <Building2 className="h-5 w-5" />
+        Partner Categories
+      </h2>
+
+      {/* Category KPI Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {categoryStats.map((category) => {
+          const IconComponent = CATEGORY_ICONS[category.value] || Building2;
+          const colorClasses = CATEGORY_COLORS[category.value] || CATEGORY_COLORS.other;
+
+          return (
+            <Card
+              key={category.value}
+              className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] ${category.totalPartners === 0 ? "opacity-60" : ""}`}
+              onClick={() => handleCategoryClick(category.value)}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between">
+                  <div className={`p-2 rounded-lg border ${colorClasses}`}>
+                    <IconComponent className="h-5 w-5" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {canEditKPI && (
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="w-full mt-2 text-primary"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleCategoryClick(category.value);
+                          setEditingCategory(category);
+                          setEditModalOpen(true);
                         }}
+                        title="Edit category settings"
                       >
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                        <ArrowRight className="h-4 w-4 ml-auto" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
+                    )}
+                    {category.totalPartners > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {category.activePartners} active
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <CardTitle className="text-sm font-medium mt-2 line-clamp-2">{category.label}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total Partners</span>
+                    <span className="font-bold text-lg">{category.totalPartners}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">States Covered</span>
+                    <span className="font-medium">{category.statesCovered}</span>
+                  </div>
+                  {category.statesCovered > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {category.states.slice(0, 4).map((state) => (
+                        <Badge key={state} variant="outline" className="text-xs">
+                          {state}
+                        </Badge>
+                      ))}
+                      {category.states.length > 4 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{category.states.length - 4}
+                        </Badge>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Empty State */}
-          {categoryStats.length === 0 && (
-            <Card className="p-8 text-center">
-              <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-medium mb-2">No categories found</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                {searchTerm ? "Try adjusting your search" : "Add partners to see categories"}
-              </p>
-              <Button onClick={() => navigate("/crm/toptier-experience/partner/new")}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add First Partner
-              </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full mt-2 text-primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCategoryClick(category.value);
+                    }}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Details
+                    <ArrowRight className="h-4 w-4 ml-auto" />
+                  </Button>
+                </div>
+              </CardContent>
             </Card>
-          )}
-        </TabsContent>
-      </Tabs>
+          );
+        })}
+      </div>
+
+      {/* Empty State */}
+      {categoryStats.length === 0 && (
+        <Card className="p-8 text-center">
+          <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="font-medium mb-2">No categories found</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            {searchTerm ? "Try adjusting your search" : "Add partners to see categories"}
+          </p>
+          <Button onClick={() => navigate("/crm/toptier-experience/partner/new")}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add First Partner
+          </Button>
+        </Card>
+      )}
+
+      {/* Network Category Modals */}
+      <DriversModal open={driversModalOpen} onOpenChange={setDriversModalOpen} />
+      <ExperiencesModal open={experiencesModalOpen} onOpenChange={setExperiencesModalOpen} />
+      <JetsModal open={jetsModalOpen} onOpenChange={setJetsModalOpen} />
 
       {/* Task Checklist Section */}
       <TaskChecklistSection businessSlug="toptier_experience" show2026Goals={false} />
