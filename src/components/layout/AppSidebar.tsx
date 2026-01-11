@@ -192,6 +192,7 @@ export default function AppSidebar() {
               { path: '/grabba/production', label: 'Tube Counts', emoji: '🧪' },
               { path: '/inventory/stock', label: 'Stock Overview', emoji: '📊' },
               { path: '/products', label: 'Products', emoji: '🏷️' },
+              { path: '/os/product-conversions', label: 'Product Conversions', emoji: '⚙️' },
               { path: '/inventory/alerts', label: 'Low Stock Alerts', emoji: '🚨' },
             ])}
 
