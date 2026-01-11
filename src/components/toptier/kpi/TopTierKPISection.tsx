@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 
 interface TopTierKPISectionProps {
   title: string;
+  subtitle?: string;
   icon: LucideIcon;
   kpis: TopTierKPI[];
   isLoading?: boolean;
@@ -20,6 +21,7 @@ interface TopTierKPISectionProps {
 
 export function TopTierKPISection({
   title,
+  subtitle,
   icon: Icon,
   kpis,
   isLoading = false,
@@ -40,7 +42,10 @@ export function TopTierKPISection({
           <div className="p-2 rounded-lg bg-primary/10">
             <Icon className="h-5 w-5 text-primary" />
           </div>
-          <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
+          <div>
+            <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
+            {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+          </div>
           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
             {kpis.length} metrics
           </span>

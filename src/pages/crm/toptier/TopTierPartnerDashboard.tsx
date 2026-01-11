@@ -248,25 +248,31 @@ export default function TopTierPartnerDashboard() {
         </div>
       </div>
 
-      {/* Main Tabs - Operations vs Partners */}
+      {/* Main Tabs - Partner Network (Source of Truth) vs Partner Categories */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "operations" | "partners")} className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-lg grid-cols-2">
           <TabsTrigger value="operations" className="flex items-center gap-2">
             <LayoutDashboard className="h-4 w-4" />
-            Operations KPIs
+            Partner Network
           </TabsTrigger>
           <TabsTrigger value="partners" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
-            Partner Network
+            Partner Categories
           </TabsTrigger>
         </TabsList>
 
-        {/* OPERATIONS TAB - Drivers, Things To Do, Private Jet */}
+        {/* PARTNER NETWORK TAB - Drivers, Things To Do, Private Jet - EDITABLE ENTITIES */}
         <TabsContent value="operations" className="space-y-6">
+          <div className="bg-muted/30 border rounded-lg p-4 mb-4">
+            <p className="text-sm text-muted-foreground">
+              <strong>Partner Network</strong> — Manage your drivers, experiences (Things To Do), and private jets. 
+              Click any card to view details or add new entries. KPIs are derived from these entities.
+            </p>
+          </div>
           <TopTierCommandDashboard />
         </TabsContent>
 
-        {/* PARTNERS TAB - Existing partner grid */}
+        {/* PARTNER CATEGORIES TAB - Existing partner grid by category */}
         <TabsContent value="partners" className="space-y-6">
           {/* Partner Quick Actions */}
           <div className="flex flex-wrap gap-2">

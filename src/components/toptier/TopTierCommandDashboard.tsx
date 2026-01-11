@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { useTopTierKPIs, TopTierKPI } from '@/hooks/toptier/useTopTierKPIs';
 import { TopTierKPISection } from './kpi/TopTierKPISection';
 import { DriversModal, ExperiencesModal, JetsModal } from './modals';
-import { Car, Sparkles, Plane, RefreshCw, Settings } from 'lucide-react';
+import { Car, Sparkles, Plane, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useUserRole } from '@/hooks/useUserRole';
 import { cn } from '@/lib/utils';
 
 interface TopTierCommandDashboardProps {
@@ -13,7 +12,6 @@ interface TopTierCommandDashboardProps {
 
 export function TopTierCommandDashboard({ className }: TopTierCommandDashboardProps) {
   const { driversKPIs, experiencesKPIs, jetsKPIs, chartersKPIs, isLoading, refetch } = useTopTierKPIs();
-  const { isAdmin } = useUserRole();
   
   // Modal states
   const [driversModalOpen, setDriversModalOpen] = useState(false);
@@ -46,8 +44,8 @@ export function TopTierCommandDashboard({ className }: TopTierCommandDashboardPr
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Command Dashboard</h2>
-          <p className="text-muted-foreground">Real-time operational metrics across all TopTier services</p>
+          <h2 className="text-xl font-semibold tracking-tight">Network Assets</h2>
+          <p className="text-sm text-muted-foreground">Click any section to manage drivers, experiences, or jets</p>
         </div>
         <div className="flex items-center gap-2">
           <Button 
@@ -59,18 +57,13 @@ export function TopTierCommandDashboard({ className }: TopTierCommandDashboardPr
             <RefreshCw className={cn('h-4 w-4 mr-2', isLoading && 'animate-spin')} />
             Refresh
           </Button>
-          {isAdmin && (
-            <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Manage KPIs
-            </Button>
-          )}
         </div>
       </div>
 
-      {/* Drivers Section */}
+      {/* Drivers Network */}
       <TopTierKPISection
-        title="Drivers"
+        title="Drivers Network"
+        subtitle="Full CRUD: Add, edit, or remove drivers"
         icon={Car}
         kpis={driversKPIs}
         isLoading={isLoading}
@@ -80,9 +73,10 @@ export function TopTierCommandDashboard({ className }: TopTierCommandDashboardPr
         maxCards={6}
       />
 
-      {/* Things To Do (Experiences) Section */}
+      {/* Experiences Network (Things To Do) */}
       <TopTierKPISection
         title="Things To Do"
+        subtitle="Manage luxury experiences, events, and activities"
         icon={Sparkles}
         kpis={experiencesKPIs}
         isLoading={isLoading}
@@ -92,9 +86,10 @@ export function TopTierCommandDashboard({ className }: TopTierCommandDashboardPr
         maxCards={7}
       />
 
-      {/* Private Jet Section */}
+      {/* Private Jet Network */}
       <TopTierKPISection
-        title="Private Jet"
+        title="Private Jets"
+        subtitle="Fleet management and charter requests"
         icon={Plane}
         kpis={[...jetsKPIs, ...chartersKPIs]}
         isLoading={isLoading}
