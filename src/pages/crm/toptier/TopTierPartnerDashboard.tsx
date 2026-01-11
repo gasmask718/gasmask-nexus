@@ -1,6 +1,7 @@
 /**
  * TopTier Partner Dashboard
  * KPI grid with each partner category as its own card
+ * PLUS: Command Dashboard integration for Drivers, Things To Do, Private Jet
  */
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Building2,
   Users,
@@ -40,6 +42,7 @@ import {
   TrendingUp,
   Filter,
   Pencil,
+  LayoutDashboard,
 } from "lucide-react";
 import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from "@/config/crmBlueprints";
 import { useSimulationMode, SimulationBadge } from "@/contexts/SimulationModeContext";
@@ -49,6 +52,7 @@ import { TaskChecklistSection } from "@/components/crm/TaskChecklistSection";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { CategoryKPIEditModal } from "@/components/toptier/CategoryKPIEditModal";
+import { TopTierCommandDashboard } from "@/components/toptier/TopTierCommandDashboard";
 
 // Icon mapping for partner categories
 const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
@@ -101,6 +105,7 @@ export default function TopTierPartnerDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<"operations" | "partners">("operations");
   
   // Local state for category metadata overrides (display name, targets, visibility)
   // This does NOT affect KPI calculations - only display metadata
@@ -222,260 +227,281 @@ export default function TopTierPartnerDashboard() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">Partner Command Center</h1>
+            <h1 className="text-2xl font-bold">TopTier Command Center</h1>
             {isSimulated && <SimulationBadge />}
           </div>
-          <p className="text-muted-foreground">Manage your experience partners across all categories</p>
+          <p className="text-muted-foreground">Operations dashboard for Drivers, Things To Do, Private Jet & Partners</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => navigate("/crm/toptier-experience/bookings")}>
             <Eye className="h-4 w-4 mr-2" />
-            Recent Bookings
+            Bookings
           </Button>
           <Button variant="outline" onClick={() => navigate("/crm/toptier-experience/customers")}>
             <Users className="h-4 w-4 mr-2" />
             Customers
           </Button>
-          <Button variant="outline" onClick={handleViewByState}>
-            <MapPin className="h-4 w-4 mr-2" />
-            View by State
-          </Button>
-          <Button variant="outline" onClick={handleViewAllPartners}>
-            <Users className="h-4 w-4 mr-2" />
-            All Partners
-          </Button>
-          <Button
-            onClick={() => {
-              console.log("[CRM] Add New Customer button clicked", { route: "/crm/toptier-experience/customers/new" });
-              navigate("/crm/toptier-experience/customers/new");
-            }}
-          >
+          <Button onClick={() => navigate("/crm/toptier-experience/customers/new")}>
             <Plus className="h-4 w-4 mr-2" />
             Add Customer
           </Button>
-          <Button onClick={() => navigate("/crm/toptier-experience/partner/new")}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Partner
-          </Button>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <Card
-          className="bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border-cyan-500/20 cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={handleViewAllPartners}
-        >
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Partners</p>
-                <p className="text-3xl font-bold">{totalStats.totalPartners}</p>
-              </div>
-              <Building2 className="h-8 w-8 text-cyan-500" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Main Tabs - Operations vs Partners */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "operations" | "partners")} className="space-y-6">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="operations" className="flex items-center gap-2">
+            <LayoutDashboard className="h-4 w-4" />
+            Operations KPIs
+          </TabsTrigger>
+          <TabsTrigger value="partners" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Partner Network
+          </TabsTrigger>
+        </TabsList>
 
-        <Card
-          className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20 cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={handleViewAllPartners}
-        >
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Active Contracts</p>
-                <p className="text-3xl font-bold">{totalStats.activePartners}</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
+        {/* OPERATIONS TAB - Drivers, Things To Do, Private Jet */}
+        <TabsContent value="operations" className="space-y-6">
+          <TopTierCommandDashboard />
+        </TabsContent>
 
-        <Card
-          className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20 cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={handleViewByState}
-        >
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">States Covered</p>
-                <p className="text-3xl font-bold">{totalStats.statesCovered}</p>
-              </div>
-              <MapPin className="h-8 w-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
+        {/* PARTNERS TAB - Existing partner grid */}
+        <TabsContent value="partners" className="space-y-6">
+          {/* Partner Quick Actions */}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={handleViewByState}>
+              <MapPin className="h-4 w-4 mr-2" />
+              View by State
+            </Button>
+            <Button variant="outline" onClick={handleViewAllPartners}>
+              <Users className="h-4 w-4 mr-2" />
+              All Partners
+            </Button>
+            <Button onClick={() => navigate("/crm/toptier-experience/partner/new")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Partner
+            </Button>
+          </div>
 
-        <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Active Categories</p>
-                <p className="text-3xl font-bold">{totalStats.categoriesActive}</p>
-              </div>
-              <Filter className="h-8 w-8 text-amber-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20 cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => navigate("/crm/toptier-experience/bookings")}
-        >
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Recent Bookings</p>
-                <p className="text-3xl font-bold">{isSimulated ? 24 : 0}</p>
-              </div>
-              <Eye className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="bg-gradient-to-br from-rose-500/10 to-rose-500/5 border-rose-500/20 cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => navigate("/crm/toptier-experience/requests")}
-        >
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">New Requests</p>
-                <p className="text-3xl font-bold">{isSimulated ? 8 : 0}</p>
-              </div>
-              <Users className="h-8 w-8 text-rose-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search categories..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={stateFilter} onValueChange={setStateFilter}>
-          <SelectTrigger className="w-full md:w-[200px]">
-            <SelectValue placeholder="Filter by state" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All States</SelectItem>
-            {US_STATES.map((state) => (
-              <SelectItem key={state.value} value={state.value}>
-                {state.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Category KPI Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {categoryStats.map((category) => {
-          const IconComponent = CATEGORY_ICONS[category.value] || Building2;
-          const colorClasses = CATEGORY_COLORS[category.value] || CATEGORY_COLORS.other;
-
-          return (
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
             <Card
-              key={category.value}
-              className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] ${category.totalPartners === 0 ? "opacity-60" : ""}`}
-              onClick={() => handleCategoryClick(category.value)}
+              className="bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border-cyan-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={handleViewAllPartners}
             >
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div className={`p-2 rounded-lg border ${colorClasses}`}>
-                    <IconComponent className="h-5 w-5" />
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Partners</p>
+                    <p className="text-3xl font-bold">{totalStats.totalPartners}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {canEditKPI && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingCategory(category);
-                          setEditModalOpen(true);
-                        }}
-                        title="Edit category settings"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                    {category.totalPartners > 0 && (
-                      <Badge variant="secondary" className="text-xs">
-                        {category.activePartners} active
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <CardTitle className="text-sm font-medium mt-2 line-clamp-2">{category.label}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Total Partners</span>
-                    <span className="font-bold text-lg">{category.totalPartners}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">States Covered</span>
-                    <span className="font-medium">{category.statesCovered}</span>
-                  </div>
-                  {category.statesCovered > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {category.states.slice(0, 4).map((state) => (
-                        <Badge key={state} variant="outline" className="text-xs">
-                          {state}
-                        </Badge>
-                      ))}
-                      {category.states.length > 4 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{category.states.length - 4}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full mt-2 text-primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCategoryClick(category.value);
-                    }}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Details
-                    <ArrowRight className="h-4 w-4 ml-auto" />
-                  </Button>
+                  <Building2 className="h-8 w-8 text-cyan-500" />
                 </div>
               </CardContent>
             </Card>
-          );
-        })}
-      </div>
 
-      {/* Empty State */}
-      {categoryStats.length === 0 && (
-        <Card className="p-8 text-center">
-          <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="font-medium mb-2">No categories found</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            {searchTerm ? "Try adjusting your search" : "Add partners to see categories"}
-          </p>
-          <Button onClick={() => navigate("/crm/toptier-experience/partner/new")}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add First Partner
-          </Button>
-        </Card>
-      )}
+            <Card
+              className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={handleViewAllPartners}
+            >
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Active Contracts</p>
+                    <p className="text-3xl font-bold">{totalStats.activePartners}</p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={handleViewByState}
+            >
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">States Covered</p>
+                    <p className="text-3xl font-bold">{totalStats.statesCovered}</p>
+                  </div>
+                  <MapPin className="h-8 w-8 text-purple-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Active Categories</p>
+                    <p className="text-3xl font-bold">{totalStats.categoriesActive}</p>
+                  </div>
+                  <Filter className="h-8 w-8 text-amber-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => navigate("/crm/toptier-experience/bookings")}
+            >
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Recent Bookings</p>
+                    <p className="text-3xl font-bold">{isSimulated ? 24 : 0}</p>
+                  </div>
+                  <Eye className="h-8 w-8 text-blue-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="bg-gradient-to-br from-rose-500/10 to-rose-500/5 border-rose-500/20 cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => navigate("/crm/toptier-experience/requests")}
+            >
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">New Requests</p>
+                    <p className="text-3xl font-bold">{isSimulated ? 8 : 0}</p>
+                  </div>
+                  <Users className="h-8 w-8 text-rose-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search categories..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={stateFilter} onValueChange={setStateFilter}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Filter by state" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All States</SelectItem>
+                {US_STATES.map((state) => (
+                  <SelectItem key={state.value} value={state.value}>
+                    {state.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Category KPI Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {categoryStats.map((category) => {
+              const IconComponent = CATEGORY_ICONS[category.value] || Building2;
+              const colorClasses = CATEGORY_COLORS[category.value] || CATEGORY_COLORS.other;
+
+              return (
+                <Card
+                  key={category.value}
+                  className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] ${category.totalPartners === 0 ? "opacity-60" : ""}`}
+                  onClick={() => handleCategoryClick(category.value)}
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div className={`p-2 rounded-lg border ${colorClasses}`}>
+                        <IconComponent className="h-5 w-5" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {canEditKPI && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCategory(category);
+                              setEditModalOpen(true);
+                            }}
+                            title="Edit category settings"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {category.totalPartners > 0 && (
+                          <Badge variant="secondary" className="text-xs">
+                            {category.activePartners} active
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <CardTitle className="text-sm font-medium mt-2 line-clamp-2">{category.label}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Total Partners</span>
+                        <span className="font-bold text-lg">{category.totalPartners}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">States Covered</span>
+                        <span className="font-medium">{category.statesCovered}</span>
+                      </div>
+                      {category.statesCovered > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {category.states.slice(0, 4).map((state) => (
+                            <Badge key={state} variant="outline" className="text-xs">
+                              {state}
+                            </Badge>
+                          ))}
+                          {category.states.length > 4 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{category.states.length - 4}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full mt-2 text-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCategoryClick(category.value);
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
+                        <ArrowRight className="h-4 w-4 ml-auto" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Empty State */}
+          {categoryStats.length === 0 && (
+            <Card className="p-8 text-center">
+              <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="font-medium mb-2">No categories found</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {searchTerm ? "Try adjusting your search" : "Add partners to see categories"}
+              </p>
+              <Button onClick={() => navigate("/crm/toptier-experience/partner/new")}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add First Partner
+              </Button>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Task Checklist Section */}
       <TaskChecklistSection businessSlug="toptier_experience" show2026Goals={false} />

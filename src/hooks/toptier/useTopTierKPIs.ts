@@ -30,6 +30,8 @@ export interface TopTierKPI {
   icon: LucideIcon;
   color: 'cyan' | 'green' | 'amber' | 'purple' | 'red' | 'default';
   isCore: boolean; // true = code-defined, false = admin-created
+  visibleTo: ('admin' | 'partner' | 'user')[]; // Role-based visibility
+  detailsRoute?: string; // Navigation on click
 }
 
 interface KPICounts {
@@ -137,38 +139,42 @@ export function useTopTierKPIs() {
     staleTime: 30000, // 30 seconds
   });
 
-  // Generate core KPIs from counts
+  // Generate core KPIs from counts with role visibility and navigation
   const generateCoreKPIs = (counts: KPICounts): TopTierKPI[] => {
+    const visibleToAll: ('admin' | 'partner' | 'user')[] = ['admin', 'partner', 'user'];
+    const adminOnly: ('admin' | 'partner' | 'user')[] = ['admin'];
+    const adminAndPartner: ('admin' | 'partner' | 'user')[] = ['admin', 'partner'];
+    
     return [
       // DRIVERS KPIs
-      { id: 'drivers-total', section: 'drivers', name: 'Total Drivers', value: counts.drivers.total, icon: Users, color: 'cyan', isCore: true },
-      { id: 'drivers-with-vehicle', section: 'drivers', name: 'Drivers With Cars', value: counts.drivers.withVehicle, icon: Car, color: 'green', isCore: true },
-      { id: 'drivers-no-vehicle', section: 'drivers', name: 'Drivers Without Cars', value: counts.drivers.withoutVehicle, icon: AlertCircle, color: 'amber', isCore: true },
-      { id: 'drivers-active', section: 'drivers', name: 'Active Drivers', value: counts.drivers.active, icon: UserCheck, color: 'green', isCore: true },
-      { id: 'drivers-on-duty', section: 'drivers', name: 'On Duty Now', value: counts.drivers.onDuty, icon: Clock, color: 'cyan', isCore: true },
-      { id: 'drivers-unassigned', section: 'drivers', name: 'Awaiting Assignment', value: counts.drivers.unassigned, icon: UserX, color: 'amber', isCore: true },
+      { id: 'drivers-total', section: 'drivers', name: 'Total Drivers', value: counts.drivers.total, icon: Users, color: 'cyan', isCore: true, visibleTo: visibleToAll, detailsRoute: '/os/toptier/drivers' },
+      { id: 'drivers-with-vehicle', section: 'drivers', name: 'Drivers With Cars', value: counts.drivers.withVehicle, icon: Car, color: 'green', isCore: true, visibleTo: visibleToAll, detailsRoute: '/os/toptier/drivers?filter=with-vehicle' },
+      { id: 'drivers-no-vehicle', section: 'drivers', name: 'Drivers Without Cars', value: counts.drivers.withoutVehicle, icon: AlertCircle, color: 'amber', isCore: true, visibleTo: adminAndPartner, detailsRoute: '/os/toptier/drivers?filter=no-vehicle' },
+      { id: 'drivers-active', section: 'drivers', name: 'Active Drivers', value: counts.drivers.active, icon: UserCheck, color: 'green', isCore: true, visibleTo: visibleToAll, detailsRoute: '/os/toptier/drivers?filter=active' },
+      { id: 'drivers-on-duty', section: 'drivers', name: 'On Duty Now', value: counts.drivers.onDuty, icon: Clock, color: 'cyan', isCore: true, visibleTo: visibleToAll, detailsRoute: '/os/toptier/drivers?filter=on-duty' },
+      { id: 'drivers-unassigned', section: 'drivers', name: 'Awaiting Assignment', value: counts.drivers.unassigned, icon: UserX, color: 'amber', isCore: true, visibleTo: adminAndPartner, detailsRoute: '/os/toptier/drivers?filter=unassigned' },
       
       // EXPERIENCES KPIs
-      { id: 'exp-total', section: 'experiences', name: 'Total Experiences', value: counts.experiences.total, icon: Sparkles, color: 'purple', isCore: true },
-      { id: 'exp-available', section: 'experiences', name: 'Available Now', value: counts.experiences.available, icon: CheckCircle, color: 'green', isCore: true },
-      { id: 'exp-booked', section: 'experiences', name: 'Booked', value: counts.experiences.booked, icon: Calendar, color: 'cyan', isCore: true },
-      { id: 'exp-pending', section: 'experiences', name: 'Pending Confirmation', value: counts.experiences.pending, icon: Timer, color: 'amber', isCore: true },
-      { id: 'exp-partner', section: 'experiences', name: 'Partner Experiences', value: counts.experiences.partnerProvided, icon: Building2, color: 'purple', isCore: true },
-      { id: 'exp-complimentary', section: 'experiences', name: 'Complimentary', value: counts.experiences.complimentary, icon: Gift, color: 'green', isCore: true },
-      { id: 'exp-revenue', section: 'experiences', name: 'Revenue Generating', value: counts.experiences.revenueGenerating, icon: DollarSign, color: 'cyan', isCore: true },
+      { id: 'exp-total', section: 'experiences', name: 'Total Experiences', value: counts.experiences.total, icon: Sparkles, color: 'purple', isCore: true, visibleTo: visibleToAll, detailsRoute: '/os/toptier/experiences' },
+      { id: 'exp-available', section: 'experiences', name: 'Available Now', value: counts.experiences.available, icon: CheckCircle, color: 'green', isCore: true, visibleTo: visibleToAll, detailsRoute: '/os/toptier/experiences?filter=available' },
+      { id: 'exp-booked', section: 'experiences', name: 'Booked', value: counts.experiences.booked, icon: Calendar, color: 'cyan', isCore: true, visibleTo: visibleToAll, detailsRoute: '/os/toptier/experiences?filter=booked' },
+      { id: 'exp-pending', section: 'experiences', name: 'Pending Confirmation', value: counts.experiences.pending, icon: Timer, color: 'amber', isCore: true, visibleTo: adminAndPartner, detailsRoute: '/os/toptier/experiences?filter=pending' },
+      { id: 'exp-partner', section: 'experiences', name: 'Partner Experiences', value: counts.experiences.partnerProvided, icon: Building2, color: 'purple', isCore: true, visibleTo: adminAndPartner, detailsRoute: '/os/toptier/experiences?filter=partner' },
+      { id: 'exp-complimentary', section: 'experiences', name: 'Complimentary', value: counts.experiences.complimentary, icon: Gift, color: 'green', isCore: true, visibleTo: adminAndPartner, detailsRoute: '/os/toptier/experiences?filter=complimentary' },
+      { id: 'exp-revenue', section: 'experiences', name: 'Revenue Generating', value: counts.experiences.revenueGenerating, icon: DollarSign, color: 'cyan', isCore: true, visibleTo: adminOnly, detailsRoute: '/os/toptier/experiences?filter=revenue' },
       
       // JETS KPIs
-      { id: 'jets-total', section: 'jets', name: 'Total Jets', value: counts.jets.total, icon: Plane, color: 'purple', isCore: true },
-      { id: 'jets-available', section: 'jets', name: 'Jets Available', value: counts.jets.available, icon: PlaneTakeoff, color: 'green', isCore: true },
-      { id: 'jets-booked', section: 'jets', name: 'Active Charters', value: counts.jets.booked, icon: PlaneLanding, color: 'cyan', isCore: true },
-      { id: 'jets-maintenance', section: 'jets', name: 'In Maintenance', value: counts.jets.maintenance, icon: AlertCircle, color: 'amber', isCore: true },
-      { id: 'jets-pending', section: 'jets', name: 'Pending Approval', value: counts.jets.pendingApproval, icon: Timer, color: 'amber', isCore: true },
-      { id: 'jets-partner', section: 'jets', name: 'Partner Jets', value: counts.jets.partnerJets, icon: Building2, color: 'purple', isCore: true },
+      { id: 'jets-total', section: 'jets', name: 'Total Jets', value: counts.jets.total, icon: Plane, color: 'purple', isCore: true, visibleTo: visibleToAll, detailsRoute: '/os/toptier/jets' },
+      { id: 'jets-available', section: 'jets', name: 'Jets Available', value: counts.jets.available, icon: PlaneTakeoff, color: 'green', isCore: true, visibleTo: visibleToAll, detailsRoute: '/os/toptier/jets?filter=available' },
+      { id: 'jets-booked', section: 'jets', name: 'Active Charters', value: counts.jets.booked, icon: PlaneLanding, color: 'cyan', isCore: true, visibleTo: visibleToAll, detailsRoute: '/os/toptier/jets?filter=booked' },
+      { id: 'jets-maintenance', section: 'jets', name: 'In Maintenance', value: counts.jets.maintenance, icon: AlertCircle, color: 'amber', isCore: true, visibleTo: adminAndPartner, detailsRoute: '/os/toptier/jets?filter=maintenance' },
+      { id: 'jets-pending', section: 'jets', name: 'Pending Approval', value: counts.jets.pendingApproval, icon: Timer, color: 'amber', isCore: true, visibleTo: adminOnly, detailsRoute: '/os/toptier/jets?filter=pending' },
+      { id: 'jets-partner', section: 'jets', name: 'Partner Jets', value: counts.jets.partnerJets, icon: Building2, color: 'purple', isCore: true, visibleTo: adminAndPartner, detailsRoute: '/os/toptier/jets?filter=partner' },
       
       // CHARTERS KPIs
-      { id: 'charters-pending', section: 'charters', name: 'Pending Requests', value: counts.charters.pending, icon: Timer, color: 'amber', isCore: true },
-      { id: 'charters-confirmed', section: 'charters', name: 'Confirmed Charters', value: counts.charters.confirmed, icon: CheckCircle, color: 'green', isCore: true },
-      { id: 'charters-completed', section: 'charters', name: 'Completed', value: counts.charters.completed, icon: DollarSign, color: 'cyan', isCore: true },
+      { id: 'charters-pending', section: 'charters', name: 'Pending Requests', value: counts.charters.pending, icon: Timer, color: 'amber', isCore: true, visibleTo: adminAndPartner, detailsRoute: '/os/toptier/charters?filter=pending' },
+      { id: 'charters-confirmed', section: 'charters', name: 'Confirmed Charters', value: counts.charters.confirmed, icon: CheckCircle, color: 'green', isCore: true, visibleTo: visibleToAll, detailsRoute: '/os/toptier/charters?filter=confirmed' },
+      { id: 'charters-completed', section: 'charters', name: 'Completed', value: counts.charters.completed, icon: DollarSign, color: 'cyan', isCore: true, visibleTo: adminOnly, detailsRoute: '/os/toptier/charters?filter=completed' },
     ];
   };
 
