@@ -69,7 +69,6 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
         .from('invoices')
         .select('*')
         .eq('store_id', storeId)
-        .neq('payment_status', 'deleted')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -111,16 +110,16 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
 
   const deleteInvoiceMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
-      // Soft delete - set status to deleted
+      // Hard delete - permanently remove
       const { error } = await supabase
         .from('invoices')
-        .update({ payment_status: 'deleted' })
+        .delete()
         .eq('id', invoiceId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Invoice deleted');
+      toast.success('Invoice permanently deleted');
       queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
       queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
       setDeleteDialogOpen(false);
@@ -220,20 +219,14 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
     }
   };
 
-  // Determine what actions are available per invoice status
-  // RULE: Draft/Sent/Unpaid → Delete allowed | Paid → Void only (admin)
-  const getInvoiceActions = (invoice: Invoice) => {
-    const status = invoice.payment_status;
-    const isPaid = status === 'paid';
-    const isVoided = status === 'voided';
-
+  // ALL invoices can be edited and deleted - no restrictions
+  // This is an operations CRM, not an accounting system
+  const getInvoiceActions = () => {
     return {
-      canEdit: !isPaid && !isVoided,
-      // DELETE: allowed for draft, unpaid, sent, partial (anything not paid/voided)
-      canDelete: !isPaid && !isVoided,
-      // VOID: only for paid invoices (admin only action)
-      canVoid: isPaid && !isVoided,
-      canTogglePayment: !isVoided,
+      canEdit: true,
+      canDelete: true,
+      canVoid: false, // Void removed - just use delete
+      canTogglePayment: true,
     };
   };
 
@@ -300,7 +293,7 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {invoices.map((invoice) => {
-                const actions = getInvoiceActions(invoice);
+                const actions = getInvoiceActions();
                 const amountPaid = invoice.payment_status === 'paid' 
                   ? invoice.total_amount 
                   : (invoice.partial_amount || 0);
