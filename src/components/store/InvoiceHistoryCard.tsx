@@ -5,6 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -21,10 +28,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { FileText, DollarSign, Calendar, Package, Plus, Loader2, MoreVertical, Edit, Trash2, Ban, Eye } from 'lucide-react';
+import { FileText, DollarSign, Calendar, Package, Plus, Loader2, MoreVertical, Edit, Trash2, Ban, Eye, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { EditStoreInvoiceModal } from './EditStoreInvoiceModal';
+import { BulkInvoiceUploader } from './BulkInvoiceUploader';
 import { useNavigate } from 'react-router-dom';
 
 interface Invoice {
@@ -61,6 +69,7 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
   const [newStatus, setNewStatus] = useState<string>('');
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [invoiceToEdit, setInvoiceToEdit] = useState<Invoice | null>(null);
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['store-invoices', storeId],
@@ -255,16 +264,26 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
               <FileText className="h-5 w-5 text-primary" />
               Invoice History
             </CardTitle>
-            {onCreateInvoice && (
+            <div className="flex gap-2">
               <Button
-                onClick={onCreateInvoice}
+                onClick={() => setBulkUploadOpen(true)}
                 size="sm"
-                className="bg-primary hover:bg-primary/90"
+                variant="outline"
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Create Invoice
+                <Upload className="h-4 w-4 mr-2" />
+                Bulk Add
               </Button>
-            )}
+              {onCreateInvoice && (
+                <Button
+                  onClick={onCreateInvoice}
+                  size="sm"
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Invoice
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -521,6 +540,26 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
           onSuccess={() => setInvoiceToEdit(null)}
         />
       )}
+
+      {/* Bulk Invoice Upload Dialog */}
+      <Dialog open={bulkUploadOpen} onOpenChange={setBulkUploadOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5 text-primary" />
+              Bulk Add Invoices
+            </DialogTitle>
+            <DialogDescription>
+              Import invoices via CSV or manual entry for {storeName}
+            </DialogDescription>
+          </DialogHeader>
+          <BulkInvoiceUploader
+            storeId={storeId}
+            storeName={storeName}
+            onClose={() => setBulkUploadOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
