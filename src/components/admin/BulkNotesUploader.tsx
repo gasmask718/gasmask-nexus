@@ -66,11 +66,17 @@ export function BulkNotesUploader() {
   const [manualStoreId, setManualStoreId] = useState('');
   const [manualDate, setManualDate] = useState('');
 
+  // Check if string is a valid UUID
+  const isValidUUID = (str: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
   // Download CSV template
   const downloadTemplate = () => {
     const template = `store_identifier,note_text,note_date
-"Store Name or ID","Your note text here - preserved exactly as written","2024-01-15"
-"Another Store","Another note with full detail","2024-02-20"`;
+"Your Store Name Here","Your note text here - preserved exactly as written","2024-01-15"
+"Another Store Name","Another note with full detail","2024-02-20"`;
     
     const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -119,12 +125,41 @@ export function BulkNotesUploader() {
     
     for (const note of notes) {
       try {
-        // Try to find store by name or ID
-        const { data: stores, error } = await supabase
-          .from('store_master')
-          .select('id, store_name')
-          .or(`id.eq.${note.store_identifier},store_name.ilike.%${note.store_identifier}%`)
-          .limit(1);
+        const identifier = note.store_identifier.trim();
+        
+        // Skip if it looks like a header row
+        if (identifier.toLowerCase() === 'store_identifier' || 
+            identifier.toLowerCase() === 'store name' ||
+            identifier.toLowerCase() === 'store name or id' ||
+            identifier.toLowerCase() === 'store id') {
+          resolved.push({
+            ...note,
+            error: 'Skipped header row',
+            status: 'error',
+          });
+          continue;
+        }
+        
+        let query;
+        
+        // Check if identifier is a valid UUID
+        if (isValidUUID(identifier)) {
+          // Search by UUID directly
+          query = supabase
+            .from('store_master')
+            .select('id, store_name')
+            .eq('id', identifier)
+            .limit(1);
+        } else {
+          // Search by store name (case-insensitive)
+          query = supabase
+            .from('store_master')
+            .select('id, store_name')
+            .ilike('store_name', `%${identifier}%`)
+            .limit(1);
+        }
+        
+        const { data: stores, error } = await query;
         
         if (error) throw error;
         
@@ -138,7 +173,7 @@ export function BulkNotesUploader() {
         } else {
           resolved.push({
             ...note,
-            error: 'Store not found',
+            error: `Store not found: "${identifier}"`,
             status: 'error',
           });
         }
