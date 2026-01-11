@@ -143,6 +143,7 @@ export const FLOOR_3_INVENTORY: OSFloor = {
     { id: 'tube-counts', label: 'Tube Counts', path: '/grabba/production', icon: Factory, roles: ['ceo', 'admin', 'va', 'production'] },
     { id: 'stock-overview', label: 'Stock Overview', path: '/inventory/stock', icon: Boxes, roles: ['ceo', 'admin', 'va'] },
     { id: 'products', label: 'Products', path: '/products', icon: Boxes, roles: ['ceo', 'admin', 'va'] },
+    { id: 'product-conversions', label: 'Product Conversions', path: '/os/product-conversions', icon: Settings, roles: ['ceo', 'admin'] },
     { id: 'warehouse-brain', label: 'Warehouse Brain', path: '/os/warehouse', icon: Factory, roles: ['ceo', 'admin'] },
     { id: 'procurement', label: 'Procurement', path: '/os/procurement', icon: Database, roles: ['ceo', 'admin'] },
     { id: 'low-stock-alerts', label: 'Low Stock Alerts', path: '/inventory/alerts', icon: Bell, badge: 'Live', roles: ['ceo', 'admin', 'va'] },
