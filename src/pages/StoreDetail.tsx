@@ -37,7 +37,7 @@ import { StoreQuickActions } from "@/components/store/StoreQuickActions";
 import { RecentStoreInteractions } from "@/components/crm/RecentStoreInteractions";
 import { UnifiedInteractionModal } from "@/components/store/UnifiedInteractionModal";
 import { InvoiceHistoryCard } from "@/components/store/InvoiceHistoryCard";
-import { OrderHistoryCard } from "@/components/store/OrderHistoryCard";
+// OrderHistoryCard removed - Invoice History is the single source of truth
 import { CreateStoreInvoiceModal } from "@/components/store/CreateStoreInvoiceModal";
 import { ConnectedStoresCard } from "@/components/store/ConnectedStoresCard";
 import {
@@ -570,14 +570,7 @@ const StoreDetail = () => {
             }}
           />
 
-          {/* Order History */}
-          <OrderHistoryCard 
-            storeId={id || ""} 
-            onCreateOrder={() => {
-              setUnifiedInteractionModalType('order');
-              setUnifiedInteractionModalOpen(true);
-            }}
-          />
+          {/* Invoice History - Single source of truth for all orders/invoices */}
 
           {/* Invoice History */}
           <InvoiceHistoryCard 

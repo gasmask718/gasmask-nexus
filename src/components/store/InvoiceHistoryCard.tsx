@@ -14,9 +14,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { FileText, DollarSign, Calendar, Package, Plus, Loader2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { FileText, DollarSign, Calendar, Package, Plus, Loader2, MoreVertical, Edit, Trash2, Ban, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { EditStoreInvoiceModal } from './EditStoreInvoiceModal';
+import { useNavigate } from 'react-router-dom';
 
 interface Invoice {
   id: string;
@@ -31,18 +40,27 @@ interface Invoice {
   created_at: string;
   brand: string | null;
   notes: string | null;
+  partial_amount: number | null;
+  received_by: string | null;
+  delivery_photos: string[] | null;
 }
 
 interface InvoiceHistoryCardProps {
   storeId: string;
+  storeName?: string;
   onCreateInvoice?: () => void;
 }
 
-export function InvoiceHistoryCard({ storeId, onCreateInvoice }: InvoiceHistoryCardProps) {
+export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoice }: InvoiceHistoryCardProps) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [voidDialogOpen, setVoidDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [newStatus, setNewStatus] = useState<string>('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [invoiceToEdit, setInvoiceToEdit] = useState<Invoice | null>(null);
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['store-invoices', storeId],
@@ -51,6 +69,7 @@ export function InvoiceHistoryCard({ storeId, onCreateInvoice }: InvoiceHistoryC
         .from('invoices')
         .select('*')
         .eq('store_id', storeId)
+        .neq('payment_status', 'deleted')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -77,45 +96,61 @@ export function InvoiceHistoryCard({ storeId, onCreateInvoice }: InvoiceHistoryC
         .eq('id', invoiceId);
 
       if (error) throw error;
-
-      // Try to find and update corresponding order in visit_logs
-      // We'll search for orders with matching invoice number or created around the same time
-      const invoice = invoices.find(inv => inv.id === invoiceId);
-      if (invoice) {
-        // Find orders created around the same time as the invoice
-        const invoiceDate = new Date(invoice.created_at);
-        const startDate = new Date(invoiceDate.getTime() - 60000); // 1 minute before
-        const endDate = new Date(invoiceDate.getTime() + 60000); // 1 minute after
-
-        const { data: matchingOrders } = await supabase
-          .from('visit_logs')
-          .select('id')
-          .eq('store_id', storeId)
-          .eq('visit_type', 'order')
-          .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString());
-
-        if (matchingOrders && matchingOrders.length > 0) {
-          // Update the most recent matching order
-          const orderToUpdate = matchingOrders[0];
-          await supabase
-            .from('visit_logs')
-            .update({
-              cash_collected: newStatus === 'paid' ? invoice.total_amount : null,
-            })
-            .eq('id', orderToUpdate.id);
-        }
-      }
     },
     onSuccess: () => {
       toast.success(`Invoice status updated to ${newStatus}`);
       queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
-      queryClient.invalidateQueries({ queryKey: ['store-orders-history', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
       setConfirmDialogOpen(false);
       setSelectedInvoice(null);
     },
     onError: (error: any) => {
       toast.error(`Failed to update status: ${error.message}`);
+    },
+  });
+
+  const deleteInvoiceMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      // Soft delete - set status to deleted
+      const { error } = await supabase
+        .from('invoices')
+        .update({ payment_status: 'deleted' })
+        .eq('id', invoiceId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Invoice deleted');
+      queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
+      setDeleteDialogOpen(false);
+      setSelectedInvoice(null);
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to delete: ${error.message}`);
+    },
+  });
+
+  const voidInvoiceMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ 
+          payment_status: 'voided',
+        })
+        .eq('id', invoiceId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Invoice voided');
+      queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
+      setVoidDialogOpen(false);
+      setSelectedInvoice(null);
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to void: ${error.message}`);
     },
   });
 
@@ -136,27 +171,68 @@ export function InvoiceHistoryCard({ storeId, onCreateInvoice }: InvoiceHistoryC
     }
   };
 
+  const handleEdit = (invoice: Invoice) => {
+    setInvoiceToEdit(invoice);
+    setEditModalOpen(true);
+  };
+
+  const handleDelete = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleVoid = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setVoidDialogOpen(true);
+  };
+
+  const handleViewDetails = (invoice: Invoice) => {
+    navigate(`/billing/invoices/${invoice.id}`);
+  };
+
   const totalPaid = invoices
     .filter(inv => inv.payment_status === 'paid')
     .reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0);
 
   const totalUnpaid = invoices
-    .filter(inv => inv.payment_status !== 'paid')
+    .filter(inv => inv.payment_status !== 'paid' && inv.payment_status !== 'voided')
     .reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0);
 
-  const totalValue = invoices.reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0);
+  const totalValue = invoices
+    .filter(inv => inv.payment_status !== 'voided')
+    .reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0);
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'paid':
         return 'bg-green-500/10 text-green-600 border-green-500/30';
       case 'pending':
+      case 'unpaid':
         return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30';
+      case 'partial':
+        return 'bg-blue-500/10 text-blue-600 border-blue-500/30';
       case 'overdue':
         return 'bg-red-500/10 text-red-600 border-red-500/30';
+      case 'voided':
+        return 'bg-gray-500/10 text-gray-500 border-gray-500/30 line-through';
       default:
         return 'bg-gray-500/10 text-gray-600 border-gray-500/30';
     }
+  };
+
+  // Determine what actions are available per invoice status
+  const getInvoiceActions = (invoice: Invoice) => {
+    const status = invoice.payment_status;
+    const isDraft = status === 'draft' || status === 'unpaid';
+    const isPaid = status === 'paid';
+    const isVoided = status === 'voided';
+
+    return {
+      canEdit: !isPaid && !isVoided,
+      canDelete: isDraft && !isPaid && !isVoided,
+      canVoid: !isVoided && (status === 'sent' || isPaid || status === 'unpaid' || status === 'partial'),
+      canTogglePayment: !isVoided,
+    };
   };
 
   if (isLoading) {
@@ -176,118 +252,173 @@ export function InvoiceHistoryCard({ storeId, onCreateInvoice }: InvoiceHistoryC
   }
 
   return (
-    <Card className="glass-card border-border/50">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            Invoice History
-          </CardTitle>
-          {onCreateInvoice && (
-            <Button
-              onClick={onCreateInvoice}
-              size="sm"
-              className="bg-primary hover:bg-primary/90"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Invoice
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Money Tracking Summary */}
-        <div className="grid grid-cols-3 gap-4 p-4 rounded-lg bg-secondary/30 border">
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground mb-1">Total Paid</p>
-            <p className="text-lg font-bold text-green-600">${totalPaid.toFixed(2)}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground mb-1">Unpaid</p>
-            <p className="text-lg font-bold text-yellow-600">${totalUnpaid.toFixed(2)}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground mb-1">Total Value</p>
-            <p className="text-lg font-bold">${totalValue.toFixed(2)}</p>
-          </div>
-        </div>
-
-        {/* Invoice List */}
-        {invoices.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No invoices yet</p>
-          </div>
-        ) : (
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {invoices.map((invoice) => (
-              <div
-                key={invoice.id}
-                className="p-4 rounded-lg bg-secondary/30 border space-y-2"
+    <>
+      <Card className="glass-card border-border/50">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Invoice History
+            </CardTitle>
+            {onCreateInvoice && (
+              <Button
+                onClick={onCreateInvoice}
+                size="sm"
+                className="bg-primary hover:bg-primary/90"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium">{invoice.invoice_number}</span>
-                      <Badge
-                        variant="outline"
-                        className={`text-xs cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(invoice.payment_status)}`}
-                        onClick={() => handleToggleStatus(invoice)}
-                        title={`Click to mark as ${invoice.payment_status === 'paid' ? 'unpaid' : 'paid'}`}
-                      >
-                        {invoice.payment_status}
-                      </Badge>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Invoice
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Money Tracking Summary */}
+          <div className="grid grid-cols-3 gap-4 p-4 rounded-lg bg-secondary/30 border">
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground mb-1">Total Paid</p>
+              <p className="text-lg font-bold text-green-600">${totalPaid.toFixed(2)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground mb-1">Unpaid</p>
+              <p className="text-lg font-bold text-yellow-600">${totalUnpaid.toFixed(2)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground mb-1">Total Value</p>
+              <p className="text-lg font-bold">${totalValue.toFixed(2)}</p>
+            </div>
+          </div>
+
+          {/* Invoice List */}
+          {invoices.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No invoices yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {invoices.map((invoice) => {
+                const actions = getInvoiceActions(invoice);
+                const amountPaid = invoice.payment_status === 'paid' 
+                  ? invoice.total_amount 
+                  : (invoice.partial_amount || 0);
+                const balanceDue = Number(invoice.total_amount) - amountPaid;
+
+                return (
+                  <div
+                    key={invoice.id}
+                    className="p-4 rounded-lg bg-secondary/30 border space-y-2"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium">{invoice.invoice_number}</span>
+                          <Badge
+                            variant="outline"
+                            className={`text-xs cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(invoice.payment_status)}`}
+                            onClick={() => actions.canTogglePayment && handleToggleStatus(invoice)}
+                            title={actions.canTogglePayment ? `Click to mark as ${invoice.payment_status === 'paid' ? 'unpaid' : 'paid'}` : undefined}
+                          >
+                            {invoice.payment_status}
+                          </Badge>
+                        </div>
+                        {invoice.brand && (
+                          <p className="text-sm text-muted-foreground">{invoice.brand}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right mr-2">
+                          <p className="text-lg font-bold">${Number(invoice.total_amount).toFixed(2)}</p>
+                          {invoice.payment_status === 'partial' && (
+                            <p className="text-xs text-muted-foreground">
+                              Due: ${balanceDue.toFixed(2)}
+                            </p>
+                          )}
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleViewDetails(invoice)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            {actions.canEdit && (
+                              <DropdownMenuItem onClick={() => handleEdit(invoice)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Invoice
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            {actions.canDelete && (
+                              <DropdownMenuItem 
+                                onClick={() => handleDelete(invoice)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Invoice
+                              </DropdownMenuItem>
+                            )}
+                            {actions.canVoid && !actions.canDelete && (
+                              <DropdownMenuItem 
+                                onClick={() => handleVoid(invoice)}
+                                className="text-destructive"
+                              >
+                                <Ban className="h-4 w-4 mr-2" />
+                                Void Invoice
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
-                    {invoice.brand && (
-                      <p className="text-sm text-muted-foreground">{invoice.brand}</p>
+
+                    <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground pt-2 border-t">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        <span>
+                          {invoice.created_at
+                            ? format(new Date(invoice.created_at), 'MMM d, yyyy')
+                            : 'N/A'}
+                        </span>
+                      </div>
+                      {invoice.due_date && (
+                        <div className="flex items-center gap-1">
+                          <span>Due:</span>
+                          <span>{format(new Date(invoice.due_date), 'MMM d, yyyy')}</span>
+                        </div>
+                      )}
+                      {invoice.payment_method && (
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" />
+                          <span className="capitalize">{invoice.payment_method}</span>
+                        </div>
+                      )}
+                      {invoice.paid_at && (
+                        <div className="flex items-center gap-1">
+                          <span>Paid:</span>
+                          <span>{format(new Date(invoice.paid_at), 'MMM d, yyyy')}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {invoice.notes && (
+                      <p className="text-xs text-muted-foreground italic pt-1 border-t">
+                        {invoice.notes}
+                      </p>
                     )}
                   </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold">${Number(invoice.total_amount).toFixed(2)}</p>
-                  </div>
-                </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-                <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground pt-2 border-t">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>
-                      {invoice.created_at
-                        ? format(new Date(invoice.created_at), 'MMM d, yyyy')
-                        : 'N/A'}
-                    </span>
-                  </div>
-                  {invoice.due_date && (
-                    <div className="flex items-center gap-1">
-                      <span>Due:</span>
-                      <span>{format(new Date(invoice.due_date), 'MMM d, yyyy')}</span>
-                    </div>
-                  )}
-                  {invoice.payment_method && (
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="h-3 w-3" />
-                      <span className="capitalize">{invoice.payment_method}</span>
-                    </div>
-                  )}
-                  {invoice.paid_at && (
-                    <div className="flex items-center gap-1">
-                      <span>Paid:</span>
-                      <span>{format(new Date(invoice.paid_at), 'MMM d, yyyy')}</span>
-                    </div>
-                  )}
-                </div>
-
-                {invoice.notes && (
-                  <p className="text-xs text-muted-foreground italic pt-1 border-t">
-                    {invoice.notes}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-
-      {/* Confirmation Dialog */}
+      {/* Toggle Status Confirmation Dialog */}
       <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -322,7 +453,79 @@ export function InvoiceHistoryCard({ storeId, onCreateInvoice }: InvoiceHistoryC
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Invoice?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete invoice <strong>{selectedInvoice?.invoice_number}</strong>?
+              <span className="block mt-2 text-destructive">
+                This action can only be performed on draft/unpaid invoices.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteInvoiceMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => selectedInvoice && deleteInvoiceMutation.mutate(selectedInvoice.id)}
+              disabled={deleteInvoiceMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteInvoiceMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Void Confirmation Dialog */}
+      <AlertDialog open={voidDialogOpen} onOpenChange={setVoidDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Void Invoice?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to void invoice <strong>{selectedInvoice?.invoice_number}</strong>?
+              <span className="block mt-2 text-yellow-600">
+                This will keep the invoice for audit purposes but mark it as voided.
+                The amount will be removed from all totals.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={voidInvoiceMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => selectedInvoice && voidInvoiceMutation.mutate(selectedInvoice.id)}
+              disabled={voidInvoiceMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {voidInvoiceMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Void Invoice
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Invoice Modal */}
+      {invoiceToEdit && (
+        <EditStoreInvoiceModal
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          invoice={invoiceToEdit}
+          storeId={storeId}
+          storeName={storeName}
+          onSuccess={() => setInvoiceToEdit(null)}
+        />
+      )}
+    </>
   );
 }
-
