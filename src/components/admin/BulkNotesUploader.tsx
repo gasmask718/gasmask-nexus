@@ -202,38 +202,62 @@ export function BulkNotesUploader({ storeId, storeName, onClose }: BulkNotesUplo
     },
   });
 
-  // Manual single note insert
-  const manualInsertMutation = useMutation({
-    mutationFn: async () => {
-      let createdAt = new Date().toISOString();
-      if (manualDate) {
-        const parsed = parseISO(manualDate);
-        if (isValid(parsed)) {
-          createdAt = parsed.toISOString();
+  // Parse manual multi-line notes - uses same engine as CSV
+  const parseManualNotes = () => {
+    const lines = manualNotes.trim().split('\n');
+    const notes: ParsedNote[] = [];
+    const defaultDate = manualDate || new Date().toISOString().split('T')[0];
+    
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) return; // Skip empty lines
+      
+      let noteText = trimmedLine;
+      let noteDate = defaultDate;
+      
+      // Try to parse date from line: "2023-06-14 | Note text" or "2023-06-14 - Note text"
+      const datePattern = /^(\d{4}-\d{2}-\d{2})\s*[|\-]\s*(.+)$/;
+      const match = trimmedLine.match(datePattern);
+      
+      if (match) {
+        const parsedDate = parseISO(match[1]);
+        if (isValid(parsedDate)) {
+          noteDate = match[1];
+          noteText = match[2].trim();
         }
       }
       
-      const { error } = await supabase
-        .from('store_notes')
-        .insert({
-          store_id: storeId,
-          note_text: manualNotes,
-          created_at: createdAt,
-          created_by: null,
-        });
+      // Validate date
+      let dateError: string | undefined;
+      const parsedNoteDate = parseISO(noteDate);
+      if (!isValid(parsedNoteDate)) {
+        dateError = `Invalid date: ${noteDate}`;
+      }
       
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success('Note added');
-      setManualNotes('');
-      setManualDate('');
-      queryClient.invalidateQueries({ queryKey: ['store-notes', storeId] });
-    },
-    onError: (error: any) => {
-      toast.error(`Failed: ${error.message}`);
-    },
-  });
+      if (noteText) {
+        notes.push({
+          row: index + 1,
+          note_text: noteText,
+          note_date: noteDate,
+          status: dateError ? 'error' : 'valid',
+          error: dateError,
+        });
+      }
+    });
+    
+    setParsedNotes(notes);
+    
+    if (notes.length === 0) {
+      toast.error('No valid notes found');
+    } else {
+      const errorCount = notes.filter(n => n.status === 'error').length;
+      if (errorCount > 0) {
+        toast.warning(`${errorCount} notes have date errors`);
+      } else {
+        toast.success(`${notes.length} notes ready to import to ${storeName}`);
+      }
+    }
+  };
 
   const validCount = parsedNotes.filter(n => n.status === 'valid').length;
   const errorCount = parsedNotes.filter(n => n.status === 'error').length;
@@ -388,36 +412,127 @@ export function BulkNotesUploader({ storeId, storeName, onClose }: BulkNotesUplo
           )}
         </>
       ) : (
-        /* Manual Entry Mode */
+        /* Manual Bulk Entry Mode */
         <div className="space-y-4">
-          <div>
-            <Label>Note Date (optional - defaults to today)</Label>
-            <Input
-              type="date"
-              value={manualDate}
-              onChange={(e) => setManualDate(e.target.value)}
-            />
+          {/* Single Date Option */}
+          <div className="p-3 rounded-lg bg-secondary/30 border">
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <Label className="text-sm font-medium">Apply single date to all notes (optional)</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  If set, this date applies to all notes below. Otherwise, use per-line dates.
+                </p>
+              </div>
+              <Input
+                type="date"
+                value={manualDate}
+                onChange={(e) => setManualDate(e.target.value)}
+                className="w-44"
+              />
+            </div>
           </div>
+
+          {/* Multi-line Entry */}
           <div>
-            <Label>Note Text</Label>
+            <Label className="mb-2 block">Notes (one per line)</Label>
             <Textarea
-              placeholder="Enter note text exactly as it should be stored..."
+              placeholder={`Enter notes, one per line. Two formats supported:
+
+With per-line dates:
+2023-06-14 | Customer called about invoice
+2023-07-02 | Followed up re payment
+
+Without dates (uses date above or today):
+Customer called about invoice
+Followed up re payment`}
               value={manualNotes}
               onChange={(e) => setManualNotes(e.target.value)}
-              rows={4}
+              rows={10}
+              className="font-mono text-sm"
             />
           </div>
-          <Button
-            onClick={() => manualInsertMutation.mutate()}
-            disabled={!manualNotes.trim() || manualInsertMutation.isPending}
-          >
-            {manualInsertMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Upload className="h-4 w-4 mr-2" />
+
+          {/* Parse Preview Button */}
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={parseManualNotes}
+              disabled={!manualNotes.trim()}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Preview Notes
+            </Button>
+            {parsedNotes.length > 0 && (
+              <Button
+                onClick={() => setConfirmDialogOpen(true)}
+                disabled={validCount === 0}
+              >
+                Import {validCount} Notes
+              </Button>
             )}
-            Add Note
-          </Button>
+          </div>
+
+          {/* Format Help */}
+          <div className="text-xs text-muted-foreground p-2 bg-muted/30 rounded">
+            <strong>Format:</strong> <code>YYYY-MM-DD | Note text</code> or just <code>Note text</code>
+            <br />
+            <strong>Separator:</strong> Use <code>|</code> or <code>-</code> (dash after date)
+          </div>
+
+          {/* Preview Table (reuse from CSV mode) */}
+          {parsedNotes.length > 0 && (
+            <>
+              <div className="flex items-center gap-4">
+                <Badge variant="outline" className="bg-green-500/10 text-green-600">
+                  <Check className="h-3 w-3 mr-1" />
+                  {validCount} Ready
+                </Badge>
+                {errorCount > 0 && (
+                  <Badge variant="outline" className="bg-red-500/10 text-red-600">
+                    {errorCount} Errors
+                  </Badge>
+                )}
+              </div>
+
+              <div className="max-h-64 overflow-y-auto border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16">Line</TableHead>
+                      <TableHead>Note</TableHead>
+                      <TableHead className="w-32">Date</TableHead>
+                      <TableHead className="w-20">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {parsedNotes.map((note, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell>{note.row}</TableCell>
+                        <TableCell className="max-w-md">
+                          <span className="line-clamp-2">{note.note_text}</span>
+                          {note.error && (
+                            <span className="block text-xs text-destructive mt-1">{note.error}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{note.note_date}</TableCell>
+                        <TableCell>
+                          {note.status === 'valid' ? (
+                            <Badge variant="outline" className="bg-green-500/10 text-green-600">
+                              <Check className="h-3 w-3" />
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-red-500/10 text-red-600">
+                              Error
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
         </div>
       )}
 
