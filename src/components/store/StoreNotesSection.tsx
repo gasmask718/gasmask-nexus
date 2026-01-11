@@ -283,7 +283,11 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
           <DialogHeader>
             <DialogTitle>Bulk Notes Upload</DialogTitle>
           </DialogHeader>
-          <BulkNotesUploader />
+          <BulkNotesUploader 
+            storeId={storeMasterId || storeId} 
+            storeName={storeName}
+            onClose={() => setBulkUploaderOpen(false)}
+          />
         </DialogContent>
       </Dialog>
     </>
