@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSimulationMode } from '@/hooks/useSimulationMode';
+import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { toast } from 'sonner';
 
 export interface TopTierExperience {
@@ -57,13 +57,15 @@ export function useTopTierExperiences() {
     mutationFn: async (input: Partial<CreateExperienceInput>) => {
       const { data: { user } } = await supabase.auth.getUser();
       
+      const insertData = {
+        ...input,
+        created_by: user?.id,
+        is_simulation: simulationMode ?? false,
+      };
+      
       const { data, error } = await supabase
         .from('tt_experiences')
-        .insert({
-          ...input,
-          created_by: user?.id,
-          is_simulation: simulationMode ?? false,
-        })
+        .insert(insertData as any)
         .select()
         .single();
 

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSimulationMode } from '@/hooks/useSimulationMode';
+import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { 
   Car, 
   Users, 
