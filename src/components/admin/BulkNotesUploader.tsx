@@ -58,6 +58,7 @@ export function BulkNotesUploader({ storeId, storeName, onClose }: BulkNotesUplo
   const [manualMode, setManualMode] = useState(false);
   const [manualNotes, setManualNotes] = useState('');
   const [manualDate, setManualDate] = useState('');
+  const [entryMode, setEntryMode] = useState<'line' | 'block'>('line');
 
   // Download CSV template - NO store column needed
   const downloadTemplate = () => {
@@ -202,15 +203,15 @@ export function BulkNotesUploader({ storeId, storeName, onClose }: BulkNotesUplo
     },
   });
 
-  // Parse manual multi-line notes - uses same engine as CSV
-  const parseManualNotes = () => {
-    const lines = manualNotes.trim().split('\n');
+  // Parse LINE MODE notes (one per line)
+  const parseLineNotes = (input: string): ParsedNote[] => {
+    const lines = input.trim().split('\n');
     const notes: ParsedNote[] = [];
     const defaultDate = manualDate || new Date().toISOString().split('T')[0];
     
     lines.forEach((line, index) => {
       const trimmedLine = line.trim();
-      if (!trimmedLine) return; // Skip empty lines
+      if (!trimmedLine) return;
       
       let noteText = trimmedLine;
       let noteDate = defaultDate;
@@ -227,7 +228,6 @@ export function BulkNotesUploader({ storeId, storeName, onClose }: BulkNotesUplo
         }
       }
       
-      // Validate date
       let dateError: string | undefined;
       const parsedNoteDate = parseISO(noteDate);
       if (!isValid(parsedNoteDate)) {
@@ -244,6 +244,77 @@ export function BulkNotesUploader({ storeId, storeName, onClose }: BulkNotesUplo
         });
       }
     });
+    
+    return notes;
+  };
+
+  // Parse BLOCK MODE notes (multi-line notes with --- DATE --- delimiters)
+  const parseBlockNotes = (input: string): ParsedNote[] => {
+    const notes: ParsedNote[] = [];
+    const defaultDate = manualDate || new Date().toISOString().split('T')[0];
+    
+    // Split by block delimiter: --- YYYY-MM-DD ---
+    const blockPattern = /---\s*(\d{4}-\d{2}-\d{2})\s*---/g;
+    const blocks: { date: string; startIndex: number }[] = [];
+    let match;
+    
+    while ((match = blockPattern.exec(input)) !== null) {
+      blocks.push({ date: match[1], startIndex: match.index + match[0].length });
+    }
+    
+    if (blocks.length === 0) {
+      // No block delimiters found - treat entire input as one note
+      const trimmed = input.trim();
+      if (trimmed) {
+        let dateError: string | undefined;
+        const parsedDate = parseISO(defaultDate);
+        if (!isValid(parsedDate)) {
+          dateError = `Invalid date: ${defaultDate}`;
+        }
+        notes.push({
+          row: 1,
+          note_text: trimmed,
+          note_date: defaultDate,
+          status: dateError ? 'error' : 'valid',
+          error: dateError,
+        });
+      }
+      return notes;
+    }
+    
+    // Extract each block's content
+    blocks.forEach((block, index) => {
+      const endIndex = blocks[index + 1]?.startIndex 
+        ? input.lastIndexOf('---', blocks[index + 1].startIndex - 1)
+        : input.length;
+      
+      const content = input.slice(block.startIndex, endIndex).trim();
+      
+      if (content) {
+        let dateError: string | undefined;
+        const parsedDate = parseISO(block.date);
+        if (!isValid(parsedDate)) {
+          dateError = `Invalid date: ${block.date}`;
+        }
+        
+        notes.push({
+          row: index + 1,
+          note_text: content,
+          note_date: block.date,
+          status: dateError ? 'error' : 'valid',
+          error: dateError,
+        });
+      }
+    });
+    
+    return notes;
+  };
+
+  // Main parse function - routes to correct parser based on mode
+  const parseManualNotes = () => {
+    const notes = entryMode === 'line' 
+      ? parseLineNotes(manualNotes)
+      : parseBlockNotes(manualNotes);
     
     setParsedNotes(notes);
     
@@ -414,13 +485,33 @@ export function BulkNotesUploader({ storeId, storeName, onClose }: BulkNotesUplo
       ) : (
         /* Manual Bulk Entry Mode */
         <div className="space-y-4">
-          {/* Single Date Option */}
+          {/* Entry Mode Toggle */}
+          <div className="flex gap-2 p-1 bg-muted/50 rounded-lg w-fit">
+            <Button
+              variant={entryMode === 'line' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => { setEntryMode('line'); setParsedNotes([]); }}
+            >
+              Line Mode
+            </Button>
+            <Button
+              variant={entryMode === 'block' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => { setEntryMode('block'); setParsedNotes([]); }}
+            >
+              Block Mode
+            </Button>
+          </div>
+
+          {/* Single Date Option (for fallback) */}
           <div className="p-3 rounded-lg bg-secondary/30 border">
             <div className="flex items-center gap-4">
               <div className="flex-1">
-                <Label className="text-sm font-medium">Apply single date to all notes (optional)</Label>
+                <Label className="text-sm font-medium">Default date (optional)</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  If set, this date applies to all notes below. Otherwise, use per-line dates.
+                  {entryMode === 'line' 
+                    ? 'Used for notes without inline dates'
+                    : 'Used if no block delimiters are found'}
                 </p>
               </div>
               <Input
@@ -434,20 +525,33 @@ export function BulkNotesUploader({ storeId, storeName, onClose }: BulkNotesUplo
 
           {/* Multi-line Entry */}
           <div>
-            <Label className="mb-2 block">Notes (one per line)</Label>
+            <Label className="mb-2 block">
+              {entryMode === 'line' ? 'Notes (one per line)' : 'Notes (block mode - multi-line supported)'}
+            </Label>
             <Textarea
-              placeholder={`Enter notes, one per line. Two formats supported:
+              placeholder={entryMode === 'line' 
+                ? `Enter notes, one per line:
 
-With per-line dates:
 2023-06-14 | Customer called about invoice
 2023-07-02 | Followed up re payment
 
-Without dates (uses date above or today):
+Or without dates (uses default date above):
 Customer called about invoice
-Followed up re payment`}
+Followed up re payment`
+                : `Enter multi-line notes using block format:
+
+--- 2023-06-14 ---
+Customer called and explained the delay.
+Waiting on bank approval.
+Promised follow-up next week.
+
+--- 2023-07-02 ---
+Spoke with accounting.
+Partial payment expected Friday.
+Will confirm receipt.`}
               value={manualNotes}
               onChange={(e) => setManualNotes(e.target.value)}
-              rows={10}
+              rows={12}
               className="font-mono text-sm"
             />
           </div>
@@ -473,10 +577,18 @@ Followed up re payment`}
           </div>
 
           {/* Format Help */}
-          <div className="text-xs text-muted-foreground p-2 bg-muted/30 rounded">
-            <strong>Format:</strong> <code>YYYY-MM-DD | Note text</code> or just <code>Note text</code>
-            <br />
-            <strong>Separator:</strong> Use <code>|</code> or <code>-</code> (dash after date)
+          <div className="text-xs text-muted-foreground p-2 bg-muted/30 rounded space-y-1">
+            {entryMode === 'line' ? (
+              <>
+                <p><strong>Format:</strong> <code>YYYY-MM-DD | Note text</code> or just <code>Note text</code></p>
+                <p><strong>Separator:</strong> Use <code>|</code> or <code>-</code> after the date</p>
+              </>
+            ) : (
+              <>
+                <p><strong>Block delimiter:</strong> <code>--- YYYY-MM-DD ---</code></p>
+                <p><strong>Content:</strong> Everything between delimiters becomes one note (line breaks preserved)</p>
+              </>
+            )}
           </div>
 
           {/* Preview Table (reuse from CSV mode) */}
