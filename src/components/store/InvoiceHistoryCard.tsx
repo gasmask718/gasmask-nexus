@@ -221,16 +221,18 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
   };
 
   // Determine what actions are available per invoice status
+  // RULE: Draft/Sent/Unpaid → Delete allowed | Paid → Void only (admin)
   const getInvoiceActions = (invoice: Invoice) => {
     const status = invoice.payment_status;
-    const isDraft = status === 'draft' || status === 'unpaid';
     const isPaid = status === 'paid';
     const isVoided = status === 'voided';
 
     return {
       canEdit: !isPaid && !isVoided,
-      canDelete: isDraft && !isPaid && !isVoided,
-      canVoid: !isVoided && (status === 'sent' || isPaid || status === 'unpaid' || status === 'partial'),
+      // DELETE: allowed for draft, unpaid, sent, partial (anything not paid/voided)
+      canDelete: !isPaid && !isVoided,
+      // VOID: only for paid invoices (admin only action)
+      canVoid: isPaid && !isVoided,
       canTogglePayment: !isVoided,
     };
   };
