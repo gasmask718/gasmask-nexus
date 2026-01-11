@@ -25018,6 +25018,449 @@ export type Database = {
           },
         ]
       }
+      tt_charter_requests: {
+        Row: {
+          arrival_location: string | null
+          business_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          customer_name: string
+          departure_date: string | null
+          departure_location: string | null
+          departure_time: string | null
+          final_price: number | null
+          id: string
+          is_simulation: boolean | null
+          jet_id: string | null
+          notes: string | null
+          passenger_count: number | null
+          quoted_price: number | null
+          return_date: string | null
+          special_requests: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          arrival_location?: string | null
+          business_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          customer_name: string
+          departure_date?: string | null
+          departure_location?: string | null
+          departure_time?: string | null
+          final_price?: number | null
+          id?: string
+          is_simulation?: boolean | null
+          jet_id?: string | null
+          notes?: string | null
+          passenger_count?: number | null
+          quoted_price?: number | null
+          return_date?: string | null
+          special_requests?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          arrival_location?: string | null
+          business_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          departure_date?: string | null
+          departure_location?: string | null
+          departure_time?: string | null
+          final_price?: number | null
+          id?: string
+          is_simulation?: boolean | null
+          jet_id?: string | null
+          notes?: string | null
+          passenger_count?: number | null
+          quoted_price?: number | null
+          return_date?: string | null
+          special_requests?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_charter_requests_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tt_charter_requests_jet_id_fkey"
+            columns: ["jet_id"]
+            isOneToOne: false
+            referencedRelation: "tt_private_jets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tt_drivers: {
+        Row: {
+          admin_notes: string | null
+          assignment_status: string
+          business_id: string | null
+          created_at: string
+          created_by: string | null
+          duty_status: string
+          email: string | null
+          first_name: string
+          full_name: string | null
+          has_vehicle: boolean | null
+          hired_date: string | null
+          id: string
+          intake_notes: string | null
+          is_simulation: boolean | null
+          last_name: string
+          license_plate: string | null
+          phone: string | null
+          photo_url: string | null
+          rating: number | null
+          status: string
+          total_trips: number | null
+          updated_at: string
+          vehicle_color: string | null
+          vehicle_id: string | null
+          vehicle_make: string | null
+          vehicle_model: string | null
+          vehicle_year: number | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          assignment_status?: string
+          business_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          duty_status?: string
+          email?: string | null
+          first_name: string
+          full_name?: string | null
+          has_vehicle?: boolean | null
+          hired_date?: string | null
+          id?: string
+          intake_notes?: string | null
+          is_simulation?: boolean | null
+          last_name: string
+          license_plate?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          rating?: number | null
+          status?: string
+          total_trips?: number | null
+          updated_at?: string
+          vehicle_color?: string | null
+          vehicle_id?: string | null
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_year?: number | null
+        }
+        Update: {
+          admin_notes?: string | null
+          assignment_status?: string
+          business_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          duty_status?: string
+          email?: string | null
+          first_name?: string
+          full_name?: string | null
+          has_vehicle?: boolean | null
+          hired_date?: string | null
+          id?: string
+          intake_notes?: string | null
+          is_simulation?: boolean | null
+          last_name?: string
+          license_plate?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          rating?: number | null
+          status?: string
+          total_trips?: number | null
+          updated_at?: string
+          vehicle_color?: string | null
+          vehicle_id?: string | null
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_drivers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tt_experiences: {
+        Row: {
+          availability: string | null
+          business_id: string | null
+          category: string | null
+          created_at: string
+          created_by: string | null
+          current_guests: number | null
+          description: string | null
+          duration_hours: number | null
+          id: string
+          is_complimentary: boolean | null
+          is_partner_provided: boolean | null
+          is_simulation: boolean | null
+          location: string | null
+          max_guests: number | null
+          notes: string | null
+          partner_id: string | null
+          partner_name: string | null
+          price: number | null
+          revenue_generated: number | null
+          scheduled_date: string | null
+          scheduled_time: string | null
+          special_requirements: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          availability?: string | null
+          business_id?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_guests?: number | null
+          description?: string | null
+          duration_hours?: number | null
+          id?: string
+          is_complimentary?: boolean | null
+          is_partner_provided?: boolean | null
+          is_simulation?: boolean | null
+          location?: string | null
+          max_guests?: number | null
+          notes?: string | null
+          partner_id?: string | null
+          partner_name?: string | null
+          price?: number | null
+          revenue_generated?: number | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          special_requirements?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          availability?: string | null
+          business_id?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_guests?: number | null
+          description?: string | null
+          duration_hours?: number | null
+          id?: string
+          is_complimentary?: boolean | null
+          is_partner_provided?: boolean | null
+          is_simulation?: boolean | null
+          location?: string | null
+          max_guests?: number | null
+          notes?: string | null
+          partner_id?: string | null
+          partner_name?: string | null
+          price?: number | null
+          revenue_generated?: number | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          special_requirements?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_experiences_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tt_kpi_definitions: {
+        Row: {
+          business_id: string | null
+          color: string | null
+          count_type: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_order: number | null
+          filter_field: string | null
+          filter_value: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          section: string
+          show_on_dashboard: boolean | null
+          sum_field: string | null
+          table_name: string
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          color?: string | null
+          count_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          filter_field?: string | null
+          filter_value?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          section: string
+          show_on_dashboard?: boolean | null
+          sum_field?: string | null
+          table_name: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          color?: string | null
+          count_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          filter_field?: string | null
+          filter_value?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          section?: string
+          show_on_dashboard?: boolean | null
+          sum_field?: string | null
+          table_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_kpi_definitions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tt_private_jets: {
+        Row: {
+          approval_status: string | null
+          base_location: string | null
+          business_id: string | null
+          created_at: string
+          created_by: string | null
+          current_location: string | null
+          daily_rate: number | null
+          hourly_rate: number | null
+          id: string
+          is_partner_jet: boolean | null
+          is_simulation: boolean | null
+          jet_type: string | null
+          maintenance_notes: string | null
+          manufacturer: string | null
+          model: string | null
+          name: string
+          notes: string | null
+          partner_id: string | null
+          partner_name: string | null
+          passenger_capacity: number | null
+          photo_url: string | null
+          range_nautical_miles: number | null
+          status: string
+          tail_number: string | null
+          total_charters: number | null
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          approval_status?: string | null
+          base_location?: string | null
+          business_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_location?: string | null
+          daily_rate?: number | null
+          hourly_rate?: number | null
+          id?: string
+          is_partner_jet?: boolean | null
+          is_simulation?: boolean | null
+          jet_type?: string | null
+          maintenance_notes?: string | null
+          manufacturer?: string | null
+          model?: string | null
+          name: string
+          notes?: string | null
+          partner_id?: string | null
+          partner_name?: string | null
+          passenger_capacity?: number | null
+          photo_url?: string | null
+          range_nautical_miles?: number | null
+          status?: string
+          tail_number?: string | null
+          total_charters?: number | null
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          approval_status?: string | null
+          base_location?: string | null
+          business_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_location?: string | null
+          daily_rate?: number | null
+          hourly_rate?: number | null
+          id?: string
+          is_partner_jet?: boolean | null
+          is_simulation?: boolean | null
+          jet_type?: string | null
+          maintenance_notes?: string | null
+          manufacturer?: string | null
+          model?: string | null
+          name?: string
+          notes?: string | null
+          partner_id?: string | null
+          partner_name?: string | null
+          passenger_capacity?: number | null
+          photo_url?: string | null
+          range_nautical_miles?: number | null
+          status?: string
+          tail_number?: string | null
+          total_charters?: number | null
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_private_jets_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       universal_activity: {
         Row: {
           action: string
