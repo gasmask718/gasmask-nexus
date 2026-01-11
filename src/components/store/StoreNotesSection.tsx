@@ -1,13 +1,31 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Plus, User, Clock, Pencil } from 'lucide-react';
+import { FileText, Plus, User, Clock, Pencil, Trash2, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { AddNoteModal } from './AddNoteModal';
 import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { BulkNotesUploader } from '@/components/admin/BulkNotesUploader';
 
 // Helper function to determine source from role
 const getSourceFromRole = (role?: string | null): string => {
@@ -41,6 +59,9 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<StoreNote | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<StoreNote | null>(null);
+  const [bulkUploaderOpen, setBulkUploaderOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Resolve storeId to store_master.id
@@ -69,6 +90,26 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
     enabled: !!storeMasterId,
   });
 
+  // Delete note mutation
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (noteId: string) => {
+      const { error } = await supabase
+        .from('store_notes')
+        .delete()
+        .eq('id', noteId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Note deleted');
+      queryClient.invalidateQueries({ queryKey: ['store-notes', storeMasterId] });
+      setDeleteDialogOpen(false);
+      setNoteToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to delete note: ${error.message}`);
+    },
+  });
+
   const handleNoteAdded = () => {
     queryClient.invalidateQueries({ queryKey: ['store-notes', storeMasterId] });
     setEditingNote(null);
@@ -77,6 +118,17 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
   const handleEditNote = (note: StoreNote) => {
     setEditingNote(note);
     setAddModalOpen(true);
+  };
+
+  const handleDeleteNote = (note: StoreNote) => {
+    setNoteToDelete(note);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (noteToDelete) {
+      deleteNoteMutation.mutate(noteToDelete.id);
+    }
   };
 
   const handleModalClose = (open: boolean) => {
@@ -109,10 +161,16 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
               <Badge variant="secondary" className="ml-2 text-base px-2 py-1">{notes.length}</Badge>
             )}
           </CardTitle>
-          <Button size="lg" onClick={() => setAddModalOpen(true)} className="text-base h-11">
-            <Plus className="h-5 w-5 mr-2" />
-            Add Note
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="lg" onClick={() => setBulkUploaderOpen(true)} className="text-base h-11">
+              <Upload className="h-5 w-5 mr-2" />
+              Bulk Upload
+            </Button>
+            <Button size="lg" onClick={() => setAddModalOpen(true)} className="text-base h-11">
+              <Plus className="h-5 w-5 mr-2" />
+              Add Note
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {!notes || notes.length === 0 ? (
@@ -130,15 +188,26 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-base whitespace-pre-wrap flex-1">{note.note_text}</p>
-                    <Button
-                      variant="ghost"
-                      size="lg"
-                      className="h-10 w-10 p-0 flex-shrink-0"
-                      onClick={() => handleEditNote(note)}
-                      title="Edit note"
-                    >
-                      <Pencil className="h-5 w-5" />
-                    </Button>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="lg"
+                        className="h-10 w-10 p-0"
+                        onClick={() => handleEditNote(note)}
+                        title="Edit note"
+                      >
+                        <Pencil className="h-5 w-5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="lg"
+                        className="h-10 w-10 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDeleteNote(note)}
+                        title="Delete note"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="flex items-center gap-4 pt-2 border-t border-border/20">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -185,6 +254,38 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
         onSuccess={handleNoteAdded}
         editingNote={editingNote}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Note</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this note. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteNoteMutation.isPending}
+            >
+              {deleteNoteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Notes Uploader Dialog */}
+      <Dialog open={bulkUploaderOpen} onOpenChange={setBulkUploaderOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Bulk Notes Upload</DialogTitle>
+          </DialogHeader>
+          <BulkNotesUploader />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
