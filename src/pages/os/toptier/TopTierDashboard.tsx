@@ -1,8 +1,10 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LayoutDashboard } from "lucide-react";
+import { TopTierCommandDashboard } from "@/components/toptier/TopTierCommandDashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Car, Calendar, MapPin, Gift, Users, DollarSign, TrendingUp, Star, Clock, CheckCircle } from "lucide-react";
+import { Calendar, Car, Gift, DollarSign, Star } from "lucide-react";
 
 export default function TopTierDashboard() {
   const stats = [
@@ -11,23 +13,6 @@ export default function TopTierDashboard() {
     { label: "This Month Revenue", value: "$42,500", icon: DollarSign, change: "+18%", color: "text-amber-500" },
     { label: "Customer Rating", value: "4.9", icon: Star, change: "+0.2", color: "text-purple-500" },
   ];
-
-  const recentBookings = [
-    { id: "TT-001", client: "Sarah Mitchell", service: "Black Truck + Roses", date: "Dec 2, 2025", status: "Confirmed", amount: "$1,200" },
-    { id: "TT-002", client: "James Rodriguez", service: "Luxury Anniversary", date: "Dec 3, 2025", status: "Pending", amount: "$2,500" },
-    { id: "TT-003", client: "Emily Chen", service: "VIP Airport Transfer", date: "Dec 4, 2025", status: "Confirmed", amount: "$450" },
-    { id: "TT-004", client: "Michael Thompson", service: "Proposal Package", date: "Dec 5, 2025", status: "In Progress", amount: "$3,200" },
-    { id: "TT-005", client: "Ashley Williams", service: "Birthday Surprise", date: "Dec 6, 2025", status: "Confirmed", amount: "$1,800" },
-  ];
-
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      "Confirmed": "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-      "Pending": "bg-amber-500/10 text-amber-600 border-amber-500/20",
-      "In Progress": "bg-blue-500/10 text-blue-600 border-blue-500/20",
-    };
-    return styles[status] || "bg-muted text-muted-foreground";
-  };
 
   return (
     <div className="min-h-screen p-6 space-y-6">
@@ -65,14 +50,23 @@ export default function TopTierDashboard() {
         ))}
       </div>
 
-      {/* Main Content */}
-      <Tabs defaultValue="bookings" className="space-y-4">
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="operations" className="space-y-4">
         <TabsList className="bg-muted/50">
+          <TabsTrigger value="operations" className="gap-2">
+            <LayoutDashboard className="h-4 w-4" />
+            Operations KPIs
+          </TabsTrigger>
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
           <TabsTrigger value="fleet">Fleet</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="gifts">Gift Packages</TabsTrigger>
         </TabsList>
+
+        {/* Operations KPIs Tab - Command Dashboard */}
+        <TabsContent value="operations">
+          <TopTierCommandDashboard />
+        </TabsContent>
 
         <TabsContent value="bookings" className="space-y-4">
           <Card>
@@ -83,35 +77,9 @@ export default function TopTierDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border/50">
-                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Booking ID</th>
-                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Client</th>
-                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Service</th>
-                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Date</th>
-                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Status</th>
-                      <th className="text-right p-3 text-sm font-medium text-muted-foreground">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentBookings.map((booking) => (
-                      <tr key={booking.id} className="border-b border-border/30 hover:bg-muted/30 transition-colors">
-                        <td className="p-3 font-mono text-sm">{booking.id}</td>
-                        <td className="p-3 font-medium">{booking.client}</td>
-                        <td className="p-3 text-muted-foreground">{booking.service}</td>
-                        <td className="p-3 text-muted-foreground">{booking.date}</td>
-                        <td className="p-3">
-                          <Badge variant="outline" className={getStatusBadge(booking.status)}>
-                            {booking.status}
-                          </Badge>
-                        </td>
-                        <td className="p-3 text-right font-semibold">{booking.amount}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Bookings will appear here</p>
               </div>
             </CardContent>
           </Card>

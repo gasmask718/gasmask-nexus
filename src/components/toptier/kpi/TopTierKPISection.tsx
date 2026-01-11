@@ -71,6 +71,12 @@ export function TopTierKPISection({
               isLoading
             />
           ))
+        ) : displayKPIs.length === 0 ? (
+          <div className="col-span-full text-center py-8 text-muted-foreground border border-dashed border-border rounded-lg">
+            <Icon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No data yet</p>
+            <p className="text-xs mt-1">Data will appear here once available</p>
+          </div>
         ) : (
           displayKPIs.map((kpi) => (
             <TopTierKPICard
