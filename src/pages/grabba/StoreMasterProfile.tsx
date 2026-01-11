@@ -24,6 +24,7 @@ import { getExtractedProfile } from '@/services/profileExtractionService';
 import { getStoreRelationshipScore, RelationshipScore } from '@/services/crmInsightsService';
 import { StoreTransactionsCard } from '@/components/store/StoreTransactionsCard';
 import { StoreTubeIntelCard } from '@/components/store/StoreTubeIntelCard';
+import { TubeCounterCard } from '@/components/store/TubeCounterCard';
 import { NeighborhoodSnapshotCard } from '@/components/store/NeighborhoodSnapshotCard';
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
@@ -412,6 +413,9 @@ export default function StoreMasterProfile() {
 
           {/* Recent Transactions - Clickable Invoices */}
           <StoreTransactionsCard storeId={id || ''} storeName={storeMaster.store_name} />
+
+          {/* Tube Counter - Derived from Invoices */}
+          <TubeCounterCard storeId={id || ''} />
 
           {/* Tube Intel with Exact Counts */}
           <StoreTubeIntelCard storeId={id || ''} />

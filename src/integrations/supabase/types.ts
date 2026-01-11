@@ -14341,8 +14341,8 @@ export type Database = {
       }
       invoice_line_items: {
         Row: {
+          brand: string | null
           brand_id: string | null
-          brand_name: string | null
           created_at: string
           id: string
           invoice_id: string
@@ -14350,11 +14350,13 @@ export type Database = {
           product_name: string | null
           quantity: number
           total: number
+          tubes_equivalent: number | null
           unit_price: number
+          unit_type: string
         }
         Insert: {
+          brand?: string | null
           brand_id?: string | null
-          brand_name?: string | null
           created_at?: string
           id?: string
           invoice_id: string
@@ -14362,11 +14364,13 @@ export type Database = {
           product_name?: string | null
           quantity?: number
           total: number
+          tubes_equivalent?: number | null
           unit_price: number
+          unit_type?: string
         }
         Update: {
+          brand?: string | null
           brand_id?: string | null
-          brand_name?: string | null
           created_at?: string
           id?: string
           invoice_id?: string
@@ -14374,7 +14378,9 @@ export type Database = {
           product_name?: string | null
           quantity?: number
           total?: number
+          tubes_equivalent?: number | null
           unit_price?: number
+          unit_type?: string
         }
         Relationships: [
           {
@@ -19217,6 +19223,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_conversions: {
+        Row: {
+          brand: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          product_name: string
+          tubes_per_unit: number
+          unit_type: string
+          updated_at: string
+        }
+        Insert: {
+          brand: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          product_name: string
+          tubes_per_unit?: number
+          unit_type: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          product_name?: string
+          tubes_per_unit?: number
+          unit_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       product_deal_recommendations: {
         Row: {
@@ -28616,7 +28658,28 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      tube_counter: {
+        Row: {
+          brand: string | null
+          invoice_count: number | null
+          payment_status: string | null
+          product_name: string | null
+          sale_date: string | null
+          store_id: string | null
+          total_revenue: number | null
+          total_tubes: number | null
+          total_units: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       backfill_final_results: { Args: never; Returns: number }
