@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSimulationMode } from '@/hooks/useSimulationMode';
+import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { toast } from 'sonner';
 
 export interface TopTierJet {
@@ -78,13 +78,15 @@ export function useTopTierJets() {
     mutationFn: async (input: Partial<Omit<TopTierJet, 'id' | 'created_at' | 'updated_at' | 'is_simulation' | 'total_charters'>>) => {
       const { data: { user } } = await supabase.auth.getUser();
       
+      const insertData = {
+        ...input,
+        created_by: user?.id,
+        is_simulation: simulationMode ?? false,
+      };
+      
       const { data, error } = await supabase
         .from('tt_private_jets')
-        .insert({
-          ...input,
-          created_by: user?.id,
-          is_simulation: simulationMode ?? false,
-        })
+        .insert(insertData as any)
         .select()
         .single();
 
@@ -182,13 +184,15 @@ export function useTopTierCharters() {
     mutationFn: async (input: Partial<Omit<TopTierCharterRequest, 'id' | 'created_at' | 'updated_at' | 'is_simulation'>>) => {
       const { data: { user } } = await supabase.auth.getUser();
       
+      const insertData = {
+        ...input,
+        created_by: user?.id,
+        is_simulation: simulationMode ?? false,
+      };
+      
       const { data, error } = await supabase
         .from('tt_charter_requests')
-        .insert({
-          ...input,
-          created_by: user?.id,
-          is_simulation: simulationMode ?? false,
-        })
+        .insert(insertData as any)
         .select()
         .single();
 
