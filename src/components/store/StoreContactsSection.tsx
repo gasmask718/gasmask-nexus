@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Phone, MessageSquare, Star, User, Eye, Edit } from 'lucide-react';
+import { Users, Plus, Phone, MessageSquare, Star, User, Eye, Edit, Trash2 } from 'lucide-react';
+import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { toast } from 'sonner';
 import { AddContactModal } from './AddContactModal';
 import { EditStoreContactModal } from './EditStoreContactModal';
@@ -47,6 +48,8 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<StoreContact | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingContact, setDeletingContact] = useState<StoreContact | null>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -97,6 +100,30 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
     queryClient.invalidateQueries({ queryKey: ['store-contacts', storeId] });
     queryClient.invalidateQueries({ queryKey: ['store-owner', storeId] });
     setEditingContact(null);
+  };
+
+  const handleDeleteContact = (contact: StoreContact) => {
+    setDeletingContact(contact);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteContact = async () => {
+    if (!deletingContact) return;
+    
+    const { error } = await supabase
+      .from('store_contacts')
+      .delete()
+      .eq('id', deletingContact.id);
+
+    if (error) {
+      toast.error('Failed to delete contact');
+      throw error;
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['store-contacts', storeId] });
+    queryClient.invalidateQueries({ queryKey: ['store-owner', storeId] });
+    toast.success(`${deletingContact.name} deleted`);
+    setDeletingContact(null);
   };
 
   if (isLoading) {
@@ -195,6 +222,15 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDeleteContact(contact)}
+                      title="Delete Contact"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -216,6 +252,14 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
         onOpenChange={setEditModalOpen}
         contact={editingContact}
         onSuccess={handleContactUpdated}
+      />
+
+      <DeleteConfirmModal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        title="Delete Contact"
+        itemName={deletingContact?.name}
+        onConfirm={confirmDeleteContact}
       />
     </>
   );
