@@ -14,6 +14,7 @@ import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag, Edit, 
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
+import { useGlobalTags } from '@/hooks/useGlobalTags';
 // Simulation data now comes from database with is_simulation=true (RLS handles filtering)
 
 interface StoreContact {
@@ -144,6 +145,9 @@ const Stores = () => {
     createStoreMutation.mutate(newStoreData);
   };
 
+  // Fetch all global tags for the filter dropdown
+  const { data: allGlobalTags = [] } = useGlobalTags();
+
   // Fetch stores from database - RLS automatically filters by simulation mode
   const { data: stores = [], isLoading } = useQuery({
     queryKey: ['stores-with-contacts', simulationMode],
@@ -183,6 +187,34 @@ const Stores = () => {
       const storeIds = mappedStores.map(s => s.id);
       
       if (storeIds.length) {
+        // Fetch global tags for all stores
+        const { data: tagAttachments, error: tagError } = await supabase
+          .from('tag_attachments')
+          .select(`
+            entity_id,
+            global_tags (
+              id,
+              name
+            )
+          `)
+          .eq('entity_type', 'store')
+          .in('entity_id', storeIds);
+
+        if (!tagError && tagAttachments) {
+          const tagsByStore = tagAttachments.reduce((acc, attachment) => {
+            const storeId = attachment.entity_id;
+            if (!acc[storeId]) acc[storeId] = [];
+            if (attachment.global_tags?.name) {
+              acc[storeId].push(attachment.global_tags.name);
+            }
+            return acc;
+          }, {} as Record<string, string[]>);
+
+          mappedStores.forEach(store => {
+            store.tags = tagsByStore[store.id] || [];
+          });
+        }
+
         const { data: contactsData, error: contactsError } = await supabase
           .from('store_contacts')
           .select('id, store_id, name, role, phone, can_receive_sms, is_primary')
@@ -228,14 +260,20 @@ const Stores = () => {
     },
   });
 
-  const availableStoreTags = Array.from(
-    new Set(
+  // Use global tags for the filter dropdown - combines tags from stores AND all global tags
+  const availableStoreTags = useMemo(() => {
+    const storeTagsSet = new Set(
       stores
         .flatMap(store => store.tags ?? [])
         .map(tag => tag?.trim())
         .filter((tag): tag is string => Boolean(tag))
-    )
-  ).sort((a, b) => a.localeCompare(b));
+    );
+    
+    // Also include all global tags so they appear in the dropdown
+    allGlobalTags.forEach(tag => storeTagsSet.add(tag.name));
+    
+    return Array.from(storeTagsSet).sort((a, b) => a.localeCompare(b));
+  }, [stores, allGlobalTags]);
 
   const filteredStores = stores.filter(store => {
     const matchesSearch = 
