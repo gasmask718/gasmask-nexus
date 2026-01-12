@@ -161,14 +161,14 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
               {contacts.map((contact) => (
                 <div
                   key={contact.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30 gap-3"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <User className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium">{contact.name}</span>
                         {contact.is_primary && (
                           <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
@@ -177,7 +177,7 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
                         {contact.role && (
                           <Badge variant="secondary" className="text-xs">
                             {ROLE_LABELS[contact.role] || contact.role}
@@ -187,7 +187,7 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 flex-wrap">
                     <Button
                       size="sm"
                       variant="outline"
