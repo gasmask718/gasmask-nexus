@@ -4,7 +4,17 @@
  */
 
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -87,6 +97,8 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
   const { state, reset, setUploadType, parseFile, updateColumnMapping, validateData, performImport } = useBulkUpload();
   const [dragActive, setDragActive] = useState(false);
   const [importMode, setImportMode] = useState<'append' | 'upsert'>('append');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
 
   const schema = state.uploadType ? getSchemaByType(state.uploadType) : null;
 
@@ -144,10 +156,28 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
     validateData();
   };
 
-  const handleImport = async () => {
+  const handleProceedToUpload = () => {
+    if (validCount === 0) return;
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmImport = async () => {
+    setShowConfirmDialog(false);
     if (!state.uploadType) return;
+    
+    // Set initial progress
+    setImportProgress({ current: 0, total: validCount });
+    
     await performImport(importMode);
-    // Success handling is done in the hook - we check state.step === 'complete'
+    
+    // Call success callback if provided
+    if (state.step === 'complete' && onSuccess) {
+      onSuccess();
+    }
+  };
+
+  const handleCancelImport = () => {
+    setShowConfirmDialog(false);
   };
 
   const downloadTemplate = () => {
@@ -182,6 +212,12 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
   // Count validation results
   const validCount = state.validationResult?.summary.validRows || 0;
   const invalidCount = state.validationResult?.summary.errorRows || 0;
+
+  // Check if all required columns are mapped
+  const requiredFields = schema ? getRequiredFields(schema) : [];
+  const mappedFields = Object.values(state.columnMapping).filter(Boolean);
+  const missingRequiredFields = requiredFields.filter(f => !mappedFields.includes(f.field));
+  const canProceed = missingRequiredFields.length === 0 && state.rawData.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -440,7 +476,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                   </div>
                 )}
 
-                {validCount > 0 && (
+                {validCount > 0 && !state.isProcessing && (
                   <div className="border rounded-lg p-4 bg-green-500/5 border-green-500/20">
                     <div className="flex items-center gap-2 mb-3">
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -459,23 +495,34 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+                )}
 
+                {/* Import Progress */}
+                {state.isProcessing && (
+                  <div className="border rounded-lg p-6 bg-primary/5 border-primary/20">
+                    <div className="flex flex-col items-center gap-4">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <p className="font-medium">Importing records...</p>
+                      <p className="text-sm text-muted-foreground">
+                        Please do not close this window or navigate away.
+                      </p>
+                      <Progress value={50} className="w-full max-w-xs" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Sticky Footer with Proceed Button */}
+                {validCount > 0 && !state.isProcessing && (
+                  <div className="sticky bottom-0 bg-background pt-4 pb-2 border-t mt-4">
                     <Button 
-                      onClick={handleImport} 
+                      onClick={handleProceedToUpload} 
                       disabled={state.isProcessing || validCount === 0}
                       className="w-full"
+                      size="lg"
                     >
-                      {state.isProcessing ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Importing...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Import {validCount} Records
-                        </>
-                      )}
+                      <Upload className="h-4 w-4 mr-2" />
+                      Proceed to Upload ({validCount} records)
                     </Button>
                   </div>
                 )}
@@ -509,6 +556,33 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
           </ScrollArea>
         )}
       </DialogContent>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Bulk Upload</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                You are about to upload <strong>{validCount}</strong> rows into the CRM.
+              </p>
+              <p>
+                This action will {importMode === 'append' ? 'insert new records only (existing will be skipped)' : 'insert new records and update existing ones'}.
+              </p>
+              <p className="text-destructive font-medium">
+                This action cannot be undone.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelImport}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmImport}>
+              <Upload className="h-4 w-4 mr-2" />
+              Start Upload
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
