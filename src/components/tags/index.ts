@@ -1,0 +1,1 @@
+export { GlobalTagSelector } from './GlobalTagSelector';

@@ -11708,6 +11708,36 @@ export type Database = {
           },
         ]
       }
+      global_tags: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       grabba_autopilot_tasks: {
         Row: {
           brand: string | null
@@ -24776,6 +24806,38 @@ export type Database = {
           setting_value?: Json
         }
         Relationships: []
+      }
+      tag_attachments: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tag_attachments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "global_tags"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       term_sheets: {
         Row: {

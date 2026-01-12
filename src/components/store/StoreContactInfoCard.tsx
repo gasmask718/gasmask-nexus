@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { MapPin, Phone, Mail, MessageSquare, Edit, Building, Plus, X, User } from 'lucide-react';
+import { MapPin, Phone, Mail, MessageSquare, Edit, Building, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { GlobalTagSelector } from '@/components/tags/GlobalTagSelector';
+import { useEntityTags } from '@/hooks/useGlobalTags';
 
 type StickerStatus = 'none' | 'doorOnly' | 'inStoreOnly' | 'doorAndInStore';
 
@@ -105,7 +107,10 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<ContactFormData>(() => createInitialFormData(store));
-  const [newTag, setNewTag] = useState('');
+  
+  // Use global tags system
+  const { data: entityTags = [] } = useEntityTags('store', store.id);
+  const globalTagNames = entityTags.map(et => et.global_tags?.name).filter(Boolean);
   type StoreContact = {
     id: string;
     name: string;
@@ -154,36 +159,10 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
 
   useEffect(() => {
     if (!editOpen) return;
-
     setFormData(createInitialFormData(store));
-    setNewTag('');
   }, [store, editOpen]);
 
-  const handleAddTag = () => {
-    const trimmed = newTag.trim();
-    if (!trimmed) return;
-
-    setFormData((prev) => {
-      const hasTag = prev.tags.some((tag) => tag.toLowerCase() === trimmed.toLowerCase());
-      if (hasTag) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        tags: [...prev.tags, trimmed],
-      };
-    });
-
-    setNewTag('');
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags.filter((tag) => tag !== tagToRemove),
-    }));
-  };
+  // Tag handling now done via GlobalTagSelector component
 
   const handleStickerToggle = (
     field: 'sticker_door' | 'sticker_instore' | 'sticker_phone',
@@ -444,12 +423,12 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
             </>
           )}
 
-          {/* Tags */}
-          {store.tags && store.tags.length > 0 && (
+          {/* Tags - Using Global Tags System */}
+          {globalTagNames.length > 0 && (
             <>
               <Separator />
               <div className="flex flex-wrap gap-2">
-                {store.tags.map(tag => (
+                {globalTagNames.map(tag => (
                   <Badge key={tag} variant="outline" className="text-xs">
                     {tag}
                   </Badge>
@@ -516,48 +495,12 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
             </div>
             <div className="space-y-2">
               <Label>Store Tags</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      handleAddTag();
-                    }
-                  }}
-                  placeholder="Type a tag and press Enter"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddTag}
-                  disabled={!newTag.trim()}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
-              </div>
-              {formData.tags.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {formData.tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="flex items-center gap-1 text-xs">
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-destructive"
-                        aria-label={`Remove ${tag}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground">No tags added yet.</p>
-              )}
+              <GlobalTagSelector
+                entityType="store"
+                entityId={store.id}
+                placeholder="Add or select tags..."
+                showSelectedTags={true}
+              />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
