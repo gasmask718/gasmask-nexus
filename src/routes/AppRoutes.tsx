@@ -111,6 +111,7 @@ import CRMCustomerImport from '@/pages/CRMCustomerImport';
 import CRMData from '@/pages/CRMData';
 import CRMDataExport from '@/pages/CRMDataExport';
 import CRMDataImport from '@/pages/CRMDataImport';
+import CRMBulkUpload from '@/pages/CRMBulkUpload';
 import CRMBackupSettings from '@/pages/CRMBackupSettings';
 import CRMFollowUps from '@/pages/CRMFollowUps';
 import Companies from '@/pages/Companies';
@@ -716,6 +717,7 @@ export default function AppRoutes() {
         <Route path="/crm/data" element={<CRMDataPage />} />
         <Route path="/crm/data/export" element={<CRMExportPage />} />
         <Route path="/crm/data/import" element={<CRMImportPage />} />
+        <Route path="/crm/data/bulk-upload" element={<CRMBulkUpload />} />
         <Route path="/crm/data/backup" element={<CRMBackupPage />} />
         <Route path="/crm/settings" element={<CRMSettingsPage />} />
         <Route path="/crm/user-access" element={<CRMUserAccessPage />} />
