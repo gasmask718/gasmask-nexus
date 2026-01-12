@@ -295,7 +295,7 @@ import PodLayout from '@/pages/pod/PodLayout';
 // OS Modules
 import { ProcurementDashboard, SuppliersPage as ProcurementSuppliersPage, SupplierDetailPage as ProcurementSupplierDetailPage, PurchaseOrdersPage as ProcurementPurchaseOrdersPage, NewPurchaseOrderPage as ProcurementNewPurchaseOrderPage, PurchaseOrderDetailPage as ProcurementPurchaseOrderDetailPage } from '@/pages/os/procurement';
 import { WarehouseDashboard } from '@/pages/os/warehouse';
-import { InventoryDashboard, ProductsPage, ProductDetailPage, WarehousesPage, WarehouseDetailPage, SuppliersPage as InventorySuppliersPage, SupplierDetailPage as InventorySupplierDetailPage, PurchaseOrdersPage as InventoryPurchaseOrdersPage, NewPurchaseOrderPage as InventoryNewPurchaseOrderPage, PurchaseOrderDetailPage, StockLevelsPage, MovementsPage, ProcurementPage, InsightsPage, NeighborhoodIntelligencePage } from '@/pages/os/inventory';
+import { InventoryDashboard, ProductsPage, ProductDetailPage, ProductInventoryPage, WarehousesPage, WarehouseDetailPage, SuppliersPage as InventorySuppliersPage, SupplierDetailPage as InventorySupplierDetailPage, PurchaseOrdersPage as InventoryPurchaseOrdersPage, NewPurchaseOrderPage as InventoryNewPurchaseOrderPage, PurchaseOrderDetailPage, StockLevelsPage, MovementsPage, ProcurementPage, InsightsPage, NeighborhoodIntelligencePage } from '@/pages/os/inventory';
 import ProductConversions from '@/pages/os/ProductConversions';
 import OSLayout from '@/pages/os/OSLayout';
 import StoreInventoryPage from '@/pages/os/inventory/StoreInventoryPage';
@@ -866,6 +866,7 @@ export default function AppRoutes() {
         <Route path="/os/inventory" element={<InventoryDashboard />} />
         <Route path="/os/inventory/dashboard" element={<InventoryDashboard />} />
         <Route path="/os/inventory/products" element={<ProductsPage />} />
+        <Route path="/os/inventory/product-inventory" element={<ProductInventoryPage />} />
         <Route path="/os/inventory/products/:productId" element={<ProductDetailPage />} />
         <Route path="/os/inventory/warehouses" element={<WarehousesPage />} />
         <Route path="/os/inventory/warehouses/:warehouseId" element={<WarehouseDetailPage />} />

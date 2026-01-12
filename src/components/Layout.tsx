@@ -178,6 +178,7 @@ const DYNASTY_NAVIGATION = {
       items: [
         { path: '/grabba/inventory', label: 'Inventory Dashboard', icon: Boxes },
         { path: '/products', label: 'Products', icon: Package },
+        { path: '/os/inventory/product-inventory', label: 'Product Inventory', icon: BarChart3 },
         { path: '/os/product-conversions', label: 'Product Conversions', icon: Settings },
         { path: '/os/warehouse', label: 'Warehouse', icon: Building2 },
         { path: '/os/procurement', label: 'Procurement', icon: ShoppingCart },
