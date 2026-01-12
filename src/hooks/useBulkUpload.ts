@@ -17,14 +17,27 @@ import {
   ValidatedRow
 } from '@/lib/uploadValidation';
 
+// Stage enum for deterministic state transitions
+export type UploadStage = 
+  | 'SELECT_TYPE' 
+  | 'FILE_UPLOADED' 
+  | 'MAPPED' 
+  | 'VALIDATED' 
+  | 'IMPORT_READY' 
+  | 'IMPORTING' 
+  | 'COMPLETE' 
+  | 'ERROR';
+
 export interface UploadState {
   step: 'select' | 'upload' | 'validate' | 'preview' | 'importing' | 'complete' | 'error';
+  stage: UploadStage; // New deterministic stage controller
   uploadType: string | null;
   fileName: string | null;
   rawData: Record<string, any>[];
   columns: string[];
   columnMapping: Record<string, string>;
   validationResult: ValidationResult | null;
+  isImportReady: boolean; // Explicit boolean to unlock import
   importResult: ImportResult | null;
   isProcessing: boolean;
   error: string | null;
@@ -40,12 +53,14 @@ export interface ImportResult {
 
 const initialState: UploadState = {
   step: 'select',
+  stage: 'SELECT_TYPE',
   uploadType: null,
   fileName: null,
   rawData: [],
   columns: [],
   columnMapping: {},
   validationResult: null,
+  isImportReady: false,
   importResult: null,
   isProcessing: false,
   error: null
@@ -63,7 +78,8 @@ export function useBulkUpload() {
     setState(prev => ({
       ...prev,
       uploadType: type,
-      step: 'upload'
+      step: 'upload',
+      stage: 'FILE_UPLOADED'
     }));
   }, []);
 
@@ -107,7 +123,9 @@ export function useBulkUpload() {
         columns,
         columnMapping: autoMapping,
         step: 'validate',
-        isProcessing: false
+        stage: 'MAPPED',
+        isProcessing: false,
+        isImportReady: false // Reset import ready state
       }));
 
       toast.success(`Loaded ${jsonData.length} rows from ${file.name}`);
@@ -116,7 +134,8 @@ export function useBulkUpload() {
         ...prev,
         isProcessing: false,
         error: error.message,
-        step: 'error'
+        step: 'error',
+        stage: 'ERROR'
       }));
       toast.error(`Failed to parse file: ${error.message}`);
     }
@@ -128,7 +147,10 @@ export function useBulkUpload() {
       columnMapping: {
         ...prev.columnMapping,
         [excelCol]: schemaField
-      }
+      },
+      // Reset validation when mapping changes
+      isImportReady: false,
+      stage: 'MAPPED'
     }));
   }, []);
 
@@ -153,17 +175,26 @@ export function useBulkUpload() {
     // Validate all rows
     const result = validateAllRows(state.rawData, schema, state.columnMapping);
 
+    // Determine if import is ready: validation completed AND has valid rows
+    // Blocking errors prevent import, but warnings (optional fields) do NOT block
+    const hasValidRows = result.summary.validRows > 0;
+    const isImportReady = hasValidRows; // Import is ready if we have any valid rows
+
     setState(prev => ({
       ...prev,
       validationResult: result,
       step: 'preview',
+      stage: isImportReady ? 'IMPORT_READY' : 'VALIDATED',
+      isImportReady: isImportReady,
       isProcessing: false
     }));
 
-    if (result.summary.errorRows > 0) {
-      toast.warning(`${result.summary.errorRows} rows have errors that need review`);
+    if (result.summary.errorRows > 0 && result.summary.validRows > 0) {
+      toast.warning(`${result.summary.errorRows} rows have errors, but ${result.summary.validRows} rows are ready to import`);
+    } else if (result.summary.errorRows > 0) {
+      toast.error(`All ${result.summary.errorRows} rows have errors - please fix and re-upload`);
     } else {
-      toast.success(`All ${result.summary.validRows} rows validated successfully`);
+      toast.success(`All ${result.summary.validRows} rows validated successfully - ready to import!`);
     }
   }, [state.uploadType, state.columns, state.rawData, state.columnMapping]);
 
@@ -179,7 +210,7 @@ export function useBulkUpload() {
       return;
     }
 
-    setState(prev => ({ ...prev, step: 'importing', isProcessing: true }));
+    setState(prev => ({ ...prev, step: 'importing', stage: 'IMPORTING', isProcessing: true }));
 
     const result: ImportResult = {
       success: 0,
@@ -252,7 +283,9 @@ export function useBulkUpload() {
         ...prev,
         importResult: result,
         step: 'complete',
-        isProcessing: false
+        stage: 'COMPLETE',
+        isProcessing: false,
+        isImportReady: false
       }));
 
       // Invalidate relevant queries
@@ -266,7 +299,9 @@ export function useBulkUpload() {
         ...prev,
         error: error.message,
         step: 'error',
-        isProcessing: false
+        stage: 'ERROR',
+        isProcessing: false,
+        isImportReady: false
       }));
       toast.error(`Import failed: ${error.message}`);
     }

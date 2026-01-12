@@ -3,7 +3,7 @@
  * Reuses CRM bulk upload logic in a modal interface
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -99,8 +99,21 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
   const [importMode, setImportMode] = useState<'append' | 'upsert'>('append');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
+  const successCallbackFired = useRef(false);
 
   const schema = state.uploadType ? getSchemaByType(state.uploadType) : null;
+
+  // Watch for completion and trigger success callback via useEffect
+  useEffect(() => {
+    if (state.stage === 'COMPLETE' && state.importResult && onSuccess && !successCallbackFired.current) {
+      successCallbackFired.current = true;
+      onSuccess();
+    }
+    // Reset the flag when modal closes or state resets
+    if (state.stage === 'SELECT_TYPE') {
+      successCallbackFired.current = false;
+    }
+  }, [state.stage, state.importResult, onSuccess]);
 
   const handleClose = () => {
     reset();
@@ -157,23 +170,25 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
   };
 
   const handleProceedToUpload = () => {
-    if (validCount === 0) return;
+    // Only allow if import is explicitly ready
+    if (!state.isImportReady || validCount === 0) {
+      toast.error('Cannot proceed - resolve validation errors first');
+      return;
+    }
     setShowConfirmDialog(true);
   };
 
   const handleConfirmImport = async () => {
     setShowConfirmDialog(false);
-    if (!state.uploadType) return;
+    if (!state.uploadType || !state.isImportReady) {
+      toast.error('Import not ready');
+      return;
+    }
     
     // Set initial progress
     setImportProgress({ current: 0, total: validCount });
     
     await performImport(importMode);
-    
-    // Call success callback if provided
-    if (state.step === 'complete' && onSuccess) {
-      onSuccess();
-    }
   };
 
   const handleCancelImport = () => {
@@ -198,13 +213,19 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
     toast.success('Template downloaded');
   };
 
-  // Determine current step based on state
+  // Determine current step based on stage (deterministic)
   const getStepNumber = () => {
-    if (state.step === 'complete') return 5;
-    if (state.step === 'preview' || state.step === 'importing') return 4;
-    if (state.step === 'validate') return 3;
-    if (state.step === 'upload') return 2;
-    return 1;
+    switch (state.stage) {
+      case 'SELECT_TYPE': return 1;
+      case 'FILE_UPLOADED': return 2;
+      case 'MAPPED': return 3;
+      case 'VALIDATED': return 4;
+      case 'IMPORT_READY': return 4; // Still on step 4, but import is unlocked
+      case 'IMPORTING': return 4;
+      case 'COMPLETE': return 5;
+      case 'ERROR': return state.step === 'select' ? 1 : 4;
+      default: return 1;
+    }
   };
 
   const currentStep = getStepNumber();
@@ -213,11 +234,8 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
   const validCount = state.validationResult?.summary.validRows || 0;
   const invalidCount = state.validationResult?.summary.errorRows || 0;
 
-  // Check if all required columns are mapped
-  const requiredFields = schema ? getRequiredFields(schema) : [];
-  const mappedFields = Object.values(state.columnMapping).filter(Boolean);
-  const missingRequiredFields = requiredFields.filter(f => !mappedFields.includes(f.field));
-  const canProceed = missingRequiredFields.length === 0 && state.rawData.length > 0;
+  // Import can proceed when explicitly marked ready by validation
+  const canProceedToUpload = state.isImportReady && validCount > 0 && !state.isProcessing;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -512,20 +530,35 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                   </div>
                 )}
 
-                {/* Sticky Footer with Proceed Button */}
-                {validCount > 0 && !state.isProcessing && (
-                  <div className="sticky bottom-0 bg-background pt-4 pb-2 border-t mt-4">
-                    <Button 
-                      onClick={handleProceedToUpload} 
-                      disabled={state.isProcessing || validCount === 0}
-                      className="w-full"
-                      size="lg"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Proceed to Upload ({validCount} records)
-                    </Button>
-                  </div>
-                )}
+                {/* Sticky Footer with Proceed Button - Always visible when on validation step */}
+                <div className="sticky bottom-0 bg-background pt-4 pb-2 border-t mt-4">
+                  {!canProceedToUpload && validCount === 0 && (
+                    <div className="text-center text-sm text-muted-foreground mb-2">
+                      All rows have errors. Fix the data and re-upload.
+                    </div>
+                  )}
+                  <Button 
+                    onClick={handleProceedToUpload} 
+                    disabled={!canProceedToUpload}
+                    className="w-full"
+                    size="lg"
+                    title={!canProceedToUpload ? "Resolve validation errors before proceeding." : undefined}
+                  >
+                    {state.isProcessing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {canProceedToUpload 
+                          ? `Proceed to Upload (${validCount} records)` 
+                          : 'Resolve Errors to Continue'}
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             )}
 
