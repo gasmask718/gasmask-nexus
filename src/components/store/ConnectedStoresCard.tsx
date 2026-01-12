@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Phone, Users, Package, ExternalLink, Store, Link2 } from 'lucide-react';
+import { MapPin, Phone, Users, Package, ExternalLink, Store, Link2, Unlink } from 'lucide-react';
 import { ConnectStoresModal } from './ConnectStoresModal';
+import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
+import { toast } from 'sonner';
 
 interface ConnectedStore {
   id: string;
@@ -74,7 +76,44 @@ export function ConnectedStoresCard({
   onConnectionChange,
 }: ConnectedStoresCardProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [connectModalOpen, setConnectModalOpen] = useState(false);
+  const [disconnectModalOpen, setDisconnectModalOpen] = useState(false);
+  const [disconnectingStore, setDisconnectingStore] = useState<ConnectedStoreWithDetails | null>(null);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+
+  const handleDisconnect = (store: ConnectedStoreWithDetails) => {
+    setDisconnectingStore(store);
+    setDisconnectModalOpen(true);
+  };
+
+  const confirmDisconnect = async () => {
+    if (!disconnectingStore) return;
+    
+    setIsDisconnecting(true);
+    try {
+      // Remove the connected_group_id from the store being disconnected
+      const { error } = await supabase
+        .from('stores')
+        .update({ connected_group_id: null })
+        .eq('id', disconnectingStore.id);
+
+      if (error) throw error;
+
+      toast.success(`Disconnected ${disconnectingStore.name}`);
+      
+      // Refresh the connected stores list
+      queryClient.invalidateQueries({ queryKey: ['connected-stores'] });
+      onConnectionChange?.();
+    } catch (error) {
+      console.error('Error disconnecting store:', error);
+      toast.error('Failed to disconnect store');
+    } finally {
+      setIsDisconnecting(false);
+      setDisconnectModalOpen(false);
+      setDisconnectingStore(null);
+    }
+  };
 
   const { data: connectedStores, isLoading, error } = useQuery({
     queryKey: ['connected-stores', storeId, currentStoreGroupId, currentStoreOwnerName],
@@ -240,17 +279,28 @@ export function ConnectedStoresCard({
             >
               {/* Store Name & Address */}
               <div className="space-y-2">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-2">
                   <h4 className="font-semibold text-base">{store.name}</h4>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate(`/stores/${store.id}`)}
-                    className="h-8 gap-1"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    View
-                  </Button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate(`/stores/${store.id}`)}
+                      className="h-8 gap-1"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      View
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDisconnect(store)}
+                      className="h-8 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      title="Disconnect this store"
+                    >
+                      <Unlink className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
 
                 {fullAddress && (
@@ -327,6 +377,14 @@ export function ConnectedStoresCard({
         storeName={currentStoreName}
         currentGroupId={currentStoreGroupId}
         onSuccess={onConnectionChange}
+      />
+
+      <DeleteConfirmModal
+        open={disconnectModalOpen}
+        onOpenChange={setDisconnectModalOpen}
+        title="Disconnect Store"
+        itemName={disconnectingStore?.name}
+        onConfirm={confirmDisconnect}
       />
     </>
   );
