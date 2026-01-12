@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link } from 'lucide-react';
+import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import BulkUploadModal from '@/components/stores/BulkUploadModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useGlobalTags } from '@/hooks/useGlobalTags';
@@ -74,6 +75,7 @@ const Stores = () => {
   
   // Add Store Modal State
   const [showAddStore, setShowAddStore] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [newStoreData, setNewStoreData] = useState({
     name: '',
     type: 'retail',
@@ -458,10 +460,16 @@ const Stores = () => {
             {simulationMode ? 'Demo stores preview' : 'Manage your distribution network'} • {filteredStores.length} stores
           </p>
         </div>
-        <Button className="bg-primary hover:bg-primary-hover" onClick={() => setShowAddStore(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Store
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowBulkUpload(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Bulk Upload
+          </Button>
+          <Button className="bg-primary hover:bg-primary-hover" onClick={() => setShowAddStore(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Store
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -934,6 +942,13 @@ const Stores = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal
+        open={showBulkUpload}
+        onOpenChange={setShowBulkUpload}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['stores-with-contacts'] })}
+      />
     </div>
   );
 };
