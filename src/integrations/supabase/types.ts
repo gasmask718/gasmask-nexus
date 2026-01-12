@@ -19226,35 +19226,38 @@ export type Database = {
       }
       product_conversions: {
         Row: {
+          base_unit: string
+          base_units_per_unit: number
           brand: string
           created_at: string
           created_by: string | null
           id: string
           is_active: boolean
           product_name: string
-          tubes_per_unit: number
           unit_type: string
           updated_at: string
         }
         Insert: {
+          base_unit?: string
+          base_units_per_unit?: number
           brand: string
           created_at?: string
           created_by?: string | null
           id?: string
           is_active?: boolean
           product_name: string
-          tubes_per_unit?: number
           unit_type: string
           updated_at?: string
         }
         Update: {
+          base_unit?: string
+          base_units_per_unit?: number
           brand?: string
           created_at?: string
           created_by?: string | null
           id?: string
           is_active?: boolean
           product_name?: string
-          tubes_per_unit?: number
           unit_type?: string
           updated_at?: string
         }

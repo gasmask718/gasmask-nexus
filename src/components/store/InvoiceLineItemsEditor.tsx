@@ -70,7 +70,7 @@ export function InvoiceLineItemsEditor({
            c.product_name.toLowerCase() === productName.toLowerCase() &&
            c.unit_type === unitType
     );
-    return conversion?.tubes_per_unit || (unitType === 'TUBE' ? 1 : 1);
+    return conversion?.base_units_per_unit || (unitType === 'TUBE' || unitType === 'SINGLE' ? 1 : 1);
   };
 
   const calculateTubes = (item: LineItem): number => {

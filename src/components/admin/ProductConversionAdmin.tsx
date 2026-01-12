@@ -40,15 +40,16 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Package, Edit, Trash2, Loader2, Box, Layers } from 'lucide-react';
+import { Plus, Package, Edit, Trash2, Loader2, Box, Layers, ShoppingBag, Circle, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ProductConversion {
   id: string;
   brand: string;
   product_name: string;
-  unit_type: 'BOX' | 'HALF_BOX' | 'TUBE';
-  tubes_per_unit: number;
+  base_unit: string;
+  unit_type: 'BOX' | 'HALF_BOX' | 'PACK' | 'SINGLE';
+  base_units_per_unit: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -57,16 +58,26 @@ interface ProductConversion {
 const UNIT_TYPES = [
   { value: 'BOX', label: 'Box', icon: Box },
   { value: 'HALF_BOX', label: 'Half Box', icon: Layers },
+  { value: 'PACK', label: 'Pack', icon: Package },
+  { value: 'SINGLE', label: 'Single Unit', icon: Circle },
+] as const;
+
+const BASE_UNITS = [
   { value: 'TUBE', label: 'Tube', icon: Package },
+  { value: 'BAG', label: 'Bag', icon: ShoppingBag },
+  { value: 'WRAP', label: 'Wrap', icon: FileText },
+  { value: 'PIECE', label: 'Piece', icon: Circle },
 ] as const;
 
 const DEFAULT_BRANDS = [
   'Grabba',
   'Gasmask',
+  'GasmaskTubes',
+  'GasmaskBags',
   'Fronto',
   'Hotscolatti',
   'HotMama',
-  'GasmaskTubes',
+  'Grabba R Us',
 ];
 
 export function ProductConversionAdmin() {
@@ -80,8 +91,10 @@ export function ProductConversionAdmin() {
   const [brand, setBrand] = useState('');
   const [customBrand, setCustomBrand] = useState('');
   const [productName, setProductName] = useState('');
-  const [unitType, setUnitType] = useState<'BOX' | 'HALF_BOX' | 'TUBE'>('BOX');
-  const [tubesPerUnit, setTubesPerUnit] = useState('20');
+  const [baseUnit, setBaseUnit] = useState('TUBE');
+  const [customBaseUnit, setCustomBaseUnit] = useState('');
+  const [unitType, setUnitType] = useState<'BOX' | 'HALF_BOX' | 'PACK' | 'SINGLE'>('BOX');
+  const [baseUnitsPerUnit, setBaseUnitsPerUnit] = useState('20');
   
   const { data: conversions = [], isLoading } = useQuery({
     queryKey: ['product-conversions'],
@@ -180,13 +193,21 @@ export function ProductConversionAdmin() {
     setBrand('');
     setCustomBrand('');
     setProductName('');
+    setBaseUnit('TUBE');
+    setCustomBaseUnit('');
     setUnitType('BOX');
-    setTubesPerUnit('20');
+    setBaseUnitsPerUnit('20');
+  };
+
+  const getFinalBaseUnit = () => {
+    return baseUnit === 'CUSTOM' ? customBaseUnit : baseUnit;
   };
 
   const handleAdd = () => {
     const finalBrand = brand === 'custom' ? customBrand : brand;
-    if (!finalBrand || !productName || !tubesPerUnit) {
+    const finalBaseUnit = getFinalBaseUnit();
+    
+    if (!finalBrand || !productName || !baseUnitsPerUnit || !finalBaseUnit) {
       toast.error('Please fill all required fields');
       return;
     }
@@ -194,8 +215,9 @@ export function ProductConversionAdmin() {
     createMutation.mutate({
       brand: finalBrand,
       product_name: productName,
+      base_unit: finalBaseUnit,
       unit_type: unitType,
-      tubes_per_unit: parseFloat(tubesPerUnit),
+      base_units_per_unit: parseFloat(baseUnitsPerUnit),
       is_active: true,
     });
   };
@@ -205,7 +227,7 @@ export function ProductConversionAdmin() {
     
     updateMutation.mutate({
       id: editConversion.id,
-      tubes_per_unit: editConversion.tubes_per_unit,
+      base_units_per_unit: editConversion.base_units_per_unit,
       is_active: editConversion.is_active,
     });
   };
@@ -222,6 +244,11 @@ export function ProductConversionAdmin() {
     return acc;
   }, {} as Record<string, ProductConversion[]>);
 
+  const getBaseUnitLabel = (unit: string) => {
+    const found = BASE_UNITS.find(u => u.value === unit);
+    return found ? found.label : unit;
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -233,7 +260,7 @@ export function ProductConversionAdmin() {
                 Product Conversions
               </CardTitle>
               <CardDescription>
-                Define how BOX, HALF_BOX, and TUBE units convert to base tubes
+                Define unit conversion rules for each product. Each product has its own base unit (TUBE, BAG, WRAP, etc.)
               </CardDescription>
             </div>
             <Button onClick={() => setIsAddOpen(true)}>
@@ -265,8 +292,9 @@ export function ProductConversionAdmin() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Product</TableHead>
+                        <TableHead>Base Unit</TableHead>
                         <TableHead>Unit Type</TableHead>
-                        <TableHead className="text-right">Tubes/Unit</TableHead>
+                        <TableHead className="text-right">Units/Type</TableHead>
                         <TableHead className="text-center">Active</TableHead>
                         <TableHead className="w-[100px]">Actions</TableHead>
                       </TableRow>
@@ -276,10 +304,15 @@ export function ProductConversionAdmin() {
                         <TableRow key={conv.id} className={!conv.is_active ? 'opacity-50' : ''}>
                           <TableCell className="font-medium">{conv.product_name}</TableCell>
                           <TableCell>
+                            <Badge variant="secondary" className="bg-primary/10 text-primary">
+                              {getBaseUnitLabel(conv.base_unit)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
                             <Badge variant="outline">{conv.unit_type.replace('_', ' ')}</Badge>
                           </TableCell>
                           <TableCell className="text-right font-mono">
-                            {conv.tubes_per_unit}
+                            1 {conv.unit_type.replace('_', ' ')} = {conv.base_units_per_unit} {getBaseUnitLabel(conv.base_unit)}s
                           </TableCell>
                           <TableCell className="text-center">
                             <Switch
@@ -322,16 +355,16 @@ export function ProductConversionAdmin() {
 
       {/* Add Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Add Conversion Rule</DialogTitle>
             <DialogDescription>
-              Define how many tubes equal one unit for a specific product
+              Define the base unit and conversion rates for a product
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Brand</Label>
+              <Label>Brand *</Label>
               <Select value={brand} onValueChange={setBrand}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select brand" />
@@ -353,16 +386,49 @@ export function ProductConversionAdmin() {
             </div>
             
             <div className="space-y-2">
-              <Label>Product Name</Label>
+              <Label>Product Name *</Label>
               <Input
-                placeholder="e.g., Standard Tube, Premium Box"
+                placeholder="e.g., Standard Tubes, Premium Bags"
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
+              <Label>Base Unit *</Label>
+              <p className="text-xs text-muted-foreground mb-1">
+                This is the smallest unit you count. Once saved, it cannot be changed.
+              </p>
+              <Select value={baseUnit} onValueChange={setBaseUnit}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {BASE_UNITS.map((bu) => (
+                    <SelectItem key={bu.value} value={bu.value}>
+                      <div className="flex items-center gap-2">
+                        <bu.icon className="h-4 w-4" />
+                        {bu.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="CUSTOM">Custom...</SelectItem>
+                </SelectContent>
+              </Select>
+              {baseUnit === 'CUSTOM' && (
+                <Input
+                  placeholder="Enter custom base unit (e.g., ROLL, SHEET)"
+                  value={customBaseUnit}
+                  onChange={(e) => setCustomBaseUnit(e.target.value.toUpperCase())}
+                />
+              )}
+            </div>
+
+            <div className="space-y-2">
               <Label>Unit Type</Label>
+              <p className="text-xs text-muted-foreground mb-1">
+                The larger packaging unit (e.g., a BOX contains multiple base units)
+              </p>
               <Select value={unitType} onValueChange={(v) => setUnitType(v as any)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -381,17 +447,25 @@ export function ProductConversionAdmin() {
             </div>
 
             <div className="space-y-2">
-              <Label>Tubes Per Unit</Label>
+              <Label>Base Units Per {unitType.replace('_', ' ')} *</Label>
               <Input
                 type="number"
                 min="1"
                 step="1"
                 placeholder="e.g., 20"
-                value={tubesPerUnit}
-                onChange={(e) => setTubesPerUnit(e.target.value)}
+                value={baseUnitsPerUnit}
+                onChange={(e) => setBaseUnitsPerUnit(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                How many individual tubes equal 1 {unitType.toLowerCase().replace('_', ' ')}?
+                How many {getFinalBaseUnit() || 'base units'} equal 1 {unitType.toLowerCase().replace('_', ' ')}?
+              </p>
+            </div>
+
+            {/* Preview */}
+            <div className="p-3 rounded-lg bg-secondary/50 border">
+              <p className="text-sm font-medium">Preview:</p>
+              <p className="text-sm text-muted-foreground">
+                1 {unitType.replace('_', ' ')} = {baseUnitsPerUnit || '?'} {getFinalBaseUnit() || '?'}(s)
               </p>
             </div>
           </div>
@@ -429,6 +503,12 @@ export function ProductConversionAdmin() {
                     <span className="ml-2 font-medium">{editConversion.product_name}</span>
                   </div>
                   <div>
+                    <span className="text-muted-foreground">Base Unit:</span>
+                    <Badge variant="secondary" className="ml-2 bg-primary/10 text-primary">
+                      {getBaseUnitLabel(editConversion.base_unit)}
+                    </Badge>
+                  </div>
+                  <div>
                     <span className="text-muted-foreground">Unit Type:</span>
                     <span className="ml-2 font-medium">{editConversion.unit_type.replace('_', ' ')}</span>
                   </div>
@@ -436,15 +516,15 @@ export function ProductConversionAdmin() {
               </div>
 
               <div className="space-y-2">
-                <Label>Tubes Per Unit</Label>
+                <Label>{getBaseUnitLabel(editConversion.base_unit)}s Per {editConversion.unit_type.replace('_', ' ')}</Label>
                 <Input
                   type="number"
                   min="1"
                   step="1"
-                  value={editConversion.tubes_per_unit}
+                  value={editConversion.base_units_per_unit}
                   onChange={(e) => setEditConversion({
                     ...editConversion,
-                    tubes_per_unit: parseFloat(e.target.value) || 0,
+                    base_units_per_unit: parseFloat(e.target.value) || 0,
                   })}
                 />
               </div>
@@ -482,7 +562,7 @@ export function ProductConversionAdmin() {
               Are you sure you want to delete the conversion rule for{' '}
               <strong>{deleteConversion?.brand} - {deleteConversion?.product_name}</strong>?
               <span className="block mt-2 text-destructive">
-                This may affect tube calculations for existing invoices.
+                This may affect unit calculations for existing invoices.
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -492,8 +572,11 @@ export function ProductConversionAdmin() {
               onClick={() => deleteConversion && deleteMutation.mutate(deleteConversion.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete
+              {deleteMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                'Delete'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
