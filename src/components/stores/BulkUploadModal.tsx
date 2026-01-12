@@ -386,6 +386,37 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                   </Badge>
                 </div>
 
+                {/* Required fields status */}
+                {(() => {
+                  const requiredFields = getRequiredFields(schema);
+                  const mappedFields = Object.values(state.columnMapping).filter(Boolean);
+                  const missingRequired = requiredFields.filter(f => !mappedFields.includes(f.field) && f.field !== 'id');
+                  const allRequiredMapped = missingRequired.length === 0;
+                  
+                  return (
+                    <div className={`p-3 rounded-lg border ${allRequiredMapped ? 'bg-green-500/10 border-green-500/30' : 'bg-yellow-500/10 border-yellow-500/30'}`}>
+                      {allRequiredMapped ? (
+                        <p className="text-sm flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          All required columns mapped. Ready to validate.
+                        </p>
+                      ) : (
+                        <div>
+                          <p className="text-sm flex items-center gap-2 mb-2">
+                            <AlertCircle className="h-4 w-4 text-yellow-600" />
+                            Missing required columns:
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {missingRequired.map(f => (
+                              <Badge key={f.field} variant="destructive" className="text-xs">{f.displayName}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 <div className="border rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
@@ -440,10 +471,25 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                   </Table>
                 </div>
 
-                <div className="flex justify-end gap-2">
-                  <Button onClick={handleValidate} disabled={state.isProcessing}>
-                    {state.isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                    Validate Data
+                {/* Sticky footer with Validate button */}
+                <div className="sticky bottom-0 bg-background pt-4 pb-2 border-t">
+                  <Button 
+                    onClick={handleValidate} 
+                    disabled={state.isProcessing}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {state.isProcessing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Validating...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-4 w-4 mr-2" />
+                        Validate Data
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
