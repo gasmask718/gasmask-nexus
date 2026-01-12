@@ -539,6 +539,17 @@ const StoreDetail = () => {
             currentStoreName={store.name}
             currentStoreGroupId={store.connected_group_id}
             currentStoreOwnerName={store.primary_contact_name}
+            onConnectionChange={() => {
+              // Refresh store data to get updated connected_group_id
+              supabase
+                .from("stores")
+                .select("*")
+                .eq("id", id)
+                .single()
+                .then(({ data }) => {
+                  if (data) setStore(data);
+                });
+            }}
           />
 
           {/* Tube Inventory - Editable with Brand Filter */}

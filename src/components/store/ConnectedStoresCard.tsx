@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Phone, Users, Package, ExternalLink, Store } from 'lucide-react';
+import { MapPin, Phone, Users, Package, ExternalLink, Store, Link2 } from 'lucide-react';
+import { ConnectStoresModal } from './ConnectStoresModal';
 
 interface ConnectedStore {
   id: string;
@@ -40,6 +42,7 @@ interface ConnectedStoresCardProps {
   currentStoreName: string;
   currentStoreGroupId: string | null;
   currentStoreOwnerName: string | null;
+  onConnectionChange?: () => void;
 }
 
 const brandColors: Record<string, string> = {
@@ -67,9 +70,11 @@ export function ConnectedStoresCard({
   storeId, 
   currentStoreName,
   currentStoreGroupId,
-  currentStoreOwnerName 
+  currentStoreOwnerName,
+  onConnectionChange,
 }: ConnectedStoresCardProps) {
   const navigate = useNavigate();
+  const [connectModalOpen, setConnectModalOpen] = useState(false);
 
   const { data: connectedStores, isLoading, error } = useQuery({
     queryKey: ['connected-stores', storeId, currentStoreGroupId, currentStoreOwnerName],
@@ -157,36 +162,50 @@ export function ConnectedStoresCard({
   const canSearchForConnections = !!currentStoreGroupId || !!currentStoreOwnerName;
   const hasConnectedStores = connectedStores && connectedStores.length > 0;
 
-  // Only show card if we can search AND have connections, or if there's an error
-  if (!canSearchForConnections && !hasConnectedStores && !error) {
-    return null;
-  }
-
+  // Always show the card so users can connect stores
   return (
-    <Card className="glass-card border-border/50">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Store className="h-5 w-5 text-primary" />
-          Connected Stores
-          {hasConnectedStores && ` (${connectedStores.length})`}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {error && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Error loading connected stores
-          </p>
-        )}
-        {!canSearchForConnections && !hasConnectedStores && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No connected stores. Set connected_group_id or primary_contact_name to link stores.
-          </p>
-        )}
-        {canSearchForConnections && !hasConnectedStores && !error && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No connected stores found with the same connection settings.
-          </p>
-        )}
+    <>
+      <Card className="glass-card border-border/50">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="flex items-center gap-2">
+            <Store className="h-5 w-5 text-primary" />
+            Connected Locations
+            {hasConnectedStores && ` (${connectedStores.length})`}
+          </CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setConnectModalOpen(true)}
+            className="gap-2"
+          >
+            <Link2 className="h-4 w-4" />
+            Connect Stores
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isLoading && (
+            <div className="flex items-center justify-center py-4">
+              <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+          {error && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Error loading connected stores
+            </p>
+          )}
+          {!isLoading && !hasConnectedStores && !error && (
+            <div className="text-center py-6 space-y-3">
+              <div className="mx-auto w-12 h-12 rounded-full bg-secondary/50 flex items-center justify-center">
+                <Link2 className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">No connected locations</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Click "Connect Stores" to link this store with other locations
+                </p>
+              </div>
+            </div>
+          )}
         {hasConnectedStores && connectedStores.map((store) => {
           const fullAddress = [
             store.address_street,
@@ -298,8 +317,17 @@ export function ConnectedStoresCard({
             </div>
           );
         })}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <ConnectStoresModal
+        open={connectModalOpen}
+        onOpenChange={setConnectModalOpen}
+        storeId={storeId}
+        storeName={currentStoreName}
+        currentGroupId={currentStoreGroupId}
+        onSuccess={onConnectionChange}
+      />
+    </>
   );
 }
-
