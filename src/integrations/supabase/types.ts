@@ -24261,6 +24261,7 @@ export type Database = {
           lat: number | null
           lng: number | null
           market_code: string | null
+          member_since: string | null
           name: string
           neighborhood: string | null
           notes: string | null
@@ -24330,6 +24331,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           market_code?: string | null
+          member_since?: string | null
           name: string
           neighborhood?: string | null
           notes?: string | null
@@ -24399,6 +24401,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           market_code?: string | null
+          member_since?: string | null
           name?: string
           neighborhood?: string | null
           notes?: string | null

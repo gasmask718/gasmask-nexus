@@ -40,6 +40,7 @@ import { InvoiceHistoryCard } from "@/components/store/InvoiceHistoryCard";
 // OrderHistoryCard removed - Invoice History is the single source of truth
 import { CreateStoreInvoiceModal } from "@/components/store/CreateStoreInvoiceModal";
 import { ConnectedStoresCard } from "@/components/store/ConnectedStoresCard";
+import { MemberSinceDisplay } from "@/components/store/MemberSinceDisplay";
 import {
   MapPin,
   Phone,
@@ -1134,13 +1135,7 @@ const StoreDetail = () => {
               </div>
               <Separator />
               
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Member Since</p>
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  {new Date(store.created_at).toLocaleDateString()}
-                </div>
-              </div>
+              <MemberSinceDisplay storeId={id || ""} />
             </CardContent>
           </Card>
 

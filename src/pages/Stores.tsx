@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2 } from 'lucide-react';
+import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
@@ -54,6 +54,8 @@ interface Store {
   payment_type: string | null;
   contacts: StoreContact[];
   tubeInventory: TubeInventory[];
+  owner_name: string | null;
+  connectedStoresCount: number;
 }
 
 const Stores = () => {
@@ -155,7 +157,7 @@ const Stores = () => {
       // Fetch from store_master - explicitly filter by simulation mode
       const { data: storesData, error: storesError } = await supabase
         .from('store_master')
-        .select('id, store_name, store_type, address, city, state, zip, phone, is_simulation')
+        .select('id, store_name, store_type, address, city, state, zip, phone, owner_name, is_simulation')
         .eq('is_simulation', simulationMode)
         .order('store_name');
 
@@ -178,9 +180,11 @@ const Stores = () => {
         sticker_door: false,
         sticker_instore: false,
         sticker_phone: false,
-        payment_type: null,
+        payment_type: null as string | null,
         contacts: [] as StoreContact[],
         tubeInventory: [] as TubeInventory[],
+        owner_name: store.owner_name || null,
+        connectedStoresCount: 0,
       }));
 
       // Fetch contacts for these stores
@@ -254,6 +258,23 @@ const Stores = () => {
             store.tubeInventory = inventoryByStore[store.id] || [];
           });
         }
+
+        // Calculate connected stores count based on owner_name
+        // Stores with the same owner_name are considered connected
+        const ownerNameCounts = mappedStores.reduce((acc, store) => {
+          if (store.owner_name) {
+            if (!acc[store.owner_name]) acc[store.owner_name] = [];
+            acc[store.owner_name].push(store.id);
+          }
+          return acc;
+        }, {} as Record<string, string[]>);
+
+        mappedStores.forEach(store => {
+          if (store.owner_name && ownerNameCounts[store.owner_name]) {
+            // Count excludes the store itself
+            store.connectedStoresCount = ownerNameCounts[store.owner_name].length - 1;
+          }
+        });
       }
 
       return mappedStores;
@@ -688,6 +709,12 @@ const Stores = () => {
                       <Badge className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/30">
                         <Sticker className="h-3 w-3 mr-1" />
                         Sticker
+                      </Badge>
+                    )}
+                    {store.connectedStoresCount > 0 && (
+                      <Badge className="text-xs bg-purple-500/10 text-purple-600 border-purple-500/30">
+                        <Link className="h-3 w-3 mr-1" />
+                        {store.connectedStoresCount} Connected
                       </Badge>
                     )}
                   </div>
