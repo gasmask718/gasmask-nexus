@@ -24,7 +24,7 @@ const CRMContactDetail = () => {
       if (!id) return null;
       
       const { data, error } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .select('*, role:customer_roles(id, role_name), borough:boroughs(id, name)')
         .eq('id', id)
         .single();

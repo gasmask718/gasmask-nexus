@@ -447,7 +447,7 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
 
       if (editingContact?.id) {
         const { error } = await supabase
-          .from('crm_contacts')
+          .from('people')
           .update(contactPayload)
           .eq('id', editingContact.id);
         if (error) throw error;
@@ -457,7 +457,7 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
         });
       } else {
         const { error } = await supabase
-          .from('crm_contacts')
+          .from('people')
           .insert(contactPayload);
         if (error) throw error;
         toast({

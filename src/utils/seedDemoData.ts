@@ -103,7 +103,7 @@ export async function seedDemoData(businessId: string) {
     }));
 
     const { data: insertedContacts, error: contactsError } = await supabase
-      .from('crm_contacts')
+      .from('people')
       .insert(contactsToInsert)
       .select();
 

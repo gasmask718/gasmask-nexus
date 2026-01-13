@@ -36,7 +36,7 @@ const CommunicationCampaignNew = () => {
     enabled: !!currentBusiness?.id && step === 2,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .select('*')
         .eq('business_id', currentBusiness!.id)
         .order('name');

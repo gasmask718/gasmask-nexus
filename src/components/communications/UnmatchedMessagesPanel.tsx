@@ -26,7 +26,7 @@ export default function UnmatchedMessagesPanel() {
         .from('unmatched_messages')
         .select(`
           *,
-          suggested_contact:crm_contacts(id, name, phone, email)
+          suggested_contact:people(id, name, phone, email)
         `)
         .eq('business_id', currentBusiness.id)
         .eq('status', 'pending')
@@ -45,7 +45,7 @@ export default function UnmatchedMessagesPanel() {
       if (!currentBusiness?.id) return [];
 
       const { data, error } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .select('id, name, phone, email')
         .eq('business_id', currentBusiness.id)
         .order('name');

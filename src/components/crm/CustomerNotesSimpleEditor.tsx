@@ -28,7 +28,7 @@ export const CustomerNotesSimpleEditor = ({
     setSaving(true);
     try {
       const { error } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .update({ notes })
         .eq('id', contactId)
         .eq('business_id', currentBusiness.id);

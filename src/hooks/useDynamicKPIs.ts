@@ -53,7 +53,7 @@ const ENTITY_TABLE_MAP: Record<string, string> = {
   vehicles: 'vehicles',
   crm_partners: 'crm_partners',
   crm_customers: 'crm_customers',
-  crm_contacts: 'crm_contacts',
+  crm_contacts: 'people',
   crm_deals: 'crm_deals',
   bookings: 'bookings',
   store_master: 'store_master',
@@ -143,8 +143,8 @@ async function executeTableQuery(
         if (error) throw error;
         return count || 0;
       }
-      case 'crm_contacts': {
-        let query = supabase.from('crm_contacts').select('*', { count: 'exact', head: true });
+      case 'people': {
+        let query = supabase.from('people').select('*', { count: 'exact', head: true });
         query = applyConditions(query, conditionType, config);
         const { count, error } = await query;
         if (error) throw error;

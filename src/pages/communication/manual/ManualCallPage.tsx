@@ -42,7 +42,7 @@ const ManualCallPage = () => {
     queryFn: async () => {
       if (!searchTerm || searchTerm.length < 2) return [];
       const { data, error } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .select('id, name, phone, email, organization')
         .or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
         .limit(10);

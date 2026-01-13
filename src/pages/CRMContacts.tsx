@@ -42,7 +42,7 @@ const CRMContacts = () => {
       if (!selectedBusiness?.id) return [];
       
       const { data, error } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .select('*, borough:boroughs(id, name), role:customer_roles(id, role_name)')
         .eq('business_id', selectedBusiness.id)
         .order('last_contact_date', { ascending: false, nullsFirst: false});

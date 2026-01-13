@@ -25,7 +25,7 @@ const CRMFollowUps = () => {
         .from('communication_logs')
         .select(`
           *,
-          contact:crm_contacts(id, name, type),
+          contact:people(id, name, type),
           store:stores(id, name),
           created_by_profile:profiles!communication_logs_created_by_fkey(name)
         `)

@@ -100,7 +100,7 @@ export default function DialerPage() {
     queryKey: ['comm-contacts', context.businessId, contactSearch],
     queryFn: async () => {
       const query = supabase
-        .from('crm_contacts')
+        .from('people')
         .select('*')
         .order('name')
         .limit(50);

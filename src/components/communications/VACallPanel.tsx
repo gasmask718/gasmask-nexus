@@ -38,7 +38,7 @@ export default function VACallPanel({ brand, brandColor = '#6366f1', contactId, 
 
   const fetchContacts = async () => {
     const { data } = await supabase
-      .from('crm_contacts')
+      .from('people')
       .select('*')
       .order('name');
     setContacts(data || []);

@@ -36,7 +36,7 @@ export const QuickAddContactForm = ({ onSuccess }: QuickAddContactFormProps) => 
 
     setLoading(true);
     try {
-      const { error } = await supabase.from('crm_contacts').insert({
+      const { error } = await supabase.from('people').insert({
         business_id: selectedBusiness.id,
         name: formData.name,
         email: formData.email || null,
