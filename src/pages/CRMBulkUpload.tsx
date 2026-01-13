@@ -246,14 +246,11 @@ export default function CRMBulkUpload() {
                   Optional Fields ({getOptionalFields(schema).length})
                 </h4>
                 <div className="flex flex-wrap gap-2">
-                  {getOptionalFields(schema).slice(0, 6).map(f => (
+                  {getOptionalFields(schema).map(f => (
                     <Badge key={f.field} variant="outline" className="bg-blue-500/10">
                       {f.displayName}
                     </Badge>
                   ))}
-                  {getOptionalFields(schema).length > 6 && (
-                    <Badge variant="outline">+{getOptionalFields(schema).length - 6} more</Badge>
-                  )}
                 </div>
               </div>
             </div>
