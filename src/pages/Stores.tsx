@@ -45,6 +45,7 @@ interface Store {
   address_state: string;
   address_zip: string;
   phone: string;
+  alt_phone: string | null;
   status: string;
   tags: string[];
   sells_flowers: boolean;
@@ -175,6 +176,7 @@ const Stores = () => {
         address_state: store.state || '',
         address_zip: store.zip || '',
         phone: store.phone || '',
+        alt_phone: null as string | null,
         status: 'active', // Default status
         tags: [] as string[],
         sells_flowers: false,
@@ -258,6 +260,30 @@ const Stores = () => {
           
           mappedStores.forEach(store => {
             store.tubeInventory = inventoryByStore[store.id] || [];
+          });
+        }
+
+        // Fetch phone numbers from legacy stores table
+        const { data: legacyStoresData, error: legacyError } = await supabase
+          .from('stores')
+          .select('id, phone, alt_phone')
+          .in('id', storeIds);
+
+        if (!legacyError && legacyStoresData) {
+          const phonesByStore = legacyStoresData.reduce((acc, store) => {
+            acc[store.id] = { phone: store.phone, alt_phone: store.alt_phone };
+            return acc;
+          }, {} as Record<string, { phone: string | null; alt_phone: string | null }>);
+
+          mappedStores.forEach(store => {
+            const legacyPhones = phonesByStore[store.id];
+            if (legacyPhones) {
+              // Use store_master phone if available, otherwise fall back to legacy stores phone
+              if (!store.phone && legacyPhones.phone) {
+                store.phone = legacyPhones.phone;
+              }
+              store.alt_phone = legacyPhones.alt_phone;
+            }
           });
         }
 
@@ -643,22 +669,30 @@ const Stores = () => {
                     </div>
                   </div>
                   
-                  {/* Store Phone - fallback to primary contact's phone */}
-                  {(() => {
-                    const primaryContact = store.contacts.find(c => c.is_primary);
-                    const phoneToShow = store.phone || primaryContact?.phone || store.contacts[0]?.phone;
-                    return phoneToShow ? (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Phone className="h-4 w-4" />
-                        <span>{phoneToShow}</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Phone className="h-4 w-4" />
-                        <span>No phone on file</span>
-                      </div>
-                    );
-                  })()}
+                  {/* Phone Numbers - matching StoreContactInfoCard display */}
+                  <div className="flex items-start gap-2 text-sm">
+                    <Phone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                    <div className="flex-1">
+                      {store.phone || store.alt_phone ? (
+                        <div className="space-y-1">
+                          {store.phone && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-foreground">{store.phone}</span>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">Store</Badge>
+                            </div>
+                          )}
+                          {store.alt_phone && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-foreground">{store.alt_phone}</span>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-green-600 border-green-500/30">Cell</Badge>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">No phone on file</span>
+                      )}
+                    </div>
+                  </div>
 
                   {/* All Contacts */}
                   <div className="flex items-start gap-2 text-sm">
