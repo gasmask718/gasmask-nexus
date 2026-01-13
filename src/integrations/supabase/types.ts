@@ -8695,6 +8695,50 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_partner_notes: {
+        Row: {
+          business_slug: string
+          created_at: string
+          created_by: string
+          id: string
+          is_pinned: boolean
+          is_simulation: boolean
+          note_text: string
+          partner_id: string
+          updated_at: string
+        }
+        Insert: {
+          business_slug: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_pinned?: boolean
+          is_simulation?: boolean
+          note_text: string
+          partner_id: string
+          updated_at?: string
+        }
+        Update: {
+          business_slug?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_pinned?: boolean
+          is_simulation?: boolean
+          note_text?: string
+          partner_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_partner_notes_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "crm_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_partners: {
         Row: {
           availability_rules: string | null
