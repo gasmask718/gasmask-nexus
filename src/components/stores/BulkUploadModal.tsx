@@ -1,10 +1,12 @@
-/**
- * Bulk Upload Modal for Store Directory
- * Reuses CRM bulk upload logic in a modal interface
- */
-
-import { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useState, useEffect, useRef } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,28 +16,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertCircle,
   Check,
@@ -48,12 +37,12 @@ import {
   Store,
   Users,
   FileText,
-  Layers
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { useBulkUpload } from '@/hooks/useBulkUpload';
-import { getSchemaByType, getRequiredFields, getOptionalFields } from '@/lib/uploadSchemas';
-import { downloadErrorReport } from '@/lib/uploadValidation';
+  Layers,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useBulkUpload } from "@/hooks/useBulkUpload";
+import { getSchemaByType, getRequiredFields, getOptionalFields } from "@/lib/uploadSchemas";
+import { downloadErrorReport } from "@/lib/uploadValidation";
 
 interface BulkUploadModalProps {
   open: boolean;
@@ -64,40 +53,41 @@ interface BulkUploadModalProps {
 
 const uploadTypes = [
   {
-    id: 'stores',
-    name: 'Stores Only',
-    description: 'Import store/location data',
+    id: "stores",
+    name: "Stores Only",
+    description: "Import store/location data",
     icon: Store,
-    color: 'bg-blue-500'
+    color: "bg-blue-500",
   },
   {
-    id: 'store_contacts',
-    name: 'Stores + Contacts',
-    description: 'Import contacts linked to stores',
+    id: "store_contacts",
+    name: "Stores + Contacts",
+    description: "Import contacts linked to stores",
     icon: Users,
-    color: 'bg-green-500'
+    color: "bg-green-500",
   },
   {
-    id: 'store_notes',
-    name: 'Stores + Notes',
-    description: 'Import historical notes for stores',
+    id: "store_notes",
+    name: "Stores + Notes",
+    description: "Import historical notes for stores",
     icon: FileText,
-    color: 'bg-purple-500'
+    color: "bg-purple-500",
   },
   {
-    id: 'combined_crm',
-    name: 'Full CRM Upload',
-    description: 'Stores + Contacts + Notes in one file',
+    id: "combined_crm",
+    name: "Full CRM Upload",
+    description: "Stores + Contacts + Notes in one file",
     icon: Layers,
-    color: 'bg-orange-500'
-  }
+    color: "bg-orange-500",
+  },
 ];
 
 export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUpload = true }: BulkUploadModalProps) {
   const { state, reset, setUploadType, parseFile, updateColumnMapping, validateData, performImport } = useBulkUpload();
   const [dragActive, setDragActive] = useState(false);
-  const [importMode, setImportMode] = useState<'append' | 'upsert'>('append');
+  const [importMode, setImportMode] = useState<"append" | "upsert">("append");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const successCallbackFired = useRef(false);
 
@@ -105,12 +95,12 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
 
   // Watch for completion and trigger success callback via useEffect
   useEffect(() => {
-    if (state.stage === 'COMPLETE' && state.importResult && onSuccess && !successCallbackFired.current) {
+    if (state.stage === "COMPLETE" && state.importResult && onSuccess && !successCallbackFired.current) {
       successCallbackFired.current = true;
       onSuccess();
     }
     // Reset the flag when modal closes or state resets
-    if (state.stage === 'SELECT_TYPE') {
+    if (state.stage === "SELECT_TYPE") {
       successCallbackFired.current = false;
     }
   }, [state.stage, state.importResult, onSuccess]);
@@ -123,9 +113,9 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
+    if (e.type === "dragenter" || e.type === "dragover") {
       setDragActive(true);
-    } else if (e.type === 'dragleave') {
+    } else if (e.type === "dragleave") {
       setDragActive(false);
     }
   };
@@ -134,7 +124,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileSelect(e.dataTransfer.files[0]);
     }
@@ -142,23 +132,23 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
 
   const handleFileSelect = async (file: File) => {
     if (!state.uploadType) {
-      toast.error('Please select an upload type first');
+      toast.error("Please select an upload type first");
       return;
     }
 
     const validTypes = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
-      'text/csv'
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
+      "text/csv",
     ];
-    
-    if (!validTypes.includes(file.type) && !file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
-      toast.error('Please upload an Excel (.xlsx) or CSV file');
+
+    if (!validTypes.includes(file.type) && !file.name.endsWith(".csv") && !file.name.endsWith(".xlsx")) {
+      toast.error("Please upload an Excel (.xlsx) or CSV file");
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('File size must be less than 10MB');
+      toast.error("File size must be less than 10MB");
       return;
     }
 
@@ -172,7 +162,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
   const handleProceedToUpload = () => {
     // Only allow if import is explicitly ready
     if (!state.isImportReady || validCount === 0) {
-      toast.error('Cannot proceed - resolve validation errors first');
+      toast.error("Cannot proceed - resolve validation errors first");
       return;
     }
     setShowConfirmDialog(true);
@@ -181,13 +171,13 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
   const handleConfirmImport = async () => {
     setShowConfirmDialog(false);
     if (!state.uploadType || !state.isImportReady) {
-      toast.error('Import not ready');
+      toast.error("Import not ready");
       return;
     }
-    
+
     // Set initial progress
     setImportProgress({ current: 0, total: validCount });
-    
+
     await performImport(importMode);
   };
 
@@ -197,34 +187,43 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
 
   const downloadTemplate = () => {
     if (!schema) return;
-    
+
     const required = getRequiredFields(schema);
     const optional = getOptionalFields(schema);
-    const headers = [...required.map(f => f.field), ...optional.map(f => f.field)];
-    
-    const csvContent = headers.join(',') + '\n';
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const headers = [...required.map((f) => f.field), ...optional.map((f) => f.field)];
+
+    const csvContent = headers.join(",") + "\n";
+    const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `${state.uploadType}_template.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('Template downloaded');
+    toast.success("Template downloaded");
   };
 
   // Determine current step based on stage (deterministic)
   const getStepNumber = () => {
     switch (state.stage) {
-      case 'SELECT_TYPE': return 1;
-      case 'FILE_UPLOADED': return 2;
-      case 'MAPPED': return 3;
-      case 'VALIDATED': return 4;
-      case 'IMPORT_READY': return 4; // Still on step 4, but import is unlocked
-      case 'IMPORTING': return 4;
-      case 'COMPLETE': return 5;
-      case 'ERROR': return state.step === 'select' ? 1 : 4;
-      default: return 1;
+      case "SELECT_TYPE":
+        return 1;
+      case "FILE_UPLOADED":
+        return 2;
+      case "MAPPED":
+        return 3;
+      case "VALIDATED":
+        return 4;
+      case "IMPORT_READY":
+        return 4; // Still on step 4, but import is unlocked
+      case "IMPORTING":
+        return 4;
+      case "COMPLETE":
+        return 5;
+      case "ERROR":
+        return state.step === "select" ? 1 : 4;
+      default:
+        return 1;
     }
   };
 
@@ -239,400 +238,406 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Bulk Upload Stores & CRM Data</DialogTitle>
-          <DialogDescription>
-            Upload Excel or CSV files to import stores, contacts, and notes
-          </DialogDescription>
-        </DialogHeader>
+      {/* Key Change 1: max-h-[90vh], flex-col, and p-0 on DialogContent.
+        This creates the rigid container for scrolling. 
+      */}
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+        {/* Fixed Header */}
+        <div className="px-6 py-4 border-b">
+          <DialogHeader>
+            <DialogTitle>Bulk Upload Stores & CRM Data</DialogTitle>
+            <DialogDescription>Upload Excel or CSV files to import stores, contacts, and notes</DialogDescription>
+          </DialogHeader>
 
-        {!canUpload ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium">Permission Required</p>
-            <p className="text-sm text-muted-foreground">
-              You do not have permission to upload stores.
-            </p>
-          </div>
-        ) : (
-          <ScrollArea className="flex-1 pr-4">
-            {/* Step Indicator - Responsive */}
-            <div className="flex items-center justify-between gap-1 mb-6 overflow-x-auto pb-2">
-              {['Type', 'Upload', 'Map', 'Validate', 'Import'].map((step, i) => (
+          {/* Step Indicator - Now inside fixed header area so it doesn't scroll away */}
+          {canUpload && (
+            <div className="flex items-center justify-between gap-1 mt-4 overflow-x-auto pb-2">
+              {["Type", "Upload", "Map", "Validate", "Import"].map((step, i) => (
                 <div key={step} className="flex items-center gap-1 shrink-0">
-                  <div className={`flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full text-[10px] sm:text-xs font-medium ${
-                    currentStep > i + 1 ? 'bg-green-500 text-white' :
-                    currentStep === i + 1 ? 'bg-primary text-primary-foreground' :
-                    'bg-muted text-muted-foreground'
-                  }`}>
+                  <div
+                    className={`flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full text-[10px] sm:text-xs font-medium ${
+                      currentStep > i + 1
+                        ? "bg-green-500 text-white"
+                        : currentStep === i + 1
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                    }`}
+                  >
                     {currentStep > i + 1 ? <Check className="h-3 w-3 sm:h-4 sm:w-4" /> : i + 1}
                   </div>
-                  <span className={`text-[10px] sm:text-xs hidden sm:inline ${currentStep === i + 1 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                  <span
+                    className={`text-[10px] sm:text-xs hidden sm:inline ${currentStep === i + 1 ? "text-foreground font-medium" : "text-muted-foreground"}`}
+                  >
                     {step}
                   </span>
                   {i < 4 && <div className="w-4 sm:w-8 h-px bg-border" />}
                 </div>
               ))}
             </div>
+          )}
+        </div>
 
-            {/* Step 1: Select Upload Type */}
-            {currentStep === 1 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                {uploadTypes.map((type) => {
-                  const Icon = type.icon;
-                  return (
-                    <button
-                      key={type.id}
-                      onClick={() => setUploadType(type.id)}
-                      className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border border-border hover:border-primary hover:bg-accent transition-colors text-left"
-                    >
-                      <div className={`p-2 rounded-lg ${type.color} text-white shrink-0`}>
-                        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm sm:text-base">{type.name}</p>
-                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{type.description}</p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Step 2: Upload File */}
-            {currentStep === 2 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Button variant="ghost" size="sm" onClick={() => reset()}>
-                    ← Back
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={downloadTemplate}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download Template
-                  </Button>
-                </div>
-
-                <div
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${
-                    dragActive ? 'border-primary bg-primary/5' : 'border-border'
-                  }`}
-                >
-                  {state.isProcessing ? (
-                    <div className="flex flex-col items-center gap-4">
-                      <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                      <p>Parsing file...</p>
-                    </div>
-                  ) : (
-                    <>
-                      <FileSpreadsheet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-lg font-medium mb-2">Drag & drop your file here</p>
-                      <p className="text-sm text-muted-foreground mb-4">or click to browse</p>
-                      <Input
-                        type="file"
-                        accept=".xlsx,.csv"
-                        className="max-w-xs mx-auto"
-                        onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
-                      />
-                      <p className="text-xs text-muted-foreground mt-4">
-                        Accepts .xlsx and .csv files up to 10MB
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                {schema && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
-                    <div className="p-3 sm:p-4 rounded-lg bg-secondary/50">
-                      <p className="text-xs sm:text-sm font-medium mb-2 flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4 text-destructive" />
-                        Required Columns
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {getRequiredFields(schema).map(field => (
-                          <Badge key={field.field} variant="destructive" className="text-[10px] sm:text-xs">{field.displayName}</Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="p-3 sm:p-4 rounded-lg bg-secondary/50">
-                      <p className="text-xs sm:text-sm font-medium mb-2 flex items-center gap-2">
-                        <Check className="h-4 w-4 text-muted-foreground" />
-                        Optional Columns
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {getOptionalFields(schema).map(field => (
-                          <Badge key={field.field} variant="outline" className="text-[10px] sm:text-xs">{field.displayName}</Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Step 3: Column Mapping */}
-            {currentStep === 3 && state.rawData.length > 0 && schema && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Button variant="ghost" size="sm" onClick={() => reset()}>
-                    ← Start Over
-                  </Button>
-                  <Badge variant="outline">
-                    {state.rawData.length} rows detected
-                  </Badge>
-                </div>
-
-                {/* Required fields status */}
-                {(() => {
-                  const requiredFields = getRequiredFields(schema);
-                  const mappedFields = Object.values(state.columnMapping).filter(Boolean);
-                  const missingRequired = requiredFields.filter(f => !mappedFields.includes(f.field) && f.field !== 'id');
-                  const allRequiredMapped = missingRequired.length === 0;
-                  
-                  return (
-                    <div className={`p-3 rounded-lg border ${allRequiredMapped ? 'bg-green-500/10 border-green-500/30' : 'bg-yellow-500/10 border-yellow-500/30'}`}>
-                      {allRequiredMapped ? (
-                        <p className="text-sm flex items-center gap-2">
-                          <CheckCircle2 className="h-4 w-4 text-green-500" />
-                          All required columns mapped. Ready to validate.
-                        </p>
-                      ) : (
-                        <div>
-                          <p className="text-sm flex items-center gap-2 mb-2">
-                            <AlertCircle className="h-4 w-4 text-yellow-600" />
-                            Missing required columns:
-                          </p>
-                          <div className="flex flex-wrap gap-1">
-                            {missingRequired.map(f => (
-                              <Badge key={f.field} variant="destructive" className="text-xs">{f.displayName}</Badge>
-                            ))}
-                          </div>
+        {!canUpload ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center flex-1">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-lg font-medium">Permission Required</p>
+            <p className="text-sm text-muted-foreground">You do not have permission to upload stores.</p>
+          </div>
+        ) : (
+          /* Key Change 2: ScrollArea gets flex-1 to take remaining height */
+          <ScrollArea className="flex-1">
+            <div className="p-6">
+              {/* Step 1: Select Upload Type */}
+              {currentStep === 1 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {uploadTypes.map((type) => {
+                    const Icon = type.icon;
+                    return (
+                      <button
+                        key={type.id}
+                        onClick={() => setUploadType(type.id)}
+                        className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border border-border hover:border-primary hover:bg-accent transition-colors text-left"
+                      >
+                        <div className={`p-2 rounded-lg ${type.color} text-white shrink-0`}>
+                          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                <div className="border rounded-lg overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-1/3">File Column</TableHead>
-                        <TableHead className="w-1/3">Maps To</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {state.columns.map(col => {
-                        const mapping = state.columnMapping[col];
-                        const schemaField = schema.fields.find(c => c.field === mapping);
-                        const isRequired = schemaField?.required;
-                        
-                        return (
-                          <TableRow key={col}>
-                            <TableCell className="font-mono text-sm">{col}</TableCell>
-                            <TableCell>
-                              <Select
-                                value={mapping || '_unmapped'}
-                                onValueChange={(val) => updateColumnMapping(col, val === '_unmapped' ? '' : val)}
-                              >
-                                <SelectTrigger className="h-8">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="_unmapped">-- Skip --</SelectItem>
-                                  {schema.fields.map(schemaCol => (
-                                    <SelectItem key={schemaCol.field} value={schemaCol.field}>
-                                      {schemaCol.displayName} {schemaCol.required && '*'}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell>
-                              {mapping ? (
-                                isRequired ? (
-                                  <Badge className="bg-green-500">Required ✓</Badge>
-                                ) : (
-                                  <Badge variant="outline">Optional</Badge>
-                                )
-                              ) : (
-                                <Badge variant="secondary">Skipped</Badge>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm sm:text-base">{type.name}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">{type.description}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
+              )}
 
-                {/* Sticky footer with Validate button */}
-                <div className="sticky bottom-0 bg-background pt-4 pb-2 border-t">
-                  <Button 
-                    onClick={handleValidate} 
-                    disabled={state.isProcessing}
-                    className="w-full"
-                    size="lg"
+              {/* Step 2: Upload File */}
+              {currentStep === 2 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Button variant="ghost" size="sm" onClick={() => reset()}>
+                      ← Back
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={downloadTemplate}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Template
+                    </Button>
+                  </div>
+
+                  <div
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                    className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${
+                      dragActive ? "border-primary bg-primary/5" : "border-border"
+                    }`}
                   >
                     {state.isProcessing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Validating...
-                      </>
+                      <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                        <p>Parsing file...</p>
+                      </div>
                     ) : (
                       <>
-                        <Check className="h-4 w-4 mr-2" />
-                        Validate Data
+                        <FileSpreadsheet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <p className="text-lg font-medium mb-2">Drag & drop your file here</p>
+                        <p className="text-sm text-muted-foreground mb-4">or click to browse</p>
+                        <Input
+                          type="file"
+                          accept=".xlsx,.csv"
+                          className="max-w-xs mx-auto"
+                          onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+                        />
+                        <p className="text-xs text-muted-foreground mt-4">Accepts .xlsx and .csv files up to 10MB</p>
                       </>
                     )}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Validation Results */}
-            {currentStep === 4 && state.validationResult && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Button variant="ghost" size="sm" onClick={() => reset()}>
-                    ← Start Over
-                  </Button>
-                  <div className="flex gap-2">
-                    <Badge className="bg-green-500">{validCount} Valid</Badge>
-                    <Badge variant="destructive">{invalidCount} Invalid</Badge>
                   </div>
-                </div>
 
-                {invalidCount > 0 && (
-                  <div className="border rounded-lg p-4 bg-destructive/5 border-destructive/20">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="font-medium flex items-center gap-2">
-                        <XCircle className="h-4 w-4 text-destructive" />
-                        {invalidCount} rows have errors
-                      </p>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          const errors = state.validationResult?.rows
-                            .filter(r => r.status === 'error')
-                            .flatMap(r => r.errors) || [];
-                          downloadErrorReport(errors);
-                        }}
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download Error Report
-                      </Button>
-                    </div>
-                    <ScrollArea className="h-32">
-                      {state.validationResult.rows.filter(r => r.status === 'error').slice(0, 10).map((row, i) => (
-                        <div key={i} className="text-sm py-1 border-b border-border/50 last:border-0">
-                          <span className="font-mono text-muted-foreground">Row {row.rowNumber}:</span>{' '}
-                          {row.errors.map(e => `${e.column}: ${e.error}`).join('; ')}
+                  {schema && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
+                      <div className="p-3 sm:p-4 rounded-lg bg-secondary/50">
+                        <p className="text-xs sm:text-sm font-medium mb-2 flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 text-destructive" />
+                          Required Columns
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {getRequiredFields(schema).map((field) => (
+                            <Badge key={field.field} variant="destructive" className="text-[10px] sm:text-xs">
+                              {field.displayName}
+                            </Badge>
+                          ))}
                         </div>
-                      ))}
-                    </ScrollArea>
-                  </div>
-                )}
-
-                {validCount > 0 && !state.isProcessing && (
-                  <div className="border rounded-lg p-4 bg-green-500/5 border-green-500/20">
-                    <div className="flex items-center gap-2 mb-3">
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <p className="font-medium">{validCount} rows ready to import</p>
+                      </div>
+                      <div className="p-3 sm:p-4 rounded-lg bg-secondary/50">
+                        <p className="text-xs sm:text-sm font-medium mb-2 flex items-center gap-2">
+                          <Check className="h-4 w-4 text-muted-foreground" />
+                          Optional Columns
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {getOptionalFields(schema).map((field) => (
+                            <Badge key={field.field} variant="outline" className="text-[10px] sm:text-xs">
+                              {field.displayName}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="flex items-center gap-4 mb-4">
-                      <Label>Import Mode:</Label>
-                      <Select value={importMode} onValueChange={(v) => setImportMode(v as any)}>
-                        <SelectTrigger className="w-48">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="append">Append Only (Skip Existing)</SelectItem>
-                          <SelectItem value="upsert">Update Existing</SelectItem>
-                        </SelectContent>
-                      </Select>
+                  )}
+                </div>
+              )}
+
+              {/* Step 3: Column Mapping */}
+              {currentStep === 3 && state.rawData.length > 0 && schema && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Button variant="ghost" size="sm" onClick={() => reset()}>
+                      ← Start Over
+                    </Button>
+                    <Badge variant="outline">{state.rawData.length} rows detected</Badge>
+                  </div>
+
+                  {/* Required fields status */}
+                  {(() => {
+                    const requiredFields = getRequiredFields(schema);
+                    const mappedFields = Object.values(state.columnMapping).filter(Boolean);
+                    const missingRequired = requiredFields.filter(
+                      (f) => !mappedFields.includes(f.field) && f.field !== "id",
+                    );
+                    const allRequiredMapped = missingRequired.length === 0;
+
+                    return (
+                      <div
+                        className={`p-3 rounded-lg border ${allRequiredMapped ? "bg-green-500/10 border-green-500/30" : "bg-yellow-500/10 border-yellow-500/30"}`}
+                      >
+                        {allRequiredMapped ? (
+                          <p className="text-sm flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            All required columns mapped. Ready to validate.
+                          </p>
+                        ) : (
+                          <div>
+                            <p className="text-sm flex items-center gap-2 mb-2">
+                              <AlertCircle className="h-4 w-4 text-yellow-600" />
+                              Missing required columns:
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                              {missingRequired.map((f) => (
+                                <Badge key={f.field} variant="destructive" className="text-xs">
+                                  {f.displayName}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Key Change 3: Overflow wrapper for table */}
+                  <div className="border rounded-lg overflow-x-auto">
+                    <Table className="min-w-[600px]">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-1/3">File Column</TableHead>
+                          <TableHead className="w-1/3">Maps To</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {state.columns.map((col) => {
+                          const mapping = state.columnMapping[col];
+                          const schemaField = schema.fields.find((c) => c.field === mapping);
+                          const isRequired = schemaField?.required;
+
+                          return (
+                            <TableRow key={col}>
+                              <TableCell className="font-mono text-sm whitespace-nowrap">{col}</TableCell>
+                              <TableCell>
+                                <Select
+                                  value={mapping || "_unmapped"}
+                                  onValueChange={(val) => updateColumnMapping(col, val === "_unmapped" ? "" : val)}
+                                >
+                                  <SelectTrigger className="h-8 w-full min-w-[140px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="_unmapped">-- Skip --</SelectItem>
+                                    {schema.fields.map((schemaCol) => (
+                                      <SelectItem key={schemaCol.field} value={schemaCol.field}>
+                                        {schemaCol.displayName} {schemaCol.required && "*"}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell>
+                                {mapping ? (
+                                  isRequired ? (
+                                    <Badge className="bg-green-500">Required ✓</Badge>
+                                  ) : (
+                                    <Badge variant="outline">Optional</Badge>
+                                  )
+                                ) : (
+                                  <Badge variant="secondary">Skipped</Badge>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Validation Results */}
+              {currentStep === 4 && state.validationResult && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Button variant="ghost" size="sm" onClick={() => reset()}>
+                      ← Start Over
+                    </Button>
+                    <div className="flex gap-2">
+                      <Badge className="bg-green-500">{validCount} Valid</Badge>
+                      <Badge variant="destructive">{invalidCount} Invalid</Badge>
                     </div>
                   </div>
-                )}
 
-                {/* Import Progress */}
-                {state.isProcessing && (
-                  <div className="border rounded-lg p-6 bg-primary/5 border-primary/20">
-                    <div className="flex flex-col items-center gap-4">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      <p className="font-medium">Importing records...</p>
-                      <p className="text-sm text-muted-foreground">
-                        Please do not close this window or navigate away.
-                      </p>
-                      <Progress value={50} className="w-full max-w-xs" />
+                  {invalidCount > 0 && (
+                    <div className="border rounded-lg p-4 bg-destructive/5 border-destructive/20">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
+                        <p className="font-medium flex items-center gap-2">
+                          <XCircle className="h-4 w-4 text-destructive" />
+                          {invalidCount} rows have errors
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const errors =
+                              state.validationResult?.rows
+                                .filter((r) => r.status === "error")
+                                .flatMap((r) => r.errors) || [];
+                            downloadErrorReport(errors);
+                          }}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download Error Report
+                        </Button>
+                      </div>
+                      <ScrollArea className="h-32 rounded border bg-background">
+                        <div className="p-2 space-y-2">
+                          {state.validationResult.rows
+                            .filter((r) => r.status === "error")
+                            .slice(0, 50)
+                            .map((row, i) => (
+                              <div key={i} className="text-xs sm:text-sm py-1 border-b border-border/50 last:border-0">
+                                <span className="font-mono text-muted-foreground mr-2">Row {row.rowNumber}:</span>
+                                {row.errors.map((e) => `${e.column}: ${e.error}`).join("; ")}
+                              </div>
+                            ))}
+                        </div>
+                      </ScrollArea>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Sticky Footer with Proceed Button - Always visible when on validation step */}
-                <div className="sticky bottom-0 bg-background pt-4 pb-2 border-t mt-4">
+                  {validCount > 0 && !state.isProcessing && (
+                    <div className="border rounded-lg p-4 bg-green-500/5 border-green-500/20">
+                      <div className="flex items-center gap-2 mb-3">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <p className="font-medium">{validCount} rows ready to import</p>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mb-4">
+                        <Label>Import Mode:</Label>
+                        <Select value={importMode} onValueChange={(v) => setImportMode(v as any)}>
+                          <SelectTrigger className="w-full sm:w-64">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="append">Append Only (Skip Existing)</SelectItem>
+                            <SelectItem value="upsert">Update Existing</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Import Progress */}
+                  {state.isProcessing && (
+                    <div className="border rounded-lg p-6 bg-primary/5 border-primary/20">
+                      <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="font-medium">Importing records...</p>
+                        <p className="text-sm text-muted-foreground">Please do not close this window.</p>
+                        <Progress value={50} className="w-full max-w-xs" />
+                      </div>
+                    </div>
+                  )}
+
                   {!canProceedToUpload && validCount === 0 && (
                     <div className="text-center text-sm text-muted-foreground mb-2">
                       All rows have errors. Fix the data and re-upload.
                     </div>
                   )}
-                  <Button 
-                    onClick={handleProceedToUpload} 
-                    disabled={!canProceedToUpload}
-                    className="w-full"
-                    size="lg"
-                    title={!canProceedToUpload ? "Resolve validation errors before proceeding." : undefined}
-                  >
-                    {state.isProcessing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Importing...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-2" />
-                        {canProceedToUpload 
-                          ? `Proceed to Upload (${validCount} records)` 
-                          : 'Resolve Errors to Continue'}
-                      </>
-                    )}
+                </div>
+              )}
+
+              {/* Step 5: Complete */}
+              {currentStep === 5 && state.importResult && (
+                <div className="text-center py-8">
+                  <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold mb-2">Upload Complete!</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-md mx-auto mb-6">
+                    <div className="p-3 rounded-lg bg-green-500/10">
+                      <p className="text-2xl font-bold text-green-500">{state.importResult.success}</p>
+                      <p className="text-xs text-muted-foreground">Inserted</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-yellow-500/10">
+                      <p className="text-2xl font-bold text-yellow-500">{state.importResult.skipped}</p>
+                      <p className="text-xs text-muted-foreground">Skipped</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-destructive/10">
+                      <p className="text-2xl font-bold text-destructive">{state.importResult.failed}</p>
+                      <p className="text-xs text-muted-foreground">Failed</p>
+                    </div>
+                  </div>
+                  <Button onClick={handleClose} className="w-full sm:w-auto">
+                    Close
                   </Button>
                 </div>
-              </div>
+              )}
+            </div>
+          </ScrollArea>
+        )}
+
+        {/* Key Change 4: Fixed Footer Layer 
+          The Action buttons are now OUTSIDE the ScrollArea.
+        */}
+        {canUpload && currentStep !== 5 && (currentStep === 3 || currentStep === 4) && (
+          <div className="p-4 border-t bg-background mt-auto">
+            {currentStep === 3 && (
+              <Button onClick={handleValidate} disabled={state.isProcessing} className="w-full" size="lg">
+                {state.isProcessing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Validating...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4 mr-2" /> Validate Data
+                  </>
+                )}
+              </Button>
             )}
 
-            {/* Step 5: Complete */}
-            {currentStep === 5 && state.importResult && (
-              <div className="text-center py-8">
-                <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                <h3 className="text-xl font-bold mb-2">Upload Complete!</h3>
-                <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mb-6">
-                  <div className="p-3 rounded-lg bg-green-500/10">
-                    <p className="text-2xl font-bold text-green-500">{state.importResult.success}</p>
-                    <p className="text-xs text-muted-foreground">Inserted</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-yellow-500/10">
-                    <p className="text-2xl font-bold text-yellow-500">{state.importResult.skipped}</p>
-                    <p className="text-xs text-muted-foreground">Skipped</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-destructive/10">
-                    <p className="text-2xl font-bold text-destructive">{state.importResult.failed}</p>
-                    <p className="text-xs text-muted-foreground">Failed</p>
-                  </div>
-                </div>
-                <Button onClick={handleClose}>
-                  Close
-                </Button>
-              </div>
+            {currentStep === 4 && !state.isProcessing && (
+              <Button onClick={handleProceedToUpload} disabled={!canProceedToUpload} className="w-full" size="lg">
+                <Upload className="h-4 w-4 mr-2" />
+                {canProceedToUpload ? `Proceed to Upload (${validCount} records)` : "Resolve Errors to Continue"}
+              </Button>
             )}
-          </ScrollArea>
+          </div>
         )}
       </DialogContent>
 
@@ -646,11 +651,13 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                 You are about to upload <strong>{validCount}</strong> rows into the CRM.
               </p>
               <p>
-                This action will {importMode === 'append' ? 'insert new records only (existing will be skipped)' : 'insert new records and update existing ones'}.
+                This action will{" "}
+                {importMode === "append"
+                  ? "insert new records only (existing will be skipped)"
+                  : "insert new records and update existing ones"}
+                .
               </p>
-              <p className="text-destructive font-medium">
-                This action cannot be undone.
-              </p>
+              <p className="text-destructive font-medium">This action cannot be undone.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
