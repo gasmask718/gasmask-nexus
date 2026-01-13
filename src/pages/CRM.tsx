@@ -55,7 +55,7 @@ const CRM = () => {
       if (!selectedBusiness?.id) return [];
       
       const { data, error } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .select('*')
         .eq('business_id', selectedBusiness.id)
         .order('last_contact_date', { ascending: false, nullsFirst: false });
@@ -74,7 +74,7 @@ const CRM = () => {
         .from('communication_logs')
         .select(`
           *,
-          contact:crm_contacts(name),
+          contact:people(name),
           store:stores(name),
           created_by_profile:profiles!communication_logs_created_by_fkey(name)
         `)
@@ -94,7 +94,7 @@ const CRM = () => {
       
       const { data, error } = await supabase
         .from('communication_logs')
-        .select('*, contact:crm_contacts(name), store:stores(name)')
+        .select('*, contact:people(name), store:stores(name)')
         .eq('business_id', selectedBusiness.id)
         .eq('follow_up_required', true)
         .gte('follow_up_date', new Date().toISOString())

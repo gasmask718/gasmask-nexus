@@ -100,7 +100,7 @@ const CRMDataExport = () => {
 
       if (exportType === 'contacts') {
         const { data: contacts, error } = await supabase
-          .from('crm_contacts')
+          .from('people')
           .select('*')
           .eq('business_id', currentBusiness.id);
         if (error) throw error;
@@ -109,7 +109,7 @@ const CRMDataExport = () => {
       } else if (exportType === 'logs') {
         const { data: logs, error } = await supabase
           .from('communication_logs')
-          .select('*, contact:crm_contacts(name), store:stores(name)')
+          .select('*, contact:people(name), store:stores(name)')
           .eq('business_id', currentBusiness.id);
         if (error) throw error;
         data = logs || [];
@@ -117,7 +117,7 @@ const CRMDataExport = () => {
       } else if (exportType === 'full') {
         // Export all CRM data
         const [contacts, logs] = await Promise.all([
-          supabase.from('crm_contacts').select('*').eq('business_id', currentBusiness.id),
+          supabase.from('people').select('*').eq('business_id', currentBusiness.id),
           supabase.from('communication_logs').select('*').eq('business_id', currentBusiness.id),
         ]);
         

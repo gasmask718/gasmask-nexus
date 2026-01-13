@@ -2573,6 +2573,44 @@ export type Database = {
           },
         ]
       }
+      ambassador_role_data: {
+        Row: {
+          commission_rate: number | null
+          created_at: string | null
+          person_id: string
+          tier: string | null
+          total_earnings: number | null
+          tracking_code: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          commission_rate?: number | null
+          created_at?: string | null
+          person_id: string
+          tier?: string | null
+          total_earnings?: number | null
+          tracking_code?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          commission_rate?: number | null
+          created_at?: string | null
+          person_id?: string
+          tier?: string | null
+          total_earnings?: number | null
+          tracking_code?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_role_data_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ambassadors: {
         Row: {
           created_at: string
@@ -3605,6 +3643,44 @@ export type Database = {
           zone?: string | null
         }
         Relationships: []
+      }
+      biker_role_data: {
+        Row: {
+          bike_type: string | null
+          created_at: string | null
+          delivery_zone: string | null
+          is_available: boolean | null
+          max_capacity_kg: number | null
+          person_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          bike_type?: string | null
+          created_at?: string | null
+          delivery_zone?: string | null
+          is_available?: boolean | null
+          max_capacity_kg?: number | null
+          person_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          bike_type?: string | null
+          created_at?: string | null
+          delivery_zone?: string | null
+          is_available?: boolean | null
+          max_capacity_kg?: number | null
+          person_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "biker_role_data_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       biker_routes: {
         Row: {
@@ -7321,7 +7397,7 @@ export type Database = {
             foreignKeyName: "communication_logs_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
-            referencedRelation: "crm_contacts"
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
           {
@@ -8114,151 +8190,6 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: true
             referencedRelation: "businesses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      crm_contacts: {
-        Row: {
-          address_city: string | null
-          address_state: string | null
-          address_street: string | null
-          address_zip: string | null
-          ai_keywords: string[] | null
-          ai_last_summary: string | null
-          ai_next_action: string | null
-          ai_priority: number | null
-          ai_sentiment: string | null
-          borough_id: string | null
-          business_id: string | null
-          company_id: string | null
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          email: string | null
-          id: string
-          is_simulation: boolean
-          last_contact_date: string | null
-          name: string
-          neighborhood_id: string | null
-          notes: string | null
-          organization: string | null
-          owner_id: string | null
-          phone: string | null
-          relationship_score: number | null
-          relationship_status: string
-          role_id: string | null
-          tags: string[] | null
-          type: string
-          updated_at: string
-        }
-        Insert: {
-          address_city?: string | null
-          address_state?: string | null
-          address_street?: string | null
-          address_zip?: string | null
-          ai_keywords?: string[] | null
-          ai_last_summary?: string | null
-          ai_next_action?: string | null
-          ai_priority?: number | null
-          ai_sentiment?: string | null
-          borough_id?: string | null
-          business_id?: string | null
-          company_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          email?: string | null
-          id?: string
-          is_simulation?: boolean
-          last_contact_date?: string | null
-          name: string
-          neighborhood_id?: string | null
-          notes?: string | null
-          organization?: string | null
-          owner_id?: string | null
-          phone?: string | null
-          relationship_score?: number | null
-          relationship_status?: string
-          role_id?: string | null
-          tags?: string[] | null
-          type: string
-          updated_at?: string
-        }
-        Update: {
-          address_city?: string | null
-          address_state?: string | null
-          address_street?: string | null
-          address_zip?: string | null
-          ai_keywords?: string[] | null
-          ai_last_summary?: string | null
-          ai_next_action?: string | null
-          ai_priority?: number | null
-          ai_sentiment?: string | null
-          borough_id?: string | null
-          business_id?: string | null
-          company_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          email?: string | null
-          id?: string
-          is_simulation?: boolean
-          last_contact_date?: string | null
-          name?: string
-          neighborhood_id?: string | null
-          notes?: string | null
-          organization?: string | null
-          owner_id?: string | null
-          phone?: string | null
-          relationship_score?: number | null
-          relationship_status?: string
-          role_id?: string | null
-          tags?: string[] | null
-          type?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crm_contacts_borough_id_fkey"
-            columns: ["borough_id"]
-            isOneToOne: false
-            referencedRelation: "boroughs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_contacts_business_id_fkey"
-            columns: ["business_id"]
-            isOneToOne: false
-            referencedRelation: "businesses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_contacts_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_contacts_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_contacts_neighborhood_id_fkey"
-            columns: ["neighborhood_id"]
-            isOneToOne: false
-            referencedRelation: "neighborhoods"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_contacts_role_id_fkey"
-            columns: ["role_id"]
-            isOneToOne: false
-            referencedRelation: "customer_roles"
             referencedColumns: ["id"]
           },
         ]
@@ -10481,6 +10412,47 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_role_data: {
+        Row: {
+          created_at: string | null
+          is_available: boolean | null
+          license_expiry: string | null
+          license_number: string | null
+          person_id: string
+          region: string | null
+          updated_at: string | null
+          vehicle_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          is_available?: boolean | null
+          license_expiry?: string | null
+          license_number?: string | null
+          person_id: string
+          region?: string | null
+          updated_at?: string | null
+          vehicle_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          is_available?: boolean | null
+          license_expiry?: string | null
+          license_number?: string | null
+          person_id?: string
+          region?: string | null
+          updated_at?: string | null
+          vehicle_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_role_data_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
@@ -18371,6 +18343,151 @@ export type Database = {
           },
         ]
       }
+      people: {
+        Row: {
+          address_city: string | null
+          address_state: string | null
+          address_street: string | null
+          address_zip: string | null
+          ai_keywords: string[] | null
+          ai_last_summary: string | null
+          ai_next_action: string | null
+          ai_priority: number | null
+          ai_sentiment: string | null
+          borough_id: string | null
+          business_id: string | null
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          email: string | null
+          id: string
+          is_simulation: boolean
+          last_contact_date: string | null
+          name: string
+          neighborhood_id: string | null
+          notes: string | null
+          organization: string | null
+          owner_id: string | null
+          phone: string | null
+          relationship_score: number | null
+          relationship_status: string
+          role_id: string | null
+          tags: string[] | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          address_city?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          ai_keywords?: string[] | null
+          ai_last_summary?: string | null
+          ai_next_action?: string | null
+          ai_priority?: number | null
+          ai_sentiment?: string | null
+          borough_id?: string | null
+          business_id?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          id?: string
+          is_simulation?: boolean
+          last_contact_date?: string | null
+          name: string
+          neighborhood_id?: string | null
+          notes?: string | null
+          organization?: string | null
+          owner_id?: string | null
+          phone?: string | null
+          relationship_score?: number | null
+          relationship_status?: string
+          role_id?: string | null
+          tags?: string[] | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          address_city?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          ai_keywords?: string[] | null
+          ai_last_summary?: string | null
+          ai_next_action?: string | null
+          ai_priority?: number | null
+          ai_sentiment?: string | null
+          borough_id?: string | null
+          business_id?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          id?: string
+          is_simulation?: boolean
+          last_contact_date?: string | null
+          name?: string
+          neighborhood_id?: string | null
+          notes?: string | null
+          organization?: string | null
+          owner_id?: string | null
+          phone?: string | null
+          relationship_score?: number | null
+          relationship_status?: string
+          role_id?: string | null
+          tags?: string[] | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contacts_borough_id_fkey"
+            columns: ["borough_id"]
+            isOneToOne: false
+            referencedRelation: "boroughs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "customer_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permissions_matrix: {
         Row: {
           category: string | null
@@ -18397,6 +18514,41 @@ export type Database = {
           permission_name?: string
         }
         Relationships: []
+      }
+      person_roles: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          id: string
+          is_active: boolean | null
+          person_id: string
+          role: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          person_id: string
+          role: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          person_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_roles_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       personal_finance: {
         Row: {
@@ -25792,7 +25944,7 @@ export type Database = {
             foreignKeyName: "unmatched_messages_ai_suggested_contact_id_fkey"
             columns: ["ai_suggested_contact_id"]
             isOneToOne: false
-            referencedRelation: "crm_contacts"
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
           {

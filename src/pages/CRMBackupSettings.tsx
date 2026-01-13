@@ -139,7 +139,7 @@ const CRMBackupSettings = () => {
 
       // Fetch all CRM data
       const [contacts, logs] = await Promise.all([
-        supabase.from('crm_contacts').select('*').eq('business_id', currentBusiness.id),
+        supabase.from('people').select('*').eq('business_id', currentBusiness.id),
         supabase.from('communication_logs').select('*').eq('business_id', currentBusiness.id),
       ]);
 

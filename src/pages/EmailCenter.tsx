@@ -55,7 +55,7 @@ const EmailCenter = () => {
     queryKey: ['contacts-for-email'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .select('id, name, email')
         .not('email', 'is', null)
         .order('name');

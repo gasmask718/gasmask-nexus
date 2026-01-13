@@ -117,7 +117,7 @@ const GlobalCRM = () => {
 
       // Get business contact counts from crm_contacts
       const { data: businessContacts } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .select('business_id')
         .is('deleted_at', null);
       
@@ -153,7 +153,7 @@ const GlobalCRM = () => {
     queryKey: ['global-all-contacts', searchTerm, boroughFilter, neighborhoodFilter, roleFilter, brandFilter],
     queryFn: async () => {
       let query = supabase
-        .from('crm_contacts')
+        .from('people')
         .select(`
           *,
           borough:boroughs(id, name),

@@ -53,7 +53,7 @@ const TextCenter = () => {
     queryKey: ['contacts-for-sms'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .select('id, name, phone')
         .not('phone', 'is', null)
         .order('name');

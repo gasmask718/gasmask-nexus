@@ -149,7 +149,7 @@ const CRMDataImport = () => {
           // Check for duplicates
           if (contactData.email || contactData.phone) {
             const { data: existing } = await supabase
-              .from('crm_contacts')
+              .from('people')
               .select('id')
               .eq('business_id', currentBusiness.id)
               .or(`email.eq.${contactData.email},phone.eq.${contactData.phone}`)
@@ -163,7 +163,7 @@ const CRMDataImport = () => {
           }
 
           const { error: insertError } = await supabase
-            .from('crm_contacts')
+            .from('people')
             .insert(contactData);
 
           if (insertError) {

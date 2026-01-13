@@ -75,7 +75,7 @@ export const matchIncomingMessage = async (
       
       // Check crm_contacts
       const { data: contacts } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .select('id, phone')
         .eq('business_id', businessId)
         .ilike('phone', `%${cleanPhone.slice(-10)}%`)
@@ -98,7 +98,7 @@ export const matchIncomingMessage = async (
       if (stores && stores.length > 0) {
         // Look for primary contact at this store
         const { data: storeContacts } = await supabase
-          .from('crm_contacts')
+          .from('people')
           .select('id')
           .eq('organization', stores[0].id)
           .limit(1);
@@ -115,7 +115,7 @@ export const matchIncomingMessage = async (
     // Try exact match on email
     if (senderEmail) {
       const { data: contacts } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .select('id, email')
         .eq('business_id', businessId)
         .ilike('email', senderEmail)
