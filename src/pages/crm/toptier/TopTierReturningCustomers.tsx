@@ -43,8 +43,9 @@ const TopTierReturningCustomers = () => {
 
   const filteredCustomers = useMemo(() => {
     return customers.filter(customer => {
-      const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = searchTerm === '' ||
+        customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.email?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesState = stateFilter === 'all' || customer.state === stateFilter;
       const matchesTrend = trendFilter === 'all' || customer.trend === trendFilter;
       return matchesSearch && matchesState && matchesTrend;
