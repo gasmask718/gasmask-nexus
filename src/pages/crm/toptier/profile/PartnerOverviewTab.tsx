@@ -10,15 +10,18 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Edit, ExternalLink, Phone, Mail, MapPin, 
   DollarSign, Percent, Calendar, Building2,
   User, Link2, CheckCircle, AlertCircle, Clock,
-  TrendingUp, Eye, Loader2
+  TrendingUp, Eye, Loader2, StickyNote, Plus, Pin
 } from 'lucide-react';
 import { TOPTIER_PARTNER_CATEGORIES, US_STATES } from '@/config/crmBlueprints';
 import { SimulationBadge, useSimulationMode } from '@/contexts/SimulationModeContext';
 import { CommunicationActions } from '@/components/crm/toptier/CommunicationActions';
+import { usePartnerNotes } from '@/hooks/toptier/usePartnerNotes';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -36,6 +39,21 @@ export default function PartnerOverviewTab({ partner, isSimulated, bookings, cam
   const queryClient = useQueryClient();
   const { simulationMode } = useSimulationMode();
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+  const [newNote, setNewNote] = useState('');
+
+  // Fetch notes for the overview section
+  const {
+    notes,
+    isLoading: isLoadingNotes,
+    addNote,
+    isAdding,
+  } = usePartnerNotes(partnerId, isSimulated);
+
+  const handleAddNote = async () => {
+    if (!newNote.trim()) return;
+    await addNote({ noteText: newNote.trim() });
+    setNewNote('');
+  };
   
   const categoryInfo = TOPTIER_PARTNER_CATEGORIES.find(c => c.value === partner?.partner_category);
   
@@ -340,6 +358,82 @@ export default function PartnerOverviewTab({ partner, isSimulated, bookings, cam
               </div>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Notes Section */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <StickyNote className="h-5 w-5" />
+            Notes
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/crm/toptier-experience/partners/profile/${partnerId}`, { state: { tab: 'notes' } })}>
+            <Eye className="h-4 w-4 mr-2" />
+            View All
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Quick Add Note */}
+          <div className="flex gap-2">
+            <Textarea
+              placeholder="Add a quick note..."
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              rows={2}
+              className="flex-1"
+            />
+            <Button 
+              onClick={handleAddNote} 
+              disabled={!newNote.trim() || isAdding}
+              className="shrink-0"
+            >
+              {isAdding ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+
+          {/* Recent Notes Preview */}
+          {isLoadingNotes ? (
+            <div className="space-y-2">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : notes.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">
+              <StickyNote className="h-6 w-6 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No notes yet. Add your first note above.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {notes.slice(0, 3).map((note) => (
+                <div 
+                  key={note.id}
+                  className={`p-3 rounded-lg border ${note.is_pinned ? 'border-yellow-500/50 bg-yellow-500/5' : 'bg-muted/30'}`}
+                >
+                  {note.is_pinned && (
+                    <div className="flex items-center gap-1 text-yellow-600 text-xs mb-1">
+                      <Pin className="h-3 w-3" />
+                      Pinned
+                    </div>
+                  )}
+                  <p className="text-sm line-clamp-2">{note.note_text}</p>
+                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                    <span>{note.creator_name}</span>
+                    <span>{format(new Date(note.created_at), 'MMM d, yyyy')}</span>
+                  </div>
+                </div>
+              ))}
+              {notes.length > 3 && (
+                <p className="text-xs text-muted-foreground text-center">
+                  +{notes.length - 3} more notes
+                </p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
