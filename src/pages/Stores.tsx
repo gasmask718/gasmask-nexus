@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, MapPin, Phone, Plus, User, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload } from 'lucide-react';
+import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import BulkUploadModal from '@/components/stores/BulkUploadModal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -359,21 +359,6 @@ const Stores = () => {
     notSet: stores.filter(s => !s.payment_type).length,
   };
 
-  // Helper to get owners and workers from contacts
-  const getOwners = (contacts: StoreContact[]) =>
-    contacts.filter(contact => {
-      const role = contact.role?.toLowerCase() || '';
-      return role.includes('owner') || Boolean(contact.is_primary);
-    });
-
-  const workerRoleKeywords = ['worker', 'manager', 'staff', 'cashier', 'clerk', 'employee', 'team'];
-
-  const getWorkers = (contacts: StoreContact[]) =>
-    contacts.filter(contact => {
-      const role = contact.role?.toLowerCase() || '';
-      if (!role || role.includes('owner')) return false;
-      return workerRoleKeywords.some(keyword => role.includes(keyword));
-    });
 
   const formatBrandName = (brand: string) => {
     const normalized = brand.toLowerCase();
@@ -585,8 +570,6 @@ const Stores = () => {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredStores.map((store, index) => {
-            const owners = getOwners(store.contacts);
-            const workers = getWorkers(store.contacts);
             const cityStateZip = [store.address_city, store.address_state, store.address_zip]
               .filter(Boolean)
               .join(', ');
@@ -673,25 +656,32 @@ const Stores = () => {
                     </div>
                   )}
 
-                  {/* Owners */}
+                  {/* All Contacts */}
                   <div className="flex items-start gap-2 text-sm">
-                    <User className="h-4 w-4 mt-0.5 text-amber-500 shrink-0" />
-                    <div>
-                      <span className="text-muted-foreground text-xs">Owners: </span>
-                      <span className="font-medium">
-                        {owners.length > 0 ? owners.map(o => o.name).join(', ') : 'Not on file'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Workers */}
-                  <div className="flex items-start gap-2 text-sm">
-                    <Users className="h-4 w-4 mt-0.5 text-blue-500 shrink-0" />
-                    <div>
-                      <span className="text-muted-foreground text-xs">Staff: </span>
-                      <span className="font-medium">
-                        {workers.length > 0 ? workers.map(w => w.name).join(', ') : 'Not on file'}
-                      </span>
+                    <Users className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+                    <div className="flex-1">
+                      <span className="text-muted-foreground text-xs">Contacts: </span>
+                      {store.contacts.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {store.contacts.slice(0, 5).map((contact) => (
+                            <Badge key={contact.id} variant="outline" className="text-xs">
+                              {contact.name}
+                              {contact.role && (
+                                <span className="ml-1 text-muted-foreground">
+                                  ({contact.role.toLowerCase()})
+                                </span>
+                              )}
+                            </Badge>
+                          ))}
+                          {store.contacts.length > 5 && (
+                            <Badge variant="outline" className="text-xs text-muted-foreground">
+                              +{store.contacts.length - 5} more
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="font-medium text-muted-foreground">Not on file</span>
+                      )}
                     </div>
                   </div>
 
