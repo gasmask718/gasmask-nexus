@@ -643,18 +643,22 @@ const Stores = () => {
                     </div>
                   </div>
                   
-                  {/* Store Phone */}
-                  {store.phone ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="h-4 w-4" />
-                      <span>{store.phone}</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="h-4 w-4" />
-                      <span>No phone on file</span>
-                    </div>
-                  )}
+                  {/* Store Phone - fallback to primary contact's phone */}
+                  {(() => {
+                    const primaryContact = store.contacts.find(c => c.is_primary);
+                    const phoneToShow = store.phone || primaryContact?.phone || store.contacts[0]?.phone;
+                    return phoneToShow ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Phone className="h-4 w-4" />
+                        <span>{phoneToShow}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Phone className="h-4 w-4" />
+                        <span>No phone on file</span>
+                      </div>
+                    );
+                  })()}
 
                   {/* All Contacts */}
                   <div className="flex items-start gap-2 text-sm">
