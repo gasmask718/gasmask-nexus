@@ -209,11 +209,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* RESPONSIVE CONTAINER:
-         1. w-[95vw]: Take up 95% of screen width on mobile
-         2. h-[90vh]: Fixed height to force internal scrolling
-         3. flex-col: Stack header, body, footer
-      */}
       <DialogContent className="w-[95vw] max-w-4xl h-[90vh] flex flex-col p-0 gap-0 overflow-hidden outline-none">
         {/* --- FIXED HEADER --- */}
         <div className="px-4 sm:px-6 py-4 border-b shrink-0 bg-background z-10">
@@ -221,7 +216,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
             <DialogTitle className="text-lg sm:text-xl">Bulk Upload Stores & CRM Data</DialogTitle>
           </DialogHeader>
 
-          {/* Stepper - Scrollable horizontally on very small screens */}
+          {/* Stepper */}
           {canUpload && (
             <div className="mt-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
               <div className="flex items-center justify-between min-w-[300px]">
@@ -258,7 +253,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
             <p className="text-sm text-muted-foreground">You do not have permission to upload stores.</p>
           </div>
         ) : (
-          /* --- SCROLLABLE BODY CONTENT --- */
+          /* --- SCROLLABLE BODY --- */
           <ScrollArea className="flex-1 w-full">
             <div className="p-4 sm:p-6 pb-24">
               {/* Step 1: Select Type */}
@@ -330,7 +325,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                     )}
                   </div>
 
-                  {/* Schema Info - Responsive Grid */}
                   {schema && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="p-4 rounded-lg bg-orange-500/5 border border-orange-200 dark:border-orange-900/50">
@@ -409,26 +403,40 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                     );
                   })()}
 
-                  {/* RESPONSIVE TABLE WRAPPER: Ensures horizontal scroll on small screens */}
+                  {/* RESPONSIVE TABLE WRAPPER */}
                   <div className="border rounded-lg overflow-hidden flex flex-col">
                     <div className="overflow-x-auto">
-                      <Table className="min-w-[600px] sm:min-w-full">
+                      <Table className="min-w-[700px] sm:min-w-full">
                         <TableHeader className="bg-muted/50">
                           <TableRow>
-                            <TableHead className="w-[30%]">File Column</TableHead>
-                            <TableHead className="w-[40%]">Map To CRM Field</TableHead>
-                            <TableHead className="w-[30%]">Status</TableHead>
+                            <TableHead className="w-[25%]">File Header</TableHead>
+                            <TableHead className="w-[25%] text-muted-foreground">Sample Data (Row 1)</TableHead>
+                            <TableHead className="w-[30%]">Map To CRM Field</TableHead>
+                            <TableHead className="w-[20%]">Requirement</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {state.columns.map((col) => {
                             const mapping = state.columnMapping[col];
                             const schemaField = schema.fields.find((c) => c.field === mapping);
+                            // Detect sample data from first row of rawData
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            const sampleValue = (state.rawData[0] as any)?.[col];
 
                             return (
                               <TableRow key={col}>
                                 <TableCell className="font-medium text-sm truncate max-w-[150px]" title={col}>
                                   {col}
+                                </TableCell>
+                                <TableCell
+                                  className="text-xs text-muted-foreground font-mono truncate max-w-[150px]"
+                                  title={String(sampleValue)}
+                                >
+                                  {sampleValue !== undefined && sampleValue !== null ? (
+                                    String(sampleValue)
+                                  ) : (
+                                    <span className="italic opacity-50">Empty</span>
+                                  )}
                                 </TableCell>
                                 <TableCell>
                                   <Select
@@ -515,7 +523,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                         </Button>
                       </div>
 
-                      {/* NESTED SCROLL: Keeps error list from taking over the whole page */}
                       <ScrollArea className="h-[250px] bg-background/50">
                         <div className="p-2 divide-y divide-border/50">
                           {state.validationResult.rows
