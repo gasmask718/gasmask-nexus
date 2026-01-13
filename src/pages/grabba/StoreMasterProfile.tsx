@@ -236,6 +236,10 @@ export default function StoreMasterProfile() {
 
   return (
     <div className="space-y-6">
+      {/* DEBUG BANNER — PROVES STORE MASTER PROFILE IS MOUNTED */}
+      <div className="p-2 mb-2 rounded bg-red-600 text-white text-sm font-bold">
+        🔴 STORE MASTER PROFILE ACTIVE — ROLE TABS SHOULD BE VISIBLE — storeId: {id}
+      </div>
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* TOP HEADER — Store Name ALWAYS at top, from store_master.name              */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
