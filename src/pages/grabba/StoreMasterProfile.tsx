@@ -3,9 +3,11 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Phone, Mail, MapPin, DollarSign, Package, 
-  ChevronRight, MessageSquare, ArrowLeft, Store, Truck, AlertCircle, Loader2
+  ChevronRight, MessageSquare, ArrowLeft, Store, Truck, AlertCircle, Loader2,
+  Users, Car, Bike
 } from 'lucide-react';
 import { StickerStatusCard } from '@/components/store/StickerStatusCard';
 import { useQuery } from '@tanstack/react-query';
@@ -335,11 +337,47 @@ export default function StoreMasterProfile() {
           <StoreContactsSection storeId={id || ''} storeName={storeMaster.store_name} />
 
           {/* ═══════════════════════════════════════════════════════════════════════════ */}
-          {/* ROLE SECTIONS — Ambassadors, Drivers, Bikers                                */}
+          {/* ROLE TABS — Ambassadors, Drivers, Bikers (ALWAYS RENDERED)                  */}
+          {/* These tabs render unconditionally per master prompt contract                */}
           {/* ═══════════════════════════════════════════════════════════════════════════ */}
-          <StoreRoleSection storeId={id || ''} storeName={storeMaster.store_name} role="ambassador" />
-          <StoreRoleSection storeId={id || ''} storeName={storeMaster.store_name} role="driver" />
-          <StoreRoleSection storeId={id || ''} storeName={storeMaster.store_name} role="biker" />
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                Store People
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Tabs defaultValue="ambassadors" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="ambassadors" className="text-xs">
+                    <Users className="h-3 w-3 mr-1" />
+                    Ambassadors
+                  </TabsTrigger>
+                  <TabsTrigger value="drivers" className="text-xs">
+                    <Car className="h-3 w-3 mr-1" />
+                    Drivers
+                  </TabsTrigger>
+                  <TabsTrigger value="bikers" className="text-xs">
+                    <Bike className="h-3 w-3 mr-1" />
+                    Bikers
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="ambassadors" className="mt-3">
+                  <StoreRoleSection storeId={id || ''} storeName={storeMaster.store_name} role="ambassador" embedded />
+                </TabsContent>
+
+                <TabsContent value="drivers" className="mt-3">
+                  <StoreRoleSection storeId={id || ''} storeName={storeMaster.store_name} role="driver" embedded />
+                </TabsContent>
+
+                <TabsContent value="bikers" className="mt-3">
+                  <StoreRoleSection storeId={id || ''} storeName={storeMaster.store_name} role="biker" embedded />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Center Panel - V3 AI Future + V4 Memory + V2 Core */}

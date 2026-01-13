@@ -25,6 +25,8 @@ interface StoreRoleSectionProps {
   storeId: string;
   storeName: string;
   role: 'ambassador' | 'driver' | 'biker';
+  /** When true, renders without Card wrapper (for use inside tabs) */
+  embedded?: boolean;
 }
 
 interface StorePerson {
@@ -69,7 +71,7 @@ const ROLE_CONFIG = {
   },
 };
 
-export function StoreRoleSection({ storeId, storeName, role }: StoreRoleSectionProps) {
+export function StoreRoleSection({ storeId, storeName, role, embedded = false }: StoreRoleSectionProps) {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [personToRemove, setPersonToRemove] = useState<StorePerson | null>(null);
@@ -153,7 +155,15 @@ export function StoreRoleSection({ storeId, storeName, role }: StoreRoleSectionP
     setRemoveDialogOpen(true);
   };
 
+  // Loading state
   if (isLoading) {
+    if (embedded) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      );
+    }
     return (
       <Card className="glass-card border-border/50">
         <CardContent className="flex items-center justify-center py-8">
@@ -163,92 +173,79 @@ export function StoreRoleSection({ storeId, storeName, role }: StoreRoleSectionP
     );
   }
 
-  return (
+  // Content for the role section (shared between embedded and card modes)
+  const peopleList = (
     <>
-      <Card className={`glass-card border-border/50 border-l-4 ${config.borderColor}`}>
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <Icon className={`h-5 w-5 ${config.color}`} />
-            {config.label}
-            {storePeople && storePeople.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {storePeople.length}
-              </Badge>
-            )}
-          </CardTitle>
-          <Button size="sm" onClick={() => setAddModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Add {config.singularLabel}
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {!storePeople || storePeople.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground">
-              <Icon className={`h-10 w-10 mx-auto mb-2 opacity-30 ${config.color}`} />
-              <p className="text-sm">No {config.label.toLowerCase()} assigned</p>
-              <p className="text-xs mt-1">Click the button above to add one</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {storePeople.map((sp) => (
-                <div
-                  key={sp.id}
-                  className={`flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`h-9 w-9 rounded-full ${config.bgColor} flex items-center justify-center`}>
-                      <User className={`h-4 w-4 ${config.color}`} />
-                    </div>
-                    <div>
-                      <div className="font-medium text-sm">
-                        {sp.people?.name || 'Unknown'}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        {sp.people?.phone && <span>{sp.people.phone}</span>}
-                        {sp.people?.address_city && (
-                          <span className="opacity-70">• {sp.people.address_city}</span>
-                        )}
-                      </div>
-                    </div>
+      {!storePeople || storePeople.length === 0 ? (
+        <div className="text-center py-6 text-muted-foreground">
+          <Icon className={`h-10 w-10 mx-auto mb-2 opacity-30 ${config.color}`} />
+          <p className="text-sm">No {config.label.toLowerCase()} assigned yet</p>
+          <p className="text-xs mt-1">Click the button above to add one</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {storePeople.map((sp) => (
+            <div
+              key={sp.id}
+              className={`flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor}`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`h-9 w-9 rounded-full ${config.bgColor} flex items-center justify-center`}>
+                  <User className={`h-4 w-4 ${config.color}`} />
+                </div>
+                <div>
+                  <div className="font-medium text-sm">
+                    {sp.people?.name || 'Unknown'}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8"
-                      onClick={() => handleCall(sp.people?.phone || null, sp.people?.name || null)}
-                      disabled={!sp.people?.phone}
-                      title="Call"
-                    >
-                      <Phone className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8"
-                      onClick={() => handleText(sp.people?.phone || null, sp.people?.name || null)}
-                      disabled={!sp.people?.phone}
-                      title="Text"
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => handleRemoveClick(sp)}
-                      title="Remove from store"
-                    >
-                      <UserMinus className="h-4 w-4" />
-                    </Button>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {sp.people?.phone && <span>{sp.people.phone}</span>}
+                    {sp.people?.address_city && (
+                      <span className="opacity-70">• {sp.people.address_city}</span>
+                    )}
                   </div>
                 </div>
-              ))}
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  onClick={() => handleCall(sp.people?.phone || null, sp.people?.name || null)}
+                  disabled={!sp.people?.phone}
+                  title="Call"
+                >
+                  <Phone className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  onClick={() => handleText(sp.people?.phone || null, sp.people?.name || null)}
+                  disabled={!sp.people?.phone}
+                  title="Text"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => handleRemoveClick(sp)}
+                  title="Remove from store"
+                >
+                  <UserMinus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          ))}
+        </div>
+      )}
+    </>
+  );
 
+  // Modals (shared)
+  const modals = (
+    <>
       <AssignPersonModal
         open={addModalOpen}
         onOpenChange={setAddModalOpen}
@@ -283,6 +280,58 @@ export function StoreRoleSection({ storeId, storeName, role }: StoreRoleSectionP
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
+  );
+
+  // Embedded mode: no Card wrapper, compact header + content
+  if (embedded) {
+    return (
+      <>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Icon className={`h-4 w-4 ${config.color}`} />
+            {config.label}
+            {storePeople && storePeople.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {storePeople.length}
+              </Badge>
+            )}
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setAddModalOpen(true)}>
+            <Plus className="h-3 w-3 mr-1" />
+            Add
+          </Button>
+        </div>
+        {peopleList}
+        {modals}
+      </>
+    );
+  }
+
+  // Card mode: full Card wrapper (for standalone use)
+  return (
+    <>
+      <Card className={`glass-card border-border/50 border-l-4 ${config.borderColor}`}>
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <Icon className={`h-5 w-5 ${config.color}`} />
+            {config.label}
+            {storePeople && storePeople.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {storePeople.length}
+              </Badge>
+            )}
+          </CardTitle>
+          <Button size="sm" onClick={() => setAddModalOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add {config.singularLabel}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {peopleList}
+        </CardContent>
+      </Card>
+      {modals}
     </>
   );
 }
