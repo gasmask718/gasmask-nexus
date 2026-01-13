@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { GRABBA_BRAND_CONFIG } from '@/config/grabbaBrands';
 import { useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { StoreContactsSection } from '@/components/store/StoreContactsSection';
+import { StoreRoleSection } from '@/components/store/StoreRoleSection';
 import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import { CustomerMemoryCoreV2 } from '@/components/grabba/CustomerMemoryCoreV2';
 import { StoreAIFuturePanel } from '@/components/grabba/StoreAIFuturePanel';
@@ -332,6 +333,13 @@ export default function StoreMasterProfile() {
 
           {/* Store Contacts */}
           <StoreContactsSection storeId={id || ''} storeName={storeMaster.store_name} />
+
+          {/* ═══════════════════════════════════════════════════════════════════════════ */}
+          {/* ROLE SECTIONS — Ambassadors, Drivers, Bikers                                */}
+          {/* ═══════════════════════════════════════════════════════════════════════════ */}
+          <StoreRoleSection storeId={id || ''} storeName={storeMaster.store_name} role="ambassador" />
+          <StoreRoleSection storeId={id || ''} storeName={storeMaster.store_name} role="driver" />
+          <StoreRoleSection storeId={id || ''} storeName={storeMaster.store_name} role="biker" />
         </div>
 
         {/* Center Panel - V3 AI Future + V4 Memory + V2 Core */}
