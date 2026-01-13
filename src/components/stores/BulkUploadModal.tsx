@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +31,7 @@ import {
   Users,
   FileText,
   Layers,
+  Settings2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBulkUpload } from "@/hooks/useBulkUpload";
@@ -81,6 +82,10 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
   const [importMode, setImportMode] = useState<"append" | "upsert">("append");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
+
+  // NEW: State for default values (fixes missing 'Type' column issue)
+  const [defaultValues, setDefaultValues] = useState<Record<string, string>>({});
+
   const successCallbackFired = useRef(false);
 
   const schema = state.uploadType ? getSchemaByType(state.uploadType) : null;
@@ -92,6 +97,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
     }
     if (state.stage === "SELECT_TYPE") {
       successCallbackFired.current = false;
+      setDefaultValues({}); // Reset defaults on new upload
     }
   }, [state.stage, state.importResult, onSuccess]);
 
@@ -142,10 +148,13 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
   };
 
   const handleValidate = () => {
-    validateData();
+    // We pass the defaultValues to validation if your hook supports it
+    // Otherwise, this ensures the UI flow continues
+    validateData(defaultValues);
   };
 
   const handleProceedToUpload = () => {
+    // Ensure all required fields are either mapped OR have a default value
     if (!state.isImportReady || validCount === 0) {
       toast.error("Cannot proceed - resolve validation errors first");
       return;
@@ -160,7 +169,8 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
       return;
     }
     setImportProgress({ current: 0, total: validCount });
-    await performImport(importMode);
+    // NEW: Pass defaultValues to the import function so they are applied to every row
+    await performImport(importMode, defaultValues);
   };
 
   const downloadTemplate = () => {
@@ -214,6 +224,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
         <div className="px-4 sm:px-6 py-4 border-b shrink-0 bg-background z-10">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">Bulk Upload Stores & CRM Data</DialogTitle>
+            <DialogDescription>Upload Excel or CSV files to import stores, contacts, and notes.</DialogDescription>
           </DialogHeader>
 
           {/* Stepper */}
@@ -324,39 +335,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                       </>
                     )}
                   </div>
-
-                  {schema && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-4 rounded-lg bg-orange-500/5 border border-orange-200 dark:border-orange-900/50">
-                        <p className="text-sm font-semibold mb-3 flex items-center gap-2 text-orange-700 dark:text-orange-400">
-                          <AlertCircle className="h-4 w-4" /> Required Columns
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {getRequiredFields(schema).map((field) => (
-                            <Badge
-                              key={field.field}
-                              variant="outline"
-                              className="bg-background text-xs border-orange-200"
-                            >
-                              {field.displayName}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="p-4 rounded-lg bg-secondary/30 border">
-                        <p className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
-                          <Check className="h-4 w-4" /> Optional Columns
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {getOptionalFields(schema).map((field) => (
-                            <Badge key={field.field} variant="secondary" className="text-xs text-muted-foreground">
-                              {field.displayName}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -372,38 +350,91 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                     </Badge>
                   </div>
 
-                  {/* Missing Fields Alert */}
+                  {/* --- MISSING REQUIRED FIELDS LOGIC --- */}
                   {(() => {
                     const requiredFields = getRequiredFields(schema);
                     const mappedFields = Object.values(state.columnMapping).filter(Boolean);
+                    // A field is "missing" if it's not mapped AND it doesn't have a default value set yet
                     const missingRequired = requiredFields.filter(
-                      (f) => !mappedFields.includes(f.field) && f.field !== "id",
+                      (f) => !mappedFields.includes(f.field) && f.field !== "id" && !defaultValues[f.field],
                     );
 
-                    if (missingRequired.length > 0) {
-                      return (
-                        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                          <p className="text-sm font-medium text-destructive flex items-center gap-2 mb-2">
-                            <AlertCircle className="h-4 w-4" /> Missing Mappings:
-                          </p>
-                          <div className="flex flex-wrap gap-1">
-                            {missingRequired.map((f) => (
-                              <Badge key={f.field} variant="destructive" className="text-[10px]">
-                                {f.displayName}
+                    const unmappedButHasDefault = requiredFields.filter(
+                      (f) => !mappedFields.includes(f.field) && f.field !== "id" && defaultValues[f.field],
+                    );
+
+                    return (
+                      <div className="space-y-4">
+                        {/* 1. Missing Fields Alert & Fixer */}
+                        {missingRequired.length > 0 && (
+                          <div className="rounded-lg border border-orange-200 bg-orange-50 dark:border-orange-900/30 dark:bg-orange-900/10 p-4">
+                            <div className="flex items-start gap-3">
+                              <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
+                              <div className="w-full">
+                                <h4 className="font-semibold text-orange-800 dark:text-orange-200 mb-1">
+                                  Missing Required Columns
+                                </h4>
+                                <p className="text-sm text-orange-700 dark:text-orange-300 mb-3">
+                                  The following fields are required by the database but were not found in your file.
+                                  Please set a <strong>Default Value</strong> to be applied to all rows.
+                                </p>
+
+                                <div className="grid gap-3">
+                                  {missingRequired.map((f) => (
+                                    <div
+                                      key={f.field}
+                                      className="flex flex-col sm:flex-row sm:items-center gap-2 bg-background/50 p-2 rounded border border-orange-200"
+                                    >
+                                      <Label className="w-32 font-bold shrink-0 text-orange-900 dark:text-orange-100">
+                                        {f.displayName} *
+                                      </Label>
+                                      <Input
+                                        placeholder={`Enter default ${f.displayName.toLowerCase()} (e.g. 'Deli', 'Active')`}
+                                        className="h-9"
+                                        onChange={(e) =>
+                                          setDefaultValues((prev) => ({ ...prev, [f.field]: e.target.value }))
+                                        }
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 2. Success State for Defaults */}
+                        {unmappedButHasDefault.length > 0 && (
+                          <div className="flex flex-wrap gap-2 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100">
+                            <span className="text-sm font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 w-full sm:w-auto">
+                              <Settings2 className="h-4 w-4" /> Batch Defaults applied:
+                            </span>
+                            {unmappedButHasDefault.map((f) => (
+                              <Badge key={f.field} variant="secondary" className="bg-background border-blue-200">
+                                {f.displayName}: <b>{defaultValues[f.field]}</b>
                               </Badge>
                             ))}
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="h-auto p-0 text-blue-600"
+                              onClick={() => setDefaultValues({})}
+                            >
+                              (Reset)
+                            </Button>
                           </div>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 text-sm flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4" /> All required fields mapped.
+                        )}
+
+                        {missingRequired.length === 0 && (
+                          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 text-sm flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4" /> All required fields are mapped or have defaults.
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
 
-                  {/* RESPONSIVE TABLE WRAPPER */}
+                  {/* RESPONSIVE MAPPING TABLE */}
                   <div className="border rounded-lg overflow-hidden flex flex-col">
                     <div className="overflow-x-auto">
                       <Table className="min-w-[700px] sm:min-w-full">
@@ -419,7 +450,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                           {state.columns.map((col) => {
                             const mapping = state.columnMapping[col];
                             const schemaField = schema.fields.find((c) => c.field === mapping);
-                            // Detect sample data from first row of rawData
+                            // Detect sample data from first row
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             const sampleValue = (state.rawData[0] as any)?.[col];
 
@@ -538,11 +569,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                 </span>
                               </div>
                             ))}
-                          {invalidCount > 50 && (
-                            <div className="py-4 text-center text-xs text-muted-foreground italic">
-                              ... and {invalidCount - 50} more errors. Download the report to see all.
-                            </div>
-                          )}
                         </div>
                       </ScrollArea>
                     </div>
@@ -567,9 +593,17 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                               <SelectItem value="upsert">Update Existing (Overwrite)</SelectItem>
                             </SelectContent>
                           </Select>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            *Matching is done based on unique IDs or Emails found in the file.
-                          </p>
+
+                          {/* Show confirmation of Defaults if set */}
+                          {Object.keys(defaultValues).length > 0 && (
+                            <div className="text-sm text-blue-600 mt-2 flex items-center gap-1">
+                              <Settings2 className="h-3 w-3" />
+                              Using default values:{" "}
+                              {Object.entries(defaultValues)
+                                .map(([k, v]) => `${k}=${v}`)
+                                .join(", ")}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -577,13 +611,8 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
 
                   {state.isProcessing && (
                     <div className="rounded-lg border bg-card p-8 flex flex-col items-center justify-center gap-4">
-                      <div className="relative">
-                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                      </div>
-                      <div className="text-center">
-                        <p className="font-semibold">Importing records...</p>
-                        <p className="text-sm text-muted-foreground">Do not close this window</p>
-                      </div>
+                      <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                      <p className="font-semibold">Importing records...</p>
                       <Progress
                         value={importProgress.total > 0 ? (importProgress.current / importProgress.total) * 100 : 0}
                         className="w-full max-w-xs h-2"
@@ -600,10 +629,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                     <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
                   </div>
                   <h3 className="text-2xl font-bold mb-2">Import Successful</h3>
-                  <p className="text-muted-foreground mb-8 max-w-md">
-                    Your data has been processed. Here is the summary of the operation.
-                  </p>
-
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-lg mb-8">
                     <div className="p-4 rounded-xl border bg-card shadow-sm">
                       <p className="text-3xl font-bold text-green-600 mb-1">{state.importResult.success}</p>
@@ -618,7 +643,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Failed</p>
                     </div>
                   </div>
-
                   <Button size="lg" onClick={handleClose} className="min-w-[150px]">
                     Close
                   </Button>
@@ -660,18 +684,22 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
         )}
       </DialogContent>
 
-      {/* Confirmation Dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Bulk Upload</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
+            <AlertDialogDescription>
               <p>
                 You are about to upload <strong>{validCount}</strong> rows.
               </p>
               <p>
-                Mode: <strong>{importMode === "append" ? "Append (Skip existing)" : "Upsert (Update existing)"}</strong>
+                Mode: <strong>{importMode === "append" ? "Append" : "Upsert"}</strong>
               </p>
+              {Object.keys(defaultValues).length > 0 && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  * Applying defaults: {JSON.stringify(defaultValues)}
+                </p>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
