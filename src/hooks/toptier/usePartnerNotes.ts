@@ -53,6 +53,10 @@ export function usePartnerNotes(partnerId: string | undefined, isSimulation: boo
     mutationFn: async ({ noteText }: { noteText: string }) => {
       if (!partnerId) throw new Error('Partner ID required');
 
+      // Get current user ID for RLS policy compliance
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
       const { data, error } = await supabase
         .from('crm_partner_notes')
         .insert({
@@ -61,6 +65,7 @@ export function usePartnerNotes(partnerId: string | undefined, isSimulation: boo
           is_simulation: isSimulation,
           note_text: noteText,
           is_pinned: false,
+          created_by: user.id, // Required for RLS policy
         })
         .select()
         .single();
