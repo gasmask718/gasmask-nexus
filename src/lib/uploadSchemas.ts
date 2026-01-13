@@ -203,11 +203,18 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         field: 'phone',
         displayName: 'Phone',
         type: 'phone',
-        required: false,
+        required: true, // REQUIRED - Phone is the primary contact identifier
         source: 'excel',
-        validation: (v) => !v || phoneRegex.test(v) 
-          ? { valid: true } 
-          : { valid: false, error: 'Invalid phone format' }
+        notes: 'Primary identity key for contacts. Required for all person records.',
+        validation: (v) => {
+          if (!v?.trim()) return { valid: false, error: 'Phone number is required for Person records' };
+          if (!phoneRegex.test(v)) return { valid: false, error: 'Invalid phone format' };
+          // Reject placeholder numbers
+          const digits = v.replace(/\D/g, '');
+          if (/^(\d)\1+$/.test(digits)) return { valid: false, error: 'Invalid placeholder phone number' };
+          if (digits.length < 10) return { valid: false, error: 'Phone number must have at least 10 digits' };
+          return { valid: true };
+        }
       },
       {
         field: 'email',
@@ -364,11 +371,18 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         field: 'contact_phone',
         displayName: 'Contact Phone',
         type: 'phone',
-        required: false,
+        required: true, // REQUIRED - Phone is the primary contact identifier
         source: 'excel',
-        validation: (v) => !v || phoneRegex.test(v) 
-          ? { valid: true } 
-          : { valid: false, error: 'Invalid phone format' }
+        notes: 'Primary identity key. Required when creating contact records.',
+        validation: (v) => {
+          if (!v?.trim()) return { valid: false, error: 'Phone number is required for Person records' };
+          if (!phoneRegex.test(v)) return { valid: false, error: 'Invalid phone format' };
+          // Reject placeholder numbers
+          const digits = v.replace(/\D/g, '');
+          if (/^(\d)\1+$/.test(digits)) return { valid: false, error: 'Invalid placeholder phone number' };
+          if (digits.length < 10) return { valid: false, error: 'Phone number must have at least 10 digits' };
+          return { valid: true };
+        }
       },
       {
         field: 'contact_email',
