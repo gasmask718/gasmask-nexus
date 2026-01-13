@@ -39,7 +39,7 @@ export function useDatabaseDiagnostics() {
       
       // Known tables with soft delete
       const tablesWithSoftDelete = [
-        'stores', 'crm_contacts', 'ambassadors', 'wholesalers', 
+        'stores', 'people', 'ambassadors', 'wholesalers', 
         'driver_profiles', 'orders'
       ];
 
@@ -47,7 +47,7 @@ export function useDatabaseDiagnostics() {
       const tables: TableInfo[] = [
         { name: 'orders', hasSoftDelete: true, hasRLS: true },
         { name: 'stores', hasSoftDelete: true, hasRLS: true },
-        { name: 'crm_contacts', hasSoftDelete: true, hasRLS: true },
+        { name: 'people', hasSoftDelete: true, hasRLS: true },
         { name: 'ambassadors', hasSoftDelete: true, hasRLS: true },
         { name: 'wholesalers', hasSoftDelete: true, hasRLS: true },
         { name: 'driver_profiles', hasSoftDelete: true, hasRLS: true },
@@ -63,7 +63,7 @@ export function useDatabaseDiagnostics() {
         { tableName: 'orders', indexName: 'idx_orders_payment_status', columns: 'payment_status' },
         { tableName: 'orders', indexName: 'idx_orders_active', columns: 'deleted_at IS NULL' },
         { tableName: 'stores', indexName: 'idx_stores_active', columns: 'deleted_at IS NULL' },
-        { tableName: 'crm_contacts', indexName: 'idx_crm_contacts_active', columns: 'deleted_at IS NULL' },
+        { tableName: 'people', indexName: 'idx_people_active', columns: 'deleted_at IS NULL' },
         { tableName: 'ambassadors', indexName: 'idx_ambassadors_active', columns: 'deleted_at IS NULL' },
         { tableName: 'wholesalers', indexName: 'idx_wholesalers_active', columns: 'deleted_at IS NULL' },
         { tableName: 'driver_profiles', indexName: 'idx_driver_profiles_active', columns: 'deleted_at IS NULL' },

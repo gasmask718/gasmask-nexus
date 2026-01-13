@@ -39,7 +39,7 @@ serve(async (req) => {
       const cleanPhone = sender_phone.replace(/\D/g, '').slice(-10);
       
       const { data: contacts } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .select('id, store_id, phone, name')
         .eq('business_id', business_id)
         .ilike('phone', `%${cleanPhone}%`)
@@ -54,7 +54,7 @@ serve(async (req) => {
     // Try email match if no phone match
     if (!matchedContact && sender_email) {
       const { data: contacts } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .select('id, store_id, email, name')
         .eq('business_id', business_id)
         .ilike('email', sender_email)
@@ -72,7 +72,7 @@ serve(async (req) => {
 
       // Get recent contacts for this business
       const { data: recentContacts } = await supabase
-        .from('crm_contacts')
+        .from('people')
         .select('id, name, store_id, phone, email')
         .eq('business_id', business_id)
         .order('last_contact_date', { ascending: false })
@@ -153,7 +153,7 @@ Return JSON with:
 
       // Update last contact date
       await supabase
-        .from('crm_contacts')
+        .from('people')
         .update({ last_contact_date: new Date().toISOString() })
         .eq('id', matchedContact.id);
 

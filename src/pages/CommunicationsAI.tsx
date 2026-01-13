@@ -32,7 +32,7 @@ const CommunicationsAI = () => {
         .from('ai_communication_queue')
         .select(`
           *,
-          crm_contacts(name, phone, email),
+          people(name, phone, email),
           stores(name, location_city, location_state),
           profiles!ai_communication_queue_actioned_by_fkey(name),
           influencers(name, username),
@@ -96,7 +96,7 @@ const CommunicationsAI = () => {
   function getEntityName(item: any): string {
     switch (item.entity_type) {
       case 'contact':
-        return item.crm_contacts?.name || 'Contact';
+        return item.people?.name || 'Contact';
       case 'store':
         return item.stores?.name || 'Store';
       case 'driver':

@@ -60,7 +60,7 @@ export default function BrandStoreProfile() {
     queryKey: ["store-contacts", storeId, brandId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("crm_contacts")
+        .from("people")
         .select(`
           *,
           role:customer_roles(id, role_name)

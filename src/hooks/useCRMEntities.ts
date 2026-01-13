@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 const ENTITY_TABLE_MAP: Record<EntityType, string> = {
   partner: 'ambassadors',
   influencer: 'ambassador_profiles', 
-  customer: 'crm_contacts',
+  customer: 'people',
   vehicle: 'vehicles',
   property: 'properties',
   asset: 'assets',
@@ -15,7 +15,7 @@ const ENTITY_TABLE_MAP: Record<EntityType, string> = {
   service: 'services',
   affiliate_link: 'affiliate_clicks',
   store: 'store_master',
-  contact: 'crm_contacts',
+  contact: 'people',
   deal: 'acquisitions_pipeline',
   lead: 'leads_raw',
 };
@@ -106,12 +106,12 @@ export function useCRMEntities({
           .limit(limit);
 
         // Apply business filter if available and table has business_id
-        if (businessId && ['crm_contacts', 'bookings', 'services'].includes(tableName)) {
+        if (businessId && ['people', 'bookings', 'services'].includes(tableName)) {
           query = query.eq('business_id', businessId);
         }
 
         // Apply soft delete filter if table supports it
-        if (['crm_contacts', 'ambassadors', 'ambassador_profiles'].includes(tableName)) {
+        if (['people', 'ambassadors', 'ambassador_profiles'].includes(tableName)) {
           query = query.is('deleted_at', null);
         }
 
@@ -221,7 +221,7 @@ export function useDeleteCRMEntity(categorySlug: CRMCategorySlug, entityType: En
       }
 
       // Use soft delete for supported tables
-      if (['crm_contacts', 'ambassadors', 'ambassador_profiles'].includes(tableName)) {
+      if (['people', 'ambassadors', 'ambassador_profiles'].includes(tableName)) {
         const { error } = await supabase
           .from(tableName as any)
           .update({ deleted_at: new Date().toISOString() })
@@ -268,11 +268,11 @@ export function useCRMEntityCounts(categorySlug: CRMCategorySlug, entityTypes: E
               .select('id', { count: 'exact', head: true });
 
             // Apply filters
-            if (businessId && ['crm_contacts', 'bookings', 'services'].includes(tableName)) {
+            if (businessId && ['people', 'bookings', 'services'].includes(tableName)) {
               query = query.eq('business_id', businessId);
             }
 
-            if (['crm_contacts', 'ambassadors', 'ambassador_profiles'].includes(tableName)) {
+            if (['people', 'ambassadors', 'ambassador_profiles'].includes(tableName)) {
               query = query.is('deleted_at', null);
             }
 
