@@ -175,7 +175,7 @@ const Stores = () => {
         address_city: store.city || '',
         address_state: store.state || '',
         address_zip: store.zip || '',
-        phone: store.phone || '',
+        phone: store.phone ? String(store.phone) : '', // Ensure string
         alt_phone: null as string | null,
         status: 'active', // Default status
         tags: [] as string[],
@@ -271,7 +271,10 @@ const Stores = () => {
 
         if (!legacyError && legacyStoresData) {
           const phonesByStore = legacyStoresData.reduce((acc, store) => {
-            acc[store.id] = { phone: store.phone, alt_phone: store.alt_phone };
+            acc[store.id] = { 
+              phone: store.phone ? String(store.phone) : null, 
+              alt_phone: store.alt_phone ? String(store.alt_phone) : null 
+            };
             return acc;
           }, {} as Record<string, { phone: string | null; alt_phone: string | null }>);
 
