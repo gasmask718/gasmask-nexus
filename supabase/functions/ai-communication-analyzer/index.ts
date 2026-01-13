@@ -28,7 +28,7 @@ serve(async (req) => {
       .from('communication_logs')
       .select(`
         *,
-        crm_contacts(id, name, type),
+        people(id, name, type),
         stores(id, name),
         profiles!communication_logs_driver_id_fkey(id, name),
         influencers(id, name),
@@ -52,7 +52,7 @@ serve(async (req) => {
       if (log.contact_id) {
         entityId = log.contact_id;
         entityType = 'contact';
-        entityName = log.crm_contacts?.name || 'Contact';
+        entityName = log.people?.name || 'Contact';
       } else if (log.store_id) {
         entityId = log.store_id;
         entityType = 'store';
@@ -160,10 +160,10 @@ Provide JSON response with:
           
           const analysis = JSON.parse(jsonContent);
 
-          // Update crm_contacts if it's a contact
+          // Update people table if it's a contact
           if (entityType === 'contact') {
             await supabase
-              .from('crm_contacts')
+              .from('people')
               .update({
                 relationship_score: analysis.relationshipScore,
                 ai_keywords: analysis.keywords,

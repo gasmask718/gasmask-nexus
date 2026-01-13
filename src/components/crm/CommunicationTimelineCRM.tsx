@@ -26,7 +26,7 @@ export const CommunicationTimelineCRM = ({
         .from('communication_logs')
         .select(`
           *,
-          contact:crm_contacts(name),
+          contact:people(name),
           store:stores(name),
           created_by_profile:profiles!communication_logs_created_by_fkey(name)
         `)

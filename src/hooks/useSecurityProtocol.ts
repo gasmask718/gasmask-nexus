@@ -47,7 +47,7 @@ const ELEVATED_ACCESS_TABLES = [
   'payouts',
   'grants',
   'funding_requests',
-  'crm_contacts',
+  'people',
   'crm_calls',
   'crm_messages',
   'portfolio_positions',

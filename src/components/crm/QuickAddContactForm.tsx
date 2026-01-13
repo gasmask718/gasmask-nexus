@@ -54,7 +54,7 @@ export const QuickAddContactForm = ({ onSuccess }: QuickAddContactFormProps) => 
       // Invalidate relevant queries to refresh contact lists
       queryClient.invalidateQueries({ queryKey: ['crm-contacts'] });
       queryClient.invalidateQueries({ queryKey: ['toptier-customers'] });
-      queryClient.invalidateQueries({ queryKey: ['crm_contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['people'] });
 
       toast({
         title: 'Contact Added',

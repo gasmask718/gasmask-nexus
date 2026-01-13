@@ -139,7 +139,7 @@ export default function BrandCRM() {
       if (!brandId) return [];
       
       const { data, error } = await supabase
-        .from("crm_contacts")
+        .from("people")
         .select(`
           *,
           borough:boroughs(id, boro_name),

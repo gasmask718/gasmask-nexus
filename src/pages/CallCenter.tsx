@@ -58,7 +58,7 @@ const CallCenter = () => {
         .from('communication_logs')
         .select(`
           *,
-          contact:crm_contacts(name),
+          contact:people(name),
           store:stores(name)
         `)
         .eq('follow_up_required', true)
