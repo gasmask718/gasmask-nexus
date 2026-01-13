@@ -37,7 +37,7 @@ export const uploadSchemas: Record<string, UploadSchema> = {
     tableName: 'stores',
     displayName: 'Stores',
     description: 'Import store/location data with contacts and notes',
-    naturalKey: ['name', 'company'],
+    naturalKey: ['name'], // Store name is the primary key - company is optional
     relatedTables: ['store_notes', 'store_contacts'],
     fields: [
       {
@@ -55,12 +55,18 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         field: 'company',
         displayName: 'Company',
         type: 'string',
-        required: true,
+        required: false, // OPTIONAL per CRM data model - Person/Store can exist without Company
         source: 'excel',
-        notes: 'GasMask, Grabba, etc.',
-        validation: (v) => v?.trim()?.length > 0 
-          ? { valid: true } 
-          : { valid: false, error: 'Company is required' }
+        notes: 'Legal entity only (e.g., GasMask). Leave blank for individuals or unaffiliated stores.'
+        // No validation - blank is acceptable
+      },
+      {
+        field: 'brand',
+        displayName: 'Brand',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Commercial brand identity (e.g., Grabba). Separate from Company - stores may carry multiple brands.'
       },
       {
         field: 'address_street',
@@ -306,11 +312,17 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         field: 'company',
         displayName: 'Company',
         type: 'string',
-        required: true,
+        required: false, // OPTIONAL - legal entity only, not required for individuals
         source: 'excel',
-        validation: (v) => v?.trim()?.length > 0 
-          ? { valid: true } 
-          : { valid: false, error: 'Company is required' }
+        notes: 'Legal entity only. Leave blank for individuals or unaffiliated stores.'
+      },
+      {
+        field: 'brand',
+        displayName: 'Brand',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Commercial brand (e.g., Grabba). Separate from Company.'
       },
       {
         field: 'address',
