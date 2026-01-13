@@ -371,13 +371,14 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         field: 'contact_phone',
         displayName: 'Contact Phone',
         type: 'phone',
-        required: true, // REQUIRED - Phone is the primary contact identifier
+        required: false, // Optional at row level - but required if contact_name is provided
         source: 'excel',
-        notes: 'Primary identity key. Required when creating contact records.',
+        notes: 'Primary identity key. Required when contact_name is provided.',
         validation: (v) => {
-          if (!v?.trim()) return { valid: false, error: 'Phone number is required for Person records' };
+          // If no phone provided, that's OK (contact is optional)
+          if (!v?.trim()) return { valid: true };
+          // But if provided, validate it properly
           if (!phoneRegex.test(v)) return { valid: false, error: 'Invalid phone format' };
-          // Reject placeholder numbers
           const digits = v.replace(/\D/g, '');
           if (/^(\d)\1+$/.test(digits)) return { valid: false, error: 'Invalid placeholder phone number' };
           if (digits.length < 10) return { valid: false, error: 'Phone number must have at least 10 digits' };

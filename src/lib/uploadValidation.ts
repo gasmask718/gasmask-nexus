@@ -209,6 +209,23 @@ export function validateRow(
     transformedData[schemaField] = value;
   }
   
+  // CROSS-FIELD VALIDATION: Phone is required when contact_name is provided (combined_crm)
+  if (schema.tableName === 'combined') {
+    const hasContactName = transformedData.contact_name && String(transformedData.contact_name).trim();
+    const hasContactPhone = transformedData.contact_phone && String(transformedData.contact_phone).trim();
+    
+    if (hasContactName && !hasContactPhone) {
+      errors.push({
+        row: rowNumber,
+        column: 'contact_phone',
+        columnDisplayName: 'Contact Phone',
+        value: null,
+        error: 'Phone number is required when Contact Name is provided',
+        severity: 'error'
+      });
+    }
+  }
+  
   return {
     rowNumber,
     data: transformedData,
