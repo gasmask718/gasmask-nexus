@@ -31,7 +31,7 @@ import {
   Users,
   FileText,
   Layers,
-  Settings2,
+  ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBulkUpload } from "@/hooks/useBulkUpload";
@@ -77,15 +77,13 @@ const uploadTypes = [
 ];
 
 export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUpload = true }: BulkUploadModalProps) {
+  // Hook usage remains standard (no custom args passed later)
   const { state, reset, setUploadType, parseFile, updateColumnMapping, validateData, performImport } = useBulkUpload();
+
   const [dragActive, setDragActive] = useState(false);
   const [importMode, setImportMode] = useState<"append" | "upsert">("append");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
-
-  // NEW: State for default values (fixes missing 'Type' column issue)
-  const [defaultValues, setDefaultValues] = useState<Record<string, string>>({});
-
   const successCallbackFired = useRef(false);
 
   const schema = state.uploadType ? getSchemaByType(state.uploadType) : null;
@@ -97,7 +95,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
     }
     if (state.stage === "SELECT_TYPE") {
       successCallbackFired.current = false;
-      setDefaultValues({}); // Reset defaults on new upload
     }
   }, [state.stage, state.importResult, onSuccess]);
 
@@ -148,13 +145,11 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
   };
 
   const handleValidate = () => {
-    // We pass the defaultValues to validation if your hook supports it
-    // Otherwise, this ensures the UI flow continues
-    validateData(defaultValues);
+    // FIX: Removed defaultValues argument to match Hook signature
+    validateData();
   };
 
   const handleProceedToUpload = () => {
-    // Ensure all required fields are either mapped OR have a default value
     if (!state.isImportReady || validCount === 0) {
       toast.error("Cannot proceed - resolve validation errors first");
       return;
@@ -169,8 +164,8 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
       return;
     }
     setImportProgress({ current: 0, total: validCount });
-    // NEW: Pass defaultValues to the import function so they are applied to every row
-    await performImport(importMode, defaultValues);
+    // FIX: Removed defaultValues argument to match Hook signature
+    await performImport(importMode);
   };
 
   const downloadTemplate = () => {
@@ -350,167 +345,129 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                     </Badge>
                   </div>
 
-                  {/* --- MISSING REQUIRED FIELDS LOGIC --- */}
+                  {/* --- MISSING FIELDS DETECTION & ALERT --- */}
                   {(() => {
                     const requiredFields = getRequiredFields(schema);
                     const mappedFields = Object.values(state.columnMapping).filter(Boolean);
-                    // A field is "missing" if it's not mapped AND it doesn't have a default value set yet
-                    const missingRequired = requiredFields.filter(
-                      (f) => !mappedFields.includes(f.field) && f.field !== "id" && !defaultValues[f.field],
-                    );
 
-                    const unmappedButHasDefault = requiredFields.filter(
-                      (f) => !mappedFields.includes(f.field) && f.field !== "id" && defaultValues[f.field],
+                    const missingRequired = requiredFields.filter(
+                      (f) => !mappedFields.includes(f.field) && f.field !== "id",
                     );
 
                     return (
                       <div className="space-y-4">
-                        {/* 1. Missing Fields Alert & Fixer */}
-                        {missingRequired.length > 0 && (
-                          <div className="rounded-lg border border-orange-200 bg-orange-50 dark:border-orange-900/30 dark:bg-orange-900/10 p-4">
+                        {/* 1. Missing Fields Alert - Forces user to check file */}
+                        {missingRequired.length > 0 ? (
+                          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
                             <div className="flex items-start gap-3">
-                              <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
-                              <div className="w-full">
-                                <h4 className="font-semibold text-orange-800 dark:text-orange-200 mb-1">
-                                  Missing Required Columns
-                                </h4>
-                                <p className="text-sm text-orange-700 dark:text-orange-300 mb-3">
-                                  The following fields are required by the database but were not found in your file.
-                                  Please set a <strong>Default Value</strong> to be applied to all rows.
+                              <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+                              <div>
+                                <h4 className="font-semibold text-destructive mb-1">Missing Required Columns</h4>
+                                <p className="text-sm text-muted-foreground mb-3">
+                                  Your file is missing the following required columns. The upload cannot proceed without
+                                  them.
+                                  <br />
+                                  <span className="text-xs opacity-80">
+                                    Tip: Add these columns to your Excel file (even if empty) and re-upload.
+                                  </span>
                                 </p>
-
-                                <div className="grid gap-3">
+                                <div className="flex flex-wrap gap-2">
                                   {missingRequired.map((f) => (
-                                    <div
-                                      key={f.field}
-                                      className="flex flex-col sm:flex-row sm:items-center gap-2 bg-background/50 p-2 rounded border border-orange-200"
-                                    >
-                                      <Label className="w-32 font-bold shrink-0 text-orange-900 dark:text-orange-100">
-                                        {f.displayName} *
-                                      </Label>
-                                      <Input
-                                        placeholder={`Enter default ${f.displayName.toLowerCase()} (e.g. 'Deli', 'Active')`}
-                                        className="h-9"
-                                        onChange={(e) =>
-                                          setDefaultValues((prev) => ({ ...prev, [f.field]: e.target.value }))
-                                        }
-                                      />
-                                    </div>
+                                    <Badge key={f.field} variant="destructive">
+                                      {f.displayName}
+                                    </Badge>
                                   ))}
                                 </div>
                               </div>
                             </div>
                           </div>
-                        )}
-
-                        {/* 2. Success State for Defaults */}
-                        {unmappedButHasDefault.length > 0 && (
-                          <div className="flex flex-wrap gap-2 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100">
-                            <span className="text-sm font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 w-full sm:w-auto">
-                              <Settings2 className="h-4 w-4" /> Batch Defaults applied:
-                            </span>
-                            {unmappedButHasDefault.map((f) => (
-                              <Badge key={f.field} variant="secondary" className="bg-background border-blue-200">
-                                {f.displayName}: <b>{defaultValues[f.field]}</b>
-                              </Badge>
-                            ))}
-                            <Button
-                              variant="link"
-                              size="sm"
-                              className="h-auto p-0 text-blue-600"
-                              onClick={() => setDefaultValues({})}
-                            >
-                              (Reset)
-                            </Button>
-                          </div>
-                        )}
-
-                        {missingRequired.length === 0 && (
+                        ) : (
                           <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 text-sm flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4" /> All required fields are mapped or have defaults.
+                            <CheckCircle2 className="h-4 w-4" /> All required fields are mapped.
                           </div>
                         )}
+
+                        {/* RESPONSIVE MAPPING TABLE */}
+                        <div className="border rounded-lg overflow-hidden flex flex-col">
+                          <div className="overflow-x-auto">
+                            <Table className="min-w-[700px] sm:min-w-full">
+                              <TableHeader className="bg-muted/50">
+                                <TableRow>
+                                  <TableHead className="w-[25%]">File Header</TableHead>
+                                  <TableHead className="w-[25%] text-muted-foreground">Sample Data (Row 1)</TableHead>
+                                  <TableHead className="w-[30%]">Map To CRM Field</TableHead>
+                                  <TableHead className="w-[20%]">Requirement</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {state.columns.map((col) => {
+                                  const mapping = state.columnMapping[col];
+                                  const schemaField = schema.fields.find((c) => c.field === mapping);
+                                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                  const sampleValue = (state.rawData[0] as any)?.[col];
+
+                                  return (
+                                    <TableRow key={col}>
+                                      <TableCell className="font-medium text-sm truncate max-w-[150px]" title={col}>
+                                        {col}
+                                      </TableCell>
+                                      <TableCell
+                                        className="text-xs text-muted-foreground font-mono truncate max-w-[150px]"
+                                        title={String(sampleValue)}
+                                      >
+                                        {sampleValue !== undefined && sampleValue !== null ? (
+                                          String(sampleValue)
+                                        ) : (
+                                          <span className="italic opacity-50">Empty</span>
+                                        )}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Select
+                                          value={mapping || "_unmapped"}
+                                          onValueChange={(val) =>
+                                            updateColumnMapping(col, val === "_unmapped" ? "" : val)
+                                          }
+                                        >
+                                          <SelectTrigger className="h-9 w-full min-w-[160px]">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="_unmapped" className="text-muted-foreground italic">
+                                              -- Skip Column --
+                                            </SelectItem>
+                                            {schema.fields.map((schemaCol) => (
+                                              <SelectItem key={schemaCol.field} value={schemaCol.field}>
+                                                <span className="flex items-center justify-between w-full gap-2">
+                                                  {schemaCol.displayName}
+                                                  {schemaCol.required && <span className="text-destructive">*</span>}
+                                                </span>
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </TableCell>
+                                      <TableCell>
+                                        {mapping ? (
+                                          <Badge
+                                            variant={schemaField?.required ? "default" : "outline"}
+                                            className={schemaField?.required ? "bg-green-600 hover:bg-green-700" : ""}
+                                          >
+                                            {schemaField?.required ? "Required" : "Optional"}
+                                          </Badge>
+                                        ) : (
+                                          <span className="text-xs text-muted-foreground italic">Skipped</span>
+                                        )}
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </div>
                       </div>
                     );
                   })()}
-
-                  {/* RESPONSIVE MAPPING TABLE */}
-                  <div className="border rounded-lg overflow-hidden flex flex-col">
-                    <div className="overflow-x-auto">
-                      <Table className="min-w-[700px] sm:min-w-full">
-                        <TableHeader className="bg-muted/50">
-                          <TableRow>
-                            <TableHead className="w-[25%]">File Header</TableHead>
-                            <TableHead className="w-[25%] text-muted-foreground">Sample Data (Row 1)</TableHead>
-                            <TableHead className="w-[30%]">Map To CRM Field</TableHead>
-                            <TableHead className="w-[20%]">Requirement</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {state.columns.map((col) => {
-                            const mapping = state.columnMapping[col];
-                            const schemaField = schema.fields.find((c) => c.field === mapping);
-                            // Detect sample data from first row
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            const sampleValue = (state.rawData[0] as any)?.[col];
-
-                            return (
-                              <TableRow key={col}>
-                                <TableCell className="font-medium text-sm truncate max-w-[150px]" title={col}>
-                                  {col}
-                                </TableCell>
-                                <TableCell
-                                  className="text-xs text-muted-foreground font-mono truncate max-w-[150px]"
-                                  title={String(sampleValue)}
-                                >
-                                  {sampleValue !== undefined && sampleValue !== null ? (
-                                    String(sampleValue)
-                                  ) : (
-                                    <span className="italic opacity-50">Empty</span>
-                                  )}
-                                </TableCell>
-                                <TableCell>
-                                  <Select
-                                    value={mapping || "_unmapped"}
-                                    onValueChange={(val) => updateColumnMapping(col, val === "_unmapped" ? "" : val)}
-                                  >
-                                    <SelectTrigger className="h-9 w-full min-w-[160px]">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="_unmapped" className="text-muted-foreground italic">
-                                        -- Skip Column --
-                                      </SelectItem>
-                                      {schema.fields.map((schemaCol) => (
-                                        <SelectItem key={schemaCol.field} value={schemaCol.field}>
-                                          <span className="flex items-center justify-between w-full gap-2">
-                                            {schemaCol.displayName}
-                                            {schemaCol.required && <span className="text-destructive">*</span>}
-                                          </span>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </TableCell>
-                                <TableCell>
-                                  {mapping ? (
-                                    <Badge
-                                      variant={schemaField?.required ? "default" : "outline"}
-                                      className={schemaField?.required ? "bg-green-600 hover:bg-green-700" : ""}
-                                    >
-                                      {schemaField?.required ? "Required" : "Optional"}
-                                    </Badge>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground italic">Skipped</span>
-                                  )}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -593,17 +550,9 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                               <SelectItem value="upsert">Update Existing (Overwrite)</SelectItem>
                             </SelectContent>
                           </Select>
-
-                          {/* Show confirmation of Defaults if set */}
-                          {Object.keys(defaultValues).length > 0 && (
-                            <div className="text-sm text-blue-600 mt-2 flex items-center gap-1">
-                              <Settings2 className="h-3 w-3" />
-                              Using default values:{" "}
-                              {Object.entries(defaultValues)
-                                .map(([k, v]) => `${k}=${v}`)
-                                .join(", ")}
-                            </div>
-                          )}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            *Matching is done based on unique IDs or Emails found in the file.
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -695,11 +644,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
               <p>
                 Mode: <strong>{importMode === "append" ? "Append" : "Upsert"}</strong>
               </p>
-              {Object.keys(defaultValues).length > 0 && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  * Applying defaults: {JSON.stringify(defaultValues)}
-                </p>
-              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
