@@ -239,7 +239,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Bulk Upload Stores & CRM Data</DialogTitle>
           <DialogDescription>
@@ -257,42 +257,42 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
           </div>
         ) : (
           <ScrollArea className="flex-1 pr-4">
-            {/* Step Indicator */}
-            <div className="flex items-center gap-2 mb-6">
-              {['Select Type', 'Upload File', 'Map Columns', 'Validate', 'Import'].map((step, i) => (
-                <div key={step} className="flex items-center gap-2">
-                  <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
+            {/* Step Indicator - Responsive */}
+            <div className="flex items-center justify-between gap-1 mb-6 overflow-x-auto pb-2">
+              {['Type', 'Upload', 'Map', 'Validate', 'Import'].map((step, i) => (
+                <div key={step} className="flex items-center gap-1 shrink-0">
+                  <div className={`flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full text-[10px] sm:text-xs font-medium ${
                     currentStep > i + 1 ? 'bg-green-500 text-white' :
                     currentStep === i + 1 ? 'bg-primary text-primary-foreground' :
                     'bg-muted text-muted-foreground'
                   }`}>
-                    {currentStep > i + 1 ? <Check className="h-4 w-4" /> : i + 1}
+                    {currentStep > i + 1 ? <Check className="h-3 w-3 sm:h-4 sm:w-4" /> : i + 1}
                   </div>
-                  <span className={`text-xs ${currentStep === i + 1 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                  <span className={`text-[10px] sm:text-xs hidden sm:inline ${currentStep === i + 1 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                     {step}
                   </span>
-                  {i < 4 && <div className="w-8 h-px bg-border" />}
+                  {i < 4 && <div className="w-4 sm:w-8 h-px bg-border" />}
                 </div>
               ))}
             </div>
 
             {/* Step 1: Select Upload Type */}
             {currentStep === 1 && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {uploadTypes.map((type) => {
                   const Icon = type.icon;
                   return (
                     <button
                       key={type.id}
                       onClick={() => setUploadType(type.id)}
-                      className="flex items-start gap-4 p-4 rounded-lg border border-border hover:border-primary hover:bg-accent transition-colors text-left"
+                      className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border border-border hover:border-primary hover:bg-accent transition-colors text-left"
                     >
-                      <div className={`p-2 rounded-lg ${type.color} text-white`}>
-                        <Icon className="h-5 w-5" />
+                      <div className={`p-2 rounded-lg ${type.color} text-white shrink-0`}>
+                        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                       </div>
-                      <div>
-                        <p className="font-medium">{type.name}</p>
-                        <p className="text-sm text-muted-foreground">{type.description}</p>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm sm:text-base">{type.name}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{type.description}</p>
                       </div>
                     </button>
                   );
@@ -346,26 +346,26 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                 </div>
 
                 {schema && (
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    <div className="p-4 rounded-lg bg-secondary/50">
-                      <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
+                    <div className="p-3 sm:p-4 rounded-lg bg-secondary/50">
+                      <p className="text-xs sm:text-sm font-medium mb-2 flex items-center gap-2">
                         <AlertCircle className="h-4 w-4 text-destructive" />
                         Required Columns
                       </p>
                       <div className="flex flex-wrap gap-1">
                         {getRequiredFields(schema).map(field => (
-                          <Badge key={field.field} variant="destructive" className="text-xs">{field.displayName}</Badge>
+                          <Badge key={field.field} variant="destructive" className="text-[10px] sm:text-xs">{field.displayName}</Badge>
                         ))}
                       </div>
                     </div>
-                    <div className="p-4 rounded-lg bg-secondary/50">
-                      <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <div className="p-3 sm:p-4 rounded-lg bg-secondary/50">
+                      <p className="text-xs sm:text-sm font-medium mb-2 flex items-center gap-2">
                         <Check className="h-4 w-4 text-muted-foreground" />
                         Optional Columns
                       </p>
                       <div className="flex flex-wrap gap-1">
                         {getOptionalFields(schema).map(field => (
-                          <Badge key={field.field} variant="outline" className="text-xs">{field.displayName}</Badge>
+                          <Badge key={field.field} variant="outline" className="text-[10px] sm:text-xs">{field.displayName}</Badge>
                         ))}
                       </div>
                     </div>

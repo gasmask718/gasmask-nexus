@@ -26,8 +26,7 @@ export interface UploadSchema {
 // Email validation regex
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Phone validation (basic - allows various formats)
-const phoneRegex = /^[\d\s\-+()]{7,20}$/;
+// Phone is treated as string - no format validation, just trim and store
 
 // Date validation (YYYY-MM-DD)
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -99,12 +98,10 @@ export const uploadSchemas: Record<string, UploadSchema> = {
       {
         field: 'phone',
         displayName: 'Phone',
-        type: 'phone',
+        type: 'string', // Treat phone as string - no format validation
         required: false,
-        source: 'excel',
-        validation: (v) => !v || phoneRegex.test(v) 
-          ? { valid: true } 
-          : { valid: false, error: 'Invalid phone format' }
+        source: 'excel'
+        // No validation - accept any string value
       },
       {
         field: 'email',
@@ -202,17 +199,12 @@ export const uploadSchemas: Record<string, UploadSchema> = {
       {
         field: 'phone',
         displayName: 'Phone',
-        type: 'phone',
+        type: 'string', // Treat phone as string - no format validation
         required: true, // REQUIRED - Phone is the primary contact identifier
         source: 'excel',
         notes: 'Primary identity key for contacts. Required for all person records.',
         validation: (v) => {
-          if (!v?.trim()) return { valid: false, error: 'Phone number is required for Person records' };
-          if (!phoneRegex.test(v)) return { valid: false, error: 'Invalid phone format' };
-          // Reject placeholder numbers
-          const digits = v.replace(/\D/g, '');
-          if (/^(\d)\1+$/.test(digits)) return { valid: false, error: 'Invalid placeholder phone number' };
-          if (digits.length < 10) return { valid: false, error: 'Phone number must have at least 10 digits' };
+          if (!v?.toString().trim()) return { valid: false, error: 'Phone number is required for Person records' };
           return { valid: true };
         }
       },
@@ -370,20 +362,11 @@ export const uploadSchemas: Record<string, UploadSchema> = {
       {
         field: 'contact_phone',
         displayName: 'Contact Phone',
-        type: 'phone',
+        type: 'string', // Treat phone as string - no format validation
         required: false, // Optional at row level - but required if contact_name is provided
         source: 'excel',
-        notes: 'Primary identity key. Required when contact_name is provided.',
-        validation: (v) => {
-          // If no phone provided, that's OK (contact is optional)
-          if (!v?.trim()) return { valid: true };
-          // But if provided, validate it properly
-          if (!phoneRegex.test(v)) return { valid: false, error: 'Invalid phone format' };
-          const digits = v.replace(/\D/g, '');
-          if (/^(\d)\1+$/.test(digits)) return { valid: false, error: 'Invalid placeholder phone number' };
-          if (digits.length < 10) return { valid: false, error: 'Phone number must have at least 10 digits' };
-          return { valid: true };
-        }
+        notes: 'Primary identity key. Required when contact_name is provided.'
+        // No validation - accept any string value
       },
       {
         field: 'contact_email',
