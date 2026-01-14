@@ -99,7 +99,15 @@ export const bikerFields: FieldConfig[] = [
 ];
 
 export const ambassadorFields: FieldConfig[] = [
+  { name: 'name', label: 'Full Name', type: 'text', required: true, placeholder: 'Ambassador name' },
   { name: 'tracking_code', label: 'Tracking Code', type: 'text', required: true, placeholder: 'e.g., AMB001' },
+  { name: 'phone_primary', label: 'Primary Phone', type: 'phone', placeholder: '(555) 123-4567' },
+  { name: 'phone_secondary', label: 'Secondary Phone', type: 'phone', placeholder: '(555) 987-6543' },
+  { name: 'phone_whatsapp', label: 'WhatsApp', type: 'phone', placeholder: 'WhatsApp number' },
+  { name: 'social_media', label: 'Social Media', type: 'text', placeholder: '@username or URL' },
+  { name: 'neighborhood', label: 'Neighborhood', type: 'text', placeholder: 'e.g., Bronx, Harlem' },
+  { name: 'city', label: 'City', type: 'text', placeholder: 'e.g., New York' },
+  { name: 'state', label: 'State', type: 'text', placeholder: 'e.g., NY, CA' },
   { name: 'tier', label: 'Tier', type: 'select', defaultValue: 'starter', options: [
     { value: 'starter', label: 'Starter' },
     { value: 'rising', label: 'Rising' },
@@ -107,7 +115,6 @@ export const ambassadorFields: FieldConfig[] = [
     { value: 'legendary', label: 'Legendary' },
   ]},
   { name: 'is_active', label: 'Active', type: 'switch', defaultValue: true },
-  { name: 'state', label: 'State', type: 'text', placeholder: 'e.g., NY, CA' },
   { name: 'tags', label: 'Tags', type: 'text', placeholder: 'Comma-separated tags' },
 ];
 
