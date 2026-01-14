@@ -1,26 +1,40 @@
-import React, { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
-import Layout from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { 
-  Bike, Search, Filter, Plus, Edit, Phone, Mail, 
-  MapPin, CheckCircle2, XCircle, Download, User, Eye,
-  TrendingUp, AlertCircle, Map as MapIcon, Route
-} from 'lucide-react';
-import IssuesBoard from '@/components/biker/IssuesBoard';
-import { useAllBikersPerformance } from '@/hooks/useBikerPerformance';
-import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
-import { SimulationModeToggle, SimulationBanner } from '@/components/delivery/SimulationModeToggle';
+import React, { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+// Removed: import Layout from '@/components/Layout';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import {
+  Bike,
+  Search,
+  Filter,
+  Plus,
+  Edit,
+  Phone,
+  Mail,
+  MapPin,
+  CheckCircle2,
+  XCircle,
+  Download,
+  User,
+  Eye,
+  TrendingUp,
+  AlertCircle,
+  Map as MapIcon,
+  Route,
+} from "lucide-react";
+import IssuesBoard from "@/components/biker/IssuesBoard";
+import { useAllBikersPerformance } from "@/hooks/useBikerPerformance";
+import { useSimulationMode, SimulationBadge } from "@/contexts/SimulationModeContext";
+import { SimulationModeToggle, SimulationBanner } from "@/components/delivery/SimulationModeToggle";
 
 type Biker = {
   id: string;
@@ -40,36 +54,33 @@ const BikersManagement: React.FC = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { simulationMode, simulationData } = useSimulationMode();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingBiker, setEditingBiker] = useState<Biker | null>(null);
 
   const { data: dbBikers = [], isLoading } = useQuery({
-    queryKey: ['bikers'],
+    queryKey: ["bikers"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('bikers')
-        .select('*')
-        .order('full_name', { ascending: true });
+      const { data, error } = await supabase.from("bikers").select("*").order("full_name", { ascending: true });
       if (error) throw error;
       return data as Biker[];
-    }
+    },
   });
 
   // Generate simulated bikers from simulation data
   const simBikers = useMemo(() => {
     if (!simulationMode || dbBikers.length > 0) return [];
-    return simulationData.bikers.map(b => ({
+    return simulationData.bikers.map((b) => ({
       id: b.id,
-      business_id: 'sim-business',
+      business_id: "sim-business",
       user_id: null,
       full_name: b.full_name,
       phone: b.phone,
       email: b.email,
       territory: b.territory,
-      status: b.status === 'offline' ? 'paused' : 'active',
-      payout_method: 'zelle',
+      status: b.status === "offline" ? "paused" : "active",
+      payout_method: "zelle",
       payout_handle: b.email,
       created_at: new Date().toISOString(),
       is_simulated: true,
@@ -82,71 +93,71 @@ const BikersManagement: React.FC = () => {
 
   const createMutation = useMutation({
     mutationFn: async (data: Partial<Biker>) => {
-      const { error } = await supabase.from('bikers').insert({ ...data, status: 'active' } as any);
+      const { error } = await supabase.from("bikers").insert({ ...data, status: "active" } as any);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bikers'] });
-      toast.success('Biker created');
+      queryClient.invalidateQueries({ queryKey: ["bikers"] });
+      toast.success("Biker created");
       setShowCreateDialog(false);
     },
-    onError: () => toast.error('Failed to create biker')
+    onError: () => toast.error("Failed to create biker"),
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<Biker> }) => {
-      const { error } = await supabase.from('bikers').update(data).eq('id', id);
+      const { error } = await supabase.from("bikers").update(data).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bikers'] });
-      toast.success('Biker updated');
+      queryClient.invalidateQueries({ queryKey: ["bikers"] });
+      toast.success("Biker updated");
       setEditingBiker(null);
     },
-    onError: () => toast.error('Failed to update biker')
+    onError: () => toast.error("Failed to update biker"),
   });
 
   const toggleStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const newStatus = status === 'active' ? 'paused' : 'active';
-      const { error } = await supabase.from('bikers').update({ status: newStatus }).eq('id', id);
+      const newStatus = status === "active" ? "paused" : "active";
+      const { error } = await supabase.from("bikers").update({ status: newStatus }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bikers'] });
-      toast.success('Status updated');
+      queryClient.invalidateQueries({ queryKey: ["bikers"] });
+      toast.success("Status updated");
     },
-    onError: () => toast.error('Failed to update status')
+    onError: () => toast.error("Failed to update status"),
   });
 
-  const filteredBikers = bikers.filter(biker => {
-    const matchesSearch = 
+  const filteredBikers = bikers.filter((biker) => {
+    const matchesSearch =
       biker.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       biker.phone.includes(searchTerm) ||
       biker.territory?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || biker.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || biker.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const activeCount = bikers.filter(b => b.status === 'active').length;
-  const pausedCount = bikers.filter(b => b.status === 'paused').length;
+  const activeCount = bikers.filter((b) => b.status === "active").length;
+  const pausedCount = bikers.filter((b) => b.status === "paused").length;
 
   const exportCSV = () => {
-    const headers = ['Name', 'Phone', 'Email', 'Territory', 'Status', 'Payout Method'];
-    const rows = filteredBikers.map(b => [
+    const headers = ["Name", "Phone", "Email", "Territory", "Status", "Payout Method"];
+    const rows = filteredBikers.map((b) => [
       b.full_name,
       b.phone,
-      b.email || '',
-      b.territory || '',
+      b.email || "",
+      b.territory || "",
       b.status,
-      b.payout_method || ''
+      b.payout_method || "",
     ]);
-    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `bikers-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.download = `bikers-${format(new Date(), "yyyy-MM-dd")}.csv`;
     a.click();
   };
 
@@ -163,7 +174,7 @@ const BikersManagement: React.FC = () => {
   }, [todayPerformance]);
 
   return (
-    <Layout>
+    <div className="w-full">
       <SimulationBanner />
       <div className="container mx-auto p-4 md:p-6 space-y-6">
         {/* Header */}
@@ -178,10 +189,10 @@ const BikersManagement: React.FC = () => {
           </div>
           <div className="flex flex-wrap gap-2">
             <SimulationModeToggle />
-            <Button variant="outline" onClick={() => navigate('/delivery/heatmap')}>
+            <Button variant="outline" onClick={() => navigate("/delivery/heatmap")}>
               <MapIcon className="h-4 w-4 mr-2" /> Heatmap
             </Button>
-            <Button variant="outline" onClick={() => navigate('/delivery/route-suggestions')}>
+            <Button variant="outline" onClick={() => navigate("/delivery/route-suggestions")}>
               <Route className="h-4 w-4 mr-2" /> Route Suggestions
             </Button>
             <Button variant="outline" onClick={exportCSV}>
@@ -189,16 +200,15 @@ const BikersManagement: React.FC = () => {
             </Button>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
-                <Button><Plus className="h-4 w-4 mr-2" /> Add Biker</Button>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" /> Add Biker
+                </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Add New Biker</DialogTitle>
                 </DialogHeader>
-                <BikerForm 
-                  onSubmit={(data) => createMutation.mutate(data)}
-                  isLoading={createMutation.isPending}
-                />
+                <BikerForm onSubmit={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} />
               </DialogContent>
             </Dialog>
           </div>
@@ -245,9 +255,12 @@ const BikersManagement: React.FC = () => {
                 <TrendingUp className="h-5 w-5 text-primary" />
                 <div>
                   <div className="text-2xl font-bold text-primary">
-                    {todayPerformance.length > 0 
-                      ? Math.round(todayPerformance.reduce((s: number, p: any) => s + (p.score || 0), 0) / todayPerformance.length)
-                      : '--'}
+                    {todayPerformance.length > 0
+                      ? Math.round(
+                          todayPerformance.reduce((s: number, p: any) => s + (p.score || 0), 0) /
+                            todayPerformance.length,
+                        )
+                      : "--"}
                   </div>
                   <p className="text-sm text-muted-foreground">Avg Score</p>
                 </div>
@@ -295,12 +308,16 @@ const BikersManagement: React.FC = () => {
 
             {/* Bikers Grid */}
             {isLoading ? (
-              <Card><CardContent className="p-8 text-center text-muted-foreground">Loading...</CardContent></Card>
+              <Card>
+                <CardContent className="p-8 text-center text-muted-foreground">Loading...</CardContent>
+              </Card>
             ) : filteredBikers.length === 0 ? (
-              <Card><CardContent className="p-8 text-center text-muted-foreground">No bikers found</CardContent></Card>
+              <Card>
+                <CardContent className="p-8 text-center text-muted-foreground">No bikers found</CardContent>
+              </Card>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredBikers.map(biker => {
+                {filteredBikers.map((biker) => {
                   const perf = performanceMap.get(biker.id);
                   return (
                     <Card key={biker.id} className="hover:shadow-md transition-shadow">
@@ -320,15 +337,18 @@ const BikersManagement: React.FC = () => {
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-1">
-                            <Badge variant={biker.status === 'active' ? 'default' : 'secondary'}>
-                              {biker.status}
-                            </Badge>
+                            <Badge variant={biker.status === "active" ? "default" : "secondary"}>{biker.status}</Badge>
                             {perf && (
-                              <Badge variant="outline" className={
-                                perf.score >= 80 ? 'border-green-500 text-green-600' :
-                                perf.score >= 60 ? 'border-yellow-500 text-yellow-600' :
-                                'border-destructive text-destructive'
-                              }>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  perf.score >= 80
+                                    ? "border-green-500 text-green-600"
+                                    : perf.score >= 60
+                                      ? "border-yellow-500 text-yellow-600"
+                                      : "border-destructive text-destructive"
+                                }
+                              >
                                 Score: {Math.round(perf.score)}
                               </Badge>
                             )}
@@ -337,16 +357,22 @@ const BikersManagement: React.FC = () => {
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <div className="space-y-1 text-sm">
-                          <a href={`tel:${biker.phone}`} className="flex items-center gap-2 text-muted-foreground hover:text-primary">
+                          <a
+                            href={`tel:${biker.phone}`}
+                            className="flex items-center gap-2 text-muted-foreground hover:text-primary"
+                          >
                             <Phone className="h-4 w-4" /> {biker.phone}
                           </a>
                           {biker.email && (
-                            <a href={`mailto:${biker.email}`} className="flex items-center gap-2 text-muted-foreground hover:text-primary">
+                            <a
+                              href={`mailto:${biker.email}`}
+                              className="flex items-center gap-2 text-muted-foreground hover:text-primary"
+                            >
                               <Mail className="h-4 w-4" /> {biker.email}
                             </a>
                           )}
                         </div>
-                        
+
                         {/* Performance stats */}
                         {perf && (
                           <div className="grid grid-cols-3 gap-2 text-xs text-center">
@@ -364,11 +390,11 @@ const BikersManagement: React.FC = () => {
                             </div>
                           </div>
                         )}
-                        
+
                         <div className="flex gap-2 pt-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
+                          <Button
+                            size="sm"
+                            variant="outline"
                             className="flex-1"
                             onClick={() => navigate(`/delivery/bikers/${biker.id}`)}
                           >
@@ -384,19 +410,19 @@ const BikersManagement: React.FC = () => {
                               <DialogHeader>
                                 <DialogTitle>Edit Biker</DialogTitle>
                               </DialogHeader>
-                              <BikerForm 
+                              <BikerForm
                                 initialData={biker}
                                 onSubmit={(data) => updateMutation.mutate({ id: biker.id, data })}
                                 isLoading={updateMutation.isPending}
                               />
                             </DialogContent>
                           </Dialog>
-                          <Button 
-                            size="sm" 
-                            variant={biker.status === 'active' ? 'secondary' : 'default'}
+                          <Button
+                            size="sm"
+                            variant={biker.status === "active" ? "secondary" : "default"}
                             onClick={() => toggleStatusMutation.mutate({ id: biker.id, status: biker.status })}
                           >
-                            {biker.status === 'active' ? 'Pause' : 'Activate'}
+                            {biker.status === "active" ? "Pause" : "Activate"}
                           </Button>
                         </div>
                       </CardContent>
@@ -412,7 +438,7 @@ const BikersManagement: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
+    </div>
   );
 };
 
@@ -423,53 +449,56 @@ const BikerForm: React.FC<{
   isLoading: boolean;
 }> = ({ initialData, onSubmit, isLoading }) => {
   const [formData, setFormData] = useState({
-    full_name: initialData?.full_name || '',
-    phone: initialData?.phone || '',
-    email: initialData?.email || '',
-    territory: initialData?.territory || '',
-    payout_method: initialData?.payout_method || 'zelle',
-    payout_handle: initialData?.payout_handle || ''
+    full_name: initialData?.full_name || "",
+    phone: initialData?.phone || "",
+    email: initialData?.email || "",
+    territory: initialData?.territory || "",
+    payout_method: initialData?.payout_method || "zelle",
+    payout_handle: initialData?.payout_handle || "",
   });
 
   return (
     <div className="space-y-4 mt-4">
       <div>
         <label className="text-sm font-medium">Full Name</label>
-        <Input 
+        <Input
           value={formData.full_name}
-          onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, full_name: e.target.value }))}
           placeholder="Enter full name"
         />
       </div>
       <div>
         <label className="text-sm font-medium">Phone</label>
-        <Input 
+        <Input
           value={formData.phone}
-          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
           placeholder="Enter phone number"
         />
       </div>
       <div>
         <label className="text-sm font-medium">Email (Optional)</label>
-        <Input 
+        <Input
           type="email"
           value={formData.email}
-          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
           placeholder="Enter email"
         />
       </div>
       <div>
         <label className="text-sm font-medium">Territory</label>
-        <Input 
+        <Input
           value={formData.territory}
-          onChange={(e) => setFormData(prev => ({ ...prev, territory: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, territory: e.target.value }))}
           placeholder="e.g., Brooklyn, Manhattan"
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="text-sm font-medium">Payout Method</label>
-          <Select value={formData.payout_method} onValueChange={(v) => setFormData(prev => ({ ...prev, payout_method: v }))}>
+          <Select
+            value={formData.payout_method}
+            onValueChange={(v) => setFormData((prev) => ({ ...prev, payout_method: v }))}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -483,19 +512,19 @@ const BikerForm: React.FC<{
         </div>
         <div>
           <label className="text-sm font-medium">Payout Handle</label>
-          <Input 
+          <Input
             value={formData.payout_handle}
-            onChange={(e) => setFormData(prev => ({ ...prev, payout_handle: e.target.value }))}
+            onChange={(e) => setFormData((prev) => ({ ...prev, payout_handle: e.target.value }))}
             placeholder="Phone or email"
           />
         </div>
       </div>
-      <Button 
-        className="w-full" 
+      <Button
+        className="w-full"
         onClick={() => onSubmit(formData)}
         disabled={!formData.full_name || !formData.phone || isLoading}
       >
-        {isLoading ? 'Saving...' : initialData ? 'Update Biker' : 'Create Biker'}
+        {isLoading ? "Saving..." : initialData ? "Update Biker" : "Create Biker"}
       </Button>
     </div>
   );
