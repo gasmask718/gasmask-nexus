@@ -872,7 +872,7 @@ const AmbassadorPerformance = () => {
     queryFn: async () => {
       const { data: ambassadors } = await supabase
         .from('ambassadors')
-        .select('*, profiles(full_name)')
+        .select('*, profiles(name)')
         .order('total_earnings', { ascending: false })
         .limit(5);
       
