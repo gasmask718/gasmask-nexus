@@ -504,7 +504,7 @@ export default function AppSidebar() {
               ])}
 
               {renderSection('drivers-os', 'Drivers / TopTier Fleet OS', '🚗', [
-                { path: '/driver', label: 'Driver Management', emoji: '🚗' },
+                { path: '/delivery/drivers', label: 'Driver Management', emoji: '🚗' },
                 { path: '/toptier/drivers', label: 'TopTier Fleet', emoji: '🚙' },
                 { path: '/delivery/payouts', label: 'Driver Payouts', emoji: '💰' },
                 { path: '/driver-debt-collection', label: 'Driver Collections', emoji: '📥' },
