@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { useDeliveryWithStops, useUpdateDelivery, useUpdateStop, useCreateStop, useLocations, useCreateProof, type DeliveryStop } from "@/hooks/useDeliveryData";
-import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -112,9 +111,9 @@ export default function MyRoute() {
   // Route Selector View
   if (!deliveryId) {
     return (
-      <Layout>
+      <>
         <SimulationBanner />
-        <div className="container mx-auto p-4 md:p-6 space-y-6">
+        <div className="p-6 space-y-6">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon" onClick={() => navigate('/delivery/driver-home')}>
@@ -206,14 +205,12 @@ export default function MyRoute() {
             </div>
           )}
         </div>
-      </Layout>
+      </>
     );
   }
   if (isLoading && !isSimulatedRoute) {
     return (
-      <Layout>
-        <div className="p-6 text-center">Loading...</div>
-      </Layout>
+      <div className="p-6 text-center">Loading...</div>
     );
   }
 
@@ -244,13 +241,11 @@ export default function MyRoute() {
 
   if (!resolvedDelivery) {
     return (
-      <Layout>
-        <div className="p-6 text-center">
-          <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground mb-4">Delivery not found</p>
-          <Button onClick={() => navigate('/delivery/my-route')}>View All Routes</Button>
-        </div>
-      </Layout>
+      <div className="p-6 text-center">
+        <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+        <p className="text-muted-foreground mb-4">Delivery not found</p>
+        <Button onClick={() => navigate('/delivery/my-route')}>View All Routes</Button>
+      </div>
     );
   }
 

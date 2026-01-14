@@ -1,4 +1,4 @@
-import Layout from "@/components/Layout";
+
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,7 +64,7 @@ export default function Ambassadors() {
 
   if (!ambassadorData) {
     return (
-      <Layout>
+      <div className="p-6">
         <div className="container mx-auto px-4 py-8">
           <Card className="p-12 text-center">
             <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
@@ -74,12 +74,12 @@ export default function Ambassadors() {
             </p>
           </Card>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   return (
-    <Layout>
+    <div className="p-6 space-y-6">
       <div className="container mx-auto px-4 py-8 space-y-6">
         {/* Header */}
         <div>
@@ -214,6 +214,6 @@ export default function Ambassadors() {
           </div>
         </Card>
       </div>
-    </Layout>
+    </div>
   );
 }

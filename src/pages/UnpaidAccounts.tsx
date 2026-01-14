@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -141,17 +140,16 @@ export default function UnpaidAccounts() {
   };
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
-              Unpaid Accounts
-            </h1>
-            <p className="text-muted-foreground">Track and manage outstanding payments for GasMask & Grabba brands</p>
-          </div>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
+            Unpaid Accounts
+          </h1>
+          <p className="text-muted-foreground">Track and manage outstanding payments for GasMask & Grabba brands</p>
         </div>
+      </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -372,9 +370,8 @@ export default function UnpaidAccounts() {
                 </TableBody>
               </Table>
             )}
-          </CardContent>
-        </Card>
-      </div>
-    </Layout>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
