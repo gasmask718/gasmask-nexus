@@ -52,28 +52,55 @@ export const companyFields: FieldConfig[] = [
 ];
 
 export const driverFields: FieldConfig[] = [
-  { name: 'name', label: 'Driver Name', type: 'text', required: true, placeholder: 'Full name' },
-  { name: 'phone', label: 'Phone', type: 'phone', required: true, placeholder: '(555) 123-4567' },
+  { name: 'full_name', label: 'Driver Name', type: 'text', required: true, placeholder: 'Full name' },
+  { name: 'phone', label: 'Phone', type: 'phone', placeholder: '(555) 123-4567' },
   { name: 'email', label: 'Email', type: 'email', placeholder: 'driver@example.com' },
-  { name: 'region', label: 'Region', type: 'select', options: [
-    { value: 'bronx', label: 'Bronx' },
-    { value: 'brooklyn', label: 'Brooklyn' },
-    { value: 'manhattan', label: 'Manhattan' },
-    { value: 'queens', label: 'Queens' },
-    { value: 'staten_island', label: 'Staten Island' },
-  ]},
+  { name: 'home_base', label: 'Home Base', type: 'text', placeholder: 'e.g., Bronx' },
   { name: 'vehicle_type', label: 'Vehicle Type', type: 'select', options: [
     { value: 'car', label: 'Car' },
     { value: 'bike', label: 'Bike' },
     { value: 'van', label: 'Van' },
     { value: 'motorcycle', label: 'Motorcycle' },
   ]},
-  { name: 'active', label: 'Active', type: 'switch', defaultValue: true },
+  { name: 'license_number', label: 'License Number', type: 'text', placeholder: 'Driver license #' },
+  { name: 'payout_method', label: 'Payout Method', type: 'select', options: [
+    { value: 'cash', label: 'Cash' },
+    { value: 'zelle', label: 'Zelle' },
+    { value: 'venmo', label: 'Venmo' },
+    { value: 'cashapp', label: 'Cash App' },
+    { value: 'check', label: 'Check' },
+  ]},
+  { name: 'payout_handle', label: 'Payout Handle', type: 'text', placeholder: 'Zelle/Venmo handle' },
+  { name: 'status', label: 'Status', type: 'select', defaultValue: 'active', options: [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'on_leave', label: 'On Leave' },
+  ]},
+];
+
+export const bikerFields: FieldConfig[] = [
+  { name: 'full_name', label: 'Biker Name', type: 'text', required: true, placeholder: 'Full name' },
+  { name: 'phone', label: 'Phone', type: 'phone', placeholder: '(555) 123-4567' },
+  { name: 'email', label: 'Email', type: 'email', placeholder: 'biker@example.com' },
+  { name: 'territory', label: 'Territory', type: 'text', placeholder: 'e.g., Manhattan Downtown' },
+  { name: 'payout_method', label: 'Payout Method', type: 'select', options: [
+    { value: 'cash', label: 'Cash' },
+    { value: 'zelle', label: 'Zelle' },
+    { value: 'venmo', label: 'Venmo' },
+    { value: 'cashapp', label: 'Cash App' },
+    { value: 'check', label: 'Check' },
+  ]},
+  { name: 'payout_handle', label: 'Payout Handle', type: 'text', placeholder: 'Zelle/Venmo handle' },
+  { name: 'status', label: 'Status', type: 'select', defaultValue: 'active', options: [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'on_leave', label: 'On Leave' },
+  ]},
 ];
 
 export const ambassadorFields: FieldConfig[] = [
   { name: 'tracking_code', label: 'Tracking Code', type: 'text', required: true, placeholder: 'e.g., AMB001' },
-  { name: 'tier', label: 'Tier', type: 'select', options: [
+  { name: 'tier', label: 'Tier', type: 'select', defaultValue: 'bronze', options: [
     { value: 'bronze', label: 'Bronze' },
     { value: 'silver', label: 'Silver' },
     { value: 'gold', label: 'Gold' },

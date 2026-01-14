@@ -44,7 +44,8 @@ import { EntityModal, ExportButton } from "@/components/crud";
 import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
 import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
 import { useCrudOperations } from "@/hooks/useCrudOperations";
-import { companyFields, storeFields, wholesalerFields } from "@/config/entityFieldConfigs";
+import { companyFields, storeFields, wholesalerFields, driverFields, bikerFields, ambassadorFields } from "@/config/entityFieldConfigs";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useSimulationMode } from "@/contexts/SimulationModeContext";
 
@@ -92,6 +93,27 @@ export default function GrabbaCRM() {
     table: "wholesalers",
     queryKey: ["grabba-crm-wholesalers"],
     successMessages: { create: "Wholesaler created", update: "Wholesaler updated", delete: "Wholesaler deleted" },
+    simulationMode,
+  });
+
+  const ambassadorCrud = useCrudOperations({
+    table: "ambassadors",
+    queryKey: ["grabba-crm-ambassadors"],
+    successMessages: { create: "Ambassador created", update: "Ambassador updated", delete: "Ambassador deleted" },
+    simulationMode,
+  });
+
+  const driverCrud = useCrudOperations({
+    table: "drivers",
+    queryKey: ["grabba-crm-drivers"],
+    successMessages: { create: "Driver created", update: "Driver updated", delete: "Driver deleted" },
+    simulationMode,
+  });
+
+  const bikerCrud = useCrudOperations({
+    table: "bikers",
+    queryKey: ["grabba-crm-bikers"],
+    successMessages: { create: "Biker created", update: "Biker updated", delete: "Biker deleted" },
     simulationMode,
   });
 
@@ -782,14 +804,34 @@ export default function GrabbaCRM() {
   // ═══════════════════════════════════════════════════════════════════════════════
 
   const handleCreate = async (data: Record<string, unknown>) => {
+    // Add business_id for drivers/bikers if needed
+    const defaultBusinessId = "c3d4e5f6-a7b8-9012-cdef-123456789012";
+    
     if (activeTab === "companies") {
       await companyCrud.create(data);
     } else if (activeTab === "stores") {
       await storeCrud.create(data);
-      // Explicitly refetch stores list after creation
       refetchStores();
     } else if (activeTab === "wholesalers") {
       await wholesalerCrud.create(data);
+    } else if (activeTab === "ambassadors") {
+      // Ambassadors need user_id - for now we'll use the current user
+      const { data: userData } = await supabase.auth.getUser();
+      await ambassadorCrud.create({
+        ...data,
+        user_id: userData?.user?.id || null,
+        total_earnings: 0,
+      });
+    } else if (activeTab === "drivers") {
+      await driverCrud.create({
+        ...data,
+        business_id: defaultBusinessId,
+      });
+    } else if (activeTab === "bikers") {
+      await bikerCrud.create({
+        ...data,
+        business_id: defaultBusinessId,
+      });
     }
   };
 
@@ -801,6 +843,12 @@ export default function GrabbaCRM() {
       await storeCrud.update({ id: selectedEntity.id, ...data });
     } else if (activeTab === "wholesalers") {
       await wholesalerCrud.update({ id: selectedEntity.id, ...data });
+    } else if (activeTab === "ambassadors") {
+      await ambassadorCrud.update({ id: selectedEntity.id, ...data });
+    } else if (activeTab === "drivers") {
+      await driverCrud.update({ id: selectedEntity.id, ...data });
+    } else if (activeTab === "bikers") {
+      await bikerCrud.update({ id: selectedEntity.id, ...data });
     }
   };
 
@@ -812,6 +860,12 @@ export default function GrabbaCRM() {
       await storeCrud.remove(selectedEntity.id);
     } else if (activeTab === "wholesalers") {
       await wholesalerCrud.remove(selectedEntity.id);
+    } else if (activeTab === "ambassadors") {
+      await ambassadorCrud.remove(selectedEntity.id);
+    } else if (activeTab === "drivers") {
+      await driverCrud.remove(selectedEntity.id);
+    } else if (activeTab === "bikers") {
+      await bikerCrud.remove(selectedEntity.id);
     }
   };
 
@@ -829,6 +883,9 @@ export default function GrabbaCRM() {
     if (activeTab === "companies") return companyFields;
     if (activeTab === "stores") return storeFields;
     if (activeTab === "wholesalers") return wholesalerFields;
+    if (activeTab === "ambassadors") return ambassadorFields;
+    if (activeTab === "drivers") return driverFields;
+    if (activeTab === "bikers") return bikerFields;
     return companyFields;
   };
 
@@ -836,7 +893,20 @@ export default function GrabbaCRM() {
     if (activeTab === "companies") return "New Company";
     if (activeTab === "stores") return "New Store";
     if (activeTab === "wholesalers") return "New Wholesaler";
+    if (activeTab === "ambassadors") return "New Ambassador";
+    if (activeTab === "drivers") return "New Driver";
+    if (activeTab === "bikers") return "New Biker";
     return "New";
+  };
+
+  const getEntityTitle = () => {
+    if (activeTab === "companies") return "Company";
+    if (activeTab === "stores") return "Store";
+    if (activeTab === "wholesalers") return "Wholesaler";
+    if (activeTab === "ambassadors") return "Ambassador";
+    if (activeTab === "drivers") return "Driver";
+    if (activeTab === "bikers") return "Biker";
+    return "Entity";
   };
 
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -993,8 +1063,20 @@ export default function GrabbaCRM() {
                 </TabsTrigger>
               </TabsList>
 
+              {/* Add Button - Between tabs and content */}
+              <div className="flex justify-end mt-4 mb-2">
+                <Button 
+                  onClick={() => setCreateModalOpen(true)}
+                  className="flex items-center gap-2"
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  {getAddLabel()}
+                </Button>
+              </div>
+
               {/* Companies Tab */}
-              <TabsContent value="companies" className="space-y-3 mt-4">
+              <TabsContent value="companies" className="space-y-3">
                 {companiesLoading ? (
                   <Card className="p-8 text-center text-muted-foreground">Loading companies...</Card>
                 ) : filteredCompanies?.length === 0 ? (
@@ -1005,7 +1087,7 @@ export default function GrabbaCRM() {
               </TabsContent>
 
               {/* Stores Tab */}
-              <TabsContent value="stores" className="space-y-3 mt-4">
+              <TabsContent value="stores" className="space-y-3">
                 {storesLoading ? (
                   <Card className="p-8 text-center text-muted-foreground">Loading stores...</Card>
                 ) : filteredStores?.length === 0 ? (
@@ -1016,7 +1098,7 @@ export default function GrabbaCRM() {
               </TabsContent>
 
               {/* Wholesalers Tab */}
-              <TabsContent value="wholesalers" className="space-y-3 mt-4">
+              <TabsContent value="wholesalers" className="space-y-3">
                 {wholesalersLoading ? (
                   <Card className="p-8 text-center text-muted-foreground">Loading wholesalers...</Card>
                 ) : filteredWholesalers?.length === 0 ? (
@@ -1029,7 +1111,7 @@ export default function GrabbaCRM() {
               </TabsContent>
 
               {/* Ambassadors Tab */}
-              <TabsContent value="ambassadors" className="space-y-3 mt-4">
+              <TabsContent value="ambassadors" className="space-y-3">
                 {ambassadorsLoading ? (
                   <Card className="p-8 text-center text-muted-foreground">Loading ambassadors...</Card>
                 ) : filteredAmbassadors?.length === 0 ? (
@@ -1042,7 +1124,7 @@ export default function GrabbaCRM() {
               </TabsContent>
 
               {/* Drivers Tab */}
-              <TabsContent value="drivers" className="space-y-3 mt-4">
+              <TabsContent value="drivers" className="space-y-3">
                 {driversLoading ? (
                   <Card className="p-8 text-center text-muted-foreground">Loading drivers...</Card>
                 ) : filteredDrivers?.length === 0 ? (
@@ -1055,7 +1137,7 @@ export default function GrabbaCRM() {
               </TabsContent>
 
               {/* Bikers Tab */}
-              <TabsContent value="bikers" className="space-y-3 mt-4">
+              <TabsContent value="bikers" className="space-y-3">
                 {bikersLoading ? (
                   <Card className="p-8 text-center text-muted-foreground">Loading bikers...</Card>
                 ) : filteredBikers?.length === 0 ? (
@@ -1077,16 +1159,11 @@ export default function GrabbaCRM() {
       </div>
 
 
-      {/* Floating Add Button */}
-      {activeTab !== "ambassadors" && (
-        <GlobalAddButton label={getAddLabel()} onClick={() => setCreateModalOpen(true)} variant="floating" />
-      )}
-
       {/* Create Modal */}
       <EntityModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        title={`Create ${activeTab === "companies" ? "Company" : activeTab === "stores" ? "Store" : "Wholesaler"}`}
+        title={`Create ${getEntityTitle()}`}
         fields={getActiveFields()}
         onSubmit={handleCreate}
         mode="create"
@@ -1096,7 +1173,7 @@ export default function GrabbaCRM() {
       <EntityModal
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
-        title={`Edit ${activeTab === "companies" ? "Company" : activeTab === "stores" ? "Store" : "Wholesaler"}`}
+        title={`Edit ${getEntityTitle()}`}
         fields={getActiveFields()}
         defaultValues={selectedEntity || {}}
         onSubmit={handleEdit}
