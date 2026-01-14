@@ -100,13 +100,15 @@ export const bikerFields: FieldConfig[] = [
 
 export const ambassadorFields: FieldConfig[] = [
   { name: 'tracking_code', label: 'Tracking Code', type: 'text', required: true, placeholder: 'e.g., AMB001' },
-  { name: 'tier', label: 'Tier', type: 'select', defaultValue: 'bronze', options: [
-    { value: 'bronze', label: 'Bronze' },
-    { value: 'silver', label: 'Silver' },
-    { value: 'gold', label: 'Gold' },
-    { value: 'platinum', label: 'Platinum' },
+  { name: 'tier', label: 'Tier', type: 'select', defaultValue: 'starter', options: [
+    { value: 'starter', label: 'Starter' },
+    { value: 'rising', label: 'Rising' },
+    { value: 'elite', label: 'Elite' },
+    { value: 'legendary', label: 'Legendary' },
   ]},
   { name: 'is_active', label: 'Active', type: 'switch', defaultValue: true },
+  { name: 'state', label: 'State', type: 'text', placeholder: 'e.g., NY, CA' },
+  { name: 'tags', label: 'Tags', type: 'text', placeholder: 'Comma-separated tags' },
 ];
 
 export const orderFields: FieldConfig[] = [
