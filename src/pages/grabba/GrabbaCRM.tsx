@@ -30,6 +30,8 @@ import {
   Edit,
   Trash2,
   Heart,
+  Car,
+  Bike,
 } from "lucide-react";
 import { getRelationshipScoresForStores, RelationshipScore } from "@/services/crmInsightsService";
 import { useNavigate, Link, useParams } from "react-router-dom";
@@ -51,7 +53,7 @@ import { useSimulationMode } from "@/contexts/SimulationModeContext";
 // ═══════════════════════════════════════════════════════════════════════════════
 
 type EntityType = "all" | "store" | "wholesaler" | "direct_customer";
-type ViewTab = "companies" | "stores" | "ambassadors" | "wholesalers";
+type ViewTab = "companies" | "stores" | "ambassadors" | "wholesalers" | "drivers" | "bikers";
 
 export default function GrabbaCRM() {
   const navigate = useNavigate();
@@ -188,6 +190,30 @@ export default function GrabbaCRM() {
     },
   });
 
+  // Fetch drivers from drivers table
+  const { data: driversData, isLoading: driversLoading } = useQuery({
+    queryKey: ["grabba-crm-drivers"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("drivers")
+        .select("id, full_name, phone, email, vehicle_type, home_base, status, created_at")
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  // Fetch bikers from bikers table
+  const { data: bikersData, isLoading: bikersLoading } = useQuery({
+    queryKey: ["grabba-crm-bikers"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("bikers")
+        .select("id, full_name, phone, email, territory, status, created_at")
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
   // Fetch brand activity per company/store
   const { data: brandActivity } = useGrabbaBrandActivity();
   const { data: brandCounts } = useGrabbaBrandCounts();
@@ -269,6 +295,28 @@ export default function GrabbaCRM() {
       return matchesSearch;
     });
   }, [ambassadors, searchQuery]);
+
+  const filteredDrivers = useMemo(() => {
+    return driversData?.filter((d: any) => {
+      const matchesSearch =
+        !searchQuery ||
+        d.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        d.phone?.includes(searchQuery) ||
+        d.home_base?.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    });
+  }, [driversData, searchQuery]);
+
+  const filteredBikers = useMemo(() => {
+    return bikersData?.filter((b: any) => {
+      const matchesSearch =
+        !searchQuery ||
+        b.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        b.phone?.includes(searchQuery) ||
+        b.territory?.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    });
+  }, [bikersData, searchQuery]);
 
   const clearFilters = () => {
     setSelectedBrand("all");
@@ -604,6 +652,131 @@ export default function GrabbaCRM() {
     </Card>
   );
 
+  const DriverCard = ({ driver }: { driver: any }) => (
+    <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-blue-500/30 transition-all hover:shadow-lg">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3">
+              <Car className="h-4 w-4 text-blue-500" />
+              <span className="text-lg font-semibold">{driver.full_name || "Driver"}</span>
+              <Badge className={driver.status === 'active' 
+                ? "bg-green-500/20 text-green-400 border-green-500/30" 
+                : "bg-muted text-muted-foreground"}>
+                {driver.status || "Unknown"}
+              </Badge>
+            </div>
+
+            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
+              {driver.phone && (
+                <span className="flex items-center gap-1">
+                  <Phone className="h-3 w-3" />
+                  {String(driver.phone)}
+                </span>
+              )}
+              {driver.email && (
+                <span className="flex items-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  {driver.email}
+                </span>
+              )}
+              {driver.home_base && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {driver.home_base}
+                </span>
+              )}
+              {driver.vehicle_type && (
+                <Badge variant="outline" className="text-xs">
+                  {driver.vehicle_type}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/delivery/drivers`);
+                  }}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>View Driver</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const BikerCard = ({ biker }: { biker: any }) => (
+    <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-green-500/30 transition-all hover:shadow-lg">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3">
+              <Bike className="h-4 w-4 text-green-500" />
+              <span className="text-lg font-semibold">{biker.full_name || "Biker"}</span>
+              <Badge className={biker.status === 'active' 
+                ? "bg-green-500/20 text-green-400 border-green-500/30" 
+                : "bg-muted text-muted-foreground"}>
+                {biker.status || "Unknown"}
+              </Badge>
+            </div>
+
+            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
+              {biker.phone && (
+                <span className="flex items-center gap-1">
+                  <Phone className="h-3 w-3" />
+                  {String(biker.phone)}
+                </span>
+              )}
+              {biker.email && (
+                <span className="flex items-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  {biker.email}
+                </span>
+              )}
+              {biker.territory && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {biker.territory}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/delivery/bikers`);
+                  }}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>View Biker</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   // ═══════════════════════════════════════════════════════════════════════════════
   // CRUD HANDLERS
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -774,6 +947,8 @@ export default function GrabbaCRM() {
                   {activeTab === "stores" && `${filteredStores?.length || 0} stores`}
                   {activeTab === "wholesalers" && `${filteredWholesalers?.length || 0} wholesalers`}
                   {activeTab === "ambassadors" && `${filteredAmbassadors?.length || 0} ambassadors`}
+                  {activeTab === "drivers" && `${filteredDrivers?.length || 0} drivers`}
+                  {activeTab === "bikers" && `${filteredBikers?.length || 0} bikers`}
                 </div>
               </div>
             </div>
@@ -785,22 +960,36 @@ export default function GrabbaCRM() {
           <div className="lg:col-span-2">
             {/* Tabs for Different Entity Types */}
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ViewTab)}>
-              <TabsList className="grid grid-cols-4 w-full max-w-lg">
-                <TabsTrigger value="companies" className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Companies
+              <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full max-w-2xl">
+                <TabsTrigger value="companies" className="flex items-center gap-1 text-xs sm:text-sm">
+                  <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Companies</span>
+                  <span className="sm:hidden">Co.</span>
                 </TabsTrigger>
-                <TabsTrigger value="stores" className="flex items-center gap-2">
-                  <Store className="h-4 w-4" />
-                  Stores
+                <TabsTrigger value="stores" className="flex items-center gap-1 text-xs sm:text-sm">
+                  <Store className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Stores</span>
+                  <span className="sm:hidden">Str.</span>
                 </TabsTrigger>
-                <TabsTrigger value="wholesalers" className="flex items-center gap-2">
-                  <Truck className="h-4 w-4" />
-                  Wholesalers
+                <TabsTrigger value="wholesalers" className="flex items-center gap-1 text-xs sm:text-sm">
+                  <Truck className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Wholesalers</span>
+                  <span className="sm:hidden">Whl.</span>
                 </TabsTrigger>
-                <TabsTrigger value="ambassadors" className="flex items-center gap-2">
-                  <Award className="h-4 w-4" />
-                  Ambassadors
+                <TabsTrigger value="ambassadors" className="flex items-center gap-1 text-xs sm:text-sm">
+                  <Award className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Ambassadors</span>
+                  <span className="sm:hidden">Amb.</span>
+                </TabsTrigger>
+                <TabsTrigger value="drivers" className="flex items-center gap-1 text-xs sm:text-sm">
+                  <Car className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Drivers</span>
+                  <span className="sm:hidden">Drv.</span>
+                </TabsTrigger>
+                <TabsTrigger value="bikers" className="flex items-center gap-1 text-xs sm:text-sm">
+                  <Bike className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Bikers</span>
+                  <span className="sm:hidden">Bkr.</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -848,6 +1037,32 @@ export default function GrabbaCRM() {
                 ) : (
                   filteredAmbassadors?.map((ambassador: any) => (
                     <AmbassadorCard key={ambassador.id} ambassador={ambassador} />
+                  ))
+                )}
+              </TabsContent>
+
+              {/* Drivers Tab */}
+              <TabsContent value="drivers" className="space-y-3 mt-4">
+                {driversLoading ? (
+                  <Card className="p-8 text-center text-muted-foreground">Loading drivers...</Card>
+                ) : filteredDrivers?.length === 0 ? (
+                  <Card className="p-8 text-center text-muted-foreground">No drivers found</Card>
+                ) : (
+                  filteredDrivers?.map((driver: any) => (
+                    <DriverCard key={driver.id} driver={driver} />
+                  ))
+                )}
+              </TabsContent>
+
+              {/* Bikers Tab */}
+              <TabsContent value="bikers" className="space-y-3 mt-4">
+                {bikersLoading ? (
+                  <Card className="p-8 text-center text-muted-foreground">Loading bikers...</Card>
+                ) : filteredBikers?.length === 0 ? (
+                  <Card className="p-8 text-center text-muted-foreground">No bikers found</Card>
+                ) : (
+                  filteredBikers?.map((biker: any) => (
+                    <BikerCard key={biker.id} biker={biker} />
                   ))
                 )}
               </TabsContent>
