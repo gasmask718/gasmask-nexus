@@ -2614,6 +2614,7 @@ export type Database = {
       ambassadors: {
         Row: {
           created_at: string
+          created_by: string | null
           deleted_at: string | null
           id: string
           is_active: boolean
@@ -2625,6 +2626,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           id?: string
           is_active?: boolean
@@ -2636,6 +2638,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           id?: string
           is_active?: boolean
@@ -3733,6 +3736,7 @@ export type Database = {
         Row: {
           business_id: string
           created_at: string
+          created_by: string | null
           email: string | null
           full_name: string
           id: string
@@ -3747,6 +3751,7 @@ export type Database = {
         Insert: {
           business_id: string
           created_at?: string
+          created_by?: string | null
           email?: string | null
           full_name: string
           id?: string
@@ -3761,6 +3766,7 @@ export type Database = {
         Update: {
           business_id?: string
           created_at?: string
+          created_by?: string | null
           email?: string | null
           full_name?: string
           id?: string
@@ -10647,6 +10653,7 @@ export type Database = {
         Row: {
           business_id: string
           created_at: string
+          created_by: string | null
           email: string | null
           full_name: string
           home_base: string | null
@@ -10663,6 +10670,7 @@ export type Database = {
         Insert: {
           business_id: string
           created_at?: string
+          created_by?: string | null
           email?: string | null
           full_name: string
           home_base?: string | null
@@ -10679,6 +10687,7 @@ export type Database = {
         Update: {
           business_id?: string
           created_at?: string
+          created_by?: string | null
           email?: string | null
           full_name?: string
           home_base?: string | null
