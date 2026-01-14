@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -91,23 +90,19 @@ const BikerProfile: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Layout>
-        <div className="p-6 text-center text-muted-foreground">Loading...</div>
-      </Layout>
+      <div className="p-6 text-center text-muted-foreground">Loading...</div>
     );
   }
 
   if (!biker) {
     return (
-      <Layout>
-        <div className="p-6 text-center">
-          <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">Biker not found</p>
-          <Button className="mt-4" onClick={() => navigate('/delivery/bikers')}>
-            Back to Bikers
-          </Button>
-        </div>
-      </Layout>
+      <div className="p-6 text-center">
+        <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+        <p className="text-muted-foreground">Biker not found</p>
+        <Button className="mt-4" onClick={() => navigate('/delivery/bikers')}>
+          Back to Bikers
+        </Button>
+      </div>
     );
   }
 
@@ -116,10 +111,9 @@ const BikerProfile: React.FC = () => {
   const totalEarnings = payouts.reduce((sum: number, p: any) => sum + (p.total_to_pay || 0), 0);
 
   return (
-    <Layout>
-      <div className="container mx-auto p-4 md:p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/delivery/bikers')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -347,9 +341,8 @@ const BikerProfile: React.FC = () => {
           >
             <DollarSign className="h-4 w-4 mr-2" /> View Payouts
           </Button>
-        </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 
