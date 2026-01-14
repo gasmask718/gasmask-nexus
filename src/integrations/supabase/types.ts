@@ -2618,6 +2618,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           is_active: boolean
+          is_simulation: boolean | null
           tier: string
           total_earnings: number
           tracking_code: string
@@ -2630,6 +2631,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_active?: boolean
+          is_simulation?: boolean | null
           tier?: string
           total_earnings?: number
           tracking_code: string
@@ -2642,6 +2644,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_active?: boolean
+          is_simulation?: boolean | null
           tier?: string
           total_earnings?: number
           tracking_code?: string
@@ -3740,6 +3743,7 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          is_simulation: boolean | null
           payout_handle: string | null
           payout_method: string | null
           phone: string | null
@@ -3755,6 +3759,7 @@ export type Database = {
           email?: string | null
           full_name: string
           id?: string
+          is_simulation?: boolean | null
           payout_handle?: string | null
           payout_method?: string | null
           phone?: string | null
@@ -3770,6 +3775,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          is_simulation?: boolean | null
           payout_handle?: string | null
           payout_method?: string | null
           phone?: string | null
@@ -10658,6 +10664,7 @@ export type Database = {
           full_name: string
           home_base: string | null
           id: string
+          is_simulation: boolean | null
           license_number: string | null
           payout_handle: string | null
           payout_method: string | null
@@ -10675,6 +10682,7 @@ export type Database = {
           full_name: string
           home_base?: string | null
           id?: string
+          is_simulation?: boolean | null
           license_number?: string | null
           payout_handle?: string | null
           payout_method?: string | null
@@ -10692,6 +10700,7 @@ export type Database = {
           full_name?: string
           home_base?: string | null
           id?: string
+          is_simulation?: boolean | null
           license_number?: string | null
           payout_handle?: string | null
           payout_method?: string | null
