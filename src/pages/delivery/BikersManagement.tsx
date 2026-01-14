@@ -2,7 +2,6 @@ import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -170,9 +169,9 @@ const BikersManagement: React.FC = () => {
   }, [todayPerformance]);
 
   return (
-    <Layout>
+    <>
       <SimulationBanner />
-      <div className="container mx-auto p-4 md:p-6 space-y-6">
+      <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -436,7 +435,7 @@ const BikersManagement: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
+    </>
   );
 };
 
