@@ -2613,12 +2613,19 @@ export type Database = {
       }
       ambassadors: {
         Row: {
+          city: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
           id: string
           is_active: boolean
           is_simulation: boolean | null
+          name: string | null
+          neighborhood: string | null
+          phone_primary: string | null
+          phone_secondary: string | null
+          phone_whatsapp: string | null
+          social_media: string | null
           state: string | null
           tags: string | null
           tier: string
@@ -2628,12 +2635,19 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          city?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           id?: string
           is_active?: boolean
           is_simulation?: boolean | null
+          name?: string | null
+          neighborhood?: string | null
+          phone_primary?: string | null
+          phone_secondary?: string | null
+          phone_whatsapp?: string | null
+          social_media?: string | null
           state?: string | null
           tags?: string | null
           tier?: string
@@ -2643,12 +2657,19 @@ export type Database = {
           user_id: string
         }
         Update: {
+          city?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           id?: string
           is_active?: boolean
           is_simulation?: boolean | null
+          name?: string | null
+          neighborhood?: string | null
+          phone_primary?: string | null
+          phone_secondary?: string | null
+          phone_whatsapp?: string | null
+          social_media?: string | null
           state?: string | null
           tags?: string | null
           tier?: string
@@ -2661,7 +2682,7 @@ export type Database = {
           {
             foreignKeyName: "ambassadors_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
