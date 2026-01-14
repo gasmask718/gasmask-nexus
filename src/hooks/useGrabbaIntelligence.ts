@@ -42,7 +42,7 @@ export function useGrabbaIntelligence() {
         supabase.from('wholesale_orders').select('*').in('brand', [...GRABBA_BRAND_IDS]).order('created_at', { ascending: false }).limit(1000),
         supabase.from('store_payments').select('*').limit(500),
         supabase.from('grabba_drivers').select('*'),
-        supabase.from('ambassadors').select('*, profiles(full_name)').eq('is_active', true),
+        supabase.from('ambassadors').select('*, profiles(name)').eq('is_active', true),
         supabase.from('communication_logs').select('*').order('created_at', { ascending: false }).limit(500),
         supabase.from('store_tube_inventory').select('*').in('brand', [...GRABBA_BRAND_IDS]),
       ]);

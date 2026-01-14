@@ -209,7 +209,7 @@ export default function GrabbaCRM() {
     queryFn: async () => {
       const { data } = await supabase
         .from("ambassadors")
-        .select("*, profiles(full_name, avatar_url, email)")
+        .select("*, profiles(name, avatar_url, email)")
         .eq("is_active", true);
       return data || [];
     },

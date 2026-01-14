@@ -155,7 +155,7 @@ export function useGrabbaAmbassadors() {
     queryFn: async () => {
       const { data: ambassadors } = await supabase
         .from('ambassadors')
-        .select('*, profiles(full_name, avatar_url)')
+        .select('*, profiles(name, avatar_url)')
         .eq('is_active', true);
 
       const { data: commissions } = await supabase
