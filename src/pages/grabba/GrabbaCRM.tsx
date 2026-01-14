@@ -591,9 +591,14 @@ export default function GrabbaCRM() {
               <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30">
                 Wholesaler
               </Badge>
+              {wholesaler.status === 'active' ? (
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Active</Badge>
+              ) : (
+                <Badge className="bg-muted text-muted-foreground">Inactive</Badge>
+              )}
             </div>
 
-            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
               {wholesaler.phone && (
                 <span className="flex items-center gap-1">
                   <Phone className="h-3 w-3" />
@@ -606,27 +611,76 @@ export default function GrabbaCRM() {
                   {wholesaler.email}
                 </span>
               )}
+              {wholesaler.neighborhood && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {wholesaler.neighborhood}
+                </span>
+              )}
+              {wholesaler.tags && (
+                <span className="flex items-center gap-1 text-xs">
+                  {wholesaler.tags}
+                </span>
+              )}
             </div>
           </div>
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/wholesale/${wholesaler.id}`);
-                  }}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>View Wholesaler</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div className="flex items-center gap-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditModal(wholesaler);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit Wholesaler</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDeleteModal(wholesaler);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Delete Wholesaler</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/wholesale/${wholesaler.id}`);
+                    }}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View Wholesaler</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
       </CardContent>
     </Card>

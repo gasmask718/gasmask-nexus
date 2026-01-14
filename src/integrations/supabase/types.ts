@@ -28760,6 +28760,7 @@ export type Database = {
       wholesalers: {
         Row: {
           address: string | null
+          city: string | null
           company_id: string | null
           contact_name: string | null
           created_at: string | null
@@ -28769,11 +28770,18 @@ export type Database = {
           id: string
           is_simulation: boolean | null
           name: string
+          neighborhood: string | null
           phone: string | null
+          phone_secondary: string | null
+          phone_whatsapp: string | null
+          social_media: string | null
+          state: string | null
           status: string | null
+          tags: string | null
         }
         Insert: {
           address?: string | null
+          city?: string | null
           company_id?: string | null
           contact_name?: string | null
           created_at?: string | null
@@ -28783,11 +28791,18 @@ export type Database = {
           id?: string
           is_simulation?: boolean | null
           name: string
+          neighborhood?: string | null
           phone?: string | null
+          phone_secondary?: string | null
+          phone_whatsapp?: string | null
+          social_media?: string | null
+          state?: string | null
           status?: string | null
+          tags?: string | null
         }
         Update: {
           address?: string | null
+          city?: string | null
           company_id?: string | null
           contact_name?: string | null
           created_at?: string | null
@@ -28797,8 +28812,14 @@ export type Database = {
           id?: string
           is_simulation?: boolean | null
           name?: string
+          neighborhood?: string | null
           phone?: string | null
+          phone_secondary?: string | null
+          phone_whatsapp?: string | null
+          social_media?: string | null
+          state?: string | null
           status?: string | null
+          tags?: string | null
         }
         Relationships: [
           {

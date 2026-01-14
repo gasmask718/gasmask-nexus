@@ -180,9 +180,16 @@ export const routeFields: FieldConfig[] = [
 export const wholesalerFields: FieldConfig[] = [
   { name: 'name', label: 'Wholesaler Name', type: 'text', required: true, placeholder: 'Company name' },
   { name: 'contact_name', label: 'Contact Name', type: 'text', placeholder: 'Primary contact' },
-  { name: 'phone', label: 'Phone', type: 'phone', placeholder: '(555) 123-4567' },
+  { name: 'phone', label: 'Primary Phone', type: 'phone', required: true, placeholder: '(555) 123-4567' },
+  { name: 'phone_secondary', label: 'Secondary Phone', type: 'phone', placeholder: '(555) 987-6543' },
+  { name: 'phone_whatsapp', label: 'WhatsApp', type: 'phone', placeholder: 'WhatsApp number' },
   { name: 'email', label: 'Email', type: 'email', placeholder: 'contact@wholesaler.com' },
+  { name: 'social_media', label: 'Social Media', type: 'text', placeholder: '@username or URL' },
   { name: 'address', label: 'Address', type: 'text', placeholder: 'Business address' },
+  { name: 'neighborhood', label: 'Neighborhood', type: 'text', placeholder: 'e.g., Bronx, Harlem' },
+  { name: 'city', label: 'City', type: 'text', placeholder: 'e.g., New York' },
+  { name: 'state', label: 'State', type: 'text', placeholder: 'e.g., NY, CA' },
+  { name: 'tags', label: 'Tags', type: 'text', placeholder: 'Comma-separated tags' },
   { name: 'status', label: 'Status', type: 'select', defaultValue: 'active', options: [
     { value: 'active', label: 'Active' },
     { value: 'inactive', label: 'Inactive' },
