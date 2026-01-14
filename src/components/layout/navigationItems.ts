@@ -40,6 +40,7 @@ export const navigationItems = [
   
   // Delivery & Logistics
   { to: '/delivery', icon: Truck, label: 'Delivery Dashboard', roles: ['admin', 'dispatcher', 'ops_manager'] },
+  { to: '/biker/home', icon: Bike, label: 'Biker OS', roles: ['admin', 'dispatcher', 'ops_manager', 'biker'] },
   { to: '/delivery/deliveries', icon: Package, label: 'Deliveries Board', roles: ['admin', 'dispatcher', 'ops_manager'] },
   { to: '/delivery/drivers', icon: Truck, label: 'Drivers', roles: ['admin', 'dispatcher', 'ops_manager'] },
   { to: '/delivery/bikers', icon: Bike, label: 'Bikers', roles: ['admin', 'dispatcher', 'ops_manager'] },
