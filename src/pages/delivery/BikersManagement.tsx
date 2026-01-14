@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-// Removed: import Layout from '@/components/Layout';
+import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,9 +66,8 @@ const BikersManagement: React.FC = () => {
       if (error) throw error;
       return data as Biker[];
     },
-  });
+  }); // Generate simulated bikers from simulation data
 
-  // Generate simulated bikers from simulation data
   const simBikers = useMemo(() => {
     if (!simulationMode || dbBikers.length > 0) return [];
     return simulationData.bikers.map((b) => ({
@@ -85,9 +84,8 @@ const BikersManagement: React.FC = () => {
       created_at: new Date().toISOString(),
       is_simulated: true,
     })) as (Biker & { is_simulated?: boolean })[];
-  }, [simulationMode, simulationData, dbBikers.length]);
+  }, [simulationMode, simulationData, dbBikers.length]); // Resolve data
 
-  // Resolve data
   const bikers = dbBikers.length > 0 ? dbBikers : simBikers;
   const isSimulated = dbBikers.length === 0 && simBikers.length > 0;
 
@@ -159,12 +157,10 @@ const BikersManagement: React.FC = () => {
     a.href = url;
     a.download = `bikers-${format(new Date(), "yyyy-MM-dd")}.csv`;
     a.click();
-  };
+  }; // Fetch today's performance for all bikers
 
-  // Fetch today's performance for all bikers
-  const { data: todayPerformance = [] } = useAllBikersPerformance();
+  const { data: todayPerformance = [] } = useAllBikersPerformance(); // Create a map of biker id to performance
 
-  // Create a map of biker id to performance
   const performanceMap = React.useMemo(() => {
     const map = new Map<string, any>();
     todayPerformance.forEach((p: any) => {
@@ -174,139 +170,192 @@ const BikersManagement: React.FC = () => {
   }, [todayPerformance]);
 
   return (
-    <div className="w-full">
-      <SimulationBanner />
+    <Layout>
+            <SimulationBanner />     {" "}
       <div className="container mx-auto p-4 md:p-6 space-y-6">
-        {/* Header */}
+                {/* Header */}       {" "}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                   {" "}
           <div>
+                       {" "}
             <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Bike className="h-6 w-6 text-primary" />
-              Bikers Management
-              {isSimulated && <SimulationBadge className="ml-2" />}
+                            <Bike className="h-6 w-6 text-primary" />              Bikers Management              {" "}
+              {isSimulated && <SimulationBadge className="ml-2" />}           {" "}
             </h1>
-            <p className="text-muted-foreground">Manage store checker bikers</p>
+                        <p className="text-muted-foreground">Manage store checker bikers</p>         {" "}
           </div>
+                   {" "}
           <div className="flex flex-wrap gap-2">
-            <SimulationModeToggle />
+                        <SimulationModeToggle />           {" "}
             <Button variant="outline" onClick={() => navigate("/delivery/heatmap")}>
-              <MapIcon className="h-4 w-4 mr-2" /> Heatmap
+                            <MapIcon className="h-4 w-4 mr-2" /> Heatmap            {" "}
             </Button>
+                       {" "}
             <Button variant="outline" onClick={() => navigate("/delivery/route-suggestions")}>
-              <Route className="h-4 w-4 mr-2" /> Route Suggestions
+                            <Route className="h-4 w-4 mr-2" /> Route Suggestions            {" "}
             </Button>
+                       {" "}
             <Button variant="outline" onClick={exportCSV}>
-              <Download className="h-4 w-4 mr-2" /> Export
+                            <Download className="h-4 w-4 mr-2" /> Export            {" "}
             </Button>
+                       {" "}
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+                           {" "}
               <DialogTrigger asChild>
+                               {" "}
                 <Button>
                   <Plus className="h-4 w-4 mr-2" /> Add Biker
                 </Button>
+                             {" "}
               </DialogTrigger>
+                           {" "}
               <DialogContent>
+                               {" "}
                 <DialogHeader>
-                  <DialogTitle>Add New Biker</DialogTitle>
+                                    <DialogTitle>Add New Biker</DialogTitle>               {" "}
                 </DialogHeader>
-                <BikerForm onSubmit={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} />
+                               {" "}
+                <BikerForm onSubmit={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} />     
+                       {" "}
               </DialogContent>
+                         {" "}
             </Dialog>
+                     {" "}
           </div>
+                 {" "}
         </div>
-
-        {/* Stats */}
+                {/* Stats */}       {" "}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                   {" "}
           <Card>
+                       {" "}
             <CardContent className="p-4">
+                           {" "}
               <div className="flex items-center gap-2">
-                <User className="h-5 w-5 text-muted-foreground" />
+                                <User className="h-5 w-5 text-muted-foreground" />               {" "}
                 <div>
-                  <div className="text-2xl font-bold">{bikers.length}</div>
-                  <p className="text-sm text-muted-foreground">Total Bikers</p>
+                                    <div className="text-2xl font-bold">{bikers.length}</div>                 {" "}
+                  <p className="text-sm text-muted-foreground">Total Bikers</p>               {" "}
                 </div>
+                             {" "}
               </div>
+                         {" "}
             </CardContent>
+                     {" "}
           </Card>
+                   {" "}
           <Card>
+                       {" "}
             <CardContent className="p-4">
+                           {" "}
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                <CheckCircle2 className="h-5 w-5 text-green-600" />               {" "}
                 <div>
-                  <div className="text-2xl font-bold text-green-600">{activeCount}</div>
-                  <p className="text-sm text-muted-foreground">Active</p>
+                                    <div className="text-2xl font-bold text-green-600">{activeCount}</div>             
+                      <p className="text-sm text-muted-foreground">Active</p>               {" "}
                 </div>
+                             {" "}
               </div>
+                         {" "}
             </CardContent>
+                     {" "}
           </Card>
+                   {" "}
           <Card>
+                       {" "}
             <CardContent className="p-4">
+                           {" "}
               <div className="flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-yellow-600" />
+                                <XCircle className="h-5 w-5 text-yellow-600" />               {" "}
                 <div>
-                  <div className="text-2xl font-bold text-yellow-600">{pausedCount}</div>
-                  <p className="text-sm text-muted-foreground">Paused</p>
+                                    <div className="text-2xl font-bold text-yellow-600">{pausedCount}</div>             
+                      <p className="text-sm text-muted-foreground">Paused</p>               {" "}
                 </div>
+                             {" "}
               </div>
+                         {" "}
             </CardContent>
+                     {" "}
           </Card>
+                   {" "}
           <Card>
+                       {" "}
             <CardContent className="p-4">
+                           {" "}
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
+                                <TrendingUp className="h-5 w-5 text-primary" />               {" "}
                 <div>
+                                   {" "}
                   <div className="text-2xl font-bold text-primary">
+                                       {" "}
                     {todayPerformance.length > 0
                       ? Math.round(
                           todayPerformance.reduce((s: number, p: any) => s + (p.score || 0), 0) /
                             todayPerformance.length,
                         )
                       : "--"}
+                                     {" "}
                   </div>
-                  <p className="text-sm text-muted-foreground">Avg Score</p>
+                                    <p className="text-sm text-muted-foreground">Avg Score</p>               {" "}
                 </div>
+                             {" "}
               </div>
+                         {" "}
             </CardContent>
+                     {" "}
           </Card>
+                 {" "}
         </div>
-
-        {/* Tabs: Bikers / Issues */}
+                {/* Tabs: Bikers / Issues */}       {" "}
         <Tabs defaultValue="bikers">
+                   {" "}
           <TabsList>
+                       {" "}
             <TabsTrigger value="bikers">
-              <Bike className="h-4 w-4 mr-2" /> Bikers
+                            <Bike className="h-4 w-4 mr-2" /> Bikers            {" "}
             </TabsTrigger>
+                       {" "}
             <TabsTrigger value="issues">
-              <AlertCircle className="h-4 w-4 mr-2" /> Issues Board
+                            <AlertCircle className="h-4 w-4 mr-2" /> Issues Board            {" "}
             </TabsTrigger>
+                     {" "}
           </TabsList>
-
+                   {" "}
           <TabsContent value="bikers" className="mt-4 space-y-4">
-            {/* Filters */}
+                        {/* Filters */}           {" "}
             <div className="flex flex-col md:flex-row gap-4">
+                           {" "}
               <div className="relative flex-1">
+                               {" "}
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                               {" "}
                 <Input
                   placeholder="Search by name, phone, or territory..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
+                             {" "}
               </div>
+                           {" "}
               <Select value={statusFilter} onValueChange={setStatusFilter}>
+                               {" "}
                 <SelectTrigger className="w-full md:w-48">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
+                                    <Filter className="h-4 w-4 mr-2" />
+                                    <SelectValue placeholder="Filter by status" />               {" "}
                 </SelectTrigger>
+                               {" "}
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
-                  <SelectItem value="offboarded">Offboarded</SelectItem>
+                                    <SelectItem value="all">All Statuses</SelectItem>                 {" "}
+                  <SelectItem value="active">Active</SelectItem>                 {" "}
+                  <SelectItem value="paused">Paused</SelectItem>                 {" "}
+                  <SelectItem value="offboarded">Offboarded</SelectItem>               {" "}
                 </SelectContent>
+                             {" "}
               </Select>
+                         {" "}
             </div>
-
-            {/* Bikers Grid */}
+                        {/* Bikers Grid */}           {" "}
             {isLoading ? (
               <Card>
                 <CardContent className="p-8 text-center text-muted-foreground">Loading...</CardContent>
@@ -317,27 +366,43 @@ const BikersManagement: React.FC = () => {
               </Card>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                               {" "}
                 {filteredBikers.map((biker) => {
                   const perf = performanceMap.get(biker.id);
                   return (
                     <Card key={biker.id} className="hover:shadow-md transition-shadow">
+                                           {" "}
                       <CardHeader className="pb-2">
+                                               {" "}
                         <div className="flex justify-between items-start">
+                                                   {" "}
                           <div className="flex items-center gap-2">
+                                                       {" "}
                             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Bike className="h-5 w-5 text-primary" />
+                                                            <Bike className="h-5 w-5 text-primary" />                   
+                                     {" "}
                             </div>
+                                                       {" "}
                             <div>
-                              <CardTitle className="text-lg">{biker.full_name}</CardTitle>
+                                                            <CardTitle className="text-lg">{biker.full_name}</CardTitle>
+                                                           {" "}
                               {biker.territory && (
                                 <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" /> {biker.territory}
+                                                                    <MapPin className="h-3 w-3" /> {biker.territory}   
+                                                             {" "}
                                 </p>
                               )}
+                                                         {" "}
                             </div>
+                                                     {" "}
                           </div>
+                                                   {" "}
                           <div className="flex flex-col items-end gap-1">
-                            <Badge variant={biker.status === "active" ? "default" : "secondary"}>{biker.status}</Badge>
+                                                       {" "}
+                            <Badge variant={biker.status === "active" ? "default" : "secondary"}>
+                                                            {biker.status}                           {" "}
+                            </Badge>
+                                                       {" "}
                             {perf && (
                               <Badge
                                 variant="outline"
@@ -349,96 +414,137 @@ const BikersManagement: React.FC = () => {
                                       : "border-destructive text-destructive"
                                 }
                               >
-                                Score: {Math.round(perf.score)}
+                                                                Score: {Math.round(perf.score)}                         
+                                   {" "}
                               </Badge>
                             )}
+                                                     {" "}
                           </div>
+                                                 {" "}
                         </div>
+                                             {" "}
                       </CardHeader>
+                                           {" "}
                       <CardContent className="space-y-3">
+                                               {" "}
                         <div className="space-y-1 text-sm">
+                                                   {" "}
                           <a
                             href={`tel:${biker.phone}`}
                             className="flex items-center gap-2 text-muted-foreground hover:text-primary"
                           >
-                            <Phone className="h-4 w-4" /> {biker.phone}
+                                                        <Phone className="h-4 w-4" /> {biker.phone}                     
+                               {" "}
                           </a>
+                                                   {" "}
                           {biker.email && (
                             <a
                               href={`mailto:${biker.email}`}
                               className="flex items-center gap-2 text-muted-foreground hover:text-primary"
                             >
-                              <Mail className="h-4 w-4" /> {biker.email}
+                                                            <Mail className="h-4 w-4" /> {biker.email}                 
+                                       {" "}
                             </a>
                           )}
+                                                 {" "}
                         </div>
-
-                        {/* Performance stats */}
+                                                                         {/* Performance stats */}                     
+                         {" "}
                         {perf && (
                           <div className="grid grid-cols-3 gap-2 text-xs text-center">
+                                                       {" "}
                             <div className="p-1 bg-muted rounded">
-                              <div className="font-semibold">{perf.tasks_approved || 0}</div>
-                              <div className="text-muted-foreground">Approved</div>
+                                                           {" "}
+                              <div className="font-semibold">{perf.tasks_approved || 0}</div>                           
+                                <div className="text-muted-foreground">Approved</div>                           {" "}
                             </div>
+                                                       {" "}
                             <div className="p-1 bg-muted rounded">
-                              <div className="font-semibold">{perf.tasks_rejected || 0}</div>
-                              <div className="text-muted-foreground">Rejected</div>
+                                                           {" "}
+                              <div className="font-semibold">{perf.tasks_rejected || 0}</div>                           
+                                <div className="text-muted-foreground">Rejected</div>                           {" "}
                             </div>
+                                                       {" "}
                             <div className="p-1 bg-muted rounded">
-                              <div className="font-semibold">{perf.issues_reported || 0}</div>
-                              <div className="text-muted-foreground">Issues</div>
+                                                           {" "}
+                              <div className="font-semibold">{perf.issues_reported || 0}</div>                         
+                                  <div className="text-muted-foreground">Issues</div>                           {" "}
                             </div>
+                                                     {" "}
                           </div>
                         )}
-
+                                                                        {" "}
                         <div className="flex gap-2 pt-2">
+                                                   {" "}
                           <Button
                             size="sm"
                             variant="outline"
                             className="flex-1"
                             onClick={() => navigate(`/delivery/bikers/${biker.id}`)}
                           >
-                            <Eye className="h-4 w-4 mr-1" /> View
+                                                        <Eye className="h-4 w-4 mr-1" /> View                        
+                             {" "}
                           </Button>
+                                                   {" "}
                           <Dialog>
+                                                       {" "}
                             <DialogTrigger asChild>
+                                                           {" "}
                               <Button size="sm" variant="outline" onClick={() => setEditingBiker(biker)}>
-                                <Edit className="h-4 w-4" />
+                                                                <Edit className="h-4 w-4" />                           
+                                 {" "}
                               </Button>
+                                                         {" "}
                             </DialogTrigger>
+                                                       {" "}
                             <DialogContent>
+                                                           {" "}
                               <DialogHeader>
-                                <DialogTitle>Edit Biker</DialogTitle>
+                                                                <DialogTitle>Edit Biker</DialogTitle>                   
+                                         {" "}
                               </DialogHeader>
+                                                           {" "}
                               <BikerForm
                                 initialData={biker}
                                 onSubmit={(data) => updateMutation.mutate({ id: biker.id, data })}
                                 isLoading={updateMutation.isPending}
                               />
+                                                         {" "}
                             </DialogContent>
+                                                     {" "}
                           </Dialog>
+                                                   {" "}
                           <Button
                             size="sm"
                             variant={biker.status === "active" ? "secondary" : "default"}
                             onClick={() => toggleStatusMutation.mutate({ id: biker.id, status: biker.status })}
                           >
-                            {biker.status === "active" ? "Pause" : "Activate"}
+                                                        {biker.status === "active" ? "Pause" : "Activate"}             
+                                       {" "}
                           </Button>
+                                                 {" "}
                         </div>
+                                             {" "}
                       </CardContent>
+                                         {" "}
                     </Card>
                   );
                 })}
+                             {" "}
               </div>
             )}
+                     {" "}
           </TabsContent>
-
+                   {" "}
           <TabsContent value="issues" className="mt-4">
-            <IssuesBoard />
+                        <IssuesBoard />         {" "}
           </TabsContent>
+                 {" "}
         </Tabs>
+             {" "}
       </div>
-    </div>
+         {" "}
+    </Layout>
   );
 };
 
@@ -459,73 +565,96 @@ const BikerForm: React.FC<{
 
   return (
     <div className="space-y-4 mt-4">
+           {" "}
       <div>
-        <label className="text-sm font-medium">Full Name</label>
+                <label className="text-sm font-medium">Full Name</label>
+               {" "}
         <Input
           value={formData.full_name}
           onChange={(e) => setFormData((prev) => ({ ...prev, full_name: e.target.value }))}
           placeholder="Enter full name"
         />
+             {" "}
       </div>
+           {" "}
       <div>
-        <label className="text-sm font-medium">Phone</label>
+                <label className="text-sm font-medium">Phone</label>
+               {" "}
         <Input
           value={formData.phone}
           onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
           placeholder="Enter phone number"
         />
+             {" "}
       </div>
+           {" "}
       <div>
-        <label className="text-sm font-medium">Email (Optional)</label>
+                <label className="text-sm font-medium">Email (Optional)</label>
+               {" "}
         <Input
           type="email"
           value={formData.email}
           onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
           placeholder="Enter email"
         />
+             {" "}
       </div>
+           {" "}
       <div>
-        <label className="text-sm font-medium">Territory</label>
+                <label className="text-sm font-medium">Territory</label>
+               {" "}
         <Input
           value={formData.territory}
           onChange={(e) => setFormData((prev) => ({ ...prev, territory: e.target.value }))}
           placeholder="e.g., Brooklyn, Manhattan"
         />
+             {" "}
       </div>
+           {" "}
       <div className="grid grid-cols-2 gap-4">
+               {" "}
         <div>
-          <label className="text-sm font-medium">Payout Method</label>
+                    <label className="text-sm font-medium">Payout Method</label>         {" "}
           <Select
             value={formData.payout_method}
             onValueChange={(v) => setFormData((prev) => ({ ...prev, payout_method: v }))}
           >
+                       {" "}
             <SelectTrigger>
-              <SelectValue />
+                            <SelectValue />           {" "}
             </SelectTrigger>
+                       {" "}
             <SelectContent>
-              <SelectItem value="cash">Cash</SelectItem>
-              <SelectItem value="zelle">Zelle</SelectItem>
-              <SelectItem value="ach">ACH</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
+                            <SelectItem value="cash">Cash</SelectItem>             {" "}
+              <SelectItem value="zelle">Zelle</SelectItem>              <SelectItem value="ach">ACH</SelectItem>       
+                    <SelectItem value="other">Other</SelectItem>           {" "}
             </SelectContent>
+                     {" "}
           </Select>
+                 {" "}
         </div>
+               {" "}
         <div>
-          <label className="text-sm font-medium">Payout Handle</label>
+                    <label className="text-sm font-medium">Payout Handle</label>
+                   {" "}
           <Input
             value={formData.payout_handle}
             onChange={(e) => setFormData((prev) => ({ ...prev, payout_handle: e.target.value }))}
             placeholder="Phone or email"
           />
+                 {" "}
         </div>
+             {" "}
       </div>
+           {" "}
       <Button
         className="w-full"
         onClick={() => onSubmit(formData)}
         disabled={!formData.full_name || !formData.phone || isLoading}
       >
-        {isLoading ? "Saving..." : initialData ? "Update Biker" : "Create Biker"}
+                {isLoading ? "Saving..." : initialData ? "Update Biker" : "Create Biker"}     {" "}
       </Button>
+         {" "}
     </div>
   );
 };
