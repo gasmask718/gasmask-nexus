@@ -511,6 +511,7 @@ export default function AppSidebar() {
               ], "text-blue-400 hover:bg-blue-500/10")}
 
               {renderSection('bikers-os', 'Store Checkers OS (Bikers)', '🚴', [
+                { path: '/biker/home', label: 'Bikers Live', emoji: '📡' },
                 { path: '/delivery/bikers', label: 'Biker Management', emoji: '🚴' },
                 { path: '/delivery/payouts', label: 'Biker Payouts', emoji: '💵' },
                 { path: '/delivery/my-route', label: 'My Route', emoji: '🗺️' },
