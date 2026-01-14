@@ -2619,6 +2619,8 @@ export type Database = {
           id: string
           is_active: boolean
           is_simulation: boolean | null
+          state: string | null
+          tags: string | null
           tier: string
           total_earnings: number
           tracking_code: string
@@ -2632,6 +2634,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_simulation?: boolean | null
+          state?: string | null
+          tags?: string | null
           tier?: string
           total_earnings?: number
           tracking_code: string
@@ -2645,6 +2649,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_simulation?: boolean | null
+          state?: string | null
+          tags?: string | null
           tier?: string
           total_earnings?: number
           tracking_code?: string
