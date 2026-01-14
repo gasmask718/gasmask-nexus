@@ -1,7 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -170,7 +169,7 @@ export default function BrandDashboard() {
   });
 
   return (
-    <Layout>
+    <div className="p-6 space-y-6">
       <div className="space-y-6">
         {/* Header */}
         <div className={`p-6 rounded-xl bg-gradient-to-r ${brandConfig.gradient} text-white`}>
@@ -404,6 +403,6 @@ export default function BrandDashboard() {
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
+    </div>
   );
 }

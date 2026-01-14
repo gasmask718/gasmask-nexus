@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -200,7 +199,7 @@ const WorkerPayouts: React.FC = () => {
   };
 
   return (
-    <Layout>
+    <>
       <SimulationBanner />
       <div className="container mx-auto p-4 md:p-6 space-y-6">
         {/* Header */}
@@ -459,7 +458,7 @@ const WorkerPayouts: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </Layout>
+    </>
   );
 };
 

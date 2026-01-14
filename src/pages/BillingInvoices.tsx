@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import Layout from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,7 +51,7 @@ const BillingInvoices = () => {
   };
 
   return (
-    <Layout>
+    <div className="p-6 space-y-6">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -142,7 +141,7 @@ const BillingInvoices = () => {
           </Card>
         )}
       </div>
-    </Layout>
+    </div>
   );
 };
 
