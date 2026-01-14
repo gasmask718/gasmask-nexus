@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +71,8 @@ export default function GrabbaCRM() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
+  const [driverDetailOpen, setDriverDetailOpen] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<any>(null);
 
   // Simulation mode context - define early so CRUD can use it
   const { simulationMode } = useSimulationMode();
@@ -638,9 +641,14 @@ export default function GrabbaCRM() {
               <Award className="h-4 w-4 text-amber-500" />
               <span className="text-lg font-semibold">{ambassador.profiles?.full_name || "Ambassador"}</span>
               <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">{ambassador.tier}</Badge>
+              {ambassador.is_active ? (
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Active</Badge>
+              ) : (
+                <Badge className="bg-muted text-muted-foreground">Inactive</Badge>
+              )}
             </div>
 
-            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1">
                 <FileText className="h-3 w-3" />
                 Code: {ambassador.tracking_code}
@@ -648,34 +656,71 @@ export default function GrabbaCRM() {
               <span className="flex items-center gap-1">
                 <DollarSign className="h-3 w-3" />${ambassador.total_earnings?.toLocaleString() || "0"} earned
               </span>
+              {ambassador.state && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {ambassador.state}
+                </span>
+              )}
+              {ambassador.tags && (
+                <span className="flex items-center gap-1 text-xs">
+                  {ambassador.tags}
+                </span>
+              )}
             </div>
           </div>
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/grabba/ambassadors`);
-                  }}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>View Ambassador</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div className="flex items-center gap-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditModal(ambassador);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit Ambassador</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDeleteModal(ambassador);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Delete Ambassador</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 
   const DriverCard = ({ driver }: { driver: any }) => (
-    <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-blue-500/30 transition-all hover:shadow-lg">
+    <Card 
+      className="bg-card/50 backdrop-blur border-border/50 hover:border-blue-500/30 transition-all hover:shadow-lg cursor-pointer"
+      onClick={() => {
+        setSelectedDriver(driver);
+        setDriverDetailOpen(true);
+      }}
+    >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -716,24 +761,44 @@ export default function GrabbaCRM() {
             </div>
           </div>
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/delivery/drivers`);
-                  }}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>View Driver</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div className="flex items-center gap-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditModal(driver);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit Driver</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDeleteModal(driver);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Delete Driver</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -1184,9 +1249,110 @@ export default function GrabbaCRM() {
       <DeleteConfirmModal
         open={deleteModalOpen}
         onOpenChange={setDeleteModalOpen}
-        itemName={selectedEntity?.name}
+        itemName={selectedEntity?.name || selectedEntity?.full_name || selectedEntity?.tracking_code}
         onConfirm={handleDelete}
       />
+
+      {/* Driver Detail Modal */}
+      <Dialog open={driverDetailOpen} onOpenChange={setDriverDetailOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Car className="h-5 w-5 text-blue-500" />
+              {selectedDriver?.full_name || "Driver Details"}
+            </DialogTitle>
+            <DialogDescription>
+              Full driver profile and information
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedDriver && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Badge className={selectedDriver.status === 'active' 
+                  ? "bg-green-500/20 text-green-400 border-green-500/30" 
+                  : "bg-muted text-muted-foreground"}>
+                  {selectedDriver.status || "Unknown"}
+                </Badge>
+                {selectedDriver.vehicle_type && (
+                  <Badge variant="outline">{selectedDriver.vehicle_type}</Badge>
+                )}
+              </div>
+              
+              <div className="grid gap-3">
+                {selectedDriver.phone && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span>{String(selectedDriver.phone)}</span>
+                  </div>
+                )}
+                {selectedDriver.email && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span>{selectedDriver.email}</span>
+                  </div>
+                )}
+                {selectedDriver.home_base && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{selectedDriver.home_base}</span>
+                  </div>
+                )}
+                {selectedDriver.license_number && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span>License: {selectedDriver.license_number}</span>
+                  </div>
+                )}
+              </div>
+              
+              {(selectedDriver.payout_method || selectedDriver.payout_handle) && (
+                <div className="border-t pt-3 mt-3">
+                  <p className="text-xs text-muted-foreground mb-2">Payout Information</p>
+                  <div className="grid gap-2">
+                    {selectedDriver.payout_method && (
+                      <div className="flex items-center gap-3 text-sm">
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <span className="capitalize">{selectedDriver.payout_method}</span>
+                      </div>
+                    )}
+                    {selectedDriver.payout_handle && (
+                      <div className="flex items-center gap-3 text-sm">
+                        <span className="text-muted-foreground ml-7">{selectedDriver.payout_handle}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex gap-2 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    setDriverDetailOpen(false);
+                    openEditModal(selectedDriver);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  className="flex-1"
+                  onClick={() => {
+                    setDriverDetailOpen(false);
+                    openDeleteModal(selectedDriver);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
