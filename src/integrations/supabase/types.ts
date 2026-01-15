@@ -2528,6 +2528,62 @@ export type Database = {
           },
         ]
       }
+      ambassador_online_sales: {
+        Row: {
+          ambassador_id: string
+          commission_amount: number
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          id: string
+          order_amount: number
+          order_reference: string | null
+          product_details: Json | null
+          sale_date: string
+          status: string
+          tracking_code: string
+          updated_at: string
+        }
+        Insert: {
+          ambassador_id: string
+          commission_amount?: number
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          order_amount?: number
+          order_reference?: string | null
+          product_details?: Json | null
+          sale_date?: string
+          status?: string
+          tracking_code: string
+          updated_at?: string
+        }
+        Update: {
+          ambassador_id?: string
+          commission_amount?: number
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          order_amount?: number
+          order_reference?: string | null
+          product_details?: Json | null
+          sale_date?: string
+          status?: string
+          tracking_code?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_online_sales_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ambassador_profiles: {
         Row: {
           brand: string
