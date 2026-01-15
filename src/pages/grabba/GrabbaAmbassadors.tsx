@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { 
   Award, Users, DollarSign, TrendingUp, Plus, Star, MapPin, 
-  Store, Package, Search, Building2, Wallet, CheckCircle2, Clock, Edit, Trash2
+  Store, Package, Search, Building2, Wallet, CheckCircle2, Clock, Edit, Trash2, ShoppingCart
 } from "lucide-react";
 import { format } from "date-fns";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
@@ -19,6 +19,7 @@ import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
 import { TableRowActions, type RowAction } from "@/components/crud/TableRowActions";
 import { ambassadorFields } from "@/config/entityFieldConfigs";
 import { toast } from "sonner";
+import { AmbassadorSalesMetricsModal } from "@/components/grabba/AmbassadorSalesMetricsModal";
 
 export default function GrabbaAmbassadors() {
   const { selectedBrand, setSelectedBrand } = useGrabbaBrand();
@@ -30,6 +31,7 @@ export default function GrabbaAmbassadors() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedAmbassador, setSelectedAmbassador] = useState<any>(null);
+  const [salesModalOpen, setSalesModalOpen] = useState(false);
   
   // CRUD Mutations
   const createMutation = useMutation({
@@ -320,6 +322,7 @@ export default function GrabbaAmbassadors() {
                       const ambWholesalers = assignments?.filter(a => a.ambassador?.id === amb.id && (a.role_type === 'wholesaler_finder' || a.company?.type === 'wholesaler'))?.length || 0;
                       
                       const rowActions: RowAction[] = [
+                        { type: 'view', label: 'View Sales', onClick: () => { setSelectedAmbassador(amb); setSalesModalOpen(true); }},
                         { type: 'edit', onClick: () => { setSelectedAmbassador(amb); setEditModalOpen(true); }},
                         { type: amb.is_active ? 'deactivate' : 'activate', onClick: () => toggleStatusMutation.mutate({ id: amb.id, is_active: !amb.is_active })},
                         { type: 'delete', onClick: () => { setSelectedAmbassador(amb); setDeleteModalOpen(true); }, destructive: true },
@@ -770,6 +773,17 @@ export default function GrabbaAmbassadors() {
           }
         }}
       />
+      
+      {/* Online Sales Metrics Modal */}
+      {selectedAmbassador && (
+        <AmbassadorSalesMetricsModal
+          open={salesModalOpen}
+          onOpenChange={setSalesModalOpen}
+          ambassadorId={selectedAmbassador.id}
+          ambassadorName={selectedAmbassador.user?.name || "Unknown"}
+          trackingCode={selectedAmbassador.tracking_code}
+        />
+      )}
     </div>
   );
 }
