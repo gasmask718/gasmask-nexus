@@ -34,9 +34,19 @@ export default function GrabbaAmbassadors() {
   // CRUD Mutations
   const createMutation = useMutation({
     mutationFn: async (data: Record<string, unknown>) => {
+      // Get current user ID to satisfy user_id NOT NULL constraint
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      if (!userId) throw new Error("You must be logged in to create an ambassador");
+      
       const { data: result, error } = await supabase
         .from("ambassadors")
-        .insert(data as any)
+        .insert({
+          ...data,
+          user_id: userId,
+          created_by: userId,
+          total_earnings: 0,
+        } as any)
         .select()
         .single();
       if (error) throw error;
