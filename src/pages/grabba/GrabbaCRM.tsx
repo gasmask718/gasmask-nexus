@@ -49,7 +49,7 @@ import { companyFields, storeFields, wholesalerFields, driverFields, bikerFields
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useSimulationMode } from "@/contexts/SimulationModeContext";
-import { EntityProfileModal } from "@/components/grabba/EntityProfileModal";
+import { EntityProfileModal, type EntityProfileType } from "@/components/grabba/EntityProfileModal";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FLOOR 1 — CRM: All stores, wholesalers, customers, and companies for Grabba brands.
@@ -78,7 +78,7 @@ export default function GrabbaCRM() {
   // New profile modal states
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [selectedProfileEntity, setSelectedProfileEntity] = useState<any>(null);
-  const [selectedProfileType, setSelectedProfileType] = useState<'wholesaler' | 'ambassador' | 'driver'>('driver');
+  const [selectedProfileType, setSelectedProfileType] = useState<EntityProfileType>('driver');
 
   // Simulation mode context - define early so CRUD can use it
   const { simulationMode } = useSimulationMode();
@@ -368,7 +368,14 @@ export default function GrabbaCRM() {
     const companyBrands = brandActivity?.[company.id] || [];
 
     return (
-      <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-primary/30 transition-all hover:shadow-lg">
+      <Card 
+        className="bg-card/50 backdrop-blur border-border/50 hover:border-blue-500/30 transition-all hover:shadow-lg cursor-pointer"
+        onClick={() => {
+          setSelectedProfileEntity(company);
+          setSelectedProfileType('company');
+          setProfileModalOpen(true);
+        }}
+      >
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
@@ -507,7 +514,14 @@ export default function GrabbaCRM() {
     const inventoryCount = tubeInventory?.[store.id] || 0;
 
     return (
-      <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-green-500/30 transition-all hover:shadow-lg">
+      <Card 
+        className="bg-card/50 backdrop-blur border-border/50 hover:border-green-500/30 transition-all hover:shadow-lg cursor-pointer"
+        onClick={() => {
+          setSelectedProfileEntity(store);
+          setSelectedProfileType('store');
+          setProfileModalOpen(true);
+        }}
+      >
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
@@ -880,7 +894,14 @@ export default function GrabbaCRM() {
   );
 
   const BikerCard = ({ biker }: { biker: any }) => (
-    <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-green-500/30 transition-all hover:shadow-lg">
+    <Card 
+      className="bg-card/50 backdrop-blur border-border/50 hover:border-green-500/30 transition-all hover:shadow-lg cursor-pointer"
+      onClick={() => {
+        setSelectedProfileEntity(biker);
+        setSelectedProfileType('biker');
+        setProfileModalOpen(true);
+      }}
+    >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -1175,11 +1196,17 @@ export default function GrabbaCRM() {
                   <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Companies</span>
                   <span className="sm:hidden">Co.</span>
+                  {companies && companies.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs px-1">{companies.length}</Badge>
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="stores" className="flex items-center gap-1 text-xs sm:text-sm">
                   <Store className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Stores</span>
                   <span className="sm:hidden">Str.</span>
+                  {stores && stores.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs px-1">{stores.length}</Badge>
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="wholesalers" className="flex items-center gap-1 text-xs sm:text-sm">
                   <Truck className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -1209,6 +1236,9 @@ export default function GrabbaCRM() {
                   <Bike className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Bikers</span>
                   <span className="sm:hidden">Bkr.</span>
+                  {bikersData && bikersData.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs px-1">{bikersData.length}</Badge>
+                  )}
                 </TabsTrigger>
               </TabsList>
 

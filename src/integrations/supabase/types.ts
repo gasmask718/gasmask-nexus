@@ -3673,6 +3673,44 @@ export type Database = {
           },
         ]
       }
+      biker_notes: {
+        Row: {
+          biker_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_pinned: boolean
+          note_text: string
+          updated_at: string
+        }
+        Insert: {
+          biker_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_pinned?: boolean
+          note_text: string
+          updated_at?: string
+        }
+        Update: {
+          biker_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_pinned?: boolean
+          note_text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "biker_notes_biker_id_fkey"
+            columns: ["biker_id"]
+            isOneToOne: false
+            referencedRelation: "bikers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       biker_performance_daily: {
         Row: {
           avg_time_to_submit_minutes: number | null
@@ -7995,6 +8033,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "company_contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_notes: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_pinned: boolean
+          note_text: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_pinned?: boolean
+          note_text: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_pinned?: boolean
+          note_text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_notes_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
