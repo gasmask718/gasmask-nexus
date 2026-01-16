@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 interface EntityNotesSectionProps {
-  entityType: 'ambassador' | 'wholesaler';
+  entityType: 'ambassador' | 'wholesaler' | 'driver';
   entityId: string | undefined;
   entityName?: string;
 }

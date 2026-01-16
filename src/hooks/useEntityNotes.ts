@@ -13,7 +13,7 @@ export interface EntityNote {
   creator_name?: string;
 }
 
-type EntityType = 'ambassador' | 'wholesaler';
+type EntityType = 'ambassador' | 'wholesaler' | 'driver';
 
 export function useEntityNotes(entityType: EntityType, entityId: string | undefined) {
   const queryClient = useQueryClient();
@@ -24,8 +24,16 @@ export function useEntityNotes(entityType: EntityType, entityId: string | undefi
     queryFn: async () => {
       if (!entityId) return [];
 
-      const tableName = entityType === 'ambassador' ? 'ambassador_notes' : 'wholesaler_notes';
-      const fkColumn = entityType === 'ambassador' ? 'ambassador_id' : 'wholesaler_id';
+      const tableName = entityType === 'ambassador' 
+        ? 'ambassador_notes' 
+        : entityType === 'wholesaler' 
+          ? 'wholesaler_notes' 
+          : 'driver_notes';
+      const fkColumn = entityType === 'ambassador' 
+        ? 'ambassador_id' 
+        : entityType === 'wholesaler' 
+          ? 'wholesaler_id' 
+          : 'driver_id';
 
       const { data, error } = await supabase
         .from(tableName as 'ambassador_notes')
@@ -62,8 +70,16 @@ export function useEntityNotes(entityType: EntityType, entityId: string | undefi
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const tableName = entityType === 'ambassador' ? 'ambassador_notes' : 'wholesaler_notes';
-      const fkColumn = entityType === 'ambassador' ? 'ambassador_id' : 'wholesaler_id';
+      const tableName = entityType === 'ambassador' 
+        ? 'ambassador_notes' 
+        : entityType === 'wholesaler' 
+          ? 'wholesaler_notes' 
+          : 'driver_notes';
+      const fkColumn = entityType === 'ambassador' 
+        ? 'ambassador_id' 
+        : entityType === 'wholesaler' 
+          ? 'wholesaler_id' 
+          : 'driver_id';
 
       const insertData: Record<string, any> = {
         [fkColumn]: entityId,
@@ -93,7 +109,11 @@ export function useEntityNotes(entityType: EntityType, entityId: string | undefi
   // Update note text
   const updateMutation = useMutation({
     mutationFn: async ({ noteId, noteText }: { noteId: string; noteText: string }) => {
-      const tableName = entityType === 'ambassador' ? 'ambassador_notes' : 'wholesaler_notes';
+      const tableName = entityType === 'ambassador' 
+        ? 'ambassador_notes' 
+        : entityType === 'wholesaler' 
+          ? 'wholesaler_notes' 
+          : 'driver_notes';
       
       const { data, error } = await supabase
         .from(tableName as 'ambassador_notes')
@@ -117,7 +137,11 @@ export function useEntityNotes(entityType: EntityType, entityId: string | undefi
   // Toggle pin
   const togglePinMutation = useMutation({
     mutationFn: async ({ noteId, isPinned }: { noteId: string; isPinned: boolean }) => {
-      const tableName = entityType === 'ambassador' ? 'ambassador_notes' : 'wholesaler_notes';
+      const tableName = entityType === 'ambassador' 
+        ? 'ambassador_notes' 
+        : entityType === 'wholesaler' 
+          ? 'wholesaler_notes' 
+          : 'driver_notes';
       
       const { data, error } = await supabase
         .from(tableName as 'ambassador_notes')
@@ -140,7 +164,11 @@ export function useEntityNotes(entityType: EntityType, entityId: string | undefi
   // Delete note
   const deleteMutation = useMutation({
     mutationFn: async ({ noteId }: { noteId: string }) => {
-      const tableName = entityType === 'ambassador' ? 'ambassador_notes' : 'wholesaler_notes';
+      const tableName = entityType === 'ambassador' 
+        ? 'ambassador_notes' 
+        : entityType === 'wholesaler' 
+          ? 'wholesaler_notes' 
+          : 'driver_notes';
       
       const { error } = await supabase
         .from(tableName as 'ambassador_notes')

@@ -49,6 +49,7 @@ import { companyFields, storeFields, wholesalerFields, driverFields, bikerFields
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useSimulationMode } from "@/contexts/SimulationModeContext";
+import { EntityProfileModal } from "@/components/grabba/EntityProfileModal";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FLOOR 1 — CRM: All stores, wholesalers, customers, and companies for Grabba brands.
@@ -73,6 +74,11 @@ export default function GrabbaCRM() {
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
   const [driverDetailOpen, setDriverDetailOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<any>(null);
+  
+  // New profile modal states
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [selectedProfileEntity, setSelectedProfileEntity] = useState<any>(null);
+  const [selectedProfileType, setSelectedProfileType] = useState<'wholesaler' | 'ambassador' | 'driver'>('driver');
 
   // Simulation mode context - define early so CRUD can use it
   const { simulationMode } = useSimulationMode();
@@ -581,7 +587,14 @@ export default function GrabbaCRM() {
   };
 
   const WholesalerCard = ({ wholesaler }: { wholesaler: any }) => (
-    <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-purple-500/30 transition-all hover:shadow-lg">
+    <Card 
+      className="bg-card/50 backdrop-blur border-border/50 hover:border-purple-500/30 transition-all hover:shadow-lg cursor-pointer"
+      onClick={() => {
+        setSelectedProfileEntity(wholesaler);
+        setSelectedProfileType('wholesaler');
+        setProfileModalOpen(true);
+      }}
+    >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -687,7 +700,14 @@ export default function GrabbaCRM() {
   );
 
   const AmbassadorCard = ({ ambassador }: { ambassador: any }) => (
-    <Card className="bg-card/50 backdrop-blur border-border/50 hover:border-amber-500/30 transition-all hover:shadow-lg">
+    <Card 
+      className="bg-card/50 backdrop-blur border-border/50 hover:border-amber-500/30 transition-all hover:shadow-lg cursor-pointer"
+      onClick={() => {
+        setSelectedProfileEntity(ambassador);
+        setSelectedProfileType('ambassador');
+        setProfileModalOpen(true);
+      }}
+    >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -771,8 +791,9 @@ export default function GrabbaCRM() {
     <Card 
       className="bg-card/50 backdrop-blur border-border/50 hover:border-blue-500/30 transition-all hover:shadow-lg cursor-pointer"
       onClick={() => {
-        setSelectedDriver(driver);
-        setDriverDetailOpen(true);
+        setSelectedProfileEntity(driver);
+        setSelectedProfileType('driver');
+        setProfileModalOpen(true);
       }}
     >
       <CardContent className="p-4">
@@ -1164,16 +1185,25 @@ export default function GrabbaCRM() {
                   <Truck className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Wholesalers</span>
                   <span className="sm:hidden">Whl.</span>
+                  {wholesalers && wholesalers.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs px-1">{wholesalers.length}</Badge>
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="ambassadors" className="flex items-center gap-1 text-xs sm:text-sm">
                   <Award className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Ambassadors</span>
                   <span className="sm:hidden">Amb.</span>
+                  {ambassadors && ambassadors.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs px-1">{ambassadors.length}</Badge>
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="drivers" className="flex items-center gap-1 text-xs sm:text-sm">
                   <Car className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Drivers</span>
                   <span className="sm:hidden">Drv.</span>
+                  {driversData && driversData.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs px-1">{driversData.length}</Badge>
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="bikers" className="flex items-center gap-1 text-xs sm:text-sm">
                   <Bike className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -1307,106 +1337,15 @@ export default function GrabbaCRM() {
         onConfirm={handleDelete}
       />
 
-      {/* Driver Detail Modal */}
-      <Dialog open={driverDetailOpen} onOpenChange={setDriverDetailOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Car className="h-5 w-5 text-blue-500" />
-              {selectedDriver?.full_name || "Driver Details"}
-            </DialogTitle>
-            <DialogDescription>
-              Full driver profile and information
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedDriver && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Badge className={selectedDriver.status === 'active' 
-                  ? "bg-green-500/20 text-green-400 border-green-500/30" 
-                  : "bg-muted text-muted-foreground"}>
-                  {selectedDriver.status || "Unknown"}
-                </Badge>
-                {selectedDriver.vehicle_type && (
-                  <Badge variant="outline">{selectedDriver.vehicle_type}</Badge>
-                )}
-              </div>
-              
-              <div className="grid gap-3">
-                {selectedDriver.phone && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{String(selectedDriver.phone)}</span>
-                  </div>
-                )}
-                {selectedDriver.email && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>{selectedDriver.email}</span>
-                  </div>
-                )}
-                {selectedDriver.home_base && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{selectedDriver.home_base}</span>
-                  </div>
-                )}
-                {selectedDriver.license_number && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span>License: {selectedDriver.license_number}</span>
-                  </div>
-                )}
-              </div>
-              
-              {(selectedDriver.payout_method || selectedDriver.payout_handle) && (
-                <div className="border-t pt-3 mt-3">
-                  <p className="text-xs text-muted-foreground mb-2">Payout Information</p>
-                  <div className="grid gap-2">
-                    {selectedDriver.payout_method && (
-                      <div className="flex items-center gap-3 text-sm">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <span className="capitalize">{selectedDriver.payout_method}</span>
-                      </div>
-                    )}
-                    {selectedDriver.payout_handle && (
-                      <div className="flex items-center gap-3 text-sm">
-                        <span className="text-muted-foreground ml-7">{selectedDriver.payout_handle}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex gap-2 pt-4 border-t">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => {
-                    setDriverDetailOpen(false);
-                    openEditModal(selectedDriver);
-                  }}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-                <Button 
-                  variant="destructive" 
-                  className="flex-1"
-                  onClick={() => {
-                    setDriverDetailOpen(false);
-                    openDeleteModal(selectedDriver);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Entity Profile Modal - Unified for Wholesalers, Ambassadors, Drivers */}
+      <EntityProfileModal
+        open={profileModalOpen}
+        onOpenChange={setProfileModalOpen}
+        entity={selectedProfileEntity}
+        entityType={selectedProfileType}
+        onEdit={(entity) => openEditModal(entity)}
+        onDelete={(entity) => openDeleteModal(entity)}
+      />
     </div>
   );
 }
