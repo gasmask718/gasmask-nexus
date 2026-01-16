@@ -393,76 +393,23 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                             <Table className="min-w-[700px] sm:min-w-full">
                               <TableHeader className="bg-muted/50">
                                 <TableRow>
-                                  <TableHead className="w-[25%]">CRM Field</TableHead>
+                                  <TableHead className="w-[25%]">File Header</TableHead>
+                                  <TableHead className="w-[25%] text-muted-foreground">Sample Data (Row 1)</TableHead>
+                                  <TableHead className="w-[30%]">Map To CRM Field</TableHead>
                                   <TableHead className="w-[20%]">Requirement</TableHead>
-                                  <TableHead className="w-[30%]">Map From Excel Header</TableHead>
-                                  <TableHead className="w-[25%] text-muted-foreground">Sample Data</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {schema.fields.map((schemaField) => {
-                                  // Find which Excel column is mapped to this CRM field
-                                  const mappedExcelColumn = Object.entries(state.columnMapping).find(
-                                    ([, crmField]) => crmField === schemaField.field
-                                  )?.[0];
+                                {state.columns.map((col) => {
+                                  const mapping = state.columnMapping[col];
+                                  const schemaField = schema.fields.find((c) => c.field === mapping);
                                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                  const sampleValue = mappedExcelColumn ? (state.rawData[0] as any)?.[mappedExcelColumn] : null;
+                                  const sampleValue = (state.rawData[0] as any)?.[col];
 
                                   return (
-                                    <TableRow key={schemaField.field}>
-                                      <TableCell className="font-medium text-sm">
-                                        <span className="flex items-center gap-2">
-                                          {schemaField.displayName}
-                                          {schemaField.required && <span className="text-destructive">*</span>}
-                                        </span>
-                                      </TableCell>
-                                      <TableCell>
-                                        <Badge
-                                          variant={schemaField.required ? "default" : "outline"}
-                                          className={schemaField.required ? "bg-primary hover:bg-primary/90" : ""}
-                                        >
-                                          {schemaField.required ? "Required" : "Optional"}
-                                        </Badge>
-                                      </TableCell>
-                                      <TableCell>
-                                        <Select
-                                          value={mappedExcelColumn || "_unmapped"}
-                                          onValueChange={(val) => {
-                                            // Remove any previous mapping to this CRM field
-                                            const newMapping = { ...state.columnMapping };
-                                            Object.keys(newMapping).forEach((key) => {
-                                              if (newMapping[key] === schemaField.field) {
-                                                delete newMapping[key];
-                                              }
-                                            });
-                                            // Add the new mapping
-                                            if (val !== "_unmapped") {
-                                              newMapping[val] = schemaField.field;
-                                            }
-                                            // Update all mappings at once
-                                            Object.keys(newMapping).forEach((key) => {
-                                              updateColumnMapping(key, newMapping[key]);
-                                            });
-                                            // Handle unmapping
-                                            if (val === "_unmapped" && mappedExcelColumn) {
-                                              updateColumnMapping(mappedExcelColumn, "");
-                                            }
-                                          }}
-                                        >
-                                          <SelectTrigger className="h-9 w-full min-w-[160px]">
-                                            <SelectValue placeholder="Select Excel column" />
-                                          </SelectTrigger>
-                                          <SelectContent className="bg-background border z-50">
-                                            <SelectItem value="_unmapped" className="text-muted-foreground italic">
-                                              -- Not Mapped --
-                                            </SelectItem>
-                                            {state.columns.map((excelCol) => (
-                                              <SelectItem key={excelCol} value={excelCol}>
-                                                {excelCol}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
+                                    <TableRow key={col}>
+                                      <TableCell className="font-medium text-sm truncate max-w-[150px]" title={col}>
+                                        {col}
                                       </TableCell>
                                       <TableCell
                                         className="text-xs text-muted-foreground font-mono truncate max-w-[150px]"
@@ -471,7 +418,44 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                         {sampleValue !== undefined && sampleValue !== null ? (
                                           String(sampleValue)
                                         ) : (
-                                          <span className="italic opacity-50">—</span>
+                                          <span className="italic opacity-50">Empty</span>
+                                        )}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Select
+                                          value={mapping || "_unmapped"}
+                                          onValueChange={(val) =>
+                                            updateColumnMapping(col, val === "_unmapped" ? "" : val)
+                                          }
+                                        >
+                                          <SelectTrigger className="h-9 w-full min-w-[160px]">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="_unmapped" className="text-muted-foreground italic">
+                                              -- Skip Column --
+                                            </SelectItem>
+                                            {schema.fields.map((schemaCol) => (
+                                              <SelectItem key={schemaCol.field} value={schemaCol.field}>
+                                                <span className="flex items-center justify-between w-full gap-2">
+                                                  {schemaCol.displayName}
+                                                  {schemaCol.required && <span className="text-destructive">*</span>}
+                                                </span>
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </TableCell>
+                                      <TableCell>
+                                        {mapping ? (
+                                          <Badge
+                                            variant={schemaField?.required ? "default" : "outline"}
+                                            className={schemaField?.required ? "bg-green-600 hover:bg-green-700" : ""}
+                                          >
+                                            {schemaField?.required ? "Required" : "Optional"}
+                                          </Badge>
+                                        ) : (
+                                          <span className="text-xs text-muted-foreground italic">Skipped</span>
                                         )}
                                       </TableCell>
                                     </TableRow>
