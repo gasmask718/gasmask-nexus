@@ -13,27 +13,30 @@ export interface EntityNote {
   creator_name?: string;
 }
 
-type EntityType = 'ambassador' | 'wholesaler' | 'driver';
+type EntityType = 'ambassador' | 'wholesaler' | 'driver' | 'company' | 'store' | 'biker';
+
+// Map entity type to table name and FK column
+const getTableConfig = (entityType: EntityType) => {
+  const config: Record<EntityType, { tableName: string; fkColumn: string }> = {
+    ambassador: { tableName: 'ambassador_notes', fkColumn: 'ambassador_id' },
+    wholesaler: { tableName: 'wholesaler_notes', fkColumn: 'wholesaler_id' },
+    driver: { tableName: 'driver_notes', fkColumn: 'driver_id' },
+    company: { tableName: 'company_notes', fkColumn: 'company_id' },
+    store: { tableName: 'store_notes', fkColumn: 'store_id' },
+    biker: { tableName: 'biker_notes', fkColumn: 'biker_id' },
+  };
+  return config[entityType];
+};
 
 export function useEntityNotes(entityType: EntityType, entityId: string | undefined) {
   const queryClient = useQueryClient();
+  const { tableName, fkColumn } = getTableConfig(entityType);
 
   // Fetch notes with creator profile
   const { data: notes = [], isLoading, error, refetch } = useQuery({
     queryKey: ['entity-notes', entityType, entityId],
     queryFn: async () => {
       if (!entityId) return [];
-
-      const tableName = entityType === 'ambassador' 
-        ? 'ambassador_notes' 
-        : entityType === 'wholesaler' 
-          ? 'wholesaler_notes' 
-          : 'driver_notes';
-      const fkColumn = entityType === 'ambassador' 
-        ? 'ambassador_id' 
-        : entityType === 'wholesaler' 
-          ? 'wholesaler_id' 
-          : 'driver_id';
 
       const { data, error } = await supabase
         .from(tableName as 'ambassador_notes')
@@ -70,17 +73,6 @@ export function useEntityNotes(entityType: EntityType, entityId: string | undefi
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const tableName = entityType === 'ambassador' 
-        ? 'ambassador_notes' 
-        : entityType === 'wholesaler' 
-          ? 'wholesaler_notes' 
-          : 'driver_notes';
-      const fkColumn = entityType === 'ambassador' 
-        ? 'ambassador_id' 
-        : entityType === 'wholesaler' 
-          ? 'wholesaler_id' 
-          : 'driver_id';
-
       const insertData: Record<string, any> = {
         [fkColumn]: entityId,
         note_text: noteText,
@@ -109,12 +101,6 @@ export function useEntityNotes(entityType: EntityType, entityId: string | undefi
   // Update note text
   const updateMutation = useMutation({
     mutationFn: async ({ noteId, noteText }: { noteId: string; noteText: string }) => {
-      const tableName = entityType === 'ambassador' 
-        ? 'ambassador_notes' 
-        : entityType === 'wholesaler' 
-          ? 'wholesaler_notes' 
-          : 'driver_notes';
-      
       const { data, error } = await supabase
         .from(tableName as 'ambassador_notes')
         .update({ note_text: noteText } as any)
@@ -137,12 +123,6 @@ export function useEntityNotes(entityType: EntityType, entityId: string | undefi
   // Toggle pin
   const togglePinMutation = useMutation({
     mutationFn: async ({ noteId, isPinned }: { noteId: string; isPinned: boolean }) => {
-      const tableName = entityType === 'ambassador' 
-        ? 'ambassador_notes' 
-        : entityType === 'wholesaler' 
-          ? 'wholesaler_notes' 
-          : 'driver_notes';
-      
       const { data, error } = await supabase
         .from(tableName as 'ambassador_notes')
         .update({ is_pinned: isPinned } as any)
@@ -164,12 +144,6 @@ export function useEntityNotes(entityType: EntityType, entityId: string | undefi
   // Delete note
   const deleteMutation = useMutation({
     mutationFn: async ({ noteId }: { noteId: string }) => {
-      const tableName = entityType === 'ambassador' 
-        ? 'ambassador_notes' 
-        : entityType === 'wholesaler' 
-          ? 'wholesaler_notes' 
-          : 'driver_notes';
-      
       const { error } = await supabase
         .from(tableName as 'ambassador_notes')
         .delete()

@@ -11,8 +11,10 @@ import {
   MessageSquare
 } from 'lucide-react';
 
+type EntityType = 'ambassador' | 'wholesaler' | 'driver' | 'company' | 'store' | 'biker';
+
 interface EntityNotesSectionProps {
-  entityType: 'ambassador' | 'wholesaler' | 'driver';
+  entityType: EntityType;
   entityId: string | undefined;
   entityName?: string;
 }
