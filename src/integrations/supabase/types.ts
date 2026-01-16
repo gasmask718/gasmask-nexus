@@ -10445,6 +10445,51 @@ export type Database = {
           },
         ]
       }
+      driver_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          driver_id: string
+          id: string
+          is_pinned: boolean
+          note_text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          driver_id: string
+          id?: string
+          is_pinned?: boolean
+          note_text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          driver_id?: string
+          id?: string
+          is_pinned?: boolean
+          note_text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_notes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_payouts: {
         Row: {
           amount: number
