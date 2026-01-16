@@ -326,8 +326,19 @@ async function importStores(
 ) {
   for (const row of rows) {
     try {
+      // Normalize store type
+      let storeType = 'other';
+      if (row.data.type) {
+        const normalized = row.data.type.toLowerCase().trim().replace(/\s+/g, '_');
+        const validTypes = ['bodega', 'smoke_shop', 'gas_station', 'wholesaler', 'other'];
+        if (validTypes.includes(normalized)) {
+          storeType = normalized;
+        }
+      }
+
       const storeData: any = {
         name: row.data.name || row.data.store_name,
+        type: storeType,
         address_street: row.data.address_street || row.data.address,
         address_city: row.data.address_city || row.data.city,
         address_state: row.data.address_state || row.data.state,

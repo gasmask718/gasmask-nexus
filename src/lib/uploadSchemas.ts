@@ -122,6 +122,21 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         notes: 'active, inactive, lead, etc.'
       },
       {
+        field: 'type',
+        displayName: 'Store Type',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'bodega, smoke_shop, gas_station, wholesaler, other',
+        validation: (v) => {
+          const validTypes = ['bodega', 'smoke_shop', 'gas_station', 'wholesaler', 'other'];
+          if (!v) return { valid: true }; // Allow empty, will default to 'other'
+          return validTypes.includes(v.toLowerCase().trim().replace(' ', '_'))
+            ? { valid: true }
+            : { valid: false, error: 'Invalid store type. Must be one of: ' + validTypes.join(', ') };
+        }
+      },
+      {
         field: 'open_date',
         displayName: 'Member Since',
         type: 'date',
