@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   ShoppingCart, TrendingUp, TrendingDown, DollarSign, 
-  Package, AlertTriangle, Calendar, Clock 
+  Package, AlertTriangle, Calendar, Clock, ChevronRight 
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import type { WholesalerOrder } from '@/hooks/useWholesalerIntelligence';
@@ -20,9 +20,11 @@ interface WholesalerOrderIntelligenceProps {
     skuConcentrationRisk: boolean;
     topSku: string | null;
   } | null;
+  onOrderClick?: (order: WholesalerOrder) => void;
+  onMetricClick?: (metricType: string, value: number, label: string) => void;
 }
 
-export function WholesalerOrderIntelligence({ orders, metrics }: WholesalerOrderIntelligenceProps) {
+export function WholesalerOrderIntelligence({ orders, metrics, onOrderClick, onMetricClick }: WholesalerOrderIntelligenceProps) {
   // Calculate trend data for chart
   const chartData = React.useMemo(() => {
     if (orders.length === 0) return [];
@@ -103,29 +105,41 @@ export function WholesalerOrderIntelligence({ orders, metrics }: WholesalerOrder
         {/* Metrics Grid */}
         {metrics && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-3 rounded-lg bg-muted/50">
+            <div 
+              className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+              onClick={() => onMetricClick?.('orders', metrics.totalOrders, 'Total Orders')}
+            >
               <Package className="h-5 w-5 mx-auto text-blue-500 mb-1" />
               <p className="text-2xl font-bold">{metrics.totalOrders}</p>
-              <p className="text-xs text-muted-foreground">Total Orders</p>
+              <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Total Orders</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-muted/50">
+            <div 
+              className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+              onClick={() => onMetricClick?.('revenue', metrics.totalRevenue, 'Total Revenue')}
+            >
               <DollarSign className="h-5 w-5 mx-auto text-green-500 mb-1" />
               <p className="text-2xl font-bold">${metrics.totalRevenue.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">Total Revenue</p>
+              <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Total Revenue</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-muted/50">
+            <div 
+              className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+              onClick={() => onMetricClick?.('avg_order', metrics.avgOrderValue, 'Avg Order Value')}
+            >
               <TrendingUp className="h-5 w-5 mx-auto text-purple-500 mb-1" />
               <p className="text-2xl font-bold">${metrics.avgOrderValue.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">Avg Order Value</p>
+              <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Avg Order Value</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-muted/50">
+            <div 
+              className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+              onClick={() => onMetricClick?.('frequency', metrics.orderFrequency, 'Orders (30 days)')}
+            >
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Calendar className="h-5 w-5 text-amber-500" />
                 {frequencyTrend === 'increasing' && <TrendingUp className="h-4 w-4 text-green-500" />}
                 {frequencyTrend === 'decreasing' && <TrendingDown className="h-4 w-4 text-red-500" />}
               </div>
               <p className="text-2xl font-bold">{metrics.orderFrequency}</p>
-              <p className="text-xs text-muted-foreground">Orders (30 days)</p>
+              <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Orders (30 days)</p>
             </div>
           </div>
         )}
@@ -190,7 +204,8 @@ export function WholesalerOrderIntelligence({ orders, metrics }: WholesalerOrder
               {orders.slice(0, 10).map((order) => (
                 <div 
                   key={order.id} 
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
+                  onClick={() => onOrderClick?.(order)}
                 >
                   <div className="flex items-center gap-3">
                     <div className="text-sm">
@@ -208,6 +223,7 @@ export function WholesalerOrderIntelligence({ orders, metrics }: WholesalerOrder
                       {order.payment_status}
                     </Badge>
                     <span className="font-medium">${order.total_amount.toLocaleString()}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </div>
               ))}

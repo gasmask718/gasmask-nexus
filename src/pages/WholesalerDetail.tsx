@@ -35,7 +35,15 @@ import {
 } from "@/components/wholesaler/WholesalerCommandModals";
 
 // Drill-down Drawers
-import { OrderDetailDrawer, HealthScoreDrawer } from "@/components/wholesaler/drilldown";
+import { 
+  OrderDetailDrawer, 
+  HealthScoreDrawer, 
+  MetricDetailDrawer,
+  FinancialDetailDrawer,
+  TerritoryDetailDrawer,
+  ProductDetailDrawer,
+  VisitDetailDrawer
+} from "@/components/wholesaler/drilldown";
 
 export default function WholesalerDetail() {
   const { id } = useParams();
@@ -54,6 +62,15 @@ export default function WholesalerDetail() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [orderDetailOpen, setOrderDetailOpen] = useState(false);
   const [healthScoreOpen, setHealthScoreOpen] = useState(false);
+  const [metricDrawerOpen, setMetricDrawerOpen] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState<{type: string; value: number; label: string} | null>(null);
+  const [financialDrawerOpen, setFinancialDrawerOpen] = useState(false);
+  const [territoryDrawerOpen, setTerritoryDrawerOpen] = useState(false);
+  const [selectedTerritory, setSelectedTerritory] = useState<any>(null);
+  const [productDrawerOpen, setProductDrawerOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [visitDrawerOpen, setVisitDrawerOpen] = useState(false);
+  const [selectedVisit, setSelectedVisit] = useState<any>(null);
 
   // Fetch all intelligence data using the unified hook
   const intelligence = useWholesalerIntelligence(id || '');
@@ -113,8 +130,23 @@ export default function WholesalerDetail() {
     setOrderDetailOpen(true);
   };
 
-  const handleHealthScoreClick = () => {
-    setHealthScoreOpen(true);
+  const handleHealthScoreClick = () => setHealthScoreOpen(true);
+  const handleMetricClick = (type: string, value: number, label: string) => {
+    setSelectedMetric({ type, value, label });
+    setMetricDrawerOpen(true);
+  };
+  const handleFinancialClick = () => setFinancialDrawerOpen(true);
+  const handleTerritoryClick = (territory: any) => {
+    setSelectedTerritory(territory);
+    setTerritoryDrawerOpen(true);
+  };
+  const handleProductClick = (product: any) => {
+    setSelectedProduct(product);
+    setProductDrawerOpen(true);
+  };
+  const handleVisitClick = (visit: any) => {
+    setSelectedVisit(visit);
+    setVisitDrawerOpen(true);
   };
 
   if (isLoading && !profile) {
@@ -280,12 +312,15 @@ export default function WholesalerDetail() {
               <WholesalerOrderIntelligence 
                 orders={intelligence.orders || []}
                 metrics={intelligence.orderMetrics}
+                onOrderClick={handleOrderClick}
+                onMetricClick={handleMetricClick}
               />
               <WholesalerFinancialRisk 
                 payments={intelligence.payments || []}
                 disputes={intelligence.disputes || []}
                 paymentMetrics={intelligence.paymentMetrics}
                 profile={profile}
+                onMetricClick={handleMetricClick}
               />
             </div>
           </TabsContent>
@@ -301,31 +336,35 @@ export default function WholesalerDetail() {
             <WholesalerOrderIntelligence 
               orders={intelligence.orders || []}
               metrics={intelligence.orderMetrics}
+              onOrderClick={handleOrderClick}
+              onMetricClick={handleMetricClick}
             />
           </TabsContent>
 
-          {/* Financial Tab */}
           <TabsContent value="financial" className="mt-6">
             <WholesalerFinancialRisk 
               payments={intelligence.payments || []}
               disputes={intelligence.disputes || []}
               paymentMetrics={intelligence.paymentMetrics}
               profile={profile}
+              onMetricClick={handleMetricClick}
             />
           </TabsContent>
 
-          {/* Territory Tab */}
           <TabsContent value="territory" className="mt-6">
             <WholesalerTerritory 
               territory={intelligence.territory || []}
               profile={profile}
+              onMetricClick={handleMetricClick}
+              onTerritoryClick={handleTerritoryClick}
             />
           </TabsContent>
 
-          {/* Products Tab */}
           <TabsContent value="products" className="mt-6">
             <WholesalerProductPerformance 
               products={intelligence.productPerformance || []}
+              onMetricClick={handleMetricClick}
+              onProductClick={handleProductClick}
             />
           </TabsContent>
 
@@ -349,6 +388,8 @@ export default function WholesalerDetail() {
               visits={intelligence.visits || []}
               profile={profile}
               onAddVisit={intelligence.addVisit}
+              onMetricClick={handleMetricClick}
+              onVisitClick={handleVisitClick}
             />
           </TabsContent>
 
@@ -456,6 +497,46 @@ export default function WholesalerDetail() {
         onOpenChange={setHealthScoreOpen}
         profile={profile}
         snapshots={intelligence.healthSnapshots || []}
+      />
+
+      {/* Metric Detail Drawer */}
+      <MetricDetailDrawer
+        open={metricDrawerOpen}
+        onOpenChange={setMetricDrawerOpen}
+        metric={{
+          type: selectedMetric?.type || '',
+          value: selectedMetric?.value || 0,
+          label: selectedMetric?.label || '',
+        }}
+      />
+
+      {/* Financial Detail Drawer */}
+      <FinancialDetailDrawer
+        open={financialDrawerOpen}
+        onOpenChange={setFinancialDrawerOpen}
+        payments={intelligence.payments || []}
+        disputes={intelligence.disputes || []}
+      />
+
+      {/* Territory Detail Drawer */}
+      <TerritoryDetailDrawer
+        open={territoryDrawerOpen}
+        onOpenChange={setTerritoryDrawerOpen}
+        territory={selectedTerritory}
+      />
+
+      {/* Product Detail Drawer */}
+      <ProductDetailDrawer
+        open={productDrawerOpen}
+        onOpenChange={setProductDrawerOpen}
+        products={selectedProduct ? [selectedProduct] : []}
+      />
+
+      {/* Visit Detail Drawer */}
+      <VisitDetailDrawer
+        open={visitDrawerOpen}
+        onOpenChange={setVisitDrawerOpen}
+        visits={selectedVisit ? [selectedVisit] : []}
       />
     </div>
   );
