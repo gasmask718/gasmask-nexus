@@ -24,7 +24,10 @@ import {
   AmbassadorRevenuePanel,
   AmbassadorCommissionPanel,
   AmbassadorPerformanceSignals,
-  AmbassadorActionBar
+  AmbassadorActionBar,
+  AmbassadorActivityTimeline,
+  AmbassadorTerritoryPanel,
+  AmbassadorIdentityHeader
 } from '@/components/ambassador';
 
 const AmbassadorProfile: React.FC = () => {
@@ -172,7 +175,7 @@ const AmbassadorProfile: React.FC = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="overview">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
           <TabsTrigger value="overview">
             <UserCheck className="h-4 w-4 mr-2 hidden sm:inline" /> Overview
           </TabsTrigger>
@@ -184,6 +187,9 @@ const AmbassadorProfile: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="performance">
             <BarChart3 className="h-4 w-4 mr-2 hidden sm:inline" /> Performance
+          </TabsTrigger>
+          <TabsTrigger value="territory">
+            <MapPin className="h-4 w-4 mr-2 hidden sm:inline" /> Territory
           </TabsTrigger>
           <TabsTrigger value="notes">
             <StickyNote className="h-4 w-4 mr-2 hidden sm:inline" /> Notes
@@ -326,20 +332,21 @@ const AmbassadorProfile: React.FC = () => {
             metrics={performanceMetrics}
           />
           
-          {/* Activity summary placeholder */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                Activity Timeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-center py-8">
-                Activity tracking and field intelligence coming soon
-              </p>
-            </CardContent>
-          </Card>
+          {/* Activity Timeline - Real Component */}
+          <AmbassadorActivityTimeline ambassadorId={ambassadorId || ''} />
+        </TabsContent>
+
+        <TabsContent value="territory" className="mt-4">
+          <AmbassadorTerritoryPanel 
+            ambassador={ambassador}
+            stats={{
+              storesInArea: metrics?.storesAcquired || 0,
+              revenueInArea: metrics?.totalRevenue || 0,
+              coveragePercent: metrics?.storesActive && metrics?.storesAcquired 
+                ? Math.round((metrics.storesActive / Math.max(metrics.storesAcquired, 1)) * 100)
+                : 0
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="notes" className="mt-4">
