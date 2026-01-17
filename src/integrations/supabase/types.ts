@@ -29697,6 +29697,8 @@ export type Database = {
       wholesalers: {
         Row: {
           address: string | null
+          address_line_1: string | null
+          address_line_2: string | null
           assigned_rep_id: string | null
           authorized_brands: string[] | null
           backup_contact_name: string | null
@@ -29708,6 +29710,7 @@ export type Database = {
           contact_name: string | null
           contract_end_date: string | null
           contract_start_date: string | null
+          country: string
           created_at: string | null
           created_by: string | null
           dba_name: string | null
@@ -29752,9 +29755,12 @@ export type Database = {
           tax_id: string | null
           territories: string[] | null
           visit_frequency_days: number | null
+          zip_code: string | null
         }
         Insert: {
           address?: string | null
+          address_line_1?: string | null
+          address_line_2?: string | null
           assigned_rep_id?: string | null
           authorized_brands?: string[] | null
           backup_contact_name?: string | null
@@ -29766,6 +29772,7 @@ export type Database = {
           contact_name?: string | null
           contract_end_date?: string | null
           contract_start_date?: string | null
+          country?: string
           created_at?: string | null
           created_by?: string | null
           dba_name?: string | null
@@ -29810,9 +29817,12 @@ export type Database = {
           tax_id?: string | null
           territories?: string[] | null
           visit_frequency_days?: number | null
+          zip_code?: string | null
         }
         Update: {
           address?: string | null
+          address_line_1?: string | null
+          address_line_2?: string | null
           assigned_rep_id?: string | null
           authorized_brands?: string[] | null
           backup_contact_name?: string | null
@@ -29824,6 +29834,7 @@ export type Database = {
           contact_name?: string | null
           contract_end_date?: string | null
           contract_start_date?: string | null
+          country?: string
           created_at?: string | null
           created_by?: string | null
           dba_name?: string | null
@@ -29868,6 +29879,7 @@ export type Database = {
           tax_id?: string | null
           territories?: string[] | null
           visit_frequency_days?: number | null
+          zip_code?: string | null
         }
         Relationships: [
           {
