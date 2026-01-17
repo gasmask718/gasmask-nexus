@@ -4,9 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   Building2, Phone, Mail, MapPin, User, Shield, 
-  FileCheck, Calendar, DollarSign, Tag, AlertTriangle, Edit
+  FileCheck, Calendar, DollarSign, Tag, AlertTriangle, Edit, Globe
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { WholesalerTags, WholesalerTagsBadges } from './WholesalerTags';
 
 interface WholesalerIdentityCardProps {
   profile: any;
@@ -45,6 +46,14 @@ export function WholesalerIdentityCard({ profile, onEdit }: WholesalerIdentityCa
     }
   };
 
+  // Build location string with all components
+  const locationParts = [
+    profile.neighborhood,
+    profile.city,
+    profile.state,
+  ].filter(Boolean);
+  const fullLocation = locationParts.join(', ') || 'No location set';
+
   return (
     <Card className="bg-card/50 backdrop-blur border-border/50">
       <CardHeader className="pb-3">
@@ -74,6 +83,13 @@ export function WholesalerIdentityCard({ profile, onEdit }: WholesalerIdentityCa
             )}
           </div>
         </div>
+
+        {/* Tags Row - Displayed prominently in header */}
+        {profile.id && (
+          <div className="pt-3">
+            <WholesalerTagsBadges wholesalerId={profile.id} maxTags={5} />
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Contact Grid */}
@@ -108,14 +124,22 @@ export function WholesalerIdentityCard({ profile, onEdit }: WholesalerIdentityCa
             )}
           </div>
 
-          {/* Location */}
+          {/* Location - ENHANCED */}
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Territory</p>
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                {[profile.neighborhood, profile.city, profile.state].filter(Boolean).join(', ') || 'Not set'}
-              </span>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Location</p>
+            <div className="flex items-start gap-2">
+              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+              <div className="text-sm">
+                {profile.city && <span className="font-medium">{profile.city}</span>}
+                {profile.city && profile.state && <span className="text-muted-foreground">, </span>}
+                {profile.state && <span>{profile.state}</span>}
+                {profile.neighborhood && (
+                  <p className="text-xs text-muted-foreground">{profile.neighborhood}</p>
+                )}
+                {!profile.city && !profile.state && !profile.neighborhood && (
+                  <span className="text-muted-foreground">Not set</span>
+                )}
+              </div>
             </div>
             {profile.email && (
               <div className="flex items-center gap-2">
@@ -140,6 +164,14 @@ export function WholesalerIdentityCard({ profile, onEdit }: WholesalerIdentityCa
             </div>
           </div>
         </div>
+
+        {/* Tags Section - Full Management */}
+        {profile.id && (
+          <div className="pt-4 border-t border-border/50">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Tags & Classifications</p>
+            <WholesalerTags wholesalerId={profile.id} showSelector={true} />
+          </div>
+        )}
 
         {/* Business Terms Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 pt-4 border-t border-border/50">
