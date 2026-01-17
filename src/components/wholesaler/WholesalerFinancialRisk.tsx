@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   DollarSign, Clock, AlertTriangle, CheckCircle, 
-  TrendingDown, Calendar, FileWarning 
+  TrendingDown, Calendar, FileWarning, ChevronRight 
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import type { WholesalerPayment, WholesalerDispute } from '@/hooks/useWholesalerIntelligence';
@@ -20,13 +20,19 @@ interface WholesalerFinancialRiskProps {
     latePaments: number;
   } | null;
   profile: any;
+  onMetricClick?: (metricType: string, value: number, label: string) => void;
+  onDisputeClick?: (dispute: WholesalerDispute) => void;
+  onPaymentClick?: (payment: WholesalerPayment) => void;
 }
 
 export function WholesalerFinancialRisk({ 
   payments, 
   disputes, 
   paymentMetrics,
-  profile 
+  profile,
+  onMetricClick,
+  onDisputeClick,
+  onPaymentClick
 }: WholesalerFinancialRiskProps) {
   const openDisputes = disputes.filter(d => d.status === 'open' || d.status === 'investigating');
   const resolvedDisputes = disputes.filter(d => d.status === 'resolved');
@@ -87,25 +93,37 @@ export function WholesalerFinancialRisk({
         {/* Payment Metrics */}
         {paymentMetrics && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-3 rounded-lg bg-muted/50">
+            <div 
+              className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+              onClick={() => onMetricClick?.('on_time_rate', paymentMetrics.punctualityRate, 'On-Time Rate')}
+            >
               <CheckCircle className="h-5 w-5 mx-auto text-green-500 mb-1" />
               <p className="text-2xl font-bold">{paymentMetrics.punctualityRate.toFixed(0)}%</p>
-              <p className="text-xs text-muted-foreground">On-Time Rate</p>
+              <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">On-Time Rate</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-muted/50">
+            <div 
+              className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+              onClick={() => onMetricClick?.('avg_days', paymentMetrics.avgDaysToPayment, 'Avg Days to Pay')}
+            >
               <Clock className="h-5 w-5 mx-auto text-blue-500 mb-1" />
               <p className="text-2xl font-bold">{paymentMetrics.avgDaysToPayment.toFixed(0)}</p>
-              <p className="text-xs text-muted-foreground">Avg Days to Pay</p>
+              <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Avg Days to Pay</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-muted/50">
+            <div 
+              className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+              onClick={() => onMetricClick?.('total_payments', paymentMetrics.totalPayments, 'Total Payments')}
+            >
               <DollarSign className="h-5 w-5 mx-auto text-purple-500 mb-1" />
               <p className="text-2xl font-bold">{paymentMetrics.totalPayments}</p>
-              <p className="text-xs text-muted-foreground">Total Payments</p>
+              <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Total Payments</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-muted/50">
+            <div 
+              className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+              onClick={() => onMetricClick?.('late_payments', paymentMetrics.latePaments, 'Late Payments')}
+            >
               <AlertTriangle className="h-5 w-5 mx-auto text-amber-500 mb-1" />
               <p className="text-2xl font-bold">{paymentMetrics.latePaments}</p>
-              <p className="text-xs text-muted-foreground">Late Payments</p>
+              <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Late Payments</p>
             </div>
           </div>
         )}
@@ -158,7 +176,8 @@ export function WholesalerFinancialRisk({
                 return (
                   <div 
                     key={dispute.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-red-500/5 border border-red-500/20"
+                    className="flex items-center justify-between p-3 rounded-lg bg-red-500/5 border border-red-500/20 cursor-pointer hover:bg-red-500/10 transition-colors group"
+                    onClick={() => onDisputeClick?.(dispute)}
                   >
                     <div className="flex items-center gap-3">
                       <Icon className="h-4 w-4 text-red-400" />
@@ -172,6 +191,7 @@ export function WholesalerFinancialRisk({
                         {dispute.severity}
                       </Badge>
                       <span className="text-xs text-muted-foreground">{daysOpen}d open</span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
                 );

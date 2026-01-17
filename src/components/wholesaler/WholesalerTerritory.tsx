@@ -3,15 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
-import { MapPin, Store, AlertTriangle, Users, Lock, Unlock } from 'lucide-react';
+import { MapPin, Store, AlertTriangle, Users, Lock, Unlock, ChevronRight } from 'lucide-react';
 import type { WholesalerTerritory } from '@/hooks/useWholesalerIntelligence';
 
 interface WholesalerTerritoryProps {
   territory: WholesalerTerritory[];
   profile: any;
+  onMetricClick?: (metricType: string, value: number, label: string) => void;
+  onTerritoryClick?: (territory: WholesalerTerritory) => void;
 }
 
-export function WholesalerTerritorySection({ territory, profile }: WholesalerTerritoryProps) {
+export function WholesalerTerritorySection({ territory, profile, onMetricClick, onTerritoryClick }: WholesalerTerritoryProps) {
   const totalStores = territory.reduce((sum, t) => sum + t.store_count, 0);
   const exclusiveZones = territory.filter(t => t.is_exclusive).length;
   const overlappingZones = territory.filter(t => t.overlap_with && t.overlap_with.length > 0).length;
@@ -43,25 +45,37 @@ export function WholesalerTerritorySection({ territory, profile }: WholesalerTer
       <CardContent className="space-y-6">
         {/* Summary Stats */}
         <div className="grid grid-cols-4 gap-4">
-          <div className="text-center p-3 rounded-lg bg-muted/50">
+          <div 
+            className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+            onClick={() => onMetricClick?.('neighborhoods', territory.length, 'Neighborhoods')}
+          >
             <MapPin className="h-5 w-5 mx-auto text-cyan-500 mb-1" />
             <p className="text-2xl font-bold">{territory.length}</p>
-            <p className="text-xs text-muted-foreground">Neighborhoods</p>
+            <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Neighborhoods</p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
+          <div 
+            className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+            onClick={() => onMetricClick?.('stores', totalStores, 'Total Stores')}
+          >
             <Store className="h-5 w-5 mx-auto text-green-500 mb-1" />
             <p className="text-2xl font-bold">{totalStores}</p>
-            <p className="text-xs text-muted-foreground">Total Stores</p>
+            <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Total Stores</p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
+          <div 
+            className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+            onClick={() => onMetricClick?.('exclusive', exclusiveZones, 'Exclusive Zones')}
+          >
             <Lock className="h-5 w-5 mx-auto text-purple-500 mb-1" />
             <p className="text-2xl font-bold">{exclusiveZones}</p>
-            <p className="text-xs text-muted-foreground">Exclusive Zones</p>
+            <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Exclusive Zones</p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
+          <div 
+            className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+            onClick={() => onMetricClick?.('overlap', overlappingZones, 'Overlap Zones')}
+          >
             <Users className="h-5 w-5 mx-auto text-amber-500 mb-1" />
             <p className="text-2xl font-bold">{overlappingZones}</p>
-            <p className="text-xs text-muted-foreground">Overlap Zones</p>
+            <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Overlap Zones</p>
           </div>
         </div>
 
@@ -97,7 +111,8 @@ export function WholesalerTerritorySection({ territory, profile }: WholesalerTer
                   {neighborhoods.map((area) => (
                     <div 
                       key={area.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors group"
+                      onClick={() => onTerritoryClick?.(area)}
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1">
@@ -125,6 +140,7 @@ export function WholesalerTerritorySection({ territory, profile }: WholesalerTer
                             {area.overlap_with.length} overlap
                           </Badge>
                         )}
+                        <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </div>
                   ))}

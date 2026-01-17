@@ -5,16 +5,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { 
   Package, TrendingUp, TrendingDown, AlertTriangle, 
-  RotateCcw, DollarSign, Zap 
+  RotateCcw, DollarSign, Zap, ChevronRight 
 } from 'lucide-react';
 import type { WholesalerProductPerformance } from '@/hooks/useWholesalerIntelligence';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface WholesalerProductPerformanceProps {
   products: WholesalerProductPerformance[];
+  onMetricClick?: (metricType: string, value: number, label: string) => void;
+  onProductClick?: (product: WholesalerProductPerformance) => void;
 }
 
-export function WholesalerProductPerformanceSection({ products }: WholesalerProductPerformanceProps) {
+export function WholesalerProductPerformanceSection({ products, onMetricClick, onProductClick }: WholesalerProductPerformanceProps) {
   const totalUnits = products.reduce((sum, p) => sum + p.units_sold, 0);
   const totalRevenue = products.reduce((sum, p) => sum + Number(p.revenue), 0);
   const avgReturnRate = products.length > 0 
@@ -71,20 +73,29 @@ export function WholesalerProductPerformanceSection({ products }: WholesalerProd
       <CardContent className="space-y-6">
         {/* Summary Stats */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="text-center p-3 rounded-lg bg-muted/50">
+          <div 
+            className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+            onClick={() => onMetricClick?.('units', totalUnits, 'Units Sold')}
+          >
             <Package className="h-5 w-5 mx-auto text-indigo-500 mb-1" />
             <p className="text-2xl font-bold">{totalUnits.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">Units Sold</p>
+            <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Units Sold</p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
+          <div 
+            className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+            onClick={() => onMetricClick?.('revenue', totalRevenue, 'Total Revenue')}
+          >
             <DollarSign className="h-5 w-5 mx-auto text-green-500 mb-1" />
             <p className="text-2xl font-bold">${totalRevenue.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">Total Revenue</p>
+            <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Total Revenue</p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
+          <div 
+            className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+            onClick={() => onMetricClick?.('returns', avgReturnRate, 'Avg Return Rate')}
+          >
             <RotateCcw className="h-5 w-5 mx-auto text-amber-500 mb-1" />
             <p className="text-2xl font-bold">{avgReturnRate.toFixed(1)}%</p>
-            <p className="text-xs text-muted-foreground">Avg Return Rate</p>
+            <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Avg Return Rate</p>
           </div>
         </div>
 
@@ -156,7 +167,8 @@ export function WholesalerProductPerformanceSection({ products }: WholesalerProd
             {products.map((product) => (
               <div 
                 key={product.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
+                onClick={() => onProductClick?.(product)}
               >
                 <div className="flex-1">
                   <p className="text-sm font-medium">{product.product_name || product.sku || 'Unknown'}</p>
@@ -184,6 +196,7 @@ export function WholesalerProductPerformanceSection({ products }: WholesalerProd
                       {Number(product.return_rate).toFixed(1)}% ret
                     </Badge>
                   )}
+                  <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               </div>
             ))}

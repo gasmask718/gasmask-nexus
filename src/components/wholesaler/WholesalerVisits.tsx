@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { 
   MapPin, Calendar, Clock, Eye, AlertTriangle, 
-  Lightbulb, Plus, User, Camera, CheckCircle
+  Lightbulb, Plus, User, Camera, CheckCircle, ChevronRight
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import type { WholesalerVisit } from '@/hooks/useWholesalerIntelligence';
@@ -19,9 +19,11 @@ interface WholesalerVisitsProps {
   visits: WholesalerVisit[];
   profile: any;
   onAddVisit: (data: Partial<WholesalerVisit>) => Promise<void>;
+  onMetricClick?: (metricType: string, value: number, label: string) => void;
+  onVisitClick?: (visit: WholesalerVisit) => void;
 }
 
-export function WholesalerVisitsSection({ visits, profile, onAddVisit }: WholesalerVisitsProps) {
+export function WholesalerVisitsSection({ visits, profile, onAddVisit, onMetricClick, onVisitClick }: WholesalerVisitsProps) {
   const [addOpen, setAddOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -211,22 +213,31 @@ export function WholesalerVisitsSection({ visits, profile, onAddVisit }: Wholesa
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="text-center p-3 rounded-lg bg-muted/50">
+          <div 
+            className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+            onClick={() => onMetricClick?.('visits', visits.length, 'Total Visits')}
+          >
             <Calendar className="h-5 w-5 mx-auto text-orange-500 mb-1" />
             <p className="text-2xl font-bold">{visits.length}</p>
-            <p className="text-xs text-muted-foreground">Total Visits</p>
+            <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Total Visits</p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
+          <div 
+            className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+            onClick={() => onMetricClick?.('days_since', daysSinceLastVisit ?? 0, 'Days Since Last')}
+          >
             <Clock className="h-5 w-5 mx-auto text-blue-500 mb-1" />
             <p className="text-2xl font-bold">{daysSinceLastVisit ?? '-'}</p>
-            <p className="text-xs text-muted-foreground">Days Since Last</p>
+            <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Days Since Last</p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
+          <div 
+            className="text-center p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors group"
+            onClick={() => onMetricClick?.('visibility', lastVisit?.visibility_score ?? 0, 'Last Visibility')}
+          >
             <Eye className="h-5 w-5 mx-auto text-green-500 mb-1" />
             <p className="text-2xl font-bold">
               {lastVisit?.visibility_score ?? '-'}
             </p>
-            <p className="text-xs text-muted-foreground">Last Visibility</p>
+            <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Last Visibility</p>
           </div>
         </div>
 
@@ -236,7 +247,8 @@ export function WholesalerVisitsSection({ visits, profile, onAddVisit }: Wholesa
             {visits.map((visit) => (
               <div 
                 key={visit.id}
-                className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
+                onClick={() => onVisitClick?.(visit)}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
