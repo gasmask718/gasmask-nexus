@@ -342,15 +342,53 @@ export function useWholesalerIntelligence(wholesalerId: string | undefined) {
     enabled: !!wholesalerId,
   });
 
-  // Mutations
+  // Mutations with schema contract enforcement
   const updateProfile = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
       if (!wholesalerId) throw new Error('No wholesaler ID');
+      
+      // Import dynamically to avoid circular deps
+      const { sanitizeWholesalerUpdate } = await import('@/lib/schemaContract');
+      
+      // Enforce schema contract - strip unknown fields
+      const sanitizedUpdates = sanitizeWholesalerUpdate(updates);
+      
+      if (Object.keys(sanitizedUpdates).length === 0) {
+        throw new Error('No valid fields to update');
+      }
+      
       const { error } = await supabase
         .from('wholesalers')
-        .update(updates)
+        .update(sanitizedUpdates)
         .eq('id', wholesalerId);
       if (error) throw error;
+      
+      // Log audit trail for changes
+      try {
+        const currentProfile = profileQuery.data;
+        if (currentProfile) {
+          const { useEntityAudit } = await import('@/hooks/useEntityAudit');
+          // Note: We can't use hooks here, so we'll log directly
+          const changes = Object.entries(sanitizedUpdates).filter(
+            ([key, newValue]) => JSON.stringify(currentProfile[key as keyof typeof currentProfile]) !== JSON.stringify(newValue)
+          );
+          
+          if (changes.length > 0) {
+            await supabase.from('entity_audit_log').insert(
+              changes.map(([field, newValue]) => ({
+                entity_type: 'wholesaler',
+                entity_id: wholesalerId,
+                field_changed: field,
+                old_value: currentProfile[field as keyof typeof currentProfile] ?? null,
+                new_value: newValue ?? null,
+              }))
+            );
+          }
+        }
+      } catch (auditError) {
+        console.error('Failed to log audit:', auditError);
+        // Don't fail the update if audit logging fails
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wholesaler-intelligence-profile', wholesalerId] });

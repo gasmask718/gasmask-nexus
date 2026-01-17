@@ -419,11 +419,12 @@ export function EditProfileModal({ open, onOpenChange, wholesaler, onSubmit }: E
     risk_level: wholesaler?.risk_level || 'low',
     tax_id: wholesaler?.tax_id || '',
     license_number: wholesaler?.license_number || '',
-    // Location fields
+    // Location fields (schema-aligned)
     city: wholesaler?.city || '',
     state: wholesaler?.state || '',
-    borough: wholesaler?.borough || '',
-    neighborhood: wholesaler?.neighborhood || '',
+    borough: wholesaler?.borough || null, // Nullable field
+    neighborhoods: wholesaler?.neighborhoods || [], // Array type per schema
+    location_notes: wholesaler?.location_notes || '',
     address: wholesaler?.address || '',
     zip_code: wholesaler?.zip_code || '',
   });
@@ -443,11 +444,12 @@ export function EditProfileModal({ open, onOpenChange, wholesaler, onSubmit }: E
         risk_level: wholesaler.risk_level || 'low',
         tax_id: wholesaler.tax_id || '',
         license_number: wholesaler.license_number || '',
-        // Location fields
+        // Location fields (schema-aligned)
         city: wholesaler.city || '',
         state: wholesaler.state || '',
-        borough: wholesaler.borough || '',
-        neighborhood: wholesaler.neighborhood || '',
+        borough: wholesaler.borough || null,
+        neighborhoods: wholesaler.neighborhoods || [],
+        location_notes: wholesaler.location_notes || '',
         address: wholesaler.address || '',
         zip_code: wholesaler.zip_code || '',
       });
@@ -589,27 +591,33 @@ export function EditProfileModal({ open, onOpenChange, wholesaler, onSubmit }: E
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Borough</Label>
-                <Select value={formData.borough} onValueChange={(v) => setFormData({ ...formData, borough: v })}>
+                <Label>Borough (optional)</Label>
+                <Select 
+                  value={formData.borough || ''} 
+                  onValueChange={(v) => setFormData({ ...formData, borough: v === 'none' ? null : v })}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select borough" />
+                    <SelectValue placeholder="Select borough (if applicable)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">— None —</SelectItem>
                     <SelectItem value="Manhattan">Manhattan</SelectItem>
                     <SelectItem value="Brooklyn">Brooklyn</SelectItem>
                     <SelectItem value="Queens">Queens</SelectItem>
                     <SelectItem value="Bronx">Bronx</SelectItem>
                     <SelectItem value="Staten Island">Staten Island</SelectItem>
-                    <SelectItem value="N/A">N/A</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Neighborhood</Label>
+                <Label>Neighborhoods (comma-separated)</Label>
                 <Input
-                  value={formData.neighborhood}
-                  onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
-                  placeholder="Harlem, Williamsburg..."
+                  value={Array.isArray(formData.neighborhoods) ? formData.neighborhoods.join(', ') : ''}
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    neighborhoods: e.target.value.split(',').map(s => s.trim()).filter(Boolean) 
+                  })}
+                  placeholder="Harlem, Williamsburg, DUMBO..."
                 />
               </div>
               <div className="space-y-2">
@@ -618,6 +626,14 @@ export function EditProfileModal({ open, onOpenChange, wholesaler, onSubmit }: E
                   value={formData.zip_code}
                   onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
                   placeholder="10001"
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Location Notes</Label>
+                <Input
+                  value={formData.location_notes}
+                  onChange={(e) => setFormData({ ...formData, location_notes: e.target.value })}
+                  placeholder="Corner building, easy delivery access..."
                 />
               </div>
             </div>
