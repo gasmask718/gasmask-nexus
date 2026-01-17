@@ -1,244 +1,262 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Mail, Phone, MapPin, Star, MessageSquare, Package, Headphones, ArrowLeft } from "lucide-react";
-import { CommunicationTimeline } from "@/components/CommunicationTimeline";
-import { CommunicationStats } from "@/components/communication/CommunicationStats";
-import { CommunicationLogModal } from "@/components/CommunicationLogModal";
-import { FollowUpInsights } from "@/components/communication/FollowUpInsights";
-import { AIRelationshipHealth } from "@/components/communication/AIRelationshipHealth";
+import { ArrowLeft, Activity, DollarSign, MapPin, Package, MessageSquare, Calendar, Brain, FileText, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { CommunicationLogModal } from "@/components/CommunicationLogModal";
+import { useWholesalerIntelligence } from "@/hooks/useWholesalerIntelligence";
+
+// Intelligence Cockpit Components
+import {
+  WholesalerIdentityCard,
+  WholesalerHealthScore,
+  WholesalerOrderIntelligence,
+  WholesalerFinancialRisk,
+  WholesalerTerritory,
+  WholesalerProductPerformance,
+  WholesalerCommunicationMemory,
+  WholesalerVisits,
+  WholesalerAISignals,
+  WholesalerContracts,
+  WholesalerActionBar
+} from "@/components/wholesaler";
 
 export default function WholesalerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [logModalOpen, setLogModalOpen] = useState(false);
 
-  const { data: wholesaler, isLoading } = useQuery({
-    queryKey: ['wholesaler', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('wholesalers')
-        .select(`
-          *,
-          company:companies(
-            id,
-            name,
-            default_billing_address,
-            default_city,
-            default_state,
-            default_phone,
-            default_email,
-            notes
-          )
-        `)
-        .eq('id', id)
-        .maybeSingle();
+  // Fetch all intelligence data using the unified hook
+  const intelligence = useWholesalerIntelligence(id || '');
+  const profile = intelligence.profile;
+  const isLoading = intelligence.isLoading;
 
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: products } = useQuery({
-    queryKey: ['wholesaler-products', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('wholesale_products')
-        .select('*, brands(name, color)')
-        .eq('wholesaler_id', id)
-        .eq('is_active', true);
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  if (isLoading) {
+  if (isLoading && !profile) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="text-muted-foreground">Loading wholesaler...</div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (!wholesaler) {
+  if (!profile) {
     return (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold">Wholesaler not found</h2>
+        <Button variant="outline" className="mt-4" onClick={() => navigate(-1)}>
+          Go Back
+        </Button>
       </div>
     );
   }
 
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'active': return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'at-risk': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
+      case 'suspended': return 'bg-red-500/10 text-red-500 border-red-500/20';
+      default: return 'bg-muted text-muted-foreground';
+    }
+  };
+
   return (
-    <div>
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <h1 className="text-3xl font-bold">{wholesaler.name}</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant={wholesaler.status === 'active' ? 'default' : 'secondary'}>
-                {wholesaler.status}
-              </Badge>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={() => setLogModalOpen(true)}>
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Log Communication
-            </Button>
-          </div>
-        </div>
-
-        {/* Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">Products</div>
-            <div className="text-2xl font-bold">{products?.length || 0}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">Contact</div>
-            <div className="text-sm font-medium">
-              {wholesaler.contact_name || 'N/A'}
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">Status</div>
-            <Badge variant={wholesaler.status === 'active' ? 'default' : 'secondary'}>
-              {wholesaler.status}
-            </Badge>
-          </Card>
-        </div>
-
-        {/* Contact & Location */}
-        <Card className="p-6">
-          <h3 className="font-semibold mb-4">Contact & Location</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            {wholesaler.email && (
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{wholesaler.email}</span>
-              </div>
-            )}
-            {wholesaler.phone && (
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{wholesaler.phone}</span>
-              </div>
-            )}
-            {(wholesaler.company?.default_billing_address || wholesaler.company?.default_city) && (
-              <div className="flex items-start gap-2 md:col-span-2">
-                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <div>
-                  {wholesaler.company?.default_billing_address && (
-                    <div>{wholesaler.company.default_billing_address}</div>
-                  )}
-                  {(wholesaler.company?.default_city || wholesaler.company?.default_state) && (
-                    <div>
-                      {wholesaler.company?.default_city}
-                      {wholesaler.company?.default_city && wholesaler.company?.default_state && ', '}
-                      {wholesaler.company?.default_state}
-                    </div>
-                  )}
+              <div>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold">{profile.name}</h1>
+                  <Badge className={getStatusColor(profile.status)}>
+                    {profile.status || 'Unknown'}
+                  </Badge>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  {profile.role_type || 'Primary'} Wholesaler • {profile.neighborhood || profile.state || 'No territory'}
+                </p>
               </div>
-            )}
-          </div>
-          {wholesaler.company?.notes && (
-            <div className="mt-4 pt-4 border-t">
-              <p className="text-sm text-muted-foreground">{wholesaler.company.notes}</p>
             </div>
-          )}
-        </Card>
 
-        {/* Tabs */}
-        <Tabs defaultValue="communication" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="communication">Communication</TabsTrigger>
-            <TabsTrigger value="calls">
-              <Headphones className="h-4 w-4 mr-2" />
-              Calls
+            {/* Quick Health Indicator - compact view */}
+            <div className="hidden lg:block">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Health:</span>
+                <Badge variant="outline" className={
+                  (profile.relationship_health_score || 50) >= 70 ? 'text-green-400 border-green-500/30' :
+                  (profile.relationship_health_score || 50) >= 40 ? 'text-amber-400 border-amber-500/30' :
+                  'text-red-400 border-red-500/30'
+                }>
+                  {profile.relationship_health_score || 50}/100
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Bar */}
+      <div className="container mx-auto px-4">
+        <WholesalerActionBar 
+          profile={profile}
+          onLogCommunication={() => setLogModalOpen(true)}
+        />
+      </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-6">
+        {/* Identity Card - Always Visible */}
+        <WholesalerIdentityCard profile={profile} />
+
+        {/* Intelligence Tabs */}
+        <Tabs defaultValue="overview" className="mt-6">
+          <TabsList className="grid grid-cols-5 lg:grid-cols-9 gap-1 h-auto p-1">
+            <TabsTrigger value="overview" className="flex items-center gap-1 text-xs px-2 py-1.5">
+              <Activity className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="orders" className="flex items-center gap-1 text-xs px-2 py-1.5">
+              <Package className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Orders</span>
+            </TabsTrigger>
+            <TabsTrigger value="financial" className="flex items-center gap-1 text-xs px-2 py-1.5">
+              <DollarSign className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Financial</span>
+            </TabsTrigger>
+            <TabsTrigger value="territory" className="flex items-center gap-1 text-xs px-2 py-1.5">
+              <MapPin className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Territory</span>
+            </TabsTrigger>
+            <TabsTrigger value="products" className="flex items-center gap-1 text-xs px-2 py-1.5">
+              <Package className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Products</span>
+            </TabsTrigger>
+            <TabsTrigger value="comms" className="flex items-center gap-1 text-xs px-2 py-1.5">
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Comms</span>
+            </TabsTrigger>
+            <TabsTrigger value="visits" className="flex items-center gap-1 text-xs px-2 py-1.5">
+              <Calendar className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Visits</span>
+            </TabsTrigger>
+            <TabsTrigger value="contracts" className="flex items-center gap-1 text-xs px-2 py-1.5">
+              <FileText className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Contracts</span>
+            </TabsTrigger>
+            <TabsTrigger value="signals" className="flex items-center gap-1 text-xs px-2 py-1.5">
+              <Brain className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">AI Signals</span>
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="communication" className="space-y-6">
-              <CommunicationStats entityType="wholesaler" entityId={id!} />
-              <AIRelationshipHealth entityType="wholesaler" entityId={id!} />
-              <FollowUpInsights entityType="wholesaler" entityId={id!} />
-            <CommunicationTimeline entityType="wholesaler" entityId={id!} />
-          </TabsContent>
-
-          <TabsContent value="calls" className="space-y-6">
-            <Card className="p-6">
-              <div className="text-center py-8 text-muted-foreground">
-                <Headphones className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
-                <p>Call recordings and intelligence will appear here when calls are made to this wholesaler.</p>
-              </div>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="products">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {products?.map((product) => (
-                <Card key={product.id} className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
-                      <Package className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold line-clamp-1">{product.name}</h4>
-                      {product.brands && (
-                        <Badge 
-                          variant="outline" 
-                          style={{ borderColor: product.brands.color || undefined }}
-                          className="mt-1"
-                        >
-                          {product.brands.name}
-                        </Badge>
-                      )}
-                      <div className="mt-2 text-sm text-muted-foreground">
-                        ${product.price.toFixed(2)} • Case of {product.case_size}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-              {products?.length === 0 && (
-                <Card className="p-8 text-center md:col-span-3">
-                  <p className="text-muted-foreground">No products listed</p>
-                </Card>
-              )}
+          {/* Overview Tab - Dashboard View */}
+          <TabsContent value="overview" className="mt-6 space-y-6">
+            <div className="grid lg:grid-cols-2 gap-6">
+              <WholesalerHealthScore 
+                profile={profile}
+                snapshots={intelligence.healthSnapshots || []}
+              />
+              <WholesalerAISignals 
+                signals={intelligence.signals || []}
+                onAcknowledge={intelligence.acknowledgeSignal}
+                onResolve={intelligence.resolveSignal}
+              />
+            </div>
+            <div className="grid lg:grid-cols-2 gap-6">
+              <WholesalerOrderIntelligence 
+                orders={intelligence.orders || []}
+                metrics={intelligence.orderMetrics}
+              />
+              <WholesalerFinancialRisk 
+                payments={intelligence.payments || []}
+                disputes={intelligence.disputes || []}
+                paymentMetrics={intelligence.paymentMetrics}
+                profile={profile}
+              />
             </div>
           </TabsContent>
 
-          <TabsContent value="orders">
-            <Card className="p-8 text-center">
-              <p className="text-muted-foreground">
-                Order history coming soon
-              </p>
-            </Card>
+          {/* Orders Tab */}
+          <TabsContent value="orders" className="mt-6">
+            <WholesalerOrderIntelligence 
+              orders={intelligence.orders || []}
+              metrics={intelligence.orderMetrics}
+            />
+          </TabsContent>
+
+          {/* Financial Tab */}
+          <TabsContent value="financial" className="mt-6">
+            <WholesalerFinancialRisk 
+              payments={intelligence.payments || []}
+              disputes={intelligence.disputes || []}
+              paymentMetrics={intelligence.paymentMetrics}
+              profile={profile}
+            />
+          </TabsContent>
+
+          {/* Territory Tab */}
+          <TabsContent value="territory" className="mt-6">
+            <WholesalerTerritory 
+              territory={intelligence.territory || []}
+              profile={profile}
+            />
+          </TabsContent>
+
+          {/* Products Tab */}
+          <TabsContent value="products" className="mt-6">
+            <WholesalerProductPerformance 
+              products={intelligence.productPerformance || []}
+            />
+          </TabsContent>
+
+          {/* Communications Tab */}
+          <TabsContent value="comms" className="mt-6">
+            <WholesalerCommunicationMemory 
+              communications={intelligence.communications || []}
+              onAddCommunication={intelligence.addCommunication}
+            />
+          </TabsContent>
+
+          {/* Visits Tab */}
+          <TabsContent value="visits" className="mt-6">
+            <WholesalerVisits 
+              visits={intelligence.visits || []}
+              profile={profile}
+              onAddVisit={intelligence.addVisit}
+            />
+          </TabsContent>
+
+          {/* Contracts Tab */}
+          <TabsContent value="contracts" className="mt-6">
+            <WholesalerContracts 
+              contracts={intelligence.contracts || []}
+              profile={profile}
+            />
+          </TabsContent>
+
+          {/* AI Signals Tab */}
+          <TabsContent value="signals" className="mt-6">
+            <WholesalerAISignals 
+              signals={intelligence.signals || []}
+              onAcknowledge={intelligence.acknowledgeSignal}
+              onResolve={intelligence.resolveSignal}
+            />
           </TabsContent>
         </Tabs>
       </div>
 
+      {/* Communication Log Modal */}
       <CommunicationLogModal
         open={logModalOpen}
         onOpenChange={setLogModalOpen}
         entityType="wholesaler"
         entityId={id!}
-        entityName={wholesaler.name}
+        entityName={profile.name}
         onSuccess={() => setLogModalOpen(false)}
       />
     </div>
