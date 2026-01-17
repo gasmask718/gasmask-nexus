@@ -612,7 +612,7 @@ export default function GrabbaCRM() {
             <div className="flex items-center gap-3">
               <Truck className="h-4 w-4 text-purple-500" />
               <button
-                onClick={() => navigate(`/wholesaler/${wholesaler.id}`)}
+                onClick={() => navigate(`/wholesale/${wholesaler.id}`)}
                 className="text-lg font-semibold hover:text-purple-400 hover:underline transition-colors text-left"
                 title="Open Wholesaler Intelligence Profile"
               >
@@ -661,7 +661,7 @@ export default function GrabbaCRM() {
               variant="default"
               size="sm"
               className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
-              onClick={() => navigate(`/wholesaler/${wholesaler.id}`)}
+              onClick={() => navigate(`/wholesale/${wholesaler.id}`)}
             >
               <User className="h-4 w-4" />
               View Profile
