@@ -23,11 +23,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
-import { CalendarIcon, Plus, Loader2, X } from 'lucide-react';
+import { CalendarIcon, Plus, Loader2, X, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { WholesalerProductOrderSelector, type OrderLineItem } from './WholesalerProductOrderSelector';
 
-// ============= CREATE ORDER MODAL =============
+// ============= CREATE ORDER MODAL (ENHANCED WITH MULTI-COMPANY PRODUCTS) =============
 interface CreateOrderModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -37,30 +38,14 @@ interface CreateOrderModalProps {
 
 export function CreateOrderModal({ open, onOpenChange, wholesaler, onSubmit }: CreateOrderModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderItems, setOrderItems] = useState<Array<{ sku: string; name: string; qty: number; price: number }>>([
-    { sku: '', name: '', qty: 1, price: 0 }
-  ]);
+  const [orderItems, setOrderItems] = useState<OrderLineItem[]>([]);
   const [notes, setNotes] = useState('');
 
-  const handleAddItem = () => {
-    setOrderItems([...orderItems, { sku: '', name: '', qty: 1, price: 0 }]);
-  };
-
-  const handleRemoveItem = (index: number) => {
-    setOrderItems(orderItems.filter((_, i) => i !== index));
-  };
-
-  const handleItemChange = (index: number, field: string, value: any) => {
-    const updated = [...orderItems];
-    updated[index] = { ...updated[index], [field]: value };
-    setOrderItems(updated);
-  };
-
-  const totalAmount = orderItems.reduce((sum, item) => sum + (item.qty * item.price), 0);
+  const totalAmount = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
 
   const handleSubmit = async () => {
-    if (orderItems.every(item => !item.sku && !item.name)) {
-      toast.error('Please add at least one item');
+    if (orderItems.length === 0) {
+      toast.error('Please add at least one product');
       return;
     }
     
@@ -68,13 +53,22 @@ export function CreateOrderModal({ open, onOpenChange, wholesaler, onSubmit }: C
     try {
       await onSubmit({
         wholesaler_id: wholesaler.id,
-        items: orderItems.filter(item => item.sku || item.name),
+        items: orderItems.map(item => ({
+          product_id: item.product_id,
+          company_id: item.company_id,
+          company_name: item.company_name,
+          sku: item.sku,
+          name: item.name,
+          qty: item.qty,
+          price: item.price,
+          subtotal: item.subtotal,
+        })),
         total_amount: totalAmount,
         notes,
         order_date: new Date().toISOString(),
       });
       onOpenChange(false);
-      setOrderItems([{ sku: '', name: '', qty: 1, price: 0 }]);
+      setOrderItems([]);
       setNotes('');
     } catch (error) {
       console.error(error);
@@ -83,85 +77,58 @@ export function CreateOrderModal({ open, onOpenChange, wholesaler, onSubmit }: C
     }
   };
 
+  const handleClose = () => {
+    onOpenChange(false);
+    setOrderItems([]);
+    setNotes('');
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Create Order for {wholesaler?.name}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5" />
+            Create Order for {wholesaler?.name}
+          </DialogTitle>
           <DialogDescription>
-            Add a new order with line items. This will be tracked in the order intelligence system.
+            Select products from any Grabba company. Prices auto-populate from the catalog.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-          <div className="space-y-3">
-            <Label>Order Items</Label>
-            {orderItems.map((item, index) => (
-              <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                <Input
-                  placeholder="SKU"
-                  value={item.sku}
-                  onChange={(e) => handleItemChange(index, 'sku', e.target.value)}
-                  className="col-span-2"
-                />
-                <Input
-                  placeholder="Product Name"
-                  value={item.name}
-                  onChange={(e) => handleItemChange(index, 'name', e.target.value)}
-                  className="col-span-4"
-                />
-                <Input
-                  type="number"
-                  placeholder="Qty"
-                  value={item.qty}
-                  onChange={(e) => handleItemChange(index, 'qty', parseInt(e.target.value) || 0)}
-                  className="col-span-2"
-                />
-                <Input
-                  type="number"
-                  placeholder="Price"
-                  value={item.price}
-                  onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value) || 0)}
-                  className="col-span-3"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleRemoveItem(index)}
-                  disabled={orderItems.length === 1}
-                  className="col-span-1"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+        <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+          <WholesalerProductOrderSelector
+            orderItems={orderItems}
+            onItemsChange={setOrderItems}
+          />
+
+          {orderItems.length > 0 && (
+            <>
+              <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl border border-green-500/20">
+                <span className="font-medium">Order Total</span>
+                <span className="text-2xl font-bold text-green-400">
+                  ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
               </div>
-            ))}
-            <Button variant="outline" size="sm" onClick={handleAddItem} className="gap-1">
-              <Plus className="h-3 w-3" />
-              Add Item
-            </Button>
-          </div>
 
-          <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-            <span className="font-medium">Total Amount</span>
-            <span className="text-xl font-bold">${totalAmount.toLocaleString()}</span>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Notes</Label>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Order notes, special instructions..."
-              rows={3}
-            />
-          </div>
+              <div className="space-y-2">
+                <Label>Order Notes</Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Special instructions, delivery notes..."
+                  rows={2}
+                />
+              </div>
+            </>
+          )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+        <DialogFooter className="mt-4 pt-4 border-t">
+          <Button variant="outline" onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting || orderItems.length === 0}>
             {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Create Order
+            Create Order ({orderItems.length} items)
           </Button>
         </DialogFooter>
       </DialogContent>
