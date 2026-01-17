@@ -21,7 +21,8 @@ import {
   WholesalerVisits,
   WholesalerAISignals,
   WholesalerContracts,
-  WholesalerActionBar
+  WholesalerActionBar,
+  WholesalerFinancialSummary,
 } from "@/components/wholesaler";
 
 // Command Modals
@@ -367,7 +368,13 @@ export default function WholesalerDetail() {
             />
           </TabsContent>
 
-          <TabsContent value="financial" className="mt-6">
+          <TabsContent value="financial" className="mt-6 space-y-6">
+            {/* Financial Summary - Lifetime Spend, 30/60/90 day spend */}
+            <WholesalerFinancialSummary
+              orders={intelligence.orders || []}
+              onMetricClick={handleMetricClick}
+            />
+            {/* Payment Risk & Disputes */}
             <WholesalerFinancialRisk 
               payments={intelligence.payments || []}
               disputes={intelligence.disputes || []}
