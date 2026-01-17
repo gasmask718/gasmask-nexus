@@ -666,6 +666,7 @@ export default function AppRoutes() {
         <Route path="/wholesale/marketplace" element={<WholesaleMarketplace />} />
         <Route path="/wholesale/fulfillment" element={<WholesaleFulfillment />} />
         <Route path="/wholesale/:id" element={<WholesalerDetail />} />
+        <Route path="/wholesaler/:id" element={<WholesalerDetail />} />
         <Route path="/team" element={<Team />} />
         <Route path="/products" element={<Products />} />
         <Route path="/analytics" element={<Analytics />} />
