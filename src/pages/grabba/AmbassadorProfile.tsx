@@ -13,9 +13,19 @@ import { format } from 'date-fns';
 import { 
   ArrowLeft, UserCheck, Phone, Mail, MapPin, Edit, 
   Instagram, MessageCircle, Tag, Building2, Globe,
-  AlertTriangle, StickyNote, TrendingUp
+  AlertTriangle, StickyNote, TrendingUp, DollarSign, 
+  Store, BarChart3
 } from 'lucide-react';
 import { EntityNotesSection } from '@/components/grabba/EntityNotesSection';
+import { useAmbassadorIntelligence } from '@/hooks/useAmbassadorIntelligence';
+import {
+  AmbassadorKPICards,
+  AmbassadorStorePipeline,
+  AmbassadorRevenuePanel,
+  AmbassadorCommissionPanel,
+  AmbassadorPerformanceSignals,
+  AmbassadorActionBar
+} from '@/components/ambassador';
 
 const AmbassadorProfile: React.FC = () => {
   const { ambassadorId } = useParams();
@@ -41,6 +51,10 @@ const AmbassadorProfile: React.FC = () => {
     enabled: !!ambassadorId
   });
 
+  // Use intelligence hook for metrics
+  const { metrics, pipeline, commissions, onlineSales, isLoading: metricsLoading } = 
+    useAmbassadorIntelligence(ambassadorId || '');
+
   // Update ambassador
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -55,6 +69,22 @@ const AmbassadorProfile: React.FC = () => {
     onError: () => toast.error('Failed to update ambassador')
   });
 
+  // Toggle status mutation
+  const toggleStatusMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('ambassadors')
+        .update({ is_active: !ambassador?.is_active })
+        .eq('id', ambassadorId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ambassador', ambassadorId] });
+      toast.success(`Ambassador ${ambassador?.is_active ? 'deactivated' : 'activated'}`);
+    },
+    onError: () => toast.error('Failed to update status')
+  });
+
   if (isLoading) {
     return (
       <div className="p-6 text-center text-muted-foreground">Loading...</div>
@@ -66,7 +96,7 @@ const AmbassadorProfile: React.FC = () => {
       <div className="p-6 text-center">
         <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <p className="text-muted-foreground">Ambassador not found</p>
-        <Button className="mt-4" onClick={() => navigate('/grabba/store-master')}>
+        <Button className="mt-4" onClick={() => navigate('/grabba/crm')}>
           Back to CRM
         </Button>
       </div>
@@ -77,11 +107,22 @@ const AmbassadorProfile: React.FC = () => {
   const territory = ambassador.region || ambassador.neighborhood || '';
   const tags = ambassador.tags ? (typeof ambassador.tags === 'string' ? ambassador.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : ambassador.tags) : [];
 
+  // Prepare performance metrics for signals
+  const performanceMetrics = {
+    totalStores: metrics?.storesAcquired || 0,
+    activeStores: metrics?.storesActive || 0,
+    dormantStores: metrics?.storesDormant || 0,
+    totalRevenue: metrics?.totalRevenue || 0,
+    avgOrderValue: metrics?.avgOrderValue || 0,
+    pendingCommission: metrics?.pendingEarnings || 0,
+    recentOrdersCount: metrics?.last30DaysOrders || 0
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/grabba/store-master')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/grabba/crm')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
@@ -126,17 +167,26 @@ const AmbassadorProfile: React.FC = () => {
         </Dialog>
       </div>
 
+      {/* KPI Cards */}
+      <AmbassadorKPICards metrics={metrics} />
+
       {/* Tabs */}
       <Tabs defaultValue="overview">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
           <TabsTrigger value="overview">
-            <UserCheck className="h-4 w-4 mr-2" /> Overview
+            <UserCheck className="h-4 w-4 mr-2 hidden sm:inline" /> Overview
           </TabsTrigger>
-          <TabsTrigger value="notes">
-            <StickyNote className="h-4 w-4 mr-2" /> Notes
+          <TabsTrigger value="stores">
+            <Store className="h-4 w-4 mr-2 hidden sm:inline" /> Stores
+          </TabsTrigger>
+          <TabsTrigger value="revenue">
+            <DollarSign className="h-4 w-4 mr-2 hidden sm:inline" /> Revenue
           </TabsTrigger>
           <TabsTrigger value="performance">
-            <TrendingUp className="h-4 w-4 mr-2" /> Performance
+            <BarChart3 className="h-4 w-4 mr-2 hidden sm:inline" /> Performance
+          </TabsTrigger>
+          <TabsTrigger value="notes">
+            <StickyNote className="h-4 w-4 mr-2 hidden sm:inline" /> Notes
           </TabsTrigger>
         </TabsList>
 
@@ -246,7 +296,50 @@ const AmbassadorProfile: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Commission Panel */}
+            <div className="md:col-span-2">
+              <AmbassadorCommissionPanel 
+                commissions={commissions} 
+                metrics={metrics} 
+              />
+            </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="stores" className="mt-4 space-y-6">
+          <AmbassadorStorePipeline 
+            pipeline={pipeline} 
+          />
+        </TabsContent>
+
+        <TabsContent value="revenue" className="mt-4">
+          <AmbassadorRevenuePanel 
+            onlineSales={onlineSales}
+            metrics={metrics}
+          />
+        </TabsContent>
+
+        <TabsContent value="performance" className="mt-4 space-y-6">
+          <AmbassadorPerformanceSignals 
+            ambassadorId={ambassadorId || ''} 
+            metrics={performanceMetrics}
+          />
+          
+          {/* Activity summary placeholder */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Activity Timeline
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-center py-8">
+                Activity tracking and field intelligence coming soon
+              </p>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="notes" className="mt-4">
@@ -256,15 +349,15 @@ const AmbassadorProfile: React.FC = () => {
             entityName={ambassadorName}
           />
         </TabsContent>
-
-        <TabsContent value="performance" className="mt-4">
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              Performance metrics coming soon
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
+
+      {/* Sticky Action Bar */}
+      <AmbassadorActionBar
+        ambassadorId={ambassadorId || ''}
+        ambassadorName={ambassadorName}
+        isActive={ambassador.is_active}
+        onToggleStatus={() => toggleStatusMutation.mutate()}
+      />
     </div>
   );
 };
