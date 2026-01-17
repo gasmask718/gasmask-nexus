@@ -63,13 +63,17 @@ export default function WholesalerDetail() {
   const [orderDetailOpen, setOrderDetailOpen] = useState(false);
   const [healthScoreOpen, setHealthScoreOpen] = useState(false);
   const [metricDrawerOpen, setMetricDrawerOpen] = useState(false);
-  const [selectedMetric, setSelectedMetric] = useState<{type: string; value: number; label: string} | null>(null);
+  const [selectedMetric, setSelectedMetric] = useState<{type: string; value: number; label: string; icon?: any; items?: any[]} | null>(null);
   const [financialDrawerOpen, setFinancialDrawerOpen] = useState(false);
+  const [financialType, setFinancialType] = useState<'punctuality' | 'avg_days' | 'total_payments' | 'late_payments' | 'dispute'>('total_payments');
   const [territoryDrawerOpen, setTerritoryDrawerOpen] = useState(false);
+  const [territoryType, setTerritoryType] = useState<'neighborhoods' | 'stores' | 'exclusive' | 'overlap' | 'area'>('neighborhoods');
   const [selectedTerritory, setSelectedTerritory] = useState<any>(null);
   const [productDrawerOpen, setProductDrawerOpen] = useState(false);
+  const [productType, setProductType] = useState<'units' | 'revenue' | 'returns' | 'product'>('units');
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [visitDrawerOpen, setVisitDrawerOpen] = useState(false);
+  const [visitType, setVisitType] = useState<'total' | 'days_since' | 'visibility' | 'visit'>('total');
   const [selectedVisit, setSelectedVisit] = useState<any>(null);
 
   // Fetch all intelligence data using the unified hook
@@ -132,20 +136,42 @@ export default function WholesalerDetail() {
 
   const handleHealthScoreClick = () => setHealthScoreOpen(true);
   const handleMetricClick = (type: string, value: number, label: string) => {
-    setSelectedMetric({ type, value, label });
-    setMetricDrawerOpen(true);
+    // If it's a financial metric, open the financial drawer
+    if (['punctuality', 'avg_days', 'total_payments', 'late_payments', 'dispute'].includes(type)) {
+      setFinancialType(type as any);
+      setFinancialDrawerOpen(true);
+    } else if (['neighborhoods', 'stores', 'exclusive', 'overlap'].includes(type)) {
+      setTerritoryType(type as any);
+      setTerritoryDrawerOpen(true);
+    } else if (['units', 'revenue', 'returns'].includes(type)) {
+      setProductType(type as any);
+      setProductDrawerOpen(true);
+    } else if (['total', 'days_since', 'visibility'].includes(type)) {
+      setVisitType(type as any);
+      setVisitDrawerOpen(true);
+    } else {
+      // Generic metric drawer
+      setSelectedMetric({ type, value, label });
+      setMetricDrawerOpen(true);
+    }
   };
-  const handleFinancialClick = () => setFinancialDrawerOpen(true);
+  const handleFinancialClick = (type: 'punctuality' | 'avg_days' | 'total_payments' | 'late_payments' | 'dispute' = 'total_payments') => {
+    setFinancialType(type);
+    setFinancialDrawerOpen(true);
+  };
   const handleTerritoryClick = (territory: any) => {
     setSelectedTerritory(territory);
+    setTerritoryType('area');
     setTerritoryDrawerOpen(true);
   };
   const handleProductClick = (product: any) => {
     setSelectedProduct(product);
+    setProductType('product');
     setProductDrawerOpen(true);
   };
   const handleVisitClick = (visit: any) => {
     setSelectedVisit(visit);
+    setVisitType('visit');
     setVisitDrawerOpen(true);
   };
 
@@ -503,40 +529,57 @@ export default function WholesalerDetail() {
       <MetricDetailDrawer
         open={metricDrawerOpen}
         onOpenChange={setMetricDrawerOpen}
-        metric={{
-          type: selectedMetric?.type || '',
-          value: selectedMetric?.value || 0,
-          label: selectedMetric?.label || '',
-        }}
+        title={selectedMetric?.label || 'Metric Details'}
+        icon={selectedMetric?.icon || Package}
+        mainValue={selectedMetric?.value || 0}
+        mainLabel={selectedMetric?.label || ''}
+        items={selectedMetric?.items || []}
       />
 
       {/* Financial Detail Drawer */}
       <FinancialDetailDrawer
         open={financialDrawerOpen}
         onOpenChange={setFinancialDrawerOpen}
+        type={financialType}
         payments={intelligence.payments || []}
         disputes={intelligence.disputes || []}
+        metrics={{
+          totalPayments: intelligence.payments?.length || 0,
+          punctualityRate: intelligence.payments?.filter(p => p.on_time).length / (intelligence.payments?.length || 1) * 100 || 0,
+          avgDaysToPayment: intelligence.payments?.reduce((acc, p) => acc + (p.days_from_invoice || 0), 0) / (intelligence.payments?.length || 1) || 0,
+          latePaments: intelligence.payments?.filter(p => !p.on_time).length || 0,
+        }}
+        profile={profile}
       />
 
       {/* Territory Detail Drawer */}
       <TerritoryDetailDrawer
         open={territoryDrawerOpen}
         onOpenChange={setTerritoryDrawerOpen}
-        territory={selectedTerritory}
+        type={territoryType}
+        territory={intelligence.territory || []}
+        selectedArea={selectedTerritory}
+        profile={profile}
       />
 
       {/* Product Detail Drawer */}
       <ProductDetailDrawer
         open={productDrawerOpen}
         onOpenChange={setProductDrawerOpen}
-        products={selectedProduct ? [selectedProduct] : []}
+        type={productType}
+        products={intelligence.productPerformance || []}
+        selectedProduct={selectedProduct}
       />
 
       {/* Visit Detail Drawer */}
       <VisitDetailDrawer
         open={visitDrawerOpen}
         onOpenChange={setVisitDrawerOpen}
-        visits={selectedVisit ? [selectedVisit] : []}
+        type={visitType}
+        visits={intelligence.visits || []}
+        selectedVisit={selectedVisit}
+        profile={profile}
+        onScheduleVisit={() => setScheduleVisitOpen(true)}
       />
     </div>
   );
