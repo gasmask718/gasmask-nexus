@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Users,
+  User,
   Search,
   Phone,
   Mail,
@@ -33,6 +34,7 @@ import {
   Heart,
   Car,
   Bike,
+  Eye,
 } from "lucide-react";
 import { getRelationshipScoresForStores, RelationshipScore } from "@/services/crmInsightsService";
 import { useNavigate, Link, useParams } from "react-router-dom";
@@ -602,19 +604,20 @@ export default function GrabbaCRM() {
 
   const WholesalerCard = ({ wholesaler }: { wholesaler: any }) => (
     <Card 
-      className="bg-card/50 backdrop-blur border-border/50 hover:border-purple-500/30 transition-all hover:shadow-lg cursor-pointer"
-      onClick={() => {
-        setSelectedProfileEntity(wholesaler);
-        setSelectedProfileType('wholesaler');
-        setProfileModalOpen(true);
-      }}
+      className="bg-card/50 backdrop-blur border-border/50 hover:border-purple-500/30 transition-all hover:shadow-lg"
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
               <Truck className="h-4 w-4 text-purple-500" />
-              <span className="text-lg font-semibold">{wholesaler.name}</span>
+              <button
+                onClick={() => navigate(`/wholesaler/${wholesaler.id}`)}
+                className="text-lg font-semibold hover:text-purple-400 hover:underline transition-colors text-left"
+                title="Open Wholesaler Intelligence Profile"
+              >
+                {wholesaler.name}
+              </button>
               <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30">
                 Wholesaler
               </Badge>
@@ -652,7 +655,18 @@ export default function GrabbaCRM() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            {/* Primary CTA - View Wholesaler Profile */}
+            <Button
+              variant="default"
+              size="sm"
+              className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
+              onClick={() => navigate(`/wholesaler/${wholesaler.id}`)}
+            >
+              <User className="h-4 w-4" />
+              View Profile
+            </Button>
+            
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -660,10 +674,26 @@ export default function GrabbaCRM() {
                     size="icon"
                     variant="ghost"
                     className="h-8 w-8"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openEditModal(wholesaler);
+                    onClick={() => {
+                      setSelectedProfileEntity(wholesaler);
+                      setSelectedProfileType('wholesaler');
+                      setProfileModalOpen(true);
                     }}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Quick Preview</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={() => openEditModal(wholesaler)}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -678,33 +708,12 @@ export default function GrabbaCRM() {
                     size="icon"
                     variant="ghost"
                     className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openDeleteModal(wholesaler);
-                    }}
+                    onClick={() => openDeleteModal(wholesaler)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Delete Wholesaler</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/wholesale/${wholesaler.id}`);
-                    }}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>View Wholesaler</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
