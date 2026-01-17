@@ -736,7 +736,7 @@ export default function GrabbaCRM() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
               <Award className="h-4 w-4 text-amber-500" />
-              <span className="text-lg font-semibold">{ambassador.profiles?.full_name || "Ambassador"}</span>
+              <span className="text-lg font-semibold">{ambassador.name || ambassador.profiles?.full_name || ambassador.profiles?.name || "Unknown Ambassador"}</span>
               <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">{ambassador.tier}</Badge>
               {ambassador.is_active ? (
                 <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Active</Badge>
