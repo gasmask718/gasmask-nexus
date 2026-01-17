@@ -28878,6 +28878,343 @@ export type Database = {
           },
         ]
       }
+      wholesaler_ai_signals: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          created_at: string
+          details: string | null
+          detected_at: string
+          headline: string
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          recommended_action: string | null
+          resolved_at: string | null
+          severity: string | null
+          signal_type: string
+          wholesaler_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          details?: string | null
+          detected_at?: string
+          headline: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          recommended_action?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          signal_type: string
+          wholesaler_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          details?: string | null
+          detected_at?: string
+          headline?: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          recommended_action?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          signal_type?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_ai_signals_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_ai_signals_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesaler_communications: {
+        Row: {
+          communicated_at: string
+          communicated_by: string | null
+          communication_type: string
+          created_at: string
+          direction: string | null
+          id: string
+          linked_task_id: string | null
+          promises_kept: boolean | null
+          promises_made: Json | null
+          sentiment: string | null
+          subject: string | null
+          summary: string | null
+          wholesaler_id: string
+        }
+        Insert: {
+          communicated_at?: string
+          communicated_by?: string | null
+          communication_type: string
+          created_at?: string
+          direction?: string | null
+          id?: string
+          linked_task_id?: string | null
+          promises_kept?: boolean | null
+          promises_made?: Json | null
+          sentiment?: string | null
+          subject?: string | null
+          summary?: string | null
+          wholesaler_id: string
+        }
+        Update: {
+          communicated_at?: string
+          communicated_by?: string | null
+          communication_type?: string
+          created_at?: string
+          direction?: string | null
+          id?: string
+          linked_task_id?: string | null
+          promises_kept?: boolean | null
+          promises_made?: Json | null
+          sentiment?: string | null
+          subject?: string | null
+          summary?: string | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_communications_communicated_by_fkey"
+            columns: ["communicated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_communications_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesaler_contracts: {
+        Row: {
+          auto_renew: boolean | null
+          contract_name: string
+          contract_type: string | null
+          created_at: string
+          created_by: string | null
+          document_url: string | null
+          end_date: string | null
+          exclusivity_clauses: string[] | null
+          growth_targets: Json | null
+          id: string
+          incentive_structure: Json | null
+          penalty_structure: Json | null
+          start_date: string
+          status: string | null
+          terms: Json | null
+          updated_at: string
+          wholesaler_id: string
+        }
+        Insert: {
+          auto_renew?: boolean | null
+          contract_name: string
+          contract_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_url?: string | null
+          end_date?: string | null
+          exclusivity_clauses?: string[] | null
+          growth_targets?: Json | null
+          id?: string
+          incentive_structure?: Json | null
+          penalty_structure?: Json | null
+          start_date: string
+          status?: string | null
+          terms?: Json | null
+          updated_at?: string
+          wholesaler_id: string
+        }
+        Update: {
+          auto_renew?: boolean | null
+          contract_name?: string
+          contract_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_url?: string | null
+          end_date?: string | null
+          exclusivity_clauses?: string[] | null
+          growth_targets?: Json | null
+          id?: string
+          incentive_structure?: Json | null
+          penalty_structure?: Json | null
+          start_date?: string
+          status?: string | null
+          terms?: Json | null
+          updated_at?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_contracts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_contracts_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesaler_disputes: {
+        Row: {
+          created_by: string | null
+          description: string | null
+          dispute_type: string
+          id: string
+          opened_at: string
+          order_id: string | null
+          resolution_days: number | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string | null
+          status: string | null
+          wholesaler_id: string
+        }
+        Insert: {
+          created_by?: string | null
+          description?: string | null
+          dispute_type: string
+          id?: string
+          opened_at?: string
+          order_id?: string | null
+          resolution_days?: number | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          status?: string | null
+          wholesaler_id: string
+        }
+        Update: {
+          created_by?: string | null
+          description?: string | null
+          dispute_type?: string
+          id?: string
+          opened_at?: string
+          order_id?: string | null
+          resolution_days?: number | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          status?: string | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_disputes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_disputes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_disputes_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_disputes_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesaler_health_snapshots: {
+        Row: {
+          communication_score: number | null
+          contract_adherence_score: number | null
+          created_at: string
+          dispute_score: number | null
+          health_score: number
+          id: string
+          order_consistency_score: number | null
+          payment_punctuality_score: number | null
+          price_sensitivity_score: number | null
+          risk_factors: Json | null
+          snapshot_date: string
+          trend: string | null
+          wholesaler_id: string
+        }
+        Insert: {
+          communication_score?: number | null
+          contract_adherence_score?: number | null
+          created_at?: string
+          dispute_score?: number | null
+          health_score: number
+          id?: string
+          order_consistency_score?: number | null
+          payment_punctuality_score?: number | null
+          price_sensitivity_score?: number | null
+          risk_factors?: Json | null
+          snapshot_date?: string
+          trend?: string | null
+          wholesaler_id: string
+        }
+        Update: {
+          communication_score?: number | null
+          contract_adherence_score?: number | null
+          created_at?: string
+          dispute_score?: number | null
+          health_score?: number
+          id?: string
+          order_consistency_score?: number | null
+          payment_punctuality_score?: number | null
+          price_sensitivity_score?: number | null
+          risk_factors?: Json | null
+          snapshot_date?: string
+          trend?: string | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_health_snapshots_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wholesaler_notes: {
         Row: {
           created_at: string
@@ -28916,6 +29253,122 @@ export type Database = {
           },
           {
             foreignKeyName: "wholesaler_notes_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesaler_orders: {
+        Row: {
+          created_at: string
+          days_to_payment: number | null
+          delivery_date: string | null
+          id: string
+          items_count: number | null
+          notes: string | null
+          order_date: string
+          order_number: string | null
+          payment_received_date: string | null
+          payment_status: string | null
+          skus: Json | null
+          status: string | null
+          total_amount: number
+          updated_at: string
+          wholesaler_id: string
+        }
+        Insert: {
+          created_at?: string
+          days_to_payment?: number | null
+          delivery_date?: string | null
+          id?: string
+          items_count?: number | null
+          notes?: string | null
+          order_date?: string
+          order_number?: string | null
+          payment_received_date?: string | null
+          payment_status?: string | null
+          skus?: Json | null
+          status?: string | null
+          total_amount?: number
+          updated_at?: string
+          wholesaler_id: string
+        }
+        Update: {
+          created_at?: string
+          days_to_payment?: number | null
+          delivery_date?: string | null
+          id?: string
+          items_count?: number | null
+          notes?: string | null
+          order_date?: string
+          order_number?: string | null
+          payment_received_date?: string | null
+          payment_status?: string | null
+          skus?: Json | null
+          status?: string | null
+          total_amount?: number
+          updated_at?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_orders_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesaler_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          days_from_invoice: number | null
+          id: string
+          notes: string | null
+          on_time: boolean | null
+          order_id: string | null
+          payment_date: string
+          payment_method: string | null
+          wholesaler_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          days_from_invoice?: number | null
+          id?: string
+          notes?: string | null
+          on_time?: boolean | null
+          order_id?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          wholesaler_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          days_from_invoice?: number | null
+          id?: string
+          notes?: string | null
+          on_time?: boolean | null
+          order_id?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_payments_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
             referencedRelation: "wholesalers"
@@ -28976,6 +29429,71 @@ export type Database = {
           },
         ]
       }
+      wholesaler_product_performance: {
+        Row: {
+          created_at: string
+          id: string
+          neighborhoods_sold: string[] | null
+          period_end: string
+          period_start: string
+          price_erosion_percent: number | null
+          product_id: string | null
+          product_name: string | null
+          return_rate: number | null
+          returns_count: number | null
+          revenue: number | null
+          sku: string | null
+          substitution_rate: number | null
+          units_sold: number | null
+          velocity_score: number | null
+          wholesaler_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          neighborhoods_sold?: string[] | null
+          period_end: string
+          period_start: string
+          price_erosion_percent?: number | null
+          product_id?: string | null
+          product_name?: string | null
+          return_rate?: number | null
+          returns_count?: number | null
+          revenue?: number | null
+          sku?: string | null
+          substitution_rate?: number | null
+          units_sold?: number | null
+          velocity_score?: number | null
+          wholesaler_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          neighborhoods_sold?: string[] | null
+          period_end?: string
+          period_start?: string
+          price_erosion_percent?: number | null
+          product_id?: string | null
+          product_name?: string | null
+          return_rate?: number | null
+          returns_count?: number | null
+          revenue?: number | null
+          sku?: string | null
+          substitution_rate?: number | null
+          units_sold?: number | null
+          velocity_score?: number | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_product_performance_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wholesaler_profiles: {
         Row: {
           company_name: string
@@ -29024,71 +29542,299 @@ export type Database = {
         }
         Relationships: []
       }
+      wholesaler_territory_coverage: {
+        Row: {
+          borough: string | null
+          coverage_density: string | null
+          created_at: string
+          id: string
+          is_exclusive: boolean | null
+          last_calculated_at: string | null
+          neighborhood: string
+          overlap_with: Json | null
+          store_count: number | null
+          updated_at: string
+          wholesaler_id: string
+        }
+        Insert: {
+          borough?: string | null
+          coverage_density?: string | null
+          created_at?: string
+          id?: string
+          is_exclusive?: boolean | null
+          last_calculated_at?: string | null
+          neighborhood: string
+          overlap_with?: Json | null
+          store_count?: number | null
+          updated_at?: string
+          wholesaler_id: string
+        }
+        Update: {
+          borough?: string | null
+          coverage_density?: string | null
+          created_at?: string
+          id?: string
+          is_exclusive?: boolean | null
+          last_calculated_at?: string | null
+          neighborhood?: string
+          overlap_with?: Json | null
+          store_count?: number | null
+          updated_at?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_territory_coverage_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesaler_visits: {
+        Row: {
+          created_at: string
+          duration_minutes: number | null
+          follow_up_notes: string | null
+          follow_up_required: boolean | null
+          id: string
+          issues_found: Json | null
+          observations: string | null
+          opportunities: Json | null
+          photos: Json | null
+          placement_feedback: string | null
+          visibility_score: number | null
+          visit_date: string
+          visit_type: string | null
+          visited_by: string | null
+          wholesaler_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number | null
+          follow_up_notes?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          issues_found?: Json | null
+          observations?: string | null
+          opportunities?: Json | null
+          photos?: Json | null
+          placement_feedback?: string | null
+          visibility_score?: number | null
+          visit_date?: string
+          visit_type?: string | null
+          visited_by?: string | null
+          wholesaler_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number | null
+          follow_up_notes?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          issues_found?: Json | null
+          observations?: string | null
+          opportunities?: Json | null
+          photos?: Json | null
+          placement_feedback?: string | null
+          visibility_score?: number | null
+          visit_date?: string
+          visit_type?: string | null
+          visited_by?: string | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_visits_visited_by_fkey"
+            columns: ["visited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_visits_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wholesalers: {
         Row: {
           address: string | null
+          assigned_rep_id: string | null
+          authorized_brands: string[] | null
+          backup_contact_name: string | null
+          backup_contact_phone: string | null
           city: string | null
           company_id: string | null
+          compliance_documents: Json | null
           contact_name: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
           created_at: string | null
           created_by: string | null
+          dba_name: string | null
           deleted_at: string | null
           email: string | null
+          exclusive_zones: string[] | null
+          growth_target_percentage: number | null
+          health_score_updated_at: string | null
           id: string
+          incentives: Json | null
+          insurance_expiry: string | null
+          insurance_policy: string | null
           is_simulation: boolean | null
+          last_visit_date: string | null
+          legal_business_name: string | null
+          license_expiry: string | null
+          license_number: string | null
+          margin_agreement: number | null
+          moq: number | null
           name: string
           neighborhood: string | null
+          payment_terms: string | null
+          penalties: Json | null
           phone: string | null
           phone_secondary: string | null
           phone_whatsapp: string | null
+          pricing_tier: string | null
+          relationship_health_score: number | null
+          reorder_threshold: number | null
+          resale_cert_expiry: string | null
+          resale_cert_number: string | null
+          risk_flags: Json | null
+          risk_level: string | null
+          role_type: string | null
+          sku_permissions: Json | null
           social_media: string | null
           state: string | null
           status: string | null
           tags: string | null
+          tax_id: string | null
+          territories: string[] | null
+          visit_frequency_days: number | null
         }
         Insert: {
           address?: string | null
+          assigned_rep_id?: string | null
+          authorized_brands?: string[] | null
+          backup_contact_name?: string | null
+          backup_contact_phone?: string | null
           city?: string | null
           company_id?: string | null
+          compliance_documents?: Json | null
           contact_name?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
           created_at?: string | null
           created_by?: string | null
+          dba_name?: string | null
           deleted_at?: string | null
           email?: string | null
+          exclusive_zones?: string[] | null
+          growth_target_percentage?: number | null
+          health_score_updated_at?: string | null
           id?: string
+          incentives?: Json | null
+          insurance_expiry?: string | null
+          insurance_policy?: string | null
           is_simulation?: boolean | null
+          last_visit_date?: string | null
+          legal_business_name?: string | null
+          license_expiry?: string | null
+          license_number?: string | null
+          margin_agreement?: number | null
+          moq?: number | null
           name: string
           neighborhood?: string | null
+          payment_terms?: string | null
+          penalties?: Json | null
           phone?: string | null
           phone_secondary?: string | null
           phone_whatsapp?: string | null
+          pricing_tier?: string | null
+          relationship_health_score?: number | null
+          reorder_threshold?: number | null
+          resale_cert_expiry?: string | null
+          resale_cert_number?: string | null
+          risk_flags?: Json | null
+          risk_level?: string | null
+          role_type?: string | null
+          sku_permissions?: Json | null
           social_media?: string | null
           state?: string | null
           status?: string | null
           tags?: string | null
+          tax_id?: string | null
+          territories?: string[] | null
+          visit_frequency_days?: number | null
         }
         Update: {
           address?: string | null
+          assigned_rep_id?: string | null
+          authorized_brands?: string[] | null
+          backup_contact_name?: string | null
+          backup_contact_phone?: string | null
           city?: string | null
           company_id?: string | null
+          compliance_documents?: Json | null
           contact_name?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
           created_at?: string | null
           created_by?: string | null
+          dba_name?: string | null
           deleted_at?: string | null
           email?: string | null
+          exclusive_zones?: string[] | null
+          growth_target_percentage?: number | null
+          health_score_updated_at?: string | null
           id?: string
+          incentives?: Json | null
+          insurance_expiry?: string | null
+          insurance_policy?: string | null
           is_simulation?: boolean | null
+          last_visit_date?: string | null
+          legal_business_name?: string | null
+          license_expiry?: string | null
+          license_number?: string | null
+          margin_agreement?: number | null
+          moq?: number | null
           name?: string
           neighborhood?: string | null
+          payment_terms?: string | null
+          penalties?: Json | null
           phone?: string | null
           phone_secondary?: string | null
           phone_whatsapp?: string | null
+          pricing_tier?: string | null
+          relationship_health_score?: number | null
+          reorder_threshold?: number | null
+          resale_cert_expiry?: string | null
+          resale_cert_number?: string | null
+          risk_flags?: Json | null
+          risk_level?: string | null
+          role_type?: string | null
+          sku_permissions?: Json | null
           social_media?: string | null
           state?: string | null
           status?: string | null
           tags?: string | null
+          tax_id?: string | null
+          territories?: string[] | null
+          visit_frequency_days?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "wholesalers_assigned_rep_id_fkey"
+            columns: ["assigned_rep_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wholesalers_company_id_fkey"
             columns: ["company_id"]
