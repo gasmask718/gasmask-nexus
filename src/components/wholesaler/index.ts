@@ -9,3 +9,6 @@ export { WholesalerVisitsSection as WholesalerVisits } from './WholesalerVisits'
 export { WholesalerAISignals } from './WholesalerAISignals';
 export { WholesalerContractsSection as WholesalerContracts } from './WholesalerContracts';
 export { WholesalerActionBar } from './WholesalerActionBar';
+export { WholesalerTags, WholesalerTagsBadges, WHOLESALER_TAG_PRESETS, getTagColor } from './WholesalerTags';
+export { WholesalerFinancialSummary } from './WholesalerFinancialSummary';
+export { WholesalerProductOrderSelector } from './WholesalerProductOrderSelector';

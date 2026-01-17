@@ -419,6 +419,13 @@ export function EditProfileModal({ open, onOpenChange, wholesaler, onSubmit }: E
     risk_level: wholesaler?.risk_level || 'low',
     tax_id: wholesaler?.tax_id || '',
     license_number: wholesaler?.license_number || '',
+    // Location fields
+    city: wholesaler?.city || '',
+    state: wholesaler?.state || '',
+    borough: wholesaler?.borough || '',
+    neighborhood: wholesaler?.neighborhood || '',
+    address: wholesaler?.address || '',
+    zip_code: wholesaler?.zip_code || '',
   });
 
   React.useEffect(() => {
@@ -436,6 +443,13 @@ export function EditProfileModal({ open, onOpenChange, wholesaler, onSubmit }: E
         risk_level: wholesaler.risk_level || 'low',
         tax_id: wholesaler.tax_id || '',
         license_number: wholesaler.license_number || '',
+        // Location fields
+        city: wholesaler.city || '',
+        state: wholesaler.state || '',
+        borough: wholesaler.borough || '',
+        neighborhood: wholesaler.neighborhood || '',
+        address: wholesaler.address || '',
+        zip_code: wholesaler.zip_code || '',
       });
     }
   }, [wholesaler]);
@@ -529,6 +543,81 @@ export function EditProfileModal({ open, onOpenChange, wholesaler, onSubmit }: E
                 <Input
                   value={formData.backup_contact_phone}
                   onChange={(e) => setFormData({ ...formData, backup_contact_phone: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Location Section */}
+          <div className="col-span-2 border-t pt-4 mt-2">
+            <h4 className="font-medium mb-3">📍 Location & Territory</h4>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Address</Label>
+                <Input
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Street address"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>City *</Label>
+                <Input
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  placeholder="New York"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>State *</Label>
+                <Select value={formData.state} onValueChange={(v) => setFormData({ ...formData, state: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NY">New York</SelectItem>
+                    <SelectItem value="NJ">New Jersey</SelectItem>
+                    <SelectItem value="CT">Connecticut</SelectItem>
+                    <SelectItem value="PA">Pennsylvania</SelectItem>
+                    <SelectItem value="MA">Massachusetts</SelectItem>
+                    <SelectItem value="FL">Florida</SelectItem>
+                    <SelectItem value="CA">California</SelectItem>
+                    <SelectItem value="TX">Texas</SelectItem>
+                    <SelectItem value="IL">Illinois</SelectItem>
+                    <SelectItem value="GA">Georgia</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Borough</Label>
+                <Select value={formData.borough} onValueChange={(v) => setFormData({ ...formData, borough: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select borough" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Manhattan">Manhattan</SelectItem>
+                    <SelectItem value="Brooklyn">Brooklyn</SelectItem>
+                    <SelectItem value="Queens">Queens</SelectItem>
+                    <SelectItem value="Bronx">Bronx</SelectItem>
+                    <SelectItem value="Staten Island">Staten Island</SelectItem>
+                    <SelectItem value="N/A">N/A</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Neighborhood</Label>
+                <Input
+                  value={formData.neighborhood}
+                  onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
+                  placeholder="Harlem, Williamsburg..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>ZIP Code</Label>
+                <Input
+                  value={formData.zip_code}
+                  onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
+                  placeholder="10001"
                 />
               </div>
             </div>
