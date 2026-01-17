@@ -11098,6 +11098,39 @@ export type Database = {
           },
         ]
       }
+      entity_audit_log: {
+        Row: {
+          created_at: string
+          edited_by: string | null
+          entity_id: string
+          entity_type: string
+          field_changed: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+        }
+        Insert: {
+          created_at?: string
+          edited_by?: string | null
+          entity_id: string
+          entity_type: string
+          field_changed: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+        }
+        Update: {
+          created_at?: string
+          edited_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          field_changed?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+        }
+        Relationships: []
+      }
       escalation_rules: {
         Row: {
           business_name: string | null
@@ -29668,6 +29701,7 @@ export type Database = {
           authorized_brands: string[] | null
           backup_contact_name: string | null
           backup_contact_phone: string | null
+          borough: string | null
           city: string | null
           company_id: string | null
           compliance_documents: Json | null
@@ -29691,10 +29725,12 @@ export type Database = {
           legal_business_name: string | null
           license_expiry: string | null
           license_number: string | null
+          location_notes: string | null
           margin_agreement: number | null
           moq: number | null
           name: string
           neighborhood: string | null
+          neighborhoods: string[] | null
           payment_terms: string | null
           penalties: Json | null
           phone: string | null
@@ -29723,6 +29759,7 @@ export type Database = {
           authorized_brands?: string[] | null
           backup_contact_name?: string | null
           backup_contact_phone?: string | null
+          borough?: string | null
           city?: string | null
           company_id?: string | null
           compliance_documents?: Json | null
@@ -29746,10 +29783,12 @@ export type Database = {
           legal_business_name?: string | null
           license_expiry?: string | null
           license_number?: string | null
+          location_notes?: string | null
           margin_agreement?: number | null
           moq?: number | null
           name: string
           neighborhood?: string | null
+          neighborhoods?: string[] | null
           payment_terms?: string | null
           penalties?: Json | null
           phone?: string | null
@@ -29778,6 +29817,7 @@ export type Database = {
           authorized_brands?: string[] | null
           backup_contact_name?: string | null
           backup_contact_phone?: string | null
+          borough?: string | null
           city?: string | null
           company_id?: string | null
           compliance_documents?: Json | null
@@ -29801,10 +29841,12 @@ export type Database = {
           legal_business_name?: string | null
           license_expiry?: string | null
           license_number?: string | null
+          location_notes?: string | null
           margin_agreement?: number | null
           moq?: number | null
           name?: string
           neighborhood?: string | null
+          neighborhoods?: string[] | null
           payment_terms?: string | null
           penalties?: Json | null
           phone?: string | null
