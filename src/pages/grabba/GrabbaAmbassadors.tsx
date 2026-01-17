@@ -336,7 +336,7 @@ export default function GrabbaAmbassadors() {
                               <Award className="h-6 w-6 text-primary" />
                             </div>
                             <div>
-                              <div className="font-medium text-foreground">{amb.user?.name || 'Unknown'}</div>
+                              <div className="font-medium text-foreground">{amb.name || amb.user?.name || 'Unknown Ambassador'}</div>
                               <div className="text-sm text-muted-foreground">{amb.user?.email}</div>
                               <div className="flex gap-2 mt-1">
                                 <Badge variant={amb.is_active ? 'default' : 'secondary'}>
