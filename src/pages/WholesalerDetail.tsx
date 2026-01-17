@@ -24,6 +24,7 @@ import {
   WholesalerActionBar,
   WholesalerFinancialSummary,
 } from "@/components/wholesaler";
+import { WholesalerTubesSoldByBrand } from "@/components/wholesaler/WholesalerTubesSoldByBrand";
 
 // Command Modals
 import {
@@ -393,7 +394,12 @@ export default function WholesalerDetail() {
             />
           </TabsContent>
 
-          <TabsContent value="products" className="mt-6">
+          <TabsContent value="products" className="mt-6 space-y-6">
+            {/* Tubes Sold by Brand - Primary KPI Section */}
+            <WholesalerTubesSoldByBrand 
+              tubesByBrand={intelligence.tubesByBrand || []}
+            />
+            {/* Detailed Product Performance */}
             <WholesalerProductPerformance 
               products={intelligence.productPerformance || []}
               onMetricClick={handleMetricClick}

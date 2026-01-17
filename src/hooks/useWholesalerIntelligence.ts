@@ -259,18 +259,108 @@ export function useWholesalerIntelligence(wholesalerId: string | undefined) {
     enabled: !!wholesalerId,
   });
 
-  // Territory coverage
+  // Territory coverage - first try explicit table, then derive from wholesale_orders
   const territoryQuery = useQuery({
     queryKey: ['wholesaler-territory', wholesalerId],
     queryFn: async () => {
       if (!wholesalerId) return [];
-      const { data, error } = await supabase
+      
+      // First try the explicit territory coverage table
+      const { data: explicitData, error: explicitError } = await supabase
         .from('wholesaler_territory_coverage')
         .select('*')
         .eq('wholesaler_id', wholesalerId)
         .order('store_count', { ascending: false });
+      
+      if (!explicitError && explicitData && explicitData.length > 0) {
+        return explicitData as WholesalerTerritory[];
+      }
+      
+      // If no explicit data, derive from wholesale_orders → stores
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('wholesale_orders')
+        .select('store_id, stores!wholesale_orders_store_id_fkey(id, name, address_city)')
+        .eq('wholesaler_id', wholesalerId)
+        .not('store_id', 'is', null);
+      
+      if (ordersError || !ordersData) return [];
+      
+      // Aggregate stores by city (as proxy for territory)
+      const storesByCity: Record<string, { stores: Set<string>; storeNames: string[] }> = {};
+      ordersData.forEach((order: any) => {
+        if (order.stores) {
+          const city = order.stores.address_city || 'Unknown';
+          if (!storesByCity[city]) {
+            storesByCity[city] = { stores: new Set(), storeNames: [] };
+          }
+          if (order.store_id && !storesByCity[city].stores.has(order.store_id)) {
+            storesByCity[city].stores.add(order.store_id);
+            storesByCity[city].storeNames.push(order.stores.name || 'Unknown Store');
+          }
+        }
+      });
+      
+      // Convert to WholesalerTerritory format
+      return Object.entries(storesByCity).map(([city, data], idx) => ({
+        id: `derived-${idx}`,
+        wholesaler_id: wholesalerId,
+        neighborhood: city,
+        borough: null,
+        store_count: data.stores.size,
+        coverage_density: data.stores.size >= 5 ? 'high' : data.stores.size >= 2 ? 'medium' : 'low',
+        is_exclusive: false,
+        overlap_with: [],
+      })) as WholesalerTerritory[];
+    },
+    enabled: !!wholesalerId,
+  });
+
+  // Tubes sold by brand - derived from wholesale_orders (Grabba brands)
+  const GRABBA_BRANDS = ['grabba', 'hot grabba', 'dark grabba', 'grabba leaf', 'gasmask', 'hotscolati', 'hotmama', 'grabba_r_us'];
+  
+  const tubesSoldByBrandQuery = useQuery({
+    queryKey: ['wholesaler-tubes-by-brand', wholesalerId],
+    queryFn: async () => {
+      if (!wholesalerId) return [];
+      
+      const { data, error } = await supabase
+        .from('wholesale_orders')
+        .select('brand, tubes_total, created_at')
+        .eq('wholesaler_id', wholesalerId)
+        .not('brand', 'is', null);
+      
       if (error) throw error;
-      return (data || []) as WholesalerTerritory[];
+      
+      // Aggregate by brand
+      const brandAggregates: Record<string, { tubes_sold: number; last_sold_date: string | null; order_count: number }> = {};
+      
+      // Initialize all Grabba brands with 0
+      GRABBA_BRANDS.forEach(brand => {
+        brandAggregates[brand.toLowerCase()] = { tubes_sold: 0, last_sold_date: null, order_count: 0 };
+      });
+      
+      (data || []).forEach((order: any) => {
+        const brand = (order.brand || '').toLowerCase();
+        if (!brandAggregates[brand]) {
+          brandAggregates[brand] = { tubes_sold: 0, last_sold_date: null, order_count: 0 };
+        }
+        brandAggregates[brand].tubes_sold += order.tubes_total || 0;
+        brandAggregates[brand].order_count += 1;
+        
+        // Track most recent sale
+        if (!brandAggregates[brand].last_sold_date || 
+            new Date(order.created_at) > new Date(brandAggregates[brand].last_sold_date)) {
+          brandAggregates[brand].last_sold_date = order.created_at;
+        }
+      });
+      
+      return Object.entries(brandAggregates).map(([brand, agg]) => ({
+        brand,
+        brand_display: brand.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+        tubes_sold: agg.tubes_sold,
+        last_sold_date: agg.last_sold_date,
+        order_count: agg.order_count,
+      }));
     },
     enabled: !!wholesalerId,
   });
@@ -530,6 +620,7 @@ export function useWholesalerIntelligence(wholesalerId: string | undefined) {
     communications: communicationsQuery.data || [],
     territory: territoryQuery.data || [],
     productPerformance: productPerformanceQuery.data || [],
+    tubesByBrand: tubesSoldByBrandQuery.data || [],
     healthSnapshots: healthSnapshotsQuery.data || [],
     signals: signalsQuery.data || [],
     contracts: contractsQuery.data || [],
