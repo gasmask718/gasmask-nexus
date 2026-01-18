@@ -24,7 +24,9 @@ import {
   WholesalerActionBar,
   WholesalerFinancialSummary,
 } from "@/components/wholesaler";
-import { WholesalerTubesSoldByBrand } from "@/components/wholesaler/WholesalerTubesSoldByBrand";
+import { WholesalerTubesSoldKPI } from "@/components/wholesaler/WholesalerTubesSoldKPI";
+import { WholesalerTerritoryCoverage } from "@/components/wholesaler/WholesalerTerritoryCoverage";
+import { useWholesalerProfileDirect } from "@/hooks/useWholesalerProfileAPI";
 
 // Command Modals
 import {
@@ -82,6 +84,9 @@ export default function WholesalerDetail() {
   const intelligence = useWholesalerIntelligence(id || '');
   const profile = intelligence.profile;
   const isLoading = intelligence.isLoading;
+  
+  // Fetch territory & tubes sold from new authoritative source
+  const { territoryCoverage, tubesSoldByBrand } = useWholesalerProfileDirect(id);
 
   // Action handlers
   const handleCreateOrder = async (data: any) => {
@@ -385,7 +390,12 @@ export default function WholesalerDetail() {
             />
           </TabsContent>
 
-          <TabsContent value="territory" className="mt-6">
+          <TabsContent value="territory" className="mt-6 space-y-6">
+            {/* New Territory Coverage from wholesaler_store_map */}
+            <WholesalerTerritoryCoverage 
+              territoryCoverage={territoryCoverage}
+            />
+            {/* Legacy territory view */}
             <WholesalerTerritory 
               territory={intelligence.territory || []}
               profile={profile}
@@ -395,10 +405,10 @@ export default function WholesalerDetail() {
           </TabsContent>
 
           <TabsContent value="products" className="mt-6 space-y-6">
-            {/* Tubes Sold by Brand - Primary KPI Section */}
-            <WholesalerTubesSoldByBrand 
+            {/* Tubes Sold by Brand - All 4 Grabba brands always shown */}
+            <WholesalerTubesSoldKPI 
               wholesalerId={id || ''}
-              tubesByBrand={intelligence.tubesByBrand || []}
+              tubesSoldByBrand={tubesSoldByBrand}
             />
             {/* Detailed Product Performance */}
             <WholesalerProductPerformance 

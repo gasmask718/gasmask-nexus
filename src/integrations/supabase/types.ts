@@ -29575,6 +29575,64 @@ export type Database = {
         }
         Relationships: []
       }
+      wholesaler_store_map: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          store_id: string
+          updated_at: string | null
+          wholesaler_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          store_id: string
+          updated_at?: string | null
+          wholesaler_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          store_id?: string
+          updated_at?: string | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_store_map_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_store_map_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_store_map_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wholesaler_territory_coverage: {
         Row: {
           borough: string | null
