@@ -24,6 +24,9 @@ export interface BrandTubesSold {
   tubesSold: number;
   lastSoldAt: string | null;
   orderCount: number;
+  etaNextOrder?: string | null;
+  avgDaysBetweenOrders?: number | null;
+  etaConfidence?: 'strong' | 'weak' | 'learning' | 'no_history';
 }
 
 export interface WholesalerProfileData {
@@ -143,16 +146,22 @@ export function useWholesalerProfileDirect(wholesalerId: string | undefined) {
         { key: 'grabba leaf', name: 'Grabba Leaf' },
       ];
 
-      // Aggregate by brand
-      const aggregates: Record<string, { tubesSold: number; lastSoldAt: string | null; orderCount: number }> = {};
+      // Aggregate by brand with order dates for ETA
+      const aggregates: Record<string, { 
+        tubesSold: number; 
+        lastSoldAt: string | null; 
+        orderCount: number;
+        orderDates: Date[];
+      }> = {};
       
       (orders || []).forEach((order: any) => {
         const brandKey = order.brand?.toLowerCase() || '';
         if (!aggregates[brandKey]) {
-          aggregates[brandKey] = { tubesSold: 0, lastSoldAt: null, orderCount: 0 };
+          aggregates[brandKey] = { tubesSold: 0, lastSoldAt: null, orderCount: 0, orderDates: [] };
         }
         aggregates[brandKey].tubesSold += order.tubes_total || 0;
         aggregates[brandKey].orderCount += 1;
+        aggregates[brandKey].orderDates.push(new Date(order.created_at));
         
         if (!aggregates[brandKey].lastSoldAt || 
             new Date(order.created_at) > new Date(aggregates[brandKey].lastSoldAt!)) {
@@ -160,15 +169,44 @@ export function useWholesalerProfileDirect(wholesalerId: string | undefined) {
         }
       });
 
+      // Calculate ETA for each brand
+      const calculateETA = (orderDates: Date[], lastSoldAt: string | null) => {
+        if (orderDates.length === 0) {
+          return { etaDate: null, avgDays: null, confidence: 'no_history' as const };
+        }
+        if (orderDates.length === 1) {
+          return { etaDate: null, avgDays: null, confidence: 'learning' as const };
+        }
+
+        const sorted = [...orderDates].sort((a, b) => a.getTime() - b.getTime());
+        const intervals: number[] = [];
+        for (let i = 1; i < sorted.length; i++) {
+          const daysBetween = (sorted[i].getTime() - sorted[i - 1].getTime()) / (1000 * 60 * 60 * 24);
+          intervals.push(daysBetween);
+        }
+        
+        const avgDays = Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length);
+        const lastDate = new Date(lastSoldAt!);
+        const etaDate = new Date(lastDate.getTime() + avgDays * 24 * 60 * 60 * 1000);
+        const confidence = orderDates.length >= 3 ? 'strong' as const : 'weak' as const;
+        
+        return { etaDate: etaDate.toISOString(), avgDays, confidence };
+      };
+
       // Return all 4 brands with defaults
       return GRABBA_BRANDS.map(brand => {
-        const agg = aggregates[brand.key] || { tubesSold: 0, lastSoldAt: null, orderCount: 0 };
+        const agg = aggregates[brand.key] || { tubesSold: 0, lastSoldAt: null, orderCount: 0, orderDates: [] };
+        const eta = calculateETA(agg.orderDates, agg.lastSoldAt);
+        
         return {
           brandKey: brand.key,
           brandName: brand.name,
           tubesSold: agg.tubesSold,
           lastSoldAt: agg.lastSoldAt,
           orderCount: agg.orderCount,
+          etaNextOrder: eta.etaDate,
+          avgDaysBetweenOrders: eta.avgDays,
+          etaConfidence: eta.confidence,
         } as BrandTubesSold;
       });
     },
