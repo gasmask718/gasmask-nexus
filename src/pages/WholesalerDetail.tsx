@@ -397,6 +397,7 @@ export default function WholesalerDetail() {
           <TabsContent value="products" className="mt-6 space-y-6">
             {/* Tubes Sold by Brand - Primary KPI Section */}
             <WholesalerTubesSoldByBrand 
+              wholesalerId={id || ''}
               tubesByBrand={intelligence.tubesByBrand || []}
             />
             {/* Detailed Product Performance */}
