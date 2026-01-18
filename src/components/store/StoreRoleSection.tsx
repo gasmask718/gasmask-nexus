@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Users, Plus, Phone, MessageSquare, User, 
-  UserMinus, Loader2, Bike, Truck, Star 
+  UserMinus, Loader2, Bike, Truck, Star, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AssignPersonModal } from './AssignPersonModal';
@@ -76,9 +77,19 @@ export function StoreRoleSection({ storeId, storeName, role, embedded = false }:
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [personToRemove, setPersonToRemove] = useState<StorePerson | null>(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   
   const config = ROLE_CONFIG[role];
   const Icon = config.icon;
+
+  // Handle view profile for ambassadors
+  const handleViewProfile = (personId: string) => {
+    if (role === 'ambassador') {
+      // Need to find the ambassador ID from the person ID
+      // The person_id links to people table, but we need ambassador ID
+      navigate(`/grabba/ambassadors/${personId}`);
+    }
+  };
 
   // Fetch people assigned to this store with this role
   const { data: storePeople, isLoading } = useQuery({
@@ -206,6 +217,18 @@ export function StoreRoleSection({ storeId, storeName, role, embedded = false }:
                 </div>
               </div>
               <div className="flex items-center gap-1">
+                {/* View Profile button for ambassadors */}
+                {role === 'ambassador' && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                    onClick={() => handleViewProfile(sp.person_id)}
+                    title="View Profile"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button
                   size="icon"
                   variant="ghost"
