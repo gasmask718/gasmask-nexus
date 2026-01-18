@@ -725,11 +725,7 @@ export default function GrabbaCRM() {
   const AmbassadorCard = ({ ambassador }: { ambassador: any }) => (
     <Card 
       className="bg-card/50 backdrop-blur border-border/50 hover:border-amber-500/30 transition-all hover:shadow-lg cursor-pointer"
-      onClick={() => {
-        setSelectedProfileEntity(ambassador);
-        setSelectedProfileType('ambassador');
-        setProfileModalOpen(true);
-      }}
+      onClick={() => navigate(`/grabba/ambassadors/${ambassador.id}`)}
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
@@ -768,6 +764,24 @@ export default function GrabbaCRM() {
           </div>
 
           <div className="flex items-center gap-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/grabba/ambassadors/${ambassador.id}`);
+                    }}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View Profile</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>

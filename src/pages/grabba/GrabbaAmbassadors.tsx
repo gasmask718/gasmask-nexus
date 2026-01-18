@@ -7,12 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { 
   Award, Users, DollarSign, TrendingUp, Plus, Star, MapPin, 
-  Store, Package, Search, Building2, Wallet, CheckCircle2, Clock, Edit, Trash2, ShoppingCart
+  Store, Package, Search, Building2, Wallet, CheckCircle2, Clock, Edit, Trash2, ShoppingCart, Eye
 } from "lucide-react";
 import { format } from "date-fns";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { BrandFilterBar } from "@/components/grabba/BrandFilterBar";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { EntityModal, ExportButton } from "@/components/crud";
 import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
 import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
@@ -25,6 +26,7 @@ export default function GrabbaAmbassadors() {
   const { selectedBrand, setSelectedBrand } = useGrabbaBrand();
   const [searchTerm, setSearchTerm] = useState("");
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   
   // CRUD Modal States
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -322,6 +324,7 @@ export default function GrabbaAmbassadors() {
                       const ambWholesalers = assignments?.filter(a => a.ambassador?.id === amb.id && (a.role_type === 'wholesaler_finder' || a.company?.type === 'wholesaler'))?.length || 0;
                       
                       const rowActions: RowAction[] = [
+                        { type: 'view', label: 'View Profile', onClick: () => navigate(`/grabba/ambassadors/${amb.id}`)},
                         { type: 'view', label: 'View Sales', onClick: () => { setSelectedAmbassador(amb); setSalesModalOpen(true); }},
                         { type: 'edit', onClick: () => { setSelectedAmbassador(amb); setEditModalOpen(true); }},
                         { type: amb.is_active ? 'deactivate' : 'activate', onClick: () => toggleStatusMutation.mutate({ id: amb.id, is_active: !amb.is_active })},
@@ -329,7 +332,11 @@ export default function GrabbaAmbassadors() {
                       ];
                       
                       return (
-                        <div key={amb.id} className="p-4 rounded-xl border border-border/50 bg-card/30 flex items-center justify-between">
+                        <div 
+                          key={amb.id} 
+                          className="p-4 rounded-xl border border-border/50 bg-card/30 flex items-center justify-between hover:border-primary/30 hover:bg-card/50 transition-all cursor-pointer"
+                          onClick={() => navigate(`/grabba/ambassadors/${amb.id}`)}
+                        >
                           <div className="flex items-center gap-4">
                             <div className="text-2xl font-bold text-muted-foreground">#{i + 1}</div>
                             <div className="p-3 rounded-full bg-primary/10">
@@ -363,7 +370,9 @@ export default function GrabbaAmbassadors() {
                                 Code: {amb.tracking_code}
                               </div>
                             </div>
-                            <TableRowActions actions={rowActions} />
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <TableRowActions actions={rowActions} />
+                            </div>
                           </div>
                         </div>
                       );
