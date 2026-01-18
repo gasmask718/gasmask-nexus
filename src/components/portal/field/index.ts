@@ -5,3 +5,6 @@ export { MyDayDashboard } from './MyDayDashboard';
 export { StoreListPage } from './StoreListPage';
 export { ChangeListsPage } from './ChangeListsPage';
 export { HistoryPage } from './HistoryPage';
+export { MakeDeliveryPage } from './MakeDeliveryPage';
+export { MessagesPage } from './MessagesPage';
+export { ProfilePage } from './ProfilePage';
