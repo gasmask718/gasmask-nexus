@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Package, Calendar, Eye, Pencil, Trash2, MoreVertical } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
+import { Package, Calendar, Eye, Pencil, Trash2, MoreVertical, Clock, TrendingUp } from 'lucide-react';
+import { format, differenceInDays, formatDistanceToNow, isPast } from 'date-fns';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -101,6 +101,93 @@ export function WholesalerTubesSoldKPI({
   const formatLastSold = (date: string | null) => {
     if (!date) return 'Never';
     return format(new Date(date), 'MMM d, yyyy');
+  };
+
+  const getETAStatus = (brand: BrandTubesSold) => {
+    if (!brand.etaConfidence || brand.etaConfidence === 'no_history') {
+      return { label: 'No history', color: 'text-muted-foreground', dot: '⚪' };
+    }
+    if (brand.etaConfidence === 'learning') {
+      return { label: 'Learning', color: 'text-muted-foreground', dot: '⚪' };
+    }
+    if (brand.etaConfidence === 'weak') {
+      return { label: 'Weak signal', color: 'text-amber-400', dot: '🟡' };
+    }
+    return { label: 'Predictable', color: 'text-green-400', dot: '🟢' };
+  };
+
+  const formatETA = (brand: BrandTubesSold) => {
+    if (!brand.etaNextOrder) return null;
+    
+    const etaDate = new Date(brand.etaNextOrder);
+    const isOverdue = isPast(etaDate);
+    const daysUntil = differenceInDays(etaDate, new Date());
+    
+    if (isOverdue) {
+      const daysOverdue = Math.abs(daysUntil);
+      return { 
+        text: `Overdue by ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''}`,
+        isOverdue: true,
+        date: format(etaDate, 'MMM d')
+      };
+    }
+    
+    if (daysUntil <= 7) {
+      return { 
+        text: `~${daysUntil} day${daysUntil !== 1 ? 's' : ''}`,
+        isOverdue: false,
+        date: format(etaDate, 'MMM d')
+      };
+    }
+    
+    if (daysUntil <= 14) {
+      return { 
+        text: '~2 weeks',
+        isOverdue: false,
+        date: format(etaDate, 'MMM d')
+      };
+    }
+    
+    return { 
+      text: formatDistanceToNow(etaDate, { addSuffix: false }),
+      isOverdue: false,
+      date: format(etaDate, 'MMM d')
+    };
+  };
+
+  const renderETA = (brand: BrandTubesSold) => {
+    const status = getETAStatus(brand);
+    const eta = formatETA(brand);
+    
+    if (!eta) {
+      return (
+        <div className="flex items-center gap-1.5 text-xs">
+          <Clock className="h-3 w-3 text-muted-foreground" />
+          <span className="text-muted-foreground">ETA: {status.label}</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center gap-1.5 text-xs">
+          <Clock className={`h-3 w-3 ${eta.isOverdue ? 'text-red-400' : 'text-primary'}`} />
+          <span className={eta.isOverdue ? 'text-red-400 font-medium' : 'text-foreground'}>
+            ETA: {eta.text}
+          </span>
+          <span className="text-muted-foreground">({eta.date})</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs">
+          <span>{status.dot}</span>
+          <span className={status.color}>{status.label}</span>
+          {brand.avgDaysBetweenOrders && (
+            <span className="text-muted-foreground ml-1">
+              (avg: {brand.avgDaysBetweenOrders}d)
+            </span>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const handleViewDetails = (brand: BrandTubesSold) => {
@@ -209,8 +296,13 @@ export function WholesalerTubesSoldKPI({
                     <span>Last: {formatLastSold(brand.lastSoldAt)}</span>
                   </div>
                   
+                  {/* ETA to Next Order */}
+                  <div className="mt-2 pt-2 border-t border-border/30">
+                    {renderETA(brand)}
+                  </div>
+                  
                   {/* Order Count & View Details */}
-                  <div className="mt-2 pt-2 border-t border-border/30 flex items-center justify-between">
+                  <div className="mt-2 flex items-center justify-between">
                     <p className="text-xs text-muted-foreground">
                       {brand.orderCount} order{brand.orderCount !== 1 ? 's' : ''}
                     </p>

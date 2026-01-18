@@ -127,16 +127,22 @@ serve(async (req) => {
 
     const salesData = brandSales || [];
     
-    // Aggregate by brand
-    const brandAggregates: Record<string, { tubesSold: number; lastSoldAt: string | null; orderCount: number }> = {};
+    // Aggregate by brand with order dates for ETA calculation
+    const brandAggregates: Record<string, { 
+      tubesSold: number; 
+      lastSoldAt: string | null; 
+      orderCount: number;
+      orderDates: Date[];
+    }> = {};
     
     salesData.forEach((order: any) => {
       const brandKey = order.brand?.toLowerCase() || '';
       if (!brandAggregates[brandKey]) {
-        brandAggregates[brandKey] = { tubesSold: 0, lastSoldAt: null, orderCount: 0 };
+        brandAggregates[brandKey] = { tubesSold: 0, lastSoldAt: null, orderCount: 0, orderDates: [] };
       }
       brandAggregates[brandKey].tubesSold += order.tubes_total || 0;
       brandAggregates[brandKey].orderCount += 1;
+      brandAggregates[brandKey].orderDates.push(new Date(order.created_at));
       
       // Track most recent sale
       if (!brandAggregates[brandKey].lastSoldAt || 
@@ -145,15 +151,53 @@ serve(async (req) => {
       }
     });
 
+    // Calculate ETA for each brand based on order cadence
+    const calculateETA = (orderDates: Date[], lastSoldAt: string | null) => {
+      if (orderDates.length === 0) {
+        return { etaDate: null, avgDaysBetween: null, confidence: 'no_history' as const };
+      }
+      
+      if (orderDates.length === 1) {
+        return { etaDate: null, avgDaysBetween: null, confidence: 'learning' as const };
+      }
+
+      // Sort dates ascending
+      const sorted = [...orderDates].sort((a, b) => a.getTime() - b.getTime());
+      
+      // Calculate intervals between consecutive orders
+      const intervals: number[] = [];
+      for (let i = 1; i < sorted.length; i++) {
+        const daysBetween = (sorted[i].getTime() - sorted[i - 1].getTime()) / (1000 * 60 * 60 * 24);
+        intervals.push(daysBetween);
+      }
+      
+      // Calculate average interval
+      const avgDaysBetween = Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length);
+      
+      // Project next order date from last sold
+      const lastDate = new Date(lastSoldAt!);
+      const etaDate = new Date(lastDate.getTime() + avgDaysBetween * 24 * 60 * 60 * 1000);
+      
+      // Confidence based on data points
+      const confidence = orderDates.length >= 3 ? 'strong' as const : 'weak' as const;
+      
+      return { etaDate: etaDate.toISOString(), avgDaysBetween, confidence };
+    };
+
     // Build tubesSoldByBrand array - ALWAYS include all 4 brands
     const tubesSoldByBrand = GRABBA_BRANDS.map(brand => {
-      const agg = brandAggregates[brand.key] || { tubesSold: 0, lastSoldAt: null, orderCount: 0 };
+      const agg = brandAggregates[brand.key] || { tubesSold: 0, lastSoldAt: null, orderCount: 0, orderDates: [] };
+      const eta = calculateETA(agg.orderDates, agg.lastSoldAt);
+      
       return {
         brandKey: brand.key,
         brandName: brand.name,
         tubesSold: agg.tubesSold,
         lastSoldAt: agg.lastSoldAt,
         orderCount: agg.orderCount,
+        etaNextOrder: eta.etaDate,
+        avgDaysBetweenOrders: eta.avgDaysBetween,
+        etaConfidence: eta.confidence,
       };
     });
 
