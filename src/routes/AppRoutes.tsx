@@ -1205,8 +1205,8 @@ export default function AppRoutes() {
         <Route path="/portal" element={<RoleRouter />} />
         <Route path="/portal/home" element={<PortalHome />} />
         <Route path="/portal/onboarding" element={<PortalOnboarding />} />
-        <Route path="/portal/driver" element={<DriverPortal />} />
-        <Route path="/portal/biker" element={<BikerPortal />} />
+        <Route path="/portal/driver/*" element={<DriverPortal />} />
+        <Route path="/portal/biker/*" element={<BikerPortal />} />
         <Route path="/portal/ambassador" element={<AmbassadorPortal />} />
         <Route path="/portal/store" element={<StoreDashboard />} />
         <Route path="/portal/store/dashboard" element={<StoreDashboard />} />

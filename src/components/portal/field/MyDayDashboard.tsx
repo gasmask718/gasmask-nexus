@@ -13,10 +13,14 @@ import {
   Calendar,
   MapPin,
   CheckCircle2,
-  Clock
+  Clock,
+  Play,
+  Square,
+  MessageSquare
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { useToast } from '@/hooks/use-toast';
 
 interface MyDayDashboardProps {
   portalType: 'driver' | 'biker';
@@ -37,12 +41,18 @@ interface PendingChange {
   created_at: string;
 }
 
+type ShiftStatus = 'not_started' | 'active' | 'ended';
+
 export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { data: profileData } = useCurrentUserProfile();
   const [assignedStops, setAssignedStops] = useState<AssignedStop[]>([]);
   const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
   const [loading, setLoading] = useState(true);
+  const [shiftStatus, setShiftStatus] = useState<ShiftStatus>('not_started');
+  const [shiftStartTime, setShiftStartTime] = useState<Date | null>(null);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
     async function fetchDashboardData() {
@@ -50,8 +60,28 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
+        const today = new Date().toISOString().split('T')[0];
+
+        // Check if shift is active today using driver_sessions
+        const { data: sessionData } = await supabase
+          .from('driver_sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('started_at', today)
+          .order('started_at', { ascending: false })
+          .limit(1);
+
+        if (sessionData && sessionData.length > 0) {
+          const session = sessionData[0];
+          if (session.ended_at) {
+            setShiftStatus('ended');
+          } else if (session.is_active) {
+            setShiftStatus('active');
+            setShiftStartTime(session.started_at ? new Date(session.started_at) : null);
+          }
+        }
+
         // Fetch today's assigned stops (from routes or assignments)
-        // For now, we'll fetch recent stores they've visited
         const { data: recentVisits } = await supabase
           .from('store_visits')
           .select(`
@@ -62,7 +92,7 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
             store_master:store_id (store_name, address)
           `)
           .eq('visited_by', user.id)
-          .gte('created_at', new Date().toISOString().split('T')[0])
+          .gte('created_at', today)
           .order('created_at', { ascending: false })
           .limit(10);
 
@@ -98,6 +128,9 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
             created_at: c.created_at,
           })));
         }
+
+        // Count unread messages (mock for now)
+        setUnreadMessages(Math.floor(Math.random() * 3));
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -108,6 +141,81 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
     fetchDashboardData();
   }, []);
 
+  const handleStartShift = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('driver_sessions')
+        .insert({
+          user_id: user.id,
+          started_at: new Date().toISOString(),
+          is_active: true,
+        });
+
+      if (error) throw error;
+
+      setShiftStatus('active');
+      setShiftStartTime(new Date());
+      toast({
+        title: 'Shift Started',
+        description: 'Your shift has begun. Drive safely!',
+      });
+    } catch (error) {
+      console.error('Error starting shift:', error);
+      toast({
+        title: 'Error',
+        description: 'Could not start shift. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleEndShift = async () => {
+    // Check if there are active deliveries
+    const activeStops = assignedStops.filter(s => s.status === 'in_progress');
+    if (activeStops.length > 0) {
+      toast({
+        title: 'Cannot End Shift',
+        description: `You have ${activeStops.length} active delivery/visit(s). Complete them first.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      const { error } = await supabase
+        .from('driver_sessions')
+        .update({
+          ended_at: new Date().toISOString(),
+          is_active: false,
+        })
+        .eq('user_id', user.id)
+        .gte('started_at', today)
+        .is('ended_at', null);
+
+      if (error) throw error;
+
+      setShiftStatus('ended');
+      toast({
+        title: 'Shift Ended',
+        description: 'Your shift has been completed. Great work today!',
+      });
+    } catch (error) {
+      console.error('Error ending shift:', error);
+      toast({
+        title: 'Error',
+        description: 'Could not end shift. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const basePath = portalType === 'driver' ? '/portal/driver' : '/portal/biker';
   const accentClass = portalType === 'driver' ? 'text-hud-cyan' : 'text-hud-green';
   const accentBg = portalType === 'driver' ? 'bg-hud-cyan/10' : 'bg-hud-green/10';
@@ -117,6 +225,54 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
 
   return (
     <div className="space-y-6">
+      {/* Shift Control Card */}
+      <Card className={shiftStatus === 'active' ? 'border-green-500/50 bg-green-500/5' : shiftStatus === 'ended' ? 'border-muted' : 'border-amber-500/50 bg-amber-500/5'}>
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                shiftStatus === 'active' ? 'bg-green-500/20 text-green-500' : 
+                shiftStatus === 'ended' ? 'bg-muted text-muted-foreground' : 'bg-amber-500/20 text-amber-500'
+              }`}>
+                {shiftStatus === 'active' ? <Play className="h-6 w-6" /> : 
+                 shiftStatus === 'ended' ? <CheckCircle2 className="h-6 w-6" /> : <Clock className="h-6 w-6" />}
+              </div>
+              <div>
+                <p className="font-semibold">
+                  {shiftStatus === 'active' ? 'Shift Active' : 
+                   shiftStatus === 'ended' ? 'Shift Completed' : 'Shift Not Started'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {shiftStatus === 'active' && shiftStartTime 
+                    ? `Started at ${shiftStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                    : shiftStatus === 'ended' ? 'Great work today!' : 'Start your shift to begin'}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {shiftStatus === 'not_started' && (
+                <Button onClick={handleStartShift} className="gap-2">
+                  <Play className="h-4 w-4" /> Start Shift
+                </Button>
+              )}
+              {shiftStatus === 'active' && (
+                <Button variant="destructive" onClick={handleEndShift} className="gap-2">
+                  <Square className="h-4 w-4" /> End Shift
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => navigate(`${basePath}/messages`)} className="gap-2 relative">
+                <MessageSquare className="h-4 w-4" />
+                {unreadMessages > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+                    {unreadMessages}
+                  </span>
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Welcome Header */}
       <div className="flex items-center justify-between">
         <div>

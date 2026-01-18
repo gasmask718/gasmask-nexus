@@ -42,7 +42,11 @@ interface DeliveryStop {
   instructions: string;
 }
 
-export function MakeDeliveryPage() {
+interface MakeDeliveryPageProps {
+  portalType: 'driver' | 'biker';
+}
+
+export function MakeDeliveryPage({ portalType }: MakeDeliveryPageProps) {
   const { stopId } = useParams<{ stopId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
