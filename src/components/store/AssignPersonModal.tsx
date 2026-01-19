@@ -20,7 +20,7 @@ interface AssignPersonModalProps {
   onOpenChange: (open: boolean) => void;
   storeId: string;
   storeName: string;
-  role: 'ambassador' | 'driver' | 'biker';
+  role: 'ambassador' | 'driver' | 'biker' | 'production';
   onSuccess?: () => void;
 }
 
@@ -37,6 +37,7 @@ const ROLE_LABELS = {
   ambassador: 'Ambassador',
   driver: 'Driver',
   biker: 'Biker',
+  production: 'Production Worker',
 };
 
 export function AssignPersonModal({
