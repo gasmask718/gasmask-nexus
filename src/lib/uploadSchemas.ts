@@ -6,7 +6,7 @@
 export interface FieldSchema {
   field: string;
   displayName: string;
-  type: 'string' | 'email' | 'phone' | 'date' | 'number' | 'boolean' | 'tags';
+  type: 'string'; // ALL fields are strings for simplicity - no type coercion
   required: boolean;
   autoDerive?: boolean;
   source?: 'excel' | 'system' | 'derived';
@@ -23,13 +23,8 @@ export interface UploadSchema {
   relatedTables?: string[];
 }
 
-// Email validation regex
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-// Phone is treated as string - no format validation, just trim and store
-
-// Date validation (YYYY-MM-DD)
-const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+// ALL DATA IS TREATED AS STRINGS - No format validation for simplicity
+// This prevents import failures due to format mismatches
 
 export const uploadSchemas: Record<string, UploadSchema> = {
   stores: {
@@ -98,20 +93,16 @@ export const uploadSchemas: Record<string, UploadSchema> = {
       {
         field: 'phone',
         displayName: 'Phone',
-        type: 'string', // Treat phone as string - no format validation
+        type: 'string',
         required: false,
         source: 'excel'
-        // No validation - accept any string value
       },
       {
         field: 'email',
         displayName: 'Email',
-        type: 'email',
+        type: 'string',
         required: false,
-        source: 'excel',
-        validation: (v) => !v || emailRegex.test(v) 
-          ? { valid: true } 
-          : { valid: false, error: 'Invalid email format' }
+        source: 'excel'
       },
       {
         field: 'status',
@@ -127,26 +118,16 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         type: 'string',
         required: false,
         source: 'excel',
-        notes: 'bodega, smoke_shop, gas_station, wholesaler, other',
-        validation: (v) => {
-          const validTypes = ['bodega', 'smoke_shop', 'gas_station', 'wholesaler', 'other'];
-          if (!v) return { valid: true }; // Allow empty, will default to 'other'
-          return validTypes.includes(v.toLowerCase().trim().replace(' ', '_'))
-            ? { valid: true }
-            : { valid: false, error: 'Invalid store type. Must be one of: ' + validTypes.join(', ') };
-        }
+        notes: 'bodega, smoke_shop, gas_station, wholesaler, other'
       },
       {
         field: 'open_date',
         displayName: 'Member Since',
-        type: 'date',
+        type: 'string',
         required: false,
         autoDerive: true,
         source: 'derived',
-        notes: 'Auto-derived from oldest note if not provided',
-        validation: (v) => !v || dateRegex.test(v) 
-          ? { valid: true } 
-          : { valid: false, error: 'Date must be YYYY-MM-DD format' }
+        notes: 'Auto-derived from oldest note if not provided'
       },
       {
         field: 'connected_group_id',
@@ -167,7 +148,7 @@ export const uploadSchemas: Record<string, UploadSchema> = {
       {
         field: 'tags',
         displayName: 'Tags',
-        type: 'tags',
+        type: 'string',
         required: false,
         source: 'excel',
         notes: 'Comma-separated, auto-registered globally'
@@ -226,17 +207,14 @@ export const uploadSchemas: Record<string, UploadSchema> = {
       {
         field: 'email',
         displayName: 'Email',
-        type: 'email',
+        type: 'string',
         required: false,
-        source: 'excel',
-        validation: (v) => !v || emailRegex.test(v) 
-          ? { valid: true } 
-          : { valid: false, error: 'Invalid email format' }
+        source: 'excel'
       },
       {
         field: 'is_primary',
         displayName: 'Primary Contact',
-        type: 'boolean',
+        type: 'string',
         required: false,
         source: 'excel',
         notes: 'true/false or yes/no'
@@ -285,13 +263,10 @@ export const uploadSchemas: Record<string, UploadSchema> = {
       {
         field: 'note_date',
         displayName: 'Note Date',
-        type: 'date',
+        type: 'string',
         required: false,
         source: 'excel',
-        notes: 'YYYY-MM-DD format. Uses current date if empty.',
-        validation: (v) => !v || dateRegex.test(v) 
-          ? { valid: true } 
-          : { valid: false, error: 'Date must be YYYY-MM-DD format' }
+        notes: 'Date format. Uses current date if empty.'
       },
       {
         field: 'created_by_name',
@@ -386,12 +361,9 @@ export const uploadSchemas: Record<string, UploadSchema> = {
       {
         field: 'contact_email',
         displayName: 'Contact Email',
-        type: 'email',
+        type: 'string',
         required: false,
-        source: 'excel',
-        validation: (v) => !v || emailRegex.test(v) 
-          ? { valid: true } 
-          : { valid: false, error: 'Invalid email format' }
+        source: 'excel'
       },
       {
         field: 'contact_role',
@@ -411,18 +383,15 @@ export const uploadSchemas: Record<string, UploadSchema> = {
       {
         field: 'note_date',
         displayName: 'Note Date',
-        type: 'date',
+        type: 'string',
         required: false,
-        source: 'excel',
-        validation: (v) => !v || dateRegex.test(v) 
-          ? { valid: true } 
-          : { valid: false, error: 'Date must be YYYY-MM-DD format' }
+        source: 'excel'
       },
       // Tags
       {
         field: 'tags',
         displayName: 'Tags',
-        type: 'tags',
+        type: 'string',
         required: false,
         source: 'excel',
         notes: 'Comma-separated'
@@ -431,7 +400,7 @@ export const uploadSchemas: Record<string, UploadSchema> = {
       {
         field: 'member_since',
         displayName: 'Member Since',
-        type: 'date',
+        type: 'string',
         required: false,
         autoDerive: true,
         source: 'derived'
