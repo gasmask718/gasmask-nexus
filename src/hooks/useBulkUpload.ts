@@ -444,8 +444,9 @@ async function importStores(
         }
       }
 
-      // Handle contact if present (combined upload)
-      if (row.data.contact_name) {
+      // Handle contact if present (combined upload) - require at least name OR phone
+      const hasContactData = row.data.contact_name || row.data.contact_phone;
+      if (hasContactData) {
         const { data: store } = await supabase
           .from('stores')
           .select('id')
@@ -453,13 +454,21 @@ async function importStores(
           .maybeSingle();
 
         if (store) {
-          await supabase.from('store_contacts').insert({
+          const contactData: any = {
             store_id: store.id,
-            name: row.data.contact_name,
-            phone: row.data.contact_phone,
-            email: row.data.contact_email,
+            name: row.data.contact_name || 'Unknown',
+            phone: row.data.contact_phone || null,
+            email: row.data.contact_email || null,
             role: row.data.contact_role || 'worker'
-          });
+          };
+          
+          const { error: contactError } = await supabase
+            .from('store_contacts')
+            .insert(contactData);
+          
+          if (contactError) {
+            console.error('Contact insert error:', contactError);
+          }
         }
       }
 
