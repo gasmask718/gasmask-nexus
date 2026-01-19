@@ -343,8 +343,8 @@ async function importStores(
         address_city: row.data.address_city || row.data.city,
         address_state: row.data.address_state || row.data.state,
         address_zip: row.data.address_zip || row.data.zip,
-        phone: row.data.phone,
-        email: row.data.email,
+        phone: row.data.phone || row.data.contact_phone, // Also check contact_phone
+        email: row.data.email || row.data.contact_email, // Also check contact_email
         status: row.data.status || 'active',
         open_date: row.data.open_date || row.data.member_since,
       };
@@ -382,14 +382,46 @@ async function importStores(
         await supabase.from('stores').insert(storeData);
       }
 
-      // Handle tags if present
-      if (row.data.tags && Array.isArray(row.data.tags)) {
-        for (const tag of row.data.tags) {
+      // Handle tags if present - support both array and pipe-separated string
+      if (row.data.tags) {
+        let tagsArray: string[] = [];
+        
+        if (Array.isArray(row.data.tags)) {
+          tagsArray = row.data.tags;
+        } else if (typeof row.data.tags === 'string') {
+          // Split by " | " (pipe with spaces) or "|" (just pipe) or "," (comma)
+          tagsArray = row.data.tags
+            .split(/\s*\|\s*|,/)
+            .map((t: string) => t.trim())
+            .filter((t: string) => t.length > 0);
+        }
+
+        // Get the store id for tag attachment
+        const { data: store } = await supabase
+          .from('stores')
+          .select('id')
+          .eq('name', storeData.name)
+          .maybeSingle();
+
+        for (const tag of tagsArray) {
           // Ensure tag exists in global_tags (slug is required)
           const slug = tag.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-          await supabase
+          const { data: globalTag } = await supabase
             .from('global_tags')
-            .upsert({ name: tag, slug, status: 'active' }, { onConflict: 'name' });
+            .upsert({ name: tag, slug, status: 'active' }, { onConflict: 'name' })
+            .select('id')
+            .single();
+
+          // Attach tag to store via tag_attachments
+          if (store && globalTag) {
+            await supabase
+              .from('tag_attachments')
+              .upsert({
+                tag_id: globalTag.id,
+                entity_type: 'store',
+                entity_id: store.id
+              }, { onConflict: 'tag_id,entity_type,entity_id', ignoreDuplicates: true });
+          }
         }
       }
 

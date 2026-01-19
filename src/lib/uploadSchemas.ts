@@ -394,7 +394,7 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         type: 'string',
         required: false,
         source: 'excel',
-        notes: 'Comma-separated'
+        notes: 'Pipe-separated (e.g., Tag1 | Tag2) or comma-separated'
       },
       // Member since
       {
