@@ -117,15 +117,9 @@ export default function CRMBulkUpload() {
     if (!schema) return;
     
     const headers = schema.fields.map(f => f.field).join(',');
+    // All fields are strings - provide simple sample values
     const exampleRow = schema.fields.map(f => {
-      switch (f.type) {
-        case 'date': return '2024-01-15';
-        case 'email': return 'example@email.com';
-        case 'phone': return '555-123-4567';
-        case 'boolean': return 'true';
-        case 'tags': return 'tag1,tag2';
-        default: return f.notes || 'Sample value';
-      }
+      return f.notes || 'Sample value';
     }).join(',');
     
     const csv = `${headers}\n${exampleRow}`;

@@ -137,58 +137,10 @@ export function validateRow(
     const rawValue = row[excelCol];
     let value = rawValue;
     
-    // Type coercion and validation
+    // Type coercion - ALL values are treated as strings for simplicity
     if (rawValue !== undefined && rawValue !== null && String(rawValue).trim() !== '') {
-      switch (field.type) {
-        case 'string':
-          value = String(rawValue).trim();
-          break;
-          
-        case 'email':
-          value = String(rawValue).trim().toLowerCase();
-          break;
-          
-        case 'phone':
-          value = String(rawValue).trim().replace(/[^\d+\-() ]/g, '');
-          break;
-          
-        case 'date':
-          value = String(rawValue).trim();
-          // Try to parse Excel serial date
-          if (typeof rawValue === 'number') {
-            const date = new Date((rawValue - 25569) * 86400 * 1000);
-            value = date.toISOString().split('T')[0];
-          }
-          break;
-          
-        case 'number':
-          value = parseFloat(String(rawValue).replace(/[^0-9.-]/g, ''));
-          if (isNaN(value)) {
-            warnings.push({
-              row: rowNumber,
-              column: field.field,
-              columnDisplayName: field.displayName,
-              value: rawValue,
-              error: `Could not parse as number`,
-              severity: 'warning'
-            });
-            value = null;
-          }
-          break;
-          
-        case 'boolean':
-          const strVal = String(rawValue).toLowerCase().trim();
-          value = ['true', 'yes', '1', 'y'].includes(strVal);
-          break;
-          
-        case 'tags':
-          if (Array.isArray(rawValue)) {
-            value = rawValue.map(t => String(t).trim()).filter(Boolean);
-          } else {
-            value = String(rawValue).split(',').map(t => t.trim()).filter(Boolean);
-          }
-          break;
-      }
+      // Always convert to string - no special type handling
+      value = String(rawValue).trim();
       
       // Run custom validation if defined
       if (field.validation) {
