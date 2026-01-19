@@ -20,6 +20,7 @@ import {
   Users,
   Car,
   Bike,
+  Factory,
 } from "lucide-react";
 import { StickerStatusCard } from "@/components/store/StickerStatusCard";
 import { useQuery } from "@tanstack/react-query";
@@ -358,7 +359,7 @@ export default function StoreMasterProfile() {
             </CardHeader>
             <CardContent className="pt-0">
               <Tabs defaultValue="ambassadors" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="ambassadors" className="text-[10px] md:text-xs px-1">
                     <Users className="h-3 w-3 mr-1 md:mr-1 hidden sm:block" />
                     Ambassadors
@@ -370,6 +371,10 @@ export default function StoreMasterProfile() {
                   <TabsTrigger value="bikers" className="text-[10px] md:text-xs px-1">
                     <Bike className="h-3 w-3 mr-1 md:mr-1 hidden sm:block" />
                     Bikers
+                  </TabsTrigger>
+                  <TabsTrigger value="production" className="text-[10px] md:text-xs px-1">
+                    <Factory className="h-3 w-3 mr-1 md:mr-1 hidden sm:block" />
+                    Production
                   </TabsTrigger>
                 </TabsList>
 
@@ -383,6 +388,10 @@ export default function StoreMasterProfile() {
 
                 <TabsContent value="bikers" className="mt-3">
                   <StoreRoleSection storeId={id || ""} storeName={storeMaster.store_name} role="biker" embedded />
+                </TabsContent>
+
+                <TabsContent value="production" className="mt-3">
+                  <StoreRoleSection storeId={id || ""} storeName={storeMaster.store_name} role="production" embedded />
                 </TabsContent>
               </Tabs>
             </CardContent>

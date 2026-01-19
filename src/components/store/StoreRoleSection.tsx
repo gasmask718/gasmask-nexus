@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Users, Plus, Phone, MessageSquare, User, 
-  UserMinus, Loader2, Bike, Truck, Star, Eye
+  UserMinus, Loader2, Bike, Truck, Star, Eye, Factory
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AssignPersonModal } from './AssignPersonModal';
@@ -25,7 +25,7 @@ import {
 interface StoreRoleSectionProps {
   storeId: string;
   storeName: string;
-  role: 'ambassador' | 'driver' | 'biker';
+  role: 'ambassador' | 'driver' | 'biker' | 'production';
   /** When true, renders without Card wrapper (for use inside tabs) */
   embedded?: boolean;
 }
@@ -69,6 +69,14 @@ const ROLE_CONFIG = {
     color: 'text-green-500',
     bgColor: 'bg-green-500/10',
     borderColor: 'border-green-500/30',
+  },
+  production: {
+    label: 'Production',
+    singularLabel: 'Production Worker',
+    icon: Factory,
+    color: 'text-purple-500',
+    bgColor: 'bg-purple-500/10',
+    borderColor: 'border-purple-500/30',
   },
 };
 
