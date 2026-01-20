@@ -259,6 +259,13 @@ export default function AppSidebar() {
               { path: '/grabba/autopilot', label: 'Autopilot Console', emoji: '✈️' },
               { path: '/grabba/command-console', label: 'Command Console', emoji: '🎮' },
             ])}
+
+            {/* Floor 10 - Security & Governance */}
+            {renderSection('floor-10', 'Floor 10: Security', '🔐', [
+              { path: '/security/console', label: 'Security Console', emoji: '🛡️' },
+              { path: '/security/devices', label: 'Device Management', emoji: '📱' },
+              { path: '/security/sessions', label: 'Active Sessions', emoji: '🔑' },
+            ])}
           </div>
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
