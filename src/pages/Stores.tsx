@@ -158,13 +158,31 @@ const Stores = () => {
     queryKey: ['stores-with-contacts', simulationMode],
     queryFn: async () => {
       // Fetch from store_master - explicitly filter by simulation mode
-      const { data: storesData, error: storesError } = await supabase
-        .from('store_master')
-        .select('id, store_name, store_type, address, city, state, zip, phone, owner_name, is_simulation')
-        .eq('is_simulation', simulationMode)
-        .order('store_name');
+      let storesData: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
 
-      if (storesError) throw storesError;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('store_master')
+          .select('id, store_name, store_type, address, city, state, zip, phone, owner_name, is_simulation')
+          .eq('is_simulation', simulationMode)
+          .order('store_name')
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          storesData = [...storesData, ...data];
+          if (data.length < pageSize) hasMore = false;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      const storesError = null; // Cleared because we threw on error above
 
       // Map store_master fields to expected Store interface
       const mappedStores = (storesData || []).map(store => ({
@@ -599,9 +617,6 @@ const Stores = () => {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredStores.map((store, index) => {
-            const cityStateZip = [store.address_city, store.address_state, store.address_zip]
-              .filter(Boolean)
-              .join(', ');
             // Group inventory by brand (case-insensitive) and sum counts
             const inventoryByBrand = (store.tubeInventory || []).reduce((acc, item) => {
               const brandKey = item.brand.toLowerCase();
@@ -663,11 +678,6 @@ const Stores = () => {
                         <span className="block text-foreground">{store.address_street}</span>
                       ) : (
                         <span>No street address on file</span>
-                      )}
-                      {cityStateZip ? (
-                        <span>{cityStateZip}</span>
-                      ) : (
-                        <span>No city / state / zip on file</span>
                       )}
                     </div>
                   </div>
