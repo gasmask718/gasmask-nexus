@@ -12,6 +12,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface Phase5Recommendation {
   id: string;
@@ -77,10 +78,10 @@ export async function generateShadowRecommendation(
       .insert([{
         intent_id: intentId,
         recommendation_type: recommendation.type,
-        recommended_action: recommendation.action as Record<string, unknown>,
+        recommended_action: recommendation.action as unknown as Json,
         confidence_score: recommendation.confidence,
         reasoning: recommendation.reasoning,
-        supporting_evidence: recommendation.evidence as Record<string, unknown>,
+        supporting_evidence: recommendation.evidence as unknown as Json,
         processing_time_ms: processingTime,
       }])
       .select()
@@ -344,7 +345,7 @@ export async function detectPattern(
         .from('phase5_pattern_observations')
         .insert([{
           pattern_type: patternType,
-          pattern_signature: signature as Record<string, unknown>,
+          pattern_signature: signature as unknown as Json,
           notes,
         }]);
 
@@ -357,7 +358,7 @@ export async function detectPattern(
       await supabase.from('phase5_audit_log').insert([{
         action_type: 'pattern_detected',
         actor_type: 'system',
-        details: { pattern_type: patternType, signature } as Record<string, unknown>,
+        details: { pattern_type: patternType, signature } as unknown as Json,
       }]);
     }
 
@@ -449,4 +450,26 @@ export async function getAgreementStats(): Promise<{
   });
 
   return { total, agreed, disagreed, rate, byType };
+}
+
+/**
+ * Get the latest Phase 5 recommendation for an intent
+ * Used to link human decisions to shadow recommendations
+ */
+export async function getLatestRecommendationForIntent(
+  intentId: string
+): Promise<{ id: string; recommendation_type: string } | null> {
+  const { data, error } = await supabase
+    .from('phase5_recommendations')
+    .select('id, recommendation_type')
+    .eq('intent_id', intentId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data;
 }

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Phase5Dashboard } from './Phase5Dashboard';
 import {
   Table,
   TableBody,
@@ -36,6 +37,7 @@ import {
   Check,
   RefreshCw,
   Search,
+  Brain,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -190,6 +192,10 @@ export function SecurityConsole() {
         <TabsList>
           <TabsTrigger value="events">Security Events</TabsTrigger>
           <TabsTrigger value="controls">Emergency Controls</TabsTrigger>
+          <TabsTrigger value="phase5" className="flex items-center gap-1">
+            <Brain className="h-3 w-3" />
+            Phase 5
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="events" className="space-y-4">
@@ -470,6 +476,11 @@ export function SecurityConsole() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Phase 5 Shadow Mode Tab */}
+        <TabsContent value="phase5">
+          <Phase5Dashboard />
         </TabsContent>
       </Tabs>
     </div>
