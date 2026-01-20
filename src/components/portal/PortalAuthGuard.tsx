@@ -24,18 +24,20 @@ export function PortalAuthGuard({ children, allowedRoles, portalType }: PortalAu
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/portal/login', { replace: true });
+      // Redirect to role-specific login page
+      navigate(`/portal/${portalType}/login`, { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, portalType]);
 
   // Log portal access for audit
   useEffect(() => {
     if (user && profileData?.profile) {
+      const roleValue = (profileData.profile as any).role || profileData.profile.primary_role;
       supabase.from('portal_audit_log').insert([{
         user_id: user.id,
         portal_type: portalType,
         action_type: 'portal_access',
-        metadata: { role: (profileData.profile as any).role || profileData.profile.primary_role }
+        metadata: { role: String(roleValue || 'unknown') }
       }]).then(() => {});
     }
   }, [user, profileData, portalType]);
