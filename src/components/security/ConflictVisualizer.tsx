@@ -1,6 +1,7 @@
 /**
  * Conflict Visualizer Component
  * Phase 4: Controlled Autonomy & Intent Resolution
+ * Schema-aligned with actual database structure
  */
 
 import { useState, useEffect } from 'react';
@@ -46,7 +47,6 @@ export function ConflictVisualizer() {
   const [conflictingIntents, setConflictingIntents] = useState<ConflictingIntentDetail[]>([]);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
-  // Fetch conflicting intent details when a conflict is selected
   useEffect(() => {
     if (!selectedConflict) {
       setConflictingIntents([]);
@@ -56,10 +56,8 @@ export function ConflictVisualizer() {
     const fetchIntentDetails = async () => {
       setIsLoadingDetails(true);
       try {
-        const allIntentIds = [
-          selectedConflict.primary_intent_id,
-          ...selectedConflict.conflicting_intent_ids,
-        ];
+        // Use intent_ids array from schema
+        const allIntentIds = selectedConflict.intent_ids || [];
 
         const { data, error } = await supabase
           .from('intent_envelopes')
@@ -145,7 +143,6 @@ export function ConflictVisualizer() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center gap-2">
         <AlertTriangle className="h-5 w-5 text-yellow-500" />
         <span className="text-sm text-muted-foreground">
@@ -153,7 +150,6 @@ export function ConflictVisualizer() {
         </span>
       </div>
 
-      {/* Conflict List */}
       <ScrollArea className="h-[400px]">
         <div className="space-y-3">
           {conflictLogs.length === 0 ? (
@@ -176,7 +172,7 @@ export function ConflictVisualizer() {
                       {getConflictClassIcon(conflict.conflict_class)}
                       {getConflictClassBadge(conflict.conflict_class)}
                       <span className="text-sm text-muted-foreground">
-                        {conflict.conflicting_intent_ids.length + 1} intents involved
+                        {conflict.intent_ids.length} intents involved
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -190,9 +186,9 @@ export function ConflictVisualizer() {
                       </Button>
                     </div>
                   </div>
-                  <p className="mt-2 text-sm line-clamp-2">{conflict.explanation}</p>
+                  <p className="mt-2 text-sm line-clamp-2">{conflict.description}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {format(new Date(conflict.created_at), 'MMM d, yyyy HH:mm')}
+                    {format(new Date(conflict.detected_at), 'MMM d, yyyy HH:mm')}
                   </p>
                 </CardContent>
               </Card>
@@ -201,7 +197,6 @@ export function ConflictVisualizer() {
         </div>
       </ScrollArea>
 
-      {/* Conflict Detail Dialog */}
       <Dialog open={!!selectedConflict} onOpenChange={() => setSelectedConflict(null)}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
@@ -216,7 +211,6 @@ export function ConflictVisualizer() {
 
           {selectedConflict && (
             <div className="space-y-4">
-              {/* Conflict Info */}
               <Card>
                 <CardHeader className="py-3">
                   <CardTitle className="text-sm flex items-center gap-2">
@@ -225,16 +219,15 @@ export function ConflictVisualizer() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm">{selectedConflict.explanation}</p>
-                  {selectedConflict.resolution_action && (
+                  <p className="text-sm">{selectedConflict.description}</p>
+                  {selectedConflict.resolution_explanation && (
                     <div className="mt-3 p-2 bg-green-500/10 rounded-lg text-sm">
-                      <strong>Resolution:</strong> {selectedConflict.resolution_action}
+                      <strong>Resolution:</strong> {selectedConflict.resolution_explanation}
                     </div>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Side-by-side comparison */}
               {isLoadingDetails ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

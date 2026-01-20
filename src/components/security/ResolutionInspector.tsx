@@ -1,6 +1,7 @@
 /**
  * Resolution Inspector Component
  * Phase 4: Controlled Autonomy & Intent Resolution
+ * Schema-aligned with actual database structure
  */
 
 import { useState, useCallback } from 'react';
@@ -86,7 +87,6 @@ export function ResolutionInspector() {
 
   return (
     <div className="space-y-6">
-      {/* Search Section */}
       <Card>
         <CardHeader className="py-4">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -126,10 +126,8 @@ export function ResolutionInspector() {
         </CardContent>
       </Card>
 
-      {/* Resolution Details */}
       {resolution && (
         <div className="space-y-4">
-          {/* Outcome Summary */}
           <Card>
             <CardHeader className="py-4">
               <CardTitle className="text-sm flex items-center justify-between">
@@ -141,7 +139,6 @@ export function ResolutionInspector() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Auto vs Human */}
               <div className="flex items-center gap-2 text-sm">
                 {resolution.was_auto_resolved ? (
                   <>
@@ -156,7 +153,6 @@ export function ResolutionInspector() {
                 )}
               </div>
 
-              {/* Explanation */}
               <div>
                 <h4 className="text-sm font-medium mb-1">Explanation</h4>
                 <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
@@ -164,7 +160,6 @@ export function ResolutionInspector() {
                 </p>
               </div>
 
-              {/* Reason Codes */}
               <div>
                 <h4 className="text-sm font-medium mb-2">Reason Codes</h4>
                 <div className="flex flex-wrap gap-2">
@@ -180,7 +175,6 @@ export function ResolutionInspector() {
                 </div>
               </div>
 
-              {/* Override Details */}
               {resolution.override_by && (
                 <>
                   <Separator />
@@ -205,15 +199,15 @@ export function ResolutionInspector() {
                 </>
               )}
 
-              {/* Timestamp */}
-              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                Resolved at {format(new Date(resolution.created_at), 'PPpp')}
-              </div>
+              {resolution.resolved_at && (
+                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Resolved at {format(new Date(resolution.resolved_at), 'PPpp')}
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Autonomy Envelope Used */}
           {autonomyEnvelope && (
             <Card>
               <CardHeader className="py-4">
@@ -251,7 +245,7 @@ export function ResolutionInspector() {
                       {Object.entries(autonomyEnvelope.max_impact).map(([key, value]) => (
                         <div key={key} className="text-sm bg-muted p-2 rounded">
                           <span className="text-muted-foreground">{key}:</span>{' '}
-                          <span className="font-mono">{value}</span>
+                          <span className="font-mono">{String(value)}</span>
                         </div>
                       ))}
                     </div>
@@ -287,7 +281,6 @@ export function ResolutionInspector() {
         </div>
       )}
 
-      {/* Empty State */}
       {!resolution && !error && !isSearching && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">

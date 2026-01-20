@@ -1,6 +1,8 @@
 /**
  * Hook for Intent Operations & Governance Console
  * Phase 4: Controlled Autonomy & Intent Resolution
+ * 
+ * Schema-aligned with actual database structure
  */
 
 import { useState, useCallback } from 'react';
@@ -9,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Json } from '@/integrations/supabase/types';
 
-// Intent Review Queue item
+// Intent Review Queue item - aligned with intent_envelopes schema
 export interface IntentReviewItem {
   id: string;
   intent_id: string;
@@ -26,50 +28,73 @@ export interface IntentReviewItem {
   created_at: string;
   priority: number;
   review_reason: string | null;
+  autonomy_envelope_id: string | null;
 }
 
-// Conflict log entry
+// Conflict log entry - aligned with conflict_logs schema
 export interface ConflictLogEntry {
   id: string;
   conflict_class: string;
-  primary_intent_id: string;
-  conflicting_intent_ids: string[];
-  explanation: string;
-  resolution_action: string | null;
+  conflict_type: string;
+  primary_intent_id: string | null;
+  intent_ids: string[];
+  description: string;
+  conflicting_values: Record<string, unknown>;
+  resolution_method: string | null;
+  resolution_explanation: string | null;
+  winning_intent_id: string | null;
   resolved_at: string | null;
-  created_at: string;
+  resolved_by: string | null;
+  requires_human_review: boolean;
+  severity: string | null;
+  detected_at: string;
 }
 
-// Intent resolution details for inspector
+// Intent resolution details - aligned with intent_resolutions schema
 export interface IntentResolutionDetail {
   id: string;
   intent_id: string;
   outcome: string;
   reason_codes: string[];
-  explanation: string;
+  explanation: string | null;
   was_auto_resolved: boolean;
   override_by: string | null;
   override_reason: string | null;
-  autonomy_envelope_id: string | null;
-  created_at: string;
+  override_at: string | null;
+  resolved_at: string | null;
+  competing_intent_ids: string[];
+  confidence_score: number | null;
+  evidence_score: number | null;
+  trust_score: number | null;
+  conflict_resolution_method: string | null;
+  resolution_rules_applied: string[];
+  why_this_intent_won: string | null;
+  original_effect: Record<string, unknown> | null;
+  modified_effect: Record<string, unknown> | null;
 }
 
-// Autonomy envelope for resolution inspector
+// Autonomy envelope - aligned with autonomy_envelopes schema
 export interface AutonomyEnvelopeDetail {
   id: string;
   envelope_name: string;
+  description: string | null;
+  portal_type: string;
   allowed_intent_types: string[];
-  max_impact: Record<string, number>;
+  max_impact: Record<string, unknown>;
   required_evidence: string[];
+  decision_thresholds: Record<string, unknown>;
+  escalation_rules: Record<string, unknown>;
+  valid_from: string;
   valid_until: string | null;
   is_active: boolean;
+  core_signature: string | null;
 }
 
 export function useIntentOps() {
   const queryClient = useQueryClient();
   const [selectedIntentId, setSelectedIntentId] = useState<string | null>(null);
 
-  // Fetch pending/escalated intents for review queue (join with intent_envelopes)
+  // Fetch pending/escalated intents for review queue
   const {
     data: reviewQueue,
     isLoading: isLoadingQueue,
@@ -77,7 +102,6 @@ export function useIntentOps() {
   } = useQuery({
     queryKey: ['intent-review-queue'],
     queryFn: async () => {
-      // Fetch from intent_envelopes directly with escalated/pending status
       const { data, error } = await supabase
         .from('intent_envelopes')
         .select('*')
@@ -103,11 +127,12 @@ export function useIntentOps() {
         created_at: row.created_at || row.client_timestamp,
         priority: row.status === 'escalated' ? 8 : 3,
         review_reason: row.status === 'escalated' ? 'Escalated for review' : null,
+        autonomy_envelope_id: row.autonomy_envelope_id,
       })) as IntentReviewItem[];
     },
   });
 
-  // Fetch conflict logs
+  // Fetch conflict logs - using actual schema fields
   const {
     data: conflictLogs,
     isLoading: isLoadingConflicts,
@@ -126,61 +151,96 @@ export function useIntentOps() {
       return (data || []).map(row => ({
         id: row.id,
         conflict_class: row.conflict_class,
+        conflict_type: row.conflict_type,
         primary_intent_id: row.primary_intent_id,
-        conflicting_intent_ids: row.secondary_intent_ids || [],
-        explanation: row.description || '',
-        resolution_action: row.resolution_strategy,
+        intent_ids: row.intent_ids || [],
+        description: row.description,
+        conflicting_values: (row.conflicting_values as Record<string, unknown>) || {},
+        resolution_method: row.resolution_method,
+        resolution_explanation: row.resolution_explanation,
+        winning_intent_id: row.winning_intent_id,
         resolved_at: row.resolved_at,
-        created_at: row.detected_at,
+        resolved_by: row.resolved_by,
+        requires_human_review: row.requires_human_review ?? false,
+        severity: row.severity,
+        detected_at: row.detected_at || new Date().toISOString(),
       })) as ConflictLogEntry[];
     },
   });
 
   // Fetch resolution details for a specific intent
-  const fetchResolutionDetail = useCallback(async (intentId: string) => {
-    const { data, error } = await supabase
+  const fetchResolutionDetail = useCallback(async (intentId: string): Promise<{
+    resolution: IntentResolutionDetail;
+    autonomyEnvelope: AutonomyEnvelopeDetail | null;
+  }> => {
+    // First get the resolution
+    const { data: resolutionData, error: resolutionError } = await supabase
       .from('intent_resolutions')
       .select('*')
       .eq('intent_id', intentId)
       .single();
 
-    if (error) throw error;
+    if (resolutionError) throw resolutionError;
 
-    // Fetch autonomy envelope separately if exists
+    // Get the intent envelope to find the autonomy_envelope_id
+    const { data: intentData } = await supabase
+      .from('intent_envelopes')
+      .select('autonomy_envelope_id')
+      .eq('intent_id', intentId)
+      .single();
+
+    // Fetch autonomy envelope if linked
     let envelope: AutonomyEnvelopeDetail | null = null;
-    if (data.used_envelope_id) {
+    const envelopeId = intentData?.autonomy_envelope_id;
+    
+    if (envelopeId) {
       const { data: envData } = await supabase
         .from('autonomy_envelopes')
         .select('*')
-        .eq('id', data.used_envelope_id)
+        .eq('id', envelopeId)
         .single();
 
       if (envData) {
         envelope = {
           id: envData.id,
           envelope_name: envData.envelope_name,
+          description: envData.description,
+          portal_type: envData.portal_type,
           allowed_intent_types: envData.allowed_intent_types || [],
-          max_impact: (envData.max_impact as Record<string, number>) || {},
+          max_impact: (envData.max_impact as Record<string, unknown>) || {},
           required_evidence: envData.required_evidence || [],
+          decision_thresholds: (envData.decision_thresholds as Record<string, unknown>) || {},
+          escalation_rules: (envData.escalation_rules as Record<string, unknown>) || {},
+          valid_from: envData.valid_from,
           valid_until: envData.valid_until,
           is_active: envData.is_active ?? true,
+          core_signature: envData.core_signature,
         };
       }
     }
 
     return {
       resolution: {
-        id: data.id,
-        intent_id: data.intent_id,
-        outcome: data.outcome,
-        reason_codes: data.reason_codes || [],
-        explanation: data.explanation || '',
-        was_auto_resolved: data.was_auto_resolved ?? true,
-        override_by: data.override_by,
-        override_reason: data.override_reason,
-        autonomy_envelope_id: data.used_envelope_id,
-        created_at: data.resolved_at || data.intent_id,
-      } as IntentResolutionDetail,
+        id: resolutionData.id,
+        intent_id: resolutionData.intent_id,
+        outcome: resolutionData.outcome,
+        reason_codes: resolutionData.reason_codes || [],
+        explanation: resolutionData.explanation,
+        was_auto_resolved: resolutionData.was_auto_resolved ?? true,
+        override_by: resolutionData.override_by,
+        override_reason: resolutionData.override_reason,
+        override_at: resolutionData.override_at,
+        resolved_at: resolutionData.resolved_at,
+        competing_intent_ids: resolutionData.competing_intent_ids || [],
+        confidence_score: resolutionData.confidence_score,
+        evidence_score: resolutionData.evidence_score,
+        trust_score: resolutionData.trust_score,
+        conflict_resolution_method: resolutionData.conflict_resolution_method,
+        resolution_rules_applied: resolutionData.resolution_rules_applied || [],
+        why_this_intent_won: resolutionData.why_this_intent_won,
+        original_effect: (resolutionData.original_effect as Record<string, unknown>) || null,
+        modified_effect: (resolutionData.modified_effect as Record<string, unknown>) || null,
+      },
       autonomyEnvelope: envelope,
     };
   }, []);
