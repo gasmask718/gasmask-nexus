@@ -4,10 +4,10 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
 // Intent envelope structure
 export interface IntentEnvelope {
-  intent_id?: string;
   origin_action_ids: string[];
   portal_type: 'driver' | 'biker';
   user_id: string;
@@ -47,6 +47,25 @@ export interface IntentResolution {
   error?: string;
 }
 
+// RPC response shape from resolve_intent
+interface ResolveIntentRpcResponse {
+  success?: boolean;
+  outcome?: string;
+  resolution_id?: string;
+  reason_codes?: string[];
+  explanation?: string;
+}
+
+// Raw resolution row from database join
+interface RawResolutionRow {
+  outcome?: string;
+  reason_codes?: string[];
+  explanation?: string;
+  was_auto_resolved?: boolean;
+  override_by?: string;
+  override_reason?: string;
+}
+
 // Cache for autonomy envelopes
 let autonomyCache: AutonomyEnvelope[] = [];
 let cacheTimestamp: number = 0;
@@ -79,7 +98,18 @@ export async function fetchAutonomyEnvelopes(
     return autonomyCache; // Return stale cache on error
   }
 
-  autonomyCache = (data || []) as AutonomyEnvelope[];
+  // Map database rows to AutonomyEnvelope interface
+  autonomyCache = (data || []).map(row => ({
+    id: row.id,
+    envelope_name: row.envelope_name,
+    portal_type: row.portal_type as 'driver' | 'biker',
+    allowed_intent_types: row.allowed_intent_types || [],
+    decision_thresholds: (row.decision_thresholds as Record<string, number>) || {},
+    max_impact: (row.max_impact as Record<string, number>) || {},
+    required_evidence: row.required_evidence || [],
+    valid_until: row.valid_until || undefined,
+    is_active: row.is_active ?? true,
+  }));
   cacheTimestamp = now;
   
   return autonomyCache;
@@ -108,7 +138,7 @@ export function checkLocalAutonomy(
   // Check impact limits
   if (envelope.max_impact) {
     for (const [key, limit] of Object.entries(envelope.max_impact)) {
-      const value = proposedEffect[key] as number;
+      const value = proposedEffect[key];
       if (typeof value === 'number' && value > limit) {
         return { allowed: false, reason: `exceeds_${key}_limit` };
       }
@@ -124,13 +154,10 @@ export function checkLocalAutonomy(
 export async function submitIntent(
   intent: IntentEnvelope
 ): Promise<IntentResolution> {
-  const intentId = intent.intent_id || crypto.randomUUID();
-
-  // First, insert the intent
-  const { error: insertError } = await supabase
+  // First, insert the intent and let the database generate the intent_id
+  const { data: insertedData, error: insertError } = await supabase
     .from('intent_envelopes')
     .insert({
-      intent_id: intentId,
       origin_action_ids: intent.origin_action_ids,
       portal_type: intent.portal_type,
       user_id: intent.user_id,
@@ -140,23 +167,27 @@ export async function submitIntent(
       intent_type: intent.intent_type,
       confidence_level: intent.confidence_level,
       constraints_seen: intent.constraints_seen,
-      proposed_effect: intent.proposed_effect,
-      supporting_evidence: intent.supporting_evidence,
+      proposed_effect: intent.proposed_effect as Json,
+      supporting_evidence: intent.supporting_evidence as Json,
       client_timestamp: intent.client_timestamp,
       expires_at: intent.expires_at,
       status: 'pending',
-    });
+    })
+    .select('intent_id')
+    .single();
 
-  if (insertError) {
+  if (insertError || !insertedData) {
     return {
       success: false,
-      intent_id: intentId,
+      intent_id: '',
       outcome: 'rejected',
       reason_codes: ['insert_failed'],
-      explanation: insertError.message,
-      error: insertError.message,
+      explanation: insertError?.message || 'Failed to insert intent',
+      error: insertError?.message,
     };
   }
+
+  const intentId = insertedData.intent_id;
 
   // Trigger resolution
   const { data, error: resolveError } = await supabase
@@ -173,14 +204,17 @@ export async function submitIntent(
     };
   }
 
-  const result = data as unknown as IntentResolution;
+  // Safely parse RPC response
+  const rpcResult = data as ResolveIntentRpcResponse | null;
+  const outcome = (rpcResult?.outcome || 'deferred') as IntentResolution['outcome'];
+  
   return {
-    success: result.success,
+    success: rpcResult?.success ?? false,
     intent_id: intentId,
-    outcome: result.outcome,
-    resolution_id: result.resolution_id,
-    reason_codes: result.reason_codes || [],
-    explanation: result.explanation || '',
+    outcome,
+    resolution_id: rpcResult?.resolution_id,
+    reason_codes: rpcResult?.reason_codes || [],
+    explanation: rpcResult?.explanation || '',
   };
 }
 
@@ -195,6 +229,7 @@ export async function getIntentStatus(intentId: string): Promise<{
     .from('intent_envelopes')
     .select(`
       status,
+      intent_id,
       intent_resolutions (
         outcome,
         reason_codes,
@@ -211,9 +246,23 @@ export async function getIntentStatus(intentId: string): Promise<{
     return { status: 'unknown' };
   }
 
+  // Handle the joined resolution data
+  const resolutions = data.intent_resolutions as RawResolutionRow[] | null;
+  const rawResolution = resolutions?.[0];
+
+  if (!rawResolution) {
+    return { status: data.status };
+  }
+
   return {
     status: data.status,
-    resolution: data.intent_resolutions?.[0] as IntentResolution | undefined,
+    resolution: {
+      success: rawResolution.outcome === 'accepted' || rawResolution.outcome === 'modified',
+      intent_id: data.intent_id,
+      outcome: (rawResolution.outcome || 'deferred') as IntentResolution['outcome'],
+      reason_codes: rawResolution.reason_codes || [],
+      explanation: rawResolution.explanation || '',
+    },
   };
 }
 
