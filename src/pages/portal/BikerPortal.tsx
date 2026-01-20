@@ -1,9 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { FieldPortalLayout, MyDayDashboard, StoreListPage, StoreVisitEngine, ChangeListsPage, HistoryPage, MessagesPage, ProfilePage } from '@/components/portal/field';
+import { PortalAuthGuard } from '@/components/portal/PortalAuthGuard';
 
 export default function BikerPortal() {
   return (
-    <FieldPortalLayout portalType="biker">
+    <PortalAuthGuard allowedRoles={['biker']} portalType="biker">
+      <FieldPortalLayout portalType="biker">
       <Routes>
         <Route index element={<MyDayDashboard portalType="biker" />} />
         <Route path="stores" element={<StoreListPage portalType="biker" />} />
@@ -16,6 +18,7 @@ export default function BikerPortal() {
         <Route path="profile" element={<ProfilePage portalType="biker" />} />
         <Route path="*" element={<Navigate to="/portal/biker" replace />} />
       </Routes>
-    </FieldPortalLayout>
+      </FieldPortalLayout>
+    </PortalAuthGuard>
   );
 }

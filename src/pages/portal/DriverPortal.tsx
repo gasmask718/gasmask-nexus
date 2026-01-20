@@ -1,9 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { FieldPortalLayout, MyDayDashboard, StoreListPage, StoreVisitEngine, ChangeListsPage, HistoryPage, MakeDeliveryPage, MessagesPage, ProfilePage } from '@/components/portal/field';
+import { PortalAuthGuard } from '@/components/portal/PortalAuthGuard';
 
 export default function DriverPortal() {
   return (
-    <FieldPortalLayout portalType="driver">
+    <PortalAuthGuard allowedRoles={['driver']} portalType="driver">
+      <FieldPortalLayout portalType="driver">
       <Routes>
         <Route index element={<MyDayDashboard portalType="driver" />} />
         <Route path="stores" element={<StoreListPage portalType="driver" />} />
@@ -18,6 +20,7 @@ export default function DriverPortal() {
         <Route path="profile" element={<ProfilePage portalType="driver" />} />
         <Route path="*" element={<Navigate to="/portal/driver" replace />} />
       </Routes>
-    </FieldPortalLayout>
+      </FieldPortalLayout>
+    </PortalAuthGuard>
   );
 }
