@@ -19648,6 +19648,167 @@ export type Database = {
           },
         ]
       }
+      phase5_agreement_log: {
+        Row: {
+          agreed: boolean
+          created_at: string
+          disagreement_reason: string | null
+          human_decision: string
+          id: string
+          intent_id: string | null
+          phase5_recommendation: string
+          recommendation_id: string | null
+        }
+        Insert: {
+          agreed: boolean
+          created_at?: string
+          disagreement_reason?: string | null
+          human_decision: string
+          id?: string
+          intent_id?: string | null
+          phase5_recommendation: string
+          recommendation_id?: string | null
+        }
+        Update: {
+          agreed?: boolean
+          created_at?: string
+          disagreement_reason?: string | null
+          human_decision?: string
+          id?: string
+          intent_id?: string | null
+          phase5_recommendation?: string
+          recommendation_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phase5_agreement_log_intent_id_fkey"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "intent_envelopes"
+            referencedColumns: ["intent_id"]
+          },
+          {
+            foreignKeyName: "phase5_agreement_log_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "phase5_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phase5_audit_log: {
+        Row: {
+          action_type: string
+          actor_id: string | null
+          actor_type: string | null
+          created_at: string
+          details: Json
+          id: string
+        }
+        Insert: {
+          action_type: string
+          actor_id?: string | null
+          actor_type?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+        }
+        Update: {
+          action_type?: string
+          actor_id?: string | null
+          actor_type?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+        }
+        Relationships: []
+      }
+      phase5_pattern_observations: {
+        Row: {
+          confidence: number | null
+          first_observed_at: string
+          id: string
+          last_observed_at: string
+          notes: string | null
+          observation_count: number
+          pattern_signature: Json
+          pattern_type: string
+        }
+        Insert: {
+          confidence?: number | null
+          first_observed_at?: string
+          id?: string
+          last_observed_at?: string
+          notes?: string | null
+          observation_count?: number
+          pattern_signature: Json
+          pattern_type: string
+        }
+        Update: {
+          confidence?: number | null
+          first_observed_at?: string
+          id?: string
+          last_observed_at?: string
+          notes?: string | null
+          observation_count?: number
+          pattern_signature?: Json
+          pattern_type?: string
+        }
+        Relationships: []
+      }
+      phase5_recommendations: {
+        Row: {
+          actual_outcome: string | null
+          confidence_score: number
+          created_at: string
+          human_agreed: boolean | null
+          id: string
+          intent_id: string | null
+          processing_time_ms: number | null
+          reasoning: string
+          recommendation_type: string
+          recommended_action: Json
+          resolved_at: string | null
+          supporting_evidence: Json | null
+        }
+        Insert: {
+          actual_outcome?: string | null
+          confidence_score: number
+          created_at?: string
+          human_agreed?: boolean | null
+          id?: string
+          intent_id?: string | null
+          processing_time_ms?: number | null
+          reasoning: string
+          recommendation_type: string
+          recommended_action?: Json
+          resolved_at?: string | null
+          supporting_evidence?: Json | null
+        }
+        Update: {
+          actual_outcome?: string | null
+          confidence_score?: number
+          created_at?: string
+          human_agreed?: boolean | null
+          id?: string
+          intent_id?: string | null
+          processing_time_ms?: number | null
+          reasoning?: string
+          recommendation_type?: string
+          recommended_action?: Json
+          resolved_at?: string | null
+          supporting_evidence?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phase5_recommendations_intent_id_fkey"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "intent_envelopes"
+            referencedColumns: ["intent_id"]
+          },
+        ]
+      }
       pick_entries: {
         Row: {
           actual_result_value: number | null
@@ -31528,6 +31689,7 @@ export type Database = {
         }[]
       }
       get_intent_queue_health: { Args: never; Returns: Json }
+      get_phase5_mode: { Args: never; Returns: Json }
       get_portal_queue_health: { Args: never; Returns: Json }
       get_store_full_address: { Args: { p_store_id: string }; Returns: string }
       get_user_businesses: {
@@ -31678,6 +31840,10 @@ export type Database = {
       }
       revoke_portal_device: {
         Args: { _device_id: string; _reason?: string }
+        Returns: boolean
+      }
+      set_phase5_mode: {
+        Args: { p_enabled?: boolean; p_kill_switch?: boolean; p_mode: string }
         Returns: boolean
       }
       soft_delete: {
