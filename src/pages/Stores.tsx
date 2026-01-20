@@ -644,7 +644,10 @@ const Stores = () => {
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <CardTitle className="text-lg">{store.name}</CardTitle>
+                      <CardTitle className="text-lg">{store.owner_name || store.name}</CardTitle>
+                      {store.owner_name && store.name !== store.owner_name && (
+                        <p className="text-xs text-muted-foreground">{store.name}</p>
+                      )}
                       <Badge variant="outline" className="text-xs">
                         {store.type.replace('_', ' ')}
                       </Badge>
@@ -712,15 +715,24 @@ const Stores = () => {
                     <Users className="h-4 w-4 mt-0.5 text-primary shrink-0" />
                     <div className="flex-1">
                       <span className="text-muted-foreground text-xs">Contacts: </span>
-                      {store.contacts.length > 0 ? (
+                      {store.contacts && store.contacts.length > 0 ? (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {store.contacts.slice(0, 5).map((contact) => (
-                            <Badge key={contact.id} variant="outline" className="text-xs">
-                              {contact.name}
+                            <Badge key={contact.id} variant="outline" className="text-xs flex items-center gap-1">
+                              <span>{contact.name}</span>
                               {contact.role && (
-                                <span className="ml-1 text-muted-foreground">
+                                <span className="text-muted-foreground">
                                   ({contact.role.toLowerCase()})
                                 </span>
+                              )}
+                              {contact.phone && (
+                                <a 
+                                  href={`tel:${contact.phone}`} 
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-primary hover:underline ml-1"
+                                >
+                                  {contact.phone}
+                                </a>
                               )}
                             </Badge>
                           ))}
