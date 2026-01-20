@@ -12,6 +12,7 @@ import { toast } from 'sonner';
  * Biker Portal Login - Isolated from Core Dynasty OS
  * - Validates biker role on login
  * - Blocks non-biker users
+ * - Registers device for Phase 2 security hardening
  * - Logs all access attempts for audit
  */
 export default function BikerLogin() {
@@ -20,6 +21,71 @@ export default function BikerLogin() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Device registration helper
+  const registerDevice = async (userId: string) => {
+    const ua = navigator.userAgent;
+    let platform = 'web';
+    let browser = 'unknown';
+    
+    if (/iPhone|iPad|iPod/.test(ua)) platform = 'ios';
+    else if (/Android/.test(ua)) platform = 'android';
+    
+    if (/Chrome/.test(ua)) browser = 'chrome';
+    else if (/Safari/.test(ua)) browser = 'safari';
+    else if (/Firefox/.test(ua)) browser = 'firefox';
+    else if (/Edge/.test(ua)) browser = 'edge';
+
+    // Simple fingerprint
+    const components = [ua, navigator.language, screen.width + 'x' + screen.height, new Date().getTimezoneOffset()];
+    const str = components.join('|');
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash = hash & hash;
+    }
+    const fingerprint = Math.abs(hash).toString(16);
+
+    // Check existing device
+    const { data: existing } = await supabase
+      .from('portal_devices')
+      .select('id, is_revoked')
+      .eq('user_id', userId)
+      .eq('device_fingerprint', fingerprint)
+      .maybeSingle();
+
+    if (existing?.is_revoked) {
+      throw new Error('This device has been revoked. Contact your administrator.');
+    }
+
+    if (existing) {
+      await supabase.from('portal_devices').update({ last_seen_at: new Date().toISOString() }).eq('id', existing.id);
+      return;
+    }
+
+    // Register new device
+    const { data: newDevice, error: insertError } = await supabase.from('portal_devices').insert({
+      user_id: userId,
+      portal_type: 'biker',
+      device_fingerprint: fingerprint,
+      device_name: `${platform} - ${browser}`,
+      platform,
+      browser,
+    }).select().single();
+
+    if (insertError) throw insertError;
+
+    // Log new device event
+    await supabase.from('portal_security_events').insert({
+      user_id: userId,
+      device_id: newDevice.id,
+      portal_type: 'biker',
+      event_type: 'new_device',
+      severity: 'info',
+      event_message: 'New device registered',
+      metadata: { platform, browser },
+    });
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +124,6 @@ export default function BikerLogin() {
       const isBiker = userRole === 'biker';
 
       if (!isBiker && !isElevated) {
-        // Log failed access attempt
         await supabase.from('portal_audit_log').insert([{
           user_id: authData.user.id,
           portal_type: 'biker',
@@ -72,7 +137,17 @@ export default function BikerLogin() {
         return;
       }
 
-      // Step 3: Log successful login
+      // Step 3: Register device (Phase 2 security)
+      try {
+        await registerDevice(authData.user.id);
+      } catch (deviceErr: any) {
+        await supabase.auth.signOut();
+        setError(deviceErr.message || 'Device registration failed');
+        setIsLoading(false);
+        return;
+      }
+
+      // Step 4: Log successful login
       await supabase.from('portal_audit_log').insert([{
         user_id: authData.user.id,
         portal_type: 'biker',

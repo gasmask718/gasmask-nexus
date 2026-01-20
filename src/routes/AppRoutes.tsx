@@ -58,6 +58,7 @@ import Subscriptions from '@/pages/Subscriptions';
 import DeliveryCapacity from '@/pages/DeliveryCapacity';
 import CommunicationAutomation from '@/pages/CommunicationAutomation';
 import CommunicationsAI from '@/pages/CommunicationsAI';
+import { SecurityConsole } from '@/components/security/SecurityConsole';
 import MessagesPage from '@/pages/Messages';
 import CommunicationInsights from '@/pages/CommunicationInsights';
 import RouteOptimizer from '@/pages/RouteOptimizer';
@@ -497,6 +498,11 @@ export default function AppRoutes() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/sidebar-test" element={<SidebarVisualTest />} />
         <Route path="/sidebar-debug" element={<SidebarDebug />} />
+
+        {/* Security & Governance (Phase 2 - Military-Grade Hardening) */}
+        <Route path="/security/console" element={<SecurityConsole />} />
+        <Route path="/security/devices" element={<SecurityConsole />} />
+        <Route path="/security/sessions" element={<SecurityConsole />} />
 
         {/* GasMask Brand Routes */}
         <Route path="/gasmask" element={<Dashboard />} />
