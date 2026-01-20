@@ -15,6 +15,8 @@ import Checkout from '@/pages/Checkout';
 import NotFound from '@/pages/NotFound';
 import PortalLogin from '@/pages/portal/PortalLogin';
 import PortalRegister from '@/pages/portal/PortalRegister';
+import DriverLogin from '@/pages/portal/DriverLogin';
+import BikerLogin from '@/pages/portal/BikerLogin';
 
 // Protected page imports
 import Dashboard from '@/pages/Dashboard';
@@ -484,6 +486,8 @@ export default function AppRoutes() {
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/portal/login" element={<PortalLogin />} />
       <Route path="/portal/register" element={<PortalRegister />} />
+      <Route path="/portal/driver/login" element={<DriverLogin />} />
+      <Route path="/portal/biker/login" element={<BikerLogin />} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES (Authentication required)                                   */}

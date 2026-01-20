@@ -19,7 +19,7 @@ interface AuditLogParams {
   actionType: PortalActionType;
   entityType?: 'store' | 'route' | 'delivery' | 'session';
   entityId?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: { [key: string]: string | number | boolean | null };
 }
 
 /**
@@ -39,7 +39,7 @@ export function usePortalAudit() {
         action_type: params.actionType,
         entity_type: params.entityType || null,
         entity_id: params.entityId || null,
-        metadata: params.metadata || {}
+        metadata: (params.metadata || null) as { [key: string]: string | number | boolean | null } | null
       }]);
     } catch (error) {
       console.error('Audit log failed:', error);
