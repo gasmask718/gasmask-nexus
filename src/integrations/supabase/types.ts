@@ -3297,6 +3297,181 @@ export type Database = {
           },
         ]
       }
+      autonomy_envelopes: {
+        Row: {
+          allowed_intent_types: string[]
+          assignment_id: string | null
+          core_signature: string | null
+          created_at: string | null
+          created_by: string | null
+          decision_thresholds: Json | null
+          description: string | null
+          device_id: string | null
+          envelope_name: string
+          escalation_rules: Json | null
+          id: string
+          is_active: boolean | null
+          max_impact: Json | null
+          portal_type: string
+          required_evidence: string[] | null
+          revocation_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          role_id: string | null
+          route_ids: string[] | null
+          store_ids: string[] | null
+          time_window_end: string | null
+          time_window_start: string | null
+          updated_at: string | null
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          allowed_intent_types?: string[]
+          assignment_id?: string | null
+          core_signature?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          decision_thresholds?: Json | null
+          description?: string | null
+          device_id?: string | null
+          envelope_name: string
+          escalation_rules?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_impact?: Json | null
+          portal_type: string
+          required_evidence?: string[] | null
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role_id?: string | null
+          route_ids?: string[] | null
+          store_ids?: string[] | null
+          time_window_end?: string | null
+          time_window_start?: string | null
+          updated_at?: string | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          allowed_intent_types?: string[]
+          assignment_id?: string | null
+          core_signature?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          decision_thresholds?: Json | null
+          description?: string | null
+          device_id?: string | null
+          envelope_name?: string
+          escalation_rules?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_impact?: Json | null
+          portal_type?: string
+          required_evidence?: string[] | null
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role_id?: string | null
+          route_ids?: string[] | null
+          store_ids?: string[] | null
+          time_window_end?: string | null
+          time_window_start?: string | null
+          updated_at?: string | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autonomy_envelopes_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "portal_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "autonomy_envelopes_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      autonomy_violations: {
+        Row: {
+          assignment_id: string | null
+          attempted_action: string
+          auto_response: string | null
+          autonomy_reduced: boolean | null
+          created_at: string | null
+          device_id: string | null
+          device_quarantined: boolean | null
+          envelope_id: string | null
+          exceeded_limit: Json | null
+          id: string
+          intent_id: string | null
+          portal_type: string | null
+          user_id: string | null
+          violation_type: string
+        }
+        Insert: {
+          assignment_id?: string | null
+          attempted_action: string
+          auto_response?: string | null
+          autonomy_reduced?: boolean | null
+          created_at?: string | null
+          device_id?: string | null
+          device_quarantined?: boolean | null
+          envelope_id?: string | null
+          exceeded_limit?: Json | null
+          id?: string
+          intent_id?: string | null
+          portal_type?: string | null
+          user_id?: string | null
+          violation_type: string
+        }
+        Update: {
+          assignment_id?: string | null
+          attempted_action?: string
+          auto_response?: string | null
+          autonomy_reduced?: boolean | null
+          created_at?: string | null
+          device_id?: string | null
+          device_quarantined?: boolean | null
+          envelope_id?: string | null
+          exceeded_limit?: Json | null
+          id?: string
+          intent_id?: string | null
+          portal_type?: string | null
+          user_id?: string | null
+          violation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autonomy_violations_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "portal_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "autonomy_violations_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "autonomy_envelopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "autonomy_violations_intent_id_fkey"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "intent_envelopes"
+            referencedColumns: ["intent_id"]
+          },
+        ]
+      }
       autopilot_settings: {
         Row: {
           auto_assign_routes: boolean | null
@@ -8233,6 +8408,71 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      conflict_logs: {
+        Row: {
+          conflict_class: Database["public"]["Enums"]["conflict_class"]
+          conflict_type: string
+          conflicting_values: Json
+          description: string
+          detected_at: string | null
+          id: string
+          intent_ids: string[]
+          primary_intent_id: string | null
+          requires_human_review: boolean | null
+          resolution_explanation: string | null
+          resolution_method: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string | null
+          temporal_details: Json | null
+          winning_intent_id: string | null
+        }
+        Insert: {
+          conflict_class: Database["public"]["Enums"]["conflict_class"]
+          conflict_type: string
+          conflicting_values: Json
+          description: string
+          detected_at?: string | null
+          id?: string
+          intent_ids: string[]
+          primary_intent_id?: string | null
+          requires_human_review?: boolean | null
+          resolution_explanation?: string | null
+          resolution_method?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          temporal_details?: Json | null
+          winning_intent_id?: string | null
+        }
+        Update: {
+          conflict_class?: Database["public"]["Enums"]["conflict_class"]
+          conflict_type?: string
+          conflicting_values?: Json
+          description?: string
+          detected_at?: string | null
+          id?: string
+          intent_ids?: string[]
+          primary_intent_id?: string | null
+          requires_human_review?: boolean | null
+          resolution_explanation?: string | null
+          resolution_method?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          temporal_details?: Json | null
+          winning_intent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conflict_logs_primary_intent_id_fkey"
+            columns: ["primary_intent_id"]
+            isOneToOne: false
+            referencedRelation: "intent_envelopes"
+            referencedColumns: ["intent_id"]
+          },
+        ]
       }
       contact_interactions: {
         Row: {
@@ -13645,6 +13885,90 @@ export type Database = {
           },
         ]
       }
+      intent_envelopes: {
+        Row: {
+          assignment_id: string | null
+          autonomy_envelope_id: string | null
+          autonomy_validated: boolean | null
+          client_timestamp: string
+          confidence_level: number | null
+          constraints_seen: string[] | null
+          created_at: string | null
+          device_id: string
+          expires_at: string | null
+          id: string
+          intent_id: string
+          intent_type: string
+          origin_action_ids: string[]
+          portal_type: string
+          proposed_effect: Json
+          received_at: string | null
+          shift_id: string | null
+          status: string
+          supporting_evidence: Json | null
+          user_id: string
+        }
+        Insert: {
+          assignment_id?: string | null
+          autonomy_envelope_id?: string | null
+          autonomy_validated?: boolean | null
+          client_timestamp: string
+          confidence_level?: number | null
+          constraints_seen?: string[] | null
+          created_at?: string | null
+          device_id: string
+          expires_at?: string | null
+          id?: string
+          intent_id?: string
+          intent_type: string
+          origin_action_ids?: string[]
+          portal_type: string
+          proposed_effect: Json
+          received_at?: string | null
+          shift_id?: string | null
+          status?: string
+          supporting_evidence?: Json | null
+          user_id: string
+        }
+        Update: {
+          assignment_id?: string | null
+          autonomy_envelope_id?: string | null
+          autonomy_validated?: boolean | null
+          client_timestamp?: string
+          confidence_level?: number | null
+          constraints_seen?: string[] | null
+          created_at?: string | null
+          device_id?: string
+          expires_at?: string | null
+          id?: string
+          intent_id?: string
+          intent_type?: string
+          origin_action_ids?: string[]
+          portal_type?: string
+          proposed_effect?: Json
+          received_at?: string | null
+          shift_id?: string | null
+          status?: string
+          supporting_evidence?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intent_envelopes_autonomy_envelope_id_fkey"
+            columns: ["autonomy_envelope_id"]
+            isOneToOne: false
+            referencedRelation: "autonomy_envelopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intent_envelopes_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "portal_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intent_graphs: {
         Row: {
           active_intents: string[] | null
@@ -13782,6 +14106,139 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "memory_events"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      intent_resolutions: {
+        Row: {
+          competing_intent_ids: string[] | null
+          confidence_score: number | null
+          conflict_resolution_method: string | null
+          evidence_score: number | null
+          explanation: string | null
+          id: string
+          intent_id: string
+          modified_effect: Json | null
+          original_effect: Json | null
+          outcome: string
+          override_at: string | null
+          override_by: string | null
+          override_reason: string | null
+          reason_codes: string[]
+          resolution_rules_applied: string[] | null
+          resolved_at: string | null
+          resolver_version: string | null
+          trust_score: number | null
+          was_auto_resolved: boolean | null
+          why_this_intent_won: string | null
+        }
+        Insert: {
+          competing_intent_ids?: string[] | null
+          confidence_score?: number | null
+          conflict_resolution_method?: string | null
+          evidence_score?: number | null
+          explanation?: string | null
+          id?: string
+          intent_id: string
+          modified_effect?: Json | null
+          original_effect?: Json | null
+          outcome: string
+          override_at?: string | null
+          override_by?: string | null
+          override_reason?: string | null
+          reason_codes?: string[]
+          resolution_rules_applied?: string[] | null
+          resolved_at?: string | null
+          resolver_version?: string | null
+          trust_score?: number | null
+          was_auto_resolved?: boolean | null
+          why_this_intent_won?: string | null
+        }
+        Update: {
+          competing_intent_ids?: string[] | null
+          confidence_score?: number | null
+          conflict_resolution_method?: string | null
+          evidence_score?: number | null
+          explanation?: string | null
+          id?: string
+          intent_id?: string
+          modified_effect?: Json | null
+          original_effect?: Json | null
+          outcome?: string
+          override_at?: string | null
+          override_by?: string | null
+          override_reason?: string | null
+          reason_codes?: string[]
+          resolution_rules_applied?: string[] | null
+          resolved_at?: string | null
+          resolver_version?: string | null
+          trust_score?: number | null
+          was_auto_resolved?: boolean | null
+          why_this_intent_won?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intent_resolutions_intent_id_fkey"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "intent_envelopes"
+            referencedColumns: ["intent_id"]
+          },
+        ]
+      }
+      intent_review_queue: {
+        Row: {
+          amended_effect: Json | null
+          assigned_to: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision: string | null
+          decision_notes: string | null
+          id: string
+          intent_id: string
+          priority: number | null
+          queued_at: string | null
+          reason_for_review: string
+          status: string | null
+          suggested_action: string | null
+        }
+        Insert: {
+          amended_effect?: Json | null
+          assigned_to?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision?: string | null
+          decision_notes?: string | null
+          id?: string
+          intent_id: string
+          priority?: number | null
+          queued_at?: string | null
+          reason_for_review: string
+          status?: string | null
+          suggested_action?: string | null
+        }
+        Update: {
+          amended_effect?: Json | null
+          assigned_to?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision?: string | null
+          decision_notes?: string | null
+          id?: string
+          intent_id?: string
+          priority?: number | null
+          queued_at?: string | null
+          reason_for_review?: string
+          status?: string | null
+          suggested_action?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intent_review_queue_intent_id_fkey"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "intent_envelopes"
+            referencedColumns: ["intent_id"]
           },
         ]
       }
@@ -17763,6 +18220,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      operational_signals: {
+        Row: {
+          computation_method: string
+          computed_at: string | null
+          confidence: number | null
+          contributing_factors: Json | null
+          data_points_used: number | null
+          entity_id: string
+          entity_type: string
+          id: string
+          previous_value: number | null
+          signal_type: string
+          signal_value: number
+          trend: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          computation_method: string
+          computed_at?: string | null
+          confidence?: number | null
+          contributing_factors?: Json | null
+          data_points_used?: number | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          previous_value?: number | null
+          signal_type: string
+          signal_value: number
+          trend?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          computation_method?: string
+          computed_at?: string | null
+          confidence?: number | null
+          contributing_factors?: Json | null
+          data_points_used?: number | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          previous_value?: number | null
+          signal_type?: string
+          signal_value?: number
+          trend?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
       }
       order_routing: {
         Row: {
@@ -30986,6 +31491,11 @@ export type Database = {
         Args: { _device_id: string; _endpoint_name: string }
         Returns: boolean
       }
+      compute_device_reliability: {
+        Args: { p_device_id: string }
+        Returns: number
+      }
+      detect_intent_conflicts: { Args: { p_intent_id: string }; Returns: Json }
       expire_old_simulations: { Args: never; Returns: undefined }
       force_portal_logout: {
         Args: { _reason?: string; _target_user_id: string }
@@ -31017,6 +31527,7 @@ export type Database = {
           user_name: string
         }[]
       }
+      get_intent_queue_health: { Args: never; Returns: Json }
       get_portal_queue_health: { Args: never; Returns: Json }
       get_store_full_address: { Args: { p_store_id: string }; Returns: string }
       get_user_businesses: {
@@ -31114,6 +31625,15 @@ export type Database = {
       }
       mark_overdue_followups: { Args: never; Returns: undefined }
       not_developer: { Args: { _user_id: string }; Returns: boolean }
+      override_intent_resolution: {
+        Args: {
+          p_amended_effect?: Json
+          p_decision: string
+          p_intent_id: string
+          p_notes?: string
+        }
+        Returns: Json
+      }
       process_ai_approval: {
         Args: { p_approved: boolean; p_notes?: string; p_request_id: string }
         Returns: boolean
@@ -31147,6 +31667,7 @@ export type Database = {
         Args: { _device_id: string }
         Returns: boolean
       }
+      resolve_intent: { Args: { p_intent_id: string }; Returns: Json }
       restore_deleted: {
         Args: { _record_id: string; _table_name: string }
         Returns: undefined
@@ -31173,6 +31694,7 @@ export type Database = {
         Returns: undefined
       }
       update_relationship_status: { Args: never; Returns: undefined }
+      validate_intent_autonomy: { Args: { p_intent_id: string }; Returns: Json }
       validate_portal_request: {
         Args: {
           _action_type: string
@@ -31230,6 +31752,12 @@ export type Database = {
         | "decision_maker"
         | "other"
       brand_type: "GasMask" | "HotMama" | "GrabbaRUs" | "HotScalati"
+      conflict_class:
+        | "temporal"
+        | "resource"
+        | "authority"
+        | "evidence"
+        | "integrity"
       credit_terms_type: "COD" | "NET7" | "NET14" | "NET30"
       crm_access_role: "view" | "edit" | "admin"
       fulfillment_type:
@@ -31594,6 +32122,13 @@ export const Constants = {
         "other",
       ],
       brand_type: ["GasMask", "HotMama", "GrabbaRUs", "HotScalati"],
+      conflict_class: [
+        "temporal",
+        "resource",
+        "authority",
+        "evidence",
+        "integrity",
+      ],
       credit_terms_type: ["COD", "NET7", "NET14", "NET30"],
       crm_access_role: ["view", "edit", "admin"],
       fulfillment_type: [
