@@ -243,13 +243,13 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Owner */}
+          {/* Owner (Store Name) */}
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">Owner</p>
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-primary" />
               <p className="text-sm">
-                {contactsLoading ? 'Loading owner...' : ownerName || 'No owner on file'}
+                {store.name || 'No owner on file'}
               </p>
             </div>
           </div>
