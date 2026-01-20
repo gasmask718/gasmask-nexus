@@ -29,7 +29,7 @@ export default function AppSidebar() {
   
   // All sections open by default
   const [openSections, setOpenSections] = useState<string[]>([
-    'penthouse', 'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9'
+    'penthouse', 'security-governance', 'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9'
   ]);
 
   const userRole = profileData?.profile?.primary_role || 'admin';
@@ -154,6 +154,23 @@ export default function AppSidebar() {
           </div>
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* 🛡️ SECURITY & GOVERNANCE — Constitutional Layer */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {['owner', 'admin', 'ceo'].includes(userRole) && (
+            <div className="mb-4 pt-2 border-t border-sidebar-border">
+              <div className="px-3 py-2 text-xs font-semibold uppercase text-emerald-400/80 tracking-wider">
+                🛡️ Security & Governance
+              </div>
+              {renderSection('security-governance', 'Security & Governance', '🔐', [
+                { path: '/security/console', label: 'Security Console', emoji: '🛡️' },
+                { path: '/security/devices', label: 'Device Management', emoji: '📱' },
+                { path: '/security/sessions', label: 'Active Sessions', emoji: '🔑' },
+                { path: '/security/audit', label: 'Audit Logs', emoji: '📋' },
+              ], "bg-gradient-to-r from-emerald-500/20 to-green-500/10 text-emerald-300 hover:from-emerald-500/30")}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* 🏢 FLOORS 1-9 — Grabba Empire Skyscraper */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
           <div className="mb-4 pt-2 border-t border-sidebar-border">
@@ -258,13 +275,6 @@ export default function AppSidebar() {
               { path: '/grabba/risk-radar', label: 'Risk Radar', emoji: '🛡️' },
               { path: '/grabba/autopilot', label: 'Autopilot Console', emoji: '✈️' },
               { path: '/grabba/command-console', label: 'Command Console', emoji: '🎮' },
-            ])}
-
-            {/* Floor 10 - Security & Governance */}
-            {renderSection('floor-10', 'Floor 10: Security', '🔐', [
-              { path: '/security/console', label: 'Security Console', emoji: '🛡️' },
-              { path: '/security/devices', label: 'Device Management', emoji: '📱' },
-              { path: '/security/sessions', label: 'Active Sessions', emoji: '🔑' },
             ])}
           </div>
 
