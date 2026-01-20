@@ -3542,6 +3542,57 @@ export type Database = {
           },
         ]
       }
+      biker_assignments: {
+        Row: {
+          assigned_date: string
+          biker_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          store_id: string | null
+          task_type: string | null
+          territory: string | null
+        }
+        Insert: {
+          assigned_date?: string
+          biker_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          store_id?: string | null
+          task_type?: string | null
+          territory?: string | null
+        }
+        Update: {
+          assigned_date?: string
+          biker_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          store_id?: string | null
+          task_type?: string | null
+          territory?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "biker_assignments_biker_id_fkey"
+            columns: ["biker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "biker_assignments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       biker_issues: {
         Row: {
           assigned_biker_id: string | null
@@ -10402,6 +10453,61 @@ export type Database = {
           },
           {
             foreignKeyName: "dispatch_triggers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_assignments: {
+        Row: {
+          assigned_date: string
+          created_at: string
+          created_by: string | null
+          driver_id: string
+          id: string
+          is_active: boolean
+          route_id: string | null
+          store_id: string | null
+        }
+        Insert: {
+          assigned_date?: string
+          created_at?: string
+          created_by?: string | null
+          driver_id: string
+          id?: string
+          is_active?: boolean
+          route_id?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          assigned_date?: string
+          created_at?: string
+          created_by?: string | null
+          driver_id?: string
+          id?: string
+          is_active?: boolean
+          route_id?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_assignments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_assignments_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_assignments_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "store_master"
@@ -19339,6 +19445,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      portal_audit_log: {
+        Row: {
+          action_type: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          portal_type: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          portal_type: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          portal_type?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       prediction_evaluations: {
         Row: {
@@ -30281,6 +30426,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_portal_role: {
+        Args: { _role: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -30289,6 +30438,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_assigned_to_route: {
+        Args: { _route_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_business_admin: {
         Args: { _business_id: string; _user_id: string }
         Returns: boolean
