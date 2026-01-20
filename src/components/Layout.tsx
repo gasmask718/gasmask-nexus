@@ -131,6 +131,16 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/owner/holdings', label: 'Holdings Overview', icon: Building },
     ],
   },
+  securityGovernance: {
+    id: 'security-governance',
+    name: '🛡️ Security & Governance',
+    items: [
+      { path: '/security/console', label: 'Security Console', icon: Shield },
+      { path: '/security/devices', label: 'Device Management', icon: Lock },
+      { path: '/security/sessions', label: 'Active Sessions', icon: Key },
+      { path: '/security/audit', label: 'Audit Logs', icon: FileText },
+    ],
+  },
   grabbaSkyscraper: [
     {
       id: 'grabba-command',
@@ -428,7 +438,7 @@ const Layout = ({ children }: LayoutProps) => {
   
   // All sections open by default
   const [openSections, setOpenSections] = useState<string[]>([
-    'penthouse',
+    'penthouse', 'security-governance',
     'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
@@ -538,6 +548,22 @@ const Layout = ({ children }: LayoutProps) => {
         DYNASTY_NAVIGATION.penthouse.id,
         DYNASTY_NAVIGATION.penthouse.name,
         DYNASTY_NAVIGATION.penthouse.items
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🛡️ SECURITY & GOVERNANCE — Constitutional Layer (Owner/Admin/CEO Only) */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {['owner', 'admin', 'ceo'].includes(role || '') && (
+        <div className="pt-2 border-t border-emerald-500/30">
+          <div className="px-3 py-1 text-[10px] font-semibold uppercase text-emerald-400/80 tracking-wider">
+            🛡️ Security & Governance
+          </div>
+          {renderSection(
+            DYNASTY_NAVIGATION.securityGovernance.id,
+            DYNASTY_NAVIGATION.securityGovernance.name,
+            DYNASTY_NAVIGATION.securityGovernance.items
+          )}
+        </div>
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
