@@ -19446,6 +19446,185 @@ export type Database = {
           },
         ]
       }
+      portal_action_deadletter: {
+        Row: {
+          action_id: string
+          action_type: string
+          client_timestamp: string
+          deadlettered_at: string | null
+          device_id: string | null
+          failure_code: string | null
+          failure_reason: string
+          id: string
+          last_error: string | null
+          payload: Json
+          payload_hash: string
+          portal_type: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          retry_count: number | null
+          sequence_number: number
+          signature: string | null
+          user_id: string
+        }
+        Insert: {
+          action_id: string
+          action_type: string
+          client_timestamp: string
+          deadlettered_at?: string | null
+          device_id?: string | null
+          failure_code?: string | null
+          failure_reason: string
+          id?: string
+          last_error?: string | null
+          payload: Json
+          payload_hash: string
+          portal_type: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          retry_count?: number | null
+          sequence_number: number
+          signature?: string | null
+          user_id: string
+        }
+        Update: {
+          action_id?: string
+          action_type?: string
+          client_timestamp?: string
+          deadlettered_at?: string | null
+          device_id?: string | null
+          failure_code?: string | null
+          failure_reason?: string
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          payload_hash?: string
+          portal_type?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          retry_count?: number | null
+          sequence_number?: number
+          signature?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      portal_action_queue: {
+        Row: {
+          action_id: string
+          action_type: string
+          assignment_id: string | null
+          client_timestamp: string
+          created_at: string | null
+          device_id: string | null
+          id: string
+          ingested_at: string | null
+          payload: Json
+          payload_hash: string
+          portal_type: string
+          processed_at: string | null
+          rejection_code: string | null
+          rejection_reason: string | null
+          sequence_number: number
+          shift_id: string | null
+          signature: string | null
+          signature_valid: boolean | null
+          signature_verified_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          action_id: string
+          action_type: string
+          assignment_id?: string | null
+          client_timestamp: string
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          ingested_at?: string | null
+          payload?: Json
+          payload_hash: string
+          portal_type: string
+          processed_at?: string | null
+          rejection_code?: string | null
+          rejection_reason?: string | null
+          sequence_number: number
+          shift_id?: string | null
+          signature?: string | null
+          signature_valid?: boolean | null
+          signature_verified_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          action_id?: string
+          action_type?: string
+          assignment_id?: string | null
+          client_timestamp?: string
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          ingested_at?: string | null
+          payload?: Json
+          payload_hash?: string
+          portal_type?: string
+          processed_at?: string | null
+          rejection_code?: string | null
+          rejection_reason?: string | null
+          sequence_number?: number
+          shift_id?: string | null
+          signature?: string | null
+          signature_valid?: boolean | null
+          signature_verified_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_action_queue_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "portal_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_api_allowlist: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          endpoint_name: string
+          id: string
+          is_active: boolean | null
+          portal_types: string[]
+          rate_limit_per_minute: number | null
+          requires_signature: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          endpoint_name: string
+          id?: string
+          is_active?: boolean | null
+          portal_types?: string[]
+          rate_limit_per_minute?: number | null
+          requires_signature?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          endpoint_name?: string
+          id?: string
+          is_active?: boolean | null
+          portal_types?: string[]
+          rate_limit_per_minute?: number | null
+          requires_signature?: boolean | null
+        }
+        Relationships: []
+      }
       portal_audit_log: {
         Row: {
           action_type: string
@@ -19485,6 +19664,38 @@ export type Database = {
         }
         Relationships: []
       }
+      portal_device_sequences: {
+        Row: {
+          device_id: string
+          id: string
+          last_action_id: string | null
+          last_sequence_number: number
+          updated_at: string | null
+        }
+        Insert: {
+          device_id: string
+          id?: string
+          last_action_id?: string | null
+          last_sequence_number?: number
+          updated_at?: string | null
+        }
+        Update: {
+          device_id?: string
+          id?: string
+          last_action_id?: string | null
+          last_sequence_number?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_device_sequences_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: true
+            referencedRelation: "portal_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       portal_devices: {
         Row: {
           app_version: string | null
@@ -19494,15 +19705,24 @@ export type Database = {
           device_name: string | null
           first_seen_at: string
           id: string
+          is_quarantined: boolean | null
           is_revoked: boolean
           is_trusted: boolean
+          key_created_at: string | null
+          key_rotated_at: string | null
           last_ip_address: unknown
           last_location: Json | null
           last_seen_at: string
+          last_signed_action_at: string | null
           os_version: string | null
           platform: string | null
           portal_type: string
+          public_key: string | null
+          public_key_algorithm: string | null
           push_token: string | null
+          quarantine_reason: string | null
+          quarantined_at: string | null
+          quarantined_by: string | null
           revoke_reason: string | null
           revoked_at: string | null
           revoked_by: string | null
@@ -19519,15 +19739,24 @@ export type Database = {
           device_name?: string | null
           first_seen_at?: string
           id?: string
+          is_quarantined?: boolean | null
           is_revoked?: boolean
           is_trusted?: boolean
+          key_created_at?: string | null
+          key_rotated_at?: string | null
           last_ip_address?: unknown
           last_location?: Json | null
           last_seen_at?: string
+          last_signed_action_at?: string | null
           os_version?: string | null
           platform?: string | null
           portal_type: string
+          public_key?: string | null
+          public_key_algorithm?: string | null
           push_token?: string | null
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
+          quarantined_by?: string | null
           revoke_reason?: string | null
           revoked_at?: string | null
           revoked_by?: string | null
@@ -19544,15 +19773,24 @@ export type Database = {
           device_name?: string | null
           first_seen_at?: string
           id?: string
+          is_quarantined?: boolean | null
           is_revoked?: boolean
           is_trusted?: boolean
+          key_created_at?: string | null
+          key_rotated_at?: string | null
           last_ip_address?: unknown
           last_location?: Json | null
           last_seen_at?: string
+          last_signed_action_at?: string | null
           os_version?: string | null
           platform?: string | null
           portal_type?: string
+          public_key?: string | null
+          public_key_algorithm?: string | null
           push_token?: string | null
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
+          quarantined_by?: string | null
           revoke_reason?: string | null
           revoked_at?: string | null
           revoked_by?: string | null
@@ -19562,6 +19800,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      portal_rate_limits: {
+        Row: {
+          device_id: string
+          endpoint_name: string
+          id: string
+          request_count: number | null
+          window_start: string
+        }
+        Insert: {
+          device_id: string
+          endpoint_name: string
+          id?: string
+          request_count?: number | null
+          window_start: string
+        }
+        Update: {
+          device_id?: string
+          endpoint_name?: string
+          id?: string
+          request_count?: number | null
+          window_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_rate_limits_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "portal_devices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       portal_request_log: {
         Row: {
@@ -30712,6 +30982,10 @@ export type Database = {
         Args: { p_brand_id: string; p_store_id: string }
         Returns: boolean
       }
+      check_portal_rate_limit: {
+        Args: { _device_id: string; _endpoint_name: string }
+        Returns: boolean
+      }
       expire_old_simulations: { Args: never; Returns: undefined }
       force_portal_logout: {
         Args: { _reason?: string; _target_user_id: string }
@@ -30743,6 +31017,7 @@ export type Database = {
           user_name: string
         }[]
       }
+      get_portal_queue_health: { Args: never; Returns: Json }
       get_store_full_address: { Args: { p_store_id: string }; Returns: string }
       get_user_businesses: {
         Args: { user_id: string }
@@ -30781,6 +31056,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      ingest_portal_actions: { Args: { _actions: Json }; Returns: Json }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_assigned_to_route: {
         Args: { _route_id: string; _user_id: string }
@@ -30853,6 +31129,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      quarantine_portal_device: {
+        Args: { _device_id: string; _reason: string }
+        Returns: boolean
+      }
       request_ai_approval: {
         Args: {
           p_action_description: string
@@ -30862,6 +31142,10 @@ export type Database = {
           p_severity?: string
         }
         Returns: string
+      }
+      require_device_key_rotation: {
+        Args: { _device_id: string }
+        Returns: boolean
       }
       restore_deleted: {
         Args: { _record_id: string; _table_name: string }
