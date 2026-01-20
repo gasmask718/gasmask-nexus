@@ -1,6 +1,7 @@
 /**
  * Hook for Intent Operations & Governance Console
  * Phase 4: Controlled Autonomy & Intent Resolution
+ * Phase 5 Integration: Shadow Mode observation
  * 
  * Schema-aligned with actual database structure
  */
@@ -10,6 +11,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Json } from '@/integrations/supabase/types';
+import {
+  recordHumanDecision,
+  getLatestRecommendationForIntent,
+} from '@/lib/phase5Engine';
 
 // Intent Review Queue item - aligned with intent_envelopes schema
 export interface IntentReviewItem {
@@ -245,7 +250,7 @@ export function useIntentOps() {
     };
   }, []);
 
-  // Approve intent mutation
+  // Approve intent mutation - with Phase 5 tracking
   const approveMutation = useMutation({
     mutationFn: async ({ intentId, notes }: { intentId: string; notes?: string }) => {
       const { error: intentError } = await supabase
@@ -254,6 +259,13 @@ export function useIntentOps() {
         .eq('intent_id', intentId);
 
       if (intentError) throw intentError;
+
+      // Phase 5: Record human decision for agreement tracking
+      const recommendation = await getLatestRecommendationForIntent(intentId);
+      if (recommendation) {
+        await recordHumanDecision(recommendation.id, intentId, 'approve', notes);
+      }
+
       return intentId;
     },
     onSuccess: () => {
@@ -265,7 +277,7 @@ export function useIntentOps() {
     },
   });
 
-  // Reject intent mutation
+  // Reject intent mutation - with Phase 5 tracking
   const rejectMutation = useMutation({
     mutationFn: async ({ intentId, reason }: { intentId: string; reason: string }) => {
       const { error: intentError } = await supabase
@@ -274,6 +286,13 @@ export function useIntentOps() {
         .eq('intent_id', intentId);
 
       if (intentError) throw intentError;
+
+      // Phase 5: Record human decision for agreement tracking
+      const recommendation = await getLatestRecommendationForIntent(intentId);
+      if (recommendation) {
+        await recordHumanDecision(recommendation.id, intentId, 'reject', reason);
+      }
+
       return intentId;
     },
     onSuccess: () => {
@@ -285,7 +304,7 @@ export function useIntentOps() {
     },
   });
 
-  // Amend intent mutation
+  // Amend intent mutation - with Phase 5 tracking
   const amendMutation = useMutation({
     mutationFn: async ({
       intentId,
@@ -305,6 +324,13 @@ export function useIntentOps() {
         .eq('intent_id', intentId);
 
       if (intentError) throw intentError;
+
+      // Phase 5: Record human decision for agreement tracking
+      const recommendation = await getLatestRecommendationForIntent(intentId);
+      if (recommendation) {
+        await recordHumanDecision(recommendation.id, intentId, 'amend', notes);
+      }
+
       return intentId;
     },
     onSuccess: () => {
