@@ -19485,6 +19485,342 @@ export type Database = {
         }
         Relationships: []
       }
+      portal_devices: {
+        Row: {
+          app_version: string | null
+          browser: string | null
+          created_at: string
+          device_fingerprint: string | null
+          device_name: string | null
+          first_seen_at: string
+          id: string
+          is_revoked: boolean
+          is_trusted: boolean
+          last_ip_address: unknown
+          last_location: Json | null
+          last_seen_at: string
+          os_version: string | null
+          platform: string | null
+          portal_type: string
+          push_token: string | null
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          trusted_at: string | null
+          trusted_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_version?: string | null
+          browser?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          device_name?: string | null
+          first_seen_at?: string
+          id?: string
+          is_revoked?: boolean
+          is_trusted?: boolean
+          last_ip_address?: unknown
+          last_location?: Json | null
+          last_seen_at?: string
+          os_version?: string | null
+          platform?: string | null
+          portal_type: string
+          push_token?: string | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          trusted_at?: string | null
+          trusted_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_version?: string | null
+          browser?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          device_name?: string | null
+          first_seen_at?: string
+          id?: string
+          is_revoked?: boolean
+          is_trusted?: boolean
+          last_ip_address?: unknown
+          last_location?: Json | null
+          last_seen_at?: string
+          os_version?: string | null
+          platform?: string | null
+          portal_type?: string
+          push_token?: string | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          trusted_at?: string | null
+          trusted_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      portal_request_log: {
+        Row: {
+          action_type: string
+          assignment_id: string | null
+          client_timestamp: string | null
+          created_at: string
+          device_id: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: unknown
+          location: Json | null
+          payload_hash: string | null
+          portal_type: string
+          rejection_reason: string | null
+          request_id: string
+          server_timestamp: string
+          session_id: string | null
+          shift_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          assignment_id?: string | null
+          client_timestamp?: string | null
+          created_at?: string
+          device_id?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          location?: Json | null
+          payload_hash?: string | null
+          portal_type: string
+          rejection_reason?: string | null
+          request_id: string
+          server_timestamp?: string
+          session_id?: string | null
+          shift_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          assignment_id?: string | null
+          client_timestamp?: string | null
+          created_at?: string
+          device_id?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          location?: Json | null
+          payload_hash?: string | null
+          portal_type?: string
+          rejection_reason?: string | null
+          request_id?: string
+          server_timestamp?: string
+          session_id?: string | null
+          shift_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_request_log_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "portal_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_request_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "portal_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_security_events: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          created_at: string
+          device_id: string | null
+          event_message: string
+          event_type: string
+          id: string
+          ip_address: unknown
+          location: Json | null
+          metadata: Json | null
+          portal_type: string | null
+          session_id: string | null
+          severity: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          device_id?: string | null
+          event_message: string
+          event_type: string
+          id?: string
+          ip_address?: unknown
+          location?: Json | null
+          metadata?: Json | null
+          portal_type?: string | null
+          session_id?: string | null
+          severity?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          device_id?: string | null
+          event_message?: string
+          event_type?: string
+          id?: string
+          ip_address?: unknown
+          location?: Json | null
+          metadata?: Json | null
+          portal_type?: string | null
+          session_id?: string | null
+          severity?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_security_events_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "portal_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_security_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "portal_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_sessions: {
+        Row: {
+          access_expires_at: string
+          access_token_hash: string | null
+          created_at: string
+          device_id: string | null
+          id: string
+          ip_address: unknown
+          is_active: boolean
+          issued_at: string
+          last_activity_at: string | null
+          portal_type: string
+          refresh_expires_at: string
+          refresh_token_hash: string | null
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          access_expires_at?: string
+          access_token_hash?: string | null
+          created_at?: string
+          device_id?: string | null
+          id?: string
+          ip_address?: unknown
+          is_active?: boolean
+          issued_at?: string
+          last_activity_at?: string | null
+          portal_type: string
+          refresh_expires_at?: string
+          refresh_token_hash?: string | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          access_expires_at?: string
+          access_token_hash?: string | null
+          created_at?: string
+          device_id?: string | null
+          id?: string
+          ip_address?: unknown
+          is_active?: boolean
+          issued_at?: string
+          last_activity_at?: string | null
+          portal_type?: string
+          refresh_expires_at?: string
+          refresh_token_hash?: string | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      portal_user_security_state: {
+        Row: {
+          created_at: string
+          force_logout_at: string | null
+          id: string
+          max_active_devices: number
+          mfa_reset_at: string | null
+          password_changed_at: string | null
+          portal_frozen_at: string | null
+          portal_frozen_by: string | null
+          portal_frozen_reason: string | null
+          require_step_up_auth: boolean
+          role_changed_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          force_logout_at?: string | null
+          id?: string
+          max_active_devices?: number
+          mfa_reset_at?: string | null
+          password_changed_at?: string | null
+          portal_frozen_at?: string | null
+          portal_frozen_by?: string | null
+          portal_frozen_reason?: string | null
+          require_step_up_auth?: boolean
+          role_changed_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          force_logout_at?: string | null
+          id?: string
+          max_active_devices?: number
+          mfa_reset_at?: string | null
+          password_changed_at?: string | null
+          portal_frozen_at?: string | null
+          portal_frozen_by?: string | null
+          portal_frozen_reason?: string | null
+          require_step_up_auth?: boolean
+          role_changed_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       prediction_evaluations: {
         Row: {
           ai_predicted_winner: string
@@ -30377,6 +30713,14 @@ export type Database = {
         Returns: boolean
       }
       expire_old_simulations: { Args: never; Returns: undefined }
+      force_portal_logout: {
+        Args: { _reason?: string; _target_user_id: string }
+        Returns: boolean
+      }
+      freeze_portal_access: {
+        Args: { _reason: string; _target_user_id: string }
+        Returns: boolean
+      }
       get_allowed_brands_for_store: {
         Args: { p_store_id: string }
         Returns: {
@@ -30461,6 +30805,10 @@ export type Database = {
         Returns: boolean
       }
       is_owner: { Args: { _user_id: string }; Returns: boolean }
+      is_portal_session_valid: {
+        Args: { _session_id: string }
+        Returns: boolean
+      }
       is_simulation_mode: { Args: never; Returns: boolean }
       is_va: { Args: { _user_id: string }; Returns: boolean }
       log_audit_event: {
@@ -30469,6 +30817,18 @@ export type Database = {
           p_entity_id?: string
           p_entity_type?: string
           p_metadata?: Json
+        }
+        Returns: string
+      }
+      log_portal_security_event: {
+        Args: {
+          _device_id: string
+          _event_type: string
+          _message: string
+          _metadata?: Json
+          _portal_type: string
+          _severity: string
+          _user_id: string
         }
         Returns: string
       }
@@ -30511,6 +30871,10 @@ export type Database = {
         Args: { p_id: string; p_table: string }
         Returns: undefined
       }
+      revoke_portal_device: {
+        Args: { _device_id: string; _reason?: string }
+        Returns: boolean
+      }
       soft_delete: {
         Args: { _record_id: string; _table_name: string }
         Returns: undefined
@@ -30525,6 +30889,19 @@ export type Database = {
         Returns: undefined
       }
       update_relationship_status: { Args: never; Returns: undefined }
+      validate_portal_request: {
+        Args: {
+          _action_type: string
+          _assignment_id?: string
+          _client_timestamp?: string
+          _payload_hash?: string
+          _portal_type: string
+          _request_id: string
+          _shift_id?: string
+          _user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       acquisition_status:
