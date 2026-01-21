@@ -290,10 +290,14 @@ export const aiTaskFields: FieldConfig[] = [
 ];
 
 export const productionFields: FieldConfig[] = [
-  { name: 'name', label: 'Office Name', type: 'text', required: true, placeholder: 'Enter office name' },
-  { name: 'location', label: 'Location', type: 'text', placeholder: 'Address or Location' },
-  { name: 'active', label: 'Status', type: 'select', defaultValue: true, options: [
-    { value: true, label: 'Active' },
-    { value: false, label: 'Inactive' },
+  { name: 'name', label: 'Full Name', type: 'text', required: true, placeholder: 'Enter full name' },
+  { name: 'phone', label: 'Phone Number', type: 'text', required: true, placeholder: '+1 (555) 123-4567' },
+  { name: 'email', label: 'Email', type: 'text', placeholder: 'email@example.com' },
+  { name: 'address_city', label: 'City', type: 'text', placeholder: 'City' },
+  { name: 'address_state', label: 'State', type: 'text', placeholder: 'State' },
+  { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Additional notes...' },
+  { name: 'status', label: 'Status', type: 'select', defaultValue: 'active', options: [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
   ]},
 ];
