@@ -74,6 +74,13 @@ const uploadTypes = [
     icon: Layers,
     color: "bg-orange-500",
   },
+  {
+    id: "invoices",
+    name: "Invoices",
+    description: "Import invoices matched to existing stores",
+    icon: FileText,
+    color: "bg-amber-500",
+  },
 ];
 
 export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUpload = true }: BulkUploadModalProps) {

@@ -406,6 +406,140 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         source: 'derived'
       }
     ]
+  },
+
+  invoices: {
+    tableName: 'invoices',
+    displayName: 'Invoices',
+    description: 'Import invoices matched to existing stores by client name',
+    naturalKey: ['client_name', 'title'],
+    relatedTables: ['store_master'],
+    fields: [
+      {
+        field: 'client_name',
+        displayName: 'Client Name',
+        type: 'string',
+        required: true,
+        source: 'excel',
+        notes: 'Must match an existing store name in the system',
+        validation: (v) => v?.trim()?.length > 0 
+          ? { valid: true } 
+          : { valid: false, error: 'Client name is required' }
+      },
+      {
+        field: 'title',
+        displayName: 'Title',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Invoice title or description'
+      },
+      {
+        field: 'amount',
+        displayName: 'Amount',
+        type: 'string',
+        required: true,
+        source: 'excel',
+        notes: 'Total amount of the invoice',
+        validation: (v) => {
+          if (!v) return { valid: false, error: 'Amount is required' };
+          const num = parseFloat(String(v).replace(/[^0-9.-]/g, ''));
+          return !isNaN(num) ? { valid: true } : { valid: false, error: 'Amount must be a number' };
+        }
+      },
+      {
+        field: 'payment_status',
+        displayName: 'Payment Status',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'paid, unpaid, partial, refunded'
+      },
+      {
+        field: 'payment_method',
+        displayName: 'Payment Method',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Cash, Card, Zelle, etc.'
+      },
+      {
+        field: 'due_date',
+        displayName: 'Due Date',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Date format. Uses current date if empty.'
+      },
+      {
+        field: 'created_at',
+        displayName: 'Created At',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Invoice creation date'
+      },
+      {
+        field: 'notes',
+        displayName: 'Notes',
+        type: 'string',
+        required: false,
+        source: 'excel'
+      },
+      {
+        field: 'client_phone',
+        displayName: 'Client Phone',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Used as fallback for store matching'
+      },
+      {
+        field: 'client_address',
+        displayName: 'Client Address',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Used as fallback for store matching'
+      },
+      {
+        field: 'client_tags',
+        displayName: 'Client Tags',
+        type: 'string',
+        required: false,
+        source: 'excel'
+      },
+      {
+        field: 'reference',
+        displayName: 'Reference',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'External reference number'
+      },
+      {
+        field: 'currency',
+        displayName: 'Currency',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'USD by default'
+      },
+      {
+        field: 'issued_by',
+        displayName: 'Issued By',
+        type: 'string',
+        required: false,
+        source: 'excel'
+      },
+      {
+        field: 'brand',
+        displayName: 'Brand',
+        type: 'string',
+        required: false,
+        source: 'excel'
+      }
+    ]
   }
 };
 

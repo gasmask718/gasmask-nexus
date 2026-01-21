@@ -257,6 +257,8 @@ export function useBulkUpload() {
         await importStoreContacts(validRows, result);
       } else if (state.uploadType === 'store_notes') {
         await importStoreNotes(validRows, result);
+      } else if (state.uploadType === 'invoices') {
+        await importInvoices(validRows, result);
       }
 
       // Skipped = error rows from validation
@@ -292,6 +294,8 @@ export function useBulkUpload() {
       queryClient.invalidateQueries({ queryKey: ['stores'] });
       queryClient.invalidateQueries({ queryKey: ['store-contacts'] });
       queryClient.invalidateQueries({ queryKey: ['store-notes'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['stores-with-contacts'] });
 
       toast.success(`Import complete: ${result.success} rows imported`);
     } catch (error: any) {
@@ -622,5 +626,161 @@ async function importStoreNotes(rows: ValidatedRow[], result: ImportResult) {
         .update({ open_date: oldestDate.split('T')[0] })
         .eq('id', storeId);
     }
+  }
+}
+
+/**
+ * Import invoices matched to existing stores by client name
+ * Skips rows where no matching store is found
+ */
+async function importInvoices(rows: ValidatedRow[], result: ImportResult) {
+  // First, fetch all stores from store_master for matching
+  const { data: allStores, error: storesError } = await supabase
+    .from('store_master')
+    .select('id, store_name, address, phone');
+
+  if (storesError || !allStores) {
+    console.error('Failed to fetch stores for matching:', storesError);
+    result.failed = rows.length;
+    return;
+  }
+
+  // Create lookup maps for flexible matching
+  const storeByName: Record<string, string> = {};
+  const storeByPhone: Record<string, string> = {};
+  const storeByAddress: Record<string, string> = {};
+
+  allStores.forEach(store => {
+    // Normalize store name for matching (lowercase, trim)
+    if (store.store_name) {
+      const normalizedName = store.store_name.toLowerCase().trim();
+      storeByName[normalizedName] = store.id;
+    }
+    if (store.phone) {
+      // Normalize phone: remove non-digits
+      const normalizedPhone = String(store.phone).replace(/\D/g, '');
+      if (normalizedPhone.length >= 7) {
+        storeByPhone[normalizedPhone] = store.id;
+      }
+    }
+    if (store.address) {
+      const normalizedAddress = store.address.toLowerCase().trim();
+      storeByAddress[normalizedAddress] = store.id;
+    }
+  });
+
+  const BATCH_SIZE = 20;
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+    await Promise.all(batch.map(async (row) => {
+      try {
+        const clientName = row.data.client_name?.trim() || '';
+        const clientPhone = row.data.client_phone ? String(row.data.client_phone).replace(/\D/g, '') : '';
+        const clientAddress = row.data.client_address?.toLowerCase().trim() || '';
+
+        // Try to find matching store
+        let storeId: string | null = null;
+
+        // 1. Try exact name match first
+        const normalizedClientName = clientName.toLowerCase();
+        if (storeByName[normalizedClientName]) {
+          storeId = storeByName[normalizedClientName];
+        }
+        
+        // 2. Try partial name match (store name contained in client name or vice versa)
+        if (!storeId) {
+          for (const [storeName, id] of Object.entries(storeByName)) {
+            if (normalizedClientName.includes(storeName) || storeName.includes(normalizedClientName)) {
+              storeId = id;
+              break;
+            }
+          }
+        }
+
+        // 3. Try phone match
+        if (!storeId && clientPhone.length >= 7 && storeByPhone[clientPhone]) {
+          storeId = storeByPhone[clientPhone];
+        }
+
+        // 4. Try address match
+        if (!storeId && clientAddress && storeByAddress[clientAddress]) {
+          storeId = storeByAddress[clientAddress];
+        }
+
+        // If no match found, skip this invoice
+        if (!storeId) {
+          result.skipped++;
+          result.errors.push({
+            row: row.rowNumber,
+            column: 'client_name',
+            columnDisplayName: 'Client Name',
+            value: clientName,
+            error: 'No matching store found',
+            severity: 'warning'
+          });
+          return;
+        }
+
+        // Parse amount
+        const amountStr = String(row.data.amount || '0').replace(/[^0-9.-]/g, '');
+        const amount = parseFloat(amountStr) || 0;
+
+        // Parse due date
+        let dueDate = new Date().toISOString().split('T')[0];
+        if (row.data.due_date) {
+          try {
+            const parsed = new Date(row.data.due_date);
+            if (!isNaN(parsed.getTime())) {
+              dueDate = parsed.toISOString().split('T')[0];
+            }
+          } catch (e) {
+            // Use default
+          }
+        }
+
+        // Parse payment status
+        let paymentStatus = 'unpaid';
+        const statusRaw = (row.data.payment_status || '').toLowerCase().trim();
+        if (['paid', 'unpaid', 'partial', 'refunded'].includes(statusRaw)) {
+          paymentStatus = statusRaw;
+        }
+
+        // Generate invoice number
+        const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+        // Insert the invoice
+        const { error: insertError } = await supabase
+          .from('invoices')
+          .insert({
+            store_id: storeId,
+            invoice_number: invoiceNumber,
+            total_amount: amount,
+            total: amount,
+            amount_paid: paymentStatus === 'paid' ? amount : 0,
+            due_date: dueDate,
+            payment_status: paymentStatus,
+            payment_method: row.data.payment_method || null,
+            notes: row.data.notes || row.data.title || null,
+            brand: row.data.brand || row.data.issued_by || null,
+            created_by: row.data.issued_by || null
+          });
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        result.success++;
+      } catch (error: any) {
+        result.failed++;
+        result.errors.push({
+          row: row.rowNumber,
+          column: '',
+          columnDisplayName: '',
+          value: null,
+          error: error.message,
+          severity: 'error'
+        });
+      }
+    }));
   }
 }
