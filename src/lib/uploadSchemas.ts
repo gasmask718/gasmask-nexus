@@ -253,10 +253,9 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         type: 'string',
         required: true,
         source: 'excel',
-        notes: 'Will be preserved exactly - no HTML allowed',
+        notes: 'Will be preserved exactly - HTML content is allowed and rendered',
         validation: (v) => {
           if (!v?.trim()) return { valid: false, error: 'Note text cannot be empty' };
-          if (/<[^>]*>/.test(v)) return { valid: false, error: 'HTML tags not allowed in notes' };
           return { valid: true };
         }
       },
