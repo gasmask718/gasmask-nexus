@@ -875,12 +875,8 @@ async function importInvoices(rows: ValidatedRow[], result: ImportResult) {
           }
         }
 
-        // Parse payment status
-        let paymentStatus = 'unpaid';
-        const statusRaw = (row.data.payment_status || '').toLowerCase().trim();
-        if (['paid', 'unpaid', 'partial', 'refunded'].includes(statusRaw)) {
-          paymentStatus = statusRaw;
-        }
+        // Parse payment status - accept any string value
+        const paymentStatus = (row.data.payment_status || 'unpaid').toString().toLowerCase().trim() || 'unpaid';
 
         // Generate invoice number
         const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
