@@ -187,7 +187,10 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
                   className="p-4 rounded-lg bg-muted/30 border border-border/30 space-y-3"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-base whitespace-pre-wrap flex-1">{note.note_text}</p>
+                    <div 
+                      className="text-base flex-1 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5" 
+                      dangerouslySetInnerHTML={{ __html: note.note_text }} 
+                    />
                     <div className="flex gap-1 flex-shrink-0">
                       <Button
                         variant="ghost"
