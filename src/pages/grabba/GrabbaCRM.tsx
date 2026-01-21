@@ -1104,7 +1104,12 @@ export default function GrabbaCRM() {
         business_id: defaultBusinessId,
       });
     } else if (activeTab === "production") {
-      await productionCrud.create(data);
+      // Convert 'active' string to boolean for production_offices table
+      const productionData = {
+        ...data,
+        active: data.active === 'true' || data.active === true,
+      };
+      await productionCrud.create(productionData);
     }
   };
 
@@ -1123,7 +1128,12 @@ export default function GrabbaCRM() {
     } else if (activeTab === "bikers") {
       await bikerCrud.update({ id: selectedEntity.id, ...data });
     } else if (activeTab === "production") {
-      await productionCrud.update({ id: selectedEntity.id, ...data });
+      // Convert 'active' string to boolean for production_offices table
+      const productionData = {
+        ...data,
+        active: data.active === 'true' || data.active === true,
+      };
+      await productionCrud.update({ id: selectedEntity.id, ...productionData });
     }
   };
 
