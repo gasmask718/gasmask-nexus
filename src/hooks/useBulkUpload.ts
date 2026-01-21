@@ -548,53 +548,181 @@ async function importStoreContacts(rows: ValidatedRow[], result: ImportResult) {
 }
 
 async function importStoreNotes(rows: ValidatedRow[], result: ImportResult) {
-  // Track stores that got notes for member_since auto-derivation
-  const storeNoteDates: Record<string, string[]> = {};
-  const BATCH_SIZE = 20;
 
+  // Fetch all stores from store_master for flexible matching (same as invoices)
+  const { data: allStores, error: storesError } = await supabase
+    .from('store_master')
+    .select('id, store_name, address, phone');
+
+  if (storesError || !allStores) {
+    console.error('[Notes Import] Failed to fetch stores for matching:', storesError);
+    result.failed = rows.length;
+    return;
+  }
+
+  // Create lookup maps for flexible matching
+  const storeByExactName: Record<string, string> = {};
+  const storeByNormalizedName: Record<string, string> = {};
+  const storeByPhone: Record<string, string> = {};
+  const storeByAddress: Record<string, string> = {};
+  const storeByAddressInName: Record<string, string> = {}; // For "(address) name" patterns
+
+  allStores.forEach(store => {
+    if (store.store_name) {
+      // Exact match (case-insensitive, trimmed)
+      const exactName = store.store_name.toLowerCase().trim();
+      storeByExactName[exactName] = store.id;
+      
+      // Normalized match (collapsed spaces, normalized chars)
+      const normalizedName = normalizeForMatch(store.store_name);
+      storeByNormalizedName[normalizedName] = store.id;
+      
+      // Extract address from name pattern like "(123 Main St) Store Name"
+      const addressInName = extractAddressFromName(store.store_name);
+      if (addressInName) {
+        storeByAddressInName[addressInName] = store.id;
+      }
+    }
+    if (store.phone) {
+      const normalizedPhone = String(store.phone).replace(/\D/g, '');
+      if (normalizedPhone.length >= 7) {
+        storeByPhone[normalizedPhone] = store.id;
+      }
+    }
+    if (store.address) {
+      const normalizedAddress = normalizeForMatch(store.address);
+      storeByAddress[normalizedAddress] = store.id;
+    }
+  });
+
+  console.log('[Notes Import] Loaded stores for matching:', {
+    exactNames: Object.keys(storeByExactName).length,
+    addressPatterns: Object.keys(storeByAddressInName).length
+  });
+
+  const BATCH_SIZE = 20;
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = rows.slice(i, i + BATCH_SIZE);
     await Promise.all(batch.map(async (row) => {
       try {
-        // Find store by name
-        const { data: store } = await supabase
-          .from('stores')
-          .select('id, open_date')
-          .eq('name', row.data.store_name)
-          .maybeSingle();
+        const storeName = row.data.store_name?.trim() || '';
+        
+        // Try to find matching store with priority order
+        let storeId: string | null = null;
+        let matchMethod = '';
 
-        if (!store) {
-          result.failed++;
+        // Normalize the store name for matching
+        const exactStoreName = storeName.toLowerCase().trim();
+        const normalizedStoreName = normalizeForMatch(storeName);
+        const addressFromStoreName = extractAddressFromName(storeName);
+
+        // 1. Try exact name match first (most reliable)
+        if (storeByExactName[exactStoreName]) {
+          storeId = storeByExactName[exactStoreName];
+          matchMethod = 'exact_name';
+        }
+        
+        // 2. Try normalized name match (handles whitespace/char differences)
+        if (!storeId && storeByNormalizedName[normalizedStoreName]) {
+          storeId = storeByNormalizedName[normalizedStoreName];
+          matchMethod = 'normalized_name';
+        }
+        
+        // 3. Try matching address extracted from store name to store's address-in-name
+        if (!storeId && addressFromStoreName && storeByAddressInName[addressFromStoreName]) {
+          storeId = storeByAddressInName[addressFromStoreName];
+          matchMethod = 'address_in_name';
+        }
+        
+        // 4. Try partial name match (store name contained in input or vice versa)
+        if (!storeId) {
+          for (const [name, id] of Object.entries(storeByNormalizedName)) {
+            const minLen = Math.min(normalizedStoreName.length, name.length);
+            if (minLen >= 5) {
+              if (normalizedStoreName.includes(name) || name.includes(normalizedStoreName)) {
+                storeId = id;
+                matchMethod = 'partial_name';
+                break;
+              }
+            }
+          }
+        }
+
+        // If no match found, skip this note
+        if (!storeId) {
+          console.log('[Notes Import] No match found for:', { 
+            storeName, 
+            exactStoreName, 
+            normalizedStoreName,
+            addressFromStoreName 
+          });
+          result.skipped++;
           result.errors.push({
             row: row.rowNumber,
             column: 'store_name',
             columnDisplayName: 'Store Name',
-            value: row.data.store_name,
-            error: 'Store not found',
-            severity: 'error'
+            value: storeName,
+            error: 'No matching store found',
+            severity: 'warning'
           });
           return;
         }
+        
+        console.log('[Notes Import] Matched:', { storeName, storeId, matchMethod });
 
-        const noteDate = row.data.note_date 
-          ? new Date(row.data.note_date).toISOString()
-          : new Date().toISOString();
+        // Parse note date (handles Excel serial numbers and date strings)
+        let noteDate = new Date().toISOString();
+        if (row.data.note_date) {
+          try {
+            const dateValue = row.data.note_date;
+            let parsed: Date | null = null;
+            
+            // Check if it's an Excel serial date number (e.g., 46032.42847222222)
+            const numValue = Number(dateValue);
+            if (!isNaN(numValue) && numValue > 25000 && numValue < 60000) {
+              // Excel serial date: days since Dec 30, 1899
+              const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+              const days = Math.floor(numValue);
+              const timeFraction = numValue - days;
+              parsed = new Date(excelEpoch.getTime() + days * 24 * 60 * 60 * 1000 + timeFraction * 24 * 60 * 60 * 1000);
+            } else {
+              const dateStr = String(dateValue).trim();
+              
+              // Try parsing m/d/yyyy h:mm or m/d/yyyy hh:mm format
+              const customMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+              if (customMatch) {
+                const [, month, day, year, hours, minutes, seconds = '0'] = customMatch;
+                parsed = new Date(
+                  parseInt(year),
+                  parseInt(month) - 1,
+                  parseInt(day),
+                  parseInt(hours),
+                  parseInt(minutes),
+                  parseInt(seconds)
+                );
+              } else {
+                // Fallback to standard Date parsing
+                parsed = new Date(dateStr);
+              }
+            }
+            
+            if (parsed && !isNaN(parsed.getTime())) {
+              noteDate = parsed.toISOString();
+            }
+          } catch (e) {
+            console.warn('[Notes Import] Failed to parse note_date:', row.data.note_date);
+          }
+        }
 
-        // Insert note with default if empty
+        // Keep note_text as-is (including HTML content)
         const noteText = row.data.note_text?.trim() 
           || 'Contact customer for partnership details.';
 
         await supabase.from('store_notes').insert({
-          store_id: store.id,
+          store_id: storeId,
           note_text: noteText,
           created_at: noteDate
         });
-
-        // Track note dates for member_since derivation
-        if (!storeNoteDates[store.id]) {
-          storeNoteDates[store.id] = [];
-        }
-        storeNoteDates[store.id].push(noteDate);
 
         result.success++;
       } catch (error: any) {
@@ -610,23 +738,8 @@ async function importStoreNotes(rows: ValidatedRow[], result: ImportResult) {
       }
     }));
   }
-
-  // Auto-derive member_since from oldest note for stores without one
-  for (const [storeId, dates] of Object.entries(storeNoteDates)) {
-    const { data: store } = await supabase
-      .from('stores')
-      .select('open_date')
-      .eq('id', storeId)
-      .single();
-
-    if (!store?.open_date && dates.length > 0) {
-      const oldestDate = dates.sort()[0];
-      await supabase
-        .from('stores')
-        .update({ open_date: oldestDate.split('T')[0] })
-        .eq('id', storeId);
-    }
-  }
+  // Note: member_since auto-derivation removed due to type sync issues
+  // The notes are already imported with correct created_at timestamps
 }
 
 /**
