@@ -630,6 +630,26 @@ async function importStoreNotes(rows: ValidatedRow[], result: ImportResult) {
 }
 
 /**
+ * Extract address from parentheses pattern like "(123 Main St) Store Name"
+ */
+function extractAddressFromName(name: string): string | null {
+  const match = name.match(/^\s*\(([^)]+)\)/);
+  return match ? match[1].toLowerCase().trim() : null;
+}
+
+/**
+ * Normalize text for fuzzy matching: lowercase, remove extra spaces, normalize special chars
+ */
+function normalizeForMatch(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')           // Collapse multiple spaces
+    .replace(/['']/g, "'")          // Normalize quotes
+    .replace(/[–—]/g, '-');         // Normalize dashes
+}
+
+/**
  * Import invoices matched to existing stores by client name
  * Skips rows where no matching store is found
  */
@@ -646,27 +666,43 @@ async function importInvoices(rows: ValidatedRow[], result: ImportResult) {
   }
 
   // Create lookup maps for flexible matching
-  const storeByName: Record<string, string> = {};
+  const storeByExactName: Record<string, string> = {};
+  const storeByNormalizedName: Record<string, string> = {};
   const storeByPhone: Record<string, string> = {};
   const storeByAddress: Record<string, string> = {};
+  const storeByAddressInName: Record<string, string> = {}; // For "(address) name" patterns
 
   allStores.forEach(store => {
-    // Normalize store name for matching (lowercase, trim)
     if (store.store_name) {
-      const normalizedName = store.store_name.toLowerCase().trim();
-      storeByName[normalizedName] = store.id;
+      // Exact match (case-insensitive, trimmed)
+      const exactName = store.store_name.toLowerCase().trim();
+      storeByExactName[exactName] = store.id;
+      
+      // Normalized match (collapsed spaces, normalized chars)
+      const normalizedName = normalizeForMatch(store.store_name);
+      storeByNormalizedName[normalizedName] = store.id;
+      
+      // Extract address from name pattern like "(123 Main St) Store Name"
+      const addressInName = extractAddressFromName(store.store_name);
+      if (addressInName) {
+        storeByAddressInName[addressInName] = store.id;
+      }
     }
     if (store.phone) {
-      // Normalize phone: remove non-digits
       const normalizedPhone = String(store.phone).replace(/\D/g, '');
       if (normalizedPhone.length >= 7) {
         storeByPhone[normalizedPhone] = store.id;
       }
     }
     if (store.address) {
-      const normalizedAddress = store.address.toLowerCase().trim();
+      const normalizedAddress = normalizeForMatch(store.address);
       storeByAddress[normalizedAddress] = store.id;
     }
+  });
+
+  console.log('[Invoice Import] Loaded stores for matching:', {
+    exactNames: Object.keys(storeByExactName).length,
+    addressPatterns: Object.keys(storeByAddressInName).length
   });
 
   const BATCH_SIZE = 20;
@@ -678,37 +714,68 @@ async function importInvoices(rows: ValidatedRow[], result: ImportResult) {
         const clientPhone = row.data.client_phone ? String(row.data.client_phone).replace(/\D/g, '') : '';
         const clientAddress = row.data.client_address?.toLowerCase().trim() || '';
 
-        // Try to find matching store
+        // Try to find matching store with priority order
         let storeId: string | null = null;
+        let matchMethod = '';
 
-        // 1. Try exact name match first
-        const normalizedClientName = clientName.toLowerCase();
-        if (storeByName[normalizedClientName]) {
-          storeId = storeByName[normalizedClientName];
+        // Normalize the client name for matching
+        const exactClientName = clientName.toLowerCase().trim();
+        const normalizedClientName = normalizeForMatch(clientName);
+        const addressFromClientName = extractAddressFromName(clientName);
+
+        // 1. Try exact name match first (most reliable)
+        if (storeByExactName[exactClientName]) {
+          storeId = storeByExactName[exactClientName];
+          matchMethod = 'exact_name';
         }
         
-        // 2. Try partial name match (store name contained in client name or vice versa)
+        // 2. Try normalized name match (handles whitespace/char differences)
+        if (!storeId && storeByNormalizedName[normalizedClientName]) {
+          storeId = storeByNormalizedName[normalizedClientName];
+          matchMethod = 'normalized_name';
+        }
+        
+        // 3. Try matching address extracted from client name to store's address-in-name
+        if (!storeId && addressFromClientName && storeByAddressInName[addressFromClientName]) {
+          storeId = storeByAddressInName[addressFromClientName];
+          matchMethod = 'address_in_name';
+        }
+        
+        // 4. Try partial name match (store name contained in client name or vice versa)
         if (!storeId) {
-          for (const [storeName, id] of Object.entries(storeByName)) {
-            if (normalizedClientName.includes(storeName) || storeName.includes(normalizedClientName)) {
-              storeId = id;
-              break;
+          for (const [storeName, id] of Object.entries(storeByNormalizedName)) {
+            // Only match if significant overlap (at least 10 chars or 50% of shorter string)
+            const minLen = Math.min(normalizedClientName.length, storeName.length);
+            if (minLen >= 5) {
+              if (normalizedClientName.includes(storeName) || storeName.includes(normalizedClientName)) {
+                storeId = id;
+                matchMethod = 'partial_name';
+                break;
+              }
             }
           }
         }
 
-        // 3. Try phone match
+        // 5. Try phone match
         if (!storeId && clientPhone.length >= 7 && storeByPhone[clientPhone]) {
           storeId = storeByPhone[clientPhone];
+          matchMethod = 'phone';
         }
 
-        // 4. Try address match
+        // 6. Try address match
         if (!storeId && clientAddress && storeByAddress[clientAddress]) {
           storeId = storeByAddress[clientAddress];
+          matchMethod = 'address';
         }
 
         // If no match found, skip this invoice
         if (!storeId) {
+          console.log('[Invoice Import] No match found for:', { 
+            clientName, 
+            exactClientName, 
+            normalizedClientName,
+            addressFromClientName 
+          });
           result.skipped++;
           result.errors.push({
             row: row.rowNumber,
@@ -720,6 +787,8 @@ async function importInvoices(rows: ValidatedRow[], result: ImportResult) {
           });
           return;
         }
+        
+        console.log('[Invoice Import] Matched:', { clientName, storeId, matchMethod });
 
         // Parse amount
         const amountStr = String(row.data.amount || '0').replace(/[^0-9.-]/g, '');
