@@ -807,6 +807,19 @@ async function importInvoices(rows: ValidatedRow[], result: ImportResult) {
           }
         }
 
+        // Parse created_at from uploaded file
+        let createdAt: string | undefined;
+        if (row.data.created_at) {
+          try {
+            const parsed = new Date(row.data.created_at);
+            if (!isNaN(parsed.getTime())) {
+              createdAt = parsed.toISOString();
+            }
+          } catch (e) {
+            // Use database default
+          }
+        }
+
         // Parse payment status
         let paymentStatus = 'unpaid';
         const statusRaw = (row.data.payment_status || '').toLowerCase().trim();
@@ -831,7 +844,8 @@ async function importInvoices(rows: ValidatedRow[], result: ImportResult) {
             payment_method: row.data.payment_method || null,
             notes: row.data.notes || row.data.title || null,
             brand: row.data.brand || row.data.issued_by || null,
-            created_by: row.data.issued_by || null
+            created_by: row.data.issued_by || null,
+            ...(createdAt && { created_at: createdAt })
           });
 
         if (insertError) {
