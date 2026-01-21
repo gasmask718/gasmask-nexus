@@ -794,16 +794,38 @@ async function importInvoices(rows: ValidatedRow[], result: ImportResult) {
         const amountStr = String(row.data.amount || '0').replace(/[^0-9.-]/g, '');
         const amount = parseFloat(amountStr) || 0;
 
-        // Parse due date
+        // Parse due date (handles Excel serial numbers and date strings)
         let dueDate = new Date().toISOString().split('T')[0];
         if (row.data.due_date) {
           try {
-            const parsed = new Date(row.data.due_date);
-            if (!isNaN(parsed.getTime())) {
+            const dateValue = row.data.due_date;
+            let parsed: Date | null = null;
+            
+            // Check if it's an Excel serial date number
+            const numValue = Number(dateValue);
+            if (!isNaN(numValue) && numValue > 25000 && numValue < 60000) {
+              const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+              const days = Math.floor(numValue);
+              const timeFraction = numValue - days;
+              parsed = new Date(excelEpoch.getTime() + days * 24 * 60 * 60 * 1000 + timeFraction * 24 * 60 * 60 * 1000);
+            } else {
+              const dateStr = String(dateValue).trim();
+              
+              // Try parsing m/d/yyyy h:mm format
+              const customMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+              if (customMatch) {
+                const [, month, day, year, hours, minutes, seconds = '0'] = customMatch;
+                parsed = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes), parseInt(seconds));
+              } else {
+                parsed = new Date(dateStr);
+              }
+            }
+            
+            if (parsed && !isNaN(parsed.getTime())) {
               dueDate = parsed.toISOString().split('T')[0];
             }
           } catch (e) {
-            // Use default
+            console.warn('Failed to parse due_date:', row.data.due_date);
           }
         }
 
