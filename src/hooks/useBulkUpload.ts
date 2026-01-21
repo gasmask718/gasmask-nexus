@@ -807,12 +807,31 @@ async function importInvoices(rows: ValidatedRow[], result: ImportResult) {
           }
         }
 
-        // Parse created_at from uploaded file
+        // Parse created_at from uploaded file (handles custom formats like m/d/yyyy h:mm)
         let createdAt: string | undefined;
         if (row.data.created_at) {
           try {
-            const parsed = new Date(row.data.created_at);
-            if (!isNaN(parsed.getTime())) {
+            const dateStr = String(row.data.created_at).trim();
+            let parsed: Date | null = null;
+            
+            // Try parsing m/d/yyyy h:mm or m/d/yyyy hh:mm format
+            const customMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+            if (customMatch) {
+              const [, month, day, year, hours, minutes, seconds = '0'] = customMatch;
+              parsed = new Date(
+                parseInt(year),
+                parseInt(month) - 1,
+                parseInt(day),
+                parseInt(hours),
+                parseInt(minutes),
+                parseInt(seconds)
+              );
+            } else {
+              // Fallback to standard Date parsing
+              parsed = new Date(dateStr);
+            }
+            
+            if (parsed && !isNaN(parsed.getTime())) {
               createdAt = parsed.toISOString();
             }
           } catch (e) {
