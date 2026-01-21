@@ -331,9 +331,7 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
               <MapPin className="h-4 w-4 text-primary mt-0.5" />
               <div className="text-sm">
                 <p>{store.address_street || 'No street address'}</p>
-                {[store.address_city, store.address_state, store.address_zip].some(Boolean) && (
-                  <p>{[store.address_city, store.address_state, store.address_zip].filter(Boolean).join(', ')}</p>
-                )}
+                <p>{[store.address_city, store.address_state, store.address_zip].filter(Boolean).join(', ') || 'No city/state'}</p>
               </div>
             </div>
           </div>

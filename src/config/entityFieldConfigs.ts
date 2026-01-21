@@ -288,12 +288,3 @@ export const aiTaskFields: FieldConfig[] = [
   { name: 'is_enabled', label: 'Enabled', type: 'switch', defaultValue: true },
   { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Task description...' },
 ];
-
-export const productionFields: FieldConfig[] = [
-  { name: 'name', label: 'Office Name', type: 'text', required: true, placeholder: 'Enter production office name' },
-  { name: 'location', label: 'Location', type: 'text', placeholder: 'e.g. Brooklyn, NY' },
-  { name: 'active', label: 'Active', type: 'select', defaultValue: 'true', options: [
-    { value: 'true', label: 'Active' },
-    { value: 'false', label: 'Inactive' },
-  ]},
-];

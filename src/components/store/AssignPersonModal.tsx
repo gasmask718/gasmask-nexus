@@ -56,10 +56,7 @@ export function AssignPersonModal({
   const [newPerson, setNewPerson] = useState({
     name: '',
     phone: '',
-    email: '',
     city: '',
-    state: '',
-    notes: '',
   });
 
   // Search existing people
@@ -143,14 +140,10 @@ export function AssignPersonModal({
         const { data: newPersonData, error: createError } = await supabase
           .from('people')
           .insert({
-            name: newPerson.name || 'Unnamed',
+            name: newPerson.name,
             phone: newPerson.phone,
-            email: newPerson.email || null,
-            address_city: newPerson.city || null,
-            address_state: newPerson.state || null,
-            notes: newPerson.notes || null,
+            address_city: newPerson.city,
             type: role,
-            relationship_status: 'active',
           })
           .select('id')
           .single();
@@ -200,7 +193,7 @@ export function AssignPersonModal({
   const resetAndClose = () => {
     setSearchQuery('');
     setSelectedPerson(null);
-    setNewPerson({ name: '', phone: '', email: '', city: '', state: '', notes: '' });
+    setNewPerson({ name: '', phone: '', city: '' });
     onOpenChange(false);
   };
 
@@ -211,11 +204,7 @@ export function AssignPersonModal({
   };
 
   const handleCreateNew = () => {
-    if (!newPerson.name.trim()) {
-      toast.error('Name is required');
-      return;
-    }
-    if (!newPerson.phone.trim()) {
+    if (!newPerson.phone) {
       toast.error('Phone number is required');
       return;
     }
@@ -341,24 +330,7 @@ export function AssignPersonModal({
 
           {/* Tab: Create New Person */}
           <TabsContent value="new" className="space-y-4 mt-4">
-            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-              {/* Name - Required for production */}
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name *</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="name"
-                    placeholder="Full name"
-                    value={newPerson.name}
-                    onChange={(e) => setNewPerson({ ...newPerson, name: e.target.value })}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Phone */}
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number *</Label>
                 <div className="relative">
@@ -377,61 +349,31 @@ export function AssignPersonModal({
                 </p>
               </div>
 
-              {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="name">Name</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="email@example.com"
-                  value={newPerson.email}
-                  onChange={(e) => setNewPerson({ ...newPerson, email: e.target.value })}
+                  id="name"
+                  placeholder="Full name"
+                  value={newPerson.name}
+                  onChange={(e) => setNewPerson({ ...newPerson, name: e.target.value })}
                 />
               </div>
 
-              {/* City & State - Side by side */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="city"
-                      placeholder="City"
-                      value={newPerson.city}
-                      onChange={(e) => setNewPerson({ ...newPerson, city: e.target.value })}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
-                  <Input
-                    id="state"
-                    placeholder="State"
-                    value={newPerson.state}
-                    onChange={(e) => setNewPerson({ ...newPerson, state: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Notes */}
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <textarea
-                  id="notes"
-                  placeholder="Additional notes about this person..."
-                  value={newPerson.notes}
-                  onChange={(e) => setNewPerson({ ...newPerson, notes: e.target.value })}
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  placeholder="City"
+                  value={newPerson.city}
+                  onChange={(e) => setNewPerson({ ...newPerson, city: e.target.value })}
                 />
               </div>
             </div>
 
             <Button
               onClick={handleCreateNew}
-              disabled={!newPerson.name.trim() || !newPerson.phone.trim() || isSubmitting}
-              className="w-full mt-4"
+              disabled={!newPerson.phone || isSubmitting}
+              className="w-full"
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
