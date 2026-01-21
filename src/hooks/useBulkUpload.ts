@@ -807,35 +807,49 @@ async function importInvoices(rows: ValidatedRow[], result: ImportResult) {
           }
         }
 
-        // Parse created_at from uploaded file (handles custom formats like m/d/yyyy h:mm)
+        // Parse created_at from uploaded file (handles Excel serial numbers and date strings)
         let createdAt: string | undefined;
         if (row.data.created_at) {
           try {
-            const dateStr = String(row.data.created_at).trim();
+            const dateValue = row.data.created_at;
             let parsed: Date | null = null;
             
-            // Try parsing m/d/yyyy h:mm or m/d/yyyy hh:mm format
-            const customMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-            if (customMatch) {
-              const [, month, day, year, hours, minutes, seconds = '0'] = customMatch;
-              parsed = new Date(
-                parseInt(year),
-                parseInt(month) - 1,
-                parseInt(day),
-                parseInt(hours),
-                parseInt(minutes),
-                parseInt(seconds)
-              );
+            // Check if it's an Excel serial date number (e.g., 46032.42847222222)
+            const numValue = Number(dateValue);
+            if (!isNaN(numValue) && numValue > 25000 && numValue < 60000) {
+              // Excel serial date: days since Dec 30, 1899 (Excel's quirky base date)
+              // Convert to JavaScript Date
+              const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // Dec 30, 1899 UTC
+              const days = Math.floor(numValue);
+              const timeFraction = numValue - days;
+              
+              parsed = new Date(excelEpoch.getTime() + days * 24 * 60 * 60 * 1000 + timeFraction * 24 * 60 * 60 * 1000);
             } else {
-              // Fallback to standard Date parsing
-              parsed = new Date(dateStr);
+              const dateStr = String(dateValue).trim();
+              
+              // Try parsing m/d/yyyy h:mm or m/d/yyyy hh:mm format
+              const customMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+              if (customMatch) {
+                const [, month, day, year, hours, minutes, seconds = '0'] = customMatch;
+                parsed = new Date(
+                  parseInt(year),
+                  parseInt(month) - 1,
+                  parseInt(day),
+                  parseInt(hours),
+                  parseInt(minutes),
+                  parseInt(seconds)
+                );
+              } else {
+                // Fallback to standard Date parsing
+                parsed = new Date(dateStr);
+              }
             }
             
             if (parsed && !isNaN(parsed.getTime())) {
               createdAt = parsed.toISOString();
             }
           } catch (e) {
-            // Use database default
+            console.warn('Failed to parse created_at:', row.data.created_at);
           }
         }
 
