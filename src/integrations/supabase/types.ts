@@ -21368,6 +21368,7 @@ export type Database = {
           organization: string | null
           owner_id: string | null
           phone: string | null
+          phone_whatsapp: string | null
           relationship_score: number | null
           relationship_status: string
           role_id: string | null
@@ -21401,6 +21402,7 @@ export type Database = {
           organization?: string | null
           owner_id?: string | null
           phone?: string | null
+          phone_whatsapp?: string | null
           relationship_score?: number | null
           relationship_status?: string
           role_id?: string | null
@@ -21434,6 +21436,7 @@ export type Database = {
           organization?: string | null
           owner_id?: string | null
           phone?: string | null
+          phone_whatsapp?: string | null
           relationship_score?: number | null
           relationship_status?: string
           role_id?: string | null
