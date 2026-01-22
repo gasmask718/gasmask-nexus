@@ -1029,7 +1029,7 @@ export default function GrabbaCRM() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
               <Factory className="h-4 w-4 text-purple-500" />
-              <span className="text-lg font-semibold">{worker.name || "Production Worker"}</span>
+              <span className="text-lg font-semibold">{worker.name || "Production"}</span>
               <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
                 Production
               </Badge>
@@ -1220,7 +1220,7 @@ export default function GrabbaCRM() {
     if (activeTab === "ambassadors") return "New Ambassador";
     if (activeTab === "drivers") return "New Driver";
     if (activeTab === "bikers") return "New Biker";
-    if (activeTab === "production") return "New Production Worker";
+    if (activeTab === "production") return "New Production";
     return "New";
   };
 
@@ -1231,7 +1231,7 @@ export default function GrabbaCRM() {
     if (activeTab === "ambassadors") return "Ambassador";
     if (activeTab === "drivers") return "Driver";
     if (activeTab === "bikers") return "Biker";
-    if (activeTab === "production") return "Production Worker";
+    if (activeTab === "production") return "Production";
     return "Entity";
   };
 
@@ -1345,7 +1345,7 @@ export default function GrabbaCRM() {
                   {activeTab === "ambassadors" && `${filteredAmbassadors?.length || 0} ambassadors`}
                   {activeTab === "drivers" && `${filteredDrivers?.length || 0} drivers`}
                   {activeTab === "bikers" && `${filteredBikers?.length || 0} bikers`}
-                  {activeTab === "production" && `${filteredProduction?.length || 0} production workers`}
+                  {activeTab === "production" && `${filteredProduction?.length || 0} productions`}
                 </div>
               </div>
             </div>
@@ -1505,9 +1505,9 @@ export default function GrabbaCRM() {
               {/* Production Tab */}
               <TabsContent value="production" className="space-y-3">
                 {productionLoading ? (
-                  <Card className="p-8 text-center text-muted-foreground">Loading production workers...</Card>
+                  <Card className="p-8 text-center text-muted-foreground">Loading productions...</Card>
                 ) : filteredProduction?.length === 0 ? (
-                  <Card className="p-8 text-center text-muted-foreground">No production workers found</Card>
+                  <Card className="p-8 text-center text-muted-foreground">No productions found</Card>
                 ) : (
                   filteredProduction?.map((worker: any) => (
                     <ProductionCard key={worker.id} worker={worker} />
