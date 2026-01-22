@@ -54,6 +54,8 @@ import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, Amba
 import { AdminDisputesQueue, AdminDisputeDetail } from '@/pages/admin/disputes';
 import { AdminOverridesPage, AdminOverrideDetailPage } from '@/pages/admin/overrides';
 import { AdminPayoutsPage, AdminPayoutDetailPage } from '@/pages/admin/payouts';
+import { FinancialReportsPage, AmbassadorReportsPage, StoreReportsPage, TaxReportsPage, PayoutReportsPage } from '@/pages/admin/reports';
+import { AmbassadorEarningsPage } from '@/pages/ambassador/reports';
 import { AmbassadorPayoutsPage, AmbassadorPayoutStatementPage, AmbassadorPayoutSettingsPage } from '@/pages/ambassador/payouts';
 import Expansion from '@/pages/Expansion';
 import Rewards from '@/pages/Rewards';
