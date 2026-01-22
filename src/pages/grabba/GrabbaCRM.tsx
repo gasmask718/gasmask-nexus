@@ -48,7 +48,7 @@ import { EntityModal, ExportButton } from "@/components/crud";
 import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
 import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
 import { useCrudOperations } from "@/hooks/useCrudOperations";
-import { companyFields, storeFields, wholesalerFields, driverFields, bikerFields, ambassadorFields } from "@/config/entityFieldConfigs";
+import { companyFields, storeFields, wholesalerFields, driverFields, bikerFields, ambassadorFields, productionWorkerFields } from "@/config/entityFieldConfigs";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useSimulationMode } from "@/contexts/SimulationModeContext";
@@ -126,6 +126,13 @@ export default function GrabbaCRM() {
     table: "bikers",
     queryKey: ["grabba-crm-bikers"],
     successMessages: { create: "Biker created", update: "Biker updated", delete: "Biker deleted" },
+    simulationMode,
+  });
+
+  const productionCrud = useCrudOperations({
+    table: "people",
+    queryKey: ["grabba-crm-production"],
+    successMessages: { create: "Production worker created", update: "Production worker updated", delete: "Production worker deleted" },
     simulationMode,
   });
 
@@ -1044,23 +1051,64 @@ export default function GrabbaCRM() {
             </div>
           </div>
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>View Details</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div className="flex items-center gap-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedProfileEntity(worker);
+                      setSelectedProfileType('production' as EntityProfileType);
+                      setProfileModalOpen(true);
+                    }}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View Details</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditModal(worker);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit Production Worker</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDeleteModal(worker);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Delete Production Worker</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -1097,6 +1145,11 @@ export default function GrabbaCRM() {
         ...data,
         business_id: defaultBusinessId,
       });
+    } else if (activeTab === "production") {
+      await productionCrud.create({
+        ...data,
+        type: "production",
+      });
     }
   };
 
@@ -1114,6 +1167,8 @@ export default function GrabbaCRM() {
       await driverCrud.update({ id: selectedEntity.id, ...data });
     } else if (activeTab === "bikers") {
       await bikerCrud.update({ id: selectedEntity.id, ...data });
+    } else if (activeTab === "production") {
+      await productionCrud.update({ id: selectedEntity.id, ...data });
     }
   };
 
@@ -1131,6 +1186,8 @@ export default function GrabbaCRM() {
       await driverCrud.remove(selectedEntity.id);
     } else if (activeTab === "bikers") {
       await bikerCrud.remove(selectedEntity.id);
+    } else if (activeTab === "production") {
+      await productionCrud.remove(selectedEntity.id);
     }
   };
 
@@ -1151,6 +1208,7 @@ export default function GrabbaCRM() {
     if (activeTab === "ambassadors") return ambassadorFields;
     if (activeTab === "drivers") return driverFields;
     if (activeTab === "bikers") return bikerFields;
+    if (activeTab === "production") return productionWorkerFields;
     return companyFields;
   };
 
@@ -1286,6 +1344,7 @@ export default function GrabbaCRM() {
                   {activeTab === "ambassadors" && `${filteredAmbassadors?.length || 0} ambassadors`}
                   {activeTab === "drivers" && `${filteredDrivers?.length || 0} drivers`}
                   {activeTab === "bikers" && `${filteredBikers?.length || 0} bikers`}
+                  {activeTab === "production" && `${filteredProduction?.length || 0} production workers`}
                 </div>
               </div>
             </div>
