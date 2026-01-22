@@ -35,6 +35,7 @@ import {
   Car,
   Bike,
   Eye,
+  Factory,
 } from "lucide-react";
 import { getRelationshipScoresForStores, RelationshipScore } from "@/services/crmInsightsService";
 import { useNavigate, Link, useParams } from "react-router-dom";
@@ -58,7 +59,7 @@ import { EntityProfileModal, type EntityProfileType } from "@/components/grabba/
 // ═══════════════════════════════════════════════════════════════════════════════
 
 type EntityType = "all" | "store" | "wholesaler" | "direct_customer";
-type ViewTab = "companies" | "stores" | "ambassadors" | "wholesalers" | "drivers" | "bikers";
+type ViewTab = "companies" | "stores" | "ambassadors" | "wholesalers" | "drivers" | "bikers" | "production";
 
 export default function GrabbaCRM() {
   const navigate = useNavigate();
@@ -247,6 +248,19 @@ export default function GrabbaCRM() {
     },
   });
 
+  // Fetch production workers from people table
+  const { data: productionData, isLoading: productionLoading } = useQuery({
+    queryKey: ["grabba-crm-production"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("people")
+        .select("id, name, phone, email, created_at")
+        .eq("type", "production")
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
   // Fetch brand activity per company/store
   const { data: brandActivity } = useGrabbaBrandActivity();
   const { data: brandCounts } = useGrabbaBrandCounts();
@@ -350,6 +364,17 @@ export default function GrabbaCRM() {
       return matchesSearch;
     });
   }, [bikersData, searchQuery]);
+
+  const filteredProduction = useMemo(() => {
+    return productionData?.filter((p: any) => {
+      const matchesSearch =
+        !searchQuery ||
+        p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.phone?.includes(searchQuery) ||
+        p.email?.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    });
+  }, [productionData, searchQuery]);
 
   const clearFilters = () => {
     setSelectedBrand("all");
@@ -983,8 +1008,64 @@ export default function GrabbaCRM() {
     </Card>
   );
 
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // CRUD HANDLERS
+  const ProductionCard = ({ worker }: { worker: any }) => (
+    <Card 
+      className="bg-card/50 backdrop-blur border-border/50 hover:border-purple-500/30 transition-all hover:shadow-lg cursor-pointer"
+      onClick={() => {
+        setSelectedProfileEntity(worker);
+        setSelectedProfileType('production' as EntityProfileType);
+        setProfileModalOpen(true);
+      }}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3">
+              <Factory className="h-4 w-4 text-purple-500" />
+              <span className="text-lg font-semibold">{worker.name || "Production Worker"}</span>
+              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                Production
+              </Badge>
+            </div>
+
+            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
+              {worker.phone && (
+                <span className="flex items-center gap-1">
+                  <Phone className="h-3 w-3" />
+                  {String(worker.phone)}
+                </span>
+              )}
+              {worker.email && (
+                <span className="flex items-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  {worker.email}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>View Details</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   // ═══════════════════════════════════════════════════════════════════════════════
 
   const handleCreate = async (data: Record<string, unknown>) => {
@@ -1080,6 +1161,7 @@ export default function GrabbaCRM() {
     if (activeTab === "ambassadors") return "New Ambassador";
     if (activeTab === "drivers") return "New Driver";
     if (activeTab === "bikers") return "New Biker";
+    if (activeTab === "production") return "New Production Worker";
     return "New";
   };
 
@@ -1090,6 +1172,7 @@ export default function GrabbaCRM() {
     if (activeTab === "ambassadors") return "Ambassador";
     if (activeTab === "drivers") return "Driver";
     if (activeTab === "bikers") return "Biker";
+    if (activeTab === "production") return "Production Worker";
     return "Entity";
   };
 
@@ -1214,7 +1297,7 @@ export default function GrabbaCRM() {
           <div className="lg:col-span-2">
             {/* Tabs for Different Entity Types */}
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ViewTab)}>
-              <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full max-w-2xl">
+              <TabsList className="grid grid-cols-4 sm:grid-cols-7 w-full max-w-3xl">
                 <TabsTrigger value="companies" className="flex items-center gap-1 text-xs sm:text-sm">
                   <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Companies</span>
@@ -1261,6 +1344,14 @@ export default function GrabbaCRM() {
                   <span className="sm:hidden">Bkr.</span>
                   {bikersData && bikersData.length > 0 && (
                     <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs px-1">{bikersData.length}</Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="production" className="flex items-center gap-1 text-xs sm:text-sm">
+                  <Factory className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Production</span>
+                  <span className="sm:hidden">Prod.</span>
+                  {productionData && productionData.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs px-1">{productionData.length}</Badge>
                   )}
                 </TabsTrigger>
               </TabsList>
@@ -1347,6 +1438,19 @@ export default function GrabbaCRM() {
                 ) : (
                   filteredBikers?.map((biker: any) => (
                     <BikerCard key={biker.id} biker={biker} />
+                  ))
+                )}
+              </TabsContent>
+
+              {/* Production Tab */}
+              <TabsContent value="production" className="space-y-3">
+                {productionLoading ? (
+                  <Card className="p-8 text-center text-muted-foreground">Loading production workers...</Card>
+                ) : filteredProduction?.length === 0 ? (
+                  <Card className="p-8 text-center text-muted-foreground">No production workers found</Card>
+                ) : (
+                  filteredProduction?.map((worker: any) => (
+                    <ProductionCard key={worker.id} worker={worker} />
                   ))
                 )}
               </TabsContent>
