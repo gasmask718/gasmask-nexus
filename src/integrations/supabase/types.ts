@@ -2354,30 +2354,54 @@ export type Database = {
       }
       ambassador_assignments: {
         Row: {
+          active: boolean | null
           ambassador_id: string | null
+          assignment_type: string | null
           commission_rate: number | null
           company_id: string | null
           created_at: string | null
+          created_by: string | null
+          end_date: string | null
           id: string
+          is_primary: boolean | null
           role_type: string | null
+          start_date: string | null
+          store_id: string | null
+          updated_at: string | null
           wholesaler_id: string | null
         }
         Insert: {
+          active?: boolean | null
           ambassador_id?: string | null
+          assignment_type?: string | null
           commission_rate?: number | null
           company_id?: string | null
           created_at?: string | null
+          created_by?: string | null
+          end_date?: string | null
           id?: string
+          is_primary?: boolean | null
           role_type?: string | null
+          start_date?: string | null
+          store_id?: string | null
+          updated_at?: string | null
           wholesaler_id?: string | null
         }
         Update: {
+          active?: boolean | null
           ambassador_id?: string | null
+          assignment_type?: string | null
           commission_rate?: number | null
           company_id?: string | null
           created_at?: string | null
+          created_by?: string | null
+          end_date?: string | null
           id?: string
+          is_primary?: boolean | null
           role_type?: string | null
+          start_date?: string | null
+          store_id?: string | null
+          updated_at?: string | null
           wholesaler_id?: string | null
         }
         Relationships: [
@@ -2393,6 +2417,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_ambassador_assignments_store"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
             referencedColumns: ["id"]
           },
         ]
@@ -31591,6 +31622,51 @@ export type Database = {
       }
     }
     Views: {
+      ambassador_store_portfolio: {
+        Row: {
+          active: boolean | null
+          ambassador_id: string | null
+          ambassador_name: string | null
+          ambassador_user_id: string | null
+          assigned_at: string | null
+          assignment_id: string | null
+          assignment_type: string | null
+          commission_rate: number | null
+          end_date: string | null
+          is_primary: boolean | null
+          start_date: string | null
+          store_address: string | null
+          store_city: string | null
+          store_id: string | null
+          store_name: string | null
+          store_owner: string | null
+          store_phone: string | null
+          store_state: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassadors_user_id_fkey"
+            columns: ["ambassador_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_ambassador_assignments_store"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tube_counter: {
         Row: {
           brand: string | null
@@ -31674,6 +31750,7 @@ export type Database = {
           vertical_name: string
         }[]
       }
+      get_ambassador_id: { Args: { _user_id: string }; Returns: string }
       get_audit_summary: {
         Args: { p_limit?: number }
         Returns: {
@@ -31731,6 +31808,10 @@ export type Database = {
       }
       ingest_portal_actions: { Args: { _actions: Json }; Returns: Json }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_ambassador_for_store: {
+        Args: { _store_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_assigned_to_route: {
         Args: { _route_id: string; _user_id: string }
         Returns: boolean
@@ -31885,6 +31966,7 @@ export type Database = {
         | "assigned"
         | "closed"
         | "dead"
+      ambassador_assignment_type: "assigned" | "sourced"
       app_role:
         | "admin"
         | "csr"
@@ -32253,6 +32335,7 @@ export const Constants = {
         "closed",
         "dead",
       ],
+      ambassador_assignment_type: ["assigned", "sourced"],
       app_role: [
         "admin",
         "csr",
