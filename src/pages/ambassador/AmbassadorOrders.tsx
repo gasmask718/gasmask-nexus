@@ -1,0 +1,325 @@
+/**
+ * Ambassador Orders Page
+ * Unified view of all orders across channels (store, wholesale, affiliate)
+ */
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  Package, Store, ShoppingCart, TrendingUp, Search, 
+  Filter, ChevronRight, DollarSign, Clock, CheckCircle,
+  XCircle, Eye, Download
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
+
+interface Order {
+  id: string;
+  order_number: string;
+  channel: 'store' | 'wholesale' | 'affiliate';
+  entity_name: string;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  payment_status: 'pending' | 'paid' | 'partial' | 'failed' | 'refunded';
+  subtotal: number;
+  tax: number;
+  total: number;
+  created_at: string;
+  items_count: number;
+}
+
+export default function AmbassadorOrders() {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [channelFilter, setChannelFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Mock order data - will be replaced with real data from unified orders table
+  const orders: Order[] = [
+    {
+      id: '1',
+      order_number: 'ORD-2024-001234',
+      channel: 'store',
+      entity_name: 'Quick Stop Deli',
+      status: 'delivered',
+      payment_status: 'paid',
+      subtotal: 425.00,
+      tax: 37.81,
+      total: 462.81,
+      created_at: new Date().toISOString(),
+      items_count: 8,
+    },
+    {
+      id: '2',
+      order_number: 'ORD-2024-001235',
+      channel: 'wholesale',
+      entity_name: 'NYC Wholesale Supply',
+      status: 'shipped',
+      payment_status: 'paid',
+      subtotal: 2500.00,
+      tax: 222.50,
+      total: 2722.50,
+      created_at: new Date(Date.now() - 86400000).toISOString(),
+      items_count: 25,
+    },
+    {
+      id: '3',
+      order_number: 'ORD-2024-001236',
+      channel: 'affiliate',
+      entity_name: 'Online Merch Store',
+      status: 'processing',
+      payment_status: 'paid',
+      subtotal: 89.99,
+      tax: 8.00,
+      total: 97.99,
+      created_at: new Date(Date.now() - 172800000).toISOString(),
+      items_count: 2,
+    },
+    {
+      id: '4',
+      order_number: 'ORD-2024-001237',
+      channel: 'store',
+      entity_name: 'Corner Bodega',
+      status: 'pending',
+      payment_status: 'pending',
+      subtotal: 315.00,
+      tax: 28.03,
+      total: 343.03,
+      created_at: new Date(Date.now() - 259200000).toISOString(),
+      items_count: 5,
+    },
+  ];
+
+  // Calculate totals
+  const totalOrders = orders.length;
+  const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
+  const pendingPayments = orders.filter(o => o.payment_status === 'pending').length;
+
+  const getChannelIcon = (channel: string) => {
+    switch (channel) {
+      case 'store': return <Store className="h-4 w-4" />;
+      case 'wholesale': return <ShoppingCart className="h-4 w-4" />;
+      case 'affiliate': return <TrendingUp className="h-4 w-4" />;
+      default: return <Package className="h-4 w-4" />;
+    }
+  };
+
+  const getChannelBadge = (channel: string) => {
+    switch (channel) {
+      case 'store':
+        return <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">Store</Badge>;
+      case 'wholesale':
+        return <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/30">Wholesale</Badge>;
+      case 'affiliate':
+        return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30">Affiliate</Badge>;
+      default:
+        return <Badge variant="outline">{channel}</Badge>;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/30"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
+      case 'processing':
+        return <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/30"><Clock className="h-3 w-3 mr-1" />Processing</Badge>;
+      case 'shipped':
+        return <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/30"><Package className="h-3 w-3 mr-1" />Shipped</Badge>;
+      case 'delivered':
+        return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30"><CheckCircle className="h-3 w-3 mr-1" />Delivered</Badge>;
+      case 'cancelled':
+        return <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/30"><XCircle className="h-3 w-3 mr-1" />Cancelled</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getPaymentStatusBadge = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return <Badge className="bg-green-500/20 text-green-500"><DollarSign className="h-3 w-3 mr-1" />Paid</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-500/20 text-yellow-500"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
+      case 'partial':
+        return <Badge className="bg-orange-500/20 text-orange-500"><DollarSign className="h-3 w-3 mr-1" />Partial</Badge>;
+      case 'failed':
+        return <Badge className="bg-red-500/20 text-red-500"><XCircle className="h-3 w-3 mr-1" />Failed</Badge>;
+      case 'refunded':
+        return <Badge className="bg-gray-500/20 text-gray-500"><DollarSign className="h-3 w-3 mr-1" />Refunded</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = 
+      order.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.entity_name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesChannel = channelFilter === 'all' || order.channel === channelFilter;
+    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    return matchesSearch && matchesChannel && matchesStatus;
+  });
+
+  return (
+    <EnhancedPortalLayout 
+      title="Orders" 
+      subtitle="View all orders from your portfolio"
+      backPath="/ambassador/dashboard"
+    >
+      <div className="p-6 space-y-6">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Orders</p>
+                  <p className="text-2xl font-bold">{totalOrders}</p>
+                </div>
+                <Package className="h-8 w-8 text-primary/50" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Revenue</p>
+                  <p className="text-2xl font-bold text-green-500">${totalRevenue.toFixed(2)}</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-green-500/50" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border-blue-500/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Store Orders</p>
+                  <p className="text-2xl font-bold text-blue-500">
+                    {orders.filter(o => o.channel === 'store').length}
+                  </p>
+                </div>
+                <Store className="h-8 w-8 text-blue-500/50" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border-yellow-500/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Pending Payment</p>
+                  <p className="text-2xl font-bold text-yellow-500">{pendingPayments}</p>
+                </div>
+                <Clock className="h-8 w-8 text-yellow-500/50" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search by order # or entity..." 
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Select value={channelFilter} onValueChange={setChannelFilter}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Channel" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Channels</SelectItem>
+              <SelectItem value="store">Store Orders</SelectItem>
+              <SelectItem value="wholesale">Wholesale</SelectItem>
+              <SelectItem value="affiliate">Affiliate</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="shipped">Shipped</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="icon">
+            <Download className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Orders Table */}
+        <Card>
+          <ScrollArea className="h-[500px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order #</TableHead>
+                  <TableHead>Channel</TableHead>
+                  <TableHead>Entity</TableHead>
+                  <TableHead>Items</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Payment</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.map((order) => (
+                  <TableRow 
+                    key={order.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => navigate(`/ambassador/orders/${order.id}`)}
+                  >
+                    <TableCell className="font-mono text-sm">{order.order_number}</TableCell>
+                    <TableCell>{getChannelBadge(order.channel)}</TableCell>
+                    <TableCell className="font-medium">{order.entity_name}</TableCell>
+                    <TableCell>{order.items_count}</TableCell>
+                    <TableCell className="text-right font-semibold">${order.total.toFixed(2)}</TableCell>
+                    <TableCell>{getStatusBadge(order.status)}</TableCell>
+                    <TableCell>{getPaymentStatusBadge(order.payment_status)}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {format(new Date(order.created_at), 'MMM d, yyyy')}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filteredOrders.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                      <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No orders found matching your filters</p>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </Card>
+      </div>
+    </EnhancedPortalLayout>
+  );
+}
