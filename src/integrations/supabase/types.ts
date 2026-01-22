@@ -32113,6 +32113,73 @@ export type Database = {
         }
         Relationships: []
       }
+      ambassador_commission_by_channel: {
+        Row: {
+          ambassador_id: string | null
+          channel_total: number | null
+          entry_count: number | null
+          source_channel: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ambassador_commission_totals: {
+        Row: {
+          ambassador_id: string | null
+          approved_count: number | null
+          approved_total: number | null
+          lifetime_total: number | null
+          paid_count: number | null
+          paid_total: number | null
+          pending_count: number | null
+          pending_total: number | null
+          reversed_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ambassador_store_portfolio: {
         Row: {
           active: boolean | null
@@ -32165,6 +32232,48 @@ export type Database = {
           },
           {
             foreignKeyName: "fk_ambassador_assignments_store"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_commission_totals: {
+        Row: {
+          ambassador_id: string | null
+          approved_total: number | null
+          entry_count: number | null
+          last_commission_at: string | null
+          lifetime_total: number | null
+          paid_total: number | null
+          pending_total: number | null
+          store_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "store_master"

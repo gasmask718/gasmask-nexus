@@ -1,6 +1,7 @@
 /**
  * Ambassador Portal Dashboard - Portfolio command center
  * Shows KPIs, assigned stores, commissions, and quick actions
+ * Commission data now sourced from real ledger (SQL views, zero client math)
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAmbassadorPortfolio, type PortfolioStore } from '@/hooks/useAmbassadorPortfolio';
+import { useCommissionTotals, useCommissionLedger } from '@/hooks/useCommissionLedger';
 import { format, formatDistanceToNow } from 'date-fns';
 
 function StoreCard({ store, onClick }: { store: PortfolioStore; onClick: () => void }) {
@@ -63,8 +65,13 @@ function StoreCard({ store, onClick }: { store: PortfolioStore; onClick: () => v
 
 function DashboardContent() {
   const navigate = useNavigate();
-  const { ambassador, stores, metrics, commissions, onlineSales, isLoading } = useAmbassadorPortfolio();
+  const { ambassador, stores, metrics, isLoading: portfolioLoading } = useAmbassadorPortfolio();
+  // Real commission data from SQL views
+  const { data: commissionTotals, isLoading: totalsLoading } = useCommissionTotals();
+  const { data: recentLedger, isLoading: ledgerLoading } = useCommissionLedger({ limit: 5 });
   const [selectedKpi, setSelectedKpi] = useState<string | null>(null);
+  
+  const isLoading = portfolioLoading || totalsLoading || ledgerLoading;
 
   const handleStoreClick = (storeId: string) => {
     navigate(`/ambassador/stores/${storeId}`);
@@ -90,8 +97,11 @@ function DashboardContent() {
   const assignedStores = stores.filter(s => s.assignment_type === 'assigned');
   const sourcedStores = stores.filter(s => s.assignment_type === 'sourced');
 
-  // Recent commissions
-  const recentCommissions = commissions.slice(0, 5);
+  // Real commission totals from SQL view
+  const pendingTotal = Number(commissionTotals?.pending_total || 0);
+  const approvedTotal = Number(commissionTotals?.approved_total || 0);
+  const paidTotal = Number(commissionTotals?.paid_total || 0);
+  const lifetimeTotal = Number(commissionTotals?.lifetime_total || 0);
 
   return (
     <div className="space-y-6">
@@ -118,16 +128,16 @@ function DashboardContent() {
         />
         <CommandCenterKPI
           label="Total Commission"
-          value={`$${metrics.totalCommission.toFixed(2)}`}
+          value={`$${lifetimeTotal.toFixed(2)}`}
           icon={DollarSign}
-          trend={metrics.pendingCommission > 0 ? `$${metrics.pendingCommission.toFixed(2)} pending` : undefined}
+          trend={pendingTotal > 0 ? `$${pendingTotal.toFixed(2)} pending` : undefined}
           variant="green"
           isActive={selectedKpi === 'commissions'}
           onClick={() => setSelectedKpi(selectedKpi === 'commissions' ? null : 'commissions')}
         />
         <CommandCenterKPI
-          label="Online Commission"
-          value={`$${metrics.onlineCommission.toFixed(2)}`}
+          label="Approved"
+          value={`$${approvedTotal.toFixed(2)}`}
           icon={TrendingUp}
           variant="purple"
         />
@@ -210,7 +220,7 @@ function DashboardContent() {
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[320px] pr-4">
-              {recentCommissions.length === 0 ? (
+              {(!recentLedger || recentLedger.length === 0) ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>No commissions yet</p>
@@ -218,21 +228,23 @@ function DashboardContent() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {recentCommissions.map((commission: any) => (
+                  {recentLedger.map((entry) => (
                     <div 
-                      key={commission.id}
+                      key={entry.id}
                       className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border"
                     >
                       <div>
-                        <p className="font-medium text-sm">{commission.entity_type}</p>
+                        <p className="font-medium text-sm">{entry.store_name || entry.source_channel}</p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(commission.created_at), 'MMM d, yyyy')}
+                          {format(new Date(entry.earned_at), 'MMM d, yyyy')}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-primary">${commission.amount}</p>
-                        <Badge variant={commission.status === 'paid' ? 'default' : 'secondary'} className="text-xs">
-                          {commission.status}
+                        <p className={`font-semibold ${Number(entry.commission_amount) >= 0 ? 'text-primary' : 'text-red-500'}`}>
+                          {Number(entry.commission_amount) >= 0 ? '+' : ''}${Number(entry.commission_amount).toFixed(2)}
+                        </p>
+                        <Badge variant={entry.status === 'paid' ? 'default' : 'secondary'} className="text-xs">
+                          {entry.status}
                         </Badge>
                       </div>
                     </div>
