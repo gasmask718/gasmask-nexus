@@ -1149,6 +1149,7 @@ export default function GrabbaCRM() {
       await productionCrud.create({
         ...data,
         type: "production",
+        relationship_status: "active",
       });
     }
   };
