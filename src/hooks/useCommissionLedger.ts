@@ -48,15 +48,41 @@ export interface ChannelBreakdown {
   entry_count: number;
 }
 
+export type PayoutBatchStatus = 'draft' | 'ready' | 'processing' | 'paid' | 'failed' | 'void';
+
 export interface PayoutBatch {
   id: string;
   ambassador_id: string;
   period_start: string;
   period_end: string;
+  currency: string;
+  subtotal_amount: number;
+  adjustments_amount: number;
   total_amount: number;
-  status: 'pending' | 'paid' | 'failed';
+  statement_url: string | null;
+  export_ref: string | null;
+  status: PayoutBatchStatus;
   paid_at: string | null;
   created_at: string;
+  items_count: number;
+}
+
+export interface UnpaidTotals {
+  ambassador_id: string;
+  unpaid_approved_total: number;
+  unpaid_approved_count: number;
+}
+
+export interface PayoutMethod {
+  id: string;
+  ambassador_id: string;
+  method_type: 'ach' | 'stripe_connect' | 'paypal' | 'cashapp' | 'zelle' | 'manual';
+  method_label: string | null;
+  is_default: boolean;
+  external_ref: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 interface UseCommissionLedgerOptions {
@@ -201,19 +227,60 @@ export function useStoreCommissionTotals(storeId?: string) {
 }
 
 /**
- * Fetch payout batches
+ * Fetch payout batches from ambassador_payout_history view
  */
 export function usePayoutHistory() {
   return useQuery({
     queryKey: ['payout-history'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('commission_payout_batches')
+        .from('ambassador_payout_history')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return (data || []) as PayoutBatch[];
+    },
+  });
+}
+
+/**
+ * Fetch unpaid approved commission totals
+ */
+export function useUnpaidTotals() {
+  return useQuery({
+    queryKey: ['unpaid-totals'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ambassador_unpaid_commission_totals')
+        .select('*')
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      return (data || {
+        unpaid_approved_total: 0,
+        unpaid_approved_count: 0,
+      }) as UnpaidTotals;
+    },
+  });
+}
+
+/**
+ * Fetch ambassador payout methods
+ */
+export function usePayoutMethods() {
+  return useQuery({
+    queryKey: ['payout-methods'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ambassador_payout_methods')
+        .select('*')
+        .eq('active', true)
+        .order('is_default', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as PayoutMethod[];
     },
   });
 }
@@ -226,6 +293,8 @@ export function useCommissionPage() {
   const totals = useCommissionTotals();
   const channels = useChannelBreakdown();
   const payouts = usePayoutHistory();
+  const unpaid = useUnpaidTotals();
+  const methods = usePayoutMethods();
 
   return {
     ledger: ledger.data || [],
@@ -246,7 +315,12 @@ export function useCommissionPage() {
       team_override: 0,
     },
     payouts: payouts.data || [],
-    isLoading: ledger.isLoading || totals.isLoading || channels.isLoading,
-    isError: ledger.isError || totals.isError || channels.isError,
+    unpaid: unpaid.data || {
+      unpaid_approved_total: 0,
+      unpaid_approved_count: 0,
+    },
+    payoutMethods: methods.data || [],
+    isLoading: ledger.isLoading || totals.isLoading || channels.isLoading || payouts.isLoading,
+    isError: ledger.isError || totals.isError || channels.isError || payouts.isError,
   };
 }
