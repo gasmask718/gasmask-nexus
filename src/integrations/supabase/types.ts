@@ -2713,6 +2713,64 @@ export type Database = {
           },
         ]
       }
+      ambassador_payout_methods: {
+        Row: {
+          active: boolean
+          ambassador_id: string
+          created_at: string
+          external_ref: string | null
+          id: string
+          is_default: boolean
+          method_label: string | null
+          method_type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          ambassador_id: string
+          created_at?: string
+          external_ref?: string | null
+          id?: string
+          is_default?: boolean
+          method_label?: string | null
+          method_type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          ambassador_id?: string
+          created_at?: string
+          external_ref?: string | null
+          id?: string
+          is_default?: boolean
+          method_label?: string | null
+          method_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_payout_methods_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_payout_methods_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_payout_methods_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ambassador_profiles: {
         Row: {
           brand: string
@@ -7560,6 +7618,7 @@ export type Database = {
           gross_amount: number
           id: string
           paid_at: string | null
+          payout_batch_id: string | null
           reversal_of: string | null
           source_channel: string
           source_id: string
@@ -7577,6 +7636,7 @@ export type Database = {
           gross_amount: number
           id?: string
           paid_at?: string | null
+          payout_batch_id?: string | null
           reversal_of?: string | null
           source_channel: string
           source_id: string
@@ -7594,6 +7654,7 @@ export type Database = {
           gross_amount?: number
           id?: string
           paid_at?: string | null
+          payout_batch_id?: string | null
           reversal_of?: string | null
           source_channel?: string
           source_id?: string
@@ -7627,6 +7688,20 @@ export type Database = {
             columns: ["commission_plan_id"]
             isOneToOne: false
             referencedRelation: "commission_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_payout_batch_id_fkey"
+            columns: ["payout_batch_id"]
+            isOneToOne: false
+            referencedRelation: "ambassador_payout_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_payout_batch_id_fkey"
+            columns: ["payout_batch_id"]
+            isOneToOne: false
+            referencedRelation: "payout_batches"
             referencedColumns: ["id"]
           },
           {
@@ -19503,6 +19578,135 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      payout_batches: {
+        Row: {
+          adjustments_amount: number
+          ambassador_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          export_ref: string | null
+          id: string
+          paid_at: string | null
+          period_end: string
+          period_start: string
+          statement_url: string | null
+          status: string
+          subtotal_amount: number
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          adjustments_amount?: number
+          ambassador_id: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          export_ref?: string | null
+          id?: string
+          paid_at?: string | null
+          period_end: string
+          period_start: string
+          statement_url?: string | null
+          status?: string
+          subtotal_amount?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          adjustments_amount?: number
+          ambassador_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          export_ref?: string | null
+          id?: string
+          paid_at?: string | null
+          period_end?: string
+          period_start?: string
+          statement_url?: string | null
+          status?: string
+          subtotal_amount?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payout_items: {
+        Row: {
+          commission_amount: number
+          commission_ledger_id: string
+          created_at: string
+          id: string
+          payout_batch_id: string
+        }
+        Insert: {
+          commission_amount: number
+          commission_ledger_id: string
+          created_at?: string
+          id?: string
+          payout_batch_id: string
+        }
+        Update: {
+          commission_amount?: number
+          commission_ledger_id?: string
+          created_at?: string
+          id?: string
+          payout_batch_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_items_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: true
+            referencedRelation: "admin_ledger_feed"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_items_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: true
+            referencedRelation: "commission_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_items_payout_batch_id_fkey"
+            columns: ["payout_batch_id"]
+            isOneToOne: false
+            referencedRelation: "ambassador_payout_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_items_payout_batch_id_fkey"
+            columns: ["payout_batch_id"]
+            isOneToOne: false
+            referencedRelation: "payout_batches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payouts: {
         Row: {
@@ -32180,6 +32384,79 @@ export type Database = {
           },
         ]
       }
+      ambassador_payout_history: {
+        Row: {
+          adjustments_amount: number | null
+          ambassador_id: string | null
+          created_at: string | null
+          currency: string | null
+          export_ref: string | null
+          id: string | null
+          items_count: number | null
+          paid_at: string | null
+          period_end: string | null
+          period_start: string | null
+          statement_url: string | null
+          status: string | null
+          subtotal_amount: number | null
+          total_amount: number | null
+        }
+        Insert: {
+          adjustments_amount?: number | null
+          ambassador_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          export_ref?: string | null
+          id?: string | null
+          items_count?: never
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          statement_url?: string | null
+          status?: string | null
+          subtotal_amount?: number | null
+          total_amount?: number | null
+        }
+        Update: {
+          adjustments_amount?: number | null
+          ambassador_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          export_ref?: string | null
+          id?: string | null
+          items_count?: never
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          statement_url?: string | null
+          status?: string | null
+          subtotal_amount?: number | null
+          total_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ambassador_store_portfolio: {
         Row: {
           active: boolean | null
@@ -32235,6 +32512,36 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ambassador_unpaid_commission_totals: {
+        Row: {
+          ambassador_id: string | null
+          unpaid_approved_count: number | null
+          unpaid_approved_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
             referencedColumns: ["id"]
           },
         ]
@@ -32381,8 +32688,21 @@ export type Database = {
         Args: { p_device_id: string }
         Returns: number
       }
+      create_payout_batch_for_ambassador: {
+        Args: {
+          p_ambassador_id: string
+          p_period_end: string
+          p_period_start: string
+        }
+        Returns: string
+      }
+      current_ambassador_id: { Args: never; Returns: string }
       detect_intent_conflicts: { Args: { p_intent_id: string }; Returns: Json }
       expire_old_simulations: { Args: never; Returns: undefined }
+      finalize_payout_batch: {
+        Args: { p_batch_id: string }
+        Returns: undefined
+      }
       force_portal_logout: {
         Args: { _reason?: string; _target_user_id: string }
         Returns: boolean
@@ -32518,6 +32838,10 @@ export type Database = {
         Returns: string
       }
       mark_overdue_followups: { Args: never; Returns: undefined }
+      mark_payout_batch_paid: {
+        Args: { p_batch_id: string; p_export_ref?: string }
+        Returns: undefined
+      }
       not_developer: { Args: { _user_id: string }; Returns: boolean }
       override_intent_resolution: {
         Args: {
@@ -32606,6 +32930,7 @@ export type Database = {
         }
         Returns: Json
       }
+      void_payout_batch: { Args: { p_batch_id: string }; Returns: undefined }
     }
     Enums: {
       acquisition_status:
