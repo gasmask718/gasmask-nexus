@@ -1,6 +1,6 @@
 /**
  * Ambassador Commissions Page
- * Comprehensive commission ledger, earnings breakdown, and payout history
+ * Real commission ledger, SQL-computed totals, zero client-side math
  */
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,134 +11,26 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   DollarSign, TrendingUp, Clock, CheckCircle, AlertCircle, 
-  Store, ShoppingCart, Users, Download, Filter, Search,
-  Calendar, ArrowUpRight, ArrowDownRight, Receipt
+  Store, ShoppingCart, Users, Download, Search, Receipt
 } from 'lucide-react';
-import { useAmbassadorPortfolio } from '@/hooks/useAmbassadorPortfolio';
+import { useCommissionPage, type CommissionLedgerEntry, type SourceChannel } from '@/hooks/useCommissionLedger';
 import { format } from 'date-fns';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
 
-interface CommissionEntry {
-  id: string;
-  source_channel: 'store_order' | 'wholesale_order' | 'merch_affiliate' | 'team_override';
-  source_id: string;
-  source_name: string;
-  gross_amount: number;
-  commission_amount: number;
-  rate: number;
-  status: 'pending' | 'approved' | 'paid' | 'reversed';
-  created_at: string;
-  notes?: string;
-}
-
-interface PayoutBatch {
-  id: string;
-  period_start: string;
-  period_end: string;
-  total_amount: number;
-  status: 'draft' | 'approved' | 'paid';
-  paid_at?: string;
-  items_count: number;
-}
-
 export default function AmbassadorCommissions() {
-  const { metrics, isLoading } = useAmbassadorPortfolio();
+  const { ledger, totals, channels, payouts, isLoading } = useCommissionPage();
   const [searchQuery, setSearchQuery] = useState('');
   const [channelFilter, setChannelFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-
-  // Mock commission data - will be replaced with real data from commission_ledger
-  const commissionEntries: CommissionEntry[] = [
-    {
-      id: '1',
-      source_channel: 'store_order',
-      source_id: 'ord-001',
-      source_name: 'Quick Stop Deli - Order #1234',
-      gross_amount: 450.00,
-      commission_amount: 22.50,
-      rate: 5,
-      status: 'paid',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: '2',
-      source_channel: 'wholesale_order',
-      source_id: 'wh-001',
-      source_name: 'NYC Wholesale Supply - Order #5678',
-      gross_amount: 2500.00,
-      commission_amount: 75.00,
-      rate: 3,
-      status: 'approved',
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-    },
-    {
-      id: '3',
-      source_channel: 'merch_affiliate',
-      source_id: 'aff-001',
-      source_name: 'Online Store - Merch Sale',
-      gross_amount: 89.99,
-      commission_amount: 8.99,
-      rate: 10,
-      status: 'pending',
-      created_at: new Date(Date.now() - 172800000).toISOString(),
-    },
-  ];
-
-  const payoutHistory: PayoutBatch[] = [
-    {
-      id: 'pay-001',
-      period_start: '2024-01-01',
-      period_end: '2024-01-15',
-      total_amount: 456.78,
-      status: 'paid',
-      paid_at: '2024-01-20',
-      items_count: 12,
-    },
-    {
-      id: 'pay-002',
-      period_start: '2024-01-16',
-      period_end: '2024-01-31',
-      total_amount: 623.45,
-      status: 'paid',
-      paid_at: '2024-02-05',
-      items_count: 18,
-    },
-  ];
-
-  // Calculate totals from mock data
-  const totalPending = commissionEntries
-    .filter(e => e.status === 'pending')
-    .reduce((sum, e) => sum + e.commission_amount, 0);
-  const totalApproved = commissionEntries
-    .filter(e => e.status === 'approved')
-    .reduce((sum, e) => sum + e.commission_amount, 0);
-  const totalPaid = commissionEntries
-    .filter(e => e.status === 'paid')
-    .reduce((sum, e) => sum + e.commission_amount, 0);
-
-  // Channel breakdown
-  const channelBreakdown = {
-    store_order: commissionEntries
-      .filter(e => e.source_channel === 'store_order')
-      .reduce((sum, e) => sum + e.commission_amount, 0),
-    wholesale_order: commissionEntries
-      .filter(e => e.source_channel === 'wholesale_order')
-      .reduce((sum, e) => sum + e.commission_amount, 0),
-    merch_affiliate: commissionEntries
-      .filter(e => e.source_channel === 'merch_affiliate')
-      .reduce((sum, e) => sum + e.commission_amount, 0),
-    team_override: commissionEntries
-      .filter(e => e.source_channel === 'team_override')
-      .reduce((sum, e) => sum + e.commission_amount, 0),
-  };
 
   const getChannelIcon = (channel: string) => {
     switch (channel) {
       case 'store_order': return <Store className="h-4 w-4" />;
       case 'wholesale_order': return <ShoppingCart className="h-4 w-4" />;
-      case 'merch_affiliate': return <TrendingUp className="h-4 w-4" />;
+      case 'affiliate': return <TrendingUp className="h-4 w-4" />;
       case 'team_override': return <Users className="h-4 w-4" />;
       default: return <DollarSign className="h-4 w-4" />;
     }
@@ -148,7 +40,7 @@ export default function AmbassadorCommissions() {
     switch (channel) {
       case 'store_order': return 'Store Order';
       case 'wholesale_order': return 'Wholesale';
-      case 'merch_affiliate': return 'Affiliate';
+      case 'affiliate': return 'Affiliate';
       case 'team_override': return 'Team Override';
       default: return channel;
     }
@@ -169,12 +61,30 @@ export default function AmbassadorCommissions() {
     }
   };
 
-  const filteredEntries = commissionEntries.filter(entry => {
-    const matchesSearch = entry.source_name.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredEntries = ledger.filter((entry: CommissionLedgerEntry) => {
+    const matchesSearch = entry.store_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          entry.source_id.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesChannel = channelFilter === 'all' || entry.source_channel === channelFilter;
     const matchesStatus = statusFilter === 'all' || entry.status === statusFilter;
     return matchesSearch && matchesChannel && matchesStatus;
   });
+
+  if (isLoading) {
+    return (
+      <EnhancedPortalLayout 
+        title="Commission Center" 
+        subtitle="Track earnings, view ledger, and manage payouts"
+        backPath="/ambassador/dashboard"
+      >
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24" />)}
+          </div>
+          <Skeleton className="h-64" />
+        </div>
+      </EnhancedPortalLayout>
+    );
+  }
 
   return (
     <EnhancedPortalLayout 
@@ -183,14 +93,17 @@ export default function AmbassadorCommissions() {
       backPath="/ambassador/dashboard"
     >
       <div className="p-6 space-y-6">
-        {/* Summary Cards */}
+        {/* Summary Cards - Data from SQL view, zero client math */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/20">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Pending</p>
-                  <p className="text-2xl font-bold text-yellow-500">${totalPending.toFixed(2)}</p>
+                  <p className="text-2xl font-bold text-yellow-500">
+                    ${Number(totals.pending_total || 0).toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{totals.pending_count} entries</p>
                 </div>
                 <Clock className="h-8 w-8 text-yellow-500/50" />
               </div>
@@ -202,7 +115,10 @@ export default function AmbassadorCommissions() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Approved</p>
-                  <p className="text-2xl font-bold text-blue-500">${totalApproved.toFixed(2)}</p>
+                  <p className="text-2xl font-bold text-blue-500">
+                    ${Number(totals.approved_total || 0).toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{totals.approved_count} entries</p>
                 </div>
                 <CheckCircle className="h-8 w-8 text-blue-500/50" />
               </div>
@@ -214,7 +130,10 @@ export default function AmbassadorCommissions() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Paid (Lifetime)</p>
-                  <p className="text-2xl font-bold text-green-500">${totalPaid.toFixed(2)}</p>
+                  <p className="text-2xl font-bold text-green-500">
+                    ${Number(totals.paid_total || 0).toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{totals.paid_count} entries</p>
                 </div>
                 <DollarSign className="h-8 w-8 text-green-500/50" />
               </div>
@@ -225,9 +144,9 @@ export default function AmbassadorCommissions() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">This Month</p>
+                  <p className="text-sm text-muted-foreground">Lifetime Total</p>
                   <p className="text-2xl font-bold text-purple-500">
-                    ${(totalPending + totalApproved).toFixed(2)}
+                    ${Number(totals.lifetime_total || 0).toFixed(2)}
                   </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-purple-500/50" />
@@ -236,7 +155,7 @@ export default function AmbassadorCommissions() {
           </Card>
         </div>
 
-        {/* Channel Breakdown */}
+        {/* Channel Breakdown - Data from SQL view */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Earnings by Channel</CardTitle>
@@ -250,7 +169,7 @@ export default function AmbassadorCommissions() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Store Orders</p>
-                  <p className="font-semibold">${channelBreakdown.store_order.toFixed(2)}</p>
+                  <p className="font-semibold">${Number(channels.store_order || 0).toFixed(2)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
@@ -259,7 +178,7 @@ export default function AmbassadorCommissions() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Wholesale</p>
-                  <p className="font-semibold">${channelBreakdown.wholesale_order.toFixed(2)}</p>
+                  <p className="font-semibold">${Number(channels.wholesale_order || 0).toFixed(2)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
@@ -268,7 +187,7 @@ export default function AmbassadorCommissions() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Affiliate</p>
-                  <p className="font-semibold">${channelBreakdown.merch_affiliate.toFixed(2)}</p>
+                  <p className="font-semibold">${Number(channels.affiliate || 0).toFixed(2)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
@@ -277,7 +196,7 @@ export default function AmbassadorCommissions() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Team Override</p>
-                  <p className="font-semibold">${channelBreakdown.team_override.toFixed(2)}</p>
+                  <p className="font-semibold">${Number(channels.team_override || 0).toFixed(2)}</p>
                 </div>
               </div>
             </div>
@@ -297,7 +216,7 @@ export default function AmbassadorCommissions() {
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Search transactions..." 
+                  placeholder="Search by store or source ID..." 
                   className="pl-9"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -311,7 +230,7 @@ export default function AmbassadorCommissions() {
                   <SelectItem value="all">All Channels</SelectItem>
                   <SelectItem value="store_order">Store Orders</SelectItem>
                   <SelectItem value="wholesale_order">Wholesale</SelectItem>
-                  <SelectItem value="merch_affiliate">Affiliate</SelectItem>
+                  <SelectItem value="affiliate">Affiliate</SelectItem>
                   <SelectItem value="team_override">Team Override</SelectItem>
                 </SelectContent>
               </Select>
@@ -332,26 +251,27 @@ export default function AmbassadorCommissions() {
               </Button>
             </div>
 
-            {/* Ledger Table */}
+            {/* Ledger Table - Real data from commission_ledger */}
             <Card>
               <ScrollArea className="h-[400px]">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Source</TableHead>
+                      <TableHead>Store / Source</TableHead>
                       <TableHead>Channel</TableHead>
                       <TableHead className="text-right">Gross</TableHead>
                       <TableHead className="text-right">Rate</TableHead>
                       <TableHead className="text-right">Commission</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
+                      <TableHead>Earned</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredEntries.map((entry) => (
-                      <TableRow key={entry.id}>
+                      <TableRow key={entry.id} className={entry.reversal_of ? 'opacity-60' : ''}>
                         <TableCell className="font-medium max-w-[200px] truncate">
-                          {entry.source_name}
+                          {entry.store_name || entry.source_id.slice(0, 8)}
+                          {entry.reversal_of && <span className="text-red-500 ml-1">(Reversal)</span>}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -359,21 +279,25 @@ export default function AmbassadorCommissions() {
                             <span className="text-sm">{getChannelLabel(entry.source_channel)}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">${entry.gross_amount.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">{entry.rate}%</TableCell>
-                        <TableCell className="text-right font-semibold text-green-500">
-                          +${entry.commission_amount.toFixed(2)}
+                        <TableCell className="text-right">
+                          ${Number(entry.gross_amount).toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right">{entry.commission_rate}%</TableCell>
+                        <TableCell className={`text-right font-semibold ${Number(entry.commission_amount) < 0 ? 'text-red-500' : 'text-green-500'}`}>
+                          {Number(entry.commission_amount) >= 0 ? '+' : ''}${Number(entry.commission_amount).toFixed(2)}
                         </TableCell>
                         <TableCell>{getStatusBadge(entry.status)}</TableCell>
                         <TableCell className="text-muted-foreground">
-                          {format(new Date(entry.created_at), 'MMM d, yyyy')}
+                          {format(new Date(entry.earned_at), 'MMM d, yyyy')}
                         </TableCell>
                       </TableRow>
                     ))}
                     {filteredEntries.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                          No commission entries found
+                          {ledger.length === 0 
+                            ? 'No commission entries yet. Start earning by completing store orders!'
+                            : 'No entries match your filters'}
                         </TableCell>
                       </TableRow>
                     )}
@@ -400,38 +324,33 @@ export default function AmbassadorCommissions() {
                     <TableRow>
                       <TableHead>Period</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">Items</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Paid Date</TableHead>
-                      <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payoutHistory.map((payout) => (
+                    {payouts.map((payout) => (
                       <TableRow key={payout.id}>
                         <TableCell className="font-medium">
                           {format(new Date(payout.period_start), 'MMM d')} - {format(new Date(payout.period_end), 'MMM d, yyyy')}
                         </TableCell>
                         <TableCell className="text-right font-semibold text-green-500">
-                          ${payout.total_amount.toFixed(2)}
+                          ${Number(payout.total_amount).toFixed(2)}
                         </TableCell>
-                        <TableCell className="text-right">{payout.items_count}</TableCell>
-                        <TableCell>{getStatusBadge(payout.status)}</TableCell>
+                        <TableCell>
+                          <Badge variant={payout.status === 'paid' ? 'default' : 'secondary'}>
+                            {payout.status}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="text-muted-foreground">
                           {payout.paid_at ? format(new Date(payout.paid_at), 'MMM d, yyyy') : '-'}
                         </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm">
-                            <Download className="h-4 w-4 mr-1" />
-                            Statement
-                          </Button>
-                        </TableCell>
                       </TableRow>
                     ))}
-                    {payoutHistory.length === 0 && (
+                    {payouts.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          No payout history yet
+                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          No payouts yet. Approved commissions will be batched for payment.
                         </TableCell>
                       </TableRow>
                     )}
@@ -441,24 +360,6 @@ export default function AmbassadorCommissions() {
             </Card>
           </TabsContent>
         </Tabs>
-
-        {/* Dispute CTA */}
-        <Card className="border-dashed">
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Commission Dispute?</p>
-                <p className="text-sm text-muted-foreground">
-                  If you believe there's an error in your commissions, submit a dispute for review.
-                </p>
-              </div>
-              <Button variant="outline">
-                <AlertCircle className="h-4 w-4 mr-2" />
-                File Dispute
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </EnhancedPortalLayout>
   );
