@@ -10,12 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload } from 'lucide-react';
+import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import BulkUploadModal from '@/components/stores/BulkUploadModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useGlobalTags } from '@/hooks/useGlobalTags';
+import { useStoreProductCounts } from '@/hooks/useProductStoreAssignments';
 // Simulation data now comes from database with is_simulation=true (RLS handles filtering)
 
 interface StoreContact {
@@ -152,6 +153,9 @@ const Stores = () => {
 
   // Fetch all global tags for the filter dropdown
   const { data: allGlobalTags = [] } = useGlobalTags();
+  
+  // Fetch product counts for stores
+  const { data: storeProductCounts = {} } = useStoreProductCounts();
 
   // Fetch stores from database - RLS automatically filters by simulation mode
   const { data: stores = [], isLoading } = useQuery({
@@ -760,6 +764,12 @@ const Stores = () => {
 
                   {/* Operations Tags */}
                   <div className="flex flex-wrap gap-1 pt-1">
+                    {storeProductCounts[store.id] > 0 && (
+                      <Badge className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                        <Package className="h-3 w-3 mr-1" />
+                        {storeProductCounts[store.id]} Products
+                      </Badge>
+                    )}
                     {store.sells_flowers && (
                       <Badge className="text-xs bg-pink-500/10 text-pink-600 border-pink-500/30">
                         <Flower2 className="h-3 w-3 mr-1" />

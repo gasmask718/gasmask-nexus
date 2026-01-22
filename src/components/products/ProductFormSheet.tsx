@@ -29,6 +29,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { createProduct, updateProduct, validateProduct } from '@/services/products/productService';
 import { ImageUpload } from '@/components/inventory/ImageUpload';
+import { StoreAssignmentSection } from './StoreAssignmentSection';
+import { useAssignStoresToProduct } from '@/hooks/useProductStoreAssignments';
 import { 
   Loader2, 
   Package, 
@@ -159,7 +161,10 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
   const [form, setForm] = useState<ProductForm>(defaultForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [selectedStores, setSelectedStores] = useState<string[]>([]);
   const isEditMode = !!productId;
+  
+  const assignStoresMutation = useAssignStoresToProduct();
 
   // Fetch brands
   const { data: brands = [] } = useQuery({
@@ -243,6 +248,7 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
       });
     } else if (!isEditMode && open) {
       setForm(defaultForm);
+      setSelectedStores([]);
     }
   }, [existingProduct, isEditMode, open]);
 
@@ -288,6 +294,8 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
 
     setIsSubmitting(true);
     try {
+      let savedProductId = productId;
+      
       if (isEditMode && productId) {
         await updateProduct(productId, {
           ...form,
@@ -295,11 +303,20 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
         });
         toast.success('Product updated successfully');
       } else {
-        await createProduct({
+        const newProduct = await createProduct({
           ...form,
           is_active: form.status === 'active',
         });
+        savedProductId = newProduct?.id;
         toast.success('Product created successfully');
+      }
+
+      // Assign stores if any selected and we have a product ID
+      if (savedProductId && selectedStores.length > 0) {
+        await assignStoresMutation.mutateAsync({ 
+          productId: savedProductId, 
+          storeIds: selectedStores 
+        });
       }
 
       onSuccess?.();
@@ -597,6 +614,15 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                         />
                       </div>
                     ))}
+
+                    <Separator className="my-4" />
+                    
+                    {/* Store Assignment Section */}
+                    <StoreAssignmentSection
+                      productId={productId}
+                      selectedStores={selectedStores}
+                      onStoresChange={setSelectedStores}
+                    />
                   </AccordionContent>
                 </AccordionItem>
 
