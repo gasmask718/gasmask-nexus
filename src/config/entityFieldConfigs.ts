@@ -118,6 +118,12 @@ export const ambassadorFields: FieldConfig[] = [
   { name: 'tags', label: 'Tags', type: 'text', placeholder: 'Comma-separated tags' },
 ];
 
+export const productionWorkerFields: FieldConfig[] = [
+  { name: 'name', label: 'Full Name', type: 'text', required: true, placeholder: 'Production worker name' },
+  { name: 'phone', label: 'Phone Number', type: 'phone', required: true, placeholder: '(555) 123-4567' },
+  { name: 'email', label: 'Email', type: 'email', placeholder: 'worker@example.com' },
+];
+
 export const orderFields: FieldConfig[] = [
   { name: 'brand', label: 'Brand', type: 'select', required: true, options: brandOptions.slice(1) },
   { name: 'boxes', label: 'Boxes', type: 'number', required: true, placeholder: '0' },
