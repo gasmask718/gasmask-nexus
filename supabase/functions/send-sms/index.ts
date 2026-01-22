@@ -35,11 +35,23 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Missing required fields: to and message");
     }
 
-    // Format phone number - ensure it starts with +1 for US numbers
+    // Format phone number to E.164 format
     let formattedTo = to.replace(/\D/g, "");
-    if (formattedTo.length === 10) {
+    
+    // Handle Philippine numbers (start with 09, 11 digits)
+    if (formattedTo.startsWith("09") && formattedTo.length === 11) {
+      formattedTo = `+63${formattedTo.substring(1)}`; // Remove leading 0, add +63
+    }
+    // Handle Philippine numbers already with country code (63...)
+    else if (formattedTo.startsWith("63") && formattedTo.length === 12) {
+      formattedTo = `+${formattedTo}`;
+    }
+    // Handle US numbers (10 digits)
+    else if (formattedTo.length === 10) {
       formattedTo = `+1${formattedTo}`;
-    } else if (!formattedTo.startsWith("+")) {
+    }
+    // Handle numbers that already have country code but no +
+    else if (formattedTo.length >= 11 && !formattedTo.startsWith("+")) {
       formattedTo = `+${formattedTo}`;
     }
 
