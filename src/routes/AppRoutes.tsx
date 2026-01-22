@@ -1828,6 +1828,51 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+      {/* Admin Reports */}
+      <Route path="/admin/reports/financial" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin']}>
+            <Layout><FinancialReportsPage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/reports/ambassadors" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin']}>
+            <Layout><AmbassadorReportsPage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/reports/stores" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin']}>
+            <Layout><StoreReportsPage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/reports/tax" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin']}>
+            <Layout><TaxReportsPage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/reports/payouts" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin']}>
+            <Layout><PayoutReportsPage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
+      {/* Ambassador Reports */}
+      <Route path="/ambassador/reports/earnings" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <Layout><AmbassadorEarningsPage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
 
       <Route path="*" element={<NotFound />} />
     </Routes>
