@@ -3235,36 +3235,93 @@ export type Database = {
           },
         ]
       }
+      audit_lock: {
+        Row: {
+          locked: boolean
+          locked_at: string
+          locked_by: string | null
+          table_name: string
+        }
+        Insert: {
+          locked?: boolean
+          locked_at?: string
+          locked_by?: string | null
+          table_name: string
+        }
+        Update: {
+          locked?: boolean
+          locked_at?: string
+          locked_by?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           acted_at: string | null
           acted_by: string | null
           action: string
+          actor_ip: unknown
+          actor_role: string | null
+          actor_user_id: string | null
+          after: Json | null
+          before: Json | null
+          changed_fields: string[] | null
+          created_at: string | null
           id: string
           new_data: Json | null
           old_data: Json | null
+          prev_row_hash: string | null
           record_id: string | null
+          request_id: string | null
+          row_hash: string
+          source: string | null
           table_name: string
+          user_agent: string | null
         }
         Insert: {
           acted_at?: string | null
           acted_by?: string | null
           action: string
+          actor_ip?: unknown
+          actor_role?: string | null
+          actor_user_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          changed_fields?: string[] | null
+          created_at?: string | null
           id?: string
           new_data?: Json | null
           old_data?: Json | null
+          prev_row_hash?: string | null
           record_id?: string | null
+          request_id?: string | null
+          row_hash: string
+          source?: string | null
           table_name: string
+          user_agent?: string | null
         }
         Update: {
           acted_at?: string | null
           acted_by?: string | null
           action?: string
+          actor_ip?: unknown
+          actor_role?: string | null
+          actor_user_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          changed_fields?: string[] | null
+          created_at?: string | null
           id?: string
           new_data?: Json | null
           old_data?: Json | null
+          prev_row_hash?: string | null
           record_id?: string | null
+          request_id?: string | null
+          row_hash?: string
+          source?: string | null
           table_name?: string
+          user_agent?: string | null
         }
         Relationships: []
       }
@@ -8205,6 +8262,8 @@ export type Database = {
           payout_hold: boolean
           payout_hold_reason: string | null
           reversal_of: string | null
+          reversal_reason: string | null
+          reversed_ledger_id: string | null
           source_channel: string
           source_id: string
           source_name: string | null
@@ -8229,6 +8288,8 @@ export type Database = {
           payout_hold?: boolean
           payout_hold_reason?: string | null
           reversal_of?: string | null
+          reversal_reason?: string | null
+          reversed_ledger_id?: string | null
           source_channel: string
           source_id: string
           source_name?: string | null
@@ -8253,6 +8314,8 @@ export type Database = {
           payout_hold?: boolean
           payout_hold_reason?: string | null
           reversal_of?: string | null
+          reversal_reason?: string | null
+          reversed_ledger_id?: string | null
           source_channel?: string
           source_id?: string
           source_name?: string | null
@@ -34753,6 +34816,14 @@ export type Database = {
           },
         ]
       }
+      v_audit_integrity_check: {
+        Row: {
+          broken_links: number | null
+          rows_checked: number | null
+          table_name: string | null
+        }
+        Relationships: []
+      }
       v_commissions_payable: {
         Row: {
           ambassador_id: string | null
@@ -35259,6 +35330,24 @@ export type Database = {
         Args: { p_approved_by?: string; p_batch_id: string }
         Returns: undefined
       }
+      audit_actor_role: { Args: never; Returns: string }
+      audit_compute_hash: {
+        Args: { payload: Json; prev: string }
+        Returns: string
+      }
+      audit_write: {
+        Args: {
+          p_action: string
+          p_after: Json
+          p_before: Json
+          p_changed_fields: string[]
+          p_record: string
+          p_request_id?: string
+          p_source?: string
+          p_table: string
+        }
+        Returns: undefined
+      }
       backfill_final_results: { Args: never; Returns: number }
       bulk_approve_commissions: {
         Args: { p_ambassador_id?: string; p_before_date?: string }
@@ -35394,6 +35483,14 @@ export type Database = {
         }[]
       }
       get_ambassador_id: { Args: { _user_id: string }; Returns: string }
+      get_audit_integrity: {
+        Args: never
+        Returns: {
+          broken_links: number
+          rows_checked: number
+          table_name: string
+        }[]
+      }
       get_audit_summary: {
         Args: { p_limit?: number }
         Returns: {
@@ -35406,6 +35503,20 @@ export type Database = {
           role_type: Database["public"]["Enums"]["app_role"]
           user_email: string
           user_name: string
+        }[]
+      }
+      get_audit_trail: {
+        Args: { p_record_id: string; p_table_name: string }
+        Returns: {
+          action: string
+          actor_role: string
+          actor_user_id: string
+          after: Json
+          before: Json
+          changed_fields: string[]
+          created_at: string
+          id: string
+          source: string
         }[]
       }
       get_intent_queue_health: { Args: never; Returns: Json }
@@ -35584,6 +35695,29 @@ export type Database = {
       revoke_portal_device: {
         Args: { _device_id: string; _reason?: string }
         Returns: boolean
+      }
+      search_audit_logs: {
+        Args: {
+          p_action?: string
+          p_actor_role?: string
+          p_actor_user_id?: string
+          p_end_date?: string
+          p_limit?: number
+          p_offset?: number
+          p_start_date?: string
+          p_table_name?: string
+        }
+        Returns: {
+          action: string
+          actor_role: string
+          actor_user_id: string
+          changed_fields: string[]
+          created_at: string
+          id: string
+          record_id: string
+          source: string
+          table_name: string
+        }[]
       }
       set_phase5_mode: {
         Args: { p_enabled?: boolean; p_kill_switch?: boolean; p_mode: string }
