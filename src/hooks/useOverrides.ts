@@ -322,12 +322,12 @@ export function useAmbassadorsForOverrides() {
 export function useStoresForOverrides() {
   return useQuery({
     queryKey: ['stores-for-overrides'],
-    queryFn: async () => {
-      const { data, error } = await (supabase
+    queryFn: async (): Promise<Array<{ id: string; store_name: string; city: string | null; state: string | null }>> => {
+      const { data, error } = await (supabase as any)
         .from('store_master')
         .select('id, store_name, city, state')
         .eq('status', 'active')
-        .order('store_name', { ascending: true }) as any);
+        .order('store_name', { ascending: true });
 
       if (error) throw error;
       return data || [];
