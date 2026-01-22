@@ -7622,6 +7622,7 @@ export type Database = {
           reversal_of: string | null
           source_channel: string
           source_id: string
+          source_name: string | null
           status: string
           store_id: string | null
         }
@@ -7640,6 +7641,7 @@ export type Database = {
           reversal_of?: string | null
           source_channel: string
           source_id: string
+          source_name?: string | null
           status?: string
           store_id?: string | null
         }
@@ -7658,6 +7660,7 @@ export type Database = {
           reversal_of?: string | null
           source_channel?: string
           source_id?: string
+          source_name?: string | null
           status?: string
           store_id?: string | null
         }
@@ -7730,6 +7733,13 @@ export type Database = {
             columns: ["reversal_of"]
             isOneToOne: false
             referencedRelation: "commission_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_reversal_of_fkey"
+            columns: ["reversal_of"]
+            isOneToOne: false
+            referencedRelation: "payout_eligible_commissions"
             referencedColumns: ["id"]
           },
           {
@@ -7835,6 +7845,13 @@ export type Database = {
             columns: ["commission_ledger_id"]
             isOneToOne: false
             referencedRelation: "commission_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_payout_items_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "payout_eligible_commissions"
             referencedColumns: ["id"]
           },
           {
@@ -19718,6 +19735,13 @@ export type Database = {
             columns: ["commission_ledger_id"]
             isOneToOne: true
             referencedRelation: "commission_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_items_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: true
+            referencedRelation: "payout_eligible_commissions"
             referencedColumns: ["id"]
           },
           {
@@ -32350,6 +32374,13 @@ export type Database = {
             foreignKeyName: "commission_ledger_reversal_of_fkey"
             columns: ["reversal_of"]
             isOneToOne: false
+            referencedRelation: "payout_eligible_commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_reversal_of_fkey"
+            columns: ["reversal_of"]
+            isOneToOne: false
             referencedRelation: "payout_export_rows"
             referencedColumns: ["commission_id"]
           },
@@ -32602,6 +32633,53 @@ export type Database = {
           },
         ]
       }
+      payout_eligible_commissions: {
+        Row: {
+          ambassador_id: string | null
+          ambassador_name: string | null
+          approved_at: string | null
+          commission_amount: number | null
+          commission_rate: number | null
+          earned_at: string | null
+          gross_amount: number | null
+          id: string | null
+          source_channel: string | null
+          source_id: string | null
+          source_name: string | null
+          store_id: string | null
+          store_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payout_export_rows: {
         Row: {
           ambassador_email: string | null
@@ -32801,7 +32879,12 @@ export type Database = {
           success: boolean
         }[]
       }
+      approve_commission: { Args: { p_ledger_id: string }; Returns: undefined }
       backfill_final_results: { Args: never; Returns: number }
+      bulk_approve_commissions: {
+        Args: { p_ambassador_id?: string; p_before_date?: string }
+        Returns: number
+      }
       can_access_brand: {
         Args: { _brand: string; _user_id: string }
         Returns: boolean
@@ -32841,6 +32924,10 @@ export type Database = {
       compute_device_reliability: {
         Args: { p_device_id: string }
         Returns: number
+      }
+      create_commission_reversal: {
+        Args: { p_ledger_id: string; p_reason?: string }
+        Returns: string
       }
       create_payout_batch_for_ambassador: {
         Args: {

@@ -14,6 +14,7 @@ export interface CommissionLedgerEntry {
   store_id: string | null;
   source_channel: SourceChannel;
   source_id: string;
+  source_name: string | null; // Human-readable name for statements
   gross_amount: number;
   commission_rate: number;
   commission_amount: number;
@@ -23,10 +24,27 @@ export interface CommissionLedgerEntry {
   approved_at: string | null;
   paid_at: string | null;
   reversal_of: string | null;
+  payout_batch_id: string | null;
   created_at: string;
   // Joined fields
   store_name?: string;
   plan_name?: string;
+}
+
+export interface PayoutEligibleCommission {
+  id: string;
+  ambassador_id: string;
+  store_id: string | null;
+  source_channel: SourceChannel;
+  source_id: string;
+  source_name: string | null;
+  gross_amount: number;
+  commission_rate: number;
+  commission_amount: number;
+  earned_at: string;
+  approved_at: string | null;
+  ambassador_name: string;
+  store_name: string | null;
 }
 
 export interface CommissionTotals {
@@ -462,4 +480,107 @@ export function useCommissionPage() {
     isLoading: ledger.isLoading || totals.isLoading || channels.isLoading || payouts.isLoading,
     isError: ledger.isError || totals.isError || channels.isError || payouts.isError,
   };
+}
+
+// =====================================================
+// LEDGER MANAGEMENT FUNCTIONS (Admin Operations)
+// =====================================================
+
+/**
+ * Approve a single pending commission
+ */
+export async function approveCommission(ledgerId: string): Promise<void> {
+  const { error } = await supabase.rpc('approve_commission', {
+    p_ledger_id: ledgerId
+  });
+  if (error) throw error;
+}
+
+/**
+ * Bulk approve all pending commissions for an ambassador (or all if null)
+ */
+export async function bulkApproveCommissions(
+  ambassadorId?: string,
+  beforeDate?: Date
+): Promise<number> {
+  const { data, error } = await supabase.rpc('bulk_approve_commissions', {
+    p_ambassador_id: ambassadorId || null,
+    p_before_date: beforeDate?.toISOString() || new Date().toISOString()
+  });
+  if (error) throw error;
+  return data as number;
+}
+
+/**
+ * Create a reversal for a commission entry
+ */
+export async function createCommissionReversal(
+  ledgerId: string,
+  reason?: string
+): Promise<string> {
+  const { data, error } = await supabase.rpc('create_commission_reversal', {
+    p_ledger_id: ledgerId,
+    p_reason: reason || 'Manual reversal'
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+/**
+ * Fetch payout-eligible commissions (approved, unpaid, positive amount)
+ */
+export function usePayoutEligibleCommissions() {
+  return useQuery({
+    queryKey: ['payout-eligible-commissions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payout_eligible_commissions')
+        .select('*')
+        .order('earned_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as PayoutEligibleCommission[];
+    },
+  });
+}
+
+/**
+ * Create a payout batch for an ambassador
+ */
+export async function createPayoutBatch(
+  ambassadorId: string,
+  periodStart: Date,
+  periodEnd: Date
+): Promise<string> {
+  const { data, error } = await supabase.rpc('create_payout_batch_for_ambassador', {
+    p_ambassador_id: ambassadorId,
+    p_period_start: periodStart.toISOString().split('T')[0],
+    p_period_end: periodEnd.toISOString().split('T')[0]
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+/**
+ * Finalize a payout batch (lock for payment)
+ */
+export async function finalizePayoutBatch(batchId: string): Promise<void> {
+  const { error } = await supabase.rpc('finalize_payout_batch', {
+    p_batch_id: batchId
+  });
+  if (error) throw error;
+}
+
+/**
+ * Mark a payout batch as paid
+ */
+export async function markPayoutBatchPaid(
+  batchId: string,
+  exportRef?: string
+): Promise<void> {
+  const { error } = await supabase.rpc('mark_payout_batch_paid', {
+    p_batch_id: batchId,
+    p_export_ref: exportRef || null
+  });
+  if (error) throw error;
 }
