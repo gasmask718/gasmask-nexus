@@ -119,9 +119,14 @@ export const ambassadorFields: FieldConfig[] = [
 ];
 
 export const productionWorkerFields: FieldConfig[] = [
-  { name: 'name', label: 'Full Name', type: 'text', required: true, placeholder: 'Production worker name' },
+  { name: 'name', label: 'Full Name', type: 'text', required: true, placeholder: 'Production name' },
   { name: 'phone', label: 'Phone Number', type: 'phone', required: true, placeholder: '(555) 123-4567' },
   { name: 'email', label: 'Email', type: 'email', placeholder: 'worker@example.com' },
+  { name: 'phone_whatsapp', label: 'WhatsApp', type: 'phone', placeholder: 'WhatsApp number' },
+  { name: 'address_street', label: 'Street Address', type: 'text', placeholder: 'Street address' },
+  { name: 'address_city', label: 'City', type: 'text', placeholder: 'City' },
+  { name: 'address_state', label: 'State', type: 'text', placeholder: 'NY' },
+  { name: 'address_zip', label: 'ZIP Code', type: 'text', placeholder: '10001' },
 ];
 
 export const orderFields: FieldConfig[] = [
