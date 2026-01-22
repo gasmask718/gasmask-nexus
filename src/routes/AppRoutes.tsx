@@ -51,6 +51,7 @@ import AutomationSettings from '@/pages/AutomationSettings';
 import Training from '@/pages/Training';
 import Ambassadors from '@/pages/Ambassadors';
 import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, AmbassadorCommissions, AmbassadorRoutes, AmbassadorOrders, AmbassadorCommunications, AmbassadorLeads, AmbassadorDisputes, AmbassadorDisputeDetail } from '@/pages/ambassador';
+import { AdminDisputesQueue, AdminDisputeDetail } from '@/pages/admin/disputes';
 import Expansion from '@/pages/Expansion';
 import Rewards from '@/pages/Rewards';
 import LiveMap from '@/pages/LiveMap';
@@ -1748,6 +1749,22 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
             <Layout><AmbassadorDisputeDetail /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
+      {/* Admin Disputes */}
+      <Route path="/admin/disputes" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin']}>
+            <Layout><AdminDisputesQueue /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/disputes/:id" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin']}>
+            <Layout><AdminDisputeDetail /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
