@@ -52,6 +52,7 @@ import Training from '@/pages/Training';
 import Ambassadors from '@/pages/Ambassadors';
 import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, AmbassadorCommissions, AmbassadorRoutes, AmbassadorOrders, AmbassadorCommunications, AmbassadorLeads, AmbassadorDisputes, AmbassadorDisputeDetail } from '@/pages/ambassador';
 import { AdminDisputesQueue, AdminDisputeDetail } from '@/pages/admin/disputes';
+import { AdminOverridesPage, AdminOverrideDetailPage } from '@/pages/admin/overrides';
 import Expansion from '@/pages/Expansion';
 import Rewards from '@/pages/Rewards';
 import LiveMap from '@/pages/LiveMap';
@@ -1769,7 +1770,22 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      {/* 404 */}
+      {/* Admin Overrides */}
+      <Route path="/admin/overrides" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin']}>
+            <AdminOverridesPage />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/overrides/:id" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin']}>
+            <AdminOverrideDetailPage />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
