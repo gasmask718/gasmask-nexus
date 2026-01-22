@@ -53,6 +53,8 @@ import Ambassadors from '@/pages/Ambassadors';
 import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, AmbassadorCommissions, AmbassadorRoutes, AmbassadorOrders, AmbassadorCommunications, AmbassadorLeads, AmbassadorDisputes, AmbassadorDisputeDetail } from '@/pages/ambassador';
 import { AdminDisputesQueue, AdminDisputeDetail } from '@/pages/admin/disputes';
 import { AdminOverridesPage, AdminOverrideDetailPage } from '@/pages/admin/overrides';
+import { AdminPayoutsPage, AdminPayoutDetailPage } from '@/pages/admin/payouts';
+import { AmbassadorPayoutsPage, AmbassadorPayoutStatementPage, AmbassadorPayoutSettingsPage } from '@/pages/ambassador/payouts';
 import Expansion from '@/pages/Expansion';
 import Rewards from '@/pages/Rewards';
 import LiveMap from '@/pages/LiveMap';
@@ -1782,6 +1784,45 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin']}>
             <AdminOverrideDetailPage />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
+      {/* Admin Payouts */}
+      <Route path="/admin/payouts" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin']}>
+            <Layout><AdminPayoutsPage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/payouts/:batchId" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin']}>
+            <Layout><AdminPayoutDetailPage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
+      {/* Ambassador Payouts */}
+      <Route path="/ambassador/payouts" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <Layout><AmbassadorPayoutsPage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/payouts/:itemId" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <Layout><AmbassadorPayoutStatementPage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/settings/payouts" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <Layout><AmbassadorPayoutSettingsPage /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
