@@ -130,9 +130,9 @@ export default function GrabbaCRM() {
   });
 
   const productionCrud = useCrudOperations({
-    table: "people",
+    table: "crm_production",
     queryKey: ["grabba-crm-production"],
-    successMessages: { create: "Production worker created", update: "Production worker updated", delete: "Production worker deleted" },
+    successMessages: { create: "Production created", update: "Production updated", delete: "Production deleted" },
     simulationMode,
   });
 
@@ -259,10 +259,9 @@ export default function GrabbaCRM() {
   const { data: productionData, isLoading: productionLoading } = useQuery({
     queryKey: ["grabba-crm-production"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("people")
-        .select("id, name, phone, email, created_at")
-        .eq("type", "production")
+      const { data } = await (supabase as any)
+        .from("crm_production")
+        .select("id, name, phone, email, phone_whatsapp, address_street, address_city, address_state, address_zip, created_at")
         .order("created_at", { ascending: false });
       return data || [];
     },
@@ -1146,11 +1145,7 @@ export default function GrabbaCRM() {
         business_id: defaultBusinessId,
       });
     } else if (activeTab === "production") {
-      await productionCrud.create({
-        ...data,
-        type: "production",
-        relationship_status: "active",
-      });
+      await productionCrud.create(data);
     }
   };
 

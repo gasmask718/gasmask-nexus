@@ -10843,6 +10843,63 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_production: {
+        Row: {
+          address_city: string | null
+          address_state: string | null
+          address_street: string | null
+          address_zip: string | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          email: string | null
+          id: string
+          is_simulation: boolean | null
+          name: string
+          notes: string | null
+          phone: string | null
+          phone_whatsapp: string | null
+          relationship_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address_city?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          id?: string
+          is_simulation?: boolean | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          phone_whatsapp?: string | null
+          relationship_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address_city?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          id?: string
+          is_simulation?: boolean | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          phone_whatsapp?: string | null
+          relationship_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       crm_snapshots: {
         Row: {
           business_id: string
