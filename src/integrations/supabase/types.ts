@@ -7906,7 +7906,9 @@ export type Database = {
           earned_at: string
           gross_amount: number
           id: string
+          override_plan_id: string | null
           paid_at: string | null
+          parent_commission_id: string | null
           payout_batch_id: string | null
           reversal_of: string | null
           source_channel: string
@@ -7925,7 +7927,9 @@ export type Database = {
           earned_at?: string
           gross_amount: number
           id?: string
+          override_plan_id?: string | null
           paid_at?: string | null
+          parent_commission_id?: string | null
           payout_batch_id?: string | null
           reversal_of?: string | null
           source_channel: string
@@ -7944,7 +7948,9 @@ export type Database = {
           earned_at?: string
           gross_amount?: number
           id?: string
+          override_plan_id?: string | null
           paid_at?: string | null
+          parent_commission_id?: string | null
           payout_batch_id?: string | null
           reversal_of?: string | null
           source_channel?: string
@@ -7981,6 +7987,48 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "commission_plans"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_override_plan_id_fkey"
+            columns: ["override_plan_id"]
+            isOneToOne: false
+            referencedRelation: "admin_override_summary"
+            referencedColumns: ["plan_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_override_plan_id_fkey"
+            columns: ["override_plan_id"]
+            isOneToOne: false
+            referencedRelation: "commission_override_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_parent_commission_id_fkey"
+            columns: ["parent_commission_id"]
+            isOneToOne: false
+            referencedRelation: "admin_ledger_feed"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_parent_commission_id_fkey"
+            columns: ["parent_commission_id"]
+            isOneToOne: false
+            referencedRelation: "commission_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_parent_commission_id_fkey"
+            columns: ["parent_commission_id"]
+            isOneToOne: false
+            referencedRelation: "payout_eligible_commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_parent_commission_id_fkey"
+            columns: ["parent_commission_id"]
+            isOneToOne: false
+            referencedRelation: "payout_export_rows"
+            referencedColumns: ["commission_id"]
           },
           {
             foreignKeyName: "commission_ledger_payout_batch_id_fkey"
@@ -8046,6 +8094,151 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      commission_override_assignments: {
+        Row: {
+          active: boolean
+          beneficiary_ambassador_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          override_plan_id: string
+          source_ambassador_id: string | null
+          source_store_id: string | null
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          beneficiary_ambassador_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          override_plan_id: string
+          source_ambassador_id?: string | null
+          source_store_id?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          beneficiary_ambassador_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          override_plan_id?: string
+          source_ambassador_id?: string | null
+          source_store_id?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_override_assignments_beneficiary_ambassador_id_fkey"
+            columns: ["beneficiary_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_override_assignments_beneficiary_ambassador_id_fkey"
+            columns: ["beneficiary_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_override_assignments_beneficiary_ambassador_id_fkey"
+            columns: ["beneficiary_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_override_assignments_override_plan_id_fkey"
+            columns: ["override_plan_id"]
+            isOneToOne: false
+            referencedRelation: "admin_override_summary"
+            referencedColumns: ["plan_id"]
+          },
+          {
+            foreignKeyName: "commission_override_assignments_override_plan_id_fkey"
+            columns: ["override_plan_id"]
+            isOneToOne: false
+            referencedRelation: "commission_override_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_override_assignments_source_ambassador_id_fkey"
+            columns: ["source_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_override_assignments_source_ambassador_id_fkey"
+            columns: ["source_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_override_assignments_source_ambassador_id_fkey"
+            columns: ["source_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_override_assignments_source_store_id_fkey"
+            columns: ["source_store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_override_plans: {
+        Row: {
+          active: boolean
+          applies_to_channel: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          override_type: string
+          override_value: number
+          priority: number
+          role_type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          applies_to_channel?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          override_type: string
+          override_value: number
+          priority?: number
+          role_type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          applies_to_channel?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          override_type?: string
+          override_value?: number
+          priority?: number
+          role_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       commission_payout_batches: {
         Row: {
@@ -32759,6 +32952,21 @@ export type Database = {
           },
         ]
       }
+      admin_override_summary: {
+        Row: {
+          applies_to_channel: string | null
+          assignment_count: number | null
+          commissions_generated: number | null
+          override_type: string | null
+          override_value: number | null
+          plan_active: boolean | null
+          plan_id: string | null
+          plan_name: string | null
+          role_type: string | null
+          total_paid_out: number | null
+        }
+        Relationships: []
+      }
       admin_payout_summary: {
         Row: {
           ambassador_id: string | null
@@ -32833,6 +33041,53 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ambassador_override_earnings: {
+        Row: {
+          ambassador_id: string | null
+          override_count: number | null
+          override_plan_id: string | null
+          plan_name: string | null
+          role_type: string | null
+          total_override_earnings: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_override_plan_id_fkey"
+            columns: ["override_plan_id"]
+            isOneToOne: false
+            referencedRelation: "admin_override_summary"
+            referencedColumns: ["plan_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_override_plan_id_fkey"
+            columns: ["override_plan_id"]
+            isOneToOne: false
+            referencedRelation: "commission_override_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -33300,6 +33555,10 @@ export type Database = {
       }
       admin_resolve_dispute: {
         Args: { p_admin_notes?: string; p_dispute_id: string }
+        Returns: undefined
+      }
+      apply_commission_overrides: {
+        Args: { p_commission_id: string }
         Returns: undefined
       }
       approve_commission: { Args: { p_ledger_id: string }; Returns: undefined }
