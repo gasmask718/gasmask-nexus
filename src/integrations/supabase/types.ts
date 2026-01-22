@@ -7705,6 +7705,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "commission_ledger_payout_batch_id_fkey"
+            columns: ["payout_batch_id"]
+            isOneToOne: false
+            referencedRelation: "payout_export_rows"
+            referencedColumns: ["payout_batch_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_payout_batch_id_fkey"
+            columns: ["payout_batch_id"]
+            isOneToOne: false
+            referencedRelation: "payout_statement_data"
+            referencedColumns: ["payout_batch_id"]
+          },
+          {
             foreignKeyName: "commission_ledger_reversal_of_fkey"
             columns: ["reversal_of"]
             isOneToOne: false
@@ -7717,6 +7731,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "commission_ledger"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_reversal_of_fkey"
+            columns: ["reversal_of"]
+            isOneToOne: false
+            referencedRelation: "payout_export_rows"
+            referencedColumns: ["commission_id"]
           },
           {
             foreignKeyName: "commission_ledger_store_id_fkey"
@@ -7815,6 +7836,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "commission_ledger"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_payout_items_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "payout_export_rows"
+            referencedColumns: ["commission_id"]
           },
           {
             foreignKeyName: "commission_payout_items_payout_batch_id_fkey"
@@ -19693,6 +19721,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "payout_items_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: true
+            referencedRelation: "payout_export_rows"
+            referencedColumns: ["commission_id"]
+          },
+          {
             foreignKeyName: "payout_items_payout_batch_id_fkey"
             columns: ["payout_batch_id"]
             isOneToOne: false
@@ -19705,6 +19740,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "payout_batches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_items_payout_batch_id_fkey"
+            columns: ["payout_batch_id"]
+            isOneToOne: false
+            referencedRelation: "payout_export_rows"
+            referencedColumns: ["payout_batch_id"]
+          },
+          {
+            foreignKeyName: "payout_items_payout_batch_id_fkey"
+            columns: ["payout_batch_id"]
+            isOneToOne: false
+            referencedRelation: "payout_statement_data"
+            referencedColumns: ["payout_batch_id"]
           },
         ]
       }
@@ -32298,6 +32347,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "commission_ledger_reversal_of_fkey"
+            columns: ["reversal_of"]
+            isOneToOne: false
+            referencedRelation: "payout_export_rows"
+            referencedColumns: ["commission_id"]
+          },
+          {
             foreignKeyName: "commission_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
@@ -32546,6 +32602,104 @@ export type Database = {
           },
         ]
       }
+      payout_export_rows: {
+        Row: {
+          ambassador_email: string | null
+          ambassador_id: string | null
+          ambassador_name: string | null
+          batch_total: number | null
+          commission_amount: number | null
+          commission_id: string | null
+          commission_rate: number | null
+          currency: string | null
+          earned_at: string | null
+          gross_amount: number | null
+          paid_at: string | null
+          payout_batch_id: string | null
+          payout_destination: string | null
+          payout_method: string | null
+          payout_method_label: string | null
+          payout_status: string | null
+          period_end: string | null
+          period_start: string | null
+          source_channel: string | null
+          source_id: string | null
+          store_id: string | null
+          store_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payout_statement_data: {
+        Row: {
+          adjustments_amount: number | null
+          ambassador_id: string | null
+          currency: string | null
+          email: string | null
+          full_name: string | null
+          items_count: number | null
+          line_items: Json | null
+          paid_at: string | null
+          payout_batch_id: string | null
+          period_end: string | null
+          period_start: string | null
+          statement_url: string | null
+          status: string | null
+          subtotal_amount: number | null
+          total_amount: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_commission_totals: {
         Row: {
           ambassador_id: string | null
@@ -32699,6 +32853,50 @@ export type Database = {
       current_ambassador_id: { Args: never; Returns: string }
       detect_intent_conflicts: { Args: { p_intent_id: string }; Returns: Json }
       expire_old_simulations: { Args: never; Returns: undefined }
+      export_payout_batch_csv: {
+        Args: { p_batch_id: string }
+        Returns: {
+          ambassador_email: string
+          ambassador_name: string
+          batch_total: number
+          commission_amount: number
+          commission_rate: number
+          currency: string
+          earned_at: string
+          gross_amount: number
+          payout_batch_id: string
+          payout_destination: string
+          payout_method: string
+          period_end: string
+          period_start: string
+          source_channel: string
+          source_id: string
+          store_name: string
+        }[]
+      }
+      export_payouts_by_period: {
+        Args: { p_end: string; p_start: string }
+        Returns: {
+          ambassador_email: string
+          ambassador_name: string
+          batch_total: number
+          commission_amount: number
+          commission_rate: number
+          currency: string
+          earned_at: string
+          gross_amount: number
+          paid_at: string
+          payout_batch_id: string
+          payout_destination: string
+          payout_method: string
+          payout_status: string
+          period_end: string
+          period_start: string
+          source_channel: string
+          source_id: string
+          store_name: string
+        }[]
+      }
       finalize_payout_batch: {
         Args: { p_batch_id: string }
         Returns: undefined
@@ -32735,6 +32933,7 @@ export type Database = {
         }[]
       }
       get_intent_queue_health: { Args: never; Returns: Json }
+      get_payout_statement: { Args: { p_batch_id: string }; Returns: Json }
       get_phase5_mode: { Args: never; Returns: Json }
       get_portal_queue_health: { Args: never; Returns: Json }
       get_store_full_address: { Args: { p_store_id: string }; Returns: string }
@@ -32901,6 +33100,10 @@ export type Database = {
       set_phase5_mode: {
         Args: { p_enabled?: boolean; p_kill_switch?: boolean; p_mode: string }
         Returns: boolean
+      }
+      set_statement_url: {
+        Args: { p_batch_id: string; p_url: string }
+        Returns: undefined
       }
       soft_delete: {
         Args: { _record_id: string; _table_name: string }

@@ -285,6 +285,145 @@ export function usePayoutMethods() {
   });
 }
 
+export interface PayoutExportRow {
+  payout_batch_id: string;
+  ambassador_name: string;
+  ambassador_email: string;
+  payout_method: string | null;
+  payout_destination: string | null;
+  period_start: string;
+  period_end: string;
+  source_channel: string;
+  source_id: string;
+  store_name: string | null;
+  gross_amount: number;
+  commission_rate: number;
+  commission_amount: number;
+  earned_at: string;
+  batch_total: number;
+  currency: string;
+}
+
+export interface PayoutStatement {
+  batch_id: string;
+  ambassador_id: string;
+  ambassador_name: string;
+  ambassador_email: string | null;
+  period_start: string;
+  period_end: string;
+  paid_at: string | null;
+  currency: string;
+  subtotal: number;
+  adjustments: number;
+  total: number;
+  status: PayoutBatchStatus;
+  statement_url: string | null;
+  line_items: Array<{
+    earned_at: string;
+    source_channel: string;
+    store_name: string;
+    gross_amount: number;
+    rate: number;
+    commission: number;
+  }>;
+  items_count: number;
+}
+
+/**
+ * Export payout batch to CSV-ready data
+ */
+export async function exportPayoutBatchCSV(batchId: string): Promise<PayoutExportRow[]> {
+  const { data, error } = await supabase
+    .rpc('export_payout_batch_csv', { p_batch_id: batchId });
+  
+  if (error) throw error;
+  return (data || []) as PayoutExportRow[];
+}
+
+/**
+ * Get payout statement data for PDF generation
+ */
+export async function getPayoutStatement(batchId: string): Promise<PayoutStatement | null> {
+  const { data, error } = await supabase
+    .rpc('get_payout_statement', { p_batch_id: batchId });
+  
+  if (error) throw error;
+  return data as unknown as PayoutStatement | null;
+}
+
+/**
+ * Export payouts by period (bulk export)
+ */
+export async function exportPayoutsByPeriod(startDate: string, endDate: string): Promise<PayoutExportRow[]> {
+  const { data, error } = await supabase
+    .rpc('export_payouts_by_period', { p_start: startDate, p_end: endDate });
+  
+  if (error) throw error;
+  return (data || []) as PayoutExportRow[];
+}
+
+/**
+ * Convert export rows to CSV string
+ */
+export function convertToCSV(rows: PayoutExportRow[]): string {
+  if (rows.length === 0) return '';
+  
+  const headers = [
+    'Batch ID',
+    'Ambassador Name',
+    'Ambassador Email',
+    'Payout Method',
+    'Payout Destination',
+    'Period Start',
+    'Period End',
+    'Source Channel',
+    'Source ID',
+    'Store Name',
+    'Gross Amount',
+    'Commission Rate (%)',
+    'Commission Amount',
+    'Earned At',
+    'Batch Total',
+    'Currency'
+  ];
+  
+  const csvRows = rows.map(row => [
+    row.payout_batch_id,
+    row.ambassador_name,
+    row.ambassador_email || '',
+    row.payout_method || '',
+    row.payout_destination || '',
+    row.period_start,
+    row.period_end,
+    row.source_channel,
+    row.source_id,
+    row.store_name || '',
+    row.gross_amount.toFixed(2),
+    row.commission_rate.toFixed(2),
+    row.commission_amount.toFixed(2),
+    row.earned_at,
+    row.batch_total.toFixed(2),
+    row.currency
+  ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+  
+  return [headers.join(','), ...csvRows].join('\n');
+}
+
+/**
+ * Download CSV file
+ */
+export function downloadCSV(csv: string, filename: string): void {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 /**
  * Combined hook for commission page - all data in one call
  */
