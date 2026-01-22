@@ -7450,6 +7450,249 @@ export type Database = {
         }
         Relationships: []
       }
+      commission_ledger: {
+        Row: {
+          ambassador_id: string
+          approved_at: string | null
+          commission_amount: number
+          commission_plan_id: string | null
+          commission_rate: number
+          created_at: string | null
+          earned_at: string
+          gross_amount: number
+          id: string
+          paid_at: string | null
+          reversal_of: string | null
+          source_channel: string
+          source_id: string
+          status: string
+          store_id: string | null
+        }
+        Insert: {
+          ambassador_id: string
+          approved_at?: string | null
+          commission_amount: number
+          commission_plan_id?: string | null
+          commission_rate: number
+          created_at?: string | null
+          earned_at?: string
+          gross_amount: number
+          id?: string
+          paid_at?: string | null
+          reversal_of?: string | null
+          source_channel: string
+          source_id: string
+          status?: string
+          store_id?: string | null
+        }
+        Update: {
+          ambassador_id?: string
+          approved_at?: string | null
+          commission_amount?: number
+          commission_plan_id?: string | null
+          commission_rate?: number
+          created_at?: string | null
+          earned_at?: string
+          gross_amount?: number
+          id?: string
+          paid_at?: string | null
+          reversal_of?: string | null
+          source_channel?: string
+          source_id?: string
+          status?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_commission_plan_id_fkey"
+            columns: ["commission_plan_id"]
+            isOneToOne: false
+            referencedRelation: "commission_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_reversal_of_fkey"
+            columns: ["reversal_of"]
+            isOneToOne: false
+            referencedRelation: "commission_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_payout_batches: {
+        Row: {
+          ambassador_id: string
+          created_at: string | null
+          id: string
+          paid_at: string | null
+          period_end: string
+          period_start: string
+          status: string
+          total_amount: number
+        }
+        Insert: {
+          ambassador_id: string
+          created_at?: string | null
+          id?: string
+          paid_at?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          total_amount: number
+        }
+        Update: {
+          ambassador_id?: string
+          created_at?: string | null
+          id?: string
+          paid_at?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_payout_items: {
+        Row: {
+          commission_ledger_id: string | null
+          created_at: string | null
+          id: string
+          payout_batch_id: string | null
+        }
+        Insert: {
+          commission_ledger_id?: string | null
+          created_at?: string | null
+          id?: string
+          payout_batch_id?: string | null
+        }
+        Update: {
+          commission_ledger_id?: string | null
+          created_at?: string | null
+          id?: string
+          payout_batch_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_payout_items_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "commission_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_payout_items_payout_batch_id_fkey"
+            columns: ["payout_batch_id"]
+            isOneToOne: false
+            referencedRelation: "commission_payout_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_plans: {
+        Row: {
+          active: boolean | null
+          applies_to: string
+          created_at: string | null
+          default_rate: number | null
+          description: string | null
+          effective_from: string
+          effective_to: string | null
+          id: string
+          is_stackable: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          applies_to: string
+          created_at?: string | null
+          default_rate?: number | null
+          description?: string | null
+          effective_from: string
+          effective_to?: string | null
+          id?: string
+          is_stackable?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          applies_to?: string
+          created_at?: string | null
+          default_rate?: number | null
+          description?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          is_stackable?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      commission_rules: {
+        Row: {
+          commission_plan_id: string | null
+          created_at: string | null
+          flat_bonus: number | null
+          id: string
+          max_gross_amount: number | null
+          min_gross_amount: number | null
+          rate_override: number | null
+          source_channel: string
+        }
+        Insert: {
+          commission_plan_id?: string | null
+          created_at?: string | null
+          flat_bonus?: number | null
+          id?: string
+          max_gross_amount?: number | null
+          min_gross_amount?: number | null
+          rate_override?: number | null
+          source_channel: string
+        }
+        Update: {
+          commission_plan_id?: string | null
+          created_at?: string | null
+          flat_bonus?: number | null
+          id?: string
+          max_gross_amount?: number | null
+          min_gross_amount?: number | null
+          rate_override?: number | null
+          source_channel?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_rules_commission_plan_id_fkey"
+            columns: ["commission_plan_id"]
+            isOneToOne: false
+            referencedRelation: "commission_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_alerts: {
         Row: {
           alert_type: string
@@ -31829,7 +32072,9 @@ export type Database = {
         Returns: boolean
       }
       is_developer: { Args: { _user_id: string }; Returns: boolean }
-      is_elevated_user: { Args: { _user_id: string }; Returns: boolean }
+      is_elevated_user:
+        | { Args: never; Returns: boolean }
+        | { Args: { _user_id: string }; Returns: boolean }
       is_org_member: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
