@@ -7606,6 +7606,295 @@ export type Database = {
         }
         Relationships: []
       }
+      commission_dispute_evidence: {
+        Row: {
+          created_at: string
+          dispute_id: string
+          file_name: string | null
+          file_url: string
+          id: string
+          mime_type: string | null
+          uploaded_by_ambassador_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          dispute_id: string
+          file_name?: string | null
+          file_url: string
+          id?: string
+          mime_type?: string | null
+          uploaded_by_ambassador_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          dispute_id?: string
+          file_name?: string | null
+          file_url?: string
+          id?: string
+          mime_type?: string | null
+          uploaded_by_ambassador_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_dispute_evidence_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "admin_dispute_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_dispute_evidence_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "commission_disputes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_dispute_evidence_uploaded_by_ambassador_id_fkey"
+            columns: ["uploaded_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_dispute_evidence_uploaded_by_ambassador_id_fkey"
+            columns: ["uploaded_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_dispute_evidence_uploaded_by_ambassador_id_fkey"
+            columns: ["uploaded_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_dispute_messages: {
+        Row: {
+          author_admin_user_id: string | null
+          author_ambassador_id: string | null
+          author_role: string
+          created_at: string
+          dispute_id: string
+          id: string
+          message: string
+        }
+        Insert: {
+          author_admin_user_id?: string | null
+          author_ambassador_id?: string | null
+          author_role: string
+          created_at?: string
+          dispute_id: string
+          id?: string
+          message: string
+        }
+        Update: {
+          author_admin_user_id?: string | null
+          author_ambassador_id?: string | null
+          author_role?: string
+          created_at?: string
+          dispute_id?: string
+          id?: string
+          message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_dispute_messages_author_ambassador_id_fkey"
+            columns: ["author_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_dispute_messages_author_ambassador_id_fkey"
+            columns: ["author_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_dispute_messages_author_ambassador_id_fkey"
+            columns: ["author_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_dispute_messages_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "admin_dispute_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_dispute_messages_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "commission_disputes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_disputes: {
+        Row: {
+          adjustment_ledger_id: string | null
+          admin_notes: string | null
+          ambassador_id: string
+          assigned_admin_user_id: string | null
+          commission_ledger_id: string | null
+          currency: string
+          description: string
+          id: string
+          priority: string
+          reason_code: string
+          requested_amount: number | null
+          resolution_summary: string | null
+          resolved_at: string | null
+          reviewed_at: string | null
+          source_channel: string | null
+          source_id: string | null
+          status: Database["public"]["Enums"]["commission_dispute_status"]
+          store_id: string | null
+          submitted_at: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          adjustment_ledger_id?: string | null
+          admin_notes?: string | null
+          ambassador_id: string
+          assigned_admin_user_id?: string | null
+          commission_ledger_id?: string | null
+          currency?: string
+          description: string
+          id?: string
+          priority?: string
+          reason_code: string
+          requested_amount?: number | null
+          resolution_summary?: string | null
+          resolved_at?: string | null
+          reviewed_at?: string | null
+          source_channel?: string | null
+          source_id?: string | null
+          status?: Database["public"]["Enums"]["commission_dispute_status"]
+          store_id?: string | null
+          submitted_at?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          adjustment_ledger_id?: string | null
+          admin_notes?: string | null
+          ambassador_id?: string
+          assigned_admin_user_id?: string | null
+          commission_ledger_id?: string | null
+          currency?: string
+          description?: string
+          id?: string
+          priority?: string
+          reason_code?: string
+          requested_amount?: number | null
+          resolution_summary?: string | null
+          resolved_at?: string | null
+          reviewed_at?: string | null
+          source_channel?: string | null
+          source_id?: string | null
+          status?: Database["public"]["Enums"]["commission_dispute_status"]
+          store_id?: string | null
+          submitted_at?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_disputes_adjustment_ledger_id_fkey"
+            columns: ["adjustment_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "admin_ledger_feed"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_adjustment_ledger_id_fkey"
+            columns: ["adjustment_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "commission_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_adjustment_ledger_id_fkey"
+            columns: ["adjustment_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "payout_eligible_commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_adjustment_ledger_id_fkey"
+            columns: ["adjustment_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "payout_export_rows"
+            referencedColumns: ["commission_id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "admin_ledger_feed"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "commission_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "payout_eligible_commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "payout_export_rows"
+            referencedColumns: ["commission_id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commission_ledger: {
         Row: {
           ambassador_id: string
@@ -32314,6 +32603,83 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_dispute_queue: {
+        Row: {
+          ambassador_id: string | null
+          ambassador_name: string | null
+          assigned_admin_user_id: string | null
+          commission_ledger_id: string | null
+          currency: string | null
+          description: string | null
+          evidence_count: number | null
+          id: string | null
+          ledger_amount: number | null
+          ledger_earned_at: string | null
+          ledger_source_name: string | null
+          message_count: number | null
+          priority: string | null
+          reason_code: string | null
+          requested_amount: number | null
+          resolution_summary: string | null
+          status:
+            | Database["public"]["Enums"]["commission_dispute_status"]
+            | null
+          submitted_at: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_disputes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "admin_ledger_feed"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "commission_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "payout_eligible_commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_commission_ledger_id_fkey"
+            columns: ["commission_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "payout_export_rows"
+            referencedColumns: ["commission_id"]
+          },
+        ]
+      }
       admin_ledger_feed: {
         Row: {
           ambassador_id: string | null
@@ -32633,6 +32999,39 @@ export type Database = {
           },
         ]
       }
+      dispute_kpis: {
+        Row: {
+          ambassador_id: string | null
+          approved_disputes: number | null
+          open_disputes: number | null
+          rejected_disputes: number | null
+          resolved_disputes: number | null
+          total_disputes: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_disputes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payout_eligible_commissions: {
         Row: {
           ambassador_id: string | null
@@ -32859,6 +33258,14 @@ export type Database = {
           success: boolean
         }[]
       }
+      admin_approve_dispute: {
+        Args: {
+          p_adjustment_amount: number
+          p_dispute_id: string
+          p_resolution_summary?: string
+        }
+        Returns: string
+      }
       admin_bulk_approve_commissions: {
         Args: { p_admin_user_id?: string; p_ledger_ids: string[] }
         Returns: {
@@ -32878,6 +33285,22 @@ export type Database = {
           reversal_id: string
           success: boolean
         }[]
+      }
+      admin_pickup_dispute: {
+        Args: { p_dispute_id: string }
+        Returns: undefined
+      }
+      admin_reject_dispute: {
+        Args: { p_dispute_id: string; p_resolution_summary?: string }
+        Returns: undefined
+      }
+      admin_request_info: {
+        Args: { p_dispute_id: string; p_message: string }
+        Returns: undefined
+      }
+      admin_resolve_dispute: {
+        Args: { p_admin_notes?: string; p_dispute_id: string }
+        Returns: undefined
       }
       approve_commission: { Args: { p_ledger_id: string }; Returns: undefined }
       backfill_final_results: { Args: never; Returns: number }
@@ -33266,6 +33689,13 @@ export type Database = {
         | "decision_maker"
         | "other"
       brand_type: "GasMask" | "HotMama" | "GrabbaRUs" | "HotScalati"
+      commission_dispute_status:
+        | "submitted"
+        | "under_review"
+        | "needs_info"
+        | "approved"
+        | "rejected"
+        | "resolved"
       conflict_class:
         | "temporal"
         | "resource"
@@ -33637,6 +34067,14 @@ export const Constants = {
         "other",
       ],
       brand_type: ["GasMask", "HotMama", "GrabbaRUs", "HotScalati"],
+      commission_dispute_status: [
+        "submitted",
+        "under_review",
+        "needs_info",
+        "approved",
+        "rejected",
+        "resolved",
+      ],
       conflict_class: [
         "temporal",
         "resource",

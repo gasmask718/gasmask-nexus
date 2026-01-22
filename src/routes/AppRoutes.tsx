@@ -50,7 +50,7 @@ import WorkerHome from '@/pages/WorkerHome';
 import AutomationSettings from '@/pages/AutomationSettings';
 import Training from '@/pages/Training';
 import Ambassadors from '@/pages/Ambassadors';
-import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, AmbassadorCommissions, AmbassadorRoutes, AmbassadorOrders, AmbassadorCommunications, AmbassadorLeads } from '@/pages/ambassador';
+import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, AmbassadorCommissions, AmbassadorRoutes, AmbassadorOrders, AmbassadorCommunications, AmbassadorLeads, AmbassadorDisputes, AmbassadorDisputeDetail } from '@/pages/ambassador';
 import Expansion from '@/pages/Expansion';
 import Rewards from '@/pages/Rewards';
 import LiveMap from '@/pages/LiveMap';
@@ -1734,6 +1734,20 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
             <Layout><AmbassadorCommissions /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/disputes" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <Layout><AmbassadorDisputes /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/disputes/:id" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <Layout><AmbassadorDisputeDetail /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />

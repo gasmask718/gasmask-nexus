@@ -7,3 +7,5 @@ export { default as AmbassadorRoutes } from './AmbassadorRoutes';
 export { default as AmbassadorOrders } from './AmbassadorOrders';
 export { default as AmbassadorCommunications } from './AmbassadorCommunications';
 export { default as AmbassadorLeads } from './AmbassadorLeads';
+export { default as AmbassadorDisputes } from './AmbassadorDisputes';
+export { default as AmbassadorDisputeDetail } from './AmbassadorDisputeDetail';
