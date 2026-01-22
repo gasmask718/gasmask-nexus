@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Search, UserPlus, User, Phone, MapPin, Loader2 } from 'lucide-react';
+import { Search, UserPlus, User, Phone, MapPin, Loader2, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface AssignPersonModalProps {
@@ -57,6 +57,7 @@ export function AssignPersonModal({
     name: '',
     phone: '',
     city: '',
+    email: '',
   });
 
   // Search existing people
@@ -136,14 +137,15 @@ export function AssignPersonModal({
         // Person exists, just assign the role
         personId = existing.id;
       } else {
-        // Create new person
+        // Create new person - build the insert object conditionally
         const { data: newPersonData, error: createError } = await supabase
           .from('people')
           .insert({
             name: newPerson.name,
             phone: newPerson.phone,
-            address_city: newPerson.city,
             type: role,
+            email: role === 'production' ? (newPerson.email || null) : null,
+            address_city: role !== 'production' ? (newPerson.city || null) : null,
           })
           .select('id')
           .single();
@@ -193,7 +195,7 @@ export function AssignPersonModal({
   const resetAndClose = () => {
     setSearchQuery('');
     setSelectedPerson(null);
-    setNewPerson({ name: '', phone: '', city: '' });
+    setNewPerson({ name: '', phone: '', city: '', email: '' });
     onOpenChange(false);
   };
 
@@ -359,15 +361,32 @@ export function AssignPersonModal({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  placeholder="City"
-                  value={newPerson.city}
-                  onChange={(e) => setNewPerson({ ...newPerson, city: e.target.value })}
-                />
-              </div>
+              {role === 'production' ? (
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="email@example.com"
+                      value={newPerson.email}
+                      onChange={(e) => setNewPerson({ ...newPerson, email: e.target.value })}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    placeholder="City"
+                    value={newPerson.city}
+                    onChange={(e) => setNewPerson({ ...newPerson, city: e.target.value })}
+                  />
+                </div>
+              )}
             </div>
 
             <Button
