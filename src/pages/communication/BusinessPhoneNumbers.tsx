@@ -218,168 +218,167 @@ export default function BusinessPhoneNumbers() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Phone className="h-6 w-6 text-primary" />
-              Business Phone Numbers
-            </h1>
-            <p className="text-muted-foreground">Configure Twilio numbers per business for caller ID</p>
-          </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => handleOpenDialog()}>
-                <Plus className="h-4 w-4 mr-2" /> Add Number
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{editingNumber ? 'Edit Phone Number' : 'Add Phone Number'}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Business *</Label>
-                  <Select value={formData.business_id} onValueChange={(v) => setFormData({...formData, business_id: v})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select business" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {businesses.map((b: any) => (
-                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Phone Number (E.164) *</Label>
-                  <Input
-                    placeholder="+17185551234"
-                    value={formData.phone_number}
-                    onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
-                  />
-                  <p className="text-xs text-muted-foreground">Must include country code, e.g., +1 for US</p>
-                </div>
-                <div className="space-y-2">
-                  <Label>Type</Label>
-                  <Select value={formData.type} onValueChange={(v) => setFormData({...formData, type: v})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="call">Call Only</SelectItem>
-                      <SelectItem value="sms">SMS Only</SelectItem>
-                      <SelectItem value="both">Call & SMS</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Label (Optional)</Label>
-                  <Input
-                    placeholder="Main Line, Support, etc."
-                    value={formData.label}
-                    onChange={(e) => setFormData({...formData, label: e.target.value})}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label>Is Default Caller ID</Label>
-                  <Switch 
-                    checked={formData.is_default} 
-                    onCheckedChange={(v) => setFormData({...formData, is_default: v})} 
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label>Active</Label>
-                  <Switch 
-                    checked={formData.is_active} 
-                    onCheckedChange={(v) => setFormData({...formData, is_active: v})} 
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={handleCloseDialog}>Cancel</Button>
-                <Button onClick={handleSubmit} disabled={saveMutation.isPending}>
-                  {saveMutation.isPending ? 'Saving...' : 'Save'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <PhoneForwarded className="h-6 w-6 text-primary" />
+            Caller IDs & Routing
+          </h1>
+          <p className="text-muted-foreground">Configure Twilio numbers per business for outbound caller ID</p>
         </div>
-
-        {/* Table */}
-        <Card>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-8 text-center text-muted-foreground">Loading...</div>
-            ) : phoneNumbers.length === 0 ? (
-              <div className="p-8 text-center">
-                <Phone className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground mb-4">No phone numbers configured</p>
-                <Button onClick={() => handleOpenDialog()}>
-                  <Plus className="h-4 w-4 mr-2" /> Add First Number
-                </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => handleOpenDialog()}>
+              <Plus className="h-4 w-4 mr-2" /> Add Number
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingNumber ? 'Edit Phone Number' : 'Add Phone Number'}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Business *</Label>
+                <Select value={formData.business_id} onValueChange={(v) => setFormData({...formData, business_id: v})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select business" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {businesses.map((b: any) => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Business</TableHead>
-                    <TableHead>Phone Number</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Label</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {phoneNumbers.map((num) => (
-                    <TableRow key={num.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-muted-foreground" />
-                          {num.businesses?.name || 'Unknown'}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono">{num.phone_number}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">{num.type}</Badge>
-                      </TableCell>
-                      <TableCell>{num.label || '-'}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {num.is_active ? (
-                            <Badge variant="default" className="bg-green-500">Active</Badge>
-                          ) : (
-                            <Badge variant="secondary">Inactive</Badge>
-                          )}
-                          {num.is_default && (
-                            <Badge variant="outline" className="border-primary text-primary">Default</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleTestCall(num)} title="Test Call">
-                            <TestTube className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(num)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-destructive" 
-                            onClick={() => deleteMutation.mutate(num.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+              <div className="space-y-2">
+                <Label>Phone Number (E.164) *</Label>
+                <Input
+                  placeholder="+17185551234"
+                  value={formData.phone_number}
+                  onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
+                />
+                <p className="text-xs text-muted-foreground">Must include country code, e.g., +1 for US</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <Select value={formData.type} onValueChange={(v) => setFormData({...formData, type: v})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="call">Call Only</SelectItem>
+                    <SelectItem value="sms">SMS Only</SelectItem>
+                    <SelectItem value="both">Call & SMS</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Label (Optional)</Label>
+                <Input
+                  placeholder="Main Line, Support, etc."
+                  value={formData.label}
+                  onChange={(e) => setFormData({...formData, label: e.target.value})}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Is Default Caller ID</Label>
+                <Switch 
+                  checked={formData.is_default} 
+                  onCheckedChange={(v) => setFormData({...formData, is_default: v})} 
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Active</Label>
+                <Switch 
+                  checked={formData.is_active} 
+                  onCheckedChange={(v) => setFormData({...formData, is_active: v})} 
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCloseDialog}>Cancel</Button>
+              <Button onClick={handleSubmit} disabled={saveMutation.isPending}>
+                {saveMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
+
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-8 text-center text-muted-foreground">Loading...</div>
+          ) : phoneNumbers.length === 0 ? (
+            <div className="p-8 text-center">
+              <Phone className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground mb-4">No phone numbers configured</p>
+              <Button onClick={() => handleOpenDialog()}>
+                <Plus className="h-4 w-4 mr-2" /> Add First Number
+              </Button>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Business</TableHead>
+                  <TableHead>Phone Number</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Label</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {phoneNumbers.map((num) => (
+                  <TableRow key={num.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        {num.businesses?.name || 'Unknown'}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono">{num.phone_number}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="capitalize">{num.type}</Badge>
+                    </TableCell>
+                    <TableCell>{num.label || '-'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {num.is_active ? (
+                          <Badge variant="default" className="bg-green-500">Active</Badge>
+                        ) : (
+                          <Badge variant="secondary">Inactive</Badge>
+                        )}
+                        {num.is_default && (
+                          <Badge variant="outline" className="border-primary text-primary">Default</Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => handleTestCall(num)} title="Test Call">
+                          <TestTube className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(num)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-destructive" 
+                          onClick={() => deleteMutation.mutate(num.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
