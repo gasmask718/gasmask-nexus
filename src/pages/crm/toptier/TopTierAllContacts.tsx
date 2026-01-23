@@ -18,6 +18,7 @@ import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeCon
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { useResolvedData } from '@/hooks/useResolvedData';
 import { format } from 'date-fns';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 export default function TopTierAllContacts() {
   const navigate = useNavigate();
@@ -255,14 +256,14 @@ export default function TopTierAllContacts() {
                       </TableCell>
                       <TableCell>
                         {contact.phone && (
-                          <a 
-                            href={`tel:${contact.phone}`} 
+                          <ClickablePhone
+                            phone={contact.phone}
+                            entityType="customer"
+                            entityId={contact.id}
+                            entityName={contact.name}
                             className="flex items-center gap-1 text-muted-foreground hover:text-primary"
                             onClick={(e) => e.stopPropagation()}
-                          >
-                            <Phone className="h-3 w-3" />
-                            {contact.phone}
-                          </a>
+                          />
                         )}
                       </TableCell>
                       <TableCell>

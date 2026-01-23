@@ -14,6 +14,7 @@ import {
   TrendingUp, Package, DollarSign, UserPlus
 } from 'lucide-react';
 import { BikerAssignmentDialog } from '@/components/biker';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 const StoreProfile: React.FC = () => {
   const { storeId } = useParams();
@@ -174,10 +175,13 @@ const StoreProfile: React.FC = () => {
               {store.contact_phone && (
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
-                  <a href={`tel:${store.contact_phone}`} className="font-medium text-primary flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    {store.contact_phone}
-                  </a>
+                  <ClickablePhone 
+                    phone={store.contact_phone}
+                    entityType="store"
+                    entityId={storeId}
+                    entityName={store.name}
+                    className="font-medium text-primary flex items-center gap-2"
+                  />
                 </div>
               )}
               <div>

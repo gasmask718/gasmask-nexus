@@ -15,6 +15,7 @@ import {
   Star, Eye
 } from 'lucide-react';
 import { SimulationBadge, EmptyStateWithGuidance } from '@/contexts/SimulationModeContext';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 interface PartnerContactsTabProps {
   partner: any;
@@ -224,14 +225,14 @@ export default function PartnerContactsTab({ partner, isSimulated }: PartnerCont
                 
                 <div className="space-y-2 text-sm">
                   {contact.phone && (
-                    <a 
-                      href={`tel:${contact.phone}`} 
+                    <ClickablePhone
+                      phone={contact.phone}
+                      entityType="wholesaler"
+                      entityId={contact.id}
+                      entityName={contact.name}
                       className="flex items-center gap-2 text-muted-foreground hover:text-primary"
                       onClick={(e) => e.stopPropagation()}
-                    >
-                      <Phone className="h-4 w-4" />
-                      {contact.phone}
-                    </a>
+                    />
                   )}
                   {contact.email && (
                     <a 

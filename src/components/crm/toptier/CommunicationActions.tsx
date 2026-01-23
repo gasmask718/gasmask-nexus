@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Phone, MessageSquare, Mail, Loader2 } from 'lucide-react';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { toast } from '@/hooks/use-toast';
+import { useCall } from '@/components/communication/CallProvider';
 
 interface ContactInfo {
   id: string;
@@ -39,6 +40,7 @@ export function CommunicationActions({
   onInteractionLogged
 }: CommunicationActionsProps) {
   const { simulationMode } = useSimulationMode();
+  const { initiateCall } = useCall();
   const [loading, setLoading] = useState<string | null>(null);
   const [smsModalOpen, setSmsModalOpen] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
@@ -71,7 +73,7 @@ export function CommunicationActions({
   };
 
   const handleCall = async () => {
-    if (!hasPhone) return;
+    if (!hasPhone || !contact.phone) return;
     
     setLoading('call');
     try {
@@ -82,11 +84,12 @@ export function CommunicationActions({
           description: `Simulated call to ${contact.name} at ${contact.phone}`,
         });
       } else {
-        // In real mode, initiate Twilio call or open dialer
-        window.location.href = `tel:${contact.phone}`;
-        toast({
-          title: '📞 Initiating Call',
-          description: `Calling ${contact.name}...`,
+        // Use the OS calling system instead of tel: link
+        initiateCall({
+          destinationPhone: contact.phone,
+          entityType: entityType === 'partner' ? 'wholesaler' : 'customer',
+          entityId: contact.id,
+          entityName: contact.name
         });
       }
       await logInteraction('call', `Called ${contact.phone}`);

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useCall } from '@/components/communication/CallProvider';
 
 interface DeliveryItem {
   id: string;
@@ -50,6 +51,7 @@ export function MakeDeliveryPage({ portalType }: MakeDeliveryPageProps) {
   const { stopId } = useParams<{ stopId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { initiateCall } = useCall();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [stop, setStop] = useState<DeliveryStop | null>(null);
@@ -349,8 +351,17 @@ export function MakeDeliveryPage({ portalType }: MakeDeliveryPageProps) {
               <span>{stop.phone || 'No phone listed'}</span>
             </div>
             {stop.phone && (
-              <Button variant="outline" size="sm" asChild>
-                <a href={`tel:${stop.phone}`}>Call Store</a>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => initiateCall({
+                  destinationPhone: stop.phone,
+                  entityType: 'store',
+                  entityId: stop.store_id,
+                  entityName: stop.store_name
+                })}
+              >
+                Call Store
               </Button>
             )}
           </div>

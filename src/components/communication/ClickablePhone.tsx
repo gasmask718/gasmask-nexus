@@ -11,6 +11,7 @@ interface ClickablePhoneProps {
   className?: string;
   showIcon?: boolean;
   children?: React.ReactNode;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
 /**
@@ -26,12 +27,14 @@ export function ClickablePhone({
   className,
   showIcon = false,
   children,
+  onClick,
 }: ClickablePhoneProps) {
   const { initiateCall } = useCall();
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    onClick?.(e);
     initiateCall({
       destinationPhone: phone,
       entityType,

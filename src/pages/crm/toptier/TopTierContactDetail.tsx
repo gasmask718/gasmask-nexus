@@ -15,10 +15,13 @@ import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeCon
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { useResolvedData } from '@/hooks/useResolvedData';
 import { format } from 'date-fns';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
+import { useCall } from '@/components/communication/CallProvider';
 
 export default function TopTierContactDetail() {
   const navigate = useNavigate();
   const { partnerId, contactId } = useParams<{ partnerId: string; contactId: string }>();
+  const { initiateCall } = useCall();
   
   const { simulationMode } = useSimulationMode();
   const { getEntityData } = useCRMSimulation('toptier-experience');
@@ -89,11 +92,17 @@ export default function TopTierContactDetail() {
               Edit Contact
             </Button>
             {contact.phone && (
-              <Button variant="outline" asChild>
-                <a href={`tel:${contact.phone}`}>
-                  <Phone className="h-4 w-4 mr-2" />
-                  Call
-                </a>
+              <Button 
+                variant="outline" 
+                onClick={() => initiateCall({
+                  destinationPhone: contact.phone,
+                  entityType: 'customer',
+                  entityId: contact.id,
+                  entityName: contact.name
+                })}
+              >
+                <Phone className="h-4 w-4 mr-2" />
+                Call
               </Button>
             )}
             {contact.email && (
@@ -119,9 +128,13 @@ export default function TopTierContactDetail() {
               <Phone className="h-4 w-4 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Phone</p>
-                <a href={`tel:${contact.phone}`} className="font-medium text-primary hover:underline">
-                  {contact.phone || 'Not provided'}
-                </a>
+                <ClickablePhone 
+                  phone={contact.phone} 
+                  entityType="customer" 
+                  entityId={contact.id} 
+                  entityName={contact.name}
+                  className="font-medium text-primary hover:underline"
+                />
               </div>
             </div>
             <div className="flex items-center gap-3">

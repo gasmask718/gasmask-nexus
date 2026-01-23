@@ -34,6 +34,7 @@ import IssuesBoard from "@/components/biker/IssuesBoard";
 import { useAllBikersPerformance } from "@/hooks/useBikerPerformance";
 import { useSimulationMode, SimulationBadge } from "@/contexts/SimulationModeContext";
 import { SimulationModeToggle, SimulationBanner } from "@/components/delivery/SimulationModeToggle";
+import { ClickablePhone } from "@/components/communication/ClickablePhone";
 
 type Biker = {
   id: string;
@@ -354,12 +355,13 @@ const BikersManagement: React.FC = () => {
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <div className="space-y-1 text-sm">
-                          <a
-                            href={`tel:${biker.phone}`}
+                          <ClickablePhone
+                            phone={biker.phone}
+                            entityType="other"
+                            entityId={biker.id}
+                            entityName={biker.full_name}
                             className="flex items-center gap-2 text-muted-foreground hover:text-primary"
-                          >
-                            <Phone className="h-4 w-4" /> {biker.phone}
-                          </a>
+                          />
                           {biker.email && (
                             <a
                               href={`mailto:${biker.email}`}
