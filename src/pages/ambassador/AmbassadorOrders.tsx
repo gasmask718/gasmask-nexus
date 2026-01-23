@@ -6,33 +6,20 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Package, Store, ShoppingCart, TrendingUp, Search, 
-  Filter, ChevronRight, DollarSign, Clock, CheckCircle,
-  XCircle, Eye, Download
+  DollarSign, Clock, CheckCircle,
+  XCircle, Eye, Download, AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
-
-interface Order {
-  id: string;
-  order_number: string;
-  channel: 'store' | 'wholesale' | 'affiliate';
-  entity_name: string;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  payment_status: 'pending' | 'paid' | 'partial' | 'failed' | 'refunded';
-  subtotal: number;
-  tax: number;
-  total: number;
-  created_at: string;
-  items_count: number;
-}
+import { useAmbassadorOrders } from '@/hooks/useAmbassadorOrders';
 
 export default function AmbassadorOrders() {
   const navigate = useNavigate();
@@ -40,66 +27,16 @@ export default function AmbassadorOrders() {
   const [channelFilter, setChannelFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  // Mock order data - will be replaced with real data from unified orders table
-  const orders: Order[] = [
-    {
-      id: '1',
-      order_number: 'ORD-2024-001234',
-      channel: 'store',
-      entity_name: 'Quick Stop Deli',
-      status: 'delivered',
-      payment_status: 'paid',
-      subtotal: 425.00,
-      tax: 37.81,
-      total: 462.81,
-      created_at: new Date().toISOString(),
-      items_count: 8,
-    },
-    {
-      id: '2',
-      order_number: 'ORD-2024-001235',
-      channel: 'wholesale',
-      entity_name: 'NYC Wholesale Supply',
-      status: 'shipped',
-      payment_status: 'paid',
-      subtotal: 2500.00,
-      tax: 222.50,
-      total: 2722.50,
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-      items_count: 25,
-    },
-    {
-      id: '3',
-      order_number: 'ORD-2024-001236',
-      channel: 'affiliate',
-      entity_name: 'Online Merch Store',
-      status: 'processing',
-      payment_status: 'paid',
-      subtotal: 89.99,
-      tax: 8.00,
-      total: 97.99,
-      created_at: new Date(Date.now() - 172800000).toISOString(),
-      items_count: 2,
-    },
-    {
-      id: '4',
-      order_number: 'ORD-2024-001237',
-      channel: 'store',
-      entity_name: 'Corner Bodega',
-      status: 'pending',
-      payment_status: 'pending',
-      subtotal: 315.00,
-      tax: 28.03,
-      total: 343.03,
-      created_at: new Date(Date.now() - 259200000).toISOString(),
-      items_count: 5,
-    },
-  ];
+  // Fetch real orders
+  const { orders, metrics, isLoading, isError, error } = useAmbassadorOrders({
+    channel: channelFilter,
+    status: statusFilter,
+  });
 
-  // Calculate totals
-  const totalOrders = orders.length;
-  const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
-  const pendingPayments = orders.filter(o => o.payment_status === 'pending').length;
+  // Calculate totals from real data
+  const totalOrders = metrics.totalOrders;
+  const totalRevenue = metrics.totalRevenue;
+  const pendingPayments = metrics.pendingPayments;
 
   const getChannelIcon = (channel: string) => {
     switch (channel) {
@@ -161,10 +98,50 @@ export default function AmbassadorOrders() {
     const matchesSearch = 
       order.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.entity_name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesChannel = channelFilter === 'all' || order.channel === channelFilter;
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    return matchesSearch && matchesChannel && matchesStatus;
+    return matchesSearch;
   });
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <EnhancedPortalLayout 
+        title="Orders" 
+        subtitle="View all orders from your portfolio"
+        backPath="/ambassador/dashboard"
+      >
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <Skeleton key={i} className="h-24" />
+            ))}
+          </div>
+          <Skeleton className="h-[500px]" />
+        </div>
+      </EnhancedPortalLayout>
+    );
+  }
+
+  // Show error state
+  if (isError) {
+    return (
+      <EnhancedPortalLayout 
+        title="Orders" 
+        subtitle="View all orders from your portfolio"
+        backPath="/ambassador/dashboard"
+      >
+        <div className="p-6">
+          <Card className="border-destructive">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 text-destructive">
+                <AlertCircle className="h-5 w-5" />
+                <p>Failed to load orders: {error?.message || 'Unknown error'}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </EnhancedPortalLayout>
+    );
+  }
 
   return (
     <EnhancedPortalLayout 
