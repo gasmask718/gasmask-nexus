@@ -15243,6 +15243,60 @@ export type Database = {
           },
         ]
       }
+      inbound_call_routes: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          phone_number_id: string | null
+          route_target_role: string | null
+          route_target_user_id: string | null
+          route_type: Database["public"]["Enums"]["inbound_route_type"]
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          phone_number_id?: string | null
+          route_target_role?: string | null
+          route_target_user_id?: string | null
+          route_type?: Database["public"]["Enums"]["inbound_route_type"]
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          phone_number_id?: string | null
+          route_target_role?: string | null
+          route_target_user_id?: string | null
+          route_type?: Database["public"]["Enums"]["inbound_route_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbound_call_routes_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_call_routes_phone_number_id_fkey"
+            columns: ["phone_number_id"]
+            isOneToOne: false
+            referencedRelation: "business_phone_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       influencer_campaign_participants: {
         Row: {
           agreed_rate: number | null
@@ -35968,6 +36022,7 @@ export type Database = {
         | "on_site_service"
         | "virtual"
         | "digital"
+      inbound_route_type: "user" | "role" | "voicemail"
       inventory_level: "empty" | "quarter" | "half" | "threeQuarters" | "full"
       lead_source:
         | "probate"
@@ -36349,6 +36404,7 @@ export const Constants = {
         "virtual",
         "digital",
       ],
+      inbound_route_type: ["user", "role", "voicemail"],
       inventory_level: ["empty", "quarter", "half", "threeQuarters", "full"],
       lead_source: [
         "probate",
