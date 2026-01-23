@@ -19,6 +19,7 @@ import {
 import { useBikerIssues } from '@/hooks/useBikerIssues';
 import BikerPerformanceTab from '@/components/biker/BikerPerformanceTab';
 import BikerIssuesTab from '@/components/biker/BikerIssuesTab';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 const BikerProfile: React.FC = () => {
   const { bikerId } = useParams();
@@ -164,13 +165,19 @@ const BikerProfile: React.FC = () => {
               <CardTitle className="text-lg">Contact Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <a href={`tel:${biker.phone}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
+              <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
                 <Phone className="h-5 w-5 text-primary" />
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{biker.phone}</p>
+                  <ClickablePhone 
+                    phone={biker.phone} 
+                    entityType="other" 
+                    entityId={biker.id} 
+                    entityName={biker.full_name}
+                    className="font-medium"
+                  />
                 </div>
-              </a>
+              </div>
               {biker.email && (
                 <a href={`mailto:${biker.email}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
                   <Mail className="h-5 w-5 text-primary" />

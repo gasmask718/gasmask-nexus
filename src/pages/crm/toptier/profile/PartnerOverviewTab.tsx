@@ -25,6 +25,7 @@ import { usePartnerNotes } from '@/hooks/toptier/usePartnerNotes';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 interface PartnerOverviewTabProps {
   partner: any;
@@ -338,9 +339,13 @@ export default function PartnerOverviewTab({ partner, isSimulated, bookings, cam
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
-                  <a href={`tel:${partner.phone}`} className="font-medium text-primary hover:underline">
-                    {partner.phone}
-                  </a>
+                  <ClickablePhone 
+                    phone={partner.phone}
+                    entityType="wholesaler"
+                    entityId={partner.id}
+                    entityName={partner.company_name || partner.name}
+                    className="font-medium text-primary hover:underline"
+                  />
                 </div>
               </div>
             )}
