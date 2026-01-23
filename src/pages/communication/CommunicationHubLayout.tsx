@@ -9,12 +9,13 @@ import {
   Sparkles, Zap, User, GitBranch, BarChart3, Tag, Brain, Shield, 
   Languages, Radio, Settings, ArrowLeft, ChevronLeft, ChevronRight,
   Search, Plus, PhoneCall, MessageCircle, PhoneOutgoing, MessageSquarePlus,
-  Volume2, DollarSign
+  Volume2, DollarSign, PhoneForwarded
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SendMessageModal } from "@/components/communication/SendMessageModal";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
 
 const navItems = [
   { path: "unified-inbox", label: "Unified Inbox", icon: MessageSquare, badge: 12, highlight: true },
@@ -46,12 +47,25 @@ const navItems = [
   { path: "settings", label: "Settings", icon: Settings },
 ];
 
+// Admin-only nav items
+const adminNavItems = [
+  { path: "business-numbers", label: "Caller IDs & Routing", icon: PhoneForwarded, adminOnly: true },
+];
+
 export default function CommunicationHubLayout() {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [smsModalOpen, setSmsModalOpen] = useState(false);
   const [callModalOpen, setCallModalOpen] = useState(false);
+
+  // Check if user is admin for showing admin-only nav items
+  const { data: profileData } = useCurrentUserProfile();
+  const userRole = profileData?.profile?.primary_role || '';
+  const isAdmin = ['admin', 'ceo', 'owner', 'va'].includes(userRole);
+
+  // Combine nav items with admin items if user is admin
+  const allNavItems = isAdmin ? [...navItems, ...adminNavItems] : navItems;
 
   const handleNewCall = () => {
     // Navigate to manual calls page or open dialer
@@ -117,7 +131,7 @@ export default function CommunicationHubLayout() {
         {/* Navigation */}
         <ScrollArea className="flex-1">
           <nav className="p-2 space-y-1">
-            {navItems.map((item) => (
+            {allNavItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={`/communication/${item.path}`}
@@ -128,7 +142,9 @@ export default function CommunicationHubLayout() {
                       ? "bg-primary text-primary-foreground"
                       : (item as any).highlight 
                         ? "text-foreground bg-muted/50 hover:bg-muted font-medium border border-primary/20"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        : (item as any).adminOnly
+                          ? "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     collapsed && "justify-center px-2"
                   )
                 }
@@ -137,17 +153,22 @@ export default function CommunicationHubLayout() {
                 {!collapsed && (
                   <>
                     <span className="flex-1 truncate">{item.label}</span>
-                    {item.badge && (
+                    {(item as any).badge && (
                       <Badge 
                         variant="destructive" 
                         className="h-5 min-w-5 flex items-center justify-center text-xs px-1.5"
                       >
-                        {item.badge}
+                        {(item as any).badge}
+                      </Badge>
+                    )}
+                    {(item as any).adminOnly && (
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 border-amber-500 text-amber-600">
+                        Admin
                       </Badge>
                     )}
                   </>
                 )}
-                {collapsed && item.badge && (
+                {collapsed && (item as any).badge && (
                   <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive" />
                 )}
               </NavLink>

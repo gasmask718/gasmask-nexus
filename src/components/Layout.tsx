@@ -179,6 +179,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/communication/predictions', label: 'Predictions', icon: Brain },
         { path: '/communication/voice-matrix', label: 'Voice Matrix', icon: Radio },
         { path: '/communication/heatmap', label: 'Heatmap', icon: Flame },
+        { path: '/communication/business-numbers', label: 'Caller IDs & Routing', icon: Phone, adminOnly: true },
         { path: '/communication/settings', label: 'Settings', icon: Settings },
       ],
     },

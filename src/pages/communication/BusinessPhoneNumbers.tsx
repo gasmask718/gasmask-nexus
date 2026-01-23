@@ -1,11 +1,13 @@
 /**
  * Business Phone Numbers Admin Page
  * Manage Twilio phone numbers per business for caller ID
+ * ADMIN ONLY - Protected route
  */
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -14,10 +16,11 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Phone, Plus, Edit, Trash2, CheckCircle, XCircle, Building2, TestTube } from 'lucide-react';
+import { Phone, Plus, Edit, Trash2, CheckCircle, XCircle, Building2, TestTube, ShieldAlert, PhoneForwarded } from 'lucide-react';
 import { useCall } from '@/components/communication/CallProvider';
-import CommSystemsLayout from '@/pages/comm-systems/CommSystemsLayout';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 
 interface BusinessPhoneNumber {
   id: string;
@@ -32,6 +35,32 @@ interface BusinessPhoneNumber {
 }
 
 export default function BusinessPhoneNumbers() {
+  const navigate = useNavigate();
+  const { data: profileData, isLoading: profileLoading } = useCurrentUserProfile();
+  const userRole = profileData?.profile?.primary_role || '';
+  const isAdmin = ['admin', 'ceo', 'owner', 'va'].includes(userRole);
+
+  // Role guard - redirect non-admins
+  if (!profileLoading && !isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-8">
+        <Alert variant="destructive" className="max-w-md">
+          <ShieldAlert className="h-5 w-5" />
+          <AlertTitle>Access Denied</AlertTitle>
+          <AlertDescription>
+            You do not have permission to access this page. Only administrators can manage business phone numbers.
+          </AlertDescription>
+          <Button 
+            variant="outline" 
+            className="mt-4" 
+            onClick={() => navigate('/communication')}
+          >
+            Return to Communication Hub
+          </Button>
+        </Alert>
+      </div>
+    );
+  }
   const queryClient = useQueryClient();
   const { initiateCall } = useCall();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -185,11 +214,10 @@ export default function BusinessPhoneNumbers() {
   };
 
   return (
-    <CommSystemsLayout title="Business Phone Numbers" subtitle="Manage caller IDs for outbound calls">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Phone className="h-6 w-6 text-primary" />
               Business Phone Numbers
@@ -352,6 +380,6 @@ export default function BusinessPhoneNumbers() {
           </CardContent>
         </Card>
       </div>
-    </CommSystemsLayout>
+    </div>
   );
 }
