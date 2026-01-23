@@ -12,6 +12,7 @@ import { useStaffMember } from '@/hooks/useUnforgettableStaff';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useCall } from '@/components/communication/CallProvider';
 
 interface CallLog {
   id: string;
@@ -58,6 +59,7 @@ export default function UnforgettableStaffCall() {
   const { staffId } = useParams<{ staffId: string }>();
   const { simulationMode } = useSimulationMode();
   const { data: staffMember, isLoading } = useStaffMember(staffId);
+  const { initiateCall } = useCall();
   
   const [callLogs, setCallLogs] = useState<CallLog[]>(generateMockCallLogs());
   const [isLogging, setIsLogging] = useState(false);
@@ -67,7 +69,12 @@ export default function UnforgettableStaffCall() {
 
   const handleInitiateCall = () => {
     if (staffMember?.phone) {
-      window.open(`tel:${staffMember.phone}`, '_self');
+      initiateCall({
+        destinationPhone: staffMember.phone,
+        entityType: 'other',
+        entityId: staffMember.id,
+        entityName: `${staffMember.first_name} ${staffMember.last_name}`
+      });
       setIsLogging(true);
       toast.info('Call initiated - log your call after completion');
     } else {

@@ -17,7 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import { Phone, Plus, Edit, Trash2, CheckCircle, XCircle, Building2, TestTube } from 'lucide-react';
 import { useCall } from '@/components/communication/CallProvider';
-import { CommSystemsLayout } from '@/pages/comm-systems/CommSystemsLayout';
+import CommSystemsLayout from '@/pages/comm-systems/CommSystemsLayout';
 
 interface BusinessPhoneNumber {
   id: string;
@@ -27,7 +27,6 @@ interface BusinessPhoneNumber {
   label: string | null;
   is_default: boolean | null;
   is_active: boolean | null;
-  twilio_phone_sid: string | null;
   created_at: string;
   businesses: { id: string; name: string } | null;
 }
@@ -43,8 +42,7 @@ export default function BusinessPhoneNumbers() {
     type: 'call',
     label: '',
     is_default: false,
-    is_active: true,
-    twilio_phone_sid: ''
+    is_active: true
   });
 
   // Fetch businesses
@@ -83,8 +81,7 @@ export default function BusinessPhoneNumbers() {
         type: data.type,
         label: data.label || null,
         is_default: data.is_default,
-        is_active: data.is_active,
-        twilio_phone_sid: data.twilio_phone_sid || null
+        is_active: data.is_active
       };
 
       // If setting as default, unset other defaults for this business
@@ -143,8 +140,7 @@ export default function BusinessPhoneNumbers() {
         type: number.type,
         label: number.label || '',
         is_default: number.is_default || false,
-        is_active: number.is_active ?? true,
-        twilio_phone_sid: number.twilio_phone_sid || ''
+        is_active: number.is_active ?? true
       });
     } else {
       setEditingNumber(null);
@@ -154,8 +150,7 @@ export default function BusinessPhoneNumbers() {
         type: 'call',
         label: '',
         is_default: false,
-        is_active: true,
-        twilio_phone_sid: ''
+        is_active: true
       });
     }
     setIsDialogOpen(true);
@@ -253,14 +248,6 @@ export default function BusinessPhoneNumbers() {
                     placeholder="Main Line, Support, etc."
                     value={formData.label}
                     onChange={(e) => setFormData({...formData, label: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Twilio Phone SID (Optional)</Label>
-                  <Input
-                    placeholder="PN..."
-                    value={formData.twilio_phone_sid}
-                    onChange={(e) => setFormData({...formData, twilio_phone_sid: e.target.value})}
                   />
                 </div>
                 <div className="flex items-center justify-between">

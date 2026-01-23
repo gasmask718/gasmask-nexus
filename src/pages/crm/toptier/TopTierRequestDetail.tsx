@@ -19,6 +19,7 @@ import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeCon
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { useResolvedData } from '@/hooks/useResolvedData';
 import { format } from 'date-fns';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 export default function TopTierRequestDetail() {
   const navigate = useNavigate();
@@ -311,9 +312,12 @@ export default function TopTierRequestDetail() {
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <a href={`tel:${request.customer_phone}`} className="text-primary hover:underline">
-                  {request.customer_phone}
-                </a>
+                <ClickablePhone 
+                  phone={request.customer_phone}
+                  entityType="customer"
+                  entityName={request.customer_name}
+                  className="text-primary hover:underline"
+                />
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-muted-foreground" />

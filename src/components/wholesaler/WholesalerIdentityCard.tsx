@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { WholesalerTags, WholesalerTagsBadges } from './WholesalerTags';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 interface WholesalerIdentityCardProps {
   profile: any;
@@ -104,7 +105,13 @@ export function WholesalerIdentityCard({ profile, onEdit }: WholesalerIdentityCa
             {profile.phone && (
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <a href={`tel:${profile.phone}`} className="text-sm text-primary hover:underline">{profile.phone}</a>
+                <ClickablePhone 
+                  phone={profile.phone}
+                  entityType="wholesaler"
+                  entityId={profile.id}
+                  entityName={profile.contact_name || profile.name}
+                  className="text-sm text-primary hover:underline"
+                />
               </div>
             )}
           </div>

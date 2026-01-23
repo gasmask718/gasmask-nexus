@@ -16,11 +16,13 @@ import {
   AlertTriangle, StickyNote, DollarSign
 } from 'lucide-react';
 import { EntityNotesSection } from '@/components/grabba/EntityNotesSection';
+import { useCall } from '@/components/communication/CallProvider';
 
 const WholesalerProfile: React.FC = () => {
   const { wholesalerId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { initiateCall } = useCall();
   const [editOpen, setEditOpen] = useState(false);
 
   // Fetch wholesaler details
@@ -143,13 +145,21 @@ const WholesalerProfile: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 {wholesaler.phone && (
-                  <a href={`tel:${wholesaler.phone}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
+                  <button 
+                    onClick={() => initiateCall({
+                      destinationPhone: wholesaler.phone,
+                      entityType: 'wholesaler',
+                      entityId: wholesaler.id,
+                      entityName: wholesaler.name
+                    })}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors w-full text-left"
+                  >
                     <Phone className="h-5 w-5 text-primary" />
                     <div>
                       <p className="text-sm text-muted-foreground">Phone</p>
                       <p className="font-medium">{wholesaler.phone}</p>
                     </div>
-                  </a>
+                  </button>
                 )}
                 {wholesaler.phone_secondary && (
                   <div className="flex items-center gap-3 p-3 rounded-lg">

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useStaffList, useStaffCategories } from '@/hooks/useUnforgettableStaff';
 import { GlobalAddButton } from '@/components/crud/GlobalAddButton';
+import { useCall } from '@/components/communication/CallProvider';
 
 // US States list
 const US_STATES = [
@@ -24,6 +25,7 @@ const US_STATES = [
 
 export default function UnforgettableStaff() {
   const navigate = useNavigate();
+  const { initiateCall } = useCall();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [stateFilter, setStateFilter] = useState<string>('all');
@@ -301,7 +303,12 @@ export default function UnforgettableStaff() {
                                   className="h-8 w-8"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    window.open(`tel:${member.phone}`);
+                                    initiateCall({
+                                      destinationPhone: member.phone,
+                                      entityType: 'other',
+                                      entityId: member.id,
+                                      entityName: `${member.first_name} ${member.last_name}`
+                                    });
                                   }}
                                 >
                                   <Phone className="h-4 w-4" />
