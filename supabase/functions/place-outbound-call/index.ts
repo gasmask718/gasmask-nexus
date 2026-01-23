@@ -58,9 +58,9 @@ const handler = async (req: Request): Promise<Response> => {
     // Get Twilio credentials
     const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
     const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const TWILIO_PHONE_NUMBER = Deno.env.get("TWILIO_PHONE_NUMBER");
+    const TWILIO_PHONE_NUMBER = Deno.env.get("TWILIO_PHONE_NUMBER"); // Fallback
 
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
       throw new Error("Missing Twilio credentials");
     }
 
@@ -162,6 +162,29 @@ const handler = async (req: Request): Promise<Response> => {
     const projectId = supabaseUrl.replace("https://", "").split(".")[0];
     const statusCallbackUrl = `https://${projectId}.supabase.co/functions/v1/twilio-call-status`;
 
+    // Get business-specific caller ID if business_id provided
+    let callerIdNumber = TWILIO_PHONE_NUMBER;
+    if (business_id) {
+      const { data: businessPhone } = await supabase
+        .from("business_phone_numbers")
+        .select("phone_number")
+        .eq("business_id", business_id)
+        .eq("is_active", true)
+        .in("type", ["call", "both"])
+        .order("is_default", { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (businessPhone?.phone_number) {
+        callerIdNumber = businessPhone.phone_number;
+        console.log(`📞 Using business caller ID: ${callerIdNumber}`);
+      }
+    }
+
+    if (!callerIdNumber) {
+      throw new Error("No caller ID available");
+    }
+
     // 1. Create the call log FIRST (so we have the ID for tracking)
     const callLogData = {
       phone_number: formattedPhone,
@@ -173,6 +196,10 @@ const handler = async (req: Request): Promise<Response> => {
       business_id: business_id || null,
       store_id: entity_type === "store" ? entity_id : null,
       contact_id: entity_type !== "store" ? entity_id : null,
+      from_number: callerIdNumber,
+      to_number: formattedPhone,
+      related_entity_type: entity_type || null,
+      related_entity_id: entity_id || null,
     };
 
     const { data: callLog, error: logError } = await supabase
@@ -186,18 +213,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // 2. Build TwiML URL for connecting the call
-    // The call will first connect to the initiating user, then dial out
-    const twimlUrl = buildTwimlUrl(formattedPhone, statusCallbackUrl);
+    const twimlUrl = buildTwimlUrl(formattedPhone, statusCallbackUrl, callerIdNumber);
 
     // 3. Initiate call via Twilio
-    // This creates a call TO the user first, then connects them to the destination
-    const userPhone = profile.phone || TWILIO_PHONE_NUMBER;
-    
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`;
 
     const callParams = new URLSearchParams();
     callParams.append("To", formattedPhone);
-    callParams.append("From", TWILIO_PHONE_NUMBER);
+    callParams.append("From", callerIdNumber);
     callParams.append("Url", twimlUrl);
     callParams.append("StatusCallback", statusCallbackUrl);
     callParams.append("StatusCallbackEvent", "initiated ringing answered completed");
@@ -295,18 +318,15 @@ const handler = async (req: Request): Promise<Response> => {
 };
 
 // Build a simple TwiML URL that will connect the call
-function buildTwimlUrl(destinationPhone: string, statusCallback: string): string {
-  // Use Twilio's TwiML Bins or build inline
-  // For now, we'll use a simple echo TwiML
+function buildTwimlUrl(destinationPhone: string, statusCallback: string, callerId: string): string {
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="alice">Connecting your call now.</Say>
-  <Dial callerId="${Deno.env.get("TWILIO_PHONE_NUMBER")}">
+  <Dial callerId="${callerId}">
     <Number statusCallbackEvent="initiated ringing answered completed" statusCallback="${statusCallback}">${destinationPhone}</Number>
   </Dial>
 </Response>`;
   
-  // Encode as data URI (simple approach - in production use TwiML Bins)
   return `http://twimlets.com/echo?Twiml=${encodeURIComponent(twiml)}`;
 }
 

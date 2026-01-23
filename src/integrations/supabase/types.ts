@@ -5334,6 +5334,7 @@ export type Database = {
           compliance_profile: string | null
           created_at: string | null
           default_dialect: string | null
+          default_inbound_route_user_id: string | null
           default_language: string | null
           default_personality: string | null
           email: string | null
@@ -5393,6 +5394,7 @@ export type Database = {
           compliance_profile?: string | null
           created_at?: string | null
           default_dialect?: string | null
+          default_inbound_route_user_id?: string | null
           default_language?: string | null
           default_personality?: string | null
           email?: string | null
@@ -5452,6 +5454,7 @@ export type Database = {
           compliance_profile?: string | null
           created_at?: string | null
           default_dialect?: string | null
+          default_inbound_route_user_id?: string | null
           default_language?: string | null
           default_personality?: string | null
           email?: string | null
@@ -18266,13 +18269,19 @@ export type Database = {
           direction: string | null
           duration_seconds: number | null
           ended_at: string | null
+          from_number: string | null
           id: string
+          metadata: Json | null
           notes: string | null
           outcome: string | null
           phone_number: string | null
+          receiving_user_id: string | null
+          related_entity_id: string | null
+          related_entity_type: string | null
           started_at: string | null
           status: string | null
           store_id: string | null
+          to_number: string | null
           vertical_id: string | null
         }
         Insert: {
@@ -18283,13 +18292,19 @@ export type Database = {
           direction?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
+          from_number?: string | null
           id?: string
+          metadata?: Json | null
           notes?: string | null
           outcome?: string | null
           phone_number?: string | null
+          receiving_user_id?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
           started_at?: string | null
           status?: string | null
           store_id?: string | null
+          to_number?: string | null
           vertical_id?: string | null
         }
         Update: {
@@ -18300,13 +18315,19 @@ export type Database = {
           direction?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
+          from_number?: string | null
           id?: string
+          metadata?: Json | null
           notes?: string | null
           outcome?: string | null
           phone_number?: string | null
+          receiving_user_id?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
           started_at?: string | null
           status?: string | null
           store_id?: string | null
+          to_number?: string | null
           vertical_id?: string | null
         }
         Relationships: [
