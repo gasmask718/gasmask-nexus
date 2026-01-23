@@ -29,6 +29,7 @@ const corsHeaders = {
 const ALLOWED_ROLES = [
   "owner",
   "admin", 
+  "va",
   "employee",
   "staff",
   "csr",
@@ -90,11 +91,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get user profile with role
+    // Get user profile with role from user_profiles table
     const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("id, full_name, phone, role")
-      .eq("id", user.id)
+      .from("user_profiles")
+      .select("id, full_name, phone, primary_role")
+      .eq("user_id", user.id)
       .single();
 
     if (profileError || !profile) {
@@ -104,17 +105,20 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+    
+    // Map primary_role to the role variable for permission check
+    const userRole = profile.primary_role;
 
     // Check role permission
-    if (!ALLOWED_ROLES.includes(profile.role)) {
-      console.error(`❌ Permission denied for role: ${profile.role}`);
+    if (!ALLOWED_ROLES.includes(userRole)) {
+      console.error(`❌ Permission denied for role: ${userRole}`);
       
       // Log permission denial
       await supabase.from("admin_audit_log").insert({
         actor_user_id: user.id,
         action: "call_permission_denied",
         target_type: "outbound_call",
-        reason: `Role ${profile.role} is not authorized to place outbound calls`,
+        reason: `Role ${userRole} is not authorized to place outbound calls`,
       });
 
       return new Response(
