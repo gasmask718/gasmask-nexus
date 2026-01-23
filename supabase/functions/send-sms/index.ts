@@ -15,16 +15,15 @@ interface SendSMSRequest {
   contact_name?: string;
 }
 
-// Map Twilio status to valid database status values
 const mapTwilioStatus = (twilioStatus: string): string => {
   const statusMap: Record<string, string> = {
-    "queued": "pending",
-    "sending": "pending",
-    "sent": "delivered",
-    "delivered": "delivered",
-    "undelivered": "failed",
-    "failed": "failed",
-    "read": "read",
+    queued: "pending",
+    sending: "pending",
+    sent: "delivered",
+    delivered: "delivered",
+    undelivered: "failed",
+    failed: "failed",
+    read: "read",
   };
   return statusMap[twilioStatus] || "pending";
 };
@@ -37,10 +36,12 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
     const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const TWILIO_PHONE_NUMBER = Deno.env.get("TWILIO_PHONE_NUMBER");
 
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
-      throw new Error("Missing Twilio credentials");
+    // CHANGE 1: Get the Messaging Service SID instead of the Phone Number
+    const TWILIO_MESSAGING_SERVICE_SID = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID");
+
+    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_MESSAGING_SERVICE_SID) {
+      throw new Error("Missing Twilio credentials (ensure TWILIO_MESSAGING_SERVICE_SID is set)");
     }
 
     const { to, message, business_id, store_id, contact_id, contact_name }: SendSMSRequest = await req.json();
@@ -49,40 +50,33 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Missing required fields: to and message");
     }
 
-    // Format phone number to E.164 format
     let formattedTo = to.replace(/\D/g, "");
-    
-    // Handle Philippine numbers (start with 09, 11 digits)
     if (formattedTo.startsWith("09") && formattedTo.length === 11) {
-      formattedTo = `+63${formattedTo.substring(1)}`; // Remove leading 0, add +63
-    }
-    // Handle Philippine numbers already with country code (63...)
-    else if (formattedTo.startsWith("63") && formattedTo.length === 12) {
+      formattedTo = `+63${formattedTo.substring(1)}`;
+    } else if (formattedTo.startsWith("63") && formattedTo.length === 12) {
       formattedTo = `+${formattedTo}`;
-    }
-    // Handle US numbers (10 digits)
-    else if (formattedTo.length === 10) {
+    } else if (formattedTo.length === 10) {
       formattedTo = `+1${formattedTo}`;
-    }
-    // Handle numbers that already have country code but no +
-    else if (formattedTo.length >= 11 && !formattedTo.startsWith("+")) {
+    } else if (formattedTo.length >= 11 && !formattedTo.startsWith("+")) {
       formattedTo = `+${formattedTo}`;
     }
 
     console.log(`📱 Sending SMS to ${formattedTo}`);
 
-    // Send SMS via Twilio
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
-    
+
     const formData = new URLSearchParams();
     formData.append("To", formattedTo);
-    formData.append("From", TWILIO_PHONE_NUMBER);
     formData.append("Body", message);
+
+    // CHANGE 2: Use MessagingServiceSid instead of 'From'
+    // Do NOT send "From" when using a Messaging Service
+    formData.append("MessagingServiceSid", TWILIO_MESSAGING_SERVICE_SID);
 
     const twilioResponse = await fetch(twilioUrl, {
       method: "POST",
       headers: {
-        "Authorization": `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
+        Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: formData,
@@ -97,15 +91,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`✅ Twilio success: SID=${twilioData.sid}, status=${twilioData.status}`);
 
-    // Map Twilio status to valid database status
     const dbStatus = mapTwilioStatus(twilioData.status || "queued");
 
-    // Log the message to Supabase
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Insert into communication_messages with Twilio SID in metadata
     const { data: msgData, error: msgError } = await supabase
       .from("communication_messages")
       .insert({
@@ -123,6 +114,8 @@ const handler = async (req: Request): Promise<Response> => {
           twilio_status: twilioData.status,
           contact_name: contact_name || null,
           sent_at: new Date().toISOString(),
+          // CHANGE 3: Useful to log which service sent it
+          messaging_service_sid: TWILIO_MESSAGING_SERVICE_SID,
         },
       })
       .select()
@@ -134,7 +127,6 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`✅ Message logged: ${msgData.id}`);
     }
 
-    // Also log to communication_logs for tracking
     const { error: logError } = await supabase.from("communication_logs").insert({
       channel: "sms",
       direction: "outbound",
@@ -149,26 +141,23 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         sid: twilioData.sid,
         status: twilioData.status,
-        message_id: msgData?.id 
+        message_id: msgData?.id,
       }),
-      { 
-        status: 200, 
-        headers: { "Content-Type": "application/json", ...corsHeaders } 
-      }
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
     );
   } catch (error: any) {
     console.error("❌ Error in send-sms function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { "Content-Type": "application/json", ...corsHeaders } 
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
 
