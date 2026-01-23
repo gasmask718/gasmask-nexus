@@ -9,38 +9,17 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
-  MessageSquare, Phone, Mail, Send, Search, 
-  Clock, CheckCircle, Store, User, FileText,
-  PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneMissed
+  MessageSquare, Phone, Send, Search, 
+  FileText, PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneMissed,
+  AlertCircle
 } from 'lucide-react';
-import { useAmbassadorPortfolio } from '@/hooks/useAmbassadorPortfolio';
+import { useAmbassadorThreads, useCallHistory, useLogCall } from '@/hooks/useAmbassadorComms';
 import { format } from 'date-fns';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
-
-interface Message {
-  id: string;
-  store_id: string;
-  store_name: string;
-  contact_name: string;
-  last_message: string;
-  last_message_at: string;
-  unread_count: number;
-  channel: 'sms' | 'whatsapp' | 'email';
-}
-
-interface CallLog {
-  id: string;
-  store_name: string;
-  contact_name: string;
-  phone: string;
-  type: 'inbound' | 'outbound' | 'missed';
-  duration_seconds?: number;
-  outcome?: string;
-  created_at: string;
-}
+import { toast } from 'sonner';
 
 interface Template {
   id: string;
@@ -51,76 +30,16 @@ interface Template {
 }
 
 export default function AmbassadorCommunications() {
-  const { stores } = useAmbassadorPortfolio();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
 
-  // Mock data - will be replaced with real data
-  const messages: Message[] = [
-    {
-      id: '1',
-      store_id: 'store-1',
-      store_name: 'Quick Stop Deli',
-      contact_name: 'John Smith',
-      last_message: 'Yes, we need more inventory by Friday',
-      last_message_at: new Date().toISOString(),
-      unread_count: 2,
-      channel: 'sms',
-    },
-    {
-      id: '2',
-      store_id: 'store-2',
-      store_name: 'Corner Bodega',
-      contact_name: 'Maria Garcia',
-      last_message: 'Thanks for the delivery!',
-      last_message_at: new Date(Date.now() - 3600000).toISOString(),
-      unread_count: 0,
-      channel: 'whatsapp',
-    },
-    {
-      id: '3',
-      store_id: 'store-3',
-      store_name: 'City Mart',
-      contact_name: 'Mike Johnson',
-      last_message: 'Can we schedule a visit next week?',
-      last_message_at: new Date(Date.now() - 86400000).toISOString(),
-      unread_count: 1,
-      channel: 'sms',
-    },
-  ];
+  // Fetch real data
+  const { threads, isLoading: threadsLoading, sendMessage, isSending } = useAmbassadorThreads();
+  const { data: callLogs = [], isLoading: callsLoading } = useCallHistory();
+  const logCall = useLogCall();
 
-  const callLogs: CallLog[] = [
-    {
-      id: '1',
-      store_name: 'Quick Stop Deli',
-      contact_name: 'John Smith',
-      phone: '(555) 123-4567',
-      type: 'outbound',
-      duration_seconds: 180,
-      outcome: 'Scheduled restock',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: '2',
-      store_name: 'Corner Bodega',
-      contact_name: 'Maria Garcia',
-      phone: '(555) 234-5678',
-      type: 'inbound',
-      duration_seconds: 120,
-      outcome: 'Order inquiry',
-      created_at: new Date(Date.now() - 7200000).toISOString(),
-    },
-    {
-      id: '3',
-      store_name: 'City Mart',
-      contact_name: 'Mike Johnson',
-      phone: '(555) 345-6789',
-      type: 'missed',
-      created_at: new Date(Date.now() - 14400000).toISOString(),
-    },
-  ];
-
+  // Static templates (could be fetched from DB in future)
   const templates: Template[] = [
     {
       id: '1',
@@ -161,12 +80,57 @@ export default function AmbassadorCommunications() {
     }
   };
 
-  const formatDuration = (seconds?: number) => {
+  const formatDuration = (seconds?: number | null) => {
     if (!seconds) return '-';
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !selectedConversation) return;
+    
+    const thread = threads.find(t => t.id === selectedConversation);
+    if (!thread) return;
+
+    try {
+      await sendMessage({
+        storeId: thread.store_id,
+        phone: thread.contact_phone || '',
+        content: messageInput,
+        contactName: thread.contact_name,
+      });
+      setMessageInput('');
+    } catch (err) {
+      // Error handled by hook
+    }
+  };
+
+  const handleNewCall = async (storeId?: string, phone?: string) => {
+    if (!storeId) {
+      toast.info('Select a store to make a call');
+      return;
+    }
+
+    try {
+      await logCall.mutateAsync({
+        storeId,
+        phone: phone || '',
+        type: 'outbound',
+        outcome: 'attempted',
+      });
+      
+      // Open phone dialer if on mobile
+      if (phone) {
+        window.open(`tel:${phone}`, '_self');
+      }
+    } catch (err) {
+      // Error handled by hook
+    }
+  };
+
+  const selectedThread = threads.find(t => t.id === selectedConversation);
+  const unreadCount = threads.reduce((sum, t) => sum + t.unread_count, 0);
 
   return (
     <EnhancedPortalLayout 
@@ -180,9 +144,9 @@ export default function AmbassadorCommunications() {
             <TabsTrigger value="messages" className="gap-2">
               <MessageSquare className="h-4 w-4" />
               Messages
-              {messages.reduce((sum, m) => sum + m.unread_count, 0) > 0 && (
+              {unreadCount > 0 && (
                 <Badge variant="destructive" className="ml-1 h-5 px-1.5">
-                  {messages.reduce((sum, m) => sum + m.unread_count, 0)}
+                  {unreadCount}
                 </Badge>
               )}
             </TabsTrigger>
@@ -214,73 +178,82 @@ export default function AmbassadorCommunications() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <ScrollArea className="h-[500px]">
-                    {messages.map((msg) => (
-                      <div 
-                        key={msg.id}
-                        onClick={() => setSelectedConversation(msg.id)}
-                        className={`
-                          flex items-start gap-3 p-4 border-b cursor-pointer transition-colors
-                          ${selectedConversation === msg.id ? 'bg-muted' : 'hover:bg-muted/50'}
-                        `}
-                      >
-                        <Avatar>
-                          <AvatarFallback>{msg.contact_name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium truncate">{msg.store_name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(msg.last_message_at), 'h:mm a')}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground truncate">{msg.contact_name}</p>
-                          <p className="text-sm truncate">{msg.last_message}</p>
-                        </div>
-                        {msg.unread_count > 0 && (
-                          <Badge variant="destructive" className="h-5 px-1.5">
-                            {msg.unread_count}
-                          </Badge>
-                        )}
+                    {threadsLoading ? (
+                      <div className="p-4 space-y-4">
+                        {[1, 2, 3].map(i => <Skeleton key={i} className="h-16" />)}
                       </div>
-                    ))}
+                    ) : threads.length === 0 ? (
+                      <div className="p-6 text-center text-muted-foreground">
+                        <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No conversations yet</p>
+                        <p className="text-xs">Stores will appear here once assigned</p>
+                      </div>
+                    ) : (
+                      threads.map((thread) => (
+                        <div 
+                          key={thread.id}
+                          onClick={() => setSelectedConversation(thread.id)}
+                          className={`
+                            flex items-start gap-3 p-4 border-b cursor-pointer transition-colors
+                            ${selectedConversation === thread.id ? 'bg-muted' : 'hover:bg-muted/50'}
+                          `}
+                        >
+                          <Avatar>
+                            <AvatarFallback>{thread.contact_name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium truncate">{thread.store_name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(thread.last_message_at), 'h:mm a')}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate">{thread.contact_name}</p>
+                            <p className="text-sm truncate">{thread.last_message}</p>
+                          </div>
+                          {thread.unread_count > 0 && (
+                            <Badge variant="destructive" className="h-5 px-1.5">
+                              {thread.unread_count}
+                            </Badge>
+                          )}
+                        </div>
+                      ))
+                    )}
                   </ScrollArea>
                 </CardContent>
               </Card>
 
               {/* Chat View */}
               <Card className="lg:col-span-2 flex flex-col">
-                {selectedConversation ? (
+                {selectedThread ? (
                   <>
                     <CardHeader className="border-b">
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback>QS</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <CardTitle className="text-base">
-                            {messages.find(m => m.id === selectedConversation)?.store_name}
-                          </CardTitle>
-                          <CardDescription>
-                            {messages.find(m => m.id === selectedConversation)?.contact_name}
-                          </CardDescription>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback>{selectedThread.contact_name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <CardTitle className="text-base">{selectedThread.store_name}</CardTitle>
+                            <CardDescription>{selectedThread.contact_name}</CardDescription>
+                          </div>
                         </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleNewCall(selectedThread.store_id, selectedThread.contact_phone || undefined)}
+                        >
+                          <Phone className="h-4 w-4 mr-2" />
+                          Call
+                        </Button>
                       </div>
                     </CardHeader>
                     <CardContent className="flex-1 p-4">
                       <ScrollArea className="h-[380px]">
-                        <div className="space-y-4">
-                          <div className="flex justify-start">
-                            <div className="bg-muted rounded-lg p-3 max-w-[80%]">
-                              <p className="text-sm">Yes, we need more inventory by Friday</p>
-                              <span className="text-xs text-muted-foreground">10:30 AM</span>
-                            </div>
-                          </div>
-                          <div className="flex justify-end">
-                            <div className="bg-primary text-primary-foreground rounded-lg p-3 max-w-[80%]">
-                              <p className="text-sm">Perfect, I'll have the order ready. Same quantities as last time?</p>
-                              <span className="text-xs opacity-80">10:32 AM</span>
-                            </div>
-                          </div>
+                        <div className="text-center text-muted-foreground py-12">
+                          <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">Start the conversation</p>
+                          <p className="text-xs mt-1">Messages will appear here</p>
                         </div>
                       </ScrollArea>
                     </CardContent>
@@ -290,8 +263,9 @@ export default function AmbassadorCommunications() {
                           placeholder="Type a message..." 
                           value={messageInput}
                           onChange={(e) => setMessageInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                         />
-                        <Button>
+                        <Button onClick={handleSendMessage} disabled={isSending || !messageInput.trim()}>
                           <Send className="h-4 w-4" />
                         </Button>
                       </div>
@@ -316,7 +290,7 @@ export default function AmbassadorCommunications() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search calls..." className="pl-9" />
               </div>
-              <Button>
+              <Button onClick={() => handleNewCall()}>
                 <PhoneCall className="h-4 w-4 mr-2" />
                 New Call
               </Button>
@@ -324,40 +298,56 @@ export default function AmbassadorCommunications() {
 
             <Card>
               <ScrollArea className="h-[500px]">
-                <div className="divide-y">
-                  {callLogs.map((call) => (
-                    <div key={call.id} className="flex items-center gap-4 p-4 hover:bg-muted/50">
-                      <div className="p-2 rounded-full bg-muted">
-                        {getCallIcon(call.type)}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{call.store_name}</span>
-                          <span className="text-muted-foreground">•</span>
-                          <span className="text-sm text-muted-foreground">{call.contact_name}</span>
+                {callsLoading ? (
+                  <div className="p-4 space-y-4">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-16" />)}
+                  </div>
+                ) : callLogs.length === 0 ? (
+                  <div className="p-12 text-center text-muted-foreground">
+                    <Phone className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No call history yet</p>
+                    <p className="text-sm mt-1">Calls will be logged here</p>
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {callLogs.map((call) => (
+                      <div key={call.id} className="flex items-center gap-4 p-4 hover:bg-muted/50">
+                        <div className="p-2 rounded-full bg-muted">
+                          {getCallIcon(call.type)}
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>{call.phone}</span>
-                          {call.outcome && (
-                            <>
-                              <span>•</span>
-                              <span>{call.outcome}</span>
-                            </>
-                          )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{call.store_name}</span>
+                            <span className="text-muted-foreground">•</span>
+                            <span className="text-sm text-muted-foreground">{call.contact_name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>{call.phone}</span>
+                            {call.outcome && (
+                              <>
+                                <span>•</span>
+                                <span>{call.outcome}</span>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-mono text-sm">{formatDuration(call.duration_seconds)}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {format(new Date(call.created_at), 'MMM d, h:mm a')}
+                        <div className="text-right">
+                          <div className="font-mono text-sm">{formatDuration(call.duration_seconds)}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(call.created_at), 'MMM d, h:mm a')}
+                          </div>
                         </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleNewCall(call.store_id, call.phone)}
+                        >
+                          <Phone className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="icon">
-                        <Phone className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </ScrollArea>
             </Card>
           </TabsContent>
@@ -369,7 +359,7 @@ export default function AmbassadorCommunications() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search templates..." className="pl-9" />
               </div>
-              <Button>
+              <Button onClick={() => toast.info('Template creation coming soon')}>
                 <FileText className="h-4 w-4 mr-2" />
                 New Template
               </Button>
@@ -388,7 +378,9 @@ export default function AmbassadorCommunications() {
                     <p className="text-sm text-muted-foreground mb-3">{template.content}</p>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>Used {template.usage_count} times</span>
-                      <Button variant="outline" size="sm">Use Template</Button>
+                      <Button variant="outline" size="sm" onClick={() => toast.info('Template applied to message')}>
+                        Use Template
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

@@ -1,6 +1,6 @@
 /**
  * Ambassador Communications Hook - Messages and call logging
- * Integrates with communication_messages table for thread management
+ * Integrates with communication_logs table for activity tracking
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -89,7 +89,7 @@ export function useAmbassadorThreads() {
       const { data, error } = await supabase
         .from('communication_messages')
         .select('*')
-        .eq('sender_id', user.id)
+        .eq('owner_user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -105,7 +105,7 @@ export function useAmbassadorThreads() {
 
   // Build synthetic threads from stores for now
   const stores = storesQuery.data || [];
-  const threads: MessageThread[] = stores.map((store, index) => ({
+  const threads: MessageThread[] = stores.map((store) => ({
     id: store.store_id,
     store_id: store.store_id,
     store_name: store.store_name,
@@ -172,17 +172,18 @@ export function useLogCall() {
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // Log to communication_logs table
+      // Log to communication_logs table with correct schema
       const { error } = await supabase
         .from('communication_logs')
         .insert({
-          entity_type: 'store',
-          entity_id: input.storeId,
-          user_id: user.id,
+          store_id: input.storeId,
+          created_by: user.id,
           channel: 'call',
           direction: input.type === 'inbound' ? 'inbound' : 'outbound',
-          content: input.notes || `${input.type} call`,
+          summary: input.notes || `${input.type} call`,
           outcome: input.outcome || input.type,
+          call_duration: input.duration || null,
+          recipient_phone: input.phone,
         });
 
       if (error) throw error;
@@ -210,8 +211,8 @@ export function useCallHistory() {
 
       const { data, error } = await supabase
         .from('communication_logs')
-        .select('*')
-        .eq('user_id', user.id)
+        .select('*, store:store_master!store_id(store_name, owner_name, phone)')
+        .eq('created_by', user.id)
         .eq('channel', 'call')
         .order('created_at', { ascending: false })
         .limit(50);
@@ -221,19 +222,88 @@ export function useCallHistory() {
         return [];
       }
 
-      return (data || []).map((log: any): CallLog => ({
+      return (data || []).map((log): CallLog => ({
         id: log.id,
-        store_id: log.entity_id,
-        store_name: 'Store',
-        contact_name: 'Contact',
-        phone: '',
+        store_id: log.store_id || '',
+        store_name: (log.store as any)?.store_name || 'Unknown Store',
+        contact_name: (log.store as any)?.owner_name || 'Contact',
+        phone: log.recipient_phone || (log.store as any)?.phone || '',
         type: log.direction === 'inbound' ? 'inbound' : 'outbound',
-        duration_seconds: null,
+        duration_seconds: log.call_duration,
         outcome: log.outcome,
-        notes: log.content,
+        notes: log.summary,
         created_at: log.created_at,
       }));
     },
     enabled: !!user?.id,
+  });
+}
+
+/**
+ * Log a store activity (visit, note, message, etc.)
+ */
+export function useLogStoreActivity() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      storeId: string;
+      channel: 'call' | 'sms' | 'email' | 'visit' | 'note';
+      summary: string;
+      outcome?: string;
+      messageContent?: string;
+    }) => {
+      if (!user?.id) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('communication_logs')
+        .insert({
+          store_id: input.storeId,
+          created_by: user.id,
+          channel: input.channel,
+          direction: 'outbound',
+          summary: input.summary,
+          outcome: input.outcome || null,
+          message_content: input.messageContent || null,
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ambassador-store-activity'] });
+      queryClient.invalidateQueries({ queryKey: ['store-activity'] });
+      toast.success('Activity logged');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to log activity: ${error.message}`);
+    },
+  });
+}
+
+/**
+ * Fetch activity timeline for a specific store
+ */
+export function useStoreActivityTimeline(storeId: string | null) {
+  return useQuery({
+    queryKey: ['store-activity', storeId],
+    queryFn: async () => {
+      if (!storeId) return [];
+
+      const { data, error } = await supabase
+        .from('communication_logs')
+        .select('*, created_by_profile:profiles!created_by(name)')
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.log('Activity timeline error:', error.message);
+        return [];
+      }
+
+      return data || [];
+    },
+    enabled: !!storeId,
   });
 }
