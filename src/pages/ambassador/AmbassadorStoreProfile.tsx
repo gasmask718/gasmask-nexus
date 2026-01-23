@@ -374,11 +374,12 @@ function StoreProfileContent() {
                         </div>
                         <div className="flex gap-2">
                           {contact.phone && (
-                            <Button size="sm" variant="ghost" asChild>
-                              <a href={`tel:${contact.phone}`}>
-                                <Phone className="h-4 w-4" />
-                              </a>
-                            </Button>
+                            <ClickablePhone 
+                              phone={contact.phone}
+                              entityType="store"
+                              entityName={contact.name}
+                              variant="icon"
+                            />
                           )}
                           {contact.email && (
                             <Button size="sm" variant="ghost" asChild>

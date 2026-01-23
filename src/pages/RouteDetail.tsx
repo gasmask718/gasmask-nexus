@@ -20,6 +20,7 @@ import {
   Plus
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 interface Route {
   id: string;
@@ -216,12 +217,12 @@ const RouteDetail = () => {
                       <span className="font-medium">{route.assigned_user.name}</span>
                     </div>
                     {route.assigned_user.phone && (
-                      <a 
-                        href={`tel:${route.assigned_user.phone}`}
+                      <ClickablePhone 
+                        phone={route.assigned_user.phone}
+                        entityType="driver"
+                        entityName={route.assigned_user.name}
                         className="text-sm text-muted-foreground hover:underline ml-6"
-                      >
-                        {route.assigned_user.phone}
-                      </a>
+                      />
                     )}
                   </div>
                 </>

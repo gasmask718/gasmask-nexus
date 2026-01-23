@@ -14,6 +14,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { GlobalTagSelector } from '@/components/tags/GlobalTagSelector';
 import { useEntityTags } from '@/hooks/useGlobalTags';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
+import { useCall } from '@/components/communication/CallProvider';
 
 type StickerStatus = 'none' | 'doorOnly' | 'inStoreOnly' | 'doorAndInStore';
 
@@ -289,10 +291,13 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                       </div>
                       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         {contact.phone ? (
-                          <a href={`tel:${contact.phone}`} className="flex items-center gap-1 hover:underline">
-                            <Phone className="h-3 w-3" />
-                            {contact.phone}
-                          </a>
+                          <ClickablePhone 
+                            phone={contact.phone} 
+                            entityType="store" 
+                            entityId={store.id} 
+                            entityName={contact.name || store.name}
+                            className="flex items-center gap-1 hover:underline text-xs"
+                          />
                         ) : (
                           <span className="flex items-center gap-1">
                             <Phone className="h-3 w-3" />
@@ -350,9 +355,13 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                     <Phone className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <a href={`tel:${store.phone}`} className="text-sm font-medium hover:underline">
-                      {store.phone}
-                    </a>
+                    <ClickablePhone 
+                      phone={store.phone} 
+                      entityType="store" 
+                      entityId={store.id} 
+                      entityName={store.name}
+                      className="text-sm font-medium hover:underline"
+                    />
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                         Store Telephone
@@ -363,11 +372,13 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                     </div>
                   </div>
                 </div>
-                <Button size="sm" variant="ghost" asChild>
-                  <a href={`tel:${store.phone}`} aria-label={`Call ${store.name}`}>
-                    <Phone className="h-4 w-4" />
-                  </a>
-                </Button>
+                <ClickablePhone 
+                  phone={store.phone} 
+                  entityType="store" 
+                  entityId={store.id} 
+                  entityName={store.name}
+                  variant="icon"
+                />
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">No store phone</p>
@@ -381,9 +392,13 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                     <MessageSquare className="h-4 w-4 text-green-600" />
                   </div>
                   <div>
-                    <a href={`tel:${store.alt_phone}`} className="text-sm font-medium hover:underline">
-                      {store.alt_phone}
-                    </a>
+                    <ClickablePhone 
+                      phone={store.alt_phone} 
+                      entityType="store" 
+                      entityId={store.id} 
+                      entityName={store.name}
+                      className="text-sm font-medium hover:underline"
+                    />
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                         Cell Phone
@@ -395,11 +410,13 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button size="sm" variant="ghost" asChild>
-                    <a href={`tel:${store.alt_phone}`} aria-label={`Call ${store.name} cell`}>
-                      <Phone className="h-4 w-4" />
-                    </a>
-                  </Button>
+                  <ClickablePhone 
+                    phone={store.alt_phone} 
+                    entityType="store" 
+                    entityId={store.id} 
+                    entityName={store.name}
+                    variant="icon"
+                  />
                   <Button size="sm" variant="ghost" asChild>
                     <a href={`sms:${store.alt_phone}`} aria-label={`Text ${store.name}`}>
                       <MessageSquare className="h-4 w-4" />

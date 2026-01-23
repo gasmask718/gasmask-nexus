@@ -26,11 +26,13 @@ import StaffEventsTab from '@/components/staff/tabs/StaffEventsTab';
 import StaffPaymentsTab from '@/components/staff/tabs/StaffPaymentsTab';
 import StaffPerformanceTab from '@/components/staff/tabs/StaffPerformanceTab';
 import StaffDocumentsTab from '@/components/staff/tabs/StaffDocumentsTab';
+import { useCall } from '@/components/communication/CallProvider';
 
 export default function UnforgettableStaffProfile() {
   const navigate = useNavigate();
   const { staffId } = useParams<{ staffId: string }>();
   const [activeTab, setActiveTab] = useState('overview');
+  const { initiateCall } = useCall();
 
   // Fetch real staff data by ID - this is the core fix
   const { data: staff, isLoading, error } = useStaffMember(staffId);
@@ -185,7 +187,12 @@ export default function UnforgettableStaffProfile() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => window.open(`tel:${staff.phone}`)}
+                      onClick={() => initiateCall({
+                        destinationPhone: staff.phone,
+                        entityType: 'other',
+                        entityId: staff.id,
+                        entityName: `${staff.first_name} ${staff.last_name}`
+                      })}
                     >
                       <Phone className="h-4 w-4 mr-2" />
                       Call

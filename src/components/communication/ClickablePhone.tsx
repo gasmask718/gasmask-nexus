@@ -1,6 +1,7 @@
 import { useCall } from "./CallProvider";
 import { Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface ClickablePhoneProps {
   phone: string;
@@ -12,6 +13,12 @@ interface ClickablePhoneProps {
   showIcon?: boolean;
   children?: React.ReactNode;
   onClick?: (e: React.MouseEvent) => void;
+  /** 
+   * Display variant:
+   * - "inline" (default): renders as a styled text button
+   * - "icon": renders as a small ghost icon button
+   */
+  variant?: "inline" | "icon";
 }
 
 /**
@@ -28,6 +35,7 @@ export function ClickablePhone({
   showIcon = false,
   children,
   onClick,
+  variant = "inline",
 }: ClickablePhoneProps) {
   const { initiateCall } = useCall();
 
@@ -43,6 +51,19 @@ export function ClickablePhone({
       businessId,
     });
   };
+
+  if (variant === "icon") {
+    return (
+      <Button 
+        size="sm" 
+        variant="ghost" 
+        onClick={handleClick}
+        aria-label={`Call ${entityName || phone}`}
+      >
+        <Phone className="h-4 w-4" />
+      </Button>
+    );
+  }
 
   return (
     <button

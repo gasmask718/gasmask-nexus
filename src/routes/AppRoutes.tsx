@@ -163,6 +163,7 @@ import LanguagePage from '@/pages/communication/language/LanguagePage';
 import VoiceMatrixPage from '@/pages/communication/voicematrix/VoiceMatrixPage';
 import CommSettingsPage from '@/pages/communication/settings/SettingsPage';
 import PhoneNumbersSettingsPage from '@/pages/communication/settings/PhoneNumbersPage';
+import BusinessPhoneNumbersPage from '@/pages/communication/BusinessPhoneNumbers';
 import ManualCallPage from '@/pages/communication/manual/ManualCallPage';
 import ManualTextPage from '@/pages/communication/manual/ManualTextPage';
 import AIAutoDialerPage from '@/pages/communication/ai/AIAutoDialerPage';
@@ -1197,6 +1198,7 @@ export default function AppRoutes() {
           <Route path="voice-matrix" element={<VoiceMatrixPage />} />
           <Route path="settings" element={<CommSettingsPage />} />
           <Route path="phone-numbers" element={<PhoneNumbersSettingsPage />} />
+          <Route path="business-numbers" element={<BusinessPhoneNumbersPage />} />
           <Route path="follow-ups" element={<FollowUpManagerPage />} />
           <Route path="unified-inbox" element={<UnifiedInboxV3Page />} />
         </Route>

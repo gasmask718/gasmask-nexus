@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { GRABBA_BRAND_CONFIG } from '@/config/grabbaSkyscraper';
+import { useCall } from '@/components/communication/CallProvider';
 
 // Use correct brand colors from config
 const brandColors = {
@@ -18,6 +19,7 @@ const brandColors = {
 };
 
 export default function MultiBrandDelivery() {
+  const { initiateCall } = useCall();
   const [completedStops, setCompletedStops] = useState<Set<number>>(new Set());
   const [callModalOpen, setCallModalOpen] = useState(false);
   const [selectedStore, setSelectedStore] = useState<{ name: string; address: string; phone?: string } | null>(null);
@@ -266,16 +268,17 @@ export default function MultiBrandDelivery() {
               </div>
               {selectedStore.phone && (
                 <Button className="w-full" onClick={() => {
-                  window.open(`tel:${selectedStore.phone}`, '_self');
-                  toast.success('Initiating call...');
+                  initiateCall({
+                    destinationPhone: selectedStore.phone!,
+                    entityType: 'store',
+                    entityName: selectedStore.name
+                  });
+                  setCallModalOpen(false);
                 }}>
                   <Phone className="w-4 h-4 mr-2" />
                   Call {selectedStore.phone}
                 </Button>
               )}
-              <p className="text-xs text-muted-foreground text-center">
-                Full telephony integration coming soon
-              </p>
             </div>
           )}
         </DialogContent>
