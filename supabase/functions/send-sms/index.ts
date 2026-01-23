@@ -15,6 +15,20 @@ interface SendSMSRequest {
   contact_name?: string;
 }
 
+// Map Twilio status to valid database status values
+const mapTwilioStatus = (twilioStatus: string): string => {
+  const statusMap: Record<string, string> = {
+    "queued": "pending",
+    "sending": "pending",
+    "sent": "delivered",
+    "delivered": "delivered",
+    "undelivered": "failed",
+    "failed": "failed",
+    "read": "read",
+  };
+  return statusMap[twilioStatus] || "pending";
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -55,6 +69,8 @@ const handler = async (req: Request): Promise<Response> => {
       formattedTo = `+${formattedTo}`;
     }
 
+    console.log(`📱 Sending SMS to ${formattedTo}`);
+
     // Send SMS via Twilio
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
     
@@ -75,42 +91,63 @@ const handler = async (req: Request): Promise<Response> => {
     const twilioData = await twilioResponse.json();
 
     if (!twilioResponse.ok) {
-      console.error("Twilio error:", twilioData);
+      console.error("❌ Twilio error:", twilioData);
       throw new Error(twilioData.message || "Failed to send SMS");
     }
+
+    console.log(`✅ Twilio success: SID=${twilioData.sid}, status=${twilioData.status}`);
+
+    // Map Twilio status to valid database status
+    const dbStatus = mapTwilioStatus(twilioData.status || "queued");
 
     // Log the message to Supabase
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    await supabase.from("communication_messages").insert({
-      business_id,
-      store_id,
-      contact_id,
-      direction: "outbound",
-      channel: "sms",
-      content: message,
-      phone_number: formattedTo,
-      status: twilioData.status || "sent",
-      ai_generated: false,
-    });
+    // Insert into communication_messages
+    const { data: msgData, error: msgError } = await supabase
+      .from("communication_messages")
+      .insert({
+        business_id: business_id || null,
+        store_id: store_id || null,
+        contact_id: contact_id || null,
+        direction: "outbound",
+        channel: "sms",
+        content: message,
+        phone_number: formattedTo,
+        status: dbStatus,
+        ai_generated: false,
+      })
+      .select()
+      .single();
+
+    if (msgError) {
+      console.error("❌ Failed to insert into communication_messages:", msgError);
+    } else {
+      console.log(`✅ Message logged: ${msgData.id}`);
+    }
 
     // Also log to communication_logs for tracking
-    await supabase.from("communication_logs").insert({
+    const { error: logError } = await supabase.from("communication_logs").insert({
       channel: "sms",
       direction: "outbound",
       recipient_phone: formattedTo,
       message_content: message,
-      delivery_status: twilioData.status || "sent",
+      delivery_status: dbStatus,
       performed_by: "va",
     });
+
+    if (logError) {
+      console.error("❌ Failed to insert into communication_logs:", logError);
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         sid: twilioData.sid,
-        status: twilioData.status 
+        status: twilioData.status,
+        message_id: msgData?.id 
       }),
       { 
         status: 200, 
@@ -118,7 +155,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
   } catch (error: any) {
-    console.error("Error in send-sms function:", error);
+    console.error("❌ Error in send-sms function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
