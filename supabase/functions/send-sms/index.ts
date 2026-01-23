@@ -105,7 +105,7 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Insert into communication_messages
+    // Insert into communication_messages with Twilio SID in metadata
     const { data: msgData, error: msgError } = await supabase
       .from("communication_messages")
       .insert({
@@ -118,6 +118,12 @@ const handler = async (req: Request): Promise<Response> => {
         phone_number: formattedTo,
         status: dbStatus,
         ai_generated: false,
+        metadata: {
+          twilio_sid: twilioData.sid,
+          twilio_status: twilioData.status,
+          contact_name: contact_name || null,
+          sent_at: new Date().toISOString(),
+        },
       })
       .select()
       .single();
