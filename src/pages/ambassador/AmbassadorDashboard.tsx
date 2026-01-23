@@ -301,14 +301,26 @@ function DashboardContent() {
   );
 }
 
+// UI Version for debugging - change key to force re-mount
+const AMBASSADOR_UI_VERSION = 'ambassador-ui-v3';
+
 export default function AmbassadorDashboard() {
+  // Log version for debugging
+  console.log(`🎯 Ambassador Portal UI Version: ${AMBASSADOR_UI_VERSION}`);
+  
   return (
-    <PortalRBACGate allowedRoles={['ambassador']} portalName="Ambassador Portal">
+    <PortalRBACGate allowedRoles={['ambassador', 'admin']} portalName="Ambassador Portal" key={AMBASSADOR_UI_VERSION}>
       <EnhancedPortalLayout 
         title="Ambassador Dashboard" 
         subtitle="Portfolio command center"
         portalIcon={<Users className="h-4 w-4 text-primary-foreground" />}
       >
+        {/* Debug version stamp - visible in dev */}
+        {import.meta.env.DEV && (
+          <div className="fixed bottom-4 right-4 z-50 bg-primary/10 text-primary text-xs px-2 py-1 rounded border border-primary/20">
+            {AMBASSADOR_UI_VERSION}
+          </div>
+        )}
         <DashboardContent />
       </EnhancedPortalLayout>
     </PortalRBACGate>

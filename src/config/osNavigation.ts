@@ -730,7 +730,7 @@ export const PORTALS: PortalConfig[] = [
   { id: 'customer-portal', role: 'customer', label: 'Customer Portal', path: '/portal/customer', icon: Heart, color: 'hsl(340, 100%, 50%)', description: 'Orders, rewards, support' },
   { id: 'store-portal', role: 'store', label: 'Store Buyer Portal', path: '/portal/store', icon: Store, color: 'hsl(270, 100%, 50%)', description: 'Orders, products, invoices' },
   { id: 'wholesaler-portal', role: 'wholesaler', label: 'Wholesaler Seller Portal', path: '/portal/wholesaler', icon: Boxes, color: 'hsl(30, 100%, 50%)', description: 'Products, orders, payouts' },
-  { id: 'ambassador-portal', role: 'ambassador', label: 'Ambassador Portal', path: '/portal/ambassador', icon: Star, color: 'hsl(150, 100%, 40%)', description: 'Referrals, commissions, stores' },
+  { id: 'ambassador-portal', role: 'ambassador', label: 'Ambassador Portal', path: '/ambassador/dashboard', icon: Star, color: 'hsl(150, 100%, 40%)', description: 'Portfolio, commissions, stores' },
   { id: 'driver-portal', role: 'driver', label: 'Driver Portal', path: '/portal/driver', icon: Car, color: 'hsl(210, 100%, 50%)', description: 'Routes, deliveries, earnings' },
   { id: 'biker-portal', role: 'biker', label: 'Biker Portal', path: '/portal/biker', icon: Bike, color: 'hsl(180, 100%, 40%)', description: 'Pickups, dropoffs, checks' },
   { id: 'production-portal', role: 'production', label: 'Production Portal', path: '/portal/production', icon: Factory, color: 'hsl(45, 100%, 50%)', description: 'Daily counts, inventory, tools' },

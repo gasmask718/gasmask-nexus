@@ -1224,7 +1224,8 @@ export default function AppRoutes() {
         <Route path="/portal/onboarding" element={<PortalOnboarding />} />
         <Route path="/portal/driver/*" element={<DriverPortal />} />
         <Route path="/portal/biker/*" element={<BikerPortal />} />
-        <Route path="/portal/ambassador" element={<AmbassadorPortal />} />
+        {/* Legacy ambassador route - redirect to new UI */}
+        <Route path="/portal/ambassador" element={<Navigate to="/ambassador/dashboard" replace />} />
         <Route path="/portal/store" element={<StoreDashboard />} />
         <Route path="/portal/store/dashboard" element={<StoreDashboard />} />
         <Route path="/portal/store/products" element={<StoreProducts />} />
