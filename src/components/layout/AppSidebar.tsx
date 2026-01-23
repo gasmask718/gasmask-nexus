@@ -200,6 +200,7 @@ export default function AppSidebar() {
               { path: '/communication/predictions', label: 'Predictions', emoji: '🧠' },
               { path: '/communication/voice-matrix', label: 'Voice Matrix', emoji: '🔊' },
               { path: '/communication/heatmap', label: 'Heatmap', emoji: '🔥' },
+              ...(isAdmin ? [{ path: '/communication/business-numbers', label: 'Caller IDs & Routing', emoji: '📲' }] : []),
               { path: '/communication/settings', label: 'Settings', emoji: '⚙️' },
             ])}
 
