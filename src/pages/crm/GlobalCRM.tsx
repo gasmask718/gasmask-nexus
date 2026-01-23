@@ -24,6 +24,8 @@ import { useCustomerRoles, useAddCustomerRole } from '@/hooks/useCustomerRoles';
 import { toast } from 'sonner';
 import CRMLayout from './CRMLayout';
 import { formatDistanceToNow } from 'date-fns';
+import { useCall } from '@/components/communication/CallProvider';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 interface Brand {
   id: string;
@@ -701,14 +703,14 @@ const GlobalCRM = () => {
                           </td>
                           <td className="px-4 py-3">
                             {contact.phone && (
-                              <a 
-                                href={`tel:${contact.phone}`} 
-                                className="flex items-center gap-1 text-sm hover:underline"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Phone className="h-3 w-3" />
-                                {contact.phone}
-                              </a>
+                              <ClickablePhone
+                                phone={contact.phone}
+                                entityType="customer"
+                                entityId={contact.id}
+                                entityName={contact.name}
+                                showIcon
+                                className="flex items-center gap-1 text-sm"
+                              />
                             )}
                           </td>
                           <td className="px-4 py-3">

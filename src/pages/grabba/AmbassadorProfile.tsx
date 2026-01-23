@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useCall } from '@/components/communication/CallProvider';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import { 
   ArrowLeft, UserCheck, Phone, Mail, MapPin, Edit, 
   Instagram, MessageCircle, Tag, Building2, Globe,
@@ -205,13 +207,19 @@ const AmbassadorProfile: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 {ambassador.phone_primary && (
-                  <a href={`tel:${ambassador.phone_primary}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
+                  <ClickablePhone 
+                    phone={ambassador.phone_primary}
+                    entityType="ambassador"
+                    entityId={ambassador.id}
+                    entityName={ambassador.name}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors w-full text-left"
+                  >
                     <Phone className="h-5 w-5 text-primary" />
                     <div>
                       <p className="text-sm text-muted-foreground">Phone</p>
                       <p className="font-medium">{ambassador.phone_primary}</p>
                     </div>
-                  </a>
+                  </ClickablePhone>
                 )}
                 {ambassador.phone_secondary && (
                   <div className="flex items-center gap-3 p-3 rounded-lg">

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Store as StoreIcon, MapPin, Phone, ExternalLink, ClipboardList, X } from 'lucide-react';
 import { useState } from 'react';
 import VisitLogModal from '@/components/VisitLogModal';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 interface Store {
   id: string;
@@ -86,9 +87,12 @@ export const StoreCard = ({ store, onClose }: StoreCardProps) => {
             {store.phone && (
               <div className="flex items-center gap-2 text-sm">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <a href={`tel:${store.phone}`} className="hover:underline">
-                  {store.phone}
-                </a>
+                <ClickablePhone
+                  phone={store.phone}
+                  entityType="store"
+                  entityId={store.id}
+                  entityName={store.name}
+                />
               </div>
             )}
           </div>

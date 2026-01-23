@@ -24,6 +24,7 @@ import {
   Star, MessageCircle, Plus, Calendar, Filter
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
+import { useCall } from '@/components/communication/CallProvider';
 
 const typeLabels: Record<string, string> = {
   store: 'Store',
@@ -69,9 +70,16 @@ export default function CompanyProfile() {
     navigate(`/stores/order?company_id=${id}`);
   };
 
-  const handleCall = (phone?: string | null) => {
+  const { initiateCall } = useCall();
+
+  const handleCall = (phone?: string | null, name?: string) => {
     if (phone) {
-      window.location.href = `tel:${phone}`;
+      initiateCall({
+        destinationPhone: phone,
+        entityType: 'store',
+        entityId: id,
+        entityName: name || company?.name || 'Company',
+      });
     } else {
       toast.error('No phone number available for this company');
     }
@@ -81,8 +89,12 @@ export default function CompanyProfile() {
     setMessageModalOpen(true);
   };
 
-  const handleContactCall = (phone: string) => {
-    window.location.href = `tel:${phone}`;
+  const handleContactCall = (phone: string, name?: string) => {
+    initiateCall({
+      destinationPhone: phone,
+      entityType: 'customer',
+      entityName: name || 'Contact',
+    });
   };
 
   const handleContactMessage = () => {

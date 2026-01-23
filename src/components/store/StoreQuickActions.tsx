@@ -9,6 +9,7 @@ import { LogInteractionAfterCallModal } from './LogInteractionAfterCallModal';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { useCall } from '@/components/communication/CallProvider';
 
 interface StoreQuickActionsProps {
   storeId: string;
@@ -54,16 +55,22 @@ export function StoreQuickActions({
   const contactPhone = primaryContact?.phone || storePhone;
   const contactEmail = primaryContact?.email;
 
+  const { initiateCall } = useCall();
+
   const handleCallStore = () => {
     if (contactPhone) {
-      // Open phone dialer
-      window.location.href = `tel:${contactPhone}`;
-      toast.success(`Calling ${primaryContact?.name || storeName}...`);
+      // Use global call system instead of tel: link
+      initiateCall({
+        destinationPhone: contactPhone,
+        entityType: 'store',
+        entityId: storeId,
+        entityName: primaryContact?.name || storeName,
+      });
       // Open modal to log the interaction after call
       setLastActionType('call');
       setTimeout(() => {
         setCallLogModalOpen(true);
-      }, 500); // Small delay to allow call to initiate
+      }, 500);
     } else {
       toast.error('No phone number available for this store');
     }

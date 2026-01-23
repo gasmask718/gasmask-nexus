@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { User, Users, Phone, MessageSquare, Star, Crown, Briefcase } from 'lucide-react';
 import { toast } from 'sonner';
+import { useCall } from '@/components/communication/CallProvider';
 
 interface StoreContact {
   id: string;
@@ -52,12 +53,18 @@ export function StorePeopleSection({ storeId }: StorePeopleSectionProps) {
     },
   });
 
+  const { initiateCall } = useCall();
+
   const handleCall = (phone: string, name: string) => {
     if (!phone) {
       toast.error('No phone number available');
       return;
     }
-    window.open(`tel:${phone}`);
+    initiateCall({
+      destinationPhone: phone,
+      entityType: 'customer',
+      entityName: name,
+    });
   };
 
   const handleText = (phone: string, name: string) => {

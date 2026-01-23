@@ -12,6 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload, Package } from 'lucide-react';
 import { toast } from 'sonner';
+import { useCall } from '@/components/communication/CallProvider';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import BulkUploadModal from '@/components/stores/BulkUploadModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
@@ -730,13 +732,12 @@ const Stores = () => {
                                 </span>
                               )}
                               {contact.phone && (
-                                <a 
-                                  href={`tel:${contact.phone}`} 
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="text-primary hover:underline ml-1"
-                                >
-                                  {contact.phone}
-                                </a>
+                                <ClickablePhone
+                                  phone={contact.phone}
+                                  entityType="customer"
+                                  entityName={contact.name}
+                                  className="ml-1"
+                                />
                               )}
                             </Badge>
                           ))}

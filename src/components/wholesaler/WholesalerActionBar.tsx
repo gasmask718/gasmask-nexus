@@ -5,6 +5,7 @@ import {
   AlertTriangle, UserPlus, DollarSign, MapPin, FileEdit
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useCall } from '@/components/communication/CallProvider';
 
 interface WholesalerActionBarProps {
   profile: any;
@@ -27,9 +28,16 @@ export function WholesalerActionBar({
   onAssignRep,
   onEscalate,
 }: WholesalerActionBarProps) {
+  const { initiateCall } = useCall();
+
   const handleCall = () => {
     if (profile?.phone) {
-      window.open(`tel:${profile.phone}`, '_self');
+      initiateCall({
+        destinationPhone: profile.phone,
+        entityType: 'wholesaler',
+        entityId: profile.id,
+        entityName: profile.name || profile.company_name || 'Wholesaler',
+      });
     } else {
       toast.error('No phone number available');
     }
