@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, MessageSquare, User, Building2, Users, Truck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 interface Contact {
   id: string;
@@ -19,9 +20,10 @@ interface Contact {
 
 interface ContactsPanelProps {
   onSelectContact: (contact: Contact) => void;
+  selectedContactId?: string;
 }
 
-export function ContactsPanel({ onSelectContact }: ContactsPanelProps) {
+export function ContactsPanel({ onSelectContact, selectedContactId }: ContactsPanelProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
@@ -245,7 +247,10 @@ export function ContactsPanel({ onSelectContact }: ContactsPanelProps) {
               {filteredContacts.map((contact) => (
                 <div
                   key={`${contact.source}-${contact.id}`}
-                  className="p-3 hover:bg-muted/50 transition-colors cursor-pointer"
+                  className={cn(
+                    "p-3 hover:bg-muted/50 transition-colors cursor-pointer",
+                    selectedContactId === contact.id && "bg-muted"
+                  )}
                   onClick={() => onSelectContact(contact)}
                 >
                   <div className="flex items-center justify-between gap-3">

@@ -3,12 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { useCommunicationCenter } from "@/hooks/useCommunicationCenter";
-import { UnifiedInbox } from "@/components/communication/UnifiedInbox";
 import { ContactsPanel } from "@/components/communication/inbox/ContactsPanel";
-import { NewMessageModal } from "@/components/communication/inbox/NewMessageModal";
-import { Plus, Users } from "lucide-react";
-import { toast } from "sonner";
+import { ConversationPanel } from "@/components/communication/inbox/ConversationPanel";
+import { Users, PanelRightClose, PanelRight } from "lucide-react";
 
 interface Contact {
   id: string;
@@ -19,14 +16,9 @@ interface Contact {
 }
 
 export default function InboxPage() {
-  const queryClient = useQueryClient();
   const [selectedBusinessId, setSelectedBusinessId] = useState<string>("all");
-  const [selectedMessage, setSelectedMessage] = useState<any>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [suggestedReply, setSuggestedReply] = useState("");
-  const [showContacts, setShowContacts] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
-  const [showNewMessageModal, setShowNewMessageModal] = useState(false);
+  const [showContacts, setShowContacts] = useState(true);
 
   const { data: businesses = [] } = useQuery({
     queryKey: ["businesses-list"],
@@ -40,98 +32,31 @@ export default function InboxPage() {
     },
   });
 
-  const businessIdFilter = selectedBusinessId === "all" ? undefined : selectedBusinessId;
-
-  const {
-    messages,
-    sendMessage,
-    isSending,
-    suggestReply,
-    isSuggestingReply,
-    rewriteBrandTone,
-    isRewriting,
-  } = useCommunicationCenter(businessIdFilter);
-
-  const handleSuggestReply = async () => {
-    if (!selectedMessage) return;
-    const brand = businesses.find(b => b.id === selectedMessage.business_id);
-    try {
-      const result = await suggestReply({
-        brandName: brand?.name || "Your Brand",
-        storeName: selectedMessage.store?.store_name || "Store",
-        previousMessage: selectedMessage.content || "",
-        context: "General follow-up",
-      });
-      setSuggestedReply(result);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleRewriteTone = async (content: string) => {
-    const brand = businesses.find(b => b.id === selectedMessage?.business_id);
-    try {
-      const result = await rewriteBrandTone({
-        brandName: brand?.name || "Your Brand",
-        message: content,
-      });
-      setSuggestedReply(result);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleSendReply = async (content: string) => {
-    if (!selectedMessage) return;
-    
-    try {
-      // Use edge function to send real SMS
-      const { data, error } = await supabase.functions.invoke("send-sms", {
-        body: {
-          to: selectedMessage.phone_number,
-          message: content,
-          business_id: selectedMessage.business_id,
-          store_id: selectedMessage.store_id,
-          contact_id: selectedMessage.contact_id,
-        },
-      });
-
-      if (error) throw error;
-      
-      if (data?.success) {
-        toast.success("Message sent successfully");
-        queryClient.invalidateQueries({ queryKey: ["communication-messages"] });
-      } else {
-        throw new Error(data?.error || "Failed to send message");
-      }
-    } catch (error: any) {
-      console.error("Error sending SMS:", error);
-      toast.error(error.message || "Failed to send message");
-    }
-    
-    setSuggestedReply("");
-  };
-
   const handleSelectContact = (contact: Contact) => {
     setSelectedContact(contact);
-    setShowNewMessageModal(true);
   };
 
-  const handleMessageSent = () => {
-    queryClient.invalidateQueries({ queryKey: ["communication-messages"] });
+  const handleBack = () => {
+    setSelectedContact(null);
   };
 
   return (
-    <div className="w-full min-h-full space-y-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="w-full h-[calc(100vh-120px)] flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <h2 className="text-2xl font-bold">Unified Inbox</h2>
         <div className="flex items-center gap-3">
           <Button
-            variant={showContacts ? "default" : "outline"}
+            variant="ghost"
+            size="icon"
             onClick={() => setShowContacts(!showContacts)}
+            className="hidden md:flex"
           >
-            <Users className="h-4 w-4 mr-2" />
-            Contacts
+            {showContacts ? (
+              <PanelRightClose className="h-4 w-4" />
+            ) : (
+              <PanelRight className="h-4 w-4" />
+            )}
           </Button>
           <Select value={selectedBusinessId} onValueChange={setSelectedBusinessId}>
             <SelectTrigger className="w-[200px]">
@@ -147,38 +72,31 @@ export default function InboxPage() {
         </div>
       </div>
 
-      <div className={`grid gap-4 ${showContacts ? "grid-cols-1 lg:grid-cols-4" : "grid-cols-1"}`}>
+      {/* Desktop Layout */}
+      <div className="hidden md:flex flex-1 gap-4 overflow-hidden">
         {showContacts && (
-          <div className="lg:col-span-1">
-            <ContactsPanel onSelectContact={handleSelectContact} />
+          <div className="w-80 flex-shrink-0">
+            <ContactsPanel 
+              onSelectContact={handleSelectContact}
+              selectedContactId={selectedContact?.id}
+            />
           </div>
         )}
-        <div className={showContacts ? "lg:col-span-3" : ""}>
-          <UnifiedInbox
-            messages={messages}
-            selectedMessage={selectedMessage}
-            onSelectMessage={(msg) => {
-              setSelectedMessage(msg);
-              setSuggestedReply("");
-            }}
-            onSendReply={handleSendReply}
-            onSuggestReply={handleSuggestReply}
-            onRewriteTone={handleRewriteTone}
-            isSending={isSending}
-            isSuggesting={isSuggestingReply || isRewriting}
-            suggestedReply={suggestedReply}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-          />
+        <div className="flex-1 min-w-0">
+          <ConversationPanel contact={selectedContact} />
         </div>
       </div>
 
-      <NewMessageModal
-        open={showNewMessageModal}
-        onOpenChange={setShowNewMessageModal}
-        contact={selectedContact}
-        onMessageSent={handleMessageSent}
-      />
+      {/* Mobile Layout */}
+      <div className="md:hidden flex-1 overflow-hidden">
+        {selectedContact ? (
+          <ConversationPanel contact={selectedContact} onBack={handleBack} />
+        ) : (
+          <ContactsPanel 
+            onSelectContact={handleSelectContact}
+          />
+        )}
+      </div>
     </div>
   );
 }
