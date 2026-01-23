@@ -687,15 +687,15 @@ function InboundRoutingTab() {
               <div className="space-y-2">
                 <Label>Phone Number (Optional)</Label>
                 <Select 
-                  value={formData.phone_number_id} 
-                  onValueChange={(v) => setFormData({...formData, phone_number_id: v})}
+                  value={formData.phone_number_id || "__all__"} 
+                  onValueChange={(v) => setFormData({...formData, phone_number_id: v === "__all__" ? "" : v})}
                   disabled={!formData.business_id}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="All business numbers (default)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All business numbers (default)</SelectItem>
+                    <SelectItem value="__all__">All business numbers (default)</SelectItem>
                     {phoneNumbers.map((p: any) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.phone_number} {p.label ? `(${p.label})` : ''}
