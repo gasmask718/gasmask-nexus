@@ -65,10 +65,42 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Normalize phone number for lookup
+    // Normalize phone numbers for lookup
     const normalizedFrom = normalizePhone(from);
+    const normalizedTo = normalizePhone(to);
 
-    // 1. Try to find the caller in our database
+    // STEP 1: Resolve business by matching "To" number against business_phone_numbers
+    let businessId: string | null = null;
+    let businessName = "Dynasty OS";
+    let defaultRouteUserId: string | null = null;
+
+    const { data: businessPhone } = await supabase
+      .from("business_phone_numbers")
+      .select(`
+        id,
+        business_id,
+        businesses (
+          id,
+          name,
+          default_inbound_route_user_id
+        )
+      `)
+      .eq("is_active", true)
+      .in("type", ["call", "both"])
+      .or(`phone_number.eq.${to},phone_number.eq.${normalizedTo},phone_number.ilike.%${normalizedTo.slice(-10)}%`)
+      .limit(1)
+      .single();
+
+    if (businessPhone?.businesses) {
+      businessId = businessPhone.business_id;
+      businessName = (businessPhone.businesses as any).name || "Dynasty OS";
+      defaultRouteUserId = (businessPhone.businesses as any).default_inbound_route_user_id;
+      console.log(`✅ Business resolved: ${businessName} (${businessId})`);
+    } else {
+      console.log("⚠️ No business matched for To number:", to);
+    }
+
+    // STEP 2: Try to find the caller in our database
     let callerInfo: CallerInfo | null = null;
     let routeDestination: string | null = null;
 
@@ -86,7 +118,7 @@ const handler = async (req: Request): Promise<Response> => {
         type: "store",
         id: storeMatch.id,
         name: storeMatch.store_name || storeMatch.owner_name,
-        business_id: storeMatch.business_id,
+        business_id: storeMatch.business_id || businessId,
         assigned_user_id: storeMatch.assigned_driver_id,
       };
       console.log(`✅ Caller identified as store: ${callerInfo.name}`);
@@ -111,15 +143,17 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // 2. Log the inbound call immediately
+    // STEP 3: Log the inbound call immediately with business_id
     const callLogData = {
       phone_number: from,
       direction: "inbound",
       status: "ringing",
       started_at: new Date().toISOString(),
       notes: callerInfo ? `Caller: ${callerInfo.name} (${callerInfo.type})` : `Unknown caller from ${from}`,
-      business_id: callerInfo?.business_id || null,
+      business_id: businessId || callerInfo?.business_id || null,
       store_id: callerInfo?.type === "store" ? callerInfo.id : null,
+      from_number: from,
+      to_number: to,
     };
 
     const { data: callLog, error: logError } = await supabase
@@ -131,7 +165,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (logError) {
       console.error("❌ Failed to log call:", logError);
     } else {
-      console.log(`✅ Call logged: ${callLog.id}`);
+      console.log(`✅ Call logged: ${callLog.id} with business_id: ${businessId}`);
     }
 
     // Also log to call_recordings with provider_call_sid for status tracking
@@ -141,7 +175,7 @@ const handler = async (req: Request): Promise<Response> => {
         manual_call_id: callLog?.id,
         provider: "twilio",
         provider_call_sid: callSid,
-        business_id: callerInfo?.business_id || null,
+        business_id: businessId || callerInfo?.business_id || null,
         store_id: callerInfo?.type === "store" ? callerInfo.id : null,
         started_at: new Date().toISOString(),
       });

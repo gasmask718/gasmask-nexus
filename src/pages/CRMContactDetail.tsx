@@ -12,6 +12,8 @@ import { CustomerNotesSimpleEditor } from '@/components/crm/CustomerNotesSimpleE
 import { InteractionTimeline } from '@/components/crm/InteractionTimeline';
 import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import { PersonalNotesCard } from '@/components/crm/PersonalNotesCard';
+import { useCall } from '@/components/communication/CallProvider';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 const CRMContactDetail = () => {
   const { id } = useParams();
@@ -77,7 +79,13 @@ const CRMContactDetail = () => {
             {contact.phone && (
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-primary" />
-                <a href={`tel:${contact.phone}`} className="text-sm hover:underline">{contact.phone}</a>
+                <ClickablePhone 
+                  phone={contact.phone} 
+                  entityType="customer" 
+                  entityId={contact.id}
+                  entityName={contact.name || 'Contact'}
+                  className="text-sm"
+                />
               </div>
             )}
             {contact.email && (

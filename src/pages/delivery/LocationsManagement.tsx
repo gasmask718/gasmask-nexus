@@ -15,6 +15,7 @@ import {
   Building2, Warehouse, Package, Phone, Download
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 type Location = {
   id: string;
@@ -258,9 +259,14 @@ const LocationsManagement: React.FC = () => {
                     <div className="text-sm text-muted-foreground">
                       <p className="font-medium">{location.contact_name}</p>
                       {location.contact_phone && (
-                        <a href={`tel:${location.contact_phone}`} className="flex items-center gap-1 text-primary">
-                          <Phone className="h-3 w-3" /> {location.contact_phone}
-                        </a>
+                        <ClickablePhone
+                          phone={location.contact_phone}
+                          entityType="store"
+                          entityId={location.id}
+                          entityName={location.name}
+                          showIcon
+                          className="flex items-center gap-1"
+                        />
                       )}
                     </div>
                   )}

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useGeofencing } from "@/hooks/useGeofencing";
+import { useCall } from "@/components/communication/CallProvider";
 
 interface RouteStop {
   id: string;
@@ -192,8 +193,14 @@ export default function Driver() {
     navigate(`/stores/${stop.store_id}?visit=true`);
   };
 
-  const handleCall = (phone: string) => {
-    window.location.href = `tel:${phone}`;
+  const { initiateCall } = useCall();
+
+  const handleCall = (phone: string, storeName?: string) => {
+    initiateCall({
+      destinationPhone: phone,
+      entityType: 'store',
+      entityName: storeName || 'Store',
+    });
   };
 
   if (loading) {

@@ -20,6 +20,7 @@ import { useAmbassadorThreads, useCallHistory, useLogCall } from '@/hooks/useAmb
 import { format } from 'date-fns';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
 import { toast } from 'sonner';
+import { useCall } from '@/components/communication/CallProvider';
 
 interface Template {
   id: string;
@@ -33,6 +34,7 @@ export default function AmbassadorCommunications() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
+  const { initiateCall } = useCall();
 
   // Fetch real data
   const { threads, isLoading: threadsLoading, sendMessage, isSending } = useAmbassadorThreads();
@@ -106,7 +108,7 @@ export default function AmbassadorCommunications() {
     }
   };
 
-  const handleNewCall = async (storeId?: string, phone?: string) => {
+  const handleNewCall = async (storeId?: string, phone?: string, name?: string) => {
     if (!storeId) {
       toast.info('Select a store to make a call');
       return;
@@ -120,9 +122,14 @@ export default function AmbassadorCommunications() {
         outcome: 'attempted',
       });
       
-      // Open phone dialer if on mobile
+      // Use the global call system instead of tel: link
       if (phone) {
-        window.open(`tel:${phone}`, '_self');
+        initiateCall({
+          destinationPhone: phone,
+          entityType: 'store',
+          entityId: storeId,
+          entityName: name || 'Store',
+        });
       }
     } catch (err) {
       // Error handled by hook

@@ -10,6 +10,7 @@ import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { toast } from 'sonner';
 import { AddContactModal } from './AddContactModal';
 import { EditStoreContactModal } from './EditStoreContactModal';
+import { useCall } from '@/components/communication/CallProvider';
 
 interface StoreContact {
   id: string;
@@ -68,13 +69,18 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
     },
   });
 
+  const { initiateCall } = useCall();
+
   const handleCall = (phone: string, name: string) => {
     if (!phone) {
       toast.error('No phone number available');
       return;
     }
-    window.open(`tel:${phone}`);
-    toast.info(`Calling ${name}...`);
+    initiateCall({
+      destinationPhone: phone,
+      entityType: 'customer',
+      entityName: name,
+    });
   };
 
   const handleText = (phone: string, name: string) => {

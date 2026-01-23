@@ -29,6 +29,8 @@ import {
 } from '@/components/ui/dialog';
 import { useAmbassadorStoreProfile } from '@/hooks/useAmbassadorPortfolio';
 import { format, formatDistanceToNow } from 'date-fns';
+import { useCall } from '@/components/communication/CallProvider';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 function StoreProfileContent() {
   const { storeId } = useParams<{ storeId: string }>();
@@ -115,7 +117,12 @@ function StoreProfileContent() {
                 {store.phone && (
                   <div className="flex items-center gap-2 text-sm">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <a href={`tel:${store.phone}`} className="hover:underline">{store.phone}</a>
+                    <ClickablePhone 
+                      phone={store.phone} 
+                      entityType="store" 
+                      entityId={store.id}
+                      entityName={store.store_name}
+                    />
                   </div>
                 )}
                 {store.email && (

@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { InteractionTimeline } from '@/components/crm/InteractionTimeline';
 import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import { PersonalNotesCard } from '@/components/crm/PersonalNotesCard';
+import { useCall } from '@/components/communication/CallProvider';
 
 const ROLE_LABELS: Record<string, string> = {
   OWNER: 'Owner',
@@ -69,13 +70,19 @@ export default function ContactProfile() {
     enabled: !!id,
   });
 
+  const { initiateCall } = useCall();
+
   const handleCall = () => {
     if (!contactData?.phone) {
       toast.error('No phone number available');
       return;
     }
-    window.open(`tel:${contactData.phone}`);
-    toast.info(`Calling ${contactData.name}...`);
+    initiateCall({
+      destinationPhone: contactData.phone,
+      entityType: 'customer',
+      entityId: contactData.id,
+      entityName: contactData.name,
+    });
   };
 
   const handleText = () => {

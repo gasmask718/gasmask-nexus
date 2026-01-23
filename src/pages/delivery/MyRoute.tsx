@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { useDeliveryWithStops, useUpdateDelivery, useUpdateStop, useCreateStop, useLocations, useCreateProof, type DeliveryStop } from "@/hooks/useDeliveryData";
+import { useCall } from "@/components/communication/CallProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -343,9 +344,16 @@ export default function MyRoute() {
     }
   };
 
+  const { initiateCall } = useCall();
+
   const callLocation = (stop: DeliveryStop) => {
     if (stop.location?.contact_phone) {
-      window.open(`tel:${stop.location.contact_phone}`, "_self");
+      initiateCall({
+        destinationPhone: stop.location.contact_phone,
+        entityType: 'store',
+        entityId: stop.location.id,
+        entityName: stop.location.name || 'Delivery Location',
+      });
     }
   };
 

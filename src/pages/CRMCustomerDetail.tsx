@@ -27,6 +27,8 @@ import {
   Plus,
   Edit
 } from 'lucide-react';
+import { useCall } from '@/components/communication/CallProvider';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 const CRMCustomerDetail = () => {
   const { id } = useParams();
@@ -410,9 +412,13 @@ const CRMCustomerDetail = () => {
               {customer.phone && (
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-primary" />
-                  <a href={`tel:${customer.phone}`} className="text-sm hover:underline">
-                    {customer.phone}
-                  </a>
+                  <ClickablePhone 
+                    phone={customer.phone}
+                    entityType="customer"
+                    entityId={customer.id}
+                    entityName={customer.name || 'Customer'}
+                    className="text-sm"
+                  />
                 </div>
               )}
               {customer.email && (

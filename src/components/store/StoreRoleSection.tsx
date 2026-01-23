@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AssignPersonModal } from './AssignPersonModal';
+import { useCall } from '@/components/communication/CallProvider';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -151,13 +152,18 @@ export function StoreRoleSection({ storeId, storeName, role, embedded = false }:
     },
   });
 
+  const { initiateCall } = useCall();
+
   const handleCall = (phone: string | null, name: string | null) => {
     if (!phone) {
       toast.error('No phone number available');
       return;
     }
-    window.open(`tel:${phone}`);
-    toast.info(`Calling ${name || 'person'}...`);
+    initiateCall({
+      destinationPhone: phone,
+      entityType: 'other',
+      entityName: name || 'Person',
+    });
   };
 
   const handleText = (phone: string | null, name: string | null) => {
