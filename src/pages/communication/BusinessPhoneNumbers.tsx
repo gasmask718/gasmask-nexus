@@ -4,7 +4,7 @@
  * Configure inbound call routing rules
  * ADMIN ONLY - Protected route
  */
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -483,19 +483,35 @@ function InboundRoutingTab() {
     enabled: !!formData.business_id
   });
 
-  // Fetch users for dropdown
-  const { data: users = [] } = useQuery({
-    queryKey: ['users-for-routes'],
+  // Fetch ALL users to show phone status
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['all-users-for-routes'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_profiles')
         .select('user_id, full_name, primary_role, phone')
-        .not('phone', 'is', null)
         .order('full_name');
       if (error) throw error;
       return data || [];
     }
   });
+
+  // Users with valid phones only (for User route dropdown)
+  const usersWithPhone = allUsers.filter((u: any) => u.phone && u.phone.trim() !== '');
+
+  // Get count of users per role with valid phone
+  const roleUserCounts = useMemo(() => {
+    const counts: Record<string, { total: number; withPhone: number }> = {};
+    const AVAILABLE_ROLES = ['owner', 'admin', 'va', 'staff', 'csr', 'ambassador'];
+    AVAILABLE_ROLES.forEach(role => {
+      const roleUsers = allUsers.filter((u: any) => u.primary_role === role);
+      counts[role] = {
+        total: roleUsers.length,
+        withPhone: roleUsers.filter((u: any) => u.phone && u.phone.trim() !== '').length
+      };
+    });
+    return counts;
+  }, [allUsers]);
 
   // Fetch inbound routes
   const { data: routes = [], isLoading } = useQuery({
@@ -516,7 +532,7 @@ function InboundRoutingTab() {
         if (route.route_target_user_id) {
           const { data: userProfile } = await supabase
             .from('user_profiles')
-            .select('full_name')
+            .select('full_name, phone')
             .eq('user_id', route.route_target_user_id)
             .single();
           return { ...route, user_profiles: userProfile };
@@ -527,6 +543,26 @@ function InboundRoutingTab() {
       return routesWithUsers as InboundRoute[];
     }
   });
+
+  // Check if current form selection will work
+  const routeValidation = useMemo(() => {
+    if (formData.route_type === 'user') {
+      const selectedUser = allUsers.find((u: any) => u.user_id === formData.route_target_user_id);
+      if (selectedUser && (!selectedUser.phone || selectedUser.phone.trim() === '')) {
+        return { valid: false, message: `${selectedUser.full_name || 'Selected user'} has no phone number configured. Calls cannot ring.` };
+      }
+    }
+    if (formData.route_type === 'role' && formData.route_target_role) {
+      const counts = roleUserCounts[formData.route_target_role];
+      if (counts && counts.withPhone === 0) {
+        return { 
+          valid: false, 
+          message: `No users with role '${formData.route_target_role}' have a phone number. ${counts.total} user(s) exist but none can receive calls.` 
+        };
+      }
+    }
+    return { valid: true, message: null };
+  }, [formData.route_type, formData.route_target_user_id, formData.route_target_role, allUsers, roleUserCounts]);
 
   // Save mutation
   const saveMutation = useMutation({
@@ -623,6 +659,12 @@ function InboundRoutingTab() {
       toast.error('Please select a role to route calls to');
       return;
     }
+    
+    // Warn but allow saving if no callable users
+    if (!routeValidation.valid) {
+      toast.warning(`Warning: ${routeValidation.message}`);
+    }
+    
     saveMutation.mutate(editingRoute ? { ...formData, id: editingRoute.id } : formData);
   };
 
@@ -638,9 +680,23 @@ function InboundRoutingTab() {
   const getRouteTarget = (route: InboundRoute) => {
     switch (route.route_type) {
       case 'user':
-        return route.user_profiles?.full_name || 'Unknown User';
+        const userProfile = route.user_profiles as any;
+        const hasPhone = userProfile?.phone && userProfile.phone.trim() !== '';
+        return (
+          <span className={!hasPhone ? 'text-destructive' : ''}>
+            {userProfile?.full_name || 'Unknown User'}
+            {!hasPhone && ' ⚠️ No Phone'}
+          </span>
+        );
       case 'role':
-        return route.route_target_role ? `${route.route_target_role} (first available)` : 'Unknown Role';
+        const counts = roleUserCounts[route.route_target_role || ''];
+        const roleHasPhone = counts && counts.withPhone > 0;
+        return (
+          <span className={!roleHasPhone ? 'text-destructive' : ''}>
+            {route.route_target_role} ({counts?.withPhone || 0} callable)
+            {!roleHasPhone && ' ⚠️'}
+          </span>
+        );
       case 'voicemail':
         return 'Voicemail';
       default:
@@ -748,13 +804,27 @@ function InboundRoutingTab() {
                       <SelectValue placeholder="Select user" />
                     </SelectTrigger>
                     <SelectContent>
-                      {users.map((u: any) => (
-                        <SelectItem key={u.user_id} value={u.user_id}>
-                          {u.full_name} ({u.primary_role})
-                        </SelectItem>
-                      ))}
+                      {usersWithPhone.length === 0 ? (
+                        <div className="p-2 text-sm text-muted-foreground">
+                          No users with phone numbers configured
+                        </div>
+                      ) : (
+                        usersWithPhone.map((u: any) => (
+                          <SelectItem key={u.user_id} value={u.user_id}>
+                            {u.full_name || 'Unknown'} ({u.primary_role}) - {u.phone}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
+                  {usersWithPhone.length === 0 && (
+                    <Alert variant="destructive" className="mt-2">
+                      <ShieldAlert className="h-4 w-4" />
+                      <AlertDescription>
+                        No users have phone numbers. Add phone numbers to user profiles before creating user routes.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               )}
 
@@ -769,16 +839,36 @@ function InboundRoutingTab() {
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
-                      {AVAILABLE_ROLES.map((role) => (
-                        <SelectItem key={role} value={role} className="capitalize">
-                          {role}
-                        </SelectItem>
-                      ))}
+                      {AVAILABLE_ROLES.map((role) => {
+                        const counts = roleUserCounts[role];
+                        const hasCallable = counts && counts.withPhone > 0;
+                        return (
+                          <SelectItem key={role} value={role} className="capitalize">
+                            <div className="flex items-center justify-between w-full gap-2">
+                              <span>{role}</span>
+                              <Badge 
+                                variant={hasCallable ? 'default' : 'destructive'} 
+                                className="text-xs ml-2"
+                              >
+                                {counts?.withPhone || 0}/{counts?.total || 0} callable
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Calls will ring the first available user with this role
+                    Calls will ring the first available user with this role who has a phone number
                   </p>
+                  
+                  {/* Show validation warning */}
+                  {!routeValidation.valid && formData.route_target_role && (
+                    <Alert variant="destructive" className="mt-2">
+                      <ShieldAlert className="h-4 w-4" />
+                      <AlertDescription>{routeValidation.message}</AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               )}
 
