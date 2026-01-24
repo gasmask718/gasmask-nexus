@@ -55,6 +55,7 @@ interface RoutingResult {
   failureReason?: string;
   userFound?: boolean;
   phoneValid?: boolean;
+  callableDisabled?: boolean;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -360,7 +361,7 @@ async function resolveRoutingDestination(
         if (inboundRoute.route_target_user_id) {
           const { data: targetUser, error } = await supabase
             .from("user_profiles")
-            .select("user_id, phone, full_name")
+            .select("user_id, phone, full_name, is_callable")
             .eq("user_id", inboundRoute.route_target_user_id)
             .single();
 
@@ -372,6 +373,20 @@ async function resolveRoutingDestination(
               source: "route_user",
               failureReason: `Target user not found (id: ${inboundRoute.route_target_user_id})`,
               userFound: false,
+            };
+          }
+
+          // Check is_callable flag
+          if (targetUser.is_callable === false) {
+            console.log(`❌ ROUTING FAILURE: User ${targetUser.full_name || targetUser.user_id} is disabled for calling (is_callable=false)`);
+            return {
+              success: false,
+              destination: null,
+              source: "route_user",
+              failureReason: `User ${targetUser.full_name || 'Unknown'} is disabled for calling`,
+              userFound: true,
+              phoneValid: true,
+              callableDisabled: true,
             };
           }
 
@@ -413,11 +428,12 @@ async function resolveRoutingDestination(
 
       case "role":
         if (inboundRoute.route_target_role) {
-          // Query users with the target role who have valid phone numbers
+          // Query users with the target role who have valid phone numbers AND are callable
           const { data: roleUsers, error } = await supabase
             .from("user_profiles")
-            .select("user_id, phone, full_name, primary_role")
+            .select("user_id, phone, full_name, primary_role, is_callable")
             .eq("primary_role", inboundRoute.route_target_role)
+            .eq("is_callable", true)
             .not("phone", "is", null);
 
           if (error) {
@@ -430,24 +446,28 @@ async function resolveRoutingDestination(
             };
           }
 
-          // Also check how many total users have this role (even without phone)
+          // Also check how many total users have this role (even without phone or is_callable)
           const { data: allRoleUsers } = await supabase
             .from("user_profiles")
-            .select("user_id, phone, full_name")
+            .select("user_id, phone, full_name, is_callable")
             .eq("primary_role", inboundRoute.route_target_role);
 
           const totalWithRole = allRoleUsers?.length || 0;
-          const withPhone = roleUsers?.filter((u: any) => u.phone && u.phone.trim() !== "").length || 0;
+          const withPhone = allRoleUsers?.filter((u: any) => u.phone && u.phone.trim() !== "").length || 0;
+          const callable = allRoleUsers?.filter((u: any) => u.is_callable === true).length || 0;
+          const callableWithPhone = allRoleUsers?.filter((u: any) => u.is_callable === true && u.phone && u.phone.trim() !== "").length || 0;
 
           if (!roleUsers || roleUsers.length === 0) {
-            console.log(`❌ ROUTING FAILURE: 0 users found with role='${inboundRoute.route_target_role}' AND phone IS NOT NULL`);
+            console.log(`❌ ROUTING FAILURE: 0 callable users found with role='${inboundRoute.route_target_role}' AND phone IS NOT NULL`);
             console.log(`   📊 Total users with role '${inboundRoute.route_target_role}': ${totalWithRole}`);
-            console.log(`   📊 Users with valid phone: ${withPhone}`);
+            console.log(`   📊 Users with phone: ${withPhone}`);
+            console.log(`   📊 Users with is_callable=true: ${callable}`);
+            console.log(`   📊 Callable users with phone: ${callableWithPhone}`);
             return {
               success: false,
               destination: null,
               source: "route_role",
-              failureReason: `0 users found for role='${inboundRoute.route_target_role}' with valid phone (${totalWithRole} total users with this role)`,
+              failureReason: `0 callable users found for role='${inboundRoute.route_target_role}' (${totalWithRole} total, ${withPhone} with phone, ${callable} callable)`,
               userFound: false,
             };
           }
@@ -467,12 +487,12 @@ async function resolveRoutingDestination(
             }
           }
 
-          console.log(`❌ ROUTING FAILURE: ${roleUsers.length} users with role='${inboundRoute.route_target_role}' but none have valid E.164 phone format`);
+          console.log(`❌ ROUTING FAILURE: ${roleUsers.length} callable users with role='${inboundRoute.route_target_role}' but none have valid E.164 phone format`);
           return {
             success: false,
             destination: null,
             source: "route_role",
-            failureReason: `${roleUsers.length} users with role='${inboundRoute.route_target_role}' but no valid phone format`,
+            failureReason: `${roleUsers.length} callable users with role='${inboundRoute.route_target_role}' but no valid phone format`,
             userFound: true,
             phoneValid: false,
           };
