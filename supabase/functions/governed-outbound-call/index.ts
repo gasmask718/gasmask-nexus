@@ -299,16 +299,32 @@ const handler = async (req: Request): Promise<Response> => {
     // =====================================================
     console.log("✅ All governance gates passed. Creating call session...");
 
+    // Validate playbook_id exists if provided (avoid FK violation)
+    let validatedPlaybookId = null;
+    if (playbook_id) {
+      const { data: playbookCheck } = await supabase
+        .from("sales_playbooks")
+        .select("id")
+        .eq("id", playbook_id)
+        .single();
+      
+      if (playbookCheck) {
+        validatedPlaybookId = playbook_id;
+      } else {
+        console.log(`⚠️ Playbook ${playbook_id} not found, proceeding without playbook binding`);
+      }
+    }
+
     // Create AI call session with full binding
     // status must match CHECK: 'initiated','ringing','ai_active','human_active','on_hold','completed','failed'
-    // handoff_state must match CHECK: 'none','ai_controlled','human_takeover','escalated'
+    // handoff_state must match CHECK: 'none','pending_to_human','human_active','back_to_ai'
     const { data: session, error: sessionError } = await supabase
       .from("ai_call_sessions")
       .insert({
         business_id: campaign.business_id,
         campaign_id,
         campaign_run_id,
-        playbook_id: playbook_id || null,
+        playbook_id: validatedPlaybookId,
         execution_mode: execution_mode || 'manual',
         is_test_call,
         status: 'initiated', // Must match DB constraint
