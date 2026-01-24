@@ -9,34 +9,76 @@ const corsHeaders = {
 /**
  * Live Mode Gate - Validates ALL hard requirements before AI can answer autonomously
  * 
- * Entry Requirements (ALL must be true):
- * 1. Canary Mode has run for minimum configurable period
- * 2. Trust Score ≥ 92 (configurable)
- * 3. Human override rate ≤ 10% (configurable)
- * 4. Consecutive failure count = 0
- * 5. No unresolved critical incidents
- * 6. Admin explicitly enabled Live Mode
- * 7. Kill switch is OFF
+ * AUDIT HARDENED: Every code path logs a decision before returning.
  */
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Generate trace ID for this gate check (survives even if session_id is null)
+  const decision_trace_id = crypto.randomUUID();
+  let auditLogId: string | null = null;
+  let auditLogStatus = "pending";
+
   try {
     const { business_id, session_id } = await req.json();
-
-    if (!business_id) {
-      return new Response(
-        JSON.stringify({ error: "business_id required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Helper to log decision and capture result
+    // NOTE: session_id may be null or not exist in ai_call_sessions yet
+    // Use ai_audit_events which doesn't require session_id FK
+    const logAuditDecision = async (payload: Record<string, unknown>) => {
+      const { data, error } = await supabase
+        .from("ai_audit_events")
+        .insert({
+          business_id: business_id || "00000000-0000-0000-0000-000000000000",
+          session_id: null, // Don't use session_id to avoid FK issues
+          event_type: "live_gate_check",
+          event_severity: payload.allowed ? "info" : "warning",
+          event_payload: { ...payload, decision_trace_id },
+          triggered_by: "system",
+        })
+        .select("id")
+        .single();
+
+      if (error) {
+        console.error("AUDIT EVENT INSERT FAILED:", { error, payload, decision_trace_id });
+        auditLogStatus = "failed";
+        return null;
+      }
+      auditLogStatus = "ok";
+      return data?.id || null;
+    };
+
+    if (!business_id) {
+      auditLogId = await logAuditDecision({
+        decision: "blocked",
+        reason: "MISSING_BUSINESS_ID",
+        allowed: false,
+      });
+
+      return new Response(
+        JSON.stringify({ 
+          error: "business_id required",
+          allowed: false,
+          mode: "shadow",
+          audit_log_id: auditLogId,
+        }),
+        { 
+          status: 400, 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json",
+            "x-audit-log-status": auditLogStatus,
+          } 
+        }
+      );
+    }
 
     // Fetch live mode config
     const { data: config } = await supabase
@@ -46,13 +88,27 @@ serve(async (req) => {
       .single();
 
     if (!config) {
+      auditLogId = await logAuditDecision({
+        decision: "blocked",
+        reason: "NO_CONFIG",
+        allowed: false,
+        business_id,
+      });
+
       return new Response(
         JSON.stringify({
           allowed: false,
           mode: "shadow",
           blockers: ["No AI agent config found for business"],
+          audit_log_id: auditLogId,
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json",
+            "x-audit-log-status": auditLogStatus,
+          } 
+        }
       );
     }
 
@@ -69,7 +125,7 @@ serve(async (req) => {
       blockers.push("Live mode kill switch is active (config)");
     }
 
-    // Gate 2b: Check GLOBAL kill switch state (CRITICAL - overrides everything)
+    // Gate 2b: Check GLOBAL kill switch state
     const { data: globalKill } = await supabase
       .from("ai_kill_switch_state")
       .select("is_active, activation_reason")
@@ -78,7 +134,7 @@ serve(async (req) => {
       .maybeSingle();
 
     if (globalKill?.is_active) {
-      blockers.push(`GLOBAL KILL SWITCH ACTIVE: ${globalKill.activation_reason || "Emergency stop"}`);
+      blockers.push(`GLOBAL_KILL_SWITCH: ${globalKill.activation_reason || "Emergency stop"}`);
     }
 
     // Gate 2c: Check BUSINESS-level kill switch state
@@ -91,7 +147,7 @@ serve(async (req) => {
       .maybeSingle();
 
     if (businessKill?.is_active) {
-      blockers.push(`BUSINESS KILL SWITCH ACTIVE: ${businessKill.activation_reason || "Emergency stop"}`);
+      blockers.push(`BUSINESS_KILL_SWITCH: ${businessKill.activation_reason || "Emergency stop"}`);
     }
 
     // Gate 3: Mode must be 'live'
@@ -171,10 +227,10 @@ serve(async (req) => {
       .not("phone", "is", null);
 
     if ((callableCount || 0) === 0) {
-      blockers.push("No callable human fallback available");
+      blockers.push("NO_CALLABLE_FALLBACK");
     }
 
-    // Gate 10: EXPLICIT AUTHORIZATION REQUIRED (no auto-promotion)
+    // Gate 10: EXPLICIT AUTHORIZATION REQUIRED
     const { data: authorization } = await supabase
       .from("ai_live_authorizations")
       .select("*")
@@ -186,33 +242,28 @@ serve(async (req) => {
 
     if (!authorization) {
       blockers.push("No explicit Live Mode authorization record exists - admin approval required");
-    } else {
-      // Check if authorization has expired
-      if (authorization.expires_at && new Date(authorization.expires_at) < new Date()) {
-        blockers.push(`Live Mode authorization expired at ${authorization.expires_at}`);
-      }
+    } else if (authorization.expires_at && new Date(authorization.expires_at) < new Date()) {
+      blockers.push(`Live Mode authorization expired at ${authorization.expires_at}`);
     }
 
-    // Determine if AI can proceed in live mode
+    // Determine if AI can proceed
     const allowLiveMode = blockers.length === 0;
     const fallbackMode = blockers.length > 0 
       ? (config.mode === "live" ? "canary" : config.mode) 
       : "live";
 
-    // Log the gate check
-    await supabase.from("ai_audit_logs").insert({
-      session_id,
-      business_id,
-      audit_type: "live_gate_check",
-      payload: {
-        allowed: allowLiveMode,
-        blockers,
-        warnings,
-        trust_score: currentTrustScore,
-        override_rate: overrideRate,
-        consecutive_failures: consecutiveFailures,
-        callable_humans: callableCount,
-      },
+    // LOG THE DECISION (MANDATORY - before any return)
+    auditLogId = await logAuditDecision({
+      decision: allowLiveMode ? "allowed" : "blocked",
+      reason: allowLiveMode ? "ALL_GATES_PASSED" : blockers.join("; "),
+      allowed: allowLiveMode,
+      blockers,
+      warnings,
+      trust_score: currentTrustScore,
+      override_rate: overrideRate,
+      consecutive_failures: consecutiveFailures,
+      callable_humans: callableCount,
+      authorization_id: authorization?.id || null,
     });
 
     return new Response(
@@ -221,6 +272,7 @@ serve(async (req) => {
         mode: allowLiveMode ? "live" : fallbackMode,
         blockers,
         warnings,
+        audit_log_id: auditLogId,
         metrics: {
           trust_score: currentTrustScore,
           trust_threshold: trustThreshold,
@@ -236,14 +288,68 @@ serve(async (req) => {
           consent_recording_enabled: config.consent_recording_enabled,
         },
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json",
+          "x-audit-log-status": auditLogStatus,
+        } 
+      }
     );
   } catch (error) {
     console.error("Live gate error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
+    
+    // Log system error before returning
+    try {
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data, error: logError } = await supabase
+        .from("ai_audit_events")
+        .insert({
+          business_id: "00000000-0000-0000-0000-000000000000",
+          event_type: "live_gate_error",
+          event_severity: "error",
+          event_payload: { 
+            decision: "blocked",
+            reason: "SYSTEM_ERROR",
+            error: message, 
+            decision_trace_id,
+          },
+          triggered_by: "system",
+        })
+        .select("id")
+        .single();
+      
+      if (logError) {
+        console.error("AUDIT LOG INSERT FAILED ON ERROR PATH:", logError);
+        auditLogStatus = "failed";
+      } else {
+        auditLogId = data?.id;
+        auditLogStatus = "ok";
+      }
+    } catch (logErr) {
+      console.error("Failed to log error audit:", logErr);
+      auditLogStatus = "failed";
+    }
+
     return new Response(
-      JSON.stringify({ error: message, allowed: false, mode: "shadow" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ 
+        error: message, 
+        allowed: false, 
+        mode: "shadow",
+        audit_log_id: auditLogId,
+      }),
+      { 
+        status: 500, 
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json",
+          "x-audit-log-status": auditLogStatus,
+        } 
+      }
     );
   }
 });

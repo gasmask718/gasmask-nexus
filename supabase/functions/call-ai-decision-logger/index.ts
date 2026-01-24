@@ -9,24 +9,23 @@ const corsHeaders = {
 /**
  * Decision Logger - Creates immutable records of every AI decision
  * 
- * For every AI decision logs:
- * - Why AI continued
- * - Why AI escalated (or didn't)
- * - Which rule allowed it
- * - Which thresholds were active
- * 
- * This ledger must be queryable, exportable, and human-readable.
+ * AUDIT HARDENED: Every insert is checked for errors.
+ * Returns x-audit-log-status header and audit_log_id in response.
  */
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const decision_trace_id = crypto.randomUUID();
+  let auditLogStatus = "pending";
+  let decisionId: string | null = null;
+
   try {
     const {
       session_id,
       business_id,
-      decision_type, // 'continue', 'escalate', 'handoff', 'terminate'
+      decision_type,
       decision_reason,
       confidence,
       risk_level,
@@ -39,8 +38,18 @@ serve(async (req) => {
 
     if (!session_id || !decision_type) {
       return new Response(
-        JSON.stringify({ error: "session_id and decision_type required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ 
+          error: "session_id and decision_type required",
+          decision_trace_id,
+        }),
+        { 
+          status: 400, 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json",
+            "x-audit-log-status": "failed",
+          } 
+        }
       );
     }
 
@@ -49,7 +58,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Log the decision
+    // Log the decision with error checking
     const { data: decision, error: decisionError } = await supabase
       .from("ai_call_decisions")
       .insert({
@@ -69,12 +78,36 @@ serve(async (req) => {
       .single();
 
     if (decisionError) {
-      throw decisionError;
+      console.error("DECISION INSERT FAILED:", { 
+        error: decisionError, 
+        session_id, 
+        decision_type,
+        decision_trace_id,
+      });
+      auditLogStatus = "failed";
+      
+      return new Response(
+        JSON.stringify({ 
+          error: `Decision log failed: ${decisionError.message}`,
+          decision_trace_id,
+        }),
+        { 
+          status: 500, 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json",
+            "x-audit-log-status": auditLogStatus,
+          } 
+        }
+      );
     }
+
+    decisionId = decision.id;
+    auditLogStatus = "ok";
 
     // If this is an escalation or high-risk event, log to risk events
     if (decision_type === "escalate" || risk_level === "high" || risk_level === "critical") {
-      await supabase.from("ai_risk_events").insert({
+      const { error: riskError } = await supabase.from("ai_risk_events").insert({
         session_id,
         business_id,
         risk_level: risk_level || "high",
@@ -82,10 +115,15 @@ serve(async (req) => {
         escalation_required: decision_type === "escalate",
         escalation_executed: decision_type === "escalate",
       });
+
+      if (riskError) {
+        console.error("RISK EVENT INSERT FAILED:", riskError);
+        // Don't fail the whole request, but note it
+      }
     }
 
     // Create audit log entry
-    await supabase.from("ai_audit_logs").insert({
+    const { error: auditError } = await supabase.from("ai_audit_logs").insert({
       session_id,
       business_id,
       audit_type: "decision",
@@ -96,23 +134,27 @@ serve(async (req) => {
         confidence,
         risk_level,
         rule_applied,
+        decision_trace_id,
       },
       transcript_at_event: transcript_snapshot,
     });
 
+    if (auditError) {
+      console.error("AUDIT LOG INSERT FAILED:", auditError);
+      // Primary decision logged, but audit log failed
+    }
+
     // Check if we need to trigger auto-downgrade
     if (decision_type === "escalate" || risk_level === "critical") {
-      // Fetch recent failures
       const { count: recentFailures } = await supabase
         .from("ai_call_decisions")
         .select("*", { count: "exact", head: true })
         .eq("business_id", business_id)
         .eq("decision_type", "escalate")
-        .gte("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString()); // Last hour
+        .gte("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString());
 
-      // If too many escalations, trigger auto-downgrade consideration
       if ((recentFailures || 0) >= 3) {
-        await supabase.from("ai_audit_logs").insert({
+        const { error: warningError } = await supabase.from("ai_audit_logs").insert({
           session_id,
           business_id,
           audit_type: "auto_downgrade_warning",
@@ -120,8 +162,13 @@ serve(async (req) => {
             reason: "Multiple escalations in past hour",
             escalation_count: recentFailures,
             threshold: 3,
+            decision_trace_id,
           },
         });
+
+        if (warningError) {
+          console.error("AUTO-DOWNGRADE WARNING INSERT FAILED:", warningError);
+        }
       }
     }
 
@@ -130,15 +177,33 @@ serve(async (req) => {
         success: true,
         decision_id: decision.id,
         logged_at: decision.created_at,
+        decision_trace_id,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json",
+          "x-audit-log-status": auditLogStatus,
+        } 
+      }
     );
   } catch (error) {
     console.error("Decision logger error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
+    
     return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ 
+        error: message,
+        decision_trace_id,
+      }),
+      { 
+        status: 500, 
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json",
+          "x-audit-log-status": "failed",
+        } 
+      }
     );
   }
 });
