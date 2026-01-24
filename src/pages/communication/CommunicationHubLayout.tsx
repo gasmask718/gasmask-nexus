@@ -21,6 +21,7 @@ import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
 const navItems = [
   { path: "unified-inbox", label: "Unified Inbox", icon: MessageSquare, badge: 12, highlight: true },
   { path: "inbox", label: "Inbox (Legacy)", icon: MessageSquare },
+  { path: "outbound-growth", label: "Outbound Growth", icon: Zap, highlight: true, badge: undefined },
   { path: "outbound-engine", label: "Outbound Engine", icon: Zap, badge: undefined },
   { path: "deals", label: "Deals & Sales", icon: DollarSign },
   { path: "follow-ups", label: "Follow-Up Manager", icon: Activity },
