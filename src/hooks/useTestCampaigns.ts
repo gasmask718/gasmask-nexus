@@ -219,7 +219,7 @@ export function useCreateCampaignRun() {
         .from('executive_policies')
         .select('id')
         .eq('business_id', params.business_id)
-        .eq('is_active', true)
+        .eq('status', 'active')  // Use 'status' column, not 'is_active'
         .limit(1);
 
       let policyId = (policies as { id: string }[] | null)?.[0]?.id;
