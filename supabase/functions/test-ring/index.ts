@@ -39,6 +39,7 @@ interface TestRingRequest {
   businessId?: string;
   phoneNumberId?: string;
   userId?: string;
+  timeSimulation?: "business_hours" | "after_hours"; // Time simulation mode
 }
 
 interface TestRingStep {
@@ -64,6 +65,12 @@ interface TestRingResult {
     failurePoint?: string;
     failureReason?: string;
     suggestedFix?: string;
+    // Time awareness
+    timezone?: string;
+    localTime?: string;
+    isOpen?: boolean;
+    timeSimulation?: string;
+    afterHoursRoute?: string;
   };
   callLogId?: string;
 }
@@ -117,13 +124,23 @@ serve(async (req: Request): Promise<Response> => {
 
     // Parse request body
     const body: TestRingRequest = await req.json();
-    const { routeId, businessId, phoneNumberId, userId } = body;
+    const { routeId, businessId, phoneNumberId, userId, timeSimulation } = body;
 
     const result: TestRingResult = {
       success: false,
       steps: [],
       summary: {},
     };
+
+    // Track if we're in time simulation mode
+    if (timeSimulation) {
+      result.summary.timeSimulation = timeSimulation;
+      result.steps.push({
+        step: "Time Simulation",
+        status: "success",
+        details: `Testing ${timeSimulation === "after_hours" ? "AFTER-HOURS" : "BUSINESS HOURS"} routing`,
+      });
+    }
 
     // =========================================
     // STEP 1: Resolve Business
@@ -170,25 +187,117 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    // Resolve business if we have ID
-    if (resolvedBusinessId && !routeId) {
+    // Resolve business with timezone and hours data
+    let businessTimezone: string | null = null;
+    let businessHours: Record<string, any> | null = null;
+    let afterHoursRouteType: string | null = null;
+    let afterHoursRouteUserId: string | null = null;
+    let afterHoursRouteRole: string | null = null;
+    let afterHoursMessage: string | null = null;
+
+    if (resolvedBusinessId) {
       const { data: business } = await supabase
         .from("businesses")
-        .select("id, name")
+        .select("id, name, timezone, business_hours, after_hours_route_type, after_hours_route_user_id, after_hours_route_role, after_hours_message")
         .eq("id", resolvedBusinessId)
         .single();
 
       if (business) {
         businessName = business.name;
-        result.steps.push({
-          step: "Resolve Business",
-          status: "success",
-          details: `Business: ${businessName}`,
-        });
+        businessTimezone = business.timezone;
+        businessHours = business.business_hours;
+        afterHoursRouteType = business.after_hours_route_type;
+        afterHoursRouteUserId = business.after_hours_route_user_id;
+        afterHoursRouteRole = business.after_hours_route_role;
+        afterHoursMessage = business.after_hours_message;
+        
+        if (!routeId) {
+          result.steps.push({
+            step: "Resolve Business",
+            status: "success",
+            details: `Business: ${businessName}`,
+          });
+        }
       }
     }
 
     result.summary.businessName = businessName;
+
+    // =========================================
+    // STEP 1.5: Check Business Hours
+    // =========================================
+    let isOpen = true; // Default to open
+    let localTime = "";
+    let dayOfWeek = "";
+
+    if (businessTimezone && businessHours) {
+      // If time simulation is set, override the real check
+      if (timeSimulation === "after_hours") {
+        isOpen = false;
+        localTime = "22:00 (simulated)";
+        dayOfWeek = "simulated";
+      } else if (timeSimulation === "business_hours") {
+        isOpen = true;
+        localTime = "10:00 (simulated)";
+        dayOfWeek = "simulated";
+      } else {
+        const hoursCheck = checkBusinessHours(businessTimezone, businessHours);
+        isOpen = hoursCheck.isOpen;
+        localTime = hoursCheck.localTime;
+        dayOfWeek = hoursCheck.dayName;
+      }
+      
+      result.summary.timezone = businessTimezone;
+      result.summary.localTime = localTime;
+      result.summary.isOpen = isOpen;
+      
+      result.steps.push({
+        step: "Check Business Hours",
+        status: isOpen ? "success" : "failure",
+        details: `${dayOfWeek} ${localTime} - ${isOpen ? "OPEN" : "CLOSED"}`,
+        data: { timezone: businessTimezone, isOpen },
+      });
+
+      // Handle after-hours routing
+      if (!isOpen) {
+        if (afterHoursRouteType) {
+          result.summary.afterHoursRoute = afterHoursRouteType;
+          result.steps.push({
+            step: "After-Hours Route",
+            status: "success",
+            details: `After-hours configured: ${afterHoursRouteType}`,
+          });
+
+          // For voicemail/kiosk/message, test ends here (no user to ring)
+          if (["voicemail", "kiosk", "message"].includes(afterHoursRouteType)) {
+            result.success = true;
+            result.steps.push({
+              step: "After-Hours Action",
+              status: "success",
+              details: `Call would go to ${afterHoursRouteType} during after-hours`,
+            });
+            result.summary.routeType = afterHoursRouteType;
+            return jsonResponse(result);
+          }
+        } else {
+          result.steps.push({
+            step: "After-Hours Route",
+            status: "failure",
+            details: "No after-hours routing configured",
+          });
+          result.summary.failurePoint = "After-Hours Configuration";
+          result.summary.failureReason = "Business is closed and no after-hours routing is configured";
+          result.summary.suggestedFix = "Configure after-hours routing in Business Hours settings";
+          return jsonResponse(result);
+        }
+      }
+    } else {
+      result.steps.push({
+        step: "Check Business Hours",
+        status: "skipped",
+        details: "No business hours configured - assuming OPEN",
+      });
+    }
 
     // =========================================
     // STEP 2: Resolve Phone Number
@@ -785,4 +894,53 @@ function normalizeToE164(phone: string | null): string | null {
   }
   
   return null;
+}
+
+/**
+ * Check if business is currently open based on timezone and hours config
+ */
+function checkBusinessHours(
+  timezone: string,
+  hoursConfig: Record<string, any>
+): { isOpen: boolean; localTime: string; dayName: string } {
+  try {
+    // Get current time in business timezone
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      weekday: "long",
+    });
+
+    const parts = formatter.formatToParts(now);
+    const hour = parts.find(p => p.type === "hour")?.value || "00";
+    const minute = parts.find(p => p.type === "minute")?.value || "00";
+    const weekday = parts.find(p => p.type === "weekday")?.value?.toLowerCase() || "monday";
+
+    const currentTimeMinutes = parseInt(hour) * 60 + parseInt(minute);
+    const localTime = `${hour}:${minute}`;
+
+    // Get hours for current day
+    const dayHours = hoursConfig[weekday];
+    if (!dayHours || !dayHours.enabled) {
+      return { isOpen: false, localTime, dayName: weekday };
+    }
+
+    // Parse open/close times
+    const [openHour, openMinute] = (dayHours.open || "09:00").split(":").map(Number);
+    const [closeHour, closeMinute] = (dayHours.close || "17:00").split(":").map(Number);
+
+    const openMinutes = openHour * 60 + openMinute;
+    const closeMinutes = closeHour * 60 + closeMinute;
+
+    const isOpen = currentTimeMinutes >= openMinutes && currentTimeMinutes < closeMinutes;
+
+    return { isOpen, localTime, dayName: weekday };
+  } catch (error) {
+    console.error("Error checking business hours:", error);
+    // Default to open on error
+    return { isOpen: true, localTime: "unknown", dayName: "unknown" };
+  }
 }
