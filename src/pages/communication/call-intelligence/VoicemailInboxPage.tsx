@@ -30,6 +30,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useBusinessStore } from "@/stores/businessStore";
+import { useCall } from "@/components/communication/CallProvider";
 
 interface VoicemailRecord {
   id: string;
@@ -49,6 +50,7 @@ interface VoicemailRecord {
 
 export default function VoicemailInboxPage() {
   const { selectedBusiness } = useBusinessStore();
+  const { initiateCall } = useCall();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -439,7 +441,11 @@ export default function VoicemailInboxPage() {
                               <div className="flex gap-2 pt-4">
                                 <Button
                                   onClick={() => {
-                                    window.location.href = `tel:${vm.caller_number}`;
+                                    initiateCall({
+                                      destinationPhone: vm.caller_number,
+                                      entityType: 'other',
+                                      entityName: vm.caller_name || 'Voicemail Caller',
+                                    });
                                   }}
                                 >
                                   <PhoneCall className="h-4 w-4 mr-2" />

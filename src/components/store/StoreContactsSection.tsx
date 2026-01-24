@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { AddContactModal } from './AddContactModal';
 import { EditStoreContactModal } from './EditStoreContactModal';
 import { useCall } from '@/components/communication/CallProvider';
+import { useMessage } from '@/components/communication/MessageProvider';
 
 interface StoreContact {
   id: string;
@@ -70,6 +71,7 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
   });
 
   const { initiateCall } = useCall();
+  const { initiateMessage } = useMessage();
 
   const handleCall = (phone: string, name: string) => {
     if (!phone) {
@@ -83,13 +85,20 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
     });
   };
 
-  const handleText = (phone: string, name: string) => {
+  const handleText = (phone: string, name: string, contactId?: string) => {
     if (!phone) {
       toast.error('No phone number available');
       return;
     }
-    window.open(`sms:${phone}`);
-    toast.info(`Opening SMS to ${name}...`);
+    // Use internal messaging system instead of native sms: link
+    initiateMessage({
+      destinationPhone: phone,
+      entityType: 'customer',
+      entityId: contactId,
+      storeId: storeId,
+      entityName: name,
+      channel: 'sms',
+    });
   };
 
   const handleContactAdded = () => {

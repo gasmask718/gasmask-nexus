@@ -13,6 +13,7 @@ import { InteractionTimeline } from '@/components/crm/InteractionTimeline';
 import { LogInteractionModal } from '@/components/crm/LogInteractionModal';
 import { PersonalNotesCard } from '@/components/crm/PersonalNotesCard';
 import { useCall } from '@/components/communication/CallProvider';
+import { useMessage } from '@/components/communication/MessageProvider';
 
 const ROLE_LABELS: Record<string, string> = {
   OWNER: 'Owner',
@@ -71,6 +72,7 @@ export default function ContactProfile() {
   });
 
   const { initiateCall } = useCall();
+  const { initiateMessage } = useMessage();
 
   const handleCall = () => {
     if (!contactData?.phone) {
@@ -90,7 +92,15 @@ export default function ContactProfile() {
       toast.error('No phone number available');
       return;
     }
-    window.open(`sms:${contactData.phone}`);
+    // Use internal messaging system instead of native sms: link
+    initiateMessage({
+      destinationPhone: contactData.phone,
+      entityType: 'customer',
+      entityId: contactData.id,
+      storeId: contactData.store_id,
+      entityName: contactData.name,
+      channel: 'sms',
+    });
   };
 
   if (isLoading) {

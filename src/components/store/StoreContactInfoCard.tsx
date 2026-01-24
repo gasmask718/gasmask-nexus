@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { GlobalTagSelector } from '@/components/tags/GlobalTagSelector';
 import { useEntityTags } from '@/hooks/useGlobalTags';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
+import { ClickableSMS } from '@/components/communication/ClickableSMS';
 import { useCall } from '@/components/communication/CallProvider';
 
 type StickerStatus = 'none' | 'doorOnly' | 'inStoreOnly' | 'doorAndInStore';
@@ -417,11 +418,14 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                     entityName={store.name}
                     variant="icon"
                   />
-                  <Button size="sm" variant="ghost" asChild>
-                    <a href={`sms:${store.alt_phone}`} aria-label={`Text ${store.name}`}>
-                      <MessageSquare className="h-4 w-4" />
-                    </a>
-                  </Button>
+                  <ClickableSMS
+                    phone={store.alt_phone}
+                    entityType="store"
+                    entityId={store.id}
+                    storeId={store.id}
+                    entityName={store.name}
+                    variant="icon"
+                  />
                 </div>
               </div>
             )}
