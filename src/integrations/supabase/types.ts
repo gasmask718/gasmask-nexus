@@ -16652,6 +16652,9 @@ export type Database = {
           active_campaign_ids: string[] | null
           active_policy_ids: string[] | null
           active_run_ids: string[] | null
+          advisory_only_mode: boolean | null
+          advisory_reason: string | null
+          advisory_triggered_at: string | null
           business_id: string | null
           confidence_floor: number | null
           created_at: string
@@ -16664,6 +16667,7 @@ export type Database = {
           override_by: string | null
           override_expires_at: string | null
           override_reason: string | null
+          safety_conditions: Json | null
           status: string
           successful_executions_today: number | null
           total_decisions_today: number | null
@@ -16674,6 +16678,9 @@ export type Database = {
           active_campaign_ids?: string[] | null
           active_policy_ids?: string[] | null
           active_run_ids?: string[] | null
+          advisory_only_mode?: boolean | null
+          advisory_reason?: string | null
+          advisory_triggered_at?: string | null
           business_id?: string | null
           confidence_floor?: number | null
           created_at?: string
@@ -16686,6 +16693,7 @@ export type Database = {
           override_by?: string | null
           override_expires_at?: string | null
           override_reason?: string | null
+          safety_conditions?: Json | null
           status?: string
           successful_executions_today?: number | null
           total_decisions_today?: number | null
@@ -16696,6 +16704,9 @@ export type Database = {
           active_campaign_ids?: string[] | null
           active_policy_ids?: string[] | null
           active_run_ids?: string[] | null
+          advisory_only_mode?: boolean | null
+          advisory_reason?: string | null
+          advisory_triggered_at?: string | null
           business_id?: string | null
           confidence_floor?: number | null
           created_at?: string
@@ -16708,6 +16719,7 @@ export type Database = {
           override_by?: string | null
           override_expires_at?: string | null
           override_reason?: string | null
+          safety_conditions?: Json | null
           status?: string
           successful_executions_today?: number | null
           total_decisions_today?: number | null
@@ -16720,6 +16732,162 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: true
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executive_directives: {
+        Row: {
+          business_id: string
+          constraints: Json | null
+          created_at: string | null
+          directive_name: string
+          directive_type: string
+          effective_from: string | null
+          expires_at: string | null
+          id: string
+          issued_at: string | null
+          issued_by: string | null
+          required_policy_ids: string[] | null
+          revocation_allowed: boolean | null
+          scope: string
+          status: string
+          strategic_intent: string
+          success_criteria: Json | null
+          target_metrics: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          constraints?: Json | null
+          created_at?: string | null
+          directive_name: string
+          directive_type: string
+          effective_from?: string | null
+          expires_at?: string | null
+          id?: string
+          issued_at?: string | null
+          issued_by?: string | null
+          required_policy_ids?: string[] | null
+          revocation_allowed?: boolean | null
+          scope: string
+          status?: string
+          strategic_intent: string
+          success_criteria?: Json | null
+          target_metrics?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          constraints?: Json | null
+          created_at?: string | null
+          directive_name?: string
+          directive_type?: string
+          effective_from?: string | null
+          expires_at?: string | null
+          id?: string
+          issued_at?: string | null
+          issued_by?: string | null
+          required_policy_ids?: string[] | null
+          revocation_allowed?: boolean | null
+          scope?: string
+          status?: string
+          strategic_intent?: string
+          success_criteria?: Json | null
+          target_metrics?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_directives_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executive_memory_artifacts: {
+        Row: {
+          artifact_summary: string | null
+          artifact_title: string
+          business_id: string
+          campaign_id: string | null
+          confidence_at_time: number | null
+          created_at: string | null
+          directive_id: string | null
+          id: string
+          is_immutable: boolean | null
+          lessons_learned: string[] | null
+          memory_type: string
+          outcome_data: Json | null
+          policy_id: string | null
+          prev_hash: string | null
+          row_hash: string | null
+          success_score: number | null
+          what_failed: string[] | null
+          what_worked: string[] | null
+        }
+        Insert: {
+          artifact_summary?: string | null
+          artifact_title: string
+          business_id: string
+          campaign_id?: string | null
+          confidence_at_time?: number | null
+          created_at?: string | null
+          directive_id?: string | null
+          id?: string
+          is_immutable?: boolean | null
+          lessons_learned?: string[] | null
+          memory_type: string
+          outcome_data?: Json | null
+          policy_id?: string | null
+          prev_hash?: string | null
+          row_hash?: string | null
+          success_score?: number | null
+          what_failed?: string[] | null
+          what_worked?: string[] | null
+        }
+        Update: {
+          artifact_summary?: string | null
+          artifact_title?: string
+          business_id?: string
+          campaign_id?: string | null
+          confidence_at_time?: number | null
+          created_at?: string | null
+          directive_id?: string | null
+          id?: string
+          is_immutable?: boolean | null
+          lessons_learned?: string[] | null
+          memory_type?: string
+          outcome_data?: Json | null
+          policy_id?: string | null
+          prev_hash?: string | null
+          row_hash?: string | null
+          success_score?: number | null
+          what_failed?: string[] | null
+          what_worked?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_memory_artifacts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_memory_artifacts_directive_id_fkey"
+            columns: ["directive_id"]
+            isOneToOne: false
+            referencedRelation: "executive_directives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_memory_artifacts_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "executive_policies"
             referencedColumns: ["id"]
           },
         ]
@@ -16819,6 +16987,56 @@ export type Database = {
           },
         ]
       }
+      executive_powers_matrix: {
+        Row: {
+          allowed_powers: string[] | null
+          business_id: string
+          created_at: string | null
+          forbidden_powers: string[] | null
+          human_override_bypasses_all: boolean | null
+          id: string
+          is_active: boolean | null
+          power_category: string
+          requires_approval_powers: string[] | null
+          sentinel_can_restrict: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          allowed_powers?: string[] | null
+          business_id: string
+          created_at?: string | null
+          forbidden_powers?: string[] | null
+          human_override_bypasses_all?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          power_category: string
+          requires_approval_powers?: string[] | null
+          sentinel_can_restrict?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          allowed_powers?: string[] | null
+          business_id?: string
+          created_at?: string | null
+          forbidden_powers?: string[] | null
+          human_override_bypasses_all?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          power_category?: string
+          requires_approval_powers?: string[] | null
+          sentinel_can_restrict?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_powers_matrix_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       executive_report_logs: {
         Row: {
           created_at: string | null
@@ -16889,6 +17107,90 @@ export type Database = {
           report_date?: string
         }
         Relationships: []
+      }
+      executive_simulation_runs: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          business_id: string
+          completed_at: string | null
+          compliance_load_score: number | null
+          created_at: string | null
+          directive_id: string | null
+          expected_call_volume: number | null
+          failure_reasons: string[] | null
+          id: string
+          input_parameters: Json | null
+          projected_outcomes: Json | null
+          recommendations: string[] | null
+          risk_exposure_score: number | null
+          run_by: string | null
+          sentinel_stress_projection: number | null
+          simulation_name: string
+          simulation_passed: boolean | null
+          simulation_type: string
+          status: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          business_id: string
+          completed_at?: string | null
+          compliance_load_score?: number | null
+          created_at?: string | null
+          directive_id?: string | null
+          expected_call_volume?: number | null
+          failure_reasons?: string[] | null
+          id?: string
+          input_parameters?: Json | null
+          projected_outcomes?: Json | null
+          recommendations?: string[] | null
+          risk_exposure_score?: number | null
+          run_by?: string | null
+          sentinel_stress_projection?: number | null
+          simulation_name: string
+          simulation_passed?: boolean | null
+          simulation_type: string
+          status?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          business_id?: string
+          completed_at?: string | null
+          compliance_load_score?: number | null
+          created_at?: string | null
+          directive_id?: string | null
+          expected_call_volume?: number | null
+          failure_reasons?: string[] | null
+          id?: string
+          input_parameters?: Json | null
+          projected_outcomes?: Json | null
+          recommendations?: string[] | null
+          risk_exposure_score?: number | null
+          run_by?: string | null
+          sentinel_stress_projection?: number | null
+          simulation_name?: string
+          simulation_passed?: boolean | null
+          simulation_type?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_simulation_runs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_simulation_runs_directive_id_fkey"
+            columns: ["directive_id"]
+            isOneToOne: false
+            referencedRelation: "executive_directives"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expansion_cities: {
         Row: {
@@ -24838,6 +25140,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           description: string | null
+          directive_id: string | null
           escalations: number | null
           executive_policy_id: string | null
           follow_ups_scheduled: number | null
@@ -24893,6 +25196,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          directive_id?: string | null
           escalations?: number | null
           executive_policy_id?: string | null
           follow_ups_scheduled?: number | null
@@ -24948,6 +25252,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          directive_id?: string | null
           escalations?: number | null
           executive_policy_id?: string | null
           follow_ups_scheduled?: number | null
@@ -24995,6 +25300,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_campaigns_directive_id_fkey"
+            columns: ["directive_id"]
+            isOneToOne: false
+            referencedRelation: "executive_directives"
             referencedColumns: ["id"]
           },
           {
