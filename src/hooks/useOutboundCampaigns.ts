@@ -66,7 +66,7 @@ export function useOutboundCampaigns(businessId: string | null) {
 export function useCreateCampaign() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { business_id: string; data: Partial<OutboundCampaign> }) => {
+    mutationFn: async (params: { business_id: string; data: Record<string, any> }) => {
       const { data, error } = await supabase.functions.invoke('outbound-campaign-manager', {
         body: { action: 'create', business_id: params.business_id, data: params.data }
       });
