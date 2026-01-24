@@ -50,14 +50,28 @@ serve(async (req) => {
         autoDeactivateAt = new Date(Date.now() + auto_deactivate_minutes * 60 * 1000).toISOString();
       }
 
-      // Upsert kill switch state
-      const { data: killSwitch, error: killError } = await supabase
+      // Check if kill switch already exists for this scope
+      let existingQuery = supabase
         .from("ai_kill_switch_state")
-        .upsert(
-          {
-            scope,
-            business_id: scope === "business" ? business_id : null,
-            route_id: scope === "route" ? route_id : null,
+        .select("id")
+        .eq("scope", scope);
+      
+      if (scope === "business") {
+        existingQuery = existingQuery.eq("business_id", business_id);
+      } else if (scope === "route") {
+        existingQuery = existingQuery.eq("route_id", route_id);
+      } else if (scope === "global") {
+        existingQuery = existingQuery.is("business_id", null).is("route_id", null);
+      }
+
+      const { data: existing } = await existingQuery.maybeSingle();
+
+      let killSwitch;
+      if (existing) {
+        // Update existing
+        const { data, error } = await supabase
+          .from("ai_kill_switch_state")
+          .update({
             is_active: true,
             activated_at: now,
             activated_by,
@@ -66,15 +80,31 @@ serve(async (req) => {
             deactivated_at: null,
             deactivated_by: null,
             updated_at: now,
-          },
-          {
-            onConflict: scope === "global" ? "scope" : scope === "business" ? "business_id" : "route_id",
-          }
-        )
-        .select()
-        .single();
-
-      if (killError) throw killError;
+          })
+          .eq("id", existing.id)
+          .select()
+          .single();
+        if (error) throw error;
+        killSwitch = data;
+      } else {
+        // Insert new
+        const { data, error } = await supabase
+          .from("ai_kill_switch_state")
+          .insert({
+            scope,
+            business_id: scope === "business" ? business_id : null,
+            route_id: scope === "route" ? route_id : null,
+            is_active: true,
+            activated_at: now,
+            activated_by,
+            activation_reason: reason || "Emergency kill switch activated",
+            auto_deactivate_at: autoDeactivateAt,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+        killSwitch = data;
+      }
 
       // If global or business, downgrade all affected configs
       if (scope === "global") {

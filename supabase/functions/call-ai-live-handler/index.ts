@@ -58,6 +58,45 @@ serve(async (req) => {
       liveConfig = data;
     }
 
+    // CRITICAL: Check kill switches before ANY AI action (mid-call enforcement)
+    const { data: globalKill } = await supabase
+      .from("ai_kill_switch_state")
+      .select("is_active")
+      .eq("scope", "global")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    const { data: businessKill } = await supabase
+      .from("ai_kill_switch_state")
+      .select("is_active")
+      .eq("scope", "business")
+      .eq("business_id", business_id)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (globalKill?.is_active || businessKill?.is_active) {
+      // IMMEDIATE ABORT - Kill switch activated mid-call
+      await supabase.from("ai_call_decisions").insert({
+        session_id,
+        business_id,
+        decision_type: "abort",
+        decision_reason: "KILL SWITCH ACTIVE - AI speech immediately halted",
+        risk_level: "critical",
+        rule_applied: "kill_switch_enforcement",
+        transcript_snapshot: transcript,
+      });
+
+      return new Response(
+        JSON.stringify({
+          action: "abort",
+          reason: "KILL SWITCH ACTIVE",
+          should_speak: false,
+          immediate_handoff: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const escapePhrases = liveConfig?.escape_phrases || ["human", "representative", "agent"];
     const highRiskKeywords = liveConfig?.high_risk_keywords || ["lawyer", "sue", "complaint"];
 
@@ -180,6 +219,54 @@ ${transcript || "[Call just started]"}`;
       analysis.escalation_reason = "High-risk keywords detected in conversation";
     }
 
+    // CRITICAL: Mid-call confidence threshold breach check
+    const confidenceThreshold = liveConfig?.confidence_threshold || 70;
+    if (analysis.confidence < confidenceThreshold) {
+      // Confidence dropped below threshold - ABORT AI and escalate
+      await supabase.from("ai_call_decisions").insert({
+        session_id,
+        business_id,
+        decision_type: "confidence_breach",
+        decision_reason: `Confidence ${analysis.confidence}% dropped below ${confidenceThreshold}% threshold - AI aborted`,
+        confidence_at_decision: analysis.confidence,
+        risk_level: "high",
+        active_thresholds: { confidence_threshold: confidenceThreshold },
+        rule_applied: "confidence_threshold_enforcement",
+        caller_sentiment: analysis.sentiment,
+        transcript_snapshot: transcript,
+      });
+
+      // Log to audit events for regulatory trail
+      await supabase.rpc("log_ai_audit_event", {
+        p_business_id: business_id,
+        p_event_type: "confidence_breach",
+        p_event_severity: "warning",
+        p_session_id: session_id,
+        p_event_payload: {
+          confidence: analysis.confidence,
+          threshold: confidenceThreshold,
+          action: "abort_and_handoff",
+        },
+        p_confidence: analysis.confidence,
+        p_transcript_snapshot: transcript,
+        p_triggered_by: "system",
+      });
+
+      return new Response(
+        JSON.stringify({
+          action: "confidence_breach",
+          response_text: null,
+          risk_level: "high",
+          sentiment: analysis.sentiment,
+          confidence: analysis.confidence,
+          should_speak: false,
+          immediate_handoff: true,
+          escalation_reason: `Confidence dropped to ${analysis.confidence}% (threshold: ${confidenceThreshold}%)`,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Determine action
     const action = analysis.should_escalate ? "escalate" : "continue";
 
@@ -196,6 +283,7 @@ ${transcript || "[Call just started]"}`;
       active_thresholds: {
         escape_phrases: escapePhrases,
         high_risk_keywords: highRiskKeywords,
+        confidence_threshold: confidenceThreshold,
       },
       rule_applied: analysis.should_escalate ? "risk_escalation" : "normal_flow",
       caller_sentiment: analysis.sentiment,

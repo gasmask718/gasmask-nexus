@@ -64,9 +64,34 @@ serve(async (req) => {
       blockers.push("Live mode not enabled by admin");
     }
 
-    // Gate 2: Kill switch must be OFF
+    // Gate 2: Config kill switch must be OFF
     if (config.live_kill_switch) {
-      blockers.push("Live mode kill switch is active");
+      blockers.push("Live mode kill switch is active (config)");
+    }
+
+    // Gate 2b: Check GLOBAL kill switch state (CRITICAL - overrides everything)
+    const { data: globalKill } = await supabase
+      .from("ai_kill_switch_state")
+      .select("is_active, activation_reason")
+      .eq("scope", "global")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (globalKill?.is_active) {
+      blockers.push(`GLOBAL KILL SWITCH ACTIVE: ${globalKill.activation_reason || "Emergency stop"}`);
+    }
+
+    // Gate 2c: Check BUSINESS-level kill switch state
+    const { data: businessKill } = await supabase
+      .from("ai_kill_switch_state")
+      .select("is_active, activation_reason")
+      .eq("scope", "business")
+      .eq("business_id", business_id)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (businessKill?.is_active) {
+      blockers.push(`BUSINESS KILL SWITCH ACTIVE: ${businessKill.activation_reason || "Emergency stop"}`);
     }
 
     // Gate 3: Mode must be 'live'
@@ -147,6 +172,25 @@ serve(async (req) => {
 
     if ((callableCount || 0) === 0) {
       blockers.push("No callable human fallback available");
+    }
+
+    // Gate 10: EXPLICIT AUTHORIZATION REQUIRED (no auto-promotion)
+    const { data: authorization } = await supabase
+      .from("ai_live_authorizations")
+      .select("*")
+      .eq("business_id", business_id)
+      .eq("status", "approved")
+      .order("authorized_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!authorization) {
+      blockers.push("No explicit Live Mode authorization record exists - admin approval required");
+    } else {
+      // Check if authorization has expired
+      if (authorization.expires_at && new Date(authorization.expires_at) < new Date()) {
+        blockers.push(`Live Mode authorization expired at ${authorization.expires_at}`);
+      }
     }
 
     // Determine if AI can proceed in live mode
