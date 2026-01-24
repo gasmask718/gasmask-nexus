@@ -5321,10 +5321,15 @@ export type Database = {
           accent_color: string | null
           address: string | null
           address_line2: string | null
+          after_hours_message: string | null
+          after_hours_route_role: string | null
+          after_hours_route_type: string | null
+          after_hours_route_user_id: string | null
           billing_email: string | null
           borough_id: string | null
           brand_banner_url: string | null
           brand_type: string | null
+          business_hours: Json | null
           business_model: string | null
           business_type: string | null
           category: string | null
@@ -5366,6 +5371,7 @@ export type Database = {
           subscription_tier: string | null
           tagline: string | null
           theme_config: Json | null
+          timezone: string | null
           trial_ends_at: string | null
           updated_at: string | null
           use_affiliates: boolean | null
@@ -5381,10 +5387,15 @@ export type Database = {
           accent_color?: string | null
           address?: string | null
           address_line2?: string | null
+          after_hours_message?: string | null
+          after_hours_route_role?: string | null
+          after_hours_route_type?: string | null
+          after_hours_route_user_id?: string | null
           billing_email?: string | null
           borough_id?: string | null
           brand_banner_url?: string | null
           brand_type?: string | null
+          business_hours?: Json | null
           business_model?: string | null
           business_type?: string | null
           category?: string | null
@@ -5426,6 +5437,7 @@ export type Database = {
           subscription_tier?: string | null
           tagline?: string | null
           theme_config?: Json | null
+          timezone?: string | null
           trial_ends_at?: string | null
           updated_at?: string | null
           use_affiliates?: boolean | null
@@ -5441,10 +5453,15 @@ export type Database = {
           accent_color?: string | null
           address?: string | null
           address_line2?: string | null
+          after_hours_message?: string | null
+          after_hours_route_role?: string | null
+          after_hours_route_type?: string | null
+          after_hours_route_user_id?: string | null
           billing_email?: string | null
           borough_id?: string | null
           brand_banner_url?: string | null
           brand_type?: string | null
+          business_hours?: Json | null
           business_model?: string | null
           business_type?: string | null
           category?: string | null
@@ -5486,6 +5503,7 @@ export type Database = {
           subscription_tier?: string | null
           tagline?: string | null
           theme_config?: Json | null
+          timezone?: string | null
           trial_ends_at?: string | null
           updated_at?: string | null
           use_affiliates?: boolean | null
