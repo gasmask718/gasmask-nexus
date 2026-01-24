@@ -62,6 +62,7 @@ const callIntelligenceItems = [
   { path: "call-intelligence", label: "Call Intelligence", icon: Brain, highlight: true },
   { path: "voicemail-inbox", label: "Voicemail Inbox", icon: Voicemail },
   { path: "missed-calls", label: "Missed Calls", icon: Phone },
+  { path: "unresolved-queue", label: "Unresolved Queue", icon: AlertTriangle },
 ];
 
 export default function CommunicationHubLayout() {
