@@ -5055,6 +5055,81 @@ export type Database = {
         }
         Relationships: []
       }
+      business_call_readiness: {
+        Row: {
+          after_hours_configured: boolean | null
+          ai_auto_answer_blocked_reason: string | null
+          ai_auto_answer_enabled: boolean | null
+          business_hours_configured: boolean | null
+          business_id: string
+          callable_users_configured: boolean | null
+          caller_id_configured: boolean | null
+          created_at: string
+          go_live_approved_at: string | null
+          go_live_approved_by: string | null
+          id: string
+          inbound_routes_configured: boolean | null
+          last_checked_at: string | null
+          test_ring_after_hours_passed: boolean | null
+          test_ring_passed: boolean | null
+          updated_at: string
+          voicemail_configured: boolean | null
+        }
+        Insert: {
+          after_hours_configured?: boolean | null
+          ai_auto_answer_blocked_reason?: string | null
+          ai_auto_answer_enabled?: boolean | null
+          business_hours_configured?: boolean | null
+          business_id: string
+          callable_users_configured?: boolean | null
+          caller_id_configured?: boolean | null
+          created_at?: string
+          go_live_approved_at?: string | null
+          go_live_approved_by?: string | null
+          id?: string
+          inbound_routes_configured?: boolean | null
+          last_checked_at?: string | null
+          test_ring_after_hours_passed?: boolean | null
+          test_ring_passed?: boolean | null
+          updated_at?: string
+          voicemail_configured?: boolean | null
+        }
+        Update: {
+          after_hours_configured?: boolean | null
+          ai_auto_answer_blocked_reason?: string | null
+          ai_auto_answer_enabled?: boolean | null
+          business_hours_configured?: boolean | null
+          business_id?: string
+          callable_users_configured?: boolean | null
+          caller_id_configured?: boolean | null
+          created_at?: string
+          go_live_approved_at?: string | null
+          go_live_approved_by?: string | null
+          id?: string
+          inbound_routes_configured?: boolean | null
+          last_checked_at?: string | null
+          test_ring_after_hours_passed?: boolean | null
+          test_ring_passed?: boolean | null
+          updated_at?: string
+          voicemail_configured?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_call_readiness_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_call_readiness_go_live_approved_by_fkey"
+            columns: ["go_live_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_expenses: {
         Row: {
           amount: number
@@ -6337,6 +6412,69 @@ export type Database = {
           },
         ]
       }
+      call_escalation_rules: {
+        Row: {
+          action_target_role: string | null
+          action_target_user_id: string | null
+          action_type: string
+          auto_sms_template: string | null
+          business_id: string | null
+          created_at: string
+          id: string
+          is_enabled: boolean | null
+          priority: number | null
+          rule_name: string
+          trigger_threshold_minutes: number | null
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          action_target_role?: string | null
+          action_target_user_id?: string | null
+          action_type: string
+          auto_sms_template?: string | null
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          priority?: number | null
+          rule_name: string
+          trigger_threshold_minutes?: number | null
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          action_target_role?: string | null
+          action_target_user_id?: string | null
+          action_type?: string
+          auto_sms_template?: string | null
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          priority?: number | null
+          rule_name?: string
+          trigger_threshold_minutes?: number | null
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_escalation_rules_action_target_user_id_fkey"
+            columns: ["action_target_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_escalation_rules_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_experiment_results: {
         Row: {
           answered: number | null
@@ -6530,6 +6668,8 @@ export type Database = {
       }
       call_followups: {
         Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
           assigned_to: string | null
           auto_sms_sent: boolean | null
           auto_sms_sent_at: string | null
@@ -6542,10 +6682,16 @@ export type Database = {
           created_at: string
           description: string | null
           due_at: string | null
+          escalated_at: string | null
+          escalated_by: string | null
+          escalation_level: number | null
           followup_type: string
           id: string
           metadata: Json | null
           priority: string | null
+          resolution_notes: string | null
+          resolution_type: string | null
+          sla_deadline: string | null
           source_id: string | null
           source_type: string
           status: string | null
@@ -6554,6 +6700,8 @@ export type Database = {
           voicemail_id: string | null
         }
         Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           assigned_to?: string | null
           auto_sms_sent?: boolean | null
           auto_sms_sent_at?: string | null
@@ -6566,10 +6714,16 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_at?: string | null
+          escalated_at?: string | null
+          escalated_by?: string | null
+          escalation_level?: number | null
           followup_type: string
           id?: string
           metadata?: Json | null
           priority?: string | null
+          resolution_notes?: string | null
+          resolution_type?: string | null
+          sla_deadline?: string | null
           source_id?: string | null
           source_type: string
           status?: string | null
@@ -6578,6 +6732,8 @@ export type Database = {
           voicemail_id?: string | null
         }
         Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           assigned_to?: string | null
           auto_sms_sent?: boolean | null
           auto_sms_sent_at?: string | null
@@ -6590,10 +6746,16 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_at?: string | null
+          escalated_at?: string | null
+          escalated_by?: string | null
+          escalation_level?: number | null
           followup_type?: string
           id?: string
           metadata?: Json | null
           priority?: string | null
+          resolution_notes?: string | null
+          resolution_type?: string | null
+          sla_deadline?: string | null
           source_id?: string | null
           source_type?: string
           status?: string | null
@@ -6602,6 +6764,13 @@ export type Database = {
           voicemail_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "call_followups_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "call_followups_assigned_to_fkey"
             columns: ["assigned_to"]
@@ -6626,6 +6795,13 @@ export type Database = {
           {
             foreignKeyName: "call_followups_completed_by_fkey"
             columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_followups_escalated_by_fkey"
+            columns: ["escalated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -6842,9 +7018,13 @@ export type Database = {
           outcome_reason: string | null
           phone_number_id: string | null
           resolution_path: Json | null
+          resolution_status: string | null
+          resolved_at: string | null
+          resolved_by: string | null
           ring_duration_seconds: number | null
           route_id: string | null
           route_type: string | null
+          sla_met: boolean | null
           suggested_fix: string | null
           timezone: string | null
           users_attempted: string[] | null
@@ -6866,9 +7046,13 @@ export type Database = {
           outcome_reason?: string | null
           phone_number_id?: string | null
           resolution_path?: Json | null
+          resolution_status?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           ring_duration_seconds?: number | null
           route_id?: string | null
           route_type?: string | null
+          sla_met?: boolean | null
           suggested_fix?: string | null
           timezone?: string | null
           users_attempted?: string[] | null
@@ -6890,9 +7074,13 @@ export type Database = {
           outcome_reason?: string | null
           phone_number_id?: string | null
           resolution_path?: Json | null
+          resolution_status?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           ring_duration_seconds?: number | null
           route_id?: string | null
           route_type?: string | null
+          sla_met?: boolean | null
           suggested_fix?: string | null
           timezone?: string | null
           users_attempted?: string[] | null
@@ -6911,6 +7099,13 @@ export type Database = {
             columns: ["phone_number_id"]
             isOneToOne: false
             referencedRelation: "business_phone_numbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_outcomes_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -32244,6 +32439,11 @@ export type Database = {
       }
       voicemails: {
         Row: {
+          ai_analyzed_at: string | null
+          ai_intent: string | null
+          ai_priority_score: number | null
+          ai_suggested_action: string | null
+          ai_summary: string | null
           assigned_to: string | null
           business_id: string | null
           call_log_id: string | null
@@ -32267,6 +32467,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_analyzed_at?: string | null
+          ai_intent?: string | null
+          ai_priority_score?: number | null
+          ai_suggested_action?: string | null
+          ai_summary?: string | null
           assigned_to?: string | null
           business_id?: string | null
           call_log_id?: string | null
@@ -32290,6 +32495,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_analyzed_at?: string | null
+          ai_intent?: string | null
+          ai_priority_score?: number | null
+          ai_suggested_action?: string | null
+          ai_summary?: string | null
           assigned_to?: string | null
           business_id?: string | null
           call_log_id?: string | null
