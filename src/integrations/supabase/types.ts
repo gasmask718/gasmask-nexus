@@ -1031,6 +1031,10 @@ export type Database = {
         Row: {
           auto_downgrade_on_failure: boolean | null
           business_id: string
+          canary_allowed_call_types: string[] | null
+          canary_blocked_intents: string[] | null
+          canary_kill_switch: boolean | null
+          canary_max_concurrent: number | null
           confidence_threshold: number | null
           created_at: string | null
           enabled: boolean | null
@@ -1044,6 +1048,10 @@ export type Database = {
         Insert: {
           auto_downgrade_on_failure?: boolean | null
           business_id: string
+          canary_allowed_call_types?: string[] | null
+          canary_blocked_intents?: string[] | null
+          canary_kill_switch?: boolean | null
+          canary_max_concurrent?: number | null
           confidence_threshold?: number | null
           created_at?: string | null
           enabled?: boolean | null
@@ -1057,6 +1065,10 @@ export type Database = {
         Update: {
           auto_downgrade_on_failure?: boolean | null
           business_id?: string
+          canary_allowed_call_types?: string[] | null
+          canary_blocked_intents?: string[] | null
+          canary_kill_switch?: boolean | null
+          canary_max_concurrent?: number | null
           confidence_threshold?: number | null
           created_at?: string | null
           enabled?: boolean | null
@@ -8218,6 +8230,188 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canary_call_log: {
+        Row: {
+          ai_active_duration_seconds: number | null
+          business_id: string | null
+          call_risk_level: string | null
+          call_type: string | null
+          callable_users_count: number
+          created_at: string | null
+          entry_accuracy_rate: number
+          entry_conditions: Json | null
+          entry_confidence: number
+          entry_reason: string
+          entry_trust_score: number
+          final_sentiment: string | null
+          handoff_completed_at: string | null
+          handoff_latency_ms: number | null
+          handoff_requested_at: string | null
+          human_overrode: boolean | null
+          id: string
+          initial_sentiment: string | null
+          outcome: string | null
+          outcome_reason: string | null
+          override_reason: string | null
+          override_user_id: string | null
+          prediction_id: string | null
+          sentiment_changed: boolean | null
+          session_id: string | null
+          total_duration_seconds: number | null
+          unresolved_calls_count: number
+          updated_at: string | null
+        }
+        Insert: {
+          ai_active_duration_seconds?: number | null
+          business_id?: string | null
+          call_risk_level?: string | null
+          call_type?: string | null
+          callable_users_count?: number
+          created_at?: string | null
+          entry_accuracy_rate: number
+          entry_conditions?: Json | null
+          entry_confidence: number
+          entry_reason: string
+          entry_trust_score: number
+          final_sentiment?: string | null
+          handoff_completed_at?: string | null
+          handoff_latency_ms?: number | null
+          handoff_requested_at?: string | null
+          human_overrode?: boolean | null
+          id?: string
+          initial_sentiment?: string | null
+          outcome?: string | null
+          outcome_reason?: string | null
+          override_reason?: string | null
+          override_user_id?: string | null
+          prediction_id?: string | null
+          sentiment_changed?: boolean | null
+          session_id?: string | null
+          total_duration_seconds?: number | null
+          unresolved_calls_count?: number
+          updated_at?: string | null
+        }
+        Update: {
+          ai_active_duration_seconds?: number | null
+          business_id?: string | null
+          call_risk_level?: string | null
+          call_type?: string | null
+          callable_users_count?: number
+          created_at?: string | null
+          entry_accuracy_rate?: number
+          entry_conditions?: Json | null
+          entry_confidence?: number
+          entry_reason?: string
+          entry_trust_score?: number
+          final_sentiment?: string | null
+          handoff_completed_at?: string | null
+          handoff_latency_ms?: number | null
+          handoff_requested_at?: string | null
+          human_overrode?: boolean | null
+          id?: string
+          initial_sentiment?: string | null
+          outcome?: string | null
+          outcome_reason?: string | null
+          override_reason?: string | null
+          override_user_id?: string | null
+          prediction_id?: string | null
+          sentiment_changed?: boolean | null
+          session_id?: string | null
+          total_duration_seconds?: number | null
+          unresolved_calls_count?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canary_call_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canary_call_log_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_predictions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canary_call_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canary_escape_events: {
+        Row: {
+          business_id: string | null
+          canary_log_id: string | null
+          escape_details: Json | null
+          escape_trigger: string | null
+          escape_type: string
+          failure_reason: string | null
+          id: string
+          resolution_latency_ms: number | null
+          resolved_at: string | null
+          session_id: string | null
+          triggered_at: string | null
+          was_successful: boolean | null
+        }
+        Insert: {
+          business_id?: string | null
+          canary_log_id?: string | null
+          escape_details?: Json | null
+          escape_trigger?: string | null
+          escape_type: string
+          failure_reason?: string | null
+          id?: string
+          resolution_latency_ms?: number | null
+          resolved_at?: string | null
+          session_id?: string | null
+          triggered_at?: string | null
+          was_successful?: boolean | null
+        }
+        Update: {
+          business_id?: string | null
+          canary_log_id?: string | null
+          escape_details?: Json | null
+          escape_trigger?: string | null
+          escape_type?: string
+          failure_reason?: string | null
+          id?: string
+          resolution_latency_ms?: number | null
+          resolved_at?: string | null
+          session_id?: string | null
+          triggered_at?: string | null
+          was_successful?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canary_escape_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canary_escape_events_canary_log_id_fkey"
+            columns: ["canary_log_id"]
+            isOneToOne: false
+            referencedRelation: "canary_call_log"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canary_escape_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
             referencedColumns: ["id"]
           },
         ]

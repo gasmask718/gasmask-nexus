@@ -12,6 +12,10 @@ export interface AICallAgentConfig {
   require_resolved_queue: boolean;
   max_consecutive_failures: number;
   auto_downgrade_on_failure: boolean;
+  canary_kill_switch: boolean;
+  canary_max_concurrent: number;
+  canary_allowed_call_types: string[];
+  canary_blocked_intents: string[];
   created_at: string;
   updated_at: string;
 }
