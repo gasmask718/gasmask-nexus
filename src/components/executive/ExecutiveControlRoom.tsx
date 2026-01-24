@@ -22,13 +22,20 @@ import {
   TrendingUp,
   Users,
   Phone,
-  Target
+  Target,
+  Compass,
+  FlaskConical,
+  ShieldCheck
 } from 'lucide-react';
 import { useExecutiveAI } from '@/hooks/useExecutiveAI';
+import { useExecutiveDirectives } from '@/hooks/useExecutiveDirectives';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { PolicyBuilder } from './PolicyBuilder';
 import { ActiveRunsMonitor } from './ActiveRunsMonitor';
 import { PolicyViolationsLog } from './PolicyViolationsLog';
+import { DirectivesPanel } from './DirectivesPanel';
+import { SimulationBoard } from './SimulationBoard';
+import { PowersMatrixPanel } from './PowersMatrixPanel';
 
 export function ExecutiveControlRoom() {
   const { currentBusiness } = useBusiness();
@@ -47,14 +54,32 @@ export function ExecutiveControlRoom() {
     haltRun,
   } = useExecutiveAI(businessId);
 
+  const {
+    directives,
+    activeDirectives,
+    draftDirectives,
+    simulations,
+    powersMatrix,
+    advisoryMode,
+    isLoading: directivesLoading,
+    fetchDirectives,
+    activateDirective,
+    revokeDirective,
+    runSimulation,
+    fetchPowersMatrix,
+  } = useExecutiveDirectives(businessId);
+
   const [showPolicyBuilder, setShowPolicyBuilder] = useState(false);
+  const [activeTab, setActiveTab] = useState('directives');
 
   useEffect(() => {
     if (businessId) {
       fetchPolicies();
       fetchEngineStatus();
+      fetchDirectives();
+      fetchPowersMatrix();
     }
-  }, [businessId, fetchPolicies, fetchEngineStatus]);
+  }, [businessId, fetchPolicies, fetchEngineStatus, fetchDirectives, fetchPowersMatrix]);
 
   // Refresh every 10 seconds
   useEffect(() => {
@@ -64,7 +89,6 @@ export function ExecutiveControlRoom() {
       }
     }, 10000);
     return () => clearInterval(interval);
-  }, [businessId, fetchEngineStatus]);
 
   const activePolicies = policies.filter(p => p.status === 'active');
   const draftPolicies = policies.filter(p => p.status === 'draft');
@@ -202,11 +226,23 @@ export function ExecutiveControlRoom() {
       )}
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="policies" className="space-y-4">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="directives" className="flex items-center gap-2">
+            <Compass className="h-4 w-4" />
+            Directives ({activeDirectives.length})
+          </TabsTrigger>
+          <TabsTrigger value="simulation" className="flex items-center gap-2">
+            <FlaskConical className="h-4 w-4" />
+            Simulation
+          </TabsTrigger>
+          <TabsTrigger value="powers" className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4" />
+            Powers Matrix
+          </TabsTrigger>
           <TabsTrigger value="policies" className="flex items-center gap-2">
             <FileSignature className="h-4 w-4" />
-            Policies ({activePolicies.length} active)
+            Policies ({activePolicies.length})
           </TabsTrigger>
           <TabsTrigger value="runs" className="flex items-center gap-2">
             <Play className="h-4 w-4" />
@@ -221,6 +257,38 @@ export function ExecutiveControlRoom() {
             Performance
           </TabsTrigger>
         </TabsList>
+
+        {/* Directives Tab */}
+        <TabsContent value="directives">
+          <DirectivesPanel
+            directives={directives}
+            activeDirectives={activeDirectives}
+            draftDirectives={draftDirectives}
+            businessId={businessId!}
+            isLoading={directivesLoading}
+            advisoryMode={advisoryMode}
+            onActivate={activateDirective}
+            onRevoke={revokeDirective}
+            onSimulate={runSimulation}
+            onRefresh={fetchDirectives}
+          />
+        </TabsContent>
+
+        {/* Simulation Tab */}
+        <TabsContent value="simulation">
+          <SimulationBoard
+            businessId={businessId!}
+            directives={directives}
+            simulations={simulations}
+            onRunSimulation={runSimulation}
+            isLoading={directivesLoading}
+          />
+        </TabsContent>
+
+        {/* Powers Matrix Tab */}
+        <TabsContent value="powers">
+          <PowersMatrixPanel powers={powersMatrix} isLoading={directivesLoading} />
+        </TabsContent>
 
         {/* Policies Tab */}
         <TabsContent value="policies" className="space-y-4">
