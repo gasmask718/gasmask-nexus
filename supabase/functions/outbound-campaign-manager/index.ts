@@ -25,11 +25,19 @@ Deno.serve(async (req) => {
 
     const body: CampaignRequest = await req.json();
     const action = body.action;
-    const campaign_id = body.campaign_id || null;
-    // Treat empty string as null to prevent UUID parse errors
+    // Treat empty strings as null to prevent UUID parse errors
+    const campaign_id = body.campaign_id && body.campaign_id.trim() !== '' ? body.campaign_id : null;
     const business_id = body.business_id && body.business_id.trim() !== '' ? body.business_id : null;
     const data = body.data;
     const approved_by = body.approved_by;
+
+    // Helper to safely throw errors from Supabase
+    const throwIfError = (error: any, context: string) => {
+      if (error) {
+        const message = error.message || JSON.stringify(error);
+        throw new Error(`${context}: ${message}`);
+      }
+    };
 
     switch (action) {
       case 'create': {
@@ -64,7 +72,7 @@ Deno.serve(async (req) => {
           .select()
           .single();
 
-        if (error) throw error;
+        throwIfError(error, 'Create campaign failed');
 
         // Create associated kill switch
         await supabase
@@ -129,7 +137,7 @@ Deno.serve(async (req) => {
           .select()
           .single();
 
-        if (approvalError) throw approvalError;
+        throwIfError(approvalError, 'Sentinel approval failed');
 
         // Update campaign status
         const { data: campaign, error } = await supabase
@@ -145,7 +153,7 @@ Deno.serve(async (req) => {
           .select()
           .single();
 
-        if (error) throw error;
+        throwIfError(error, 'Campaign update failed');
 
         return new Response(
           JSON.stringify({ success: true, campaign, sentinel_approval: approval }),
@@ -163,7 +171,7 @@ Deno.serve(async (req) => {
           .select()
           .single();
 
-        if (error) throw error;
+        throwIfError(error, 'Pause campaign failed');
 
         return new Response(
           JSON.stringify({ success: true, campaign }),
@@ -193,7 +201,7 @@ Deno.serve(async (req) => {
           .select()
           .single();
 
-        if (error) throw error;
+        throwIfError(error, 'Resume campaign failed');
 
         return new Response(
           JSON.stringify({ success: true, campaign }),
@@ -228,7 +236,7 @@ Deno.serve(async (req) => {
           .select()
           .single();
 
-        if (error) throw error;
+        throwIfError(error, 'Halt campaign failed');
 
         return new Response(
           JSON.stringify({ success: true, campaign }),
@@ -251,7 +259,7 @@ Deno.serve(async (req) => {
           .eq('id', campaign_id)
           .single();
 
-        if (error) throw error;
+        throwIfError(error, 'Get campaign failed');
 
         // Get target stats
         const { data: stats } = await supabase
@@ -285,7 +293,7 @@ Deno.serve(async (req) => {
 
         const { data: campaigns, error } = await query;
 
-        if (error) throw error;
+        throwIfError(error, 'List campaigns failed');
 
         return new Response(
           JSON.stringify({ success: true, campaigns }),
