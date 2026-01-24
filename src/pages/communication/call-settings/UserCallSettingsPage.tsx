@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Phone, AlertTriangle, CheckCircle2, XCircle, MinusCircle, Edit2, Users, PhoneOff, Search, RefreshCw } from "lucide-react";
+import { Phone, AlertTriangle, CheckCircle2, XCircle, MinusCircle, Edit2, Users, PhoneOff, Search, RefreshCw, PhoneCall } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TestRingButton } from "@/components/communication/TestRingButton";
 
 // E.164 phone format validation
 const isValidE164 = (phone: string): boolean => {
@@ -336,15 +337,25 @@ export default function UserCallSettingsPage() {
                         <CallStatusBadge status={status} />
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(user)}
-                          className="gap-1"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                          Edit
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          {status === "callable" && (
+                            <TestRingButton
+                              userId={user.user_id}
+                              variant="ghost"
+                              size="icon"
+                              label=""
+                            />
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(user)}
+                            className="gap-1"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                            Edit
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
