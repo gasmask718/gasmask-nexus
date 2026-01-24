@@ -23,7 +23,13 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action, campaign_id, business_id, data, approved_by }: CampaignRequest = await req.json();
+    const body: CampaignRequest = await req.json();
+    const action = body.action;
+    const campaign_id = body.campaign_id || null;
+    // Treat empty string as null to prevent UUID parse errors
+    const business_id = body.business_id && body.business_id.trim() !== '' ? body.business_id : null;
+    const data = body.data;
+    const approved_by = body.approved_by;
 
     switch (action) {
       case 'create': {
