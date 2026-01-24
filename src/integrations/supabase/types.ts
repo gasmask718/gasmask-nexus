@@ -1034,11 +1034,14 @@ export type Database = {
           business_id: string
           confidence_at_event: number | null
           created_at: string
+          decision_trace_id: string | null
           event_payload: Json
           event_severity: string
           event_type: string
           id: string
           is_immutable: boolean
+          prev_hash: string | null
+          row_hash: string | null
           session_id: string | null
           transcript_snapshot: string | null
           triggered_by: string | null
@@ -1050,11 +1053,14 @@ export type Database = {
           business_id: string
           confidence_at_event?: number | null
           created_at?: string
+          decision_trace_id?: string | null
           event_payload?: Json
           event_severity?: string
           event_type: string
           id?: string
           is_immutable?: boolean
+          prev_hash?: string | null
+          row_hash?: string | null
           session_id?: string | null
           transcript_snapshot?: string | null
           triggered_by?: string | null
@@ -1066,11 +1072,14 @@ export type Database = {
           business_id?: string
           confidence_at_event?: number | null
           created_at?: string
+          decision_trace_id?: string | null
           event_payload?: Json
           event_severity?: string
           event_type?: string
           id?: string
           is_immutable?: boolean
+          prev_hash?: string | null
+          row_hash?: string | null
           session_id?: string | null
           transcript_snapshot?: string | null
           triggered_by?: string | null
@@ -1106,10 +1115,13 @@ export type Database = {
           business_id: string | null
           confidence_timeline: Json | null
           created_at: string | null
+          decision_trace_id: string | null
           id: string
           intent_timeline: Json | null
           is_immutable: boolean | null
           payload: Json
+          prev_hash: string | null
+          row_hash: string | null
           sentiment_timeline: Json | null
           session_id: string | null
           transcript_at_event: string | null
@@ -1119,10 +1131,13 @@ export type Database = {
           business_id?: string | null
           confidence_timeline?: Json | null
           created_at?: string | null
+          decision_trace_id?: string | null
           id?: string
           intent_timeline?: Json | null
           is_immutable?: boolean | null
           payload: Json
+          prev_hash?: string | null
+          row_hash?: string | null
           sentiment_timeline?: Json | null
           session_id?: string | null
           transcript_at_event?: string | null
@@ -1132,10 +1147,13 @@ export type Database = {
           business_id?: string | null
           confidence_timeline?: Json | null
           created_at?: string | null
+          decision_trace_id?: string | null
           id?: string
           intent_timeline?: Json | null
           is_immutable?: boolean | null
           payload?: Json
+          prev_hash?: string | null
+          row_hash?: string | null
           sentiment_timeline?: Json | null
           session_id?: string | null
           transcript_at_event?: string | null
@@ -1415,10 +1433,13 @@ export type Database = {
           confidence_at_decision: number | null
           created_at: string | null
           decision_reason: string
+          decision_trace_id: string | null
           decision_type: string
           id: string
           intent_at_decision: string | null
+          prev_hash: string | null
           risk_level: string | null
+          row_hash: string | null
           rule_applied: string | null
           session_id: string | null
           transcript_snapshot: string | null
@@ -1430,10 +1451,13 @@ export type Database = {
           confidence_at_decision?: number | null
           created_at?: string | null
           decision_reason: string
+          decision_trace_id?: string | null
           decision_type: string
           id?: string
           intent_at_decision?: string | null
+          prev_hash?: string | null
           risk_level?: string | null
+          row_hash?: string | null
           rule_applied?: string | null
           session_id?: string | null
           transcript_snapshot?: string | null
@@ -1445,10 +1469,13 @@ export type Database = {
           confidence_at_decision?: number | null
           created_at?: string | null
           decision_reason?: string
+          decision_trace_id?: string | null
           decision_type?: string
           id?: string
           intent_at_decision?: string | null
+          prev_hash?: string | null
           risk_level?: string | null
+          row_hash?: string | null
           rule_applied?: string | null
           session_id?: string | null
           transcript_snapshot?: string | null
