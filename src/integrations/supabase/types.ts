@@ -1027,8 +1027,66 @@ export type Database = {
           },
         ]
       }
+      ai_audit_logs: {
+        Row: {
+          audit_type: string
+          business_id: string | null
+          confidence_timeline: Json | null
+          created_at: string | null
+          id: string
+          intent_timeline: Json | null
+          is_immutable: boolean | null
+          payload: Json
+          sentiment_timeline: Json | null
+          session_id: string | null
+          transcript_at_event: string | null
+        }
+        Insert: {
+          audit_type: string
+          business_id?: string | null
+          confidence_timeline?: Json | null
+          created_at?: string | null
+          id?: string
+          intent_timeline?: Json | null
+          is_immutable?: boolean | null
+          payload: Json
+          sentiment_timeline?: Json | null
+          session_id?: string | null
+          transcript_at_event?: string | null
+        }
+        Update: {
+          audit_type?: string
+          business_id?: string | null
+          confidence_timeline?: Json | null
+          created_at?: string | null
+          id?: string
+          intent_timeline?: Json | null
+          is_immutable?: boolean | null
+          payload?: Json
+          sentiment_timeline?: Json | null
+          session_id?: string | null
+          transcript_at_event?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_audit_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_audit_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_call_agent_config: {
         Row: {
+          ai_disclosure_script: string | null
           auto_downgrade_on_failure: boolean | null
           business_id: string
           canary_allowed_call_types: string[] | null
@@ -1036,9 +1094,18 @@ export type Database = {
           canary_kill_switch: boolean | null
           canary_max_concurrent: number | null
           confidence_threshold: number | null
+          consent_recording_enabled: boolean | null
           created_at: string | null
+          data_retention_days: number | null
           enabled: boolean | null
+          escape_phrases: string[] | null
+          high_risk_keywords: string[] | null
           id: string
+          live_kill_switch: boolean | null
+          live_max_override_rate: number | null
+          live_min_canary_days: number | null
+          live_mode_enabled: boolean | null
+          live_trust_threshold: number | null
           max_consecutive_failures: number | null
           mode: string | null
           require_callable_fallback: boolean | null
@@ -1046,6 +1113,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_disclosure_script?: string | null
           auto_downgrade_on_failure?: boolean | null
           business_id: string
           canary_allowed_call_types?: string[] | null
@@ -1053,9 +1121,18 @@ export type Database = {
           canary_kill_switch?: boolean | null
           canary_max_concurrent?: number | null
           confidence_threshold?: number | null
+          consent_recording_enabled?: boolean | null
           created_at?: string | null
+          data_retention_days?: number | null
           enabled?: boolean | null
+          escape_phrases?: string[] | null
+          high_risk_keywords?: string[] | null
           id?: string
+          live_kill_switch?: boolean | null
+          live_max_override_rate?: number | null
+          live_min_canary_days?: number | null
+          live_mode_enabled?: boolean | null
+          live_trust_threshold?: number | null
           max_consecutive_failures?: number | null
           mode?: string | null
           require_callable_fallback?: boolean | null
@@ -1063,6 +1140,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_disclosure_script?: string | null
           auto_downgrade_on_failure?: boolean | null
           business_id?: string
           canary_allowed_call_types?: string[] | null
@@ -1070,9 +1148,18 @@ export type Database = {
           canary_kill_switch?: boolean | null
           canary_max_concurrent?: number | null
           confidence_threshold?: number | null
+          consent_recording_enabled?: boolean | null
           created_at?: string | null
+          data_retention_days?: number | null
           enabled?: boolean | null
+          escape_phrases?: string[] | null
+          high_risk_keywords?: string[] | null
           id?: string
+          live_kill_switch?: boolean | null
+          live_max_override_rate?: number | null
+          live_min_canary_days?: number | null
+          live_mode_enabled?: boolean | null
+          live_trust_threshold?: number | null
           max_consecutive_failures?: number | null
           mode?: string | null
           require_callable_fallback?: boolean | null
@@ -1243,6 +1330,69 @@ export type Database = {
             columns: ["vertical_id"]
             isOneToOne: false
             referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_call_decisions: {
+        Row: {
+          active_thresholds: Json | null
+          business_id: string | null
+          caller_sentiment: string | null
+          confidence_at_decision: number | null
+          created_at: string | null
+          decision_reason: string
+          decision_type: string
+          id: string
+          intent_at_decision: string | null
+          risk_level: string | null
+          rule_applied: string | null
+          session_id: string | null
+          transcript_snapshot: string | null
+        }
+        Insert: {
+          active_thresholds?: Json | null
+          business_id?: string | null
+          caller_sentiment?: string | null
+          confidence_at_decision?: number | null
+          created_at?: string | null
+          decision_reason: string
+          decision_type: string
+          id?: string
+          intent_at_decision?: string | null
+          risk_level?: string | null
+          rule_applied?: string | null
+          session_id?: string | null
+          transcript_snapshot?: string | null
+        }
+        Update: {
+          active_thresholds?: Json | null
+          business_id?: string | null
+          caller_sentiment?: string | null
+          confidence_at_decision?: number | null
+          created_at?: string | null
+          decision_reason?: string
+          decision_type?: string
+          id?: string
+          intent_at_decision?: string | null
+          risk_level?: string | null
+          rule_applied?: string | null
+          session_id?: string | null
+          transcript_snapshot?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_call_decisions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_decisions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -2260,6 +2410,60 @@ export type Database = {
             columns: ["actioned_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_risk_events: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          escalation_executed: boolean | null
+          escalation_required: boolean | null
+          human_notified: boolean | null
+          id: string
+          previous_risk_level: string | null
+          risk_level: string
+          risk_triggers: string[] | null
+          session_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          escalation_executed?: boolean | null
+          escalation_required?: boolean | null
+          human_notified?: boolean | null
+          id?: string
+          previous_risk_level?: string | null
+          risk_level: string
+          risk_triggers?: string[] | null
+          session_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          escalation_executed?: boolean | null
+          escalation_required?: boolean | null
+          human_notified?: boolean | null
+          id?: string
+          previous_risk_level?: string | null
+          risk_level?: string
+          risk_triggers?: string[] | null
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_risk_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_risk_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -20156,6 +20360,50 @@ export type Database = {
         }
         Relationships: []
       }
+      mode_transition_logs: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          from_mode: string
+          id: string
+          to_mode: string
+          trigger_details: Json | null
+          trigger_reason: string
+          triggered_by: string | null
+          was_automatic: boolean | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          from_mode: string
+          id?: string
+          to_mode: string
+          trigger_details?: Json | null
+          trigger_reason: string
+          triggered_by?: string | null
+          was_automatic?: boolean | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          from_mode?: string
+          id?: string
+          to_mode?: string
+          trigger_details?: Json | null
+          trigger_reason?: string
+          triggered_by?: string | null
+          was_automatic?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mode_transition_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       moneyline_results: {
         Row: {
           actual_winner: string
@@ -25931,6 +26179,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      regulatory_exports: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          date_range_end: string | null
+          date_range_start: string | null
+          export_type: string
+          export_url: string | null
+          id: string
+          included_sessions: string[] | null
+          pii_redacted: boolean | null
+          requested_by: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          export_type: string
+          export_url?: string | null
+          id?: string
+          included_sessions?: string[] | null
+          pii_redacted?: boolean | null
+          requested_by?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          export_type?: string
+          export_url?: string | null
+          id?: string
+          included_sessions?: string[] | null
+          pii_redacted?: boolean | null
+          requested_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_exports_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reminders: {
         Row: {
