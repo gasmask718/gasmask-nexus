@@ -2514,6 +2514,104 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_learning_proposals: {
+        Row: {
+          affected_playbooks: string[] | null
+          affected_styles: string[] | null
+          affects_escalation: boolean | null
+          affects_routing: boolean | null
+          affects_speech: boolean | null
+          affects_timing: boolean | null
+          artifact_diff: Json | null
+          business_id: string | null
+          created_at: string
+          current_artifact: Json
+          description: string
+          evidence_summary: string | null
+          expected_benefit: string
+          expected_improvement_pct: number | null
+          id: string
+          is_immutable: boolean | null
+          proposal_hash: string | null
+          proposal_type: string
+          proposed_artifact: Json
+          risk_assessment: string
+          risk_level: string
+          source_calls: string[] | null
+          source_metrics: Json | null
+          source_techniques: string[] | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          affected_playbooks?: string[] | null
+          affected_styles?: string[] | null
+          affects_escalation?: boolean | null
+          affects_routing?: boolean | null
+          affects_speech?: boolean | null
+          affects_timing?: boolean | null
+          artifact_diff?: Json | null
+          business_id?: string | null
+          created_at?: string
+          current_artifact: Json
+          description: string
+          evidence_summary?: string | null
+          expected_benefit: string
+          expected_improvement_pct?: number | null
+          id?: string
+          is_immutable?: boolean | null
+          proposal_hash?: string | null
+          proposal_type: string
+          proposed_artifact: Json
+          risk_assessment: string
+          risk_level: string
+          source_calls?: string[] | null
+          source_metrics?: Json | null
+          source_techniques?: string[] | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          affected_playbooks?: string[] | null
+          affected_styles?: string[] | null
+          affects_escalation?: boolean | null
+          affects_routing?: boolean | null
+          affects_speech?: boolean | null
+          affects_timing?: boolean | null
+          artifact_diff?: Json | null
+          business_id?: string | null
+          created_at?: string
+          current_artifact?: Json
+          description?: string
+          evidence_summary?: string | null
+          expected_benefit?: string
+          expected_improvement_pct?: number | null
+          id?: string
+          is_immutable?: boolean | null
+          proposal_hash?: string | null
+          proposal_type?: string
+          proposed_artifact?: Json
+          risk_assessment?: string
+          risk_level?: string
+          source_calls?: string[] | null
+          source_metrics?: Json | null
+          source_techniques?: string[] | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_learning_proposals_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_live_authorizations: {
         Row: {
           accuracy_rate_at_approval: number | null
@@ -2764,6 +2862,119 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_promotions: {
+        Row: {
+          affected_artifact_id: string | null
+          affected_artifact_type: string
+          approval_id: string
+          business_id: string | null
+          created_at: string
+          elevated_sensitivity: boolean | null
+          expires_at: string | null
+          id: string
+          is_permanent: boolean | null
+          is_rolled_back: boolean | null
+          new_snapshot: Json
+          previous_snapshot: Json
+          previous_version_id: string | null
+          promoted_at: string
+          promotion_diff: Json
+          promotion_hash: string
+          promotion_scope: string
+          proposal_id: string
+          rollback_hash: string
+          rollback_reason: string | null
+          rolled_back_at: string | null
+          rolled_back_by: string | null
+          version_number: number
+          watch_mode_active: boolean | null
+          watch_mode_until: string | null
+        }
+        Insert: {
+          affected_artifact_id?: string | null
+          affected_artifact_type: string
+          approval_id: string
+          business_id?: string | null
+          created_at?: string
+          elevated_sensitivity?: boolean | null
+          expires_at?: string | null
+          id?: string
+          is_permanent?: boolean | null
+          is_rolled_back?: boolean | null
+          new_snapshot: Json
+          previous_snapshot: Json
+          previous_version_id?: string | null
+          promoted_at?: string
+          promotion_diff: Json
+          promotion_hash: string
+          promotion_scope: string
+          proposal_id: string
+          rollback_hash: string
+          rollback_reason?: string | null
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+          version_number: number
+          watch_mode_active?: boolean | null
+          watch_mode_until?: string | null
+        }
+        Update: {
+          affected_artifact_id?: string | null
+          affected_artifact_type?: string
+          approval_id?: string
+          business_id?: string | null
+          created_at?: string
+          elevated_sensitivity?: boolean | null
+          expires_at?: string | null
+          id?: string
+          is_permanent?: boolean | null
+          is_rolled_back?: boolean | null
+          new_snapshot?: Json
+          previous_snapshot?: Json
+          previous_version_id?: string | null
+          promoted_at?: string
+          promotion_diff?: Json
+          promotion_hash?: string
+          promotion_scope?: string
+          proposal_id?: string
+          rollback_hash?: string
+          rollback_reason?: string | null
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+          version_number?: number
+          watch_mode_active?: boolean | null
+          watch_mode_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_promotions_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_promotions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_promotions_previous_version_id_fkey"
+            columns: ["previous_version_id"]
+            isOneToOne: false
+            referencedRelation: "ai_promotions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_promotions_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "ai_learning_proposals"
             referencedColumns: ["id"]
           },
         ]
@@ -27334,6 +27545,210 @@ export type Database = {
         }
         Relationships: []
       }
+      promotion_approvals: {
+        Row: {
+          approval_payload: Json
+          approval_reason: string
+          approver_email: string
+          approver_id: string
+          approver_role: string
+          created_at: string
+          id: string
+          is_revoked: boolean | null
+          is_time_bounded: boolean | null
+          permission_scope: Json
+          proposal_id: string
+          revocation_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          rollback_contact: string | null
+          rollback_instructions: string
+          scope_description: string
+          signature_algorithm: string
+          signature_hash: string
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          approval_payload: Json
+          approval_reason: string
+          approver_email: string
+          approver_id: string
+          approver_role: string
+          created_at?: string
+          id?: string
+          is_revoked?: boolean | null
+          is_time_bounded?: boolean | null
+          permission_scope?: Json
+          proposal_id: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          rollback_contact?: string | null
+          rollback_instructions: string
+          scope_description: string
+          signature_algorithm?: string
+          signature_hash: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          approval_payload?: Json
+          approval_reason?: string
+          approver_email?: string
+          approver_id?: string
+          approver_role?: string
+          created_at?: string
+          id?: string
+          is_revoked?: boolean | null
+          is_time_bounded?: boolean | null
+          permission_scope?: Json
+          proposal_id?: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          rollback_contact?: string | null
+          rollback_instructions?: string
+          scope_description?: string
+          signature_algorithm?: string
+          signature_hash?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_approvals_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "ai_learning_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_sandbox_runs: {
+        Row: {
+          baseline_metrics: Json
+          completed_at: string | null
+          compliance_issues: string[] | null
+          confidence_variance: number | null
+          created_at: string
+          failure_modes_detected: string[] | null
+          failure_reason: string | null
+          id: string
+          improvement_achieved: boolean | null
+          improvement_pct: number | null
+          outcome_delta: Json | null
+          proposal_id: string
+          proposed_metrics: Json
+          regression_detected: boolean | null
+          run_hash: string | null
+          safety_violations: number | null
+          simulation_type: string
+          started_at: string
+          status: string
+          test_cases_count: number
+        }
+        Insert: {
+          baseline_metrics: Json
+          completed_at?: string | null
+          compliance_issues?: string[] | null
+          confidence_variance?: number | null
+          created_at?: string
+          failure_modes_detected?: string[] | null
+          failure_reason?: string | null
+          id?: string
+          improvement_achieved?: boolean | null
+          improvement_pct?: number | null
+          outcome_delta?: Json | null
+          proposal_id: string
+          proposed_metrics: Json
+          regression_detected?: boolean | null
+          run_hash?: string | null
+          safety_violations?: number | null
+          simulation_type: string
+          started_at?: string
+          status?: string
+          test_cases_count?: number
+        }
+        Update: {
+          baseline_metrics?: Json
+          completed_at?: string | null
+          compliance_issues?: string[] | null
+          confidence_variance?: number | null
+          created_at?: string
+          failure_modes_detected?: string[] | null
+          failure_reason?: string | null
+          id?: string
+          improvement_achieved?: boolean | null
+          improvement_pct?: number | null
+          outcome_delta?: Json | null
+          proposal_id?: string
+          proposed_metrics?: Json
+          regression_detected?: boolean | null
+          run_hash?: string | null
+          safety_violations?: number | null
+          simulation_type?: string
+          started_at?: string
+          status?: string
+          test_cases_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_sandbox_runs_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "ai_learning_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_watch_events: {
+        Row: {
+          action_taken: string | null
+          anomaly_score: number | null
+          created_at: string
+          drift_detected: boolean | null
+          event_type: string
+          id: string
+          metrics_snapshot: Json
+          promotion_id: string
+          severity: string
+          triggered_rollback: boolean | null
+        }
+        Insert: {
+          action_taken?: string | null
+          anomaly_score?: number | null
+          created_at?: string
+          drift_detected?: boolean | null
+          event_type: string
+          id?: string
+          metrics_snapshot?: Json
+          promotion_id: string
+          severity?: string
+          triggered_rollback?: boolean | null
+        }
+        Update: {
+          action_taken?: string | null
+          anomaly_score?: number | null
+          created_at?: string
+          drift_detected?: boolean | null
+          event_type?: string
+          id?: string
+          metrics_snapshot?: Json
+          promotion_id?: string
+          severity?: string
+          triggered_rollback?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_watch_events_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "ai_promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proofs: {
         Row: {
           business_id: string
@@ -29533,6 +29948,56 @@ export type Database = {
             columns: ["prev_evaluation_id"]
             isOneToOne: false
             referencedRelation: "sentinel_evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sentinel_promotion_gates: {
+        Row: {
+          active_containments: number
+          baseline_stable_hours: number | null
+          created_at: string
+          evaluation_snapshot: Json
+          gate_passed: boolean
+          id: string
+          proposal_id: string
+          rejection_reasons: string[] | null
+          required_stable_hours: number
+          sentinel_status: string
+          unresolved_drifts: number
+        }
+        Insert: {
+          active_containments?: number
+          baseline_stable_hours?: number | null
+          created_at?: string
+          evaluation_snapshot: Json
+          gate_passed: boolean
+          id?: string
+          proposal_id: string
+          rejection_reasons?: string[] | null
+          required_stable_hours?: number
+          sentinel_status: string
+          unresolved_drifts?: number
+        }
+        Update: {
+          active_containments?: number
+          baseline_stable_hours?: number | null
+          created_at?: string
+          evaluation_snapshot?: Json
+          gate_passed?: boolean
+          id?: string
+          proposal_id?: string
+          rejection_reasons?: string[] | null
+          required_stable_hours?: number
+          sentinel_status?: string
+          unresolved_drifts?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sentinel_promotion_gates_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "ai_learning_proposals"
             referencedColumns: ["id"]
           },
         ]
