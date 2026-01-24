@@ -73,7 +73,7 @@ const handler = async (req: Request): Promise<Response> => {
     const {
       campaign_id,
       campaign_run_id,
-      target_phone,
+      target_phone: rawTargetPhone,
       target_name,
       target_entity_type,
       target_entity_id,
@@ -82,6 +82,9 @@ const handler = async (req: Request): Promise<Response> => {
       execution_mode,
       is_test_call = false
     } = body;
+    
+    // Support both target_phone and phone_number for backwards compatibility
+    const target_phone = rawTargetPhone || (body as any).phone_number;
 
     const gateChecks: GateCheck[] = [];
     let allGatesPassed = true;
@@ -379,9 +382,14 @@ const handler = async (req: Request): Promise<Response> => {
     // =====================================================
     // RETURN SUCCESS WITH SESSION INFO
     // =====================================================
+    console.log(`✅ Test call session created: ${session.id}`);
+    
     return new Response(
       JSON.stringify({
         success: true,
+        message: is_test_call 
+          ? "✅ Test call simulation complete. Session created and all governance gates passed." 
+          : "Call session created successfully.",
         session_id: session.id,
         campaign_id,
         campaign_run_id,
@@ -389,9 +397,19 @@ const handler = async (req: Request): Promise<Response> => {
         is_test_call,
         disclosure_required: true,
         disclosure_text: disclosureText,
-        playbook_id,
+        playbook_id: validatedPlaybookId,
         gate_checks: gateChecks,
-        next_steps: [
+        artifacts_created: {
+          session: session.id,
+          campaign_run: campaign_run_id,
+          gate_log: true
+        },
+        next_steps: is_test_call ? [
+          "✅ Session created (no phone call in test mode)",
+          "✅ Governance gates passed",
+          "✅ Disclosure text prepared",
+          "Next: Try Canary mode when ready for real calls"
+        ] : [
           "1. Initiate call via Twilio",
           "2. Speak disclosure FIRST",
           "3. Log disclosure completion",
