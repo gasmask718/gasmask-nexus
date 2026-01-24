@@ -178,6 +178,7 @@ import DealsSalesPage from '@/pages/communication/deals/DealsSalesPage';
 import FollowUpManagerPage from '@/pages/communication/followups/FollowUpManagerPage';
 import UnifiedInboxV3Page from '@/pages/communication/inbox/UnifiedInboxV3Page';
 import PlaybooksManagement from '@/pages/communication/PlaybooksManagement';
+import ShadowModePage from '@/pages/communication/ShadowModePage';
 // Legacy Communication imports (kept for other routes)
 import CommunicationOverview from '@/pages/communication/CommunicationOverview';
 import CommunicationCampaigns from '@/pages/communication/CommunicationCampaigns';
