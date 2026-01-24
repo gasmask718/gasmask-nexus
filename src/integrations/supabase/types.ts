@@ -8455,6 +8455,170 @@ export type Database = {
           },
         ]
       }
+      call_state_machine: {
+        Row: {
+          active_speaker: string | null
+          ai_speech_allowed: boolean
+          business_id: string
+          confidence_at_state: number | null
+          created_at: string
+          current_state: Database["public"]["Enums"]["call_state"]
+          human_speech_active: boolean
+          id: string
+          lock_reason: string | null
+          previous_state: Database["public"]["Enums"]["call_state"] | null
+          session_id: string
+          state_locked_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          active_speaker?: string | null
+          ai_speech_allowed?: boolean
+          business_id: string
+          confidence_at_state?: number | null
+          created_at?: string
+          current_state?: Database["public"]["Enums"]["call_state"]
+          human_speech_active?: boolean
+          id?: string
+          lock_reason?: string | null
+          previous_state?: Database["public"]["Enums"]["call_state"] | null
+          session_id: string
+          state_locked_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active_speaker?: string | null
+          ai_speech_allowed?: boolean
+          business_id?: string
+          confidence_at_state?: number | null
+          created_at?: string
+          current_state?: Database["public"]["Enums"]["call_state"]
+          human_speech_active?: boolean
+          id?: string
+          lock_reason?: string | null
+          previous_state?: Database["public"]["Enums"]["call_state"] | null
+          session_id?: string
+          state_locked_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_state_machine_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_state_machine_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_state_transition_rules: {
+        Row: {
+          allowed: boolean
+          blocks_ai_speech: boolean | null
+          created_at: string
+          description: string | null
+          from_state: Database["public"]["Enums"]["call_state"]
+          id: string
+          priority: number | null
+          requires_condition: string | null
+          requires_human: boolean | null
+          to_state: Database["public"]["Enums"]["call_state"]
+        }
+        Insert: {
+          allowed?: boolean
+          blocks_ai_speech?: boolean | null
+          created_at?: string
+          description?: string | null
+          from_state: Database["public"]["Enums"]["call_state"]
+          id?: string
+          priority?: number | null
+          requires_condition?: string | null
+          requires_human?: boolean | null
+          to_state: Database["public"]["Enums"]["call_state"]
+        }
+        Update: {
+          allowed?: boolean
+          blocks_ai_speech?: boolean | null
+          created_at?: string
+          description?: string | null
+          from_state?: Database["public"]["Enums"]["call_state"]
+          id?: string
+          priority?: number | null
+          requires_condition?: string | null
+          requires_human?: boolean | null
+          to_state?: Database["public"]["Enums"]["call_state"]
+        }
+        Relationships: []
+      }
+      call_state_transitions: {
+        Row: {
+          ai_was_speaking: boolean | null
+          business_id: string
+          confidence_at_transition: number | null
+          created_at: string
+          from_state: Database["public"]["Enums"]["call_state"] | null
+          id: string
+          latency_ms: number | null
+          prev_hash: string | null
+          row_hash: string | null
+          session_id: string
+          speech_interrupted: boolean | null
+          to_state: Database["public"]["Enums"]["call_state"]
+          transition_trigger: string
+          trigger_details: Json | null
+          triggered_by: string | null
+        }
+        Insert: {
+          ai_was_speaking?: boolean | null
+          business_id: string
+          confidence_at_transition?: number | null
+          created_at?: string
+          from_state?: Database["public"]["Enums"]["call_state"] | null
+          id?: string
+          latency_ms?: number | null
+          prev_hash?: string | null
+          row_hash?: string | null
+          session_id: string
+          speech_interrupted?: boolean | null
+          to_state: Database["public"]["Enums"]["call_state"]
+          transition_trigger: string
+          trigger_details?: Json | null
+          triggered_by?: string | null
+        }
+        Update: {
+          ai_was_speaking?: boolean | null
+          business_id?: string
+          confidence_at_transition?: number | null
+          created_at?: string
+          from_state?: Database["public"]["Enums"]["call_state"] | null
+          id?: string
+          latency_ms?: number | null
+          prev_hash?: string | null
+          row_hash?: string | null
+          session_id?: string
+          speech_interrupted?: boolean | null
+          to_state?: Database["public"]["Enums"]["call_state"]
+          transition_trigger?: string
+          trigger_details?: Json | null
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_state_transitions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_messages: {
         Row: {
           campaign_id: string
@@ -37743,6 +37907,15 @@ export type Database = {
         | "decision_maker"
         | "other"
       brand_type: "GasMask" | "HotMama" | "GrabbaRUs" | "HotScalati"
+      call_state:
+        | "ringing"
+        | "ai_listening"
+        | "ai_speaking"
+        | "handoff_pending"
+        | "human_active"
+        | "ai_muted"
+        | "escalated"
+        | "ended"
       commission_dispute_status:
         | "submitted"
         | "under_review"
@@ -38122,6 +38295,16 @@ export const Constants = {
         "other",
       ],
       brand_type: ["GasMask", "HotMama", "GrabbaRUs", "HotScalati"],
+      call_state: [
+        "ringing",
+        "ai_listening",
+        "ai_speaking",
+        "handoff_pending",
+        "human_active",
+        "ai_muted",
+        "escalated",
+        "ended",
+      ],
       commission_dispute_status: [
         "submitted",
         "under_review",
