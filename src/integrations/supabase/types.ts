@@ -2253,6 +2253,163 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_graduation_events: {
+        Row: {
+          approval_notes: string | null
+          approved_by: string | null
+          business_id: string
+          calibration_data: Json | null
+          created_at: string
+          decision_trace_id: string | null
+          event_type: string
+          from_mode: string
+          id: string
+          is_reversible: boolean | null
+          requested_by: string | null
+          reversal_reason: string | null
+          reversed_at: string | null
+          reversed_by: string | null
+          thresholds_checked: Json | null
+          thresholds_passed: boolean
+          to_mode: string
+          trigger_reason: string
+          trust_score_at_event: number | null
+        }
+        Insert: {
+          approval_notes?: string | null
+          approved_by?: string | null
+          business_id: string
+          calibration_data?: Json | null
+          created_at?: string
+          decision_trace_id?: string | null
+          event_type: string
+          from_mode: string
+          id?: string
+          is_reversible?: boolean | null
+          requested_by?: string | null
+          reversal_reason?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
+          thresholds_checked?: Json | null
+          thresholds_passed: boolean
+          to_mode: string
+          trigger_reason: string
+          trust_score_at_event?: number | null
+        }
+        Update: {
+          approval_notes?: string | null
+          approved_by?: string | null
+          business_id?: string
+          calibration_data?: Json | null
+          created_at?: string
+          decision_trace_id?: string | null
+          event_type?: string
+          from_mode?: string
+          id?: string
+          is_reversible?: boolean | null
+          requested_by?: string | null
+          reversal_reason?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
+          thresholds_checked?: Json | null
+          thresholds_passed?: boolean
+          to_mode?: string
+          trigger_reason?: string
+          trust_score_at_event?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_graduation_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_graduation_thresholds: {
+        Row: {
+          assisted_to_canary_min_acceptance_rate: number | null
+          assisted_to_canary_min_days: number | null
+          assisted_to_canary_min_suggestions: number | null
+          assisted_to_canary_min_trust_score: number | null
+          business_id: string
+          canary_to_live_max_escalation_rate: number | null
+          canary_to_live_min_calls: number | null
+          canary_to_live_min_days: number | null
+          canary_to_live_min_success_rate: number | null
+          canary_to_live_min_trust_score: number | null
+          created_at: string
+          demotion_consecutive_failures: number | null
+          demotion_trust_score_floor: number | null
+          demotion_violation_threshold: number | null
+          id: string
+          require_human_approval_for_demotion: boolean | null
+          require_human_approval_for_promotion: boolean | null
+          shadow_to_assisted_max_violations: number | null
+          shadow_to_assisted_min_accuracy: number | null
+          shadow_to_assisted_min_days: number | null
+          shadow_to_assisted_min_predictions: number | null
+          updated_at: string
+        }
+        Insert: {
+          assisted_to_canary_min_acceptance_rate?: number | null
+          assisted_to_canary_min_days?: number | null
+          assisted_to_canary_min_suggestions?: number | null
+          assisted_to_canary_min_trust_score?: number | null
+          business_id: string
+          canary_to_live_max_escalation_rate?: number | null
+          canary_to_live_min_calls?: number | null
+          canary_to_live_min_days?: number | null
+          canary_to_live_min_success_rate?: number | null
+          canary_to_live_min_trust_score?: number | null
+          created_at?: string
+          demotion_consecutive_failures?: number | null
+          demotion_trust_score_floor?: number | null
+          demotion_violation_threshold?: number | null
+          id?: string
+          require_human_approval_for_demotion?: boolean | null
+          require_human_approval_for_promotion?: boolean | null
+          shadow_to_assisted_max_violations?: number | null
+          shadow_to_assisted_min_accuracy?: number | null
+          shadow_to_assisted_min_days?: number | null
+          shadow_to_assisted_min_predictions?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assisted_to_canary_min_acceptance_rate?: number | null
+          assisted_to_canary_min_days?: number | null
+          assisted_to_canary_min_suggestions?: number | null
+          assisted_to_canary_min_trust_score?: number | null
+          business_id?: string
+          canary_to_live_max_escalation_rate?: number | null
+          canary_to_live_min_calls?: number | null
+          canary_to_live_min_days?: number | null
+          canary_to_live_min_success_rate?: number | null
+          canary_to_live_min_trust_score?: number | null
+          created_at?: string
+          demotion_consecutive_failures?: number | null
+          demotion_trust_score_floor?: number | null
+          demotion_violation_threshold?: number | null
+          id?: string
+          require_human_approval_for_demotion?: boolean | null
+          require_human_approval_for_promotion?: boolean | null
+          shadow_to_assisted_max_violations?: number | null
+          shadow_to_assisted_min_accuracy?: number | null
+          shadow_to_assisted_min_days?: number | null
+          shadow_to_assisted_min_predictions?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_graduation_thresholds_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_kill_switch_state: {
         Row: {
           activated_at: string | null
@@ -2867,6 +3024,87 @@ export type Database = {
           },
         ]
       }
+      ai_suggestion_logs: {
+        Row: {
+          acted_at: string | null
+          business_id: string
+          confidence_score: number | null
+          created_at: string
+          detected_intent: string | null
+          id: string
+          operator_action: string | null
+          operator_feedback: string | null
+          operator_id: string | null
+          operator_response: string | null
+          response_time_ms: number | null
+          risk_flags: string[] | null
+          session_id: string | null
+          suggestion_content: string
+          suggestion_reasoning: string | null
+          suggestion_type: string
+          transcript_at_suggestion: string | null
+          was_helpful: boolean | null
+          would_have_been_correct: boolean | null
+        }
+        Insert: {
+          acted_at?: string | null
+          business_id: string
+          confidence_score?: number | null
+          created_at?: string
+          detected_intent?: string | null
+          id?: string
+          operator_action?: string | null
+          operator_feedback?: string | null
+          operator_id?: string | null
+          operator_response?: string | null
+          response_time_ms?: number | null
+          risk_flags?: string[] | null
+          session_id?: string | null
+          suggestion_content: string
+          suggestion_reasoning?: string | null
+          suggestion_type: string
+          transcript_at_suggestion?: string | null
+          was_helpful?: boolean | null
+          would_have_been_correct?: boolean | null
+        }
+        Update: {
+          acted_at?: string | null
+          business_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          detected_intent?: string | null
+          id?: string
+          operator_action?: string | null
+          operator_feedback?: string | null
+          operator_id?: string | null
+          operator_response?: string | null
+          response_time_ms?: number | null
+          risk_flags?: string[] | null
+          session_id?: string | null
+          suggestion_content?: string
+          suggestion_reasoning?: string | null
+          suggestion_type?: string
+          transcript_at_suggestion?: string | null
+          was_helpful?: boolean | null
+          would_have_been_correct?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_suggestion_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_suggestion_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_system_health: {
         Row: {
           communication_health_score: number | null
@@ -3027,6 +3265,94 @@ export type Database = {
             columns: ["route_id"]
             isOneToOne: false
             referencedRelation: "inbound_call_routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_vs_human_diff_logs: {
+        Row: {
+          ai_confidence: number | null
+          ai_decision: string
+          ai_reasoning: string | null
+          business_id: string
+          comparison_type: string
+          created_at: string
+          human_context: string | null
+          human_decision: string
+          id: string
+          impact_severity: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          session_id: string | null
+          shadow_prediction_id: string | null
+          verdict: string
+          verdict_reason: string | null
+          would_have_caused_escalation: boolean | null
+          would_have_violated_compliance: boolean | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_decision: string
+          ai_reasoning?: string | null
+          business_id: string
+          comparison_type: string
+          created_at?: string
+          human_context?: string | null
+          human_decision: string
+          id?: string
+          impact_severity?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          session_id?: string | null
+          shadow_prediction_id?: string | null
+          verdict: string
+          verdict_reason?: string | null
+          would_have_caused_escalation?: boolean | null
+          would_have_violated_compliance?: boolean | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_decision?: string
+          ai_reasoning?: string | null
+          business_id?: string
+          comparison_type?: string
+          created_at?: string
+          human_context?: string | null
+          human_decision?: string
+          id?: string
+          impact_severity?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          session_id?: string | null
+          shadow_prediction_id?: string | null
+          verdict?: string
+          verdict_reason?: string | null
+          would_have_caused_escalation?: boolean | null
+          would_have_violated_compliance?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_vs_human_diff_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_vs_human_diff_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_vs_human_diff_logs_shadow_prediction_id_fkey"
+            columns: ["shadow_prediction_id"]
+            isOneToOne: false
+            referencedRelation: "call_shadow_predictions"
             referencedColumns: ["id"]
           },
         ]
@@ -8609,6 +8935,96 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_shadow_predictions: {
+        Row: {
+          business_id: string
+          comparison_notes: string | null
+          confidence_score: number
+          created_at: string
+          human_actual_action: string | null
+          human_actual_response: string | null
+          human_escalated: boolean | null
+          human_operator_id: string | null
+          human_response_timestamp: string | null
+          id: string
+          predicted_escalation: boolean | null
+          predicted_intent: string
+          predicted_next_action: string | null
+          predicted_response: string
+          predicted_route: string | null
+          prediction_timestamp: string
+          processing_time_ms: number | null
+          reasoning: string | null
+          risk_flags: string[] | null
+          session_id: string | null
+          transcript_snapshot: string | null
+          would_have_matched: boolean | null
+        }
+        Insert: {
+          business_id: string
+          comparison_notes?: string | null
+          confidence_score: number
+          created_at?: string
+          human_actual_action?: string | null
+          human_actual_response?: string | null
+          human_escalated?: boolean | null
+          human_operator_id?: string | null
+          human_response_timestamp?: string | null
+          id?: string
+          predicted_escalation?: boolean | null
+          predicted_intent: string
+          predicted_next_action?: string | null
+          predicted_response: string
+          predicted_route?: string | null
+          prediction_timestamp?: string
+          processing_time_ms?: number | null
+          reasoning?: string | null
+          risk_flags?: string[] | null
+          session_id?: string | null
+          transcript_snapshot?: string | null
+          would_have_matched?: boolean | null
+        }
+        Update: {
+          business_id?: string
+          comparison_notes?: string | null
+          confidence_score?: number
+          created_at?: string
+          human_actual_action?: string | null
+          human_actual_response?: string | null
+          human_escalated?: boolean | null
+          human_operator_id?: string | null
+          human_response_timestamp?: string | null
+          id?: string
+          predicted_escalation?: boolean | null
+          predicted_intent?: string
+          predicted_next_action?: string | null
+          predicted_response?: string
+          predicted_route?: string | null
+          prediction_timestamp?: string
+          processing_time_ms?: number | null
+          reasoning?: string | null
+          risk_flags?: string[] | null
+          session_id?: string | null
+          transcript_snapshot?: string | null
+          would_have_matched?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_shadow_predictions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_shadow_predictions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -31794,6 +32210,89 @@ export type Database = {
             columns: ["module_id"]
             isOneToOne: false
             referencedRelation: "training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trust_calibration_scores: {
+        Row: {
+          ai_would_have_been_better: number | null
+          ai_would_have_been_worse: number | null
+          ai_would_have_matched: number | null
+          ai_would_have_violated_rules: number | null
+          business_id: string
+          compliance_adherence: number | null
+          consecutive_bad_predictions: number | null
+          consecutive_good_predictions: number | null
+          created_at: string
+          efficiency_score: number | null
+          escalation_timing: number | null
+          id: string
+          last_calibrated_at: string | null
+          overall_trust_score: number | null
+          resolution_accuracy: number | null
+          scope_id: string | null
+          scope_type: string
+          score_trend: string | null
+          total_comparisons: number | null
+          updated_at: string
+          window_end: string | null
+          window_start: string | null
+        }
+        Insert: {
+          ai_would_have_been_better?: number | null
+          ai_would_have_been_worse?: number | null
+          ai_would_have_matched?: number | null
+          ai_would_have_violated_rules?: number | null
+          business_id: string
+          compliance_adherence?: number | null
+          consecutive_bad_predictions?: number | null
+          consecutive_good_predictions?: number | null
+          created_at?: string
+          efficiency_score?: number | null
+          escalation_timing?: number | null
+          id?: string
+          last_calibrated_at?: string | null
+          overall_trust_score?: number | null
+          resolution_accuracy?: number | null
+          scope_id?: string | null
+          scope_type: string
+          score_trend?: string | null
+          total_comparisons?: number | null
+          updated_at?: string
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          ai_would_have_been_better?: number | null
+          ai_would_have_been_worse?: number | null
+          ai_would_have_matched?: number | null
+          ai_would_have_violated_rules?: number | null
+          business_id?: string
+          compliance_adherence?: number | null
+          consecutive_bad_predictions?: number | null
+          consecutive_good_predictions?: number | null
+          created_at?: string
+          efficiency_score?: number | null
+          escalation_timing?: number | null
+          id?: string
+          last_calibrated_at?: string | null
+          overall_trust_score?: number | null
+          resolution_accuracy?: number | null
+          scope_id?: string | null
+          scope_type?: string
+          score_trend?: string | null
+          total_comparisons?: number | null
+          updated_at?: string
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trust_calibration_scores_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]

@@ -1215,6 +1215,7 @@ export default function AppRoutes() {
           <Route path="unresolved-queue" element={<UnresolvedCallsQueuePage />} />
           <Route path="ai-call-agent" element={<AICallAgentDashboardPage />} />
           <Route path="playbooks" element={<PlaybooksManagement />} />
+          <Route path="shadow-mode" element={<ShadowModePage />} />
         </Route>
 
         <Route path="/messages" element={<MessagesPage />} />
