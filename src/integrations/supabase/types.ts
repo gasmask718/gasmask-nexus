@@ -1027,6 +1027,79 @@ export type Database = {
           },
         ]
       }
+      ai_audit_events: {
+        Row: {
+          actor_user_id: string | null
+          authorization_id: string | null
+          business_id: string
+          confidence_at_event: number | null
+          created_at: string
+          event_payload: Json
+          event_severity: string
+          event_type: string
+          id: string
+          is_immutable: boolean
+          session_id: string | null
+          transcript_snapshot: string | null
+          triggered_by: string | null
+          trust_score_at_event: number | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          authorization_id?: string | null
+          business_id: string
+          confidence_at_event?: number | null
+          created_at?: string
+          event_payload?: Json
+          event_severity?: string
+          event_type: string
+          id?: string
+          is_immutable?: boolean
+          session_id?: string | null
+          transcript_snapshot?: string | null
+          triggered_by?: string | null
+          trust_score_at_event?: number | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          authorization_id?: string | null
+          business_id?: string
+          confidence_at_event?: number | null
+          created_at?: string
+          event_payload?: Json
+          event_severity?: string
+          event_type?: string
+          id?: string
+          is_immutable?: boolean
+          session_id?: string | null
+          transcript_snapshot?: string | null
+          triggered_by?: string | null
+          trust_score_at_event?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_audit_events_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "ai_live_authorizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_audit_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_audit_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_audit_logs: {
         Row: {
           audit_type: string
@@ -2127,6 +2200,62 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_kill_switch_state: {
+        Row: {
+          activated_at: string | null
+          activated_by: string | null
+          activation_reason: string | null
+          auto_deactivate_at: string | null
+          business_id: string | null
+          created_at: string
+          deactivated_at: string | null
+          deactivated_by: string | null
+          id: string
+          is_active: boolean
+          route_id: string | null
+          scope: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          activated_by?: string | null
+          activation_reason?: string | null
+          auto_deactivate_at?: string | null
+          business_id?: string | null
+          created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          id?: string
+          is_active?: boolean
+          route_id?: string | null
+          scope: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          activated_by?: string | null
+          activation_reason?: string | null
+          auto_deactivate_at?: string | null
+          business_id?: string | null
+          created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          id?: string
+          is_active?: boolean
+          route_id?: string | null
+          scope?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_kill_switch_state_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_kpi_snapshots: {
         Row: {
           active_stores: number | null
@@ -2174,6 +2303,80 @@ export type Database = {
           unpaid_invoices?: number | null
         }
         Relationships: []
+      }
+      ai_live_authorizations: {
+        Row: {
+          accuracy_rate_at_approval: number | null
+          authorized_at: string | null
+          authorized_by: string | null
+          auto_renew: boolean | null
+          business_id: string
+          canary_calls_evaluated: number | null
+          canary_days_completed: number | null
+          created_at: string
+          evidence_snapshot: Json
+          expires_at: string | null
+          id: string
+          justification: string
+          revocation_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          route_id: string | null
+          status: string
+          trust_score_at_approval: number | null
+          updated_at: string
+        }
+        Insert: {
+          accuracy_rate_at_approval?: number | null
+          authorized_at?: string | null
+          authorized_by?: string | null
+          auto_renew?: boolean | null
+          business_id: string
+          canary_calls_evaluated?: number | null
+          canary_days_completed?: number | null
+          created_at?: string
+          evidence_snapshot?: Json
+          expires_at?: string | null
+          id?: string
+          justification: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          route_id?: string | null
+          status?: string
+          trust_score_at_approval?: number | null
+          updated_at?: string
+        }
+        Update: {
+          accuracy_rate_at_approval?: number | null
+          authorized_at?: string | null
+          authorized_by?: string | null
+          auto_renew?: boolean | null
+          business_id?: string
+          canary_calls_evaluated?: number | null
+          canary_days_completed?: number | null
+          created_at?: string
+          evidence_snapshot?: Json
+          expires_at?: string | null
+          id?: string
+          justification?: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          route_id?: string | null
+          status?: string
+          trust_score_at_approval?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_live_authorizations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_ops_log: {
         Row: {
@@ -37267,6 +37470,10 @@ export type Database = {
       is_elevated_user:
         | { Args: never; Returns: boolean }
         | { Args: { _user_id: string }; Returns: boolean }
+      is_live_mode_authorized: {
+        Args: { p_business_id: string; p_route_id?: string }
+        Returns: boolean
+      }
       is_org_member: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
@@ -37278,6 +37485,22 @@ export type Database = {
       }
       is_simulation_mode: { Args: never; Returns: boolean }
       is_va: { Args: { _user_id: string }; Returns: boolean }
+      log_ai_audit_event: {
+        Args: {
+          p_actor_user_id?: string
+          p_authorization_id?: string
+          p_business_id: string
+          p_confidence?: number
+          p_event_payload?: Json
+          p_event_severity?: string
+          p_event_type: string
+          p_session_id?: string
+          p_transcript_snapshot?: string
+          p_triggered_by?: string
+          p_trust_score?: number
+        }
+        Returns: string
+      }
       log_audit_event: {
         Args: {
           p_action: string
