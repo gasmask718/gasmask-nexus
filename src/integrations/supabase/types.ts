@@ -9404,6 +9404,160 @@ export type Database = {
           },
         ]
       }
+      campaign_audit_frames: {
+        Row: {
+          campaign_state: Json
+          confidence_at_frame: number | null
+          created_at: string
+          decision_id: string | null
+          drift_at_frame: number | null
+          frame_number: number
+          frame_type: string
+          id: string
+          is_immutable: boolean | null
+          policy_state: Json | null
+          prev_hash: string | null
+          row_hash: string
+          run_id: string
+          sentinel_state: Json | null
+        }
+        Insert: {
+          campaign_state: Json
+          confidence_at_frame?: number | null
+          created_at?: string
+          decision_id?: string | null
+          drift_at_frame?: number | null
+          frame_number: number
+          frame_type: string
+          id?: string
+          is_immutable?: boolean | null
+          policy_state?: Json | null
+          prev_hash?: string | null
+          row_hash: string
+          run_id: string
+          sentinel_state?: Json | null
+        }
+        Update: {
+          campaign_state?: Json
+          confidence_at_frame?: number | null
+          created_at?: string
+          decision_id?: string | null
+          drift_at_frame?: number | null
+          frame_number?: number
+          frame_type?: string
+          id?: string
+          is_immutable?: boolean | null
+          policy_state?: Json | null
+          prev_hash?: string | null
+          row_hash?: string
+          run_id?: string
+          sentinel_state?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_audit_frames_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_audit_frames_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_decisions: {
+        Row: {
+          action_plan: Json | null
+          approved_at: string | null
+          approved_by: string | null
+          campaign_id: string | null
+          confidence_score: number
+          context_signals: Json | null
+          created_at: string
+          decision_reason: string
+          decision_type: string
+          drift_score: number | null
+          id: string
+          performance_metrics: Json | null
+          policy_id: string | null
+          prev_hash: string | null
+          requires_human_approval: boolean | null
+          risk_flags: string[] | null
+          row_hash: string | null
+          run_id: string
+          sentinel_status: string | null
+        }
+        Insert: {
+          action_plan?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          campaign_id?: string | null
+          confidence_score: number
+          context_signals?: Json | null
+          created_at?: string
+          decision_reason: string
+          decision_type: string
+          drift_score?: number | null
+          id?: string
+          performance_metrics?: Json | null
+          policy_id?: string | null
+          prev_hash?: string | null
+          requires_human_approval?: boolean | null
+          risk_flags?: string[] | null
+          row_hash?: string | null
+          run_id: string
+          sentinel_status?: string | null
+        }
+        Update: {
+          action_plan?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          campaign_id?: string | null
+          confidence_score?: number
+          context_signals?: Json | null
+          created_at?: string
+          decision_reason?: string
+          decision_type?: string
+          drift_score?: number | null
+          id?: string
+          performance_metrics?: Json | null
+          policy_id?: string | null
+          prev_hash?: string | null
+          requires_human_approval?: boolean | null
+          risk_flags?: string[] | null
+          row_hash?: string | null
+          run_id?: string
+          sentinel_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_decisions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_decisions_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "executive_policies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_decisions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_kill_switches: {
         Row: {
           auto_trigger_complaint_count: number | null
@@ -9582,6 +9736,112 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_runs: {
+        Row: {
+          actual_end: string | null
+          actual_start: string | null
+          business_id: string | null
+          campaign_id: string
+          contacts_attempted: number | null
+          contacts_reached: number | null
+          conversions: number | null
+          created_at: string
+          decision_engine_version: string | null
+          escalations: number | null
+          final_confidence: number | null
+          id: string
+          initial_confidence: number | null
+          opt_outs: number | null
+          policy_id: string
+          rollback_at: string | null
+          rollback_reason: string | null
+          rollback_triggered: boolean | null
+          run_number: number
+          scheduled_end: string | null
+          scheduled_start: string | null
+          status: string
+          total_targets: number | null
+          updated_at: string
+          violations: number | null
+        }
+        Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
+          business_id?: string | null
+          campaign_id: string
+          contacts_attempted?: number | null
+          contacts_reached?: number | null
+          conversions?: number | null
+          created_at?: string
+          decision_engine_version?: string | null
+          escalations?: number | null
+          final_confidence?: number | null
+          id?: string
+          initial_confidence?: number | null
+          opt_outs?: number | null
+          policy_id: string
+          rollback_at?: string | null
+          rollback_reason?: string | null
+          rollback_triggered?: boolean | null
+          run_number?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          status?: string
+          total_targets?: number | null
+          updated_at?: string
+          violations?: number | null
+        }
+        Update: {
+          actual_end?: string | null
+          actual_start?: string | null
+          business_id?: string | null
+          campaign_id?: string
+          contacts_attempted?: number | null
+          contacts_reached?: number | null
+          conversions?: number | null
+          created_at?: string
+          decision_engine_version?: string | null
+          escalations?: number | null
+          final_confidence?: number | null
+          id?: string
+          initial_confidence?: number | null
+          opt_outs?: number | null
+          policy_id?: string
+          rollback_at?: string | null
+          rollback_reason?: string | null
+          rollback_triggered?: boolean | null
+          run_number?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          status?: string
+          total_targets?: number | null
+          updated_at?: string
+          violations?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_runs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_runs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_runs_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "executive_policies"
             referencedColumns: ["id"]
           },
         ]
@@ -16148,6 +16408,178 @@ export type Database = {
           uploaded_by?: string | null
         }
         Relationships: []
+      }
+      executive_decision_engine: {
+        Row: {
+          active_campaign_ids: string[] | null
+          active_policy_ids: string[] | null
+          active_run_ids: string[] | null
+          business_id: string | null
+          confidence_floor: number | null
+          created_at: string
+          current_trust_score: number | null
+          drift_ceiling: number | null
+          escalations_today: number | null
+          human_override_active: boolean | null
+          id: string
+          mode: string
+          override_by: string | null
+          override_expires_at: string | null
+          override_reason: string | null
+          status: string
+          successful_executions_today: number | null
+          total_decisions_today: number | null
+          updated_at: string
+          violations_today: number | null
+        }
+        Insert: {
+          active_campaign_ids?: string[] | null
+          active_policy_ids?: string[] | null
+          active_run_ids?: string[] | null
+          business_id?: string | null
+          confidence_floor?: number | null
+          created_at?: string
+          current_trust_score?: number | null
+          drift_ceiling?: number | null
+          escalations_today?: number | null
+          human_override_active?: boolean | null
+          id?: string
+          mode?: string
+          override_by?: string | null
+          override_expires_at?: string | null
+          override_reason?: string | null
+          status?: string
+          successful_executions_today?: number | null
+          total_decisions_today?: number | null
+          updated_at?: string
+          violations_today?: number | null
+        }
+        Update: {
+          active_campaign_ids?: string[] | null
+          active_policy_ids?: string[] | null
+          active_run_ids?: string[] | null
+          business_id?: string | null
+          confidence_floor?: number | null
+          created_at?: string
+          current_trust_score?: number | null
+          drift_ceiling?: number | null
+          escalations_today?: number | null
+          human_override_active?: boolean | null
+          id?: string
+          mode?: string
+          override_by?: string | null
+          override_expires_at?: string | null
+          override_reason?: string | null
+          status?: string
+          successful_executions_today?: number | null
+          total_decisions_today?: number | null
+          updated_at?: string
+          violations_today?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_decision_engine_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executive_policies: {
+        Row: {
+          allowed_actions: string[]
+          approval_required_for: string[]
+          auto_disable_on_violation: boolean | null
+          brand_voice_constraints: Json | null
+          business_id: string | null
+          cooldown_rules: Json | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          escalation_conditions: Json | null
+          expires_at: string | null
+          forbidden_actions: string[]
+          id: string
+          jurisdiction_constraints: Json | null
+          max_contact_rate: number | null
+          max_contacts_per_day: number | null
+          policy_name: string
+          policy_scope: string
+          risk_classification: string
+          rollback_triggers: Json | null
+          signature_hash: string | null
+          signed_at: string | null
+          signed_by: string | null
+          status: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          allowed_actions?: string[]
+          approval_required_for?: string[]
+          auto_disable_on_violation?: boolean | null
+          brand_voice_constraints?: Json | null
+          business_id?: string | null
+          cooldown_rules?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          escalation_conditions?: Json | null
+          expires_at?: string | null
+          forbidden_actions?: string[]
+          id?: string
+          jurisdiction_constraints?: Json | null
+          max_contact_rate?: number | null
+          max_contacts_per_day?: number | null
+          policy_name: string
+          policy_scope: string
+          risk_classification?: string
+          rollback_triggers?: Json | null
+          signature_hash?: string | null
+          signed_at?: string | null
+          signed_by?: string | null
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          allowed_actions?: string[]
+          approval_required_for?: string[]
+          auto_disable_on_violation?: boolean | null
+          brand_voice_constraints?: Json | null
+          business_id?: string | null
+          cooldown_rules?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          escalation_conditions?: Json | null
+          expires_at?: string | null
+          forbidden_actions?: string[]
+          id?: string
+          jurisdiction_constraints?: Json | null
+          max_contact_rate?: number | null
+          max_contacts_per_day?: number | null
+          policy_name?: string
+          policy_scope?: string
+          risk_classification?: string
+          rollback_triggers?: Json | null
+          signature_hash?: string | null
+          signed_at?: string | null
+          signed_by?: string | null
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_policies_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       executive_report_logs: {
         Row: {
@@ -26230,6 +26662,132 @@ export type Database = {
             columns: ["design_id"]
             isOneToOne: false
             referencedRelation: "pod_designs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      policy_signing_log: {
+        Row: {
+          action: string
+          actor_user_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          policy_id: string
+          prev_signature_hash: string | null
+          signature_hash: string
+          signature_payload: Json
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          policy_id: string
+          prev_signature_hash?: string | null
+          signature_hash: string
+          signature_payload: Json
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          policy_id?: string
+          prev_signature_hash?: string | null
+          signature_hash?: string
+          signature_payload?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policy_signing_log_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "executive_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      policy_violations: {
+        Row: {
+          affected_entity_id: string | null
+          affected_entity_type: string | null
+          business_id: string | null
+          campaign_id: string | null
+          containment_action: string | null
+          context_snapshot: Json | null
+          created_at: string
+          description: string
+          id: string
+          policy_id: string | null
+          prev_hash: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          row_hash: string | null
+          severity: string
+          violation_type: string
+        }
+        Insert: {
+          affected_entity_id?: string | null
+          affected_entity_type?: string | null
+          business_id?: string | null
+          campaign_id?: string | null
+          containment_action?: string | null
+          context_snapshot?: Json | null
+          created_at?: string
+          description: string
+          id?: string
+          policy_id?: string | null
+          prev_hash?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          row_hash?: string | null
+          severity: string
+          violation_type: string
+        }
+        Update: {
+          affected_entity_id?: string | null
+          affected_entity_type?: string | null
+          business_id?: string | null
+          campaign_id?: string | null
+          containment_action?: string | null
+          context_snapshot?: Json | null
+          created_at?: string
+          description?: string
+          id?: string
+          policy_id?: string | null
+          prev_hash?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          row_hash?: string | null
+          severity?: string
+          violation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policy_violations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "policy_violations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "policy_violations_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "executive_policies"
             referencedColumns: ["id"]
           },
         ]
