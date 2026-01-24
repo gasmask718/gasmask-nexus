@@ -1,12 +1,13 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBusinessStore } from "@/stores/businessStore";
-import { FlaskConical, Film, FileCheck, Siren, ShieldCheck } from "lucide-react";
+import { FlaskConical, Film, FileCheck, Siren, ShieldCheck, Eye } from "lucide-react";
 
 import { IncidentSimulationDashboard } from "@/components/compliance/IncidentSimulationDashboard";
 import { ForensicReplayViewer } from "@/components/compliance/ForensicReplayViewer";
 import { RegulatoryEvidencePanel } from "@/components/compliance/RegulatoryEvidencePanel";
 import { IncidentDrillPanel } from "@/components/compliance/IncidentDrillPanel";
 import { ComplianceDashboard } from "@/components/compliance/ComplianceDashboard";
+import { SentinelDashboard } from "@/components/compliance/SentinelDashboard";
 
 export default function ComplianceCenter() {
   const { selectedBusiness } = useBusinessStore();
@@ -21,8 +22,12 @@ export default function ComplianceCenter() {
         </p>
       </div>
 
-      <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid grid-cols-5 w-full max-w-4xl">
+      <Tabs defaultValue="sentinel" className="space-y-6">
+        <TabsList className="grid grid-cols-6 w-full max-w-5xl">
+          <TabsTrigger value="sentinel" className="flex items-center gap-2">
+            <Eye className="h-4 w-4" />
+            Sentinel
+          </TabsTrigger>
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4" />
             Dashboard
@@ -33,7 +38,7 @@ export default function ComplianceCenter() {
           </TabsTrigger>
           <TabsTrigger value="replay" className="flex items-center gap-2">
             <Film className="h-4 w-4" />
-            Forensic Replay
+            Replay
           </TabsTrigger>
           <TabsTrigger value="evidence" className="flex items-center gap-2">
             <FileCheck className="h-4 w-4" />
@@ -44,6 +49,10 @@ export default function ComplianceCenter() {
             Drills
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="sentinel">
+          <SentinelDashboard businessId={businessId} />
+        </TabsContent>
 
         <TabsContent value="dashboard">
           <ComplianceDashboard businessId={businessId} />
