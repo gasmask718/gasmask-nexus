@@ -57,6 +57,13 @@ const callSystemSettingsItems = [
   { path: "business-numbers", label: "Caller IDs & Routing", icon: PhoneForwarded, adminOnly: true },
 ];
 
+// Call Intelligence section
+const callIntelligenceItems = [
+  { path: "call-intelligence", label: "Call Intelligence", icon: Brain, highlight: true },
+  { path: "voicemail-inbox", label: "Voicemail Inbox", icon: Voicemail },
+  { path: "missed-calls", label: "Missed Calls", icon: Phone },
+];
+
 export default function CommunicationHubLayout() {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
@@ -170,6 +177,39 @@ export default function CommunicationHubLayout() {
                 {collapsed && (item as any).badge && (
                   <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive" />
                 )}
+              </NavLink>
+            ))}
+
+            {/* Call Intelligence Section */}
+            {!collapsed && (
+              <div className="pt-4 pb-2">
+                <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Brain className="h-3 w-3" />
+                  Call Intelligence
+                </p>
+              </div>
+            )}
+            {collapsed && (
+              <div className="border-t my-2" />
+            )}
+            {callIntelligenceItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={`/communication/${item.path}`}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors relative",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : item.highlight
+                      ? "text-primary hover:bg-primary/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                    collapsed && "justify-center px-2"
+                  )
+                }
+              >
+                <item.icon className="h-4 w-4 flex-shrink-0" />
+                {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
               </NavLink>
             ))}
 

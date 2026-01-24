@@ -111,13 +111,13 @@ async function analyzeBusinessCalls(
   }
 
   const totalCalls = outcomes.length;
-  const missedCalls = outcomes.filter(o => o.outcome === 'missed').length;
-  const voicemailCalls = outcomes.filter(o => o.outcome === 'voicemail').length;
-  const connectedCalls = outcomes.filter(o => o.outcome === 'connected').length;
+  const missedCalls = outcomes.filter((o: { outcome: string }) => o.outcome === 'missed').length;
+  const voicemailCalls = outcomes.filter((o: { outcome: string }) => o.outcome === 'voicemail').length;
+  const connectedCalls = outcomes.filter((o: { outcome: string }) => o.outcome === 'connected').length;
 
   // Calculate after-hours missed calls
   const afterHoursMissed = outcomes.filter(
-    o => o.outcome === 'missed' && o.is_business_hours === false
+    (o: { outcome: string; is_business_hours: boolean | null }) => o.outcome === 'missed' && o.is_business_hours === false
   ).length;
 
   // Signal: High miss rate
@@ -263,8 +263,8 @@ async function analyzeBusinessCalls(
   }
 
   // Signal: Low answer rate during business hours
-  const businessHoursCalls = outcomes.filter(o => o.is_business_hours === true);
-  const businessHoursConnected = businessHoursCalls.filter(o => o.outcome === 'connected').length;
+    const businessHoursCalls = outcomes.filter((o: { is_business_hours: boolean | null }) => o.is_business_hours === true);
+    const businessHoursConnected = businessHoursCalls.filter((o: { outcome: string }) => o.outcome === 'connected').length;
   if (businessHoursCalls.length > 10) {
     const answerRate = (businessHoursConnected / businessHoursCalls.length) * 100;
     if (answerRate < 60) {
