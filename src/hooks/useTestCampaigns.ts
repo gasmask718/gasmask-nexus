@@ -231,10 +231,11 @@ export function useCreateCampaignRun() {
           .insert({
             business_id: params.business_id,
             policy_name: 'Default Test Policy',
-            policy_scope: 'test',
+            policy_scope: 'outbound_sales', // Must match DB constraint
             allowed_actions: ['test_call'],
             forbidden_actions: [],
             approval_required_for: [],
+            risk_classification: 'low',
           } as never)
           .select('id')
           .single();
