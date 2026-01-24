@@ -10,7 +10,7 @@ import {
   Languages, Radio, Settings, ArrowLeft, ChevronLeft, ChevronRight,
   Search, Plus, PhoneCall, MessageCircle, PhoneOutgoing, MessageSquarePlus,
   Volume2, DollarSign, PhoneForwarded, Wrench, UserCog, Route, Voicemail,
-  Clock, Moon
+  Clock, Moon, Rocket
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SendMessageModal } from "@/components/communication/SendMessageModal";
@@ -50,6 +50,7 @@ const navItems = [
 
 // Call System Settings section (Admin-only)
 const callSystemSettingsItems = [
+  { path: "call-diagnostics", label: "Diagnostics & Go-Live", icon: Activity, adminOnly: true, highlight: true },
   { path: "user-call-settings", label: "User Call Settings", icon: UserCog, adminOnly: true },
   { path: "business-hours", label: "Business Hours", icon: Clock, adminOnly: true },
   { path: "after-hours-routing", label: "After-Hours Routing", icon: Moon, adminOnly: true },
