@@ -12,6 +12,7 @@ import {
 import { toast } from 'sonner';
 import { AssignPersonModal } from './AssignPersonModal';
 import { useCall } from '@/components/communication/CallProvider';
+import { useMessage } from '@/components/communication/MessageProvider';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -153,6 +154,7 @@ export function StoreRoleSection({ storeId, storeName, role, embedded = false }:
   });
 
   const { initiateCall } = useCall();
+  const { initiateMessage } = useMessage();
 
   const handleCall = (phone: string | null, name: string | null) => {
     if (!phone) {
@@ -166,13 +168,20 @@ export function StoreRoleSection({ storeId, storeName, role, embedded = false }:
     });
   };
 
-  const handleText = (phone: string | null, name: string | null) => {
+  const handleText = (phone: string | null, name: string | null, personId?: string) => {
     if (!phone) {
       toast.error('No phone number available');
       return;
     }
-    window.open(`sms:${phone}`);
-    toast.info(`Opening SMS to ${name || 'person'}...`);
+    // Use internal messaging system instead of native sms: link
+    initiateMessage({
+      destinationPhone: phone,
+      entityType: 'other',
+      entityId: personId,
+      storeId: storeId,
+      entityName: name || 'Person',
+      channel: 'sms',
+    });
   };
 
   const handleRemoveClick = (person: StorePerson) => {

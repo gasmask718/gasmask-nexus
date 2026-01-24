@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useCall } from '@/components/communication/CallProvider';
+import { useMessage } from '@/components/communication/MessageProvider';
 
 interface StoreQuickActionsProps {
   storeId: string;
@@ -56,6 +57,7 @@ export function StoreQuickActions({
   const contactEmail = primaryContact?.email;
 
   const { initiateCall } = useCall();
+  const { initiateMessage } = useMessage();
 
   const handleCallStore = () => {
     if (contactPhone) {
@@ -148,9 +150,15 @@ export function StoreQuickActions({
 
   const handleSendText = () => {
     if (contactPhone) {
-      // Open SMS app
-      window.location.href = `sms:${contactPhone}`;
-      toast.success(`Opening SMS to ${primaryContact?.name || storeName}...`);
+      // Use internal messaging system instead of native sms: link
+      initiateMessage({
+        destinationPhone: contactPhone,
+        entityType: 'store',
+        entityId: storeId,
+        storeId: storeId,
+        entityName: primaryContact?.name || storeName,
+        channel: 'sms',
+      });
       // Open modal to log the interaction after text
       setLastActionType('text');
       setTimeout(() => {
