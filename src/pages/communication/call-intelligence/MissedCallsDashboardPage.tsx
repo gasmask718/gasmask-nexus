@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CommunicationHubLayout } from "../CommunicationHubLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +28,7 @@ import {
   Wrench,
   ArrowRight,
 } from "lucide-react";
-import { useCurrentBusiness } from "@/hooks/useCurrentBusiness";
+import { useBusinessStore } from "@/stores/businessStore";
 import { Link } from "react-router-dom";
 
 interface CallOutcome {
@@ -54,22 +53,22 @@ interface CallOutcome {
 }
 
 export default function MissedCallsDashboardPage() {
-  const { currentBusiness } = useCurrentBusiness();
+  const { selectedBusiness } = useBusinessStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [outcomeFilter, setOutcomeFilter] = useState<string>("missed");
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   // Fetch call outcomes
   const { data: callOutcomes, isLoading, refetch } = useQuery({
-    queryKey: ["call-outcomes", currentBusiness?.id, outcomeFilter],
+    queryKey: ["call-outcomes", selectedBusiness?.id, outcomeFilter],
     queryFn: async () => {
       let query = supabase
         .from("call_outcomes")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (currentBusiness?.id) {
-        query = query.eq("business_id", currentBusiness.id);
+      if (selectedBusiness?.id) {
+        query = query.eq("business_id", selectedBusiness.id);
       }
 
       if (outcomeFilter !== "all") {
@@ -80,7 +79,7 @@ export default function MissedCallsDashboardPage() {
       if (error) throw error;
       return data as CallOutcome[];
     },
-    enabled: !!currentBusiness?.id,
+    enabled: !!selectedBusiness?.id,
   });
 
   const filteredOutcomes = callOutcomes?.filter(co => {
@@ -152,7 +151,14 @@ export default function MissedCallsDashboardPage() {
   };
 
   return (
-    <CommunicationHubLayout title="Missed Calls Dashboard" subtitle="Understand why calls were missed and how to fix it">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Missed Calls Dashboard</h1>
+          <p className="text-muted-foreground">Understand why calls were missed and how to fix it</p>
+        </div>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-5 gap-4 mb-6">
         <Card>
@@ -443,6 +449,6 @@ export default function MissedCallsDashboardPage() {
           )}
         </CardContent>
       </Card>
-    </CommunicationHubLayout>
+    </div>
   );
 }

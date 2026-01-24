@@ -1,7 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CommunicationHubLayout } from "../CommunicationHubLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +25,7 @@ import {
   ArrowRight,
   Zap,
 } from "lucide-react";
-import { useCurrentBusiness } from "@/hooks/useCurrentBusiness";
+import { useBusinessStore } from "@/stores/businessStore";
 import { Link } from "react-router-dom";
 
 interface IntelligenceSignal {
@@ -46,16 +45,16 @@ interface IntelligenceSignal {
 }
 
 export default function CallIntelligencePage() {
-  const { currentBusiness } = useCurrentBusiness();
+  const { selectedBusiness } = useBusinessStore();
 
   // Fetch intelligence signals
   const { data: signals, isLoading, refetch } = useQuery({
-    queryKey: ["call-intelligence-signals", currentBusiness?.id],
+    queryKey: ["call-intelligence-signals", selectedBusiness?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("call_intelligence_signals")
         .select("*")
-        .eq("business_id", currentBusiness?.id)
+        .eq("business_id", selectedBusiness?.id)
         .eq("is_resolved", false)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -63,25 +62,25 @@ export default function CallIntelligencePage() {
       if (error) throw error;
       return data as IntelligenceSignal[];
     },
-    enabled: !!currentBusiness?.id,
+    enabled: !!selectedBusiness?.id,
   });
 
   // Fetch call stats for overview
   const { data: callStats } = useQuery({
-    queryKey: ["call-stats", currentBusiness?.id],
+    queryKey: ["call-stats", selectedBusiness?.id],
     queryFn: async () => {
       const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       
       const { data: outcomes } = await supabase
         .from("call_outcomes")
         .select("outcome, is_business_hours")
-        .eq("business_id", currentBusiness?.id)
+        .eq("business_id", selectedBusiness?.id)
         .gte("created_at", since);
 
       const { data: voicemails } = await supabase
         .from("voicemails")
         .select("id, status")
-        .eq("business_id", currentBusiness?.id)
+        .eq("business_id", selectedBusiness?.id)
         .gte("created_at", since);
 
       const total = outcomes?.length || 0;
@@ -102,7 +101,7 @@ export default function CallIntelligencePage() {
         missRate: total > 0 ? (missed / total) * 100 : 0,
       };
     },
-    enabled: !!currentBusiness?.id,
+    enabled: !!selectedBusiness?.id,
   });
 
   // Trigger intelligence analysis
@@ -110,7 +109,7 @@ export default function CallIntelligencePage() {
     try {
       toast.loading("Analyzing call patterns...");
       const { data, error } = await supabase.functions.invoke("call-outcome-intelligence", {
-        body: { action: "analyze_business", business_id: currentBusiness?.id },
+        body: { action: "analyze_business", business_id: selectedBusiness?.id },
       });
       
       if (error) throw error;
@@ -182,7 +181,14 @@ export default function CallIntelligencePage() {
   const warningCount = signals?.filter(s => s.severity === "warning").length || 0;
 
   return (
-    <CommunicationHubLayout title="Call Intelligence" subtitle="AI-powered insights into your call performance">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Call Intelligence</h1>
+          <p className="text-muted-foreground">AI-powered insights into your call performance</p>
+        </div>
+      </div>
+
       {/* Header Actions */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -436,6 +442,6 @@ export default function CallIntelligencePage() {
           </CardContent>
         </Card>
       </div>
-    </CommunicationHubLayout>
+    </div>
   );
 }

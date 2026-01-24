@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CommunicationHubLayout } from "../CommunicationHubLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +29,7 @@ import {
   PhoneCall,
   MessageSquare,
 } from "lucide-react";
-import { useCurrentBusiness } from "@/hooks/useCurrentBusiness";
+import { useBusinessStore } from "@/stores/businessStore";
 
 interface VoicemailRecord {
   id: string;
@@ -49,7 +48,7 @@ interface VoicemailRecord {
 }
 
 export default function VoicemailInboxPage() {
-  const { currentBusiness } = useCurrentBusiness();
+  const { selectedBusiness } = useBusinessStore();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -59,15 +58,15 @@ export default function VoicemailInboxPage() {
 
   // Fetch voicemails
   const { data: voicemails, isLoading, refetch } = useQuery({
-    queryKey: ["voicemails", currentBusiness?.id, statusFilter],
+    queryKey: ["voicemails", selectedBusiness?.id, statusFilter],
     queryFn: async () => {
       let query = supabase
         .from("voicemails")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (currentBusiness?.id) {
-        query = query.eq("business_id", currentBusiness.id);
+      if (selectedBusiness?.id) {
+        query = query.eq("business_id", selectedBusiness.id);
       }
 
       if (statusFilter !== "all") {
@@ -78,7 +77,7 @@ export default function VoicemailInboxPage() {
       if (error) throw error;
       return data as VoicemailRecord[];
     },
-    enabled: !!currentBusiness?.id,
+    enabled: !!selectedBusiness?.id,
   });
 
   // Mark as resolved mutation
@@ -190,8 +189,13 @@ export default function VoicemailInboxPage() {
   };
 
   return (
-    <CommunicationHubLayout title="Voicemail Inbox" subtitle="Listen, transcribe, and manage voicemails">
-      {/* Hidden audio element */}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Voicemail Inbox</h1>
+          <p className="text-muted-foreground">Listen, transcribe, and manage voicemails</p>
+        </div>
+      </div>
       <audio
         ref={audioRef}
         onEnded={() => setIsPlaying(false)}
@@ -482,6 +486,6 @@ export default function VoicemailInboxPage() {
           )}
         </CardContent>
       </Card>
-    </CommunicationHubLayout>
+    </div>
   );
 }
