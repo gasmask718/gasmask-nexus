@@ -9,7 +9,7 @@ import {
   Sparkles, Zap, User, GitBranch, BarChart3, Tag, Brain, Shield, 
   Languages, Radio, Settings, ArrowLeft, ChevronLeft, ChevronRight,
   Search, Plus, PhoneCall, MessageCircle, PhoneOutgoing, MessageSquarePlus,
-  Volume2, DollarSign, PhoneForwarded
+  Volume2, DollarSign, PhoneForwarded, Wrench, UserCog, Route, Voicemail
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SendMessageModal } from "@/components/communication/SendMessageModal";
@@ -47,8 +47,9 @@ const navItems = [
   { path: "settings", label: "Settings", icon: Settings },
 ];
 
-// Admin-only nav items
-const adminNavItems = [
+// Call System Settings section (Admin-only)
+const callSystemSettingsItems = [
+  { path: "user-call-settings", label: "User Call Settings", icon: UserCog, adminOnly: true },
   { path: "business-numbers", label: "Caller IDs & Routing", icon: PhoneForwarded, adminOnly: true },
 ];
 
@@ -64,8 +65,8 @@ export default function CommunicationHubLayout() {
   const userRole = profileData?.profile?.primary_role || '';
   const isAdmin = ['admin', 'ceo', 'owner', 'va'].includes(userRole);
 
-  // Combine nav items with admin items if user is admin
-  const allNavItems = isAdmin ? [...navItems, ...adminNavItems] : navItems;
+  // Admin sees call system settings section
+  const showCallSystemSettings = isAdmin;
 
   const handleNewCall = () => {
     // Navigate to manual calls page or open dialer
@@ -131,7 +132,8 @@ export default function CommunicationHubLayout() {
         {/* Navigation */}
         <ScrollArea className="flex-1">
           <nav className="p-2 space-y-1">
-            {allNavItems.map((item) => (
+            {/* Main nav items */}
+            {navItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={`/communication/${item.path}`}
@@ -142,9 +144,7 @@ export default function CommunicationHubLayout() {
                       ? "bg-primary text-primary-foreground"
                       : (item as any).highlight 
                         ? "text-foreground bg-muted/50 hover:bg-muted font-medium border border-primary/20"
-                        : (item as any).adminOnly
-                          ? "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     collapsed && "justify-center px-2"
                   )
                 }
@@ -161,11 +161,6 @@ export default function CommunicationHubLayout() {
                         {(item as any).badge}
                       </Badge>
                     )}
-                    {(item as any).adminOnly && (
-                      <Badge variant="outline" className="text-[10px] px-1 py-0 border-amber-500 text-amber-600">
-                        Admin
-                      </Badge>
-                    )}
                   </>
                 )}
                 {collapsed && (item as any).badge && (
@@ -173,6 +168,48 @@ export default function CommunicationHubLayout() {
                 )}
               </NavLink>
             ))}
+
+            {/* Call System Settings Section (Admin only) */}
+            {showCallSystemSettings && (
+              <>
+                {!collapsed && (
+                  <div className="pt-4 pb-2">
+                    <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                      <Wrench className="h-3 w-3" />
+                      Call System Settings
+                    </p>
+                  </div>
+                )}
+                {collapsed && (
+                  <div className="border-t my-2" />
+                )}
+                {callSystemSettingsItems.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={`/communication/${item.path}`}
+                    className={({ isActive }) =>
+                      cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors relative",
+                        isActive
+                          ? "bg-primary text-primary-foreground"
+                          : "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20",
+                        collapsed && "justify-center px-2"
+                      )
+                    }
+                  >
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
+                    {!collapsed && (
+                      <>
+                        <span className="flex-1 truncate">{item.label}</span>
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 border-amber-500 text-amber-600">
+                          Admin
+                        </Badge>
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </>
+            )}
           </nav>
         </ScrollArea>
       </aside>

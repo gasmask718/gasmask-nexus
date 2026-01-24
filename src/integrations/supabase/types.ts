@@ -30334,6 +30334,7 @@ export type Database = {
           extra_roles: string[] | null
           full_name: string | null
           id: string
+          is_callable: boolean
           phone: string | null
           preferred_language: string | null
           primary_role: string
@@ -30347,6 +30348,7 @@ export type Database = {
           extra_roles?: string[] | null
           full_name?: string | null
           id?: string
+          is_callable?: boolean
           phone?: string | null
           preferred_language?: string | null
           primary_role: string
@@ -30360,6 +30362,7 @@ export type Database = {
           extra_roles?: string[] | null
           full_name?: string | null
           id?: string
+          is_callable?: boolean
           phone?: string | null
           preferred_language?: string | null
           primary_role?: string
