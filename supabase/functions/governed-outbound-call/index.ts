@@ -126,12 +126,15 @@ const handler = async (req: Request): Promise<Response> => {
     } else {
       gateChecks.push({ name: 'campaign_exists', passed: true });
 
-      // Check campaign status
-      if (campaign.status !== 'active') {
+      // Check campaign status - RELAXED for test mode
+      const isTestMode = execution_mode === 'test' || is_test_call;
+      const allowedStatuses = isTestMode ? ['draft', 'active', 'approved'] : ['active'];
+      
+      if (!allowedStatuses.includes(campaign.status)) {
         gateChecks.push({ name: 'campaign_active', passed: false, reason: `Campaign status is ${campaign.status}` });
         allGatesPassed = false;
       } else {
-        gateChecks.push({ name: 'campaign_active', passed: true });
+        gateChecks.push({ name: 'campaign_active', passed: true, reason: isTestMode ? 'Test mode allows draft campaigns' : undefined });
       }
 
       // Check containment
@@ -142,12 +145,13 @@ const handler = async (req: Request): Promise<Response> => {
         gateChecks.push({ name: 'containment_check', passed: true });
       }
 
-      // Check sentinel status
-      if (campaign.sentinel_status !== 'compliant') {
+      // Check sentinel status - RELAXED for test mode
+      const allowedSentinelStatuses = isTestMode ? ['pending', 'compliant', null] : ['compliant'];
+      if (!allowedSentinelStatuses.includes(campaign.sentinel_status)) {
         gateChecks.push({ name: 'sentinel_compliant', passed: false, reason: `Sentinel status is ${campaign.sentinel_status}` });
         allGatesPassed = false;
       } else {
-        gateChecks.push({ name: 'sentinel_compliant', passed: true });
+        gateChecks.push({ name: 'sentinel_compliant', passed: true, reason: isTestMode ? 'Test mode allows pending sentinel' : undefined });
       }
     }
 
@@ -164,11 +168,15 @@ const handler = async (req: Request): Promise<Response> => {
       gateChecks.push({ name: 'campaign_run_exists', passed: false, reason: 'Campaign run not found' });
       allGatesPassed = false;
     } else {
-      if (campaignRun.status !== 'active') {
+      // Campaign run status - RELAXED for test mode
+      const isTestMode = execution_mode === 'test' || is_test_call;
+      const allowedRunStatuses = isTestMode ? ['pending', 'running', 'active'] : ['running', 'active'];
+      
+      if (!allowedRunStatuses.includes(campaignRun.status)) {
         gateChecks.push({ name: 'campaign_run_active', passed: false, reason: `Campaign run status is ${campaignRun.status}` });
         allGatesPassed = false;
       } else {
-        gateChecks.push({ name: 'campaign_run_active', passed: true });
+        gateChecks.push({ name: 'campaign_run_active', passed: true, reason: isTestMode ? 'Test mode allows pending runs' : undefined });
       }
     }
 
