@@ -177,6 +177,7 @@ import VoiceLibraryPage from '@/pages/communication/voice/VoiceLibraryPage';
 import DealsSalesPage from '@/pages/communication/deals/DealsSalesPage';
 import FollowUpManagerPage from '@/pages/communication/followups/FollowUpManagerPage';
 import UnifiedInboxV3Page from '@/pages/communication/inbox/UnifiedInboxV3Page';
+import PlaybooksManagement from '@/pages/communication/PlaybooksManagement';
 // Legacy Communication imports (kept for other routes)
 import CommunicationOverview from '@/pages/communication/CommunicationOverview';
 import CommunicationCampaigns from '@/pages/communication/CommunicationCampaigns';
@@ -1213,6 +1214,7 @@ export default function AppRoutes() {
           <Route path="call-intelligence" element={<CallIntelligencePage />} />
           <Route path="unresolved-queue" element={<UnresolvedCallsQueuePage />} />
           <Route path="ai-call-agent" element={<AICallAgentDashboardPage />} />
+          <Route path="playbooks" element={<PlaybooksManagement />} />
         </Route>
 
         <Route path="/messages" element={<MessagesPage />} />
