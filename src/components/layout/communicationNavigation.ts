@@ -1,8 +1,9 @@
-import { Phone, MessageSquare, Mail, Bot, Hash, FileText, BarChart3, Settings, Megaphone, PhoneForwarded } from 'lucide-react';
+import { Phone, MessageSquare, Mail, Bot, Hash, FileText, BarChart3, Settings, Megaphone, PhoneForwarded, Rocket } from 'lucide-react';
 
 export const communicationNavItems = [
   { to: '/communication', icon: BarChart3, label: 'Overview', roles: ['admin', 'csr'] },
   { to: '/communication/campaigns', icon: Megaphone, label: 'Campaigns', roles: ['admin', 'manager'] },
+  { to: '/communication/outbound-growth', icon: Rocket, label: 'Outbound Growth', roles: ['admin', 'owner', 'ceo'] },
   { to: '/communication/calls', icon: Phone, label: 'Calls', roles: ['admin', 'csr'] },
   { to: '/communication/sms', icon: MessageSquare, label: 'SMS', roles: ['admin', 'csr'] },
   { to: '/communication/email', icon: Mail, label: 'Email', roles: ['admin', 'csr'] },
