@@ -179,6 +179,7 @@ import FollowUpManagerPage from '@/pages/communication/followups/FollowUpManager
 import UnifiedInboxV3Page from '@/pages/communication/inbox/UnifiedInboxV3Page';
 import PlaybooksManagement from '@/pages/communication/PlaybooksManagement';
 import ShadowModePage from '@/pages/communication/ShadowModePage';
+import OutboundGrowthPage from '@/pages/communication/OutboundGrowthPage';
 import ComplianceCenter from '@/pages/compliance/ComplianceCenter';
 // Legacy Communication imports (kept for other routes)
 import CommunicationOverview from '@/pages/communication/CommunicationOverview';
@@ -1218,6 +1219,7 @@ export default function AppRoutes() {
           <Route path="ai-call-agent" element={<AICallAgentDashboardPage />} />
           <Route path="playbooks" element={<PlaybooksManagement />} />
           <Route path="shadow-mode" element={<ShadowModePage />} />
+          <Route path="outbound-growth" element={<OutboundGrowthPage />} />
         </Route>
 
         <Route path="/messages" element={<MessagesPage />} />
