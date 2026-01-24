@@ -300,17 +300,19 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("✅ All governance gates passed. Creating call session...");
 
     // Create AI call session with full binding
+    // status must match CHECK: 'initiated','ringing','ai_active','human_active','on_hold','completed','failed'
+    // handoff_state must match CHECK: 'none','ai_controlled','human_takeover','escalated'
     const { data: session, error: sessionError } = await supabase
       .from("ai_call_sessions")
       .insert({
         business_id: campaign.business_id,
         campaign_id,
         campaign_run_id,
-        playbook_id,
-        execution_mode,
+        playbook_id: playbook_id || null,
+        execution_mode: execution_mode || 'manual',
         is_test_call,
-        status: 'pending',
-        handoff_state: 'ai_controlled',
+        status: 'initiated', // Must match DB constraint
+        handoff_state: 'none', // Must match DB constraint
         disclosure_completed: false,
         frame_written: false
       })
@@ -319,7 +321,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (sessionError) {
       console.error("❌ Failed to create session:", sessionError);
-      throw new Error("Failed to create call session");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Call session insert failed",
+          details: sessionError?.message || JSON.stringify(sessionError),
+          hint: "Check ai_call_sessions constraints and RLS"
+        }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     // =====================================================
