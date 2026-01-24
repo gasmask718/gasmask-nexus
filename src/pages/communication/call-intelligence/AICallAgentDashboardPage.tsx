@@ -11,8 +11,12 @@ import { AITrustMeter } from "@/components/communication/ai-agent/AITrustMeter";
 import { AISuggestedResponsePanel } from "@/components/communication/ai-agent/AISuggestedResponsePanel";
 import { AIAgentConfigPanel } from "@/components/communication/ai-agent/AIAgentConfigPanel";
 import { WhyAIDidntAnswer } from "@/components/communication/ai-agent/WhyAIDidntAnswer";
+import { CanaryModePanelWrapper } from "@/components/communication/ai-agent/CanaryModePanelWrapper";
+import { LiveModeBannerWrapper } from "@/components/communication/ai-agent/LiveModeBannerWrapper";
+import { LiveModePanel } from "@/components/communication/ai-agent/LiveModePanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bot, Activity, Target, Zap } from "lucide-react";
 
 export default function AICallAgentDashboardPage() {
@@ -151,41 +155,75 @@ export default function AICallAgentDashboardPage() {
         </Card>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column - Trust & Config */}
-        <div className="space-y-6">
-          <AITrustMeter 
-            trustScore={trustScore || null} 
-            config={config || null}
-            isLoading={configLoading || trustLoading}
-          />
-          <WhyAIDidntAnswer
-            config={config || null}
-            trustScore={trustScore || null}
-            hasCallableUsers={hasCallableUsers}
-            hasUnresolvedCalls={hasUnresolvedCalls}
-            lastCallConfidence={lastPrediction?.confidence_score || undefined}
-          />
-        </div>
+      {/* Live Mode Banner */}
+      {config?.mode === 'live' && (
+        <LiveModeBannerWrapper businessId={businessId} />
+      )}
 
-        {/* Middle Column - Suggestions */}
-        <div className="lg:col-span-1">
-          <AISuggestedResponsePanel 
-            predictions={predictions || []}
-            isLoading={predictionsLoading}
-          />
-        </div>
+      {/* Mode Tabs */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="canary">Canary Mode</TabsTrigger>
+          <TabsTrigger value="live">Live Mode</TabsTrigger>
+          <TabsTrigger value="config">Configuration</TabsTrigger>
+        </TabsList>
 
-        {/* Right Column - Configuration */}
-        <div>
-          <AIAgentConfigPanel
-            config={config || null}
-            businessId={businessId}
-            isLoading={configLoading}
-          />
-        </div>
-      </div>
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Left Column - Trust & Config */}
+            <div className="space-y-6">
+              <AITrustMeter 
+                trustScore={trustScore || null} 
+                config={config || null}
+                isLoading={configLoading || trustLoading}
+              />
+              <WhyAIDidntAnswer
+                config={config || null}
+                trustScore={trustScore || null}
+                hasCallableUsers={hasCallableUsers}
+                hasUnresolvedCalls={hasUnresolvedCalls}
+                lastCallConfidence={lastPrediction?.confidence_score || undefined}
+              />
+            </div>
+
+            {/* Middle Column - Suggestions */}
+            <div className="lg:col-span-1">
+              <AISuggestedResponsePanel 
+                predictions={predictions || []}
+                isLoading={predictionsLoading}
+              />
+            </div>
+
+            {/* Right Column - Configuration */}
+            <div>
+              <AIAgentConfigPanel
+                config={config || null}
+                businessId={businessId}
+                isLoading={configLoading}
+              />
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="canary">
+          <CanaryModePanelWrapper businessId={businessId} />
+        </TabsContent>
+
+        <TabsContent value="live">
+          <LiveModePanel businessId={businessId} />
+        </TabsContent>
+
+        <TabsContent value="config">
+          <div className="max-w-2xl">
+            <AIAgentConfigPanel
+              config={config || null}
+              businessId={businessId}
+              isLoading={configLoading}
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
