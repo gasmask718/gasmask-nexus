@@ -77,10 +77,25 @@ serve(async (req) => {
 
     let result: unknown;
 
+    // Allowed policy scopes per DB constraint
+    const ALLOWED_SCOPES = ['outbound_sales', 'product_launch', 'vendor_recruitment', 'marketplace_growth', 'store_reactivation', 'partnerships'];
+
     switch (action) {
       case 'create': {
         if (!policy_data || !business_id) {
           throw new Error("Policy data and business_id required");
+        }
+
+        // Validate policy_scope BEFORE insert
+        if (!ALLOWED_SCOPES.includes(policy_data.policy_scope)) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: `Invalid policy_scope: "${policy_data.policy_scope}"`,
+            allowed: ALLOWED_SCOPES
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
 
         const { data: policy, error: createError } = await supabase
