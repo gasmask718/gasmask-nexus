@@ -42,60 +42,58 @@ export function GoLiveLocksCard({ businessId, businessName }: GoLiveLocksCardPro
   const { data: readinessData, isLoading } = useQuery({
     queryKey: ["go-live-locks", businessId],
     queryFn: async () => {
-      const [
-        { data: business },
-        { data: phoneNumbers },
-        { data: routes },
-        { data: callableUsers },
-        { data: voicemailSettings },
-        { data: unresolvedMissed },
-        { data: unresolvedVoicemails },
-      ] = await Promise.all([
-        // Business config
-        supabase
-          .from("businesses")
-          .select("timezone, business_hours, after_hours_route_type")
-          .eq("id", businessId)
-          .single(),
-        // Phone numbers
-        supabase
-          .from("business_phone_numbers")
-          .select("id")
-          .eq("business_id", businessId)
-          .eq("is_active", true),
-        // Inbound routes
-        supabase
-          .from("inbound_call_routes")
-          .select("id, route_type")
-          .eq("business_id", businessId)
-          .eq("is_active", true),
-        // Callable users
-        supabase
-          .from("user_profiles")
-          .select("id, phone")
-          .eq("business_id", businessId)
-          .eq("is_callable", true)
-          .not("phone", "is", null),
-        // Voicemail settings
-        supabase
-          .from("business_voicemail_settings")
-          .select("is_enabled")
-          .eq("business_id", businessId)
-          .maybeSingle(),
-        // Unresolved missed calls
-        supabase
-          .from("call_outcomes")
-          .select("id")
-          .eq("business_id", businessId)
-          .eq("outcome", "missed")
-          .neq("resolution_status", "resolved"),
-        // Unresolved voicemails
-        supabase
-          .from("voicemails")
-          .select("id")
-          .eq("business_id", businessId)
-          .neq("status", "resolved"),
-      ]);
+      // Fetch all data individually with type assertions to avoid TS2589 type inference issues
+      const businessRes = await supabase
+        .from("businesses")
+        .select("timezone, business_hours, after_hours_route_type")
+        .eq("id", businessId)
+        .single();
+
+      const phoneNumbersRes = await supabase
+        .from("business_phone_numbers")
+        .select("id")
+        .eq("business_id", businessId)
+        .eq("is_active", true);
+
+      const routesRes = await supabase
+        .from("inbound_call_routes")
+        .select("id, route_type")
+        .eq("business_id", businessId)
+        .eq("is_active", true);
+
+      // Build query with type assertion early to avoid TS2589 deep type instantiation
+      const userProfilesQuery = supabase.from("user_profiles").select("id, phone") as any;
+      const callableUsersRes = await userProfilesQuery
+        .eq("business_id", businessId)
+        .eq("is_callable", true)
+        .not("phone", "is", null);
+
+      const voicemailSettingsRes = await supabase
+        .from("business_voicemail_settings")
+        .select("is_enabled")
+        .eq("business_id", businessId)
+        .maybeSingle();
+
+      const unresolvedMissedRes = await supabase
+        .from("call_outcomes")
+        .select("id")
+        .eq("business_id", businessId)
+        .eq("outcome", "missed")
+        .neq("resolution_status", "resolved");
+
+      const unresolvedVoicemailsRes = await supabase
+        .from("voicemails")
+        .select("id")
+        .eq("business_id", businessId)
+        .neq("status", "resolved");
+
+      const business = businessRes.data;
+      const phoneNumbers = phoneNumbersRes.data;
+      const routes = routesRes.data;
+      const callableUsers = callableUsersRes.data;
+      const voicemailSettings = voicemailSettingsRes.data;
+      const unresolvedMissed = unresolvedMissedRes.data;
+      const unresolvedVoicemails = unresolvedVoicemailsRes.data;
 
       // Check if routes have callable targets - simplified check
       const hasValidRoutes = (routes?.length || 0) > 0 && (callableUsers?.length || 0) > 0;
