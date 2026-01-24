@@ -1694,13 +1694,17 @@ export type Database = {
           current_node_id: string | null
           flow_id: string | null
           handoff_state: string
+          human_exemplar_id: string | null
           id: string
+          is_exemplar_call: boolean | null
           is_multi_party: boolean | null
           persona_id: string | null
+          playbook_id: string | null
           primary_agent_id: string | null
           sentiment_trend: string | null
           status: string
           store_id: string | null
+          style_profile_id: string | null
           switchboard_agent_id: string | null
           transcript: string | null
           updated_at: string
@@ -1716,13 +1720,17 @@ export type Database = {
           current_node_id?: string | null
           flow_id?: string | null
           handoff_state?: string
+          human_exemplar_id?: string | null
           id?: string
+          is_exemplar_call?: boolean | null
           is_multi_party?: boolean | null
           persona_id?: string | null
+          playbook_id?: string | null
           primary_agent_id?: string | null
           sentiment_trend?: string | null
           status?: string
           store_id?: string | null
+          style_profile_id?: string | null
           switchboard_agent_id?: string | null
           transcript?: string | null
           updated_at?: string
@@ -1738,13 +1746,17 @@ export type Database = {
           current_node_id?: string | null
           flow_id?: string | null
           handoff_state?: string
+          human_exemplar_id?: string | null
           id?: string
+          is_exemplar_call?: boolean | null
           is_multi_party?: boolean | null
           persona_id?: string | null
+          playbook_id?: string | null
           primary_agent_id?: string | null
           sentiment_trend?: string | null
           status?: string
           store_id?: string | null
+          style_profile_id?: string | null
           switchboard_agent_id?: string | null
           transcript?: string | null
           updated_at?: string
@@ -1786,6 +1798,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ai_call_sessions_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "sales_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ai_call_sessions_primary_agent_id_fkey"
             columns: ["primary_agent_id"]
             isOneToOne: false
@@ -1805,6 +1824,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ai_call_sessions_style_profile_id_fkey"
+            columns: ["style_profile_id"]
+            isOneToOne: false
+            referencedRelation: "speaker_style_profiles"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "ai_call_sessions_switchboard_agent_id_fkey"
@@ -7760,6 +7786,138 @@ export type Database = {
           voicemail_rate?: number | null
         }
         Relationships: []
+      }
+      call_outcome_scores: {
+        Row: {
+          ai_confidence_avg: number | null
+          ai_confidence_min: number | null
+          ai_participated: boolean | null
+          business_id: string
+          call_duration_seconds: number | null
+          call_log_id: string | null
+          caller_satisfaction_score: number | null
+          conversion_achieved: boolean | null
+          conversion_type: string | null
+          conversion_value: number | null
+          escalation_occurred: boolean | null
+          escalation_reason: string | null
+          escalation_was_appropriate: boolean | null
+          explicit_feedback: string | null
+          human_handled: boolean | null
+          human_user_id: string | null
+          id: string
+          is_exemplar_candidate: boolean | null
+          overall_score: number | null
+          playbook_adherence_score: number | null
+          playbook_id: string | null
+          review_notes: string | null
+          scored_at: string | null
+          scored_by: string | null
+          scoring_version: string | null
+          session_id: string | null
+          style_profile_id: string | null
+          time_to_resolution_seconds: number | null
+          turns_to_resolution: number | null
+        }
+        Insert: {
+          ai_confidence_avg?: number | null
+          ai_confidence_min?: number | null
+          ai_participated?: boolean | null
+          business_id: string
+          call_duration_seconds?: number | null
+          call_log_id?: string | null
+          caller_satisfaction_score?: number | null
+          conversion_achieved?: boolean | null
+          conversion_type?: string | null
+          conversion_value?: number | null
+          escalation_occurred?: boolean | null
+          escalation_reason?: string | null
+          escalation_was_appropriate?: boolean | null
+          explicit_feedback?: string | null
+          human_handled?: boolean | null
+          human_user_id?: string | null
+          id?: string
+          is_exemplar_candidate?: boolean | null
+          overall_score?: number | null
+          playbook_adherence_score?: number | null
+          playbook_id?: string | null
+          review_notes?: string | null
+          scored_at?: string | null
+          scored_by?: string | null
+          scoring_version?: string | null
+          session_id?: string | null
+          style_profile_id?: string | null
+          time_to_resolution_seconds?: number | null
+          turns_to_resolution?: number | null
+        }
+        Update: {
+          ai_confidence_avg?: number | null
+          ai_confidence_min?: number | null
+          ai_participated?: boolean | null
+          business_id?: string
+          call_duration_seconds?: number | null
+          call_log_id?: string | null
+          caller_satisfaction_score?: number | null
+          conversion_achieved?: boolean | null
+          conversion_type?: string | null
+          conversion_value?: number | null
+          escalation_occurred?: boolean | null
+          escalation_reason?: string | null
+          escalation_was_appropriate?: boolean | null
+          explicit_feedback?: string | null
+          human_handled?: boolean | null
+          human_user_id?: string | null
+          id?: string
+          is_exemplar_candidate?: boolean | null
+          overall_score?: number | null
+          playbook_adherence_score?: number | null
+          playbook_id?: string | null
+          review_notes?: string | null
+          scored_at?: string | null
+          scored_by?: string | null
+          scoring_version?: string | null
+          session_id?: string | null
+          style_profile_id?: string | null
+          time_to_resolution_seconds?: number | null
+          turns_to_resolution?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_outcome_scores_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_outcome_scores_call_log_id_fkey"
+            columns: ["call_log_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_outcome_scores_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "sales_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_outcome_scores_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_outcome_scores_style_profile_id_fkey"
+            columns: ["style_profile_id"]
+            isOneToOne: false
+            referencedRelation: "speaker_style_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       call_outcomes: {
         Row: {
@@ -23854,6 +24012,84 @@ export type Database = {
         }
         Relationships: []
       }
+      playbook_usage_log: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          id: string
+          outcome_score_id: string | null
+          playbook_id: string | null
+          selection_reason: string | null
+          session_id: string
+          speech_was_permitted: boolean
+          state_at_selection: string | null
+          state_authority_approved: boolean
+          style_profile_id: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          id?: string
+          outcome_score_id?: string | null
+          playbook_id?: string | null
+          selection_reason?: string | null
+          session_id: string
+          speech_was_permitted?: boolean
+          state_at_selection?: string | null
+          state_authority_approved?: boolean
+          style_profile_id?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          id?: string
+          outcome_score_id?: string | null
+          playbook_id?: string | null
+          selection_reason?: string | null
+          session_id?: string
+          speech_was_permitted?: boolean
+          state_at_selection?: string | null
+          state_authority_approved?: boolean
+          style_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playbook_usage_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playbook_usage_log_outcome_score_id_fkey"
+            columns: ["outcome_score_id"]
+            isOneToOne: false
+            referencedRelation: "call_outcome_scores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playbook_usage_log_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "sales_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playbook_usage_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playbook_usage_log_style_profile_id_fkey"
+            columns: ["style_profile_id"]
+            isOneToOne: false
+            referencedRelation: "speaker_style_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pod_ai_logs: {
         Row: {
           action: string
@@ -27402,6 +27638,83 @@ export type Database = {
           },
         ]
       }
+      sales_playbooks: {
+        Row: {
+          allowed_tactics: string[]
+          avg_outcome_score: number | null
+          business_id: string | null
+          confidence_floor: number | null
+          conversion_rate: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          escalation_triggers: string[] | null
+          forbidden_tactics: string[] | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          max_duration_seconds: number | null
+          name: string
+          structure: Json
+          target_intents: string[]
+          times_used: number | null
+          trigger_keywords: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          allowed_tactics?: string[]
+          avg_outcome_score?: number | null
+          business_id?: string | null
+          confidence_floor?: number | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          escalation_triggers?: string[] | null
+          forbidden_tactics?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          max_duration_seconds?: number | null
+          name: string
+          structure?: Json
+          target_intents?: string[]
+          times_used?: number | null
+          trigger_keywords?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          allowed_tactics?: string[]
+          avg_outcome_score?: number | null
+          business_id?: string | null
+          confidence_floor?: number | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          escalation_triggers?: string[] | null
+          forbidden_tactics?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          max_duration_seconds?: number | null
+          name?: string
+          structure?: Json
+          target_intents?: string[]
+          times_used?: number | null
+          trigger_keywords?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_playbooks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_prospects: {
         Row: {
           address: string | null
@@ -28105,6 +28418,98 @@ export type Database = {
             columns: ["simulation_id"]
             isOneToOne: false
             referencedRelation: "outcome_simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      speaker_style_profiles: {
+        Row: {
+          avg_caller_satisfaction: number | null
+          business_id: string | null
+          closing_examples: string[] | null
+          created_at: string | null
+          created_by: string | null
+          derived_from_human_id: string | null
+          description: string | null
+          empathy_expressions: string[] | null
+          energy_level: string | null
+          formality_level: number | null
+          greeting_examples: string[] | null
+          human_exemplar_calls: string[] | null
+          id: string
+          is_active: boolean | null
+          max_enthusiasm_level: number | null
+          mirroring_enabled: boolean | null
+          name: string
+          objection_handling_examples: string[] | null
+          pacing: string | null
+          times_used: number | null
+          tone: string
+          updated_at: string | null
+          uses_humor: boolean | null
+          uses_questions: boolean | null
+          uses_stories: boolean | null
+        }
+        Insert: {
+          avg_caller_satisfaction?: number | null
+          business_id?: string | null
+          closing_examples?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          derived_from_human_id?: string | null
+          description?: string | null
+          empathy_expressions?: string[] | null
+          energy_level?: string | null
+          formality_level?: number | null
+          greeting_examples?: string[] | null
+          human_exemplar_calls?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          max_enthusiasm_level?: number | null
+          mirroring_enabled?: boolean | null
+          name: string
+          objection_handling_examples?: string[] | null
+          pacing?: string | null
+          times_used?: number | null
+          tone?: string
+          updated_at?: string | null
+          uses_humor?: boolean | null
+          uses_questions?: boolean | null
+          uses_stories?: boolean | null
+        }
+        Update: {
+          avg_caller_satisfaction?: number | null
+          business_id?: string | null
+          closing_examples?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          derived_from_human_id?: string | null
+          description?: string | null
+          empathy_expressions?: string[] | null
+          energy_level?: string | null
+          formality_level?: number | null
+          greeting_examples?: string[] | null
+          human_exemplar_calls?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          max_enthusiasm_level?: number | null
+          mirroring_enabled?: boolean | null
+          name?: string
+          objection_handling_examples?: string[] | null
+          pacing?: string | null
+          times_used?: number | null
+          tone?: string
+          updated_at?: string | null
+          uses_humor?: boolean | null
+          uses_questions?: boolean | null
+          uses_stories?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speaker_style_profiles_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -30994,6 +31399,115 @@ export type Database = {
             columns: ["tag_id"]
             isOneToOne: false
             referencedRelation: "global_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      technique_extractions: {
+        Row: {
+          adoption_success_rate: number | null
+          approval_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          business_id: string
+          caller_sentiment_after: string | null
+          context_triggers: string[] | null
+          extracted_at: string | null
+          extraction_confidence: number | null
+          extraction_method: string | null
+          human_exemplar_id: string
+          human_name: string | null
+          human_validated: boolean | null
+          id: string
+          is_approved_for_ai: boolean | null
+          outcome_score: number | null
+          phrasing_pattern: string | null
+          source_call_log_id: string | null
+          source_session_id: string | null
+          technique_description: string | null
+          technique_name: string
+          technique_type: string
+          times_adopted: number | null
+          transcript_excerpt: string | null
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          adoption_success_rate?: number | null
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          business_id: string
+          caller_sentiment_after?: string | null
+          context_triggers?: string[] | null
+          extracted_at?: string | null
+          extraction_confidence?: number | null
+          extraction_method?: string | null
+          human_exemplar_id: string
+          human_name?: string | null
+          human_validated?: boolean | null
+          id?: string
+          is_approved_for_ai?: boolean | null
+          outcome_score?: number | null
+          phrasing_pattern?: string | null
+          source_call_log_id?: string | null
+          source_session_id?: string | null
+          technique_description?: string | null
+          technique_name: string
+          technique_type: string
+          times_adopted?: number | null
+          transcript_excerpt?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          adoption_success_rate?: number | null
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          business_id?: string
+          caller_sentiment_after?: string | null
+          context_triggers?: string[] | null
+          extracted_at?: string | null
+          extraction_confidence?: number | null
+          extraction_method?: string | null
+          human_exemplar_id?: string
+          human_name?: string | null
+          human_validated?: boolean | null
+          id?: string
+          is_approved_for_ai?: boolean | null
+          outcome_score?: number | null
+          phrasing_pattern?: string | null
+          source_call_log_id?: string | null
+          source_session_id?: string | null
+          technique_description?: string | null
+          technique_name?: string
+          technique_type?: string
+          times_adopted?: number | null
+          transcript_excerpt?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technique_extractions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technique_extractions_source_call_log_id_fkey"
+            columns: ["source_call_log_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technique_extractions_source_session_id_fkey"
+            columns: ["source_session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
             referencedColumns: ["id"]
           },
         ]
