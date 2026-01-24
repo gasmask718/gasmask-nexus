@@ -9470,6 +9470,173 @@ export type Database = {
           },
         ]
       }
+      campaign_call_frames: {
+        Row: {
+          ai_decisions_made: Json | null
+          ai_disclosure_spoken: boolean | null
+          call_outcome: string | null
+          call_session_id: string | null
+          call_status: string
+          campaign_id: string
+          campaign_run_id: string | null
+          completed_at: string | null
+          compliance_flags: string[] | null
+          compliance_score: number | null
+          confidence_score: number | null
+          decision_trace_id: string | null
+          disclaimers_spoken: string[] | null
+          duration_seconds: number | null
+          escalated_to_human: boolean | null
+          follow_up_scheduled: boolean | null
+          id: string
+          intent_detected: string | null
+          interest_captured: boolean | null
+          objections_raised: string[] | null
+          opt_out_requested: boolean | null
+          playbook_used_id: string | null
+          prev_hash: string | null
+          queued_at: string
+          row_hash: string | null
+          sentiment_detected: string | null
+          started_at: string | null
+          style_profile_used_id: string | null
+          target_id: string | null
+          target_phone: string
+          target_type: string | null
+        }
+        Insert: {
+          ai_decisions_made?: Json | null
+          ai_disclosure_spoken?: boolean | null
+          call_outcome?: string | null
+          call_session_id?: string | null
+          call_status?: string
+          campaign_id: string
+          campaign_run_id?: string | null
+          completed_at?: string | null
+          compliance_flags?: string[] | null
+          compliance_score?: number | null
+          confidence_score?: number | null
+          decision_trace_id?: string | null
+          disclaimers_spoken?: string[] | null
+          duration_seconds?: number | null
+          escalated_to_human?: boolean | null
+          follow_up_scheduled?: boolean | null
+          id?: string
+          intent_detected?: string | null
+          interest_captured?: boolean | null
+          objections_raised?: string[] | null
+          opt_out_requested?: boolean | null
+          playbook_used_id?: string | null
+          prev_hash?: string | null
+          queued_at?: string
+          row_hash?: string | null
+          sentiment_detected?: string | null
+          started_at?: string | null
+          style_profile_used_id?: string | null
+          target_id?: string | null
+          target_phone: string
+          target_type?: string | null
+        }
+        Update: {
+          ai_decisions_made?: Json | null
+          ai_disclosure_spoken?: boolean | null
+          call_outcome?: string | null
+          call_session_id?: string | null
+          call_status?: string
+          campaign_id?: string
+          campaign_run_id?: string | null
+          completed_at?: string | null
+          compliance_flags?: string[] | null
+          compliance_score?: number | null
+          confidence_score?: number | null
+          decision_trace_id?: string | null
+          disclaimers_spoken?: string[] | null
+          duration_seconds?: number | null
+          escalated_to_human?: boolean | null
+          follow_up_scheduled?: boolean | null
+          id?: string
+          intent_detected?: string | null
+          interest_captured?: boolean | null
+          objections_raised?: string[] | null
+          opt_out_requested?: boolean | null
+          playbook_used_id?: string | null
+          prev_hash?: string | null
+          queued_at?: string
+          row_hash?: string | null
+          sentiment_detected?: string | null
+          started_at?: string | null
+          style_profile_used_id?: string | null
+          target_id?: string | null
+          target_phone?: string
+          target_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_call_frames_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_call_frames_campaign_run_id_fkey"
+            columns: ["campaign_run_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_containment_log: {
+        Row: {
+          campaign_id: string
+          containment_action: string
+          id: string
+          new_mode: string | null
+          previous_mode: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          trigger_details: Json | null
+          trigger_type: string
+          triggered_at: string
+        }
+        Insert: {
+          campaign_id: string
+          containment_action: string
+          id?: string
+          new_mode?: string | null
+          previous_mode?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          trigger_details?: Json | null
+          trigger_type: string
+          triggered_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          containment_action?: string
+          id?: string
+          new_mode?: string | null
+          previous_mode?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          trigger_details?: Json | null
+          trigger_type?: string
+          triggered_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_containment_log_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_decisions: {
         Row: {
           action_plan: Json | null
@@ -9686,6 +9853,77 @@ export type Database = {
             columns: ["recipient_id"]
             isOneToOne: false
             referencedRelation: "campaign_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_metrics_snapshots: {
+        Row: {
+          avg_call_duration_seconds: number | null
+          avg_confidence_score: number | null
+          calls_attempted: number | null
+          calls_completed: number | null
+          calls_connected: number | null
+          campaign_id: string
+          compliance_score: number | null
+          containment_triggers: number | null
+          conversion_rate: number | null
+          escalation_rate: number | null
+          handoff_count: number | null
+          handoff_success_rate: number | null
+          id: string
+          interest_rate: number | null
+          objection_categories: Json | null
+          objection_rate: number | null
+          opt_out_rate: number | null
+          snapshot_at: string
+        }
+        Insert: {
+          avg_call_duration_seconds?: number | null
+          avg_confidence_score?: number | null
+          calls_attempted?: number | null
+          calls_completed?: number | null
+          calls_connected?: number | null
+          campaign_id: string
+          compliance_score?: number | null
+          containment_triggers?: number | null
+          conversion_rate?: number | null
+          escalation_rate?: number | null
+          handoff_count?: number | null
+          handoff_success_rate?: number | null
+          id?: string
+          interest_rate?: number | null
+          objection_categories?: Json | null
+          objection_rate?: number | null
+          opt_out_rate?: number | null
+          snapshot_at?: string
+        }
+        Update: {
+          avg_call_duration_seconds?: number | null
+          avg_confidence_score?: number | null
+          calls_attempted?: number | null
+          calls_completed?: number | null
+          calls_connected?: number | null
+          campaign_id?: string
+          compliance_score?: number | null
+          containment_triggers?: number | null
+          conversion_rate?: number | null
+          escalation_rate?: number | null
+          handoff_count?: number | null
+          handoff_success_rate?: number | null
+          id?: string
+          interest_rate?: number | null
+          objection_categories?: Json | null
+          objection_rate?: number | null
+          opt_out_rate?: number | null
+          snapshot_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_metrics_snapshots_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_campaigns"
             referencedColumns: ["id"]
           },
         ]
@@ -24530,34 +24768,94 @@ export type Database = {
           },
         ]
       }
+      outbound_campaign_types: {
+        Row: {
+          allowed_outcomes: string[]
+          created_at: string
+          default_cooldown_days: number | null
+          default_max_calls_per_day: number | null
+          description: string | null
+          forbidden_actions: string[]
+          id: string
+          is_active: boolean | null
+          requires_playbook: boolean | null
+          requires_policy: boolean | null
+          requires_sentinel: boolean | null
+          type_code: string
+          type_name: string
+        }
+        Insert: {
+          allowed_outcomes?: string[]
+          created_at?: string
+          default_cooldown_days?: number | null
+          default_max_calls_per_day?: number | null
+          description?: string | null
+          forbidden_actions?: string[]
+          id?: string
+          is_active?: boolean | null
+          requires_playbook?: boolean | null
+          requires_policy?: boolean | null
+          requires_sentinel?: boolean | null
+          type_code: string
+          type_name: string
+        }
+        Update: {
+          allowed_outcomes?: string[]
+          created_at?: string
+          default_cooldown_days?: number | null
+          default_max_calls_per_day?: number | null
+          description?: string | null
+          forbidden_actions?: string[]
+          id?: string
+          is_active?: boolean | null
+          requires_playbook?: boolean | null
+          requires_policy?: boolean | null
+          requires_sentinel?: boolean | null
+          type_code?: string
+          type_name?: string
+        }
+        Relationships: []
+      }
       outbound_campaigns: {
         Row: {
           allowed_business_types: string[] | null
+          allowed_playbooks: string[] | null
           approval_notes: string | null
           approved_at: string | null
           approved_by: string | null
           audience_type: string
           b2b_only: boolean
+          brand_id: string | null
           business_id: string
           calls_answered: number | null
+          calls_completed: number | null
           calls_made: number | null
           campaign_type: string
+          completed_at: string | null
+          containment_active: boolean | null
           conversions: number | null
           cooldown_period_days: number | null
           created_at: string | null
           created_by: string | null
           description: string | null
           escalations: number | null
+          executive_policy_id: string | null
+          follow_ups_scheduled: number | null
           geographic_scope: Json | null
+          human_escalation_rules: Json | null
           id: string
+          interests_captured: number | null
           jurisdiction_restrictions: Json | null
+          jurisdiction_scope: string[] | null
           kill_switch_reason: string | null
           kill_switch_triggered: boolean | null
           kill_switch_triggered_at: string | null
+          launched_at: string | null
           mandatory_ai_disclosure: string
           max_calls_per_contact: number | null
           max_calls_per_day: number | null
           name: string
+          objections_count: number | null
           opt_outs: number | null
           prev_hash: string | null
           product_playbook_id: string | null
@@ -24567,38 +24865,52 @@ export type Database = {
           row_hash: string | null
           sentinel_approval_id: string | null
           sentinel_approved: boolean | null
+          sentinel_status: string | null
           status: string
+          target_segment: Json | null
           total_targets: number | null
           updated_at: string | null
           vendor_playbook_id: string | null
         }
         Insert: {
           allowed_business_types?: string[] | null
+          allowed_playbooks?: string[] | null
           approval_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
           audience_type?: string
           b2b_only?: boolean
+          brand_id?: string | null
           business_id: string
           calls_answered?: number | null
+          calls_completed?: number | null
           calls_made?: number | null
           campaign_type: string
+          completed_at?: string | null
+          containment_active?: boolean | null
           conversions?: number | null
           cooldown_period_days?: number | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
           escalations?: number | null
+          executive_policy_id?: string | null
+          follow_ups_scheduled?: number | null
           geographic_scope?: Json | null
+          human_escalation_rules?: Json | null
           id?: string
+          interests_captured?: number | null
           jurisdiction_restrictions?: Json | null
+          jurisdiction_scope?: string[] | null
           kill_switch_reason?: string | null
           kill_switch_triggered?: boolean | null
           kill_switch_triggered_at?: string | null
+          launched_at?: string | null
           mandatory_ai_disclosure?: string
           max_calls_per_contact?: number | null
           max_calls_per_day?: number | null
           name: string
+          objections_count?: number | null
           opt_outs?: number | null
           prev_hash?: string | null
           product_playbook_id?: string | null
@@ -24608,38 +24920,52 @@ export type Database = {
           row_hash?: string | null
           sentinel_approval_id?: string | null
           sentinel_approved?: boolean | null
+          sentinel_status?: string | null
           status?: string
+          target_segment?: Json | null
           total_targets?: number | null
           updated_at?: string | null
           vendor_playbook_id?: string | null
         }
         Update: {
           allowed_business_types?: string[] | null
+          allowed_playbooks?: string[] | null
           approval_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
           audience_type?: string
           b2b_only?: boolean
+          brand_id?: string | null
           business_id?: string
           calls_answered?: number | null
+          calls_completed?: number | null
           calls_made?: number | null
           campaign_type?: string
+          completed_at?: string | null
+          containment_active?: boolean | null
           conversions?: number | null
           cooldown_period_days?: number | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
           escalations?: number | null
+          executive_policy_id?: string | null
+          follow_ups_scheduled?: number | null
           geographic_scope?: Json | null
+          human_escalation_rules?: Json | null
           id?: string
+          interests_captured?: number | null
           jurisdiction_restrictions?: Json | null
+          jurisdiction_scope?: string[] | null
           kill_switch_reason?: string | null
           kill_switch_triggered?: boolean | null
           kill_switch_triggered_at?: string | null
+          launched_at?: string | null
           mandatory_ai_disclosure?: string
           max_calls_per_contact?: number | null
           max_calls_per_day?: number | null
           name?: string
+          objections_count?: number | null
           opt_outs?: number | null
           prev_hash?: string | null
           product_playbook_id?: string | null
@@ -24649,17 +24975,33 @@ export type Database = {
           row_hash?: string | null
           sentinel_approval_id?: string | null
           sentinel_approved?: boolean | null
+          sentinel_status?: string | null
           status?: string
+          target_segment?: Json | null
           total_targets?: number | null
           updated_at?: string | null
           vendor_playbook_id?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "outbound_campaigns_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "outbound_campaigns_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_campaigns_executive_policy_id_fkey"
+            columns: ["executive_policy_id"]
+            isOneToOne: false
+            referencedRelation: "executive_policies"
             referencedColumns: ["id"]
           },
         ]
@@ -37086,6 +37428,90 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      vendor_playbooks: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          benefits_framing: string[] | null
+          brand_id: string | null
+          business_id: string
+          confidence_floor: number | null
+          created_at: string
+          escalation_triggers: string[] | null
+          forbidden_promises: string[] | null
+          id: string
+          is_active: boolean | null
+          objection_handlers: Json | null
+          opening_hook: string | null
+          outreach_goal: string
+          platform_benefits: string[] | null
+          required_disclaimers: string[] | null
+          service_category: string
+          tone_guidance: string | null
+          updated_at: string
+          website_signup_explanation: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          benefits_framing?: string[] | null
+          brand_id?: string | null
+          business_id: string
+          confidence_floor?: number | null
+          created_at?: string
+          escalation_triggers?: string[] | null
+          forbidden_promises?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          objection_handlers?: Json | null
+          opening_hook?: string | null
+          outreach_goal: string
+          platform_benefits?: string[] | null
+          required_disclaimers?: string[] | null
+          service_category: string
+          tone_guidance?: string | null
+          updated_at?: string
+          website_signup_explanation?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          benefits_framing?: string[] | null
+          brand_id?: string | null
+          business_id?: string
+          confidence_floor?: number | null
+          created_at?: string
+          escalation_triggers?: string[] | null
+          forbidden_promises?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          objection_handlers?: Json | null
+          opening_hook?: string | null
+          outreach_goal?: string
+          platform_benefits?: string[] | null
+          required_disclaimers?: string[] | null
+          service_category?: string
+          tone_guidance?: string | null
+          updated_at?: string
+          website_signup_explanation?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_playbooks_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_playbooks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendor_recruitment_playbooks: {
         Row: {
