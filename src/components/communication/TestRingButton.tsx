@@ -32,34 +32,28 @@ export function TestRingButton({
 
   const testRingMutation = useMutation({
     mutationFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error("Not authenticated");
+      // Use supabase.functions.invoke for better reliability
+      const { data, error } = await supabase.functions.invoke('test-ring', {
+        body: {
+          routeId,
+          businessId,
+          phoneNumberId,
+          userId,
+        },
+      });
+
+      if (error) {
+        // Handle edge function errors with detailed info
+        console.error("Test Ring error details:", error);
+        throw new Error(error.message || "Test Ring failed");
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/test-ring`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            routeId,
-            businessId,
-            phoneNumberId,
-            userId,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Test Ring failed");
+      // Check if the response indicates an application-level error
+      if (data?.error) {
+        throw new Error(data.error);
       }
 
-      return response.json() as Promise<TestRingResult>;
+      return data as TestRingResult;
     },
     onSuccess: (data) => {
       setResult(data);
