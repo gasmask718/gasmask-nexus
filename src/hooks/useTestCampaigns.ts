@@ -247,13 +247,17 @@ export function useCreateCampaignRun() {
       }
 
       // Now create the campaign run
+      // Now create the campaign run - status must match DB constraint
+      const ALLOWED_RUN_STATUSES = ['pending', 'running', 'paused', 'completed', 'halted', 'rolled_back'];
+      const runStatus = 'pending'; // Use 'pending' for new test runs
+      
       const { data, error } = await supabase
         .from('campaign_runs')
         .insert({
           campaign_id: params.campaign_id,
           policy_id: policyId,
           business_id: params.business_id,
-          status: 'active',
+          status: runStatus,
         })
         .select()
         .single();
