@@ -109,20 +109,43 @@ export function useCreatePlaybook() {
 
   return useMutation({
     mutationFn: async (playbook: { business_id: string; name: string; [key: string]: unknown }) => {
+      // Ensure all required fields have proper defaults
+      const completePlaybook = {
+        ...playbook,
+        // Ensure structure is always provided (NOT NULL column)
+        structure: playbook.structure ?? [],
+        // Ensure arrays default properly
+        target_intents: playbook.target_intents ?? [],
+        allowed_tactics: playbook.allowed_tactics ?? [],
+        forbidden_tactics: playbook.forbidden_tactics ?? [],
+        escalation_triggers: playbook.escalation_triggers ?? [],
+        trigger_keywords: playbook.trigger_keywords ?? [],
+        // Ensure numeric defaults
+        max_duration_seconds: playbook.max_duration_seconds ?? 300,
+        confidence_floor: playbook.confidence_floor ?? 0.75,
+        // Ensure boolean defaults
+        is_active: playbook.is_active ?? true,
+        is_default: playbook.is_default ?? false,
+      };
+
       const { data, error } = await supabase
         .from('sales_playbooks')
-        .insert(playbook as never)
+        .insert(completePlaybook as never)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Playbook creation error:', error);
+        throw new Error(error.message || 'Failed to create playbook');
+      }
       return data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['playbooks', variables.business_id] });
-      toast({ title: "Playbook created" });
+      toast({ title: "Playbook created successfully" });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      console.error('Playbook mutation error:', error);
       toast({ 
         title: "Failed to create playbook", 
         description: error.message,

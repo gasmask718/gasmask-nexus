@@ -37,7 +37,12 @@ export function PlaybookEditor({
   const [forbiddenTactics, setForbiddenTactics] = useState<string[]>(playbook?.forbidden_tactics ?? []);
   const [escalationTriggers, setEscalationTriggers] = useState<string[]>(playbook?.escalation_triggers ?? []);
   const [maxDuration, setMaxDuration] = useState(playbook?.max_duration_seconds ?? 300);
-  const [confidenceFloor, setConfidenceFloor] = useState(playbook?.confidence_floor ?? 75);
+  // Convert from decimal (0.75) to percentage (75) for UI display
+  const [confidenceFloor, setConfidenceFloor] = useState(
+    playbook?.confidence_floor 
+      ? (playbook.confidence_floor < 1 ? Math.round(playbook.confidence_floor * 100) : playbook.confidence_floor)
+      : 75
+  );
   
   const [newIntent, setNewIntent] = useState('');
   const [newAllowed, setNewAllowed] = useState('');
@@ -61,6 +66,9 @@ export function PlaybookEditor({
   };
 
   const handleSave = () => {
+    // Convert percentage to decimal for DB (UI shows 75%, DB expects 0.75)
+    const confidenceFloorDecimal = confidenceFloor / 100;
+    
     onSave({
       business_id: businessId,
       name,
@@ -70,7 +78,9 @@ export function PlaybookEditor({
       forbidden_tactics: forbiddenTactics,
       escalation_triggers: escalationTriggers,
       max_duration_seconds: maxDuration,
-      confidence_floor: confidenceFloor,
+      confidence_floor: confidenceFloorDecimal,
+      // DB requires structure column (NOT NULL with default '[]'::jsonb)
+      structure: [],
     });
     onClose();
   };
