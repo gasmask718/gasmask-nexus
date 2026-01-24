@@ -1692,9 +1692,13 @@ export type Database = {
           campaign_id: string | null
           campaign_run_id: string | null
           contact_id: string | null
+          corridor_id: string | null
+          corridor_passed: boolean | null
           created_at: string
           current_node_id: string | null
           disclosure_completed: boolean | null
+          escalated: boolean | null
+          escalation_reason: string | null
           execution_mode: string | null
           flow_id: string | null
           frame_written: boolean | null
@@ -1705,6 +1709,8 @@ export type Database = {
           is_multi_party: boolean | null
           is_test_call: boolean | null
           kill_switch_terminated: boolean | null
+          permission_granted: boolean | null
+          permission_granted_at: string | null
           persona_id: string | null
           playbook_id: string | null
           primary_agent_id: string | null
@@ -1725,9 +1731,13 @@ export type Database = {
           campaign_id?: string | null
           campaign_run_id?: string | null
           contact_id?: string | null
+          corridor_id?: string | null
+          corridor_passed?: boolean | null
           created_at?: string
           current_node_id?: string | null
           disclosure_completed?: boolean | null
+          escalated?: boolean | null
+          escalation_reason?: string | null
           execution_mode?: string | null
           flow_id?: string | null
           frame_written?: boolean | null
@@ -1738,6 +1748,8 @@ export type Database = {
           is_multi_party?: boolean | null
           is_test_call?: boolean | null
           kill_switch_terminated?: boolean | null
+          permission_granted?: boolean | null
+          permission_granted_at?: string | null
           persona_id?: string | null
           playbook_id?: string | null
           primary_agent_id?: string | null
@@ -1758,9 +1770,13 @@ export type Database = {
           campaign_id?: string | null
           campaign_run_id?: string | null
           contact_id?: string | null
+          corridor_id?: string | null
+          corridor_passed?: boolean | null
           created_at?: string
           current_node_id?: string | null
           disclosure_completed?: boolean | null
+          escalated?: boolean | null
+          escalation_reason?: string | null
           execution_mode?: string | null
           flow_id?: string | null
           frame_written?: boolean | null
@@ -1771,6 +1787,8 @@ export type Database = {
           is_multi_party?: boolean | null
           is_test_call?: boolean | null
           kill_switch_terminated?: boolean | null
+          permission_granted?: boolean | null
+          permission_granted_at?: string | null
           persona_id?: string | null
           playbook_id?: string | null
           primary_agent_id?: string | null
@@ -4538,6 +4556,53 @@ export type Database = {
         }
         Relationships: []
       }
+      approved_disclosures: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          business_id: string
+          created_at: string
+          disclosure_hash: string
+          disclosure_text: string
+          id: string
+          is_active: boolean | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          business_id: string
+          created_at?: string
+          disclosure_hash: string
+          disclosure_text: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          business_id?: string
+          created_at?: string
+          disclosure_hash?: string
+          disclosure_text?: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approved_disclosures_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assigned_closing_partner: {
         Row: {
           acquisition_id: string
@@ -5343,6 +5408,70 @@ export type Database = {
           va_id?: string | null
         }
         Relationships: []
+      }
+      behavior_violation_log: {
+        Row: {
+          action_taken: string | null
+          behavior_code: string
+          call_terminated: boolean | null
+          campaign_id: string | null
+          corridor_id: string | null
+          created_at: string
+          detected_text: string | null
+          detection_confidence: number | null
+          id: string
+          kill_switch_triggered: boolean | null
+          session_id: string | null
+        }
+        Insert: {
+          action_taken?: string | null
+          behavior_code: string
+          call_terminated?: boolean | null
+          campaign_id?: string | null
+          corridor_id?: string | null
+          created_at?: string
+          detected_text?: string | null
+          detection_confidence?: number | null
+          id?: string
+          kill_switch_triggered?: boolean | null
+          session_id?: string | null
+        }
+        Update: {
+          action_taken?: string | null
+          behavior_code?: string
+          call_terminated?: boolean | null
+          campaign_id?: string | null
+          corridor_id?: string | null
+          created_at?: string
+          detected_text?: string | null
+          detection_confidence?: number | null
+          id?: string
+          kill_switch_triggered?: boolean | null
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavior_violation_log_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavior_violation_log_corridor_id_fkey"
+            columns: ["corridor_id"]
+            isOneToOne: false
+            referencedRelation: "opening_corridor_state"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavior_violation_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bets_executed: {
         Row: {
@@ -7837,6 +7966,79 @@ export type Database = {
           },
         ]
       }
+      call_escalation_log: {
+        Row: {
+          call_bridged: boolean | null
+          campaign_id: string | null
+          confidence_at_escalation: number | null
+          corridor_id: string | null
+          created_at: string
+          escalated_to_user_id: string | null
+          escalation_status: string | null
+          followup_scheduled: boolean | null
+          human_response_at: string | null
+          id: string
+          session_id: string
+          transcript_snippet: string | null
+          trigger_details: Json | null
+          trigger_type: string
+        }
+        Insert: {
+          call_bridged?: boolean | null
+          campaign_id?: string | null
+          confidence_at_escalation?: number | null
+          corridor_id?: string | null
+          created_at?: string
+          escalated_to_user_id?: string | null
+          escalation_status?: string | null
+          followup_scheduled?: boolean | null
+          human_response_at?: string | null
+          id?: string
+          session_id: string
+          transcript_snippet?: string | null
+          trigger_details?: Json | null
+          trigger_type: string
+        }
+        Update: {
+          call_bridged?: boolean | null
+          campaign_id?: string | null
+          confidence_at_escalation?: number | null
+          corridor_id?: string | null
+          created_at?: string
+          escalated_to_user_id?: string | null
+          escalation_status?: string | null
+          followup_scheduled?: boolean | null
+          human_response_at?: string | null
+          id?: string
+          session_id?: string
+          transcript_snippet?: string | null
+          trigger_details?: Json | null
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_escalation_log_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_escalation_log_corridor_id_fkey"
+            columns: ["corridor_id"]
+            isOneToOne: false
+            referencedRelation: "opening_corridor_state"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_escalation_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_escalation_rules: {
         Row: {
           action_target_role: string | null
@@ -9585,11 +9787,14 @@ export type Database = {
           compliance_flags: string[] | null
           compliance_score: number | null
           confidence_score: number | null
+          corridor_passed: boolean | null
           decision_trace_id: string | null
           disclaimers_spoken: string[] | null
+          disclosure_hash: string | null
           disclosure_spoken: boolean | null
           duration_seconds: number | null
           escalated_to_human: boolean | null
+          escalation_decision: string | null
           escalation_triggered: boolean | null
           follow_up_scheduled: boolean | null
           frame_valid: boolean | null
@@ -9599,16 +9804,20 @@ export type Database = {
           objections: Json | null
           objections_raised: string[] | null
           opt_out_requested: boolean | null
+          permission_granted: boolean | null
+          playbook_sentence_id: string | null
           playbook_used_id: string | null
           prev_hash: string | null
           queued_at: string
           row_hash: string | null
           sentiment_detected: string | null
+          speech_limit_compliant: boolean | null
           started_at: string | null
           style_profile_used_id: string | null
           target_id: string | null
           target_phone: string
           target_type: string | null
+          time_to_permission_ms: number | null
           validation_errors: string[] | null
         }
         Insert: {
@@ -9623,11 +9832,14 @@ export type Database = {
           compliance_flags?: string[] | null
           compliance_score?: number | null
           confidence_score?: number | null
+          corridor_passed?: boolean | null
           decision_trace_id?: string | null
           disclaimers_spoken?: string[] | null
+          disclosure_hash?: string | null
           disclosure_spoken?: boolean | null
           duration_seconds?: number | null
           escalated_to_human?: boolean | null
+          escalation_decision?: string | null
           escalation_triggered?: boolean | null
           follow_up_scheduled?: boolean | null
           frame_valid?: boolean | null
@@ -9637,16 +9849,20 @@ export type Database = {
           objections?: Json | null
           objections_raised?: string[] | null
           opt_out_requested?: boolean | null
+          permission_granted?: boolean | null
+          playbook_sentence_id?: string | null
           playbook_used_id?: string | null
           prev_hash?: string | null
           queued_at?: string
           row_hash?: string | null
           sentiment_detected?: string | null
+          speech_limit_compliant?: boolean | null
           started_at?: string | null
           style_profile_used_id?: string | null
           target_id?: string | null
           target_phone: string
           target_type?: string | null
+          time_to_permission_ms?: number | null
           validation_errors?: string[] | null
         }
         Update: {
@@ -9661,11 +9877,14 @@ export type Database = {
           compliance_flags?: string[] | null
           compliance_score?: number | null
           confidence_score?: number | null
+          corridor_passed?: boolean | null
           decision_trace_id?: string | null
           disclaimers_spoken?: string[] | null
+          disclosure_hash?: string | null
           disclosure_spoken?: boolean | null
           duration_seconds?: number | null
           escalated_to_human?: boolean | null
+          escalation_decision?: string | null
           escalation_triggered?: boolean | null
           follow_up_scheduled?: boolean | null
           frame_valid?: boolean | null
@@ -9675,16 +9894,20 @@ export type Database = {
           objections?: Json | null
           objections_raised?: string[] | null
           opt_out_requested?: boolean | null
+          permission_granted?: boolean | null
+          playbook_sentence_id?: string | null
           playbook_used_id?: string | null
           prev_hash?: string | null
           queued_at?: string
           row_hash?: string | null
           sentiment_detected?: string | null
+          speech_limit_compliant?: boolean | null
           started_at?: string | null
           style_profile_used_id?: string | null
           target_id?: string | null
           target_phone?: string
           target_type?: string | null
+          time_to_permission_ms?: number | null
           validation_errors?: string[] | null
         }
         Relationships: [
@@ -16638,6 +16861,47 @@ export type Database = {
           },
         ]
       }
+      escalation_triggers: {
+        Row: {
+          auto_escalate: boolean | null
+          business_id: string | null
+          confidence_threshold: number | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          trigger_keywords: string[] | null
+          trigger_type: string
+        }
+        Insert: {
+          auto_escalate?: boolean | null
+          business_id?: string | null
+          confidence_threshold?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          trigger_keywords?: string[] | null
+          trigger_type: string
+        }
+        Update: {
+          auto_escalate?: boolean | null
+          business_id?: string | null
+          confidence_threshold?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          trigger_keywords?: string[] | null
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escalation_triggers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       esign_documents: {
         Row: {
           acquisition_id: string | null
@@ -17972,6 +18236,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      forbidden_ai_behaviors: {
+        Row: {
+          auto_terminate: boolean | null
+          behavior_code: string
+          behavior_description: string
+          created_at: string
+          detection_patterns: string[] | null
+          id: string
+          is_active: boolean | null
+          severity: string
+          trigger_kill_switch: boolean | null
+        }
+        Insert: {
+          auto_terminate?: boolean | null
+          behavior_code: string
+          behavior_description: string
+          created_at?: string
+          detection_patterns?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          severity: string
+          trigger_kill_switch?: boolean | null
+        }
+        Update: {
+          auto_terminate?: boolean | null
+          behavior_code?: string
+          behavior_description?: string
+          created_at?: string
+          detection_patterns?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          severity?: string
+          trigger_kill_switch?: boolean | null
+        }
+        Relationships: []
       }
       forecast_snapshots: {
         Row: {
@@ -24521,6 +24821,136 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opening_corridor_state: {
+        Row: {
+          business_id: string
+          campaign_id: string | null
+          corridor_blocked_reason: string | null
+          corridor_passed: boolean | null
+          corridor_status: string
+          created_at: string
+          disclosure_hash_actual: string | null
+          disclosure_hash_expected: string | null
+          disclosure_hash_verified: boolean | null
+          disclosure_interrupted: boolean | null
+          disclosure_retry_count: number | null
+          disclosure_text_used: string | null
+          id: string
+          permission_question_asked: string | null
+          permission_response: string | null
+          permission_response_raw: string | null
+          phase_a_completed_at: string | null
+          phase_a_started_at: string | null
+          phase_b_completed_at: string | null
+          phase_b_started_at: string | null
+          phase_c_completed_at: string | null
+          phase_c_started_at: string | null
+          pre_permission_duration_ms: number | null
+          pre_permission_sentences: number | null
+          pre_permission_words: number | null
+          session_id: string
+          speech_limit_exceeded: boolean | null
+          speech_limit_violation_type: string | null
+          total_corridor_duration_ms: number | null
+          updated_at: string
+          value_prop_sentence_id: string | null
+          value_prop_text: string | null
+          value_prop_word_count: number | null
+        }
+        Insert: {
+          business_id: string
+          campaign_id?: string | null
+          corridor_blocked_reason?: string | null
+          corridor_passed?: boolean | null
+          corridor_status?: string
+          created_at?: string
+          disclosure_hash_actual?: string | null
+          disclosure_hash_expected?: string | null
+          disclosure_hash_verified?: boolean | null
+          disclosure_interrupted?: boolean | null
+          disclosure_retry_count?: number | null
+          disclosure_text_used?: string | null
+          id?: string
+          permission_question_asked?: string | null
+          permission_response?: string | null
+          permission_response_raw?: string | null
+          phase_a_completed_at?: string | null
+          phase_a_started_at?: string | null
+          phase_b_completed_at?: string | null
+          phase_b_started_at?: string | null
+          phase_c_completed_at?: string | null
+          phase_c_started_at?: string | null
+          pre_permission_duration_ms?: number | null
+          pre_permission_sentences?: number | null
+          pre_permission_words?: number | null
+          session_id: string
+          speech_limit_exceeded?: boolean | null
+          speech_limit_violation_type?: string | null
+          total_corridor_duration_ms?: number | null
+          updated_at?: string
+          value_prop_sentence_id?: string | null
+          value_prop_text?: string | null
+          value_prop_word_count?: number | null
+        }
+        Update: {
+          business_id?: string
+          campaign_id?: string | null
+          corridor_blocked_reason?: string | null
+          corridor_passed?: boolean | null
+          corridor_status?: string
+          created_at?: string
+          disclosure_hash_actual?: string | null
+          disclosure_hash_expected?: string | null
+          disclosure_hash_verified?: boolean | null
+          disclosure_interrupted?: boolean | null
+          disclosure_retry_count?: number | null
+          disclosure_text_used?: string | null
+          id?: string
+          permission_question_asked?: string | null
+          permission_response?: string | null
+          permission_response_raw?: string | null
+          phase_a_completed_at?: string | null
+          phase_a_started_at?: string | null
+          phase_b_completed_at?: string | null
+          phase_b_started_at?: string | null
+          phase_c_completed_at?: string | null
+          phase_c_started_at?: string | null
+          pre_permission_duration_ms?: number | null
+          pre_permission_sentences?: number | null
+          pre_permission_words?: number | null
+          session_id?: string
+          speech_limit_exceeded?: boolean | null
+          speech_limit_violation_type?: string | null
+          total_corridor_duration_ms?: number | null
+          updated_at?: string
+          value_prop_sentence_id?: string | null
+          value_prop_text?: string | null
+          value_prop_word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opening_corridor_state_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opening_corridor_state_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opening_corridor_state_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "ai_call_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -32733,6 +33163,53 @@ export type Database = {
             foreignKeyName: "speaker_style_profiles_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      speech_limit_config: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          enforce_strictly: boolean | null
+          id: string
+          max_duration_ms_before_permission: number
+          max_sentences_before_permission: number
+          max_value_prop_sentences: number
+          max_value_prop_words: number
+          max_words_before_permission: number
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          enforce_strictly?: boolean | null
+          id?: string
+          max_duration_ms_before_permission?: number
+          max_sentences_before_permission?: number
+          max_value_prop_sentences?: number
+          max_value_prop_words?: number
+          max_words_before_permission?: number
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          enforce_strictly?: boolean | null
+          id?: string
+          max_duration_ms_before_permission?: number
+          max_sentences_before_permission?: number
+          max_value_prop_sentences?: number
+          max_value_prop_words?: number
+          max_words_before_permission?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speech_limit_config_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
             referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
