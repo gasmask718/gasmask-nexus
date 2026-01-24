@@ -12136,6 +12136,202 @@ export type Database = {
           },
         ]
       }
+      compliance_baselines: {
+        Row: {
+          baseline_name: string
+          baseline_version: string
+          business_id: string | null
+          certification_hash: string | null
+          certification_notes: string | null
+          certified_at: string | null
+          certified_by: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_regulator_grade: boolean | null
+          max_confidence_breach_rate: number | null
+          max_human_takeover_latency_ms: number | null
+          max_kill_switch_latency_ms: number | null
+          max_unapproved_technique_count: number | null
+          metadata: Json | null
+          min_audit_completeness_rate: number | null
+          min_permission_rate: number | null
+          source_evidence_pack_ids: string[] | null
+          source_simulation_ids: string[] | null
+          supersedes_baseline_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          baseline_name: string
+          baseline_version?: string
+          business_id?: string | null
+          certification_hash?: string | null
+          certification_notes?: string | null
+          certified_at?: string | null
+          certified_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_regulator_grade?: boolean | null
+          max_confidence_breach_rate?: number | null
+          max_human_takeover_latency_ms?: number | null
+          max_kill_switch_latency_ms?: number | null
+          max_unapproved_technique_count?: number | null
+          metadata?: Json | null
+          min_audit_completeness_rate?: number | null
+          min_permission_rate?: number | null
+          source_evidence_pack_ids?: string[] | null
+          source_simulation_ids?: string[] | null
+          supersedes_baseline_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          baseline_name?: string
+          baseline_version?: string
+          business_id?: string | null
+          certification_hash?: string | null
+          certification_notes?: string | null
+          certified_at?: string | null
+          certified_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_regulator_grade?: boolean | null
+          max_confidence_breach_rate?: number | null
+          max_human_takeover_latency_ms?: number | null
+          max_kill_switch_latency_ms?: number | null
+          max_unapproved_technique_count?: number | null
+          metadata?: Json | null
+          min_audit_completeness_rate?: number | null
+          min_permission_rate?: number | null
+          source_evidence_pack_ids?: string[] | null
+          source_simulation_ids?: string[] | null
+          supersedes_baseline_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_baselines_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_baselines_supersedes_baseline_id_fkey"
+            columns: ["supersedes_baseline_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_baselines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_drift_events: {
+        Row: {
+          baseline_id: string | null
+          baseline_value: number | null
+          business_id: string | null
+          containment_action_id: string | null
+          created_at: string | null
+          current_value: number | null
+          deviation_magnitude: number | null
+          deviation_percentage: number | null
+          drift_direction: string | null
+          drift_type: string
+          duration_seconds: number | null
+          evaluation_id: string | null
+          event_hash: string | null
+          first_detected_at: string | null
+          id: string
+          is_resolved: boolean | null
+          last_detected_at: string | null
+          metadata: Json | null
+          metric_name: string
+          occurrence_count: number | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          triggered_containment: boolean | null
+        }
+        Insert: {
+          baseline_id?: string | null
+          baseline_value?: number | null
+          business_id?: string | null
+          containment_action_id?: string | null
+          created_at?: string | null
+          current_value?: number | null
+          deviation_magnitude?: number | null
+          deviation_percentage?: number | null
+          drift_direction?: string | null
+          drift_type: string
+          duration_seconds?: number | null
+          evaluation_id?: string | null
+          event_hash?: string | null
+          first_detected_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          last_detected_at?: string | null
+          metadata?: Json | null
+          metric_name: string
+          occurrence_count?: number | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          triggered_containment?: boolean | null
+        }
+        Update: {
+          baseline_id?: string | null
+          baseline_value?: number | null
+          business_id?: string | null
+          containment_action_id?: string | null
+          created_at?: string | null
+          current_value?: number | null
+          deviation_magnitude?: number | null
+          deviation_percentage?: number | null
+          drift_direction?: string | null
+          drift_type?: string
+          duration_seconds?: number | null
+          evaluation_id?: string | null
+          event_hash?: string | null
+          first_detected_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          last_detected_at?: string | null
+          metadata?: Json | null
+          metric_name?: string
+          occurrence_count?: number | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          triggered_containment?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_drift_events_baseline_id_fkey"
+            columns: ["baseline_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_baselines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_drift_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_drift_events_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "sentinel_evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compliance_metrics_snapshots: {
         Row: {
           audit_completeness_rate: number | null
@@ -29152,6 +29348,285 @@ export type Database = {
             columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "communication_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sentinel_containment_actions: {
+        Row: {
+          action_hash: string | null
+          action_reason: string
+          action_type: string
+          affected_agents: string[] | null
+          affected_routes: string[] | null
+          business_id: string | null
+          created_at: string | null
+          drift_event_id: string | null
+          evaluation_id: string | null
+          executed_at: string | null
+          execution_error: string | null
+          execution_success: boolean | null
+          id: string
+          is_immutable: boolean | null
+          metadata: Json | null
+          new_mode: string | null
+          previous_mode: string | null
+          requires_human_approval_to_restore: boolean | null
+          restore_approved_by: string | null
+          restore_notes: string | null
+          restored_at: string | null
+          restored_by: string | null
+          severity_at_action: string
+        }
+        Insert: {
+          action_hash?: string | null
+          action_reason: string
+          action_type: string
+          affected_agents?: string[] | null
+          affected_routes?: string[] | null
+          business_id?: string | null
+          created_at?: string | null
+          drift_event_id?: string | null
+          evaluation_id?: string | null
+          executed_at?: string | null
+          execution_error?: string | null
+          execution_success?: boolean | null
+          id?: string
+          is_immutable?: boolean | null
+          metadata?: Json | null
+          new_mode?: string | null
+          previous_mode?: string | null
+          requires_human_approval_to_restore?: boolean | null
+          restore_approved_by?: string | null
+          restore_notes?: string | null
+          restored_at?: string | null
+          restored_by?: string | null
+          severity_at_action: string
+        }
+        Update: {
+          action_hash?: string | null
+          action_reason?: string
+          action_type?: string
+          affected_agents?: string[] | null
+          affected_routes?: string[] | null
+          business_id?: string | null
+          created_at?: string | null
+          drift_event_id?: string | null
+          evaluation_id?: string | null
+          executed_at?: string | null
+          execution_error?: string | null
+          execution_success?: boolean | null
+          id?: string
+          is_immutable?: boolean | null
+          metadata?: Json | null
+          new_mode?: string | null
+          previous_mode?: string | null
+          requires_human_approval_to_restore?: boolean | null
+          restore_approved_by?: string | null
+          restore_notes?: string | null
+          restored_at?: string | null
+          restored_by?: string | null
+          severity_at_action?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sentinel_containment_actions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sentinel_containment_actions_drift_event_id_fkey"
+            columns: ["drift_event_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_drift_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sentinel_containment_actions_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "sentinel_evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sentinel_evaluations: {
+        Row: {
+          baseline_id: string | null
+          business_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          drift_count: number | null
+          drift_detected: boolean | null
+          duration_ms: number | null
+          evaluation_hash: string | null
+          evaluation_type: string
+          id: string
+          metadata: Json | null
+          metrics_evaluated: Json | null
+          prev_evaluation_hash: string | null
+          prev_evaluation_id: string | null
+          started_at: string | null
+          status: string | null
+          thresholds_checked: Json | null
+          trigger_event: string | null
+        }
+        Insert: {
+          baseline_id?: string | null
+          business_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          drift_count?: number | null
+          drift_detected?: boolean | null
+          duration_ms?: number | null
+          evaluation_hash?: string | null
+          evaluation_type: string
+          id?: string
+          metadata?: Json | null
+          metrics_evaluated?: Json | null
+          prev_evaluation_hash?: string | null
+          prev_evaluation_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          thresholds_checked?: Json | null
+          trigger_event?: string | null
+        }
+        Update: {
+          baseline_id?: string | null
+          business_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          drift_count?: number | null
+          drift_detected?: boolean | null
+          duration_ms?: number | null
+          evaluation_hash?: string | null
+          evaluation_type?: string
+          id?: string
+          metadata?: Json | null
+          metrics_evaluated?: Json | null
+          prev_evaluation_hash?: string | null
+          prev_evaluation_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          thresholds_checked?: Json | null
+          trigger_event?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sentinel_evaluations_baseline_id_fkey"
+            columns: ["baseline_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_baselines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sentinel_evaluations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sentinel_evaluations_prev_evaluation_id_fkey"
+            columns: ["prev_evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "sentinel_evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sentinel_status: {
+        Row: {
+          active_baseline_id: string | null
+          active_critical_count: number | null
+          active_drift_count: number | null
+          active_warning_count: number | null
+          business_id: string | null
+          compliance_state: string | null
+          containment_level: string | null
+          containment_reason: string | null
+          containment_started_at: string | null
+          created_at: string | null
+          evaluation_interval_seconds: number | null
+          id: string
+          is_contained: boolean | null
+          last_clean_evaluation_at: string | null
+          last_evaluation_at: string | null
+          last_evaluation_id: string | null
+          last_evaluation_status: string | null
+          metadata: Json | null
+          sentinel_enabled: boolean | null
+          time_since_last_clean_ms: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active_baseline_id?: string | null
+          active_critical_count?: number | null
+          active_drift_count?: number | null
+          active_warning_count?: number | null
+          business_id?: string | null
+          compliance_state?: string | null
+          containment_level?: string | null
+          containment_reason?: string | null
+          containment_started_at?: string | null
+          created_at?: string | null
+          evaluation_interval_seconds?: number | null
+          id?: string
+          is_contained?: boolean | null
+          last_clean_evaluation_at?: string | null
+          last_evaluation_at?: string | null
+          last_evaluation_id?: string | null
+          last_evaluation_status?: string | null
+          metadata?: Json | null
+          sentinel_enabled?: boolean | null
+          time_since_last_clean_ms?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active_baseline_id?: string | null
+          active_critical_count?: number | null
+          active_drift_count?: number | null
+          active_warning_count?: number | null
+          business_id?: string | null
+          compliance_state?: string | null
+          containment_level?: string | null
+          containment_reason?: string | null
+          containment_started_at?: string | null
+          created_at?: string | null
+          evaluation_interval_seconds?: number | null
+          id?: string
+          is_contained?: boolean | null
+          last_clean_evaluation_at?: string | null
+          last_evaluation_at?: string | null
+          last_evaluation_id?: string | null
+          last_evaluation_status?: string | null
+          metadata?: Json | null
+          sentinel_enabled?: boolean | null
+          time_since_last_clean_ms?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sentinel_status_active_baseline_id_fkey"
+            columns: ["active_baseline_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_baselines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sentinel_status_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sentinel_status_last_evaluation_id_fkey"
+            columns: ["last_evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "sentinel_evaluations"
             referencedColumns: ["id"]
           },
         ]
