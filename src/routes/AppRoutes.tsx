@@ -1594,6 +1594,15 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
+      {/* Regulatory Compliance Center */}
+      <Route path="/compliance" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin']}>
+            <Layout><ComplianceCenter /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
       {/* Floor 3 — Inventory */}
       <Route path="/grabba/inventory" element={
         <ProtectedRoute>
