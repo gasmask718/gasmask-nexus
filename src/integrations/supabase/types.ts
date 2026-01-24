@@ -12064,6 +12064,149 @@ export type Database = {
           },
         ]
       }
+      compliance_alerts: {
+        Row: {
+          acknowledged: boolean | null
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          business_id: string | null
+          created_at: string
+          description: string | null
+          evidence: Json | null
+          id: string
+          resolution_notes: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          session_id: string | null
+          severity: string | null
+          title: string
+        }
+        Insert: {
+          acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          evidence?: Json | null
+          id?: string
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          session_id?: string | null
+          severity?: string | null
+          title: string
+        }
+        Update: {
+          acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          evidence?: Json | null
+          id?: string
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          session_id?: string | null
+          severity?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_alerts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_alerts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_metrics_snapshots: {
+        Row: {
+          audit_completeness_rate: number | null
+          avg_human_takeover_latency_ms: number | null
+          business_id: string | null
+          calls_with_ai_permission: number | null
+          calls_without_permission: number | null
+          compliance_status: string | null
+          confidence_breaches: number | null
+          created_at: string
+          human_takeover_count: number | null
+          id: string
+          kill_switch_activations: number | null
+          kill_switch_success_rate: number | null
+          permission_rate: number | null
+          risk_score: number | null
+          snapshot_date: string
+          snapshot_hour: number | null
+          total_calls: number | null
+          unapproved_technique_uses: number | null
+        }
+        Insert: {
+          audit_completeness_rate?: number | null
+          avg_human_takeover_latency_ms?: number | null
+          business_id?: string | null
+          calls_with_ai_permission?: number | null
+          calls_without_permission?: number | null
+          compliance_status?: string | null
+          confidence_breaches?: number | null
+          created_at?: string
+          human_takeover_count?: number | null
+          id?: string
+          kill_switch_activations?: number | null
+          kill_switch_success_rate?: number | null
+          permission_rate?: number | null
+          risk_score?: number | null
+          snapshot_date: string
+          snapshot_hour?: number | null
+          total_calls?: number | null
+          unapproved_technique_uses?: number | null
+        }
+        Update: {
+          audit_completeness_rate?: number | null
+          avg_human_takeover_latency_ms?: number | null
+          business_id?: string | null
+          calls_with_ai_permission?: number | null
+          calls_without_permission?: number | null
+          compliance_status?: string | null
+          confidence_breaches?: number | null
+          created_at?: string
+          human_takeover_count?: number | null
+          id?: string
+          kill_switch_activations?: number | null
+          kill_switch_success_rate?: number | null
+          permission_rate?: number | null
+          risk_score?: number | null
+          snapshot_date?: string
+          snapshot_hour?: number | null
+          total_calls?: number | null
+          unapproved_technique_uses?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_metrics_snapshots_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       confirmation_audit_log: {
         Row: {
           action: string
@@ -16185,6 +16328,138 @@ export type Database = {
         }
         Relationships: []
       }
+      forensic_call_frames: {
+        Row: {
+          actual_speaker: string | null
+          call_state: string
+          confidence_level: number | null
+          created_at: string
+          frame_number: number
+          id: string
+          interruption_detected: boolean | null
+          kill_switch_active: boolean | null
+          lock_applied: boolean | null
+          original_session_id: string | null
+          replay_session_id: string | null
+          speaker_allowed: string | null
+          state_metadata: Json | null
+          timestamp_ms: number
+          transcript_fragment: string | null
+          trust_score: number | null
+        }
+        Insert: {
+          actual_speaker?: string | null
+          call_state: string
+          confidence_level?: number | null
+          created_at?: string
+          frame_number: number
+          id?: string
+          interruption_detected?: boolean | null
+          kill_switch_active?: boolean | null
+          lock_applied?: boolean | null
+          original_session_id?: string | null
+          replay_session_id?: string | null
+          speaker_allowed?: string | null
+          state_metadata?: Json | null
+          timestamp_ms: number
+          transcript_fragment?: string | null
+          trust_score?: number | null
+        }
+        Update: {
+          actual_speaker?: string | null
+          call_state?: string
+          confidence_level?: number | null
+          created_at?: string
+          frame_number?: number
+          id?: string
+          interruption_detected?: boolean | null
+          kill_switch_active?: boolean | null
+          lock_applied?: boolean | null
+          original_session_id?: string | null
+          replay_session_id?: string | null
+          speaker_allowed?: string | null
+          state_metadata?: Json | null
+          timestamp_ms?: number
+          transcript_fragment?: string | null
+          trust_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forensic_call_frames_original_session_id_fkey"
+            columns: ["original_session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forensic_call_frames_replay_session_id_fkey"
+            columns: ["replay_session_id"]
+            isOneToOne: false
+            referencedRelation: "forensic_replay_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forensic_replay_sessions: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          export_format: string | null
+          export_url: string | null
+          exported_at: string | null
+          id: string
+          notes: string | null
+          original_session_id: string | null
+          replay_purpose: string | null
+          replayed_at: string
+          replayed_by: string | null
+          row_hash: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          export_format?: string | null
+          export_url?: string | null
+          exported_at?: string | null
+          id?: string
+          notes?: string | null
+          original_session_id?: string | null
+          replay_purpose?: string | null
+          replayed_at?: string
+          replayed_by?: string | null
+          row_hash?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          export_format?: string | null
+          export_url?: string | null
+          exported_at?: string | null
+          id?: string
+          notes?: string | null
+          original_session_id?: string | null
+          replay_purpose?: string | null
+          replayed_at?: string
+          replayed_by?: string | null
+          row_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forensic_replay_sessions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forensic_replay_sessions_original_session_id_fkey"
+            columns: ["original_session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fraud_flags: {
         Row: {
           created_at: string | null
@@ -17531,6 +17806,268 @@ export type Database = {
             columns: ["phone_number_id"]
             isOneToOne: false
             referencedRelation: "business_phone_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_drills: {
+        Row: {
+          actual_outcomes: Json | null
+          ai_stopped_correctly: boolean | null
+          alerts_fired_correctly: boolean | null
+          audit_logs_persisted: boolean | null
+          business_id: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          drill_name: string
+          drill_readiness_score: number | null
+          drill_type: string
+          expected_outcomes: Json | null
+          findings: string[] | null
+          human_takeover_activated: boolean | null
+          id: string
+          initiated_at: string
+          initiated_by: string
+          is_drill: boolean | null
+          latency_metrics: Json | null
+          status: string | null
+        }
+        Insert: {
+          actual_outcomes?: Json | null
+          ai_stopped_correctly?: boolean | null
+          alerts_fired_correctly?: boolean | null
+          audit_logs_persisted?: boolean | null
+          business_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          drill_name: string
+          drill_readiness_score?: number | null
+          drill_type: string
+          expected_outcomes?: Json | null
+          findings?: string[] | null
+          human_takeover_activated?: boolean | null
+          id?: string
+          initiated_at?: string
+          initiated_by: string
+          is_drill?: boolean | null
+          latency_metrics?: Json | null
+          status?: string | null
+        }
+        Update: {
+          actual_outcomes?: Json | null
+          ai_stopped_correctly?: boolean | null
+          alerts_fired_correctly?: boolean | null
+          audit_logs_persisted?: boolean | null
+          business_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          drill_name?: string
+          drill_readiness_score?: number | null
+          drill_type?: string
+          expected_outcomes?: Json | null
+          findings?: string[] | null
+          human_takeover_activated?: boolean | null
+          id?: string
+          initiated_at?: string
+          initiated_by?: string
+          is_drill?: boolean | null
+          latency_metrics?: Json | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_drills_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_findings: {
+        Row: {
+          created_at: string
+          description: string
+          evidence: Json | null
+          finding_type: string
+          id: string
+          recommended_action: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          run_id: string | null
+          severity: string | null
+          simulation_id: string | null
+          timestamp_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          evidence?: Json | null
+          finding_type: string
+          id?: string
+          recommended_action?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          run_id?: string | null
+          severity?: string | null
+          simulation_id?: string | null
+          timestamp_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          evidence?: Json | null
+          finding_type?: string
+          id?: string
+          recommended_action?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          run_id?: string | null
+          severity?: string | null
+          simulation_id?: string | null
+          timestamp_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_findings_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "incident_simulation_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_findings_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "incident_simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_simulation_runs: {
+        Row: {
+          audit_trail: Json | null
+          business_id: string | null
+          call_state_log: Json | null
+          completed_at: string | null
+          created_at: string
+          failure_reason: string | null
+          id: string
+          passed: boolean | null
+          result_summary: Json | null
+          run_by: string | null
+          run_duration_ms: number | null
+          simulation_id: string | null
+          started_at: string
+          status: string | null
+          synthetic_session_id: string | null
+        }
+        Insert: {
+          audit_trail?: Json | null
+          business_id?: string | null
+          call_state_log?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          passed?: boolean | null
+          result_summary?: Json | null
+          run_by?: string | null
+          run_duration_ms?: number | null
+          simulation_id?: string | null
+          started_at?: string
+          status?: string | null
+          synthetic_session_id?: string | null
+        }
+        Update: {
+          audit_trail?: Json | null
+          business_id?: string | null
+          call_state_log?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          passed?: boolean | null
+          result_summary?: Json | null
+          run_by?: string | null
+          run_duration_ms?: number | null
+          simulation_id?: string | null
+          started_at?: string
+          status?: string | null
+          synthetic_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_simulation_runs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_simulation_runs_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "incident_simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_simulations: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          expected_outcome: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          scenario_config: Json | null
+          scenario_type: string
+          severity: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          expected_outcome?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          scenario_config?: Json | null
+          scenario_type: string
+          severity?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          expected_outcome?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          scenario_config?: Json | null
+          scenario_type?: string
+          severity?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_simulations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -27225,6 +27762,86 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      regulatory_evidence_packs: {
+        Row: {
+          approver_signatures: Json | null
+          business_id: string | null
+          certified_at: string | null
+          certified_by: string | null
+          created_at: string
+          csv_url: string | null
+          date_range_end: string | null
+          date_range_start: string | null
+          generated_at: string
+          generated_by: string | null
+          id: string
+          is_certified: boolean | null
+          json_url: string | null
+          log_hashes: string[] | null
+          pack_data: Json
+          pack_type: string
+          pdf_url: string | null
+          policy_version: string | null
+          row_hash: string | null
+          session_ids: string[] | null
+          system_mode_at_generation: string | null
+        }
+        Insert: {
+          approver_signatures?: Json | null
+          business_id?: string | null
+          certified_at?: string | null
+          certified_by?: string | null
+          created_at?: string
+          csv_url?: string | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          is_certified?: boolean | null
+          json_url?: string | null
+          log_hashes?: string[] | null
+          pack_data: Json
+          pack_type: string
+          pdf_url?: string | null
+          policy_version?: string | null
+          row_hash?: string | null
+          session_ids?: string[] | null
+          system_mode_at_generation?: string | null
+        }
+        Update: {
+          approver_signatures?: Json | null
+          business_id?: string | null
+          certified_at?: string | null
+          certified_by?: string | null
+          created_at?: string
+          csv_url?: string | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          is_certified?: boolean | null
+          json_url?: string | null
+          log_hashes?: string[] | null
+          pack_data?: Json
+          pack_type?: string
+          pdf_url?: string | null
+          policy_version?: string | null
+          row_hash?: string | null
+          session_ids?: string[] | null
+          system_mode_at_generation?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_evidence_packs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       regulatory_exports: {
         Row: {
