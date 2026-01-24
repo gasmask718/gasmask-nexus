@@ -101,6 +101,12 @@ const handler = async (req: Request): Promise<Response> => {
     let businessId: string | null = null;
     let businessName = "Dynasty OS";
     let phoneNumberId: string | null = null;
+    let businessTimezone: string | null = null;
+    let businessHours: Record<string, any> | null = null;
+    let afterHoursRouteType: string | null = null;
+    let afterHoursRouteUserId: string | null = null;
+    let afterHoursRouteRole: string | null = null;
+    let afterHoursMessage: string | null = null;
 
     const { data: businessPhone } = await supabase
       .from("business_phone_numbers")
@@ -110,7 +116,13 @@ const handler = async (req: Request): Promise<Response> => {
         phone_number,
         businesses (
           id,
-          name
+          name,
+          timezone,
+          business_hours,
+          after_hours_route_type,
+          after_hours_route_user_id,
+          after_hours_route_role,
+          after_hours_message
         )
       `)
       .eq("is_active", true)
@@ -120,12 +132,36 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (businessPhone?.businesses) {
+      const biz = businessPhone.businesses as any;
       businessId = businessPhone.business_id;
       phoneNumberId = businessPhone.id;
-      businessName = (businessPhone.businesses as any).name || "Dynasty OS";
-      console.log(`✅ Business resolved: ${businessName} (${businessId}), Phone ID: ${phoneNumberId}`);
+      businessName = biz.name || "Dynasty OS";
+      businessTimezone = biz.timezone || null;
+      businessHours = biz.business_hours || null;
+      afterHoursRouteType = biz.after_hours_route_type || null;
+      afterHoursRouteUserId = biz.after_hours_route_user_id || null;
+      afterHoursRouteRole = biz.after_hours_route_role || null;
+      afterHoursMessage = biz.after_hours_message || null;
+      console.log(`✅ Business resolved: ${businessName} (${businessId}), Phone ID: ${phoneNumberId}, TZ: ${businessTimezone}`);
     } else {
       console.log(`❌ ROUTING FAILURE: No business matched for To number: ${to}`);
+    }
+
+    // =====================================================
+    // STEP 1.5: Check Business Hours
+    // =====================================================
+    let isOpen = true; // Default to open if no hours configured
+    let localTimeStr = "";
+    let dayOfWeek = "";
+
+    if (businessTimezone && businessHours) {
+      const { isOpen: open, localTime, dayName } = checkBusinessHours(businessTimezone, businessHours);
+      isOpen = open;
+      localTimeStr = localTime;
+      dayOfWeek = dayName;
+      console.log(`🕒 Business hours check: ${dayName} ${localTime} - ${isOpen ? "OPEN" : "CLOSED"}`);
+    } else {
+      console.log(`🕒 No business hours configured - assuming OPEN`);
     }
 
     // =====================================================
@@ -224,8 +260,8 @@ const handler = async (req: Request): Promise<Response> => {
       status: "ringing",
       started_at: new Date().toISOString(),
       notes: callerInfo 
-        ? `Caller: ${callerInfo.name} (${callerInfo.type}) | Route: ${routeSource}` 
-        : `Unknown caller from ${from} | Route: ${routeSource}`,
+        ? `Caller: ${callerInfo.name} (${callerInfo.type}) | Route: ${routeSource} | Hours: ${isOpen ? 'Open' : 'Closed'}` 
+        : `Unknown caller from ${from} | Route: ${routeSource} | Hours: ${isOpen ? 'Open' : 'Closed'}`,
       business_id: businessId || callerInfo?.business_id || null,
       store_id: callerInfo?.type === "store" ? callerInfo.id : null,
       from_number: from,
@@ -257,7 +293,85 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
     // =====================================================
-    // STEP 5: Apply routing logic with DETAILED LOGGING
+    // STEP 5: Handle After-Hours Routing (if closed)
+    // =====================================================
+    if (!isOpen && afterHoursRouteType) {
+      console.log(`🌙 After-hours routing active: ${afterHoursRouteType}`);
+      
+      // Handle after-hours based on configuration
+      let afterHoursResult: RoutingResult | null = null;
+      
+      switch (afterHoursRouteType) {
+        case "voicemail":
+          console.log("🌙 After-hours: Sending to voicemail");
+          const voicemailMessage = afterHoursMessage || `Thank you for calling ${businessName}. We are currently closed. Please leave a message after the beep.`;
+          return generateTwiML(`
+            <Response>
+              <Say voice="alice">${escapeXml(voicemailMessage)}</Say>
+              <Record maxLength="120" transcribe="true" playBeep="true" action="${getStatusCallbackUrl()}"/>
+              <Say voice="alice">Thank you for your message. Goodbye.</Say>
+              <Hangup/>
+            </Response>
+          `);
+          
+        case "kiosk":
+          console.log("🌙 After-hours: Sending to kiosk fallback");
+          const kioskMessage = afterHoursMessage || `Thank you for calling ${businessName}. We are currently closed. Please call back during business hours.`;
+          return generateTwiML(`
+            <Response>
+              <Say voice="alice">${escapeXml(kioskMessage)}</Say>
+              <Hangup/>
+            </Response>
+          `);
+          
+        case "message":
+          console.log("🌙 After-hours: Playing custom message");
+          const customMessage = afterHoursMessage || `Thank you for calling ${businessName}. We are currently closed.`;
+          return generateTwiML(`
+            <Response>
+              <Say voice="alice">${escapeXml(customMessage)}</Say>
+              <Hangup/>
+            </Response>
+          `);
+          
+        case "user":
+          if (afterHoursRouteUserId) {
+            // Route to specific after-hours user
+            const fakeAfterHoursRoute: InboundRoute = {
+              id: "after-hours",
+              route_type: "user",
+              route_target_user_id: afterHoursRouteUserId,
+              route_target_role: null,
+              is_default: false,
+              is_active: true,
+            };
+            inboundRoute = fakeAfterHoursRoute;
+            routeSource = "after_hours_user";
+            console.log(`🌙 After-hours: Routing to user ${afterHoursRouteUserId}`);
+          }
+          break;
+          
+        case "role":
+          if (afterHoursRouteRole) {
+            // Route to after-hours role
+            const fakeAfterHoursRoute: InboundRoute = {
+              id: "after-hours",
+              route_type: "role",
+              route_target_user_id: null,
+              route_target_role: afterHoursRouteRole,
+              is_default: false,
+              is_active: true,
+            };
+            inboundRoute = fakeAfterHoursRoute;
+            routeSource = "after_hours_role";
+            console.log(`🌙 After-hours: Routing to role ${afterHoursRouteRole}`);
+          }
+          break;
+      }
+    }
+
+    // =====================================================
+    // STEP 6: Apply routing logic with DETAILED LOGGING
     // =====================================================
     const routingResult = await resolveRoutingDestination(
       supabase, 
@@ -660,6 +774,55 @@ function generateTwiML(content: string): Response {
       ...corsHeaders,
     },
   });
+}
+
+/**
+ * Check if business is currently open based on timezone and hours config
+ */
+function checkBusinessHours(
+  timezone: string,
+  hoursConfig: Record<string, any>
+): { isOpen: boolean; localTime: string; dayName: string } {
+  try {
+    // Get current time in business timezone
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      weekday: "long",
+    });
+
+    const parts = formatter.formatToParts(now);
+    const hour = parts.find(p => p.type === "hour")?.value || "00";
+    const minute = parts.find(p => p.type === "minute")?.value || "00";
+    const weekday = parts.find(p => p.type === "weekday")?.value?.toLowerCase() || "monday";
+
+    const currentTimeMinutes = parseInt(hour) * 60 + parseInt(minute);
+    const localTime = `${hour}:${minute}`;
+
+    // Get hours for current day
+    const dayHours = hoursConfig[weekday];
+    if (!dayHours || !dayHours.enabled) {
+      return { isOpen: false, localTime, dayName: weekday };
+    }
+
+    // Parse open/close times
+    const [openHour, openMinute] = (dayHours.open || "09:00").split(":").map(Number);
+    const [closeHour, closeMinute] = (dayHours.close || "17:00").split(":").map(Number);
+
+    const openMinutes = openHour * 60 + openMinute;
+    const closeMinutes = closeHour * 60 + closeMinute;
+
+    const isOpen = currentTimeMinutes >= openMinutes && currentTimeMinutes < closeMinutes;
+
+    return { isOpen, localTime, dayName: weekday };
+  } catch (error) {
+    console.error("Error checking business hours:", error);
+    // Default to open on error
+    return { isOpen: true, localTime: "unknown", dayName: "unknown" };
+  }
 }
 
 serve(handler);
