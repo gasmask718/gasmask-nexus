@@ -840,6 +840,60 @@ export type Database = {
           },
         ]
       }
+      ai_agent_failures: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          escalated_to: string | null
+          failure_reason: string | null
+          failure_type: string
+          id: string
+          prediction_id: string | null
+          resolution_status: string | null
+          resolved_at: string | null
+          was_escalated: boolean | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          escalated_to?: string | null
+          failure_reason?: string | null
+          failure_type: string
+          id?: string
+          prediction_id?: string | null
+          resolution_status?: string | null
+          resolved_at?: string | null
+          was_escalated?: boolean | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          escalated_to?: string | null
+          failure_reason?: string | null
+          failure_type?: string
+          id?: string
+          prediction_id?: string | null
+          resolution_status?: string | null
+          resolved_at?: string | null
+          was_escalated?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_agent_failures_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_agent_failures_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_predictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_agents: {
         Row: {
           active: boolean | null
@@ -969,6 +1023,56 @@ export type Database = {
             columns: ["ai_worker_id"]
             isOneToOne: false
             referencedRelation: "ai_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_call_agent_config: {
+        Row: {
+          auto_downgrade_on_failure: boolean | null
+          business_id: string
+          confidence_threshold: number | null
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          max_consecutive_failures: number | null
+          mode: string | null
+          require_callable_fallback: boolean | null
+          require_resolved_queue: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_downgrade_on_failure?: boolean | null
+          business_id: string
+          confidence_threshold?: number | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          max_consecutive_failures?: number | null
+          mode?: string | null
+          require_callable_fallback?: boolean | null
+          require_resolved_queue?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_downgrade_on_failure?: boolean | null
+          business_id?: string
+          confidence_threshold?: number | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          max_consecutive_failures?: number | null
+          mode?: string | null
+          require_callable_fallback?: boolean | null
+          require_resolved_queue?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_call_agent_config_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -1236,6 +1340,82 @@ export type Database = {
             columns: ["voice_profile_id"]
             isOneToOne: false
             referencedRelation: "voice_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_call_predictions: {
+        Row: {
+          actual_outcome: string | null
+          business_id: string | null
+          call_log_id: string | null
+          caller_phone: string | null
+          confidence_score: number | null
+          created_at: string | null
+          drafted_response: string | null
+          human_overrode: boolean | null
+          id: string
+          override_reason: string | null
+          predicted_intent: string | null
+          predicted_route: string | null
+          processing_time_ms: number | null
+          session_id: string | null
+          was_accurate: boolean | null
+        }
+        Insert: {
+          actual_outcome?: string | null
+          business_id?: string | null
+          call_log_id?: string | null
+          caller_phone?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          drafted_response?: string | null
+          human_overrode?: boolean | null
+          id?: string
+          override_reason?: string | null
+          predicted_intent?: string | null
+          predicted_route?: string | null
+          processing_time_ms?: number | null
+          session_id?: string | null
+          was_accurate?: boolean | null
+        }
+        Update: {
+          actual_outcome?: string | null
+          business_id?: string | null
+          call_log_id?: string | null
+          caller_phone?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          drafted_response?: string | null
+          human_overrode?: boolean | null
+          id?: string
+          override_reason?: string | null
+          predicted_intent?: string | null
+          predicted_route?: string | null
+          processing_time_ms?: number | null
+          session_id?: string | null
+          was_accurate?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_call_predictions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_predictions_call_log_id_fkey"
+            columns: ["call_log_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_predictions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -1916,6 +2096,65 @@ export type Database = {
           },
         ]
       }
+      ai_performance_metrics: {
+        Row: {
+          ai_escalated_calls: number | null
+          ai_handled_calls: number | null
+          average_accuracy: number | null
+          average_confidence: number | null
+          business_id: string
+          callback_success_count: number | null
+          created_at: string | null
+          human_satisfaction_score: number | null
+          id: string
+          missed_call_prevention_count: number | null
+          period_end: string
+          period_start: string
+          period_type: string | null
+          total_calls: number | null
+        }
+        Insert: {
+          ai_escalated_calls?: number | null
+          ai_handled_calls?: number | null
+          average_accuracy?: number | null
+          average_confidence?: number | null
+          business_id: string
+          callback_success_count?: number | null
+          created_at?: string | null
+          human_satisfaction_score?: number | null
+          id?: string
+          missed_call_prevention_count?: number | null
+          period_end: string
+          period_start: string
+          period_type?: string | null
+          total_calls?: number | null
+        }
+        Update: {
+          ai_escalated_calls?: number | null
+          ai_handled_calls?: number | null
+          average_accuracy?: number | null
+          average_confidence?: number | null
+          business_id?: string
+          callback_success_count?: number | null
+          created_at?: string | null
+          human_satisfaction_score?: number | null
+          id?: string
+          missed_call_prevention_count?: number | null
+          period_end?: string
+          period_start?: string
+          period_type?: string | null
+          total_calls?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_performance_metrics_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_playbooks: {
         Row: {
           created_at: string
@@ -2241,6 +2480,81 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_trust_scores: {
+        Row: {
+          accuracy_rate: number | null
+          accurate_predictions: number | null
+          business_id: string
+          consecutive_failures: number | null
+          consecutive_successes: number | null
+          created_at: string | null
+          current_mode: string | null
+          demoted_at: string | null
+          human_override_count: number | null
+          id: string
+          last_evaluated_at: string | null
+          last_failure_reason: string | null
+          promoted_at: string | null
+          route_id: string | null
+          total_predictions: number | null
+          trust_score: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          accuracy_rate?: number | null
+          accurate_predictions?: number | null
+          business_id: string
+          consecutive_failures?: number | null
+          consecutive_successes?: number | null
+          created_at?: string | null
+          current_mode?: string | null
+          demoted_at?: string | null
+          human_override_count?: number | null
+          id?: string
+          last_evaluated_at?: string | null
+          last_failure_reason?: string | null
+          promoted_at?: string | null
+          route_id?: string | null
+          total_predictions?: number | null
+          trust_score?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          accuracy_rate?: number | null
+          accurate_predictions?: number | null
+          business_id?: string
+          consecutive_failures?: number | null
+          consecutive_successes?: number | null
+          created_at?: string | null
+          current_mode?: string | null
+          demoted_at?: string | null
+          human_override_count?: number | null
+          id?: string
+          last_evaluated_at?: string | null
+          last_failure_reason?: string | null
+          promoted_at?: string | null
+          route_id?: string | null
+          total_predictions?: number | null
+          trust_score?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_trust_scores_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_trust_scores_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "inbound_call_routes"
             referencedColumns: ["id"]
           },
         ]
