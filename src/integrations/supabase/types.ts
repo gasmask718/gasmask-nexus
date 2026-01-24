@@ -18325,6 +18325,7 @@ export type Database = {
           ended_at: string | null
           from_number: string | null
           id: string
+          is_test_call: boolean | null
           metadata: Json | null
           notes: string | null
           outcome: string | null
@@ -18335,6 +18336,7 @@ export type Database = {
           started_at: string | null
           status: string | null
           store_id: string | null
+          test_ring_result: Json | null
           to_number: string | null
           vertical_id: string | null
         }
@@ -18348,6 +18350,7 @@ export type Database = {
           ended_at?: string | null
           from_number?: string | null
           id?: string
+          is_test_call?: boolean | null
           metadata?: Json | null
           notes?: string | null
           outcome?: string | null
@@ -18358,6 +18361,7 @@ export type Database = {
           started_at?: string | null
           status?: string | null
           store_id?: string | null
+          test_ring_result?: Json | null
           to_number?: string | null
           vertical_id?: string | null
         }
@@ -18371,6 +18375,7 @@ export type Database = {
           ended_at?: string | null
           from_number?: string | null
           id?: string
+          is_test_call?: boolean | null
           metadata?: Json | null
           notes?: string | null
           outcome?: string | null
@@ -18381,6 +18386,7 @@ export type Database = {
           started_at?: string | null
           status?: string | null
           store_id?: string | null
+          test_ring_result?: Json | null
           to_number?: string | null
           vertical_id?: string | null
         }
