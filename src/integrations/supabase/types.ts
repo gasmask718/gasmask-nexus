@@ -5316,6 +5316,68 @@ export type Database = {
         }
         Relationships: []
       }
+      business_voicemail_settings: {
+        Row: {
+          auto_followup_enabled: boolean | null
+          auto_sms_enabled: boolean | null
+          auto_sms_template: string | null
+          business_id: string | null
+          created_at: string
+          custom_greeting_text: string | null
+          custom_greeting_url: string | null
+          greeting_type: string | null
+          id: string
+          is_enabled: boolean | null
+          max_duration_seconds: number | null
+          notify_roles: string[] | null
+          notify_users: string[] | null
+          transcription_enabled: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          auto_followup_enabled?: boolean | null
+          auto_sms_enabled?: boolean | null
+          auto_sms_template?: string | null
+          business_id?: string | null
+          created_at?: string
+          custom_greeting_text?: string | null
+          custom_greeting_url?: string | null
+          greeting_type?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          max_duration_seconds?: number | null
+          notify_roles?: string[] | null
+          notify_users?: string[] | null
+          transcription_enabled?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          auto_followup_enabled?: boolean | null
+          auto_sms_enabled?: boolean | null
+          auto_sms_template?: string | null
+          business_id?: string | null
+          created_at?: string
+          custom_greeting_text?: string | null
+          custom_greeting_url?: string | null
+          greeting_type?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          max_duration_seconds?: number | null
+          notify_roles?: string[] | null
+          notify_users?: string[] | null
+          transcription_enabled?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_voicemail_settings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           accent_color: string | null
@@ -6466,6 +6528,192 @@ export type Database = {
           },
         ]
       }
+      call_followups: {
+        Row: {
+          assigned_to: string | null
+          auto_sms_sent: boolean | null
+          auto_sms_sent_at: string | null
+          business_id: string | null
+          call_outcome_id: string | null
+          caller_name: string | null
+          caller_number: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          description: string | null
+          due_at: string | null
+          followup_type: string
+          id: string
+          metadata: Json | null
+          priority: string | null
+          source_id: string | null
+          source_type: string
+          status: string | null
+          title: string
+          updated_at: string
+          voicemail_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          auto_sms_sent?: boolean | null
+          auto_sms_sent_at?: string | null
+          business_id?: string | null
+          call_outcome_id?: string | null
+          caller_name?: string | null
+          caller_number?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          followup_type: string
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          source_id?: string | null
+          source_type: string
+          status?: string | null
+          title: string
+          updated_at?: string
+          voicemail_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          auto_sms_sent?: boolean | null
+          auto_sms_sent_at?: string | null
+          business_id?: string | null
+          call_outcome_id?: string | null
+          caller_name?: string | null
+          caller_number?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          followup_type?: string
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          source_id?: string | null
+          source_type?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+          voicemail_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_followups_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_followups_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_followups_call_outcome_id_fkey"
+            columns: ["call_outcome_id"]
+            isOneToOne: false
+            referencedRelation: "call_outcomes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_followups_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_followups_voicemail_id_fkey"
+            columns: ["voicemail_id"]
+            isOneToOne: false
+            referencedRelation: "voicemails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_intelligence_signals: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          is_resolved: boolean | null
+          metadata: Json | null
+          metric_unit: string | null
+          metric_value: number | null
+          related_entity_id: string | null
+          related_entity_type: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string | null
+          signal_type: string
+          suggested_action: string | null
+          title: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          metadata?: Json | null
+          metric_unit?: string | null
+          metric_value?: number | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          signal_type: string
+          suggested_action?: string | null
+          title: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          metadata?: Json | null
+          metric_unit?: string | null
+          metric_value?: number | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          signal_type?: string
+          suggested_action?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_intelligence_signals_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_intelligence_signals_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_logs: {
         Row: {
           ai_notes: string | null
@@ -6576,6 +6824,103 @@ export type Database = {
           voicemail_rate?: number | null
         }
         Relationships: []
+      }
+      call_outcomes: {
+        Row: {
+          business_id: string | null
+          call_sid: string | null
+          called_number: string | null
+          caller_number: string | null
+          created_at: string
+          direction: string
+          fallback_used: string | null
+          id: string
+          is_business_hours: boolean | null
+          local_time_at_call: string | null
+          metadata: Json | null
+          outcome: string
+          outcome_reason: string | null
+          phone_number_id: string | null
+          resolution_path: Json | null
+          ring_duration_seconds: number | null
+          route_id: string | null
+          route_type: string | null
+          suggested_fix: string | null
+          timezone: string | null
+          users_attempted: string[] | null
+          voicemail_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          call_sid?: string | null
+          called_number?: string | null
+          caller_number?: string | null
+          created_at?: string
+          direction: string
+          fallback_used?: string | null
+          id?: string
+          is_business_hours?: boolean | null
+          local_time_at_call?: string | null
+          metadata?: Json | null
+          outcome: string
+          outcome_reason?: string | null
+          phone_number_id?: string | null
+          resolution_path?: Json | null
+          ring_duration_seconds?: number | null
+          route_id?: string | null
+          route_type?: string | null
+          suggested_fix?: string | null
+          timezone?: string | null
+          users_attempted?: string[] | null
+          voicemail_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          call_sid?: string | null
+          called_number?: string | null
+          caller_number?: string | null
+          created_at?: string
+          direction?: string
+          fallback_used?: string | null
+          id?: string
+          is_business_hours?: boolean | null
+          local_time_at_call?: string | null
+          metadata?: Json | null
+          outcome?: string
+          outcome_reason?: string | null
+          phone_number_id?: string | null
+          resolution_path?: Json | null
+          ring_duration_seconds?: number | null
+          route_id?: string | null
+          route_type?: string | null
+          suggested_fix?: string | null
+          timezone?: string | null
+          users_attempted?: string[] | null
+          voicemail_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_outcomes_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_outcomes_phone_number_id_fkey"
+            columns: ["phone_number_id"]
+            isOneToOne: false
+            referencedRelation: "business_phone_numbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_outcomes_voicemail_id_fkey"
+            columns: ["voicemail_id"]
+            isOneToOne: false
+            referencedRelation: "voicemails"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       call_participants: {
         Row: {
@@ -31893,6 +32238,114 @@ export type Database = {
             columns: ["voice_profile_id"]
             isOneToOne: false
             referencedRelation: "voice_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voicemails: {
+        Row: {
+          assigned_to: string | null
+          business_id: string | null
+          call_log_id: string | null
+          caller_name: string | null
+          caller_number: string
+          contact_id: string | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          metadata: Json | null
+          phone_number_id: string | null
+          reason: string | null
+          recording_sid: string | null
+          recording_url: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string | null
+          store_id: string | null
+          transcription: string | null
+          transcription_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          business_id?: string | null
+          call_log_id?: string | null
+          caller_name?: string | null
+          caller_number: string
+          contact_id?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          metadata?: Json | null
+          phone_number_id?: string | null
+          reason?: string | null
+          recording_sid?: string | null
+          recording_url?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+          store_id?: string | null
+          transcription?: string | null
+          transcription_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          business_id?: string | null
+          call_log_id?: string | null
+          caller_name?: string | null
+          caller_number?: string
+          contact_id?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          metadata?: Json | null
+          phone_number_id?: string | null
+          reason?: string | null
+          recording_sid?: string | null
+          recording_url?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+          store_id?: string | null
+          transcription?: string | null
+          transcription_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voicemails_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voicemails_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voicemails_phone_number_id_fkey"
+            columns: ["phone_number_id"]
+            isOneToOne: false
+            referencedRelation: "business_phone_numbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voicemails_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voicemails_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
