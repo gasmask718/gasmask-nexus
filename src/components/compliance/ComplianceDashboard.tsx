@@ -11,6 +11,7 @@ import {
   useResolveAlert,
   useRefreshComplianceMetrics
 } from "@/hooks/useComplianceDashboard";
+import { useComplianceSeeder } from "@/hooks/useComplianceSeeder";
 import { 
   ShieldCheck, 
   AlertTriangle, 
@@ -18,12 +19,13 @@ import {
   XCircle,
   Lock,
   RefreshCw,
-  Clock,
   Zap,
   TrendingDown,
   User,
   FileText,
-  Bell
+  Bell,
+  Database,
+  Play
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -38,6 +40,9 @@ export function ComplianceDashboard({ businessId }: Props) {
   const acknowledgeAlert = useAcknowledgeAlert();
   const resolveAlert = useResolveAlert();
   const refreshMetrics = useRefreshComplianceMetrics();
+  const seeder = useComplianceSeeder();
+
+  const hasData = latestStatus || (metrics && metrics.length > 0);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -84,15 +89,61 @@ export function ComplianceDashboard({ businessId }: Props) {
             Real-time regulatory compliance monitoring and risk assessment
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => businessId && refreshMetrics.mutate({ businessId })}
-          disabled={refreshMetrics.isPending}
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshMetrics.isPending ? 'animate-spin' : ''}`} />
-          Refresh Metrics
-        </Button>
+        <div className="flex gap-2">
+          {!hasData && (
+            <Button
+              onClick={() => seeder.mutate({ businessId: businessId || undefined })}
+              disabled={seeder.isPending}
+              className="bg-primary"
+            >
+              <Database className={`h-4 w-4 mr-2 ${seeder.isPending ? 'animate-pulse' : ''}`} />
+              {seeder.isPending ? 'Seeding...' : 'Seed Canonical Data'}
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => businessId && refreshMetrics.mutate({ businessId })}
+            disabled={refreshMetrics.isPending}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshMetrics.isPending ? 'animate-spin' : ''}`} />
+            Refresh Metrics
+          </Button>
+        </div>
       </div>
+
+      {/* Seeding Prompt when no data */}
+      {!hasData && !statusLoading && (
+        <Card className="border-2 border-dashed border-muted-foreground/30">
+          <CardContent className="py-12 text-center">
+            <Database className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Compliance Data Yet</h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Seed canonical simulation data to activate the compliance dashboard with proof of system safety.
+            </p>
+            <Button
+              size="lg"
+              onClick={() => seeder.mutate({ businessId: businessId || undefined })}
+              disabled={seeder.isPending}
+            >
+              <Play className="h-4 w-4 mr-2" />
+              {seeder.isPending ? 'Generating Proof Data...' : 'Generate Canonical Simulations'}
+            </Button>
+            <div className="mt-6 text-sm text-muted-foreground">
+              <p>This will create:</p>
+              <ul className="mt-2 space-y-1">
+                <li>✓ Kill Switch Mid-Sentence simulation</li>
+                <li>✓ Confidence Collapse → AI Muted simulation</li>
+                <li>✓ Human Takeover Within SLA simulation</li>
+                <li>✓ Forensic replay timelines</li>
+                <li>✓ Immutable evidence packs</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {hasData && (
+        <>
 
       {/* Status Banner */}
       <Card className={`border-2 ${
@@ -351,6 +402,8 @@ export function ComplianceDashboard({ businessId }: Props) {
           </div>
         </CardContent>
       </Card>
+      </>
+      )}
     </div>
   );
 }

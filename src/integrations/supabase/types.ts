@@ -16340,7 +16340,9 @@ export type Database = {
           kill_switch_active: boolean | null
           lock_applied: boolean | null
           original_session_id: string | null
+          prev_hash: string | null
           replay_session_id: string | null
+          row_hash: string | null
           speaker_allowed: string | null
           state_metadata: Json | null
           timestamp_ms: number
@@ -16358,7 +16360,9 @@ export type Database = {
           kill_switch_active?: boolean | null
           lock_applied?: boolean | null
           original_session_id?: string | null
+          prev_hash?: string | null
           replay_session_id?: string | null
+          row_hash?: string | null
           speaker_allowed?: string | null
           state_metadata?: Json | null
           timestamp_ms: number
@@ -16376,7 +16380,9 @@ export type Database = {
           kill_switch_active?: boolean | null
           lock_applied?: boolean | null
           original_session_id?: string | null
+          prev_hash?: string | null
           replay_session_id?: string | null
+          row_hash?: string | null
           speaker_allowed?: string | null
           state_metadata?: Json | null
           timestamp_ms?: number
@@ -16408,6 +16414,8 @@ export type Database = {
           export_url: string | null
           exported_at: string | null
           id: string
+          is_locked: boolean | null
+          lock_reason: string | null
           notes: string | null
           original_session_id: string | null
           replay_purpose: string | null
@@ -16422,6 +16430,8 @@ export type Database = {
           export_url?: string | null
           exported_at?: string | null
           id?: string
+          is_locked?: boolean | null
+          lock_reason?: string | null
           notes?: string | null
           original_session_id?: string | null
           replay_purpose?: string | null
@@ -16436,6 +16446,8 @@ export type Database = {
           export_url?: string | null
           exported_at?: string | null
           id?: string
+          is_locked?: boolean | null
+          lock_reason?: string | null
           notes?: string | null
           original_session_id?: string | null
           replay_purpose?: string | null
@@ -18028,6 +18040,7 @@ export type Database = {
           expected_outcome: string | null
           id: string
           is_active: boolean | null
+          is_canonical: boolean | null
           name: string
           scenario_config: Json | null
           scenario_type: string
@@ -18042,6 +18055,7 @@ export type Database = {
           expected_outcome?: string | null
           id?: string
           is_active?: boolean | null
+          is_canonical?: boolean | null
           name: string
           scenario_config?: Json | null
           scenario_type: string
@@ -18056,6 +18070,7 @@ export type Database = {
           expected_outcome?: string | null
           id?: string
           is_active?: boolean | null
+          is_canonical?: boolean | null
           name?: string
           scenario_config?: Json | null
           scenario_type?: string

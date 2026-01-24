@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,12 +16,13 @@ import {
   Pause,
   SkipBack,
   SkipForward,
-  Volume2,
   User,
   Bot,
   Lock,
   AlertTriangle,
-  Download
+  Download,
+  Shield,
+  Zap
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -40,6 +41,35 @@ export function ForensicReplayViewer({ businessId }: Props) {
   const { data: frames } = useForensicCallFrames(selectedReplay);
   const buildReplay = useBuildForensicReplay();
 
+  // Auto-select first canonical replay if no selection
+  useEffect(() => {
+    if (!selectedReplay && replaySessions?.length) {
+      const canonical = replaySessions.find(r => 
+        (r.metadata as { canonical?: boolean })?.canonical === true
+      );
+      if (canonical) {
+        setSelectedReplay(canonical.id);
+      }
+    }
+  }, [replaySessions, selectedReplay]);
+
+  // Playback logic
+  useEffect(() => {
+    if (!isPlaying || !frames?.length) return;
+    
+    const timer = setInterval(() => {
+      setCurrentFrame(prev => {
+        if (prev >= frames.length - 1) {
+          setIsPlaying(false);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 500);
+    
+    return () => clearInterval(timer);
+  }, [isPlaying, frames]);
+
   const handleBuildReplay = (sessionId: string) => {
     if (!businessId) return;
     buildReplay.mutate({
@@ -57,20 +87,39 @@ export function ForensicReplayViewer({ businessId }: Props) {
     switch (speaker) {
       case 'ai': return <Bot className="h-4 w-4 text-purple-500" />;
       case 'human': return <User className="h-4 w-4 text-blue-500" />;
+      case 'caller': return <User className="h-4 w-4 text-green-500" />;
+      case 'system': return <Shield className="h-4 w-4 text-orange-500" />;
       case 'none': return <Lock className="h-4 w-4 text-red-500" />;
       default: return null;
     }
   };
 
   const getStateColor = (state: string) => {
-    if (state.includes('ai')) return 'bg-purple-500';
+    if (state.includes('ai_speaking')) return 'bg-purple-500';
     if (state.includes('human')) return 'bg-blue-500';
-    if (state.includes('kill') || state.includes('block')) return 'bg-red-500';
-    if (state.includes('escalat')) return 'bg-orange-500';
+    if (state.includes('caller')) return 'bg-green-500';
+    if (state.includes('kill') || state.includes('block') || state.includes('muted')) return 'bg-red-500';
+    if (state.includes('intent') || state.includes('pending')) return 'bg-orange-500';
     return 'bg-muted';
   };
 
+  const getFrameColor = (frame: Record<string, unknown>) => {
+    const state = frame.call_state as string;
+    const speaker = frame.speaker as string;
+    const eventType = frame.event_type as string;
+    const isAnomaly = frame.is_anomaly as boolean;
+
+    if (isAnomaly || eventType?.includes('blocked') || eventType?.includes('muted')) return 'bg-red-500';
+    if (eventType?.includes('triggered') || state?.includes('kill')) return 'bg-red-500';
+    if (speaker === 'ai') return 'bg-purple-500';
+    if (speaker === 'human') return 'bg-blue-500';
+    if (speaker === 'caller') return 'bg-green-500';
+    if (speaker === 'system') return 'bg-orange-500';
+    return 'bg-muted-foreground/20';
+  };
+
   const currentFrameData = frames?.[currentFrame];
+  const selectedReplayData = replaySessions?.find(r => r.id === selectedReplay);
 
   return (
     <div className="space-y-6">
@@ -87,48 +136,82 @@ export function ForensicReplayViewer({ businessId }: Props) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Session Selector */}
+        {/* Replay Sessions Panel */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Call Sessions</CardTitle>
-            <CardDescription>Select a session to replay</CardDescription>
+            <CardTitle className="text-lg">Replay Sessions</CardTitle>
+            <CardDescription>
+              {replaySessions?.length || 0} sessions available
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[300px]">
+            <ScrollArea className="h-[400px]">
               <div className="space-y-2">
-                {callSessions?.map(session => (
+                {replaySessions?.map(session => (
                   <div
                     key={session.id}
                     className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedSession === session.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
+                      selectedReplay === session.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
                     }`}
-                    onClick={() => setSelectedSession(session.id)}
+                    onClick={() => {
+                      setSelectedReplay(session.id);
+                      setCurrentFrame(0);
+                    }}
                   >
-                    <div className="flex items-center justify-between">
-                      <Badge variant="outline">{session.status}</Badge>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        {session.is_locked && (
+                          <Lock className="h-3 w-3 text-muted-foreground" />
+                        )}
+                        {(session.metadata as { canonical?: boolean })?.canonical && (
+                          <Badge variant="secondary" className="text-xs">Canonical</Badge>
+                        )}
+                      </div>
                       <span className="text-xs text-muted-foreground">
-                        {format(new Date(session.created_at), 'MMM d, HH:mm')}
+                        {session.total_frames} frames
                       </span>
                     </div>
-                    {session.call_summary && (
-                      <div className="text-xs text-muted-foreground mt-1 truncate">
-                        {session.call_summary}
-                      </div>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full mt-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleBuildReplay(session.id);
-                      }}
-                      disabled={buildReplay.isPending}
-                    >
-                      Build Replay
-                    </Button>
+                    <div className="text-sm font-medium truncate">
+                      {session.replay_purpose || 'Forensic Replay'}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {format(new Date(session.replayed_at), 'MMM d, HH:mm')}
+                    </div>
                   </div>
                 ))}
+
+                {callSessions && callSessions.length > 0 && (
+                  <>
+                    <div className="text-xs text-muted-foreground mt-4 mb-2 font-medium">
+                      Build from Call Sessions
+                    </div>
+                    {callSessions.map(session => (
+                      <div
+                        key={session.id}
+                        className="p-3 rounded-lg border hover:bg-muted/50"
+                      >
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline">{session.status}</Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(session.created_at), 'MMM d')}
+                          </span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full mt-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleBuildReplay(session.id);
+                          }}
+                          disabled={buildReplay.isPending}
+                        >
+                          Build Replay
+                        </Button>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
             </ScrollArea>
           </CardContent>

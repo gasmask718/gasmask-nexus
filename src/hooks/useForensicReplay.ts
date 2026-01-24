@@ -5,15 +5,21 @@ import { toast } from "sonner";
 export interface ForensicReplaySession {
   id: string;
   business_id: string | null;
+  source_session_id: string | null;
   original_session_id: string | null;
   replayed_by: string | null;
   replayed_at: string;
   replay_purpose: string | null;
+  total_frames: number | null;
+  duration_ms: number | null;
+  is_locked: boolean | null;
+  lock_reason: string | null;
   notes: string | null;
   exported_at: string | null;
   export_format: string | null;
   export_url: string | null;
   row_hash: string | null;
+  metadata: Record<string, unknown> | null;
   created_at: string;
 }
 
