@@ -89,6 +89,7 @@ export function ExecutiveControlRoom() {
       }
     }, 10000);
     return () => clearInterval(interval);
+  }, [businessId, fetchEngineStatus]);
 
   const activePolicies = policies.filter(p => p.status === 'active');
   const draftPolicies = policies.filter(p => p.status === 'draft');
@@ -278,10 +279,7 @@ export function ExecutiveControlRoom() {
         <TabsContent value="simulation">
           <SimulationBoard
             businessId={businessId!}
-            directives={directives}
-            simulations={simulations}
-            onRunSimulation={runSimulation}
-            isLoading={directivesLoading}
+            directiveId={activeDirectives[0]?.id}
           />
         </TabsContent>
 

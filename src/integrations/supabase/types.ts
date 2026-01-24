@@ -1689,15 +1689,22 @@ export type Database = {
           business_id: string | null
           call_id: string | null
           call_summary: string | null
+          campaign_id: string | null
+          campaign_run_id: string | null
           contact_id: string | null
           created_at: string
           current_node_id: string | null
+          disclosure_completed: boolean | null
+          execution_mode: string | null
           flow_id: string | null
+          frame_written: boolean | null
           handoff_state: string
           human_exemplar_id: string | null
           id: string
           is_exemplar_call: boolean | null
           is_multi_party: boolean | null
+          is_test_call: boolean | null
+          kill_switch_terminated: boolean | null
           persona_id: string | null
           playbook_id: string | null
           primary_agent_id: string | null
@@ -1715,15 +1722,22 @@ export type Database = {
           business_id?: string | null
           call_id?: string | null
           call_summary?: string | null
+          campaign_id?: string | null
+          campaign_run_id?: string | null
           contact_id?: string | null
           created_at?: string
           current_node_id?: string | null
+          disclosure_completed?: boolean | null
+          execution_mode?: string | null
           flow_id?: string | null
+          frame_written?: boolean | null
           handoff_state?: string
           human_exemplar_id?: string | null
           id?: string
           is_exemplar_call?: boolean | null
           is_multi_party?: boolean | null
+          is_test_call?: boolean | null
+          kill_switch_terminated?: boolean | null
           persona_id?: string | null
           playbook_id?: string | null
           primary_agent_id?: string | null
@@ -1741,15 +1755,22 @@ export type Database = {
           business_id?: string | null
           call_id?: string | null
           call_summary?: string | null
+          campaign_id?: string | null
+          campaign_run_id?: string | null
           contact_id?: string | null
           created_at?: string
           current_node_id?: string | null
+          disclosure_completed?: boolean | null
+          execution_mode?: string | null
           flow_id?: string | null
+          frame_written?: boolean | null
           handoff_state?: string
           human_exemplar_id?: string | null
           id?: string
           is_exemplar_call?: boolean | null
           is_multi_party?: boolean | null
+          is_test_call?: boolean | null
+          kill_switch_terminated?: boolean | null
           persona_id?: string | null
           playbook_id?: string | null
           primary_agent_id?: string | null
@@ -1774,6 +1795,20 @@ export type Database = {
             columns: ["call_id"]
             isOneToOne: false
             referencedRelation: "ai_call_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_sessions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_sessions_campaign_run_id_fkey"
+            columns: ["campaign_run_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_runs"
             referencedColumns: ["id"]
           },
           {
@@ -7682,6 +7717,73 @@ export type Database = {
           },
         ]
       }
+      call_disclosure_log: {
+        Row: {
+          call_terminated_for_violation: boolean | null
+          campaign_id: string | null
+          campaign_run_id: string | null
+          created_at: string
+          disclosure_acknowledged: boolean | null
+          disclosure_failed: boolean | null
+          disclosure_spoken: boolean
+          disclosure_text_used: string | null
+          disclosure_timestamp_ms: number | null
+          failure_reason: string | null
+          id: string
+          session_id: string | null
+        }
+        Insert: {
+          call_terminated_for_violation?: boolean | null
+          campaign_id?: string | null
+          campaign_run_id?: string | null
+          created_at?: string
+          disclosure_acknowledged?: boolean | null
+          disclosure_failed?: boolean | null
+          disclosure_spoken?: boolean
+          disclosure_text_used?: string | null
+          disclosure_timestamp_ms?: number | null
+          failure_reason?: string | null
+          id?: string
+          session_id?: string | null
+        }
+        Update: {
+          call_terminated_for_violation?: boolean | null
+          campaign_id?: string | null
+          campaign_run_id?: string | null
+          created_at?: string
+          disclosure_acknowledged?: boolean | null
+          disclosure_failed?: boolean | null
+          disclosure_spoken?: boolean
+          disclosure_text_used?: string | null
+          disclosure_timestamp_ms?: number | null
+          failure_reason?: string | null
+          id?: string
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_disclosure_log_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_disclosure_log_campaign_run_id_fkey"
+            columns: ["campaign_run_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_disclosure_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_dispositions: {
         Row: {
           business_name: string | null
@@ -9485,12 +9587,16 @@ export type Database = {
           confidence_score: number | null
           decision_trace_id: string | null
           disclaimers_spoken: string[] | null
+          disclosure_spoken: boolean | null
           duration_seconds: number | null
           escalated_to_human: boolean | null
+          escalation_triggered: boolean | null
           follow_up_scheduled: boolean | null
+          frame_valid: boolean | null
           id: string
           intent_detected: string | null
           interest_captured: boolean | null
+          objections: Json | null
           objections_raised: string[] | null
           opt_out_requested: boolean | null
           playbook_used_id: string | null
@@ -9503,6 +9609,7 @@ export type Database = {
           target_id: string | null
           target_phone: string
           target_type: string | null
+          validation_errors: string[] | null
         }
         Insert: {
           ai_decisions_made?: Json | null
@@ -9518,12 +9625,16 @@ export type Database = {
           confidence_score?: number | null
           decision_trace_id?: string | null
           disclaimers_spoken?: string[] | null
+          disclosure_spoken?: boolean | null
           duration_seconds?: number | null
           escalated_to_human?: boolean | null
+          escalation_triggered?: boolean | null
           follow_up_scheduled?: boolean | null
+          frame_valid?: boolean | null
           id?: string
           intent_detected?: string | null
           interest_captured?: boolean | null
+          objections?: Json | null
           objections_raised?: string[] | null
           opt_out_requested?: boolean | null
           playbook_used_id?: string | null
@@ -9536,6 +9647,7 @@ export type Database = {
           target_id?: string | null
           target_phone: string
           target_type?: string | null
+          validation_errors?: string[] | null
         }
         Update: {
           ai_decisions_made?: Json | null
@@ -9551,12 +9663,16 @@ export type Database = {
           confidence_score?: number | null
           decision_trace_id?: string | null
           disclaimers_spoken?: string[] | null
+          disclosure_spoken?: boolean | null
           duration_seconds?: number | null
           escalated_to_human?: boolean | null
+          escalation_triggered?: boolean | null
           follow_up_scheduled?: boolean | null
+          frame_valid?: boolean | null
           id?: string
           intent_detected?: string | null
           interest_captured?: boolean | null
+          objections?: Json | null
           objections_raised?: string[] | null
           opt_out_requested?: boolean | null
           playbook_used_id?: string | null
@@ -9569,6 +9685,7 @@ export type Database = {
           target_id?: string | null
           target_phone?: string
           target_type?: string | null
+          validation_errors?: string[] | null
         }
         Relationships: [
           {
@@ -16647,6 +16764,116 @@ export type Database = {
         }
         Relationships: []
       }
+      execution_audit_assertions: {
+        Row: {
+          assertion_name: string
+          assertion_query: string
+          auto_halt_on_violation: boolean | null
+          created_at: string
+          expected_result: boolean
+          id: string
+          is_critical: boolean | null
+          last_check_at: string | null
+          last_check_result: boolean | null
+          violation_count: number | null
+        }
+        Insert: {
+          assertion_name: string
+          assertion_query: string
+          auto_halt_on_violation?: boolean | null
+          created_at?: string
+          expected_result?: boolean
+          id?: string
+          is_critical?: boolean | null
+          last_check_at?: string | null
+          last_check_result?: boolean | null
+          violation_count?: number | null
+        }
+        Update: {
+          assertion_name?: string
+          assertion_query?: string
+          auto_halt_on_violation?: boolean | null
+          created_at?: string
+          expected_result?: boolean
+          id?: string
+          is_critical?: boolean | null
+          last_check_at?: string | null
+          last_check_result?: boolean | null
+          violation_count?: number | null
+        }
+        Relationships: []
+      }
+      execution_gate_log: {
+        Row: {
+          block_reason: string | null
+          business_id: string | null
+          call_blocked: boolean | null
+          campaign_id: string | null
+          campaign_run_id: string | null
+          checked_at: string
+          checks_performed: Json
+          failed_checks: string[] | null
+          gate_check_passed: boolean
+          id: string
+          session_id: string | null
+        }
+        Insert: {
+          block_reason?: string | null
+          business_id?: string | null
+          call_blocked?: boolean | null
+          campaign_id?: string | null
+          campaign_run_id?: string | null
+          checked_at?: string
+          checks_performed?: Json
+          failed_checks?: string[] | null
+          gate_check_passed: boolean
+          id?: string
+          session_id?: string | null
+        }
+        Update: {
+          block_reason?: string | null
+          business_id?: string | null
+          call_blocked?: boolean | null
+          campaign_id?: string | null
+          campaign_run_id?: string | null
+          checked_at?: string
+          checks_performed?: Json
+          failed_checks?: string[] | null
+          gate_check_passed?: boolean
+          id?: string
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "execution_gate_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execution_gate_log_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execution_gate_log_campaign_run_id_fkey"
+            columns: ["campaign_run_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execution_gate_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       executive_decision_engine: {
         Row: {
           active_campaign_ids: string[] | null
@@ -21453,6 +21680,69 @@ export type Database = {
           },
         ]
       }
+      kill_switch_state: {
+        Row: {
+          business_id: string | null
+          campaign_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          requires_manual_reset: boolean | null
+          reset_at: string | null
+          reset_by: string | null
+          scope: string
+          trigger_reason: string | null
+          triggered_at: string | null
+          triggered_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          requires_manual_reset?: boolean | null
+          reset_at?: string | null
+          reset_by?: string | null
+          scope: string
+          trigger_reason?: string | null
+          triggered_at?: string | null
+          triggered_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          requires_manual_reset?: boolean | null
+          reset_at?: string | null
+          reset_by?: string | null
+          scope?: string
+          trigger_reason?: string | null
+          triggered_at?: string | null
+          triggered_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kill_switch_state_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kill_switch_state_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kpi_categories: {
         Row: {
           business_id: string | null
@@ -25160,11 +25450,15 @@ export type Database = {
           name: string
           objections_count: number | null
           opt_outs: number | null
+          playbook_validated: boolean | null
+          playbook_validation_error: string | null
           prev_hash: string | null
           product_playbook_id: string | null
           prohibited_claims: string[] | null
           required_disclaimers: string[] | null
+          requires_product_playbook: boolean | null
           requires_sentinel_approval: boolean | null
+          requires_vendor_playbook: boolean | null
           row_hash: string | null
           sentinel_approval_id: string | null
           sentinel_approved: boolean | null
@@ -25216,11 +25510,15 @@ export type Database = {
           name: string
           objections_count?: number | null
           opt_outs?: number | null
+          playbook_validated?: boolean | null
+          playbook_validation_error?: string | null
           prev_hash?: string | null
           product_playbook_id?: string | null
           prohibited_claims?: string[] | null
           required_disclaimers?: string[] | null
+          requires_product_playbook?: boolean | null
           requires_sentinel_approval?: boolean | null
+          requires_vendor_playbook?: boolean | null
           row_hash?: string | null
           sentinel_approval_id?: string | null
           sentinel_approved?: boolean | null
@@ -25272,11 +25570,15 @@ export type Database = {
           name?: string
           objections_count?: number | null
           opt_outs?: number | null
+          playbook_validated?: boolean | null
+          playbook_validation_error?: string | null
           prev_hash?: string | null
           product_playbook_id?: string | null
           prohibited_claims?: string[] | null
           required_disclaimers?: string[] | null
+          requires_product_playbook?: boolean | null
           requires_sentinel_approval?: boolean | null
+          requires_vendor_playbook?: boolean | null
           row_hash?: string | null
           sentinel_approval_id?: string | null
           sentinel_approved?: boolean | null
@@ -35558,6 +35860,79 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "territory_stats_daily_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_call_rate_limits: {
+        Row: {
+          business_id: string
+          calls_made: number | null
+          created_at: string
+          date: string
+          id: string
+          max_calls_per_day: number | null
+        }
+        Insert: {
+          business_id: string
+          calls_made?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          max_calls_per_day?: number | null
+        }
+        Update: {
+          business_id?: string
+          calls_made?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          max_calls_per_day?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_call_rate_limits_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_call_whitelist: {
+        Row: {
+          added_by: string | null
+          business_id: string
+          created_at: string
+          id: string
+          is_internal: boolean | null
+          label: string | null
+          phone_number: string
+        }
+        Insert: {
+          added_by?: string | null
+          business_id: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean | null
+          label?: string | null
+          phone_number: string
+        }
+        Update: {
+          added_by?: string | null
+          business_id?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean | null
+          label?: string | null
+          phone_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_call_whitelist_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
