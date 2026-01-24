@@ -60,6 +60,7 @@ const callSystemSettingsItems = [
 // Call Intelligence section
 const callIntelligenceItems = [
   { path: "call-intelligence", label: "Call Intelligence", icon: Brain, highlight: true },
+  { path: "ai-call-agent", label: "AI Call Agent", icon: Rocket, highlight: true, adminOnly: true },
   { path: "voicemail-inbox", label: "Voicemail Inbox", icon: Voicemail },
   { path: "missed-calls", label: "Missed Calls", icon: Phone },
   { path: "unresolved-queue", label: "Unresolved Queue", icon: AlertTriangle },

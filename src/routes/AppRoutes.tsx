@@ -166,6 +166,7 @@ import PhoneNumbersSettingsPage from '@/pages/communication/settings/PhoneNumber
 import BusinessPhoneNumbersPage from '@/pages/communication/BusinessPhoneNumbers';
 import { UserCallSettingsPage, BusinessHoursPage, AfterHoursRoutingPage, CallSystemDiagnosticsPage } from '@/pages/communication/call-settings';
 import { VoicemailInboxPage, MissedCallsDashboardPage, CallIntelligencePage, UnresolvedCallsQueuePage } from '@/pages/communication/call-intelligence';
+import AICallAgentDashboardPage from '@/pages/communication/call-intelligence/AICallAgentDashboardPage';
 import ManualCallPage from '@/pages/communication/manual/ManualCallPage';
 import ManualTextPage from '@/pages/communication/manual/ManualTextPage';
 import AIAutoDialerPage from '@/pages/communication/ai/AIAutoDialerPage';
@@ -1211,6 +1212,7 @@ export default function AppRoutes() {
           <Route path="missed-calls" element={<MissedCallsDashboardPage />} />
           <Route path="call-intelligence" element={<CallIntelligencePage />} />
           <Route path="unresolved-queue" element={<UnresolvedCallsQueuePage />} />
+          <Route path="ai-call-agent" element={<AICallAgentDashboardPage />} />
         </Route>
 
         <Route path="/messages" element={<MessagesPage />} />
