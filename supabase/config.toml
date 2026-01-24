@@ -88,3 +88,9 @@ verify_jwt = false
 
 [functions.simulate-lines]
 verify_jwt = false
+
+[functions.executive-policy-manager]
+verify_jwt = false
+
+[functions.executive-decision-engine]
+verify_jwt = false

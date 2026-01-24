@@ -180,6 +180,7 @@ import UnifiedInboxV3Page from '@/pages/communication/inbox/UnifiedInboxV3Page';
 import PlaybooksManagement from '@/pages/communication/PlaybooksManagement';
 import ShadowModePage from '@/pages/communication/ShadowModePage';
 import OutboundGrowthPage from '@/pages/communication/OutboundGrowthPage';
+import { ExecutiveControlRoomPage } from '@/pages/executive';
 import ComplianceCenter from '@/pages/compliance/ComplianceCenter';
 // Legacy Communication imports (kept for other routes)
 import CommunicationOverview from '@/pages/communication/CommunicationOverview';
@@ -1220,6 +1221,7 @@ export default function AppRoutes() {
           <Route path="playbooks" element={<PlaybooksManagement />} />
           <Route path="shadow-mode" element={<ShadowModePage />} />
           <Route path="outbound-growth" element={<OutboundGrowthPage />} />
+          <Route path="executive-ai" element={<ExecutiveControlRoomPage />} />
         </Route>
 
         <Route path="/messages" element={<MessagesPage />} />
