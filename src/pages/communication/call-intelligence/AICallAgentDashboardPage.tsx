@@ -14,10 +14,11 @@ import { WhyAIDidntAnswer } from "@/components/communication/ai-agent/WhyAIDidnt
 import { CanaryModePanelWrapper } from "@/components/communication/ai-agent/CanaryModePanelWrapper";
 import { LiveModeBannerWrapper } from "@/components/communication/ai-agent/LiveModeBannerWrapper";
 import { LiveModePanel } from "@/components/communication/ai-agent/LiveModePanel";
+import { GovernancePanel } from "@/components/communication/ai-agent/GovernancePanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bot, Activity, Target, Zap } from "lucide-react";
+import { Bot, Activity, Target, Zap, Shield } from "lucide-react";
 
 export default function AICallAgentDashboardPage() {
   const { selectedBusiness } = useBusinessStore();
@@ -166,6 +167,10 @@ export default function AICallAgentDashboardPage() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="canary">Canary Mode</TabsTrigger>
           <TabsTrigger value="live">Live Mode</TabsTrigger>
+          <TabsTrigger value="governance" className="flex items-center gap-1">
+            <Shield className="h-3 w-3" />
+            Governance
+          </TabsTrigger>
           <TabsTrigger value="config">Configuration</TabsTrigger>
         </TabsList>
 
@@ -212,6 +217,10 @@ export default function AICallAgentDashboardPage() {
 
         <TabsContent value="live">
           <LiveModePanel businessId={businessId} />
+        </TabsContent>
+
+        <TabsContent value="governance">
+          <GovernancePanel businessId={businessId} />
         </TabsContent>
 
         <TabsContent value="config">

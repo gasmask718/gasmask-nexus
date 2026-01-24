@@ -45,16 +45,19 @@ import {
   useRealtimeKillSwitch,
 } from "@/hooks/useLiveModeGovernance";
 import { useLiveModeGate } from "@/hooks/useLiveMode";
+import { useAuth } from "@/contexts/AuthContext";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface GovernancePanelProps {
   businessId: string;
-  userId: string;
+  userId?: string;
   className?: string;
 }
 
-export function GovernancePanel({ businessId, userId, className }: GovernancePanelProps) {
+export function GovernancePanel({ businessId, userId: propUserId, className }: GovernancePanelProps) {
+  const { user } = useAuth();
+  const userId = propUserId || user?.id || "";
   const [justification, setJustification] = useState("");
   const [showAuthHistory, setShowAuthHistory] = useState(false);
 
