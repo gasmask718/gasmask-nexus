@@ -14,13 +14,23 @@ export interface OutboundCampaign {
   max_calls_per_day: number;
   total_targets: number;
   calls_made: number;
+  calls_completed: number;
   conversions: number;
+  interests_captured: number;
+  follow_ups_scheduled: number;
   opt_outs: number;
   escalations: number;
+  objections_count: number;
   kill_switch_triggered: boolean;
   sentinel_approved: boolean;
+  sentinel_status: 'pending' | 'compliant' | 'warning' | 'degraded' | 'halted';
+  containment_active: boolean;
+  executive_policy_id?: string;
+  product_playbook_id?: string;
+  vendor_playbook_id?: string;
   created_at: string;
   approved_at?: string;
+  launched_at?: string;
 }
 
 export interface ProductPlaybook {
