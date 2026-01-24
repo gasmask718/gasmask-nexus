@@ -130,12 +130,12 @@ export function TestCallPanel() {
       // Now call the governed outbound function
       const { data, error } = await supabase.functions.invoke('governed-outbound-call', {
         body: {
-          phone_number: selectedPhone,
+          target_phone: selectedPhone,  // Must match edge function parameter name
           campaign_id: selectedCampaignId,
           campaign_run_id: run.id,
           playbook_id: selectedPlaybookId || selectedCampaign?.product_playbook_id,
           execution_mode: 'test',
-          business_id: businessId,
+          is_test_call: true,  // Explicitly set test mode flag
         },
       });
 
