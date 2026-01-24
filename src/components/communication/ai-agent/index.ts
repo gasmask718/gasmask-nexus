@@ -17,3 +17,5 @@ export { CanaryModePanelWrapper } from "./CanaryModePanelWrapper";
 export { LiveModeBanner } from "./LiveModeBanner";
 export { LiveModePanel } from "./LiveModePanel";
 export { LiveModeBannerWrapper } from "./LiveModeBannerWrapper";
+// Governance
+export { GovernancePanel } from "./GovernancePanel";
