@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Rocket, Target, Activity, UserX, BarChart3, FileText, 
-  Shield, Plus, Settings
+  Shield, Plus, FlaskConical, AlertTriangle, CheckCircle2
 } from 'lucide-react';
 import { CampaignBuilder, LiveCampaignMonitor, OptOutRegistry, ProductPlaybookEditor } from '@/components/communication/outbound';
-import { useOutboundCampaigns, useKillSwitchStatus } from '@/hooks/useOutboundCampaigns';
+import { TestCallPanel, KillSwitchPanel, ExecutionGateMonitor } from '@/components/outbound';
+import { useOutboundCampaigns } from '@/hooks/useOutboundCampaigns';
+import { useKillSwitchStatus } from '@/hooks/useGovernedOutboundCall';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { GlobalBusinessSelector } from '@/components/crm/GlobalBusinessSelector';
 
@@ -16,7 +18,7 @@ export default function OutboundGrowthPage() {
   const businessId = currentBusiness?.id || null;
   
   const { data: campaigns } = useOutboundCampaigns(businessId);
-  const { data: killSwitchStatus } = useKillSwitchStatus('business', businessId || undefined);
+  const { data: killSwitchStatus } = useKillSwitchStatus('global');
   
   const [activeTab, setActiveTab] = useState('monitor');
   const [showCampaignBuilder, setShowCampaignBuilder] = useState(false);
@@ -24,9 +26,23 @@ export default function OutboundGrowthPage() {
 
   const activeCampaigns = campaigns?.filter(c => c.status === 'active').length || 0;
   const pendingApproval = campaigns?.filter(c => c.status === 'pending_approval' || c.status === 'draft').length || 0;
+  const isSystemHalted = killSwitchStatus?.active;
 
   return (
     <div className="space-y-6">
+      {/* Kill Switch Warning Banner */}
+      {isSystemHalted && (
+        <div className="bg-red-500 text-white p-4 rounded-lg flex items-center gap-3">
+          <AlertTriangle className="h-6 w-6" />
+          <div>
+            <p className="font-bold">SYSTEM HALTED</p>
+            <p className="text-sm opacity-90">
+              Kill switch is active. All outbound calls are blocked. Reason: {killSwitchStatus?.reason || 'Manual trigger'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -44,11 +60,20 @@ export default function OutboundGrowthPage() {
           
           {/* System Status Badge */}
           <Badge 
-            variant={killSwitchStatus?.operational ? 'default' : 'destructive'}
+            variant={isSystemHalted ? 'destructive' : 'default'}
             className="gap-1"
           >
-            <Shield className="h-3 w-3" />
-            {killSwitchStatus?.operational ? 'Operational' : 'Halted'}
+            {isSystemHalted ? (
+              <>
+                <AlertTriangle className="h-3 w-3" />
+                Halted
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-3 w-3" />
+                Operational
+              </>
+            )}
           </Badge>
         </div>
       </div>
@@ -127,6 +152,14 @@ export default function OutboundGrowthPage() {
                 <Target className="h-4 w-4" />
                 Campaigns
               </TabsTrigger>
+              <TabsTrigger value="test-calls" className="gap-2">
+                <FlaskConical className="h-4 w-4" />
+                Test Calls
+              </TabsTrigger>
+              <TabsTrigger value="governance" className="gap-2">
+                <Shield className="h-4 w-4" />
+                Governance
+              </TabsTrigger>
               <TabsTrigger value="playbooks" className="gap-2">
                 <FileText className="h-4 w-4" />
                 Playbooks
@@ -151,6 +184,7 @@ export default function OutboundGrowthPage() {
                 size="sm"
                 onClick={() => setShowCampaignBuilder(true)}
                 className="gap-2"
+                disabled={isSystemHalted}
               >
                 <Plus className="h-4 w-4" />
                 New Campaign
@@ -164,6 +198,20 @@ export default function OutboundGrowthPage() {
 
           <TabsContent value="campaigns" className="mt-6">
             <LiveCampaignMonitor />
+          </TabsContent>
+
+          <TabsContent value="test-calls" className="mt-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <TestCallPanel />
+              <ExecutionGateMonitor />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="governance" className="mt-6">
+            <div className="space-y-6">
+              <KillSwitchPanel />
+              <ExecutionGateMonitor />
+            </div>
           </TabsContent>
 
           <TabsContent value="playbooks" className="mt-6">
