@@ -32010,7 +32010,7 @@ export type Database = {
         Row: {
           allowed_tactics: string[]
           avg_outcome_score: number | null
-          business_id: string | null
+          business_id: string
           confidence_floor: number | null
           conversion_rate: number | null
           created_at: string | null
@@ -32032,7 +32032,7 @@ export type Database = {
         Insert: {
           allowed_tactics?: string[]
           avg_outcome_score?: number | null
-          business_id?: string | null
+          business_id: string
           confidence_floor?: number | null
           conversion_rate?: number | null
           created_at?: string | null
@@ -32054,7 +32054,7 @@ export type Database = {
         Update: {
           allowed_tactics?: string[]
           avg_outcome_score?: number | null
-          business_id?: string | null
+          business_id?: string
           confidence_floor?: number | null
           conversion_rate?: number | null
           created_at?: string | null
