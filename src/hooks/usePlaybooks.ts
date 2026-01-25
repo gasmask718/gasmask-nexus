@@ -128,16 +128,32 @@ export function useCreatePlaybook() {
         is_default: playbook.is_default ?? false,
       };
 
+      console.log('[Playbook Create] Payload:', JSON.stringify(completePlaybook, null, 2));
+
       const { data, error } = await supabase
         .from('sales_playbooks')
         .insert(completePlaybook as never)
         .select()
         .single();
 
+      console.log('[Playbook Create] Response:', { data, error });
+
       if (error) {
-        console.error('Playbook creation error:', error);
+        console.error('[Playbook Create] ERROR:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw new Error(error.message || 'Failed to create playbook');
       }
+      
+      if (!data || !data.id) {
+        console.error('[Playbook Create] NO DATA RETURNED - RLS likely blocked insert');
+        throw new Error('Playbook creation failed - no data returned (check RLS policies)');
+      }
+      
+      console.log('[Playbook Create] SUCCESS:', data.id);
       return data;
     },
     onSuccess: (_, variables) => {
