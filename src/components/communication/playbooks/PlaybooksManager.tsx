@@ -49,9 +49,13 @@ export function PlaybooksManager() {
   };
 
   const handleSave = (data: Partial<SalesPlaybook>) => {
+    console.log('[PlaybooksManager] handleSave called', { editingPlaybook, data });
+    
     if (editingPlaybook) {
+      console.log('[PlaybooksManager] Updating existing playbook:', editingPlaybook.id);
       updatePlaybook.mutate({ id: editingPlaybook.id, updates: data });
     } else {
+      console.log('[PlaybooksManager] Creating new playbook for business:', businessId);
       createPlaybook.mutate(data as { business_id: string; name: string });
     }
     setEditingPlaybook(null);
