@@ -17,6 +17,9 @@ export interface Lead {
   city: string | null;
   state: string | null;
   stage: string;
+  // Debug / binding proof fields (come from DB)
+  assigned_to?: string | null;
+  archived?: boolean;
   source: string | null;
   notes: string | null;
   next_follow_up: string | null;
@@ -32,9 +35,11 @@ export interface LeadsByStage {
 
 // Stages must be lowercase to match DB constraint
 const STORE_STAGES = ['new', 'contacted', 'meeting set', 'proposal', 'negotiation', 'won', 'lost'];
-const WHOLESALER_STAGES = ['identified', 'reached out', 'qualified', 'onboarding', 'active'];
-const INFLUENCER_STAGES = ['identified', 'contacted', 'interested', 'training', 'active'];
-const AMBASSADOR_STAGES = ['applied', 'screening', 'interview', 'background check', 'onboarding', 'active'];
+// CRITICAL: Lead creation defaults pipeline_stage='new' for ALL lead types.
+// If these pipelines don't include 'new', newly created leads will appear in KPIs but not render in any column.
+const WHOLESALER_STAGES = ['new', 'identified', 'reached out', 'qualified', 'onboarding', 'active'];
+const INFLUENCER_STAGES = ['new', 'identified', 'contacted', 'interested', 'training', 'active'];
+const AMBASSADOR_STAGES = ['new', 'applied', 'screening', 'interview', 'background check', 'onboarding', 'active'];
 
 // Display names for UI (title case)
 const STAGE_DISPLAY_NAMES: Record<string, string> = {
@@ -96,6 +101,8 @@ export function useAmbassadorLeads(leadType?: string) {
         city: lead.city,
         state: lead.state,
         stage: lead.pipeline_stage || 'new',
+        assigned_to: lead.assigned_to ?? null,
+        archived: typeof lead.archived === 'boolean' ? lead.archived : undefined,
         source: lead.source,
         notes: lead.notes,
         next_follow_up: lead.next_follow_up,
@@ -108,6 +115,9 @@ export function useAmbassadorLeads(leadType?: string) {
       }));
     },
     enabled: !!user?.id,
+    // CRITICAL: prevent "it saved but I can't see it" by always refreshing on mount/focus
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
   // Group leads by stage
@@ -171,7 +181,7 @@ export function useAmbassadorLeads(leadType?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] });
-      toast.success('Lead added');
+      toast.success('Lead created → pipeline refreshed');
     },
     onError: (error: Error) => {
       toast.error(`Failed to add lead: ${error.message}`);
@@ -465,7 +475,10 @@ export function useAmbassadorLeads(leadType?: string) {
     influencerStages: INFLUENCER_STAGES,
     ambassadorStages: AMBASSADOR_STAGES,
     isLoading: leadsQuery.isLoading,
+    isFetching: leadsQuery.isFetching,
     isError: leadsQuery.isError,
+    refetchLeads: leadsQuery.refetch,
+    leadsUpdatedAt: leadsQuery.dataUpdatedAt,
     createLead: createLeadMutation.mutateAsync,
     isCreatingLead: createLeadMutation.isPending,
     updateStage: updateStageMutation.mutateAsync,
