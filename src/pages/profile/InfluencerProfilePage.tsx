@@ -17,7 +17,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
-import Layout from '@/components/Layout';
 
 const platformIcons: Record<string, any> = {
   instagram: Instagram,
@@ -95,13 +94,11 @@ export default function InfluencerProfilePage() {
 
   if (!profile && !isLoading) {
     return (
-      <Layout>
-        <div className="text-center py-12">
-          <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
-          <h2 className="text-xl font-bold mb-2">Influencer Not Found</h2>
-          <Button onClick={() => navigate('/influencers')}>Back to Influencers</Button>
-        </div>
-      </Layout>
+      <div className="text-center py-12">
+        <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
+        <h2 className="text-xl font-bold mb-2">Influencer Not Found</h2>
+        <Button onClick={() => navigate('/influencers')}>Back to Influencers</Button>
+      </div>
     );
   }
 
@@ -282,8 +279,7 @@ export default function InfluencerProfilePage() {
   ];
 
   return (
-    <Layout>
-      <ProfileLayout
+    <ProfileLayout
         isLoading={isLoading}
         backPath="/influencers"
         backLabel="Back to Influencers"
@@ -335,6 +331,5 @@ export default function InfluencerProfilePage() {
         tabs={tabs}
         onAddNote={() => {}}
       />
-    </Layout>
   );
 }

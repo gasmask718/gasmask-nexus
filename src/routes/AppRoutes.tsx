@@ -1749,6 +1749,27 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+      <Route path="/ambassador/wholesalers/:id" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <Layout><WholesalerProfilePage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/influencers/:id" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <Layout><InfluencerProfilePage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/ambassadors/:id" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <Layout><AmbassadorProfilePage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
       <Route path="/ambassador/orders" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
@@ -1800,10 +1821,10 @@ export default function AppRoutes() {
       } />
 
       {/* Connected Profile Pages */}
-      <Route path="/profile/ambassador/:id" element={<ProtectedRoute><AmbassadorProfilePage /></ProtectedRoute>} />
-      <Route path="/profile/wholesaler/:id" element={<ProtectedRoute><WholesalerProfilePage /></ProtectedRoute>} />
-      <Route path="/profile/store/:id" element={<ProtectedRoute><StoreProfilePage /></ProtectedRoute>} />
-      <Route path="/profile/influencer/:id" element={<ProtectedRoute><InfluencerProfilePage /></ProtectedRoute>} />
+      <Route path="/profile/ambassador/:id" element={<ProtectedRoute><Layout><AmbassadorProfilePage /></Layout></ProtectedRoute>} />
+      <Route path="/profile/wholesaler/:id" element={<ProtectedRoute><Layout><WholesalerProfilePage /></Layout></ProtectedRoute>} />
+      <Route path="/profile/store/:id" element={<ProtectedRoute><Layout><StoreProfilePage /></Layout></ProtectedRoute>} />
+      <Route path="/profile/influencer/:id" element={<ProtectedRoute><Layout><InfluencerProfilePage /></Layout></ProtectedRoute>} />
 
       {/* Admin Disputes */}
       <Route path="/admin/disputes" element={
