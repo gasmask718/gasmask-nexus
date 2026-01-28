@@ -253,7 +253,7 @@ function WholesalersListContent() {
 
 export default function AmbassadorWholesalersList() {
   return (
-    <PortalRBACGate allowedRoles={['ambassador']} portalName="Ambassador Portal">
+    <PortalRBACGate allowedRoles={['ambassador', 'admin']} portalName="Ambassador Portal">
       <EnhancedPortalLayout 
         title="My Wholesalers" 
         subtitle="All wholesalers in your portfolio"

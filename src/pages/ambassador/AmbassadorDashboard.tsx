@@ -2,6 +2,7 @@
  * Ambassador Portal Dashboard - Portfolio command center
  * Shows KPIs, assigned stores, commissions, and quick actions
  * Commission data now sourced from real ledger (SQL views, zero client math)
+ * MASTER GENIUS ARCHITECT: Complete portfolio visibility for all entity types
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +25,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, formatDistanceToNow } from 'date-fns';
+import { PortfolioSection } from '@/components/ambassador/PortfolioSection';
 
 // MASTER GENIUS ARCHITECT: Lead KPI config - all lead types must be represented
 const LEAD_KPI_CONFIG = {
@@ -263,49 +265,12 @@ function DashboardContent() {
         />
       </div>
 
+      {/* MASTER GENIUS ARCHITECT: Unified Portfolio Section */}
+      {/* Shows all managed contacts: Stores, Wholesalers, Ambassadors, Influencers */}
+      <PortfolioSection />
+
       {/* Main Content Grid */}
       <div className="grid md:grid-cols-2 gap-6">
-        {/* My Stores */}
-        <Card className="border-primary/20">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Store className="h-5 w-5" />
-                  My Stores
-                </CardTitle>
-                <CardDescription>
-                  {stores.length} stores in your portfolio
-                </CardDescription>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => navigate('/ambassador/stores')}>
-                View All
-                <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[320px] pr-4">
-              {stores.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Store className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No stores assigned yet</p>
-                  <p className="text-sm">Contact your manager to get started</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {stores.slice(0, 6).map((store) => (
-                    <StoreCard 
-                      key={store.assignment_id} 
-                      store={store} 
-                      onClick={() => handleStoreClick(store.store_id)}
-                    />
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
 
         {/* Recent Commissions */}
         <Card className="border-primary/20">

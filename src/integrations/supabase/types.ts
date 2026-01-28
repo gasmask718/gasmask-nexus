@@ -4488,6 +4488,7 @@ export type Database = {
           phone_primary: string | null
           phone_secondary: string | null
           phone_whatsapp: string | null
+          recruited_by_ambassador_id: string | null
           social_media: string | null
           state: string | null
           tags: string | null
@@ -4510,6 +4511,7 @@ export type Database = {
           phone_primary?: string | null
           phone_secondary?: string | null
           phone_whatsapp?: string | null
+          recruited_by_ambassador_id?: string | null
           social_media?: string | null
           state?: string | null
           tags?: string | null
@@ -4532,6 +4534,7 @@ export type Database = {
           phone_primary?: string | null
           phone_secondary?: string | null
           phone_whatsapp?: string | null
+          recruited_by_ambassador_id?: string | null
           social_media?: string | null
           state?: string | null
           tags?: string | null
@@ -4542,6 +4545,34 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ambassadors_recruited_by_ambassador_id_fkey"
+            columns: ["recruited_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassadors_recruited_by_ambassador_id_fkey"
+            columns: ["recruited_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassadors_recruited_by_ambassador_id_fkey"
+            columns: ["recruited_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassadors_recruited_by_ambassador_id_fkey"
+            columns: ["recruited_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
           {
             foreignKeyName: "ambassadors_user_id_fkey"
             columns: ["user_id"]
@@ -20213,6 +20244,93 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      influencer_assignments: {
+        Row: {
+          active: boolean
+          ambassador_id: string
+          assignment_type: string
+          commission_rate: number
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          id: string
+          influencer_id: string
+          is_primary: boolean
+          notes: string | null
+          start_date: string | null
+          unassigned_at: string | null
+          unassigned_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          ambassador_id: string
+          assignment_type?: string
+          commission_rate?: number
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          influencer_id: string
+          is_primary?: boolean
+          notes?: string | null
+          start_date?: string | null
+          unassigned_at?: string | null
+          unassigned_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          ambassador_id?: string
+          assignment_type?: string
+          commission_rate?: number
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          influencer_id?: string
+          is_primary?: boolean
+          notes?: string | null
+          start_date?: string | null
+          unassigned_at?: string | null
+          unassigned_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "influencer_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "influencer_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "influencer_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "influencer_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "influencer_assignments_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencers"
             referencedColumns: ["id"]
           },
         ]
