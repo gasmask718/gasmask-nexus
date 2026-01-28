@@ -321,7 +321,7 @@ export function useAmbassadorStoreProfile(storeId: string | null) {
         .from('store_notes')
         .select('*')
         .eq('store_id', storeId)
-        .order('note_date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
