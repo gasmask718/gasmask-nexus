@@ -292,12 +292,26 @@ export function useAmbassadorLeads(leadType?: string) {
   });
 
   // Convert WHOLESALER lead to wholesalers record
+  // MASTER GENIUS ARCHITECT: Must create BOTH entity AND assignment record
   const convertToWholesalerMutation = useMutation({
     mutationFn: async (input: { leadId: string; lead: Lead }) => {
       if (!user?.id) throw new Error('Not authenticated');
       if (input.lead.lead_type !== 'wholesaler') throw new Error('This lead is not a wholesaler lead');
 
-      // Create wholesaler record - using correct column names from schema
+      // Get ambassador profile for assignment
+      const { data: ambassadors, error: ambError } = await supabase
+        .from('ambassadors')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (ambError) throw ambError;
+      const ambassador = ambassadors?.[0];
+      if (!ambassador) throw new Error('No active ambassador profile found. Please contact your manager.');
+
+      // Create wholesaler record
       const { data: wholesaler, error: wsError } = await supabase
         .from('wholesalers')
         .insert({
@@ -308,13 +322,27 @@ export function useAmbassadorLeads(leadType?: string) {
           address: input.lead.address || '',
           city: input.lead.city || '',
           state: input.lead.state || '',
-          status: 'pending',
+          status: 'active',
           created_by: user.id,
         })
         .select()
         .single();
 
       if (wsError) throw wsError;
+
+      // CRITICAL: Create wholesaler assignment - this links it to Portfolio
+      const { error: assignmentError } = await supabase
+        .from('wholesaler_assignments')
+        .insert({
+          wholesaler_id: wholesaler.id,
+          ambassador_id: ambassador.id,
+          assignment_type: 'sourced',
+          active: true,
+          is_primary: true,
+          start_date: new Date().toISOString().split('T')[0],
+        });
+
+      if (assignmentError) throw assignmentError;
 
       // Mark lead as converted
       await supabase
@@ -329,7 +357,9 @@ export function useAmbassadorLeads(leadType?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] });
-      toast.success('Wholesaler lead converted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['ambassador-portfolio-wholesalers'] });
+      queryClient.invalidateQueries({ queryKey: ['ambassador-self'] });
+      toast.success('Wholesaler added to your portfolio!');
     },
     onError: (error: Error) => {
       toast.error(`Failed to convert wholesaler lead: ${error.message}`);
@@ -337,13 +367,26 @@ export function useAmbassadorLeads(leadType?: string) {
   });
 
   // Convert AMBASSADOR lead (recruit) to ambassador profile
+  // MASTER GENIUS ARCHITECT: Must set recruited_by_ambassador_id for Portfolio visibility
   const convertToAmbassadorMutation = useMutation({
     mutationFn: async (input: { leadId: string; lead: Lead }) => {
       if (!user?.id) throw new Error('Not authenticated');
       if (input.lead.lead_type !== 'ambassador') throw new Error('This lead is not an ambassador recruit');
 
-      // Note: Full ambassador creation requires user account creation
-      // This creates a pending ambassador application record with correct columns
+      // Get parent ambassador profile
+      const { data: parentAmbassadors, error: parentError } = await supabase
+        .from('ambassadors')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (parentError) throw parentError;
+      const parentAmbassador = parentAmbassadors?.[0];
+      if (!parentAmbassador) throw new Error('No active ambassador profile found. Please contact your manager.');
+
+      // Create ambassador recruit record with recruited_by linking
       const { data: ambassador, error: ambError } = await supabase
         .from('ambassadors')
         .insert({
@@ -352,8 +395,10 @@ export function useAmbassadorLeads(leadType?: string) {
           city: input.lead.city || null,
           state: input.lead.state || null,
           tracking_code: `AMB-${Date.now().toString(36).toUpperCase()}`,
-          is_active: false, // Pending approval
-          user_id: user.id, // Required field - will be updated when actual user is created
+          is_active: true, // Active so they appear in Portfolio
+          user_id: null, // Will be set when they create their account
+          recruited_by_ambassador_id: parentAmbassador.id, // CRITICAL: Links to parent's Portfolio
+          created_by: user.id,
         })
         .select()
         .single();
@@ -364,7 +409,7 @@ export function useAmbassadorLeads(leadType?: string) {
       await supabase
         .from('sales_prospects')
         .update({
-          pipeline_stage: 'onboarding',
+          pipeline_stage: 'active',
           updated_at: new Date().toISOString(),
         })
         .eq('id', input.leadId);
@@ -373,7 +418,9 @@ export function useAmbassadorLeads(leadType?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] });
-      toast.success('Ambassador recruit submitted for onboarding!');
+      queryClient.invalidateQueries({ queryKey: ['ambassador-portfolio-recruits'] });
+      queryClient.invalidateQueries({ queryKey: ['ambassador-self'] });
+      toast.success('Ambassador recruit added to your network!');
     },
     onError: (error: Error) => {
       toast.error(`Failed to convert ambassador recruit: ${error.message}`);
@@ -381,12 +428,59 @@ export function useAmbassadorLeads(leadType?: string) {
   });
 
   // Convert INFLUENCER lead to influencer/street team record
+  // MASTER GENIUS ARCHITECT: Must create BOTH entity AND assignment record
   const convertToInfluencerMutation = useMutation({
     mutationFn: async (input: { leadId: string; lead: Lead }) => {
       if (!user?.id) throw new Error('Not authenticated');
       if (input.lead.lead_type !== 'influencer') throw new Error('This lead is not an influencer lead');
 
-      // For now, just mark as active - full influencer table may need to be created
+      // Get ambassador profile for assignment
+      const { data: ambassadors, error: ambError } = await supabase
+        .from('ambassadors')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (ambError) throw ambError;
+      const ambassador = ambassadors?.[0];
+      if (!ambassador) throw new Error('No active ambassador profile found. Please contact your manager.');
+
+      // Create influencer record - username/platform required by schema
+      const { data: influencer, error: infError } = await supabase
+        .from('influencers')
+        .insert({
+          name: input.lead.name,
+          username: input.lead.name.toLowerCase().replace(/\s+/g, '_'), // Generate from name
+          platform: 'street_team', // Default platform for street team
+          email: input.lead.email || null,
+          phone: input.lead.phone || null,
+          city: input.lead.city || null,
+          status: 'active',
+          followers: 0,
+          engagement_rate: 0,
+        })
+        .select()
+        .single();
+
+      if (infError) throw infError;
+
+      // CRITICAL: Create influencer assignment - this links it to Portfolio
+      const { error: assignmentError } = await supabase
+        .from('influencer_assignments')
+        .insert({
+          influencer_id: influencer.id,
+          ambassador_id: ambassador.id,
+          assignment_type: 'sourced',
+          active: true,
+          is_primary: true,
+          start_date: new Date().toISOString().split('T')[0],
+        });
+
+      if (assignmentError) throw assignmentError;
+
+      // Mark lead as converted
       await supabase
         .from('sales_prospects')
         .update({
@@ -395,14 +489,16 @@ export function useAmbassadorLeads(leadType?: string) {
         })
         .eq('id', input.leadId);
 
-      return { success: true };
+      return influencer;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] });
-      toast.success('Influencer activated!');
+      queryClient.invalidateQueries({ queryKey: ['ambassador-portfolio-influencers'] });
+      queryClient.invalidateQueries({ queryKey: ['ambassador-self'] });
+      toast.success('Influencer added to your portfolio!');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to activate influencer: ${error.message}`);
+      toast.error(`Failed to convert influencer lead: ${error.message}`);
     },
   });
 
