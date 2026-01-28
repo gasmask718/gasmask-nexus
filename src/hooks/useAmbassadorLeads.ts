@@ -70,10 +70,12 @@ export function useAmbassadorLeads(leadType?: string) {
     queryFn: async () => {
       if (!user?.id) return [];
 
+      // Query leads - CRITICAL: filter out archived leads (soft deleted)
       let query = supabase
         .from('sales_prospects')
         .select('*')
         .eq('assigned_to', user.id)
+        .eq('archived', false) // Only show non-archived leads
         .order('created_at', { ascending: false });
 
       const { data, error } = await query;
@@ -387,6 +389,33 @@ export function useAmbassadorLeads(leadType?: string) {
     },
   });
 
+  // ════════════════════════════════════════════════════════════════════════════
+  // SOFT DELETE — Archive lead (does not hard delete for audit purposes)
+  // ════════════════════════════════════════════════════════════════════════════
+  const deleteLeadMutation = useMutation({
+    mutationFn: async (leadId: string) => {
+      if (!user?.id) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('sales_prospects')
+        .update({
+          archived: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', leadId)
+        .eq('assigned_to', user.id); // Only allow deleting own leads
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] });
+      toast.success('Lead deleted');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to delete lead: ${error.message}`);
+    },
+  });
+
   const leads = leadsQuery.data || [];
   const storeLeads = leads.filter(l => l.lead_type === 'store');
   const wholesalerLeads = leads.filter(l => l.lead_type === 'wholesaler');
@@ -419,6 +448,9 @@ export function useAmbassadorLeads(leadType?: string) {
     isConvertingToAmbassador: convertToAmbassadorMutation.isPending,
     convertToInfluencer: convertToInfluencerMutation.mutateAsync,
     isConvertingToInfluencer: convertToInfluencerMutation.isPending,
+    // Soft delete
+    deleteLead: deleteLeadMutation.mutateAsync,
+    isDeletingLead: deleteLeadMutation.isPending,
     refetch: () => queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] }),
     getStageDisplayName: (stage: string) => STAGE_DISPLAY_NAMES[stage.toLowerCase()] || stage,
   };
