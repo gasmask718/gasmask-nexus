@@ -221,6 +221,33 @@ export function useAmbassadorPortfolio() {
     };
   };
 
+  // MASTER GENIUS ARCHITECT: Unassign store (never delete, only deactivate)
+  // "Remove from My Stores" = deactivate assignment, store remains in system
+  const unassignStoreMutation = useMutation({
+    mutationFn: async (storeId: string) => {
+      if (!ambassadorId) throw new Error('Ambassador profile not found');
+
+      const { error } = await supabase
+        .from('ambassador_assignments')
+        .update({
+          active: false,
+          unassigned_at: new Date().toISOString(),
+          unassigned_by: ambassadorId,
+        })
+        .eq('store_id', storeId)
+        .eq('ambassador_id', ambassadorId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ambassador-portfolio-stores', ambassadorId] });
+      toast.success('Store removed from your portfolio');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to remove store: ${error.message}`);
+    },
+  });
+
   return {
     ambassador: ambassadorQuery.data,
     stores: storesQuery.data || [],
@@ -229,6 +256,9 @@ export function useAmbassadorPortfolio() {
     metrics: calculateMetrics(),
     isLoading: ambassadorQuery.isLoading || storesQuery.isLoading,
     isError: ambassadorQuery.isError || storesQuery.isError,
+    // Mutations
+    unassignStore: unassignStoreMutation.mutateAsync,
+    isUnassigningStore: unassignStoreMutation.isPending,
     refetch: () => {
       queryClient.invalidateQueries({ queryKey: ['ambassador-portfolio-stores', ambassadorId] });
       queryClient.invalidateQueries({ queryKey: ['ambassador-portfolio-commissions', ambassadorId] });

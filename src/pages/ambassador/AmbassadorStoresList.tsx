@@ -1,11 +1,12 @@
 /**
  * Ambassador Stores List - View all assigned/sourced stores
+ * MASTER GENIUS ARCHITECT: Never delete stores, only unassign (deactivate assignment)
  */
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Store, Search, Filter, MapPin, Phone, Calendar,
-  ArrowRight, Users
+  ArrowRight, Users, Trash2
 } from 'lucide-react';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
@@ -15,10 +16,22 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { useAmbassadorPortfolio, type PortfolioStore } from '@/hooks/useAmbassadorPortfolio';
 import { formatDistanceToNow } from 'date-fns';
 
-function StoreCard({ store, onClick }: { store: PortfolioStore; onClick: () => void }) {
+interface StoreCardProps {
+  store: PortfolioStore;
+  onClick: () => void;
+  onRemove: () => void;
+}
+
+function StoreCard({ store, onClick, onRemove }: StoreCardProps) {
+  const handleRemoveClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click navigation
+    onRemove();
+  };
+
   return (
     <Card 
       className="cursor-pointer hover:border-primary/50 transition-colors group"
@@ -61,7 +74,18 @@ function StoreCard({ store, onClick }: { store: PortfolioStore; onClick: () => v
           <div className="flex flex-col items-end gap-1">
             <span className="text-xs text-muted-foreground">Commission</span>
             <span className="font-semibold text-primary">{store.commission_rate}%</span>
-            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors mt-2" />
+            <div className="flex items-center gap-2 mt-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                onClick={handleRemoveClick}
+                title="Remove from My Stores"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            </div>
           </div>
         </div>
       </CardContent>
@@ -71,9 +95,13 @@ function StoreCard({ store, onClick }: { store: PortfolioStore; onClick: () => v
 
 function StoresListContent() {
   const navigate = useNavigate();
-  const { stores, metrics, isLoading } = useAmbassadorPortfolio();
+  const { stores, metrics, isLoading, unassignStore, isUnassigningStore } = useAmbassadorPortfolio();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  
+  // Remove store confirmation modal state
+  const [removeModalOpen, setRemoveModalOpen] = useState(false);
+  const [storeToRemove, setStoreToRemove] = useState<PortfolioStore | null>(null);
 
   const filteredStores = useMemo(() => {
     let result = stores;
@@ -101,6 +129,16 @@ function StoresListContent() {
 
   const handleStoreClick = (storeId: string) => {
     navigate(`/ambassador/stores/${storeId}`);
+  };
+
+  const handleRemoveClick = (store: PortfolioStore) => {
+    setStoreToRemove(store);
+    setRemoveModalOpen(true);
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!storeToRemove) return;
+    await unassignStore(storeToRemove.store_id);
   };
 
   if (isLoading) {
@@ -177,12 +215,22 @@ function StoresListContent() {
                   key={store.assignment_id} 
                   store={store}
                   onClick={() => handleStoreClick(store.store_id)}
+                  onRemove={() => handleRemoveClick(store)}
                 />
               ))}
             </div>
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Remove Store Confirmation Modal */}
+      <DeleteConfirmModal
+        open={removeModalOpen}
+        onOpenChange={setRemoveModalOpen}
+        title="Remove Store from Portfolio"
+        description={`This removes "${storeToRemove?.store_name}" from your portfolio. It does not delete the store - you can be reassigned to it later.`}
+        onConfirm={handleConfirmRemove}
+      />
     </div>
   );
 }

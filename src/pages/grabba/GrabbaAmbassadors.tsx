@@ -120,6 +120,7 @@ export default function GrabbaAmbassadors() {
   });
 
   // Fetch ambassador assignments (stores & wholesalers)
+  // CRITICAL: Use explicit foreign key hint to avoid ambiguity with unassigned_by column
   const { data: assignments } = useQuery({
     queryKey: ["grabba-ambassador-assignments"],
     queryFn: async () => {
@@ -127,7 +128,7 @@ export default function GrabbaAmbassadors() {
         .from("ambassador_assignments")
         .select(`
           *,
-          ambassador:ambassadors(id, user_id, user:profiles(name)),
+          ambassador:ambassadors!ambassador_assignments_ambassador_id_fkey(id, user_id, user:profiles(name)),
           company:companies(id, name, type)
         `)
         .order("created_at", { ascending: false });
