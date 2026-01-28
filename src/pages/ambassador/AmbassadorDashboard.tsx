@@ -114,16 +114,18 @@ function DashboardContent() {
   const [selectedKpi, setSelectedKpi] = useState<string | null>(null);
   
   // MASTER GENIUS ARCHITECT: Fetch lead counts by type for KPI cards
+  // CRITICAL: Use 'assigned_to' column (created_by does NOT exist in sales_prospects)
+  // Query key matches the hook invalidation key for instant refresh on lead create
   const { data: leadCounts, isLoading: leadsLoading } = useQuery({
-    queryKey: ['ambassador-lead-counts', user?.id],
+    queryKey: ['ambassador-leads', user?.id], // SAME KEY as useAmbassadorLeads so invalidation works
     queryFn: async () => {
       if (!user?.id) return { store: 0, wholesaler: 0, influencer: 0, ambassador: 0 };
       
-      // Canonical query: count by lead_type where ambassador owns/created and not archived
+      // Canonical query: count by lead_type where ambassador is assigned AND not archived
       const { data, error } = await supabase
         .from('sales_prospects')
         .select('lead_type')
-        .or(`created_by.eq.${user.id},ambassador_id.eq.${user.id}`)
+        .eq('assigned_to', user.id) // CORRECT COLUMN - matches useAmbassadorLeads hook
         .eq('archived', false);
       
       if (error) {
@@ -140,6 +142,7 @@ function DashboardContent() {
         }
       });
       
+      console.log('[Dashboard KPI] Lead counts:', counts, 'from', data?.length, 'leads');
       return counts;
     },
     enabled: !!user?.id,
