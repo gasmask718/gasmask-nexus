@@ -35,7 +35,12 @@ export default function AmbassadorLeads() {
   const { 
     storeLeads, wholesalerLeads, influencerLeads, ambassadorLeads,
     getLeadsByStage, storeStages, wholesalerStages, influencerStages, ambassadorStages,
-    isLoading, createLead, isCreatingLead, updateStage, convertLead, isConvertingLead,
+    isLoading, createLead, isCreatingLead, updateStage,
+    // Lane-specific conversions
+    convertToStore, isConvertingToStore,
+    convertToWholesaler, isConvertingToWholesaler,
+    convertToAmbassador, isConvertingToAmbassador,
+    convertToInfluencer, isConvertingToInfluencer,
     getStageDisplayName
   } = useAmbassadorLeads();
 
@@ -79,12 +84,42 @@ export default function AmbassadorLeads() {
     }
   };
 
+  // Lane-specific conversion handlers - leads NEVER cross lanes
   const handleConvertLead = async (lead: Lead) => {
     try {
-      await convertLead({ leadId: lead.id, lead });
+      switch (lead.lead_type) {
+        case 'store':
+          await convertToStore({ leadId: lead.id, lead });
+          break;
+        case 'wholesaler':
+          await convertToWholesaler({ leadId: lead.id, lead });
+          break;
+        case 'ambassador':
+          await convertToAmbassador({ leadId: lead.id, lead });
+          break;
+        case 'influencer':
+          await convertToInfluencer({ leadId: lead.id, lead });
+          break;
+        default:
+          throw new Error(`Unknown lead type: ${lead.lead_type}`);
+      }
       setLeadDetailOpen(false);
     } catch (error) {
       // Error handled in hook
+    }
+  };
+
+  // Check if any conversion is in progress
+  const isConverting = isConvertingToStore || isConvertingToWholesaler || isConvertingToAmbassador || isConvertingToInfluencer;
+
+  // Get conversion button text based on lead type
+  const getConversionButtonText = (leadType: string) => {
+    switch (leadType) {
+      case 'store': return 'Convert to Store & Assign';
+      case 'wholesaler': return 'Convert to Wholesaler';
+      case 'ambassador': return 'Convert to Ambassador';
+      case 'influencer': return 'Activate Influencer';
+      default: return 'Convert';
     }
   };
 
@@ -531,19 +566,23 @@ export default function AmbassadorLeads() {
                 </div>
               </div>
 
-              {selectedLead.lead_type === 'store' && selectedLead.stage !== 'Won' && selectedLead.stage !== 'Lost' && (
+              {/* Lane-specific conversion button - shows for all lead types */}
+              {selectedLead.stage !== 'won' && selectedLead.stage !== 'lost' && selectedLead.stage !== 'active' && (
                 <div className="pt-4 border-t">
                   <Button 
                     className="w-full" 
                     onClick={() => handleConvertLead(selectedLead)}
-                    disabled={isConvertingLead}
+                    disabled={isConverting}
                   >
-                    {isConvertingLead && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {isConverting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Convert to Store & Assign
+                    {getConversionButtonText(selectedLead.lead_type)}
                   </Button>
                   <p className="text-xs text-muted-foreground text-center mt-2">
-                    This will create a store record and assign it to you
+                    {selectedLead.lead_type === 'store' && 'This will create a store record and assign it to you'}
+                    {selectedLead.lead_type === 'wholesaler' && 'This will create a wholesaler record'}
+                    {selectedLead.lead_type === 'ambassador' && 'This will submit for ambassador onboarding'}
+                    {selectedLead.lead_type === 'influencer' && 'This will activate the influencer'}
                   </p>
                 </div>
               )}

@@ -34191,6 +34191,7 @@ export type Database = {
           brand_id: string | null
           city: string
           communication_preference: string | null
+          country: string | null
           country_of_origin: string | null
           created_at: string | null
           dialect_preference: string | null
@@ -34232,6 +34233,7 @@ export type Database = {
           brand_id?: string | null
           city: string
           communication_preference?: string | null
+          country?: string | null
           country_of_origin?: string | null
           created_at?: string | null
           dialect_preference?: string | null
@@ -34273,6 +34275,7 @@ export type Database = {
           brand_id?: string | null
           city?: string
           communication_preference?: string | null
+          country?: string | null
           country_of_origin?: string | null
           created_at?: string | null
           dialect_preference?: string | null

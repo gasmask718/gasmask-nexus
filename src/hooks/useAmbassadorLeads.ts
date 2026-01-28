@@ -193,12 +193,18 @@ export function useAmbassadorLeads(leadType?: string) {
     },
   });
 
-  // Convert lead to store assignment
-  const convertLeadMutation = useMutation({
+  // ════════════════════════════════════════════════════════════════════════════
+  // LANE-SPECIFIC CONVERSIONS — Master Genius Architect Enforcement
+  // Store, Wholesaler, Ambassador, Influencer NEVER convert into each other
+  // ════════════════════════════════════════════════════════════════════════════
+
+  // Convert STORE lead to store_master record
+  const convertToStoreMutation = useMutation({
     mutationFn: async (input: { leadId: string; lead: Lead }) => {
       if (!user?.id) throw new Error('Not authenticated');
+      if (input.lead.lead_type !== 'store') throw new Error('This lead is not a store lead');
 
-      // First get ambassador ID - use .limit(1) since user may have multiple ambassador records
+      // Get ambassador profile
       const { data: ambassadors, error: ambError } = await supabase
         .from('ambassadors')
         .select('id')
@@ -211,7 +217,7 @@ export function useAmbassadorLeads(leadType?: string) {
       const ambassador = ambassadors?.[0];
       if (!ambassador) throw new Error('No active ambassador profile found. Please contact your manager.');
 
-      // Create store in store_master - use correct column names
+      // Create store in store_master
       const { data: store, error: storeError } = await supabase
         .from('store_master')
         .insert({
@@ -230,7 +236,7 @@ export function useAmbassadorLeads(leadType?: string) {
 
       if (storeError) throw storeError;
 
-      // Create ambassador assignment (sourced)
+      // Create ambassador assignment
       const { error: assignmentError } = await supabase
         .from('ambassador_assignments')
         .insert({
@@ -244,11 +250,11 @@ export function useAmbassadorLeads(leadType?: string) {
 
       if (assignmentError) throw assignmentError;
 
-      // Update lead as converted
+      // Mark lead as converted
       await supabase
         .from('sales_prospects')
         .update({
-          pipeline_stage: 'won', // lowercase to match DB constraint
+          pipeline_stage: 'won',
           converted_store_id: store.id,
           updated_at: new Date().toISOString(),
         })
@@ -259,10 +265,125 @@ export function useAmbassadorLeads(leadType?: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] });
       queryClient.invalidateQueries({ queryKey: ['ambassador-portfolio-stores'] });
-      toast.success('Lead converted to store!');
+      toast.success('Store lead converted successfully!');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to convert lead: ${error.message}`);
+      toast.error(`Failed to convert store lead: ${error.message}`);
+    },
+  });
+
+  // Convert WHOLESALER lead to wholesalers record
+  const convertToWholesalerMutation = useMutation({
+    mutationFn: async (input: { leadId: string; lead: Lead }) => {
+      if (!user?.id) throw new Error('Not authenticated');
+      if (input.lead.lead_type !== 'wholesaler') throw new Error('This lead is not a wholesaler lead');
+
+      // Create wholesaler record - using correct column names from schema
+      const { data: wholesaler, error: wsError } = await supabase
+        .from('wholesalers')
+        .insert({
+          name: input.lead.name,
+          contact_name: input.lead.contact_name || null,
+          phone: input.lead.phone || null,
+          email: input.lead.email || null,
+          address: input.lead.address || '',
+          city: input.lead.city || '',
+          state: input.lead.state || '',
+          status: 'pending',
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (wsError) throw wsError;
+
+      // Mark lead as converted
+      await supabase
+        .from('sales_prospects')
+        .update({
+          pipeline_stage: 'active',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.leadId);
+
+      return wholesaler;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] });
+      toast.success('Wholesaler lead converted successfully!');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to convert wholesaler lead: ${error.message}`);
+    },
+  });
+
+  // Convert AMBASSADOR lead (recruit) to ambassador profile
+  const convertToAmbassadorMutation = useMutation({
+    mutationFn: async (input: { leadId: string; lead: Lead }) => {
+      if (!user?.id) throw new Error('Not authenticated');
+      if (input.lead.lead_type !== 'ambassador') throw new Error('This lead is not an ambassador recruit');
+
+      // Note: Full ambassador creation requires user account creation
+      // This creates a pending ambassador application record with correct columns
+      const { data: ambassador, error: ambError } = await supabase
+        .from('ambassadors')
+        .insert({
+          name: input.lead.name,
+          phone_primary: input.lead.phone || null,
+          city: input.lead.city || null,
+          state: input.lead.state || null,
+          tracking_code: `AMB-${Date.now().toString(36).toUpperCase()}`,
+          is_active: false, // Pending approval
+          user_id: user.id, // Required field - will be updated when actual user is created
+        })
+        .select()
+        .single();
+
+      if (ambError) throw ambError;
+
+      // Mark lead as converted
+      await supabase
+        .from('sales_prospects')
+        .update({
+          pipeline_stage: 'onboarding',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.leadId);
+
+      return ambassador;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] });
+      toast.success('Ambassador recruit submitted for onboarding!');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to convert ambassador recruit: ${error.message}`);
+    },
+  });
+
+  // Convert INFLUENCER lead to influencer/street team record
+  const convertToInfluencerMutation = useMutation({
+    mutationFn: async (input: { leadId: string; lead: Lead }) => {
+      if (!user?.id) throw new Error('Not authenticated');
+      if (input.lead.lead_type !== 'influencer') throw new Error('This lead is not an influencer lead');
+
+      // For now, just mark as active - full influencer table may need to be created
+      await supabase
+        .from('sales_prospects')
+        .update({
+          pipeline_stage: 'active',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.leadId);
+
+      return { success: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] });
+      toast.success('Influencer activated!');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to activate influencer: ${error.message}`);
     },
   });
 
@@ -289,8 +410,15 @@ export function useAmbassadorLeads(leadType?: string) {
     isCreatingLead: createLeadMutation.isPending,
     updateStage: updateStageMutation.mutateAsync,
     isUpdatingStage: updateStageMutation.isPending,
-    convertLead: convertLeadMutation.mutateAsync,
-    isConvertingLead: convertLeadMutation.isPending,
+    // Lane-specific conversions
+    convertToStore: convertToStoreMutation.mutateAsync,
+    isConvertingToStore: convertToStoreMutation.isPending,
+    convertToWholesaler: convertToWholesalerMutation.mutateAsync,
+    isConvertingToWholesaler: convertToWholesalerMutation.isPending,
+    convertToAmbassador: convertToAmbassadorMutation.mutateAsync,
+    isConvertingToAmbassador: convertToAmbassadorMutation.isPending,
+    convertToInfluencer: convertToInfluencerMutation.mutateAsync,
+    isConvertingToInfluencer: convertToInfluencerMutation.isPending,
     refetch: () => queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] }),
     getStageDisplayName: (stage: string) => STAGE_DISPLAY_NAMES[stage.toLowerCase()] || stage,
   };
