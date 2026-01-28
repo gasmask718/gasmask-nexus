@@ -85,6 +85,7 @@ export function useAmbassadorLeads(leadType?: string) {
         return [];
       }
 
+      // MASTER GENIUS ARCHITECT: lead_type comes directly from DB column, never inferred
       return (data || []).map((lead: any): Lead => ({
         id: lead.id,
         name: lead.store_name,
@@ -94,18 +95,15 @@ export function useAmbassadorLeads(leadType?: string) {
         address: lead.address,
         city: lead.city,
         state: lead.state,
-        stage: lead.pipeline_stage || 'New',
+        stage: lead.pipeline_stage || 'new',
         source: lead.source,
         notes: lead.notes,
         next_follow_up: lead.next_follow_up,
         likelihood: lead.likelihood_to_activate,
         created_at: lead.created_at,
         updated_at: lead.updated_at,
-        // Infer type from source - IMPORTANT: ambassador_referral means store lead FROM an ambassador
-        // Only 'ambassador_recruit' should be typed as 'ambassador' (recruiting new ambassadors)
-        lead_type: lead.source?.toLowerCase().includes('wholesaler') || lead.source?.toLowerCase().includes('wholesale') ? 'wholesaler' : 
-                   lead.source?.toLowerCase().includes('influencer') ? 'influencer' :
-                   lead.source?.toLowerCase() === 'ambassador_recruit' ? 'ambassador' : 'store',
+        // CRITICAL: Read lead_type directly from database column - no inference
+        lead_type: lead.lead_type || 'store',
       }));
     },
     enabled: !!user?.id,
@@ -128,7 +126,7 @@ export function useAmbassadorLeads(leadType?: string) {
     return byStage;
   };
 
-  // Create lead mutation
+  // Create lead mutation - MASTER GENIUS ARCHITECT: lead_type is REQUIRED, no defaults
   const createLeadMutation = useMutation({
     mutationFn: async (input: {
       name: string;
@@ -141,9 +139,14 @@ export function useAmbassadorLeads(leadType?: string) {
       zipcode?: string;
       source?: string;
       notes?: string;
-      lead_type?: string;
+      lead_type: 'store' | 'wholesaler' | 'ambassador' | 'influencer'; // REQUIRED - no optional
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
+      
+      // CRITICAL: Reject if lead_type is not explicitly provided
+      if (!input.lead_type) {
+        throw new Error('lead_type is required and must be explicitly set');
+      }
 
       const { error } = await supabase
         .from('sales_prospects')
@@ -155,11 +158,12 @@ export function useAmbassadorLeads(leadType?: string) {
           address: input.address,
           city: input.city,
           state: input.state,
-          source: input.source || `${input.lead_type || 'ambassador'}_referral`,
+          source: input.source || `${input.lead_type}_referral`,
           notes: input.notes,
           pipeline_stage: 'new', // lowercase to match DB constraint
           assigned_to: user.id,
           zipcode: input.zipcode,
+          lead_type: input.lead_type, // EXPLICITLY SAVED TO DATABASE
         });
 
       if (error) throw error;

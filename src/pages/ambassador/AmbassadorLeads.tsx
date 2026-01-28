@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 export default function AmbassadorLeads() {
   const [searchQuery, setSearchQuery] = useState('');
   const [addLeadOpen, setAddLeadOpen] = useState(false);
-  const [selectedLeadType, setSelectedLeadType] = useState<string>('store');
+  const [selectedLeadType, setSelectedLeadType] = useState<'store' | 'wholesaler' | 'ambassador' | 'influencer'>('store');
   const [leadDetailOpen, setLeadDetailOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -382,7 +382,13 @@ export default function AmbassadorLeads() {
                     Start building your pipeline by adding leads
                   </p>
                   <Button onClick={() => {
-                    setSelectedLeadType(pipeline.id.replace('s', '').replace('influencer', 'influencer').replace('ambassador', 'ambassador'));
+                    const typeMap: Record<string, 'store' | 'wholesaler' | 'ambassador' | 'influencer'> = {
+                      'stores': 'store',
+                      'wholesalers': 'wholesaler', 
+                      'influencers': 'influencer',
+                      'ambassadors': 'ambassador'
+                    };
+                    setSelectedLeadType(typeMap[pipeline.id] || 'store');
                     setAddLeadOpen(true);
                   }}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -408,7 +414,7 @@ export default function AmbassadorLeads() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Lead Type</Label>
-              <Select value={selectedLeadType} onValueChange={setSelectedLeadType}>
+              <Select value={selectedLeadType} onValueChange={(v) => setSelectedLeadType(v as 'store' | 'wholesaler' | 'ambassador' | 'influencer')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
