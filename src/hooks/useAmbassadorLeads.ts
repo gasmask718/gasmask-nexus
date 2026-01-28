@@ -102,8 +102,9 @@ export function useAmbassadorLeads(leadType?: string) {
         likelihood: lead.likelihood_to_activate,
         created_at: lead.created_at,
         updated_at: lead.updated_at,
-        // CRITICAL: Read lead_type directly from database column - no inference
-        lead_type: lead.lead_type || 'store',
+        // MASTER GENIUS ARCHITECT: lead_type comes from DB - NO FALLBACK
+        // If lead_type is missing, it's a data integrity error that should be visible
+        lead_type: lead.lead_type as 'store' | 'wholesaler' | 'influencer' | 'ambassador',
       }));
     },
     enabled: !!user?.id,
