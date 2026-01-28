@@ -262,13 +262,21 @@ function DashboardContent() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <Button 
               className="h-auto py-4 flex-col gap-2" 
               onClick={() => navigate('/ambassador/stores')}
             >
               <Store className="h-5 w-5" />
               <span>View Stores</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-auto py-4 flex-col gap-2"
+              onClick={() => navigate('/ambassador/orders?action=create')}
+            >
+              <Package className="h-5 w-5" />
+              <span>Create Order</span>
             </Button>
             <Button 
               variant="outline" 

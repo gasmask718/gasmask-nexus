@@ -30,10 +30,33 @@ export interface LeadsByStage {
   [stage: string]: Lead[];
 }
 
-const STORE_STAGES = ['New', 'Contacted', 'Meeting Set', 'Proposal', 'Negotiation', 'Won', 'Lost'];
-const WHOLESALER_STAGES = ['Identified', 'Reached Out', 'Qualified', 'Onboarding', 'Active'];
-const INFLUENCER_STAGES = ['Identified', 'Contacted', 'Interested', 'Training', 'Active'];
-const AMBASSADOR_STAGES = ['Applied', 'Screening', 'Interview', 'Background Check', 'Onboarding', 'Active'];
+// Stages must be lowercase to match DB constraint
+const STORE_STAGES = ['new', 'contacted', 'meeting set', 'proposal', 'negotiation', 'won', 'lost'];
+const WHOLESALER_STAGES = ['identified', 'reached out', 'qualified', 'onboarding', 'active'];
+const INFLUENCER_STAGES = ['identified', 'contacted', 'interested', 'training', 'active'];
+const AMBASSADOR_STAGES = ['applied', 'screening', 'interview', 'background check', 'onboarding', 'active'];
+
+// Display names for UI (title case)
+const STAGE_DISPLAY_NAMES: Record<string, string> = {
+  'new': 'New',
+  'contacted': 'Contacted',
+  'meeting set': 'Meeting Set',
+  'proposal': 'Proposal',
+  'negotiation': 'Negotiation',
+  'won': 'Won',
+  'lost': 'Lost',
+  'identified': 'Identified',
+  'reached out': 'Reached Out',
+  'qualified': 'Qualified',
+  'onboarding': 'Onboarding',
+  'active': 'Active',
+  'interested': 'Interested',
+  'training': 'Training',
+  'applied': 'Applied',
+  'screening': 'Screening',
+  'interview': 'Interview',
+  'background check': 'Background Check',
+};
 
 /**
  * Fetch ambassador's leads
@@ -112,6 +135,7 @@ export function useAmbassadorLeads(leadType?: string) {
       address?: string;
       city?: string;
       state?: string;
+      zipcode?: string;
       source?: string;
       notes?: string;
       lead_type?: string;
@@ -128,10 +152,11 @@ export function useAmbassadorLeads(leadType?: string) {
           address: input.address,
           city: input.city,
           state: input.state,
-          source: input.source || input.lead_type || 'ambassador_referral',
+          source: input.source || `${input.lead_type || 'ambassador'}_referral`,
           notes: input.notes,
-          pipeline_stage: 'New',
+          pipeline_stage: 'new', // lowercase to match DB constraint
           assigned_to: user.id,
+          zipcode: input.zipcode,
         });
 
       if (error) throw error;
@@ -218,7 +243,7 @@ export function useAmbassadorLeads(leadType?: string) {
       await supabase
         .from('sales_prospects')
         .update({
-          pipeline_stage: 'Won',
+          pipeline_stage: 'won', // lowercase to match DB constraint
           converted_store_id: store.id,
           updated_at: new Date().toISOString(),
         })
@@ -262,5 +287,6 @@ export function useAmbassadorLeads(leadType?: string) {
     convertLead: convertLeadMutation.mutateAsync,
     isConvertingLead: convertLeadMutation.isPending,
     refetch: () => queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] }),
+    getStageDisplayName: (stage: string) => STAGE_DISPLAY_NAMES[stage.toLowerCase()] || stage,
   };
 }
