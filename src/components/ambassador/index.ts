@@ -7,3 +7,4 @@ export { AmbassadorActionBar } from './AmbassadorActionBar';
 export { AmbassadorActivityTimeline } from './AmbassadorActivityTimeline';
 export { AmbassadorTerritoryPanel } from './AmbassadorTerritoryPanel';
 export { AmbassadorIdentityHeader } from './AmbassadorIdentityHeader';
+export { PortfolioSection } from './PortfolioSection';
