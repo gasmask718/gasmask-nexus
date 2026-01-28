@@ -232,23 +232,37 @@ export default function AmbassadorLeads() {
       backPath="/ambassador/dashboard"
     >
       <div className="p-6 space-y-6">
-        {/* Summary Cards */}
+        {/* KPI Summary Cards - MASTER GENIUS ARCHITECT: Always render, never conditional on truthy count */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {pipelines.map((pipeline) => (
-            <Card key={pipeline.id}>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-primary/10">
-                    {pipeline.icon}
+          {pipelines.map((pipeline) => {
+            // CRITICAL: typeof check ensures we render even when count is 0
+            const count = typeof pipeline.leads?.length === 'number' ? pipeline.leads.length : 0;
+            
+            return (
+              <Card 
+                key={pipeline.id}
+                className="border-primary/20 hover:border-primary/40 transition-colors cursor-pointer"
+                onClick={() => {
+                  // Scroll to corresponding tab or set active
+                  const tabElement = document.querySelector(`[value="${pipeline.id}"]`);
+                  tabElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  (tabElement as HTMLElement)?.click();
+                }}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-primary/10">
+                      {pipeline.icon}
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">{pipeline.name}</p>
+                      <p className="text-2xl font-bold font-mono">{count}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">{pipeline.name}</p>
-                    <p className="text-2xl font-bold">{pipeline.leads.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Pipeline Tabs */}
