@@ -93,8 +93,13 @@ function WholesalerCard({ wholesaler, onRemove }: { wholesaler: PortfolioWholesa
 
 // ============ INFLUENCER CARD ============
 function InfluencerCard({ influencer, onRemove }: { influencer: PortfolioInfluencer; onRemove: () => void }) {
+  const navigate = useNavigate();
+  
   return (
-    <div className="p-3 rounded-lg border bg-card hover:border-primary/50 transition-colors cursor-pointer group">
+    <div 
+      className="p-3 rounded-lg border bg-card hover:border-primary/50 transition-colors cursor-pointer group"
+      onClick={() => navigate(`/ambassador/influencers/${influencer.influencer_id}`)}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -134,8 +139,13 @@ function InfluencerCard({ influencer, onRemove }: { influencer: PortfolioInfluen
 
 // ============ AMBASSADOR RECRUIT CARD ============
 function RecruitCard({ recruit, onRemove }: { recruit: RecruitedAmbassador; onRemove: () => void }) {
+  const navigate = useNavigate();
+  
   return (
-    <div className="p-3 rounded-lg border bg-card hover:border-primary/50 transition-colors cursor-pointer group">
+    <div 
+      className="p-3 rounded-lg border bg-card hover:border-primary/50 transition-colors cursor-pointer group"
+      onClick={() => navigate(`/ambassador/ambassadors/${recruit.id}`)}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">

@@ -18,7 +18,6 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useEntityNotes } from '@/hooks/useEntityNotes';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
-import Layout from '@/components/Layout';
 
 export default function AmbassadorProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -118,13 +117,11 @@ export default function AmbassadorProfilePage() {
 
   if (!profile && !isLoading) {
     return (
-      <Layout>
-        <div className="text-center py-12">
-          <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
-          <h2 className="text-xl font-bold mb-2">Ambassador Not Found</h2>
-          <Button onClick={() => navigate('/ambassadors')}>Back to Ambassadors</Button>
-        </div>
-      </Layout>
+      <div className="text-center py-12">
+        <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
+        <h2 className="text-xl font-bold mb-2">Ambassador Not Found</h2>
+        <Button onClick={() => navigate('/ambassadors')}>Back to Ambassadors</Button>
+      </div>
     );
   }
 
@@ -427,8 +424,7 @@ export default function AmbassadorProfilePage() {
   ];
 
   return (
-    <Layout>
-      <ProfileLayout
+    <ProfileLayout
         isLoading={isLoading}
         backPath="/ambassadors"
         backLabel="Back to Ambassadors"
@@ -479,6 +475,5 @@ export default function AmbassadorProfilePage() {
         tabs={tabs}
         onAddNote={() => {}}
       />
-    </Layout>
   );
 }
