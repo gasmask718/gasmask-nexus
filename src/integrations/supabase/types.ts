@@ -4496,7 +4496,7 @@ export type Database = {
           total_earnings: number
           tracking_code: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           city?: string | null
@@ -4519,7 +4519,7 @@ export type Database = {
           total_earnings?: number
           tracking_code: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           city?: string | null
@@ -4542,7 +4542,7 @@ export type Database = {
           total_earnings?: number
           tracking_code?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {

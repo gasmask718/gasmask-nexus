@@ -448,12 +448,13 @@ export function useAmbassadorLeads(leadType?: string) {
       if (!ambassador) throw new Error('No active ambassador profile found. Please contact your manager.');
 
       // Create influencer record - username/platform required by schema
+      // Platform constraint now allows: instagram, tiktok, youtube, twitter, facebook, street_team, other
       const { data: influencer, error: infError } = await supabase
         .from('influencers')
         .insert({
           name: input.lead.name,
           username: input.lead.name.toLowerCase().replace(/\s+/g, '_'), // Generate from name
-          platform: 'street_team', // Default platform for street team
+          platform: 'street_team', // Valid platform for street team members
           email: input.lead.email || null,
           phone: input.lead.phone || null,
           city: input.lead.city || null,
