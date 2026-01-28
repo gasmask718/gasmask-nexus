@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { 
   Store, ShoppingCart, Users, UserPlus, Plus, 
   Search, ChevronRight, Clock, CheckCircle, XCircle,
-  Phone, Mail, MapPin, Calendar, ArrowRight, Loader2
+  Phone, Mail, MapPin, Calendar, ArrowRight, Loader2, Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
@@ -30,6 +30,8 @@ export default function AmbassadorLeads() {
   const [selectedLeadType, setSelectedLeadType] = useState<string>('store');
   const [leadDetailOpen, setLeadDetailOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   
   // Real data from hook
   const { 
@@ -41,6 +43,8 @@ export default function AmbassadorLeads() {
     convertToWholesaler, isConvertingToWholesaler,
     convertToAmbassador, isConvertingToAmbassador,
     convertToInfluencer, isConvertingToInfluencer,
+    // Delete
+    deleteLead, isDeletingLead,
     getStageDisplayName
   } = useAmbassadorLeads();
 
@@ -111,6 +115,25 @@ export default function AmbassadorLeads() {
 
   // Check if any conversion is in progress
   const isConverting = isConvertingToStore || isConvertingToWholesaler || isConvertingToAmbassador || isConvertingToInfluencer;
+
+  // Handle delete confirmation
+  const handleDeleteClick = (lead: Lead) => {
+    setLeadToDelete(lead);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!leadToDelete) return;
+    try {
+      await deleteLead(leadToDelete.id);
+      setDeleteConfirmOpen(false);
+      setLeadToDelete(null);
+      setLeadDetailOpen(false);
+      setSelectedLead(null);
+    } catch (error) {
+      // Error handled in hook
+    }
+  };
 
   // Get conversion button text based on lead type
   const getConversionButtonText = (leadType: string) => {
@@ -586,8 +609,43 @@ export default function AmbassadorLeads() {
                   </p>
                 </div>
               )}
+
+              {/* Delete Button - always visible */}
+              <div className="pt-4 border-t">
+                <Button 
+                  variant="destructive"
+                  className="w-full" 
+                  onClick={() => handleDeleteClick(selectedLead)}
+                  disabled={isDeletingLead}
+                >
+                  {isDeletingLead && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Lead
+                </Button>
+              </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Lead</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{leadToDelete?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} disabled={isDeletingLead}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeletingLead}>
+              {isDeletingLead && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </EnhancedPortalLayout>

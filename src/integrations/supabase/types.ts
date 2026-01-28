@@ -32087,6 +32087,7 @@ export type Database = {
         Row: {
           address: string | null
           ai_score: number | null
+          archived: boolean
           assigned_to: string | null
           city: string | null
           contact_name: string | null
@@ -32111,6 +32112,7 @@ export type Database = {
         Insert: {
           address?: string | null
           ai_score?: number | null
+          archived?: boolean
           assigned_to?: string | null
           city?: string | null
           contact_name?: string | null
@@ -32135,6 +32137,7 @@ export type Database = {
         Update: {
           address?: string | null
           ai_score?: number | null
+          archived?: boolean
           assigned_to?: string | null
           city?: string | null
           contact_name?: string | null
