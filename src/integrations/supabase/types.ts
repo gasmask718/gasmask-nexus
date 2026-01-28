@@ -32132,6 +32132,7 @@ export type Database = {
           email: string | null
           id: string
           last_contacted: string | null
+          lead_type: string
           likelihood_to_activate: number | null
           next_follow_up: string | null
           notes: string | null
@@ -32159,6 +32160,7 @@ export type Database = {
           email?: string | null
           id?: string
           last_contacted?: string | null
+          lead_type?: string
           likelihood_to_activate?: number | null
           next_follow_up?: string | null
           notes?: string | null
@@ -32186,6 +32188,7 @@ export type Database = {
           email?: string | null
           id?: string
           last_contacted?: string | null
+          lead_type?: string
           likelihood_to_activate?: number | null
           next_follow_up?: string | null
           notes?: string | null

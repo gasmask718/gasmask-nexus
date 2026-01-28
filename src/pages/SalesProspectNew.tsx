@@ -29,16 +29,26 @@ export default function SalesProspectNew() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: typeof formData) => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('Not authenticated');
 
       const { data: prospect, error } = await supabase
         .from('sales_prospects')
         .insert([{
-          ...data,
+          store_name: data.store_name,
+          contact_name: data.contact_name,
+          phone: data.phone,
+          email: data.email,
+          address: data.address,
+          city: data.city,
+          state: data.state,
+          zipcode: data.zipcode,
+          source: data.source,
+          notes: data.notes,
           assigned_to: user.user.id,
-          pipeline_stage: 'new'
+          pipeline_stage: 'new',
+          lead_type: 'store', // EXPLICIT: SalesProspectNew is for store leads only
         }])
         .select()
         .single();
