@@ -2,10 +2,11 @@
  * Ambassador Leads Page
  * Real data from useAmbassadorLeads hook - pipelines for store/wholesaler/influencer/ambassador leads
  */
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
@@ -22,9 +23,16 @@ import {
 import { format } from 'date-fns';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
 import { useAmbassadorLeads, type Lead } from '@/hooks/useAmbassadorLeads';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export default function AmbassadorLeads() {
+  const location = useLocation();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [selectedLeadType, setSelectedLeadType] = useState<'store' | 'wholesaler' | 'ambassador' | 'influencer'>('store');
@@ -32,12 +40,18 @@ export default function AmbassadorLeads() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
+  const [activeLane, setActiveLane] = useState<'stores' | 'wholesalers' | 'influencers' | 'ambassadors'>('stores');
+  const [debugOpen, setDebugOpen] = useState(false);
   
   // Real data from hook
   const { 
+    leads,
     storeLeads, wholesalerLeads, influencerLeads, ambassadorLeads,
     getLeadsByStage, storeStages, wholesalerStages, influencerStages, ambassadorStages,
     isLoading, createLead, isCreatingLead, updateStage,
+    isFetching,
+    refetchLeads,
+    leadsUpdatedAt,
     // Lane-specific conversions
     convertToStore, isConvertingToStore,
     convertToWholesaler, isConvertingToWholesaler,
@@ -47,6 +61,76 @@ export default function AmbassadorLeads() {
     deleteLead, isDeletingLead,
     getStageDisplayName
   } = useAmbassadorLeads();
+
+  // Admin-only debug visibility (DEV always shows)
+  const { data: userRoles } = useQuery({
+    queryKey: ['user-roles', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [] as string[];
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+      if (error) {
+        console.warn('[Pipeline Debug] user_roles read failed:', error);
+        return [] as string[];
+      }
+      return (data || []).map((r: any) => String(r.role));
+    },
+    enabled: !!user?.id,
+  });
+
+  const isAdmin = import.meta.env.DEV || (userRoles || []).some(r => r === 'admin' || r === 'owner');
+
+  const { data: ambassadorId } = useQuery({
+    queryKey: ['ambassador-self-debug', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('ambassadors')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (error) {
+        console.warn('[Pipeline Debug] ambassador id fetch failed:', error);
+        return null;
+      }
+      return data?.[0]?.id ?? null;
+    },
+    enabled: !!user?.id,
+  });
+
+  const kpiCounts = useMemo(() => {
+    const counts: Record<'store' | 'wholesaler' | 'influencer' | 'ambassador', number> = {
+      store: 0,
+      wholesaler: 0,
+      influencer: 0,
+      ambassador: 0,
+    };
+
+    (leads || []).forEach((l) => {
+      if (l?.lead_type && l.lead_type in counts) {
+        counts[l.lead_type] += 1;
+      }
+    });
+
+    return counts;
+  }, [leads]);
+
+  const laneToLeadType: Record<'stores' | 'wholesalers' | 'influencers' | 'ambassadors', 'store' | 'wholesaler' | 'influencer' | 'ambassador'> = {
+    stores: 'store',
+    wholesalers: 'wholesaler',
+    influencers: 'influencer',
+    ambassadors: 'ambassador',
+  };
+
+  const getEffectiveStage = (lead: Lead, laneStages: string[]) => {
+    const s = (lead.stage || '').toLowerCase();
+    if (laneStages.includes(s)) return s;
+    // No silent drops: if stage isn't in this lane's configured columns, show it in the first column.
+    return laneStages.includes('new') ? 'new' : (laneStages[0] || s);
+  };
 
   // Form state for new lead
   const [newLead, setNewLead] = useState({
@@ -73,10 +157,66 @@ export default function AmbassadorLeads() {
         lead_type: selectedLeadType,
         source: `${selectedLeadType}_referral`,
       });
+
+      // GUARANTEED OUTCOME: force refetch now (not just invalidate) so the UI updates immediately.
+      await refetchLeads();
+
       setAddLeadOpen(false);
       setNewLead({ name: '', contact_name: '', phone: '', email: '', address: '', city: '', state: '', zipcode: '', notes: '' });
     } catch (error) {
       // Error handled in hook
+    }
+  };
+
+  const handleForceRefetch = async () => {
+    try {
+      await queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] });
+      await refetchLeads();
+      toast.success('Pipeline refetched');
+    } catch (e) {
+      toast.error(`Refetch failed: ${(e as Error).message}`);
+    }
+  };
+
+  const handleCopySnapshot = async () => {
+    const snapshot = {
+      timestamp: new Date().toISOString(),
+      route: location.pathname,
+      auth_user_id: user?.id ?? null,
+      ambassador_id: ambassadorId ?? null,
+      pipeline_query_key: ['ambassador-leads', user?.id, null],
+      pipeline_query: {
+        table: 'sales_prospects',
+        filters: {
+          assigned_to: user?.id ?? null,
+          archived: false,
+        },
+        order_by: 'created_at desc',
+      },
+      kpi_counts: kpiCounts,
+      active_filters: {
+        active_lane: activeLane,
+        search: searchQuery,
+      },
+      rows: {
+        length: (leads || []).length,
+        first5: (leads || []).slice(0, 5).map(l => ({
+          id: l.id,
+          lead_type: l.lead_type,
+          assigned_to: l.assigned_to ?? null,
+          archived: l.archived ?? null,
+          pipeline_stage: l.stage,
+          created_by: '(column not present on sales_prospects)',
+        })),
+      }
+    };
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(snapshot, null, 2));
+      toast.success('Pipeline snapshot copied');
+    } catch (e) {
+      console.error('Clipboard write failed:', e);
+      toast.error('Could not copy snapshot (clipboard blocked)');
     }
   };
 
@@ -232,11 +372,100 @@ export default function AmbassadorLeads() {
       backPath="/ambassador/dashboard"
     >
       <div className="p-6 space-y-6">
+        {/* Pipeline Debug (Admin-only, DEV always) */}
+        {isAdmin && (
+          <Collapsible open={debugOpen} onOpenChange={setDebugOpen}>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" size="sm">
+                  Pipeline Debug
+                </Button>
+              </CollapsibleTrigger>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleForceRefetch}>
+                  Force Refetch Now
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleCopySnapshot}>
+                  Copy Pipeline Snapshot
+                </Button>
+              </div>
+            </div>
+            <CollapsibleContent>
+              <Card className="mt-3 border-border/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Pipeline Debug</CardTitle>
+                  <CardDescription>
+                    Live visibility into pipeline binding, filters, and returned rows.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-1">
+                      <div><span className="text-muted-foreground">route:</span> <span className="font-mono">{location.pathname}</span></div>
+                      <div><span className="text-muted-foreground">auth user.id:</span> <span className="font-mono">{user?.id || '—'}</span></div>
+                      <div><span className="text-muted-foreground">ambassador.id:</span> <span className="font-mono">{ambassadorId || '—'}</span></div>
+                      <div><span className="text-muted-foreground">active lane:</span> <span className="font-mono">{activeLane}</span></div>
+                      <div><span className="text-muted-foreground">search:</span> <span className="font-mono">{searchQuery || '—'}</span></div>
+                      <div><span className="text-muted-foreground">isFetching:</span> <span className="font-mono">{String(isFetching)}</span></div>
+                      <div><span className="text-muted-foreground">last refreshed:</span> <span className="font-mono">{leadsUpdatedAt ? new Date(leadsUpdatedAt).toLocaleString() : '—'}</span></div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">pipeline query (authoritative)</div>
+                      <pre className="text-xs rounded-md bg-muted/30 border border-border/50 p-3 whitespace-pre-wrap break-words font-mono">
+{`from('sales_prospects')\n  .select('*')\n  .eq('assigned_to', ${user?.id ? `'${user.id}'` : 'null'})\n  .eq('archived', false)\n  .order('created_at', { ascending: false })`}
+                      </pre>
+                      <div className="text-muted-foreground">query keys</div>
+                      <pre className="text-xs rounded-md bg-muted/30 border border-border/50 p-3 whitespace-pre-wrap break-words font-mono">
+{JSON.stringify({
+  pipeline: ['ambassador-leads', user?.id, null],
+  invalidatePrefix: ['ambassador-leads'],
+}, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-2">raw leads</div>
+                      <pre className="text-xs rounded-md bg-muted/30 border border-border/50 p-3 whitespace-pre-wrap break-words font-mono">
+{JSON.stringify({
+  length: (leads || []).length,
+  first5: (leads || []).slice(0, 5).map(l => ({
+    id: l.id,
+    lead_type: l.lead_type,
+    assigned_to: l.assigned_to ?? null,
+    archived: l.archived ?? null,
+    pipeline_stage: l.stage,
+    created_by: '(column not present on sales_prospects)',
+  })),
+}, null, 2)}
+                      </pre>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-2">KPI counts (derived from raw leads)</div>
+                      <pre className="text-xs rounded-md bg-muted/30 border border-border/50 p-3 whitespace-pre-wrap break-words font-mono">
+{JSON.stringify(kpiCounts, null, 2)}
+                      </pre>
+                      {(leads || []).length === 0 && (
+                        <div className="mt-3 text-sm border border-destructive/30 bg-destructive/5 text-destructive rounded-md p-3">
+                          Select returned 0 rows. If create succeeded but this stays 0, SELECT RLS is likely blocking visibility.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
         {/* KPI Summary Cards - MASTER GENIUS ARCHITECT: Always render, never conditional on truthy count */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {pipelines.map((pipeline) => {
-            // CRITICAL: typeof check ensures we render even when count is 0
-            const count = typeof pipeline.leads?.length === 'number' ? pipeline.leads.length : 0;
+            // CRITICAL: force render from authoritative counts object, never from UI columns
+            const leadType = laneToLeadType[pipeline.id as keyof typeof laneToLeadType];
+            const countNum = Number(kpiCounts?.[leadType] ?? 0);
+            const count = Number.isNaN(countNum) ? 0 : countNum;
             
             return (
               <Card 
@@ -266,14 +495,19 @@ export default function AmbassadorLeads() {
         </div>
 
         {/* Pipeline Tabs */}
-        <Tabs defaultValue="stores" className="space-y-4">
+        <Tabs value={activeLane} onValueChange={(v) => setActiveLane(v as any)} className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <TabsList className="flex-wrap h-auto">
               {pipelines.map((pipeline) => (
                 <TabsTrigger key={pipeline.id} value={pipeline.id} className="gap-2">
                   {pipeline.icon}
                   <span className="hidden sm:inline">{pipeline.name}</span>
-                  <Badge variant="secondary" className="ml-1">{pipeline.leads.length}</Badge>
+                  <Badge variant="secondary" className="ml-1">
+                    {Number.isNaN(Number(kpiCounts?.[laneToLeadType[pipeline.id as keyof typeof laneToLeadType]] ?? 0))
+                      ? 0
+                      : Number(kpiCounts?.[laneToLeadType[pipeline.id as keyof typeof laneToLeadType]] ?? 0)
+                    }
+                  </Badge>
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -301,7 +535,7 @@ export default function AmbassadorLeads() {
                 <div className="flex gap-4 min-w-max">
                   {pipeline.stages.map((stage) => {
                     const stageLeads = pipeline.leads.filter(l => 
-                      l.stage === stage && 
+                      getEffectiveStage(l, pipeline.stages) === stage && 
                       (searchQuery === '' || l.name.toLowerCase().includes(searchQuery.toLowerCase()))
                     );
                     
