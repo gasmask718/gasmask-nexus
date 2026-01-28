@@ -51,6 +51,7 @@ import AutomationSettings from '@/pages/AutomationSettings';
 import Training from '@/pages/Training';
 import Ambassadors from '@/pages/Ambassadors';
 import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, AmbassadorWholesalersList, AmbassadorCommissions, AmbassadorRoutes, AmbassadorOrders, AmbassadorCommunications, AmbassadorLeads, AmbassadorDisputes, AmbassadorDisputeDetail } from '@/pages/ambassador';
+import { AmbassadorProfilePage, WholesalerProfilePage, StoreProfilePage, InfluencerProfilePage } from '@/pages/profile';
 import { AdminDisputesQueue, AdminDisputeDetail } from '@/pages/admin/disputes';
 import { AdminOverridesPage, AdminOverrideDetailPage } from '@/pages/admin/overrides';
 import { AdminPayoutsPage, AdminPayoutDetailPage } from '@/pages/admin/payouts';
@@ -1797,6 +1798,12 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+
+      {/* Connected Profile Pages */}
+      <Route path="/profile/ambassador/:id" element={<ProtectedRoute><AmbassadorProfilePage /></ProtectedRoute>} />
+      <Route path="/profile/wholesaler/:id" element={<ProtectedRoute><WholesalerProfilePage /></ProtectedRoute>} />
+      <Route path="/profile/store/:id" element={<ProtectedRoute><StoreProfilePage /></ProtectedRoute>} />
+      <Route path="/profile/influencer/:id" element={<ProtectedRoute><InfluencerProfilePage /></ProtectedRoute>} />
 
       {/* Admin Disputes */}
       <Route path="/admin/disputes" element={
