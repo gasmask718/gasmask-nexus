@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Store, DollarSign, TrendingUp, Package, Users, 
   ArrowRight, Phone, MessageSquare, MapPin, AlertTriangle,
-  Plus, Calendar, BarChart3, Clock
+  Plus, Calendar, BarChart3, Clock, ShoppingCart, UserPlus
 } from 'lucide-react';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
@@ -20,7 +20,48 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAmbassadorPortfolio, type PortfolioStore } from '@/hooks/useAmbassadorPortfolio';
 import { useCommissionTotals, useCommissionLedger } from '@/hooks/useCommissionLedger';
+import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { format, formatDistanceToNow } from 'date-fns';
+
+// MASTER GENIUS ARCHITECT: Lead KPI config - all lead types must be represented
+const LEAD_KPI_CONFIG = {
+  store: { 
+    label: 'Store Leads', 
+    icon: Store, 
+    variant: 'rose' as const,
+    bgClass: 'bg-rose-500/10',
+    borderClass: 'border-rose-500/30',
+    iconClass: 'text-rose-400'
+  },
+  wholesaler: { 
+    label: 'Wholesaler Leads', 
+    icon: ShoppingCart, 
+    variant: 'amber' as const,
+    bgClass: 'bg-amber-500/10',
+    borderClass: 'border-amber-500/30',
+    iconClass: 'text-amber-400'
+  },
+  influencer: { 
+    label: 'Influencer / Street Team', 
+    icon: Users, 
+    variant: 'purple' as const,
+    bgClass: 'bg-purple-500/10',
+    borderClass: 'border-purple-500/30',
+    iconClass: 'text-purple-400'
+  },
+  ambassador: { 
+    label: 'Ambassador Recruits', 
+    icon: UserPlus, 
+    variant: 'cyan' as const,
+    bgClass: 'bg-cyan-500/10',
+    borderClass: 'border-cyan-500/30',
+    iconClass: 'text-cyan-400'
+  },
+} as const;
+
+type LeadType = keyof typeof LEAD_KPI_CONFIG;
 
 function StoreCard({ store, onClick }: { store: PortfolioStore; onClick: () => void }) {
   return (
@@ -65,13 +106,46 @@ function StoreCard({ store, onClick }: { store: PortfolioStore; onClick: () => v
 
 function DashboardContent() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { ambassador, stores, metrics, isLoading: portfolioLoading } = useAmbassadorPortfolio();
   // Real commission data from SQL views
   const { data: commissionTotals, isLoading: totalsLoading } = useCommissionTotals();
   const { data: recentLedger, isLoading: ledgerLoading } = useCommissionLedger({ limit: 5 });
   const [selectedKpi, setSelectedKpi] = useState<string | null>(null);
   
-  const isLoading = portfolioLoading || totalsLoading || ledgerLoading;
+  // MASTER GENIUS ARCHITECT: Fetch lead counts by type for KPI cards
+  const { data: leadCounts, isLoading: leadsLoading } = useQuery({
+    queryKey: ['ambassador-lead-counts', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { store: 0, wholesaler: 0, influencer: 0, ambassador: 0 };
+      
+      // Canonical query: count by lead_type where ambassador owns/created and not archived
+      const { data, error } = await supabase
+        .from('sales_prospects')
+        .select('lead_type')
+        .or(`created_by.eq.${user.id},ambassador_id.eq.${user.id}`)
+        .eq('archived', false);
+      
+      if (error) {
+        console.error('Lead count fetch error:', error);
+        return { store: 0, wholesaler: 0, influencer: 0, ambassador: 0 };
+      }
+      
+      // Count by lead_type
+      const counts = { store: 0, wholesaler: 0, influencer: 0, ambassador: 0 };
+      (data || []).forEach((row) => {
+        const lt = row.lead_type as LeadType;
+        if (lt && lt in counts) {
+          counts[lt]++;
+        }
+      });
+      
+      return counts;
+    },
+    enabled: !!user?.id,
+  });
+  
+  const isLoading = portfolioLoading || totalsLoading || ledgerLoading || leadsLoading;
 
   const handleStoreClick = (storeId: string) => {
     navigate(`/ambassador/stores/${storeId}`);
@@ -116,7 +190,38 @@ function DashboardContent() {
         </div>
       </div>
 
-      {/* KPIs */}
+      {/* MASTER GENIUS ARCHITECT: Lead KPI Cards - ALWAYS render, never conditional */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {(Object.keys(LEAD_KPI_CONFIG) as LeadType[]).map((leadType) => {
+          const config = LEAD_KPI_CONFIG[leadType];
+          // CRITICAL: typeof check ensures we render even when count is 0
+          const rawCount = leadCounts?.[leadType];
+          const count = typeof rawCount === 'number' ? rawCount : 0;
+          const Icon = config.icon;
+          
+          return (
+            <Card 
+              key={leadType}
+              className={`${config.bgClass} ${config.borderClass} border hover:scale-[1.02] transition-transform cursor-pointer`}
+              onClick={() => navigate('/ambassador/leads')}
+            >
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-full ${config.bgClass}`}>
+                    <Icon className={`h-5 w-5 ${config.iconClass}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{config.label}</p>
+                    <p className="text-2xl font-bold font-mono">{count}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Portfolio KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <CommandCenterKPI
           label="Total Stores"
