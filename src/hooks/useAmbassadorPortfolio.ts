@@ -74,6 +74,7 @@ export function useAmbassadorPortfolio() {
   const queryClient = useQueryClient();
 
   // Get ambassador record for current user
+  // CRITICAL: User may have multiple ambassador records - use limit(1) to get the most recent active one
   const ambassadorQuery = useQuery({
     queryKey: ['ambassador-self', user?.id],
     queryFn: async () => {
@@ -83,13 +84,12 @@ export function useAmbassadorPortfolio() {
         .from('ambassadors')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
       
-      if (error) {
-        if (error.code === 'PGRST116') return null; // Not found
-        throw error;
-      }
-      return data;
+      if (error) throw error;
+      return data?.[0] || null;
     },
     enabled: !!user?.id,
   });
