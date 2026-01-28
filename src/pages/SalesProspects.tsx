@@ -18,12 +18,15 @@ export default function SalesProspects() {
   const { data: prospects, isLoading } = useQuery({
     queryKey: ['sales-prospects-list'],
     queryFn: async () => {
+      // MASTER GENIUS ARCHITECT: Canonical query filter
+      // Filter by archived=false to exclude soft-deleted leads
       const { data, error } = await supabase
         .from('sales_prospects')
         .select(`
           *,
           assigned_user:profiles!sales_prospects_assigned_to_fkey(id, name)
         `)
+        .eq('archived', false) // CRITICAL: Only show non-archived leads
         .order('priority', { ascending: false });
       
       if (error) throw error;
