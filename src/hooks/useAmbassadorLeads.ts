@@ -264,10 +264,12 @@ export function useAmbassadorLeads(leadType?: string) {
 
       return store;
     },
-    onSuccess: () => {
+    onSuccess: (store) => {
+      console.log('[Store Conversion] Success - Store ID:', store.id);
       queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] });
       queryClient.invalidateQueries({ queryKey: ['ambassador-portfolio-stores'] });
-      toast.success('Store lead converted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['ambassador-self'] });
+      toast.success('Store added to your portfolio!');
     },
     onError: (error: Error) => {
       toast.error(`Failed to convert store lead: ${error.message}`);
