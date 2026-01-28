@@ -99,10 +99,11 @@ export function useAmbassadorLeads(leadType?: string) {
         likelihood: lead.likelihood_to_activate,
         created_at: lead.created_at,
         updated_at: lead.updated_at,
-        // Infer type from source or default to store
-        lead_type: lead.source?.toLowerCase().includes('wholesale') ? 'wholesaler' : 
+        // Infer type from source - IMPORTANT: ambassador_referral means store lead FROM an ambassador
+        // Only 'ambassador_recruit' should be typed as 'ambassador' (recruiting new ambassadors)
+        lead_type: lead.source?.toLowerCase().includes('wholesaler') || lead.source?.toLowerCase().includes('wholesale') ? 'wholesaler' : 
                    lead.source?.toLowerCase().includes('influencer') ? 'influencer' :
-                   lead.source?.toLowerCase().includes('ambassador') ? 'ambassador' : 'store',
+                   lead.source?.toLowerCase() === 'ambassador_recruit' ? 'ambassador' : 'store',
       }));
     },
     enabled: !!user?.id,
@@ -197,14 +198,18 @@ export function useAmbassadorLeads(leadType?: string) {
     mutationFn: async (input: { leadId: string; lead: Lead }) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // First get ambassador ID
-      const { data: ambassador } = await supabase
+      // First get ambassador ID - use .limit(1) since user may have multiple ambassador records
+      const { data: ambassadors, error: ambError } = await supabase
         .from('ambassadors')
         .select('id')
         .eq('user_id', user.id)
-        .single();
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      if (!ambassador) throw new Error('Ambassador record not found');
+      if (ambError) throw ambError;
+      const ambassador = ambassadors?.[0];
+      if (!ambassador) throw new Error('No active ambassador profile found. Please contact your manager.');
 
       // Create store in store_master - use correct column names
       const { data: store, error: storeError } = await supabase

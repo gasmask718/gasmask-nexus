@@ -129,10 +129,12 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
     enabled: !!user?.id,
   });
 
-  // Create route mutation
+  // Create route mutation - ensures route AND stops persist together
   const createRouteMutation = useMutation({
     mutationFn: async (input: { title: string; date: string; storeIds?: string[] }) => {
       if (!user?.id) throw new Error('Not authenticated');
+
+      console.log('[Route Create] Creating route:', input);
 
       const { data: route, error: routeError } = await supabase
         .from('routes')
@@ -146,7 +148,16 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
         .select()
         .single();
 
-      if (routeError) throw routeError;
+      if (routeError) {
+        console.error('[Route Create] Route insert error:', routeError);
+        throw routeError;
+      }
+      
+      if (!route?.id) {
+        throw new Error('Route was not created - check RLS policies');
+      }
+
+      console.log('[Route Create] Route created:', route.id);
 
       // Add stops if provided
       if (input.storeIds?.length && route?.id) {
@@ -157,7 +168,13 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
           status: 'pending',
         }));
 
-        await supabase.from('route_stops').insert(stops);
+        console.log('[Route Create] Adding stops:', stops);
+        const { error: stopsError } = await supabase.from('route_stops').insert(stops);
+        if (stopsError) {
+          console.error('[Route Create] Stops insert error:', stopsError);
+          // Don't throw - route was created, stops can be added later
+          toast.error('Route created but stops failed to save');
+        }
       }
 
       return route;
@@ -167,6 +184,7 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
       toast.success('Route created');
     },
     onError: (error: Error) => {
+      console.error('[Route Create] Full error:', error);
       toast.error(`Failed to create route: ${error.message}`);
     },
   });
@@ -174,6 +192,8 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
   // Add stop mutation
   const addStopMutation = useMutation({
     mutationFn: async (input: { routeId: string; storeId: string; order?: number }) => {
+      console.log('[Route Stop] Adding stop:', input);
+      
       const { data: existingStops } = await supabase
         .from('route_stops')
         .select('planned_order')
@@ -183,22 +203,35 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
 
       const nextOrder = input.order || ((existingStops?.[0]?.planned_order || 0) + 1);
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('route_stops')
         .insert({
           route_id: input.routeId,
           store_id: input.storeId,
           planned_order: nextOrder,
           status: 'pending',
-        });
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[Route Stop] Insert error:', error);
+        throw error;
+      }
+      
+      if (!data?.id) {
+        throw new Error('Stop was not created - check RLS policies');
+      }
+      
+      console.log('[Route Stop] Stop created:', data.id);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ambassador-routes'] });
       toast.success('Stop added');
     },
     onError: (error: Error) => {
+      console.error('[Route Stop] Full error:', error);
       toast.error(`Failed to add stop: ${error.message}`);
     },
   });
