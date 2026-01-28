@@ -34411,6 +34411,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          note_date: string | null
           note_text: string
           store_id: string | null
         }
@@ -34418,6 +34419,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          note_date?: string | null
           note_text: string
           store_id?: string | null
         }
@@ -34425,6 +34427,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          note_date?: string | null
           note_text?: string
           store_id?: string | null
         }
@@ -40771,6 +40774,121 @@ export type Database = {
           },
           {
             foreignKeyName: "wholesaler_ai_signals_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesaler_assignments: {
+        Row: {
+          active: boolean
+          ambassador_id: string
+          assignment_type: string | null
+          commission_rate: number | null
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          id: string
+          is_primary: boolean | null
+          notes: string | null
+          start_date: string | null
+          unassigned_at: string | null
+          unassigned_by: string | null
+          wholesaler_id: string
+        }
+        Insert: {
+          active?: boolean
+          ambassador_id: string
+          assignment_type?: string | null
+          commission_rate?: number | null
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          is_primary?: boolean | null
+          notes?: string | null
+          start_date?: string | null
+          unassigned_at?: string | null
+          unassigned_by?: string | null
+          wholesaler_id: string
+        }
+        Update: {
+          active?: boolean
+          ambassador_id?: string
+          assignment_type?: string | null
+          commission_rate?: number | null
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          is_primary?: boolean | null
+          notes?: string | null
+          start_date?: string | null
+          unassigned_at?: string | null
+          unassigned_by?: string | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_assignments_unassigned_by_fkey"
+            columns: ["unassigned_by"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_assignments_unassigned_by_fkey"
+            columns: ["unassigned_by"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_assignments_unassigned_by_fkey"
+            columns: ["unassigned_by"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_assignments_unassigned_by_fkey"
+            columns: ["unassigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_assignments_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
             referencedRelation: "wholesalers"
