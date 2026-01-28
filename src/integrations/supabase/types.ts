@@ -3813,6 +3813,8 @@ export type Database = {
           role_type: string | null
           start_date: string | null
           store_id: string | null
+          unassigned_at: string | null
+          unassigned_by: string | null
           updated_at: string | null
           wholesaler_id: string | null
         }
@@ -3830,6 +3832,8 @@ export type Database = {
           role_type?: string | null
           start_date?: string | null
           store_id?: string | null
+          unassigned_at?: string | null
+          unassigned_by?: string | null
           updated_at?: string | null
           wholesaler_id?: string | null
         }
@@ -3847,6 +3851,8 @@ export type Database = {
           role_type?: string | null
           start_date?: string | null
           store_id?: string | null
+          unassigned_at?: string | null
+          unassigned_by?: string | null
           updated_at?: string | null
           wholesaler_id?: string | null
         }
@@ -3885,6 +3891,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_unassigned_by_fkey"
+            columns: ["unassigned_by"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_unassigned_by_fkey"
+            columns: ["unassigned_by"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_unassigned_by_fkey"
+            columns: ["unassigned_by"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_unassigned_by_fkey"
+            columns: ["unassigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
           },
           {
             foreignKeyName: "fk_ambassador_assignments_store"
@@ -32088,6 +32122,8 @@ export type Database = {
           address: string | null
           ai_score: number | null
           archived: boolean
+          archived_at: string | null
+          archived_by: string | null
           assigned_to: string | null
           city: string | null
           contact_name: string | null
@@ -32113,6 +32149,8 @@ export type Database = {
           address?: string | null
           ai_score?: number | null
           archived?: boolean
+          archived_at?: string | null
+          archived_by?: string | null
           assigned_to?: string | null
           city?: string | null
           contact_name?: string | null
@@ -32138,6 +32176,8 @@ export type Database = {
           address?: string | null
           ai_score?: number | null
           archived?: boolean
+          archived_at?: string | null
+          archived_by?: string | null
           assigned_to?: string | null
           city?: string | null
           contact_name?: string | null
@@ -32160,6 +32200,34 @@ export type Database = {
           zipcode?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sales_prospects_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "sales_prospects_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "sales_prospects_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_prospects_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
           {
             foreignKeyName: "sales_prospects_assigned_to_fkey"
             columns: ["assigned_to"]

@@ -393,15 +393,39 @@ export function useAmbassadorLeads(leadType?: string) {
 
   // ════════════════════════════════════════════════════════════════════════════
   // SOFT DELETE — Archive lead (does not hard delete for audit purposes)
+  // MASTER GENIUS ARCHITECT: archived_at and archived_by for full audit trail
   // ════════════════════════════════════════════════════════════════════════════
+  
+  // Get ambassador ID for the current user (for archived_by tracking)
+  const ambassadorQuery = useQuery({
+    queryKey: ['ambassador-self-for-leads', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('ambassadors')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      return data?.[0]?.id || null;
+    },
+    enabled: !!user?.id,
+  });
+
   const deleteLeadMutation = useMutation({
     mutationFn: async (leadId: string) => {
       if (!user?.id) throw new Error('Not authenticated');
+
+      const ambassadorId = ambassadorQuery.data;
 
       const { error } = await supabase
         .from('sales_prospects')
         .update({
           archived: true,
+          archived_at: new Date().toISOString(),
+          archived_by: ambassadorId, // Track who archived for accountability
           updated_at: new Date().toISOString(),
         })
         .eq('id', leadId)
@@ -411,10 +435,10 @@ export function useAmbassadorLeads(leadType?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] });
-      toast.success('Lead deleted');
+      toast.success('Lead removed from your dashboard');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to delete lead: ${error.message}`);
+      toast.error(`Failed to remove lead: ${error.message}`);
     },
   });
 
