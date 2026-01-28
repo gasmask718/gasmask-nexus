@@ -95,7 +95,10 @@ export default function AmbassadorCommissions() {
       <div className="p-6 space-y-6">
         {/* Summary Cards - Data from SQL view, zero client math */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/20">
+          <Card 
+            className={`bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/20 cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === 'pending' ? 'ring-2 ring-yellow-500' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
+          >
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -110,7 +113,10 @@ export default function AmbassadorCommissions() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20">
+          <Card 
+            className={`bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20 cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === 'approved' ? 'ring-2 ring-blue-500' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'approved' ? 'all' : 'approved')}
+          >
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -125,7 +131,10 @@ export default function AmbassadorCommissions() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
+          <Card 
+            className={`bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20 cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === 'paid' ? 'ring-2 ring-green-500' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'paid' ? 'all' : 'paid')}
+          >
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -140,7 +149,10 @@ export default function AmbassadorCommissions() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
+          <Card 
+            className={`bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20 cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === 'all' ? 'ring-2 ring-purple-500' : ''}`}
+            onClick={() => setStatusFilter('all')}
+          >
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -163,7 +175,10 @@ export default function AmbassadorCommissions() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <div 
+                className={`flex items-center gap-3 p-3 rounded-lg bg-muted/50 cursor-pointer transition-all hover:bg-muted ${channelFilter === 'store_order' ? 'ring-2 ring-primary' : ''}`}
+                onClick={() => setChannelFilter(channelFilter === 'store_order' ? 'all' : 'store_order')}
+              >
                 <div className="p-2 rounded-full bg-primary/10">
                   <Store className="h-4 w-4 text-primary" />
                 </div>
@@ -172,7 +187,10 @@ export default function AmbassadorCommissions() {
                   <p className="font-semibold">${Number(channels.store_order || 0).toFixed(2)}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <div 
+                className={`flex items-center gap-3 p-3 rounded-lg bg-muted/50 cursor-pointer transition-all hover:bg-muted ${channelFilter === 'wholesale_order' ? 'ring-2 ring-blue-500' : ''}`}
+                onClick={() => setChannelFilter(channelFilter === 'wholesale_order' ? 'all' : 'wholesale_order')}
+              >
                 <div className="p-2 rounded-full bg-blue-500/10">
                   <ShoppingCart className="h-4 w-4 text-blue-500" />
                 </div>
@@ -181,7 +199,10 @@ export default function AmbassadorCommissions() {
                   <p className="font-semibold">${Number(channels.wholesale_order || 0).toFixed(2)}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <div 
+                className={`flex items-center gap-3 p-3 rounded-lg bg-muted/50 cursor-pointer transition-all hover:bg-muted ${channelFilter === 'affiliate' ? 'ring-2 ring-green-500' : ''}`}
+                onClick={() => setChannelFilter(channelFilter === 'affiliate' ? 'all' : 'affiliate')}
+              >
                 <div className="p-2 rounded-full bg-green-500/10">
                   <TrendingUp className="h-4 w-4 text-green-500" />
                 </div>
@@ -190,7 +211,10 @@ export default function AmbassadorCommissions() {
                   <p className="font-semibold">${Number(channels.affiliate || 0).toFixed(2)}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <div 
+                className={`flex items-center gap-3 p-3 rounded-lg bg-muted/50 cursor-pointer transition-all hover:bg-muted ${channelFilter === 'team_override' ? 'ring-2 ring-purple-500' : ''}`}
+                onClick={() => setChannelFilter(channelFilter === 'team_override' ? 'all' : 'team_override')}
+              >
                 <div className="p-2 rounded-full bg-purple-500/10">
                   <Users className="h-4 w-4 text-purple-500" />
                 </div>

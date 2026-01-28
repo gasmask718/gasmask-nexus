@@ -35,7 +35,8 @@ export default function AmbassadorLeads() {
   const { 
     storeLeads, wholesalerLeads, influencerLeads, ambassadorLeads,
     getLeadsByStage, storeStages, wholesalerStages, influencerStages, ambassadorStages,
-    isLoading, createLead, isCreatingLead, updateStage, convertLead, isConvertingLead
+    isLoading, createLead, isCreatingLead, updateStage, convertLead, isConvertingLead,
+    getStageDisplayName
   } = useAmbassadorLeads();
 
   // Form state for new lead
@@ -47,6 +48,7 @@ export default function AmbassadorLeads() {
     address: '',
     city: '',
     state: '',
+    zipcode: '',
     notes: '',
   });
 
@@ -63,7 +65,7 @@ export default function AmbassadorLeads() {
         source: `${selectedLeadType}_referral`,
       });
       setAddLeadOpen(false);
-      setNewLead({ name: '', contact_name: '', phone: '', email: '', address: '', city: '', state: '', notes: '' });
+      setNewLead({ name: '', contact_name: '', phone: '', email: '', address: '', city: '', state: '', zipcode: '', notes: '' });
     } catch (error) {
       // Error handled in hook
     }
@@ -124,27 +126,28 @@ export default function AmbassadorLeads() {
   ];
 
   const getStageColor = (stage: string) => {
+    // Match lowercase stages from DB
     const colors: Record<string, string> = {
-      'New': 'bg-gray-500',
-      'Identified': 'bg-gray-500',
-      'Applied': 'bg-gray-500',
-      'Contacted': 'bg-blue-500',
-      'Reached Out': 'bg-blue-500',
-      'Screening': 'bg-blue-500',
-      'Meeting Set': 'bg-purple-500',
-      'Qualified': 'bg-purple-500',
-      'Interested': 'bg-purple-500',
-      'Interview': 'bg-purple-500',
-      'Proposal': 'bg-yellow-500',
-      'Onboarding': 'bg-yellow-500',
-      'Training': 'bg-yellow-500',
-      'Background Check': 'bg-yellow-500',
-      'Negotiation': 'bg-orange-500',
-      'Won': 'bg-green-500',
-      'Active': 'bg-green-500',
-      'Lost': 'bg-red-500',
+      'new': 'bg-gray-500',
+      'identified': 'bg-gray-500',
+      'applied': 'bg-gray-500',
+      'contacted': 'bg-blue-500',
+      'reached out': 'bg-blue-500',
+      'screening': 'bg-blue-500',
+      'meeting set': 'bg-purple-500',
+      'qualified': 'bg-purple-500',
+      'interested': 'bg-purple-500',
+      'interview': 'bg-purple-500',
+      'proposal': 'bg-yellow-500',
+      'onboarding': 'bg-yellow-500',
+      'training': 'bg-yellow-500',
+      'background check': 'bg-yellow-500',
+      'negotiation': 'bg-orange-500',
+      'won': 'bg-green-500',
+      'active': 'bg-green-500',
+      'lost': 'bg-red-500',
     };
-    return colors[stage] || 'bg-gray-500';
+    return colors[stage.toLowerCase()] || 'bg-gray-500';
   };
 
   if (isLoading) {
@@ -238,7 +241,7 @@ export default function AmbassadorLeads() {
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <div className={`w-3 h-3 rounded-full ${getStageColor(stage)}`} />
-                            <span className="font-medium">{stage}</span>
+                            <span className="font-medium">{getStageDisplayName(stage)}</span>
                           </div>
                           <Badge variant="secondary">{stageLeads.length}</Badge>
                         </div>
@@ -422,6 +425,17 @@ export default function AmbassadorLeads() {
                   value={newLead.state}
                   onChange={(e) => setNewLead({ ...newLead, state: e.target.value })}
                   placeholder="NY"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Zip Code</Label>
+                <Input 
+                  value={newLead.zipcode}
+                  onChange={(e) => setNewLead({ ...newLead, zipcode: e.target.value })}
+                  placeholder="10001"
                 />
               </div>
             </div>
