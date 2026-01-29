@@ -56,6 +56,7 @@ import { AdminDisputesQueue, AdminDisputeDetail } from '@/pages/admin/disputes';
 import { AdminOverridesPage, AdminOverrideDetailPage } from '@/pages/admin/overrides';
 import { AdminPayoutsPage, AdminPayoutDetailPage } from '@/pages/admin/payouts';
 import { FinancialReportsPage, AmbassadorReportsPage, StoreReportsPage, TaxReportsPage, PayoutReportsPage } from '@/pages/admin/reports';
+import DeletedRecords from '@/pages/admin/DeletedRecords';
 import { AmbassadorEarningsPage } from '@/pages/ambassador/reports';
 import { AmbassadorPayoutsPage, AmbassadorPayoutStatementPage, AmbassadorPayoutSettingsPage } from '@/pages/ambassador/payouts';
 import Expansion from '@/pages/Expansion';
@@ -1742,10 +1743,10 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
-      <Route path="/ambassador/stores/:storeId" element={
+      <Route path="/ambassador/stores/:id" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorStoreProfile /></Layout>
+            <Layout><StoreDetail /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
@@ -1823,7 +1824,7 @@ export default function AppRoutes() {
       {/* Connected Profile Pages */}
       <Route path="/profile/ambassador/:id" element={<ProtectedRoute><Layout><AmbassadorProfilePage /></Layout></ProtectedRoute>} />
       <Route path="/profile/wholesaler/:id" element={<ProtectedRoute><Layout><WholesalerProfilePage /></Layout></ProtectedRoute>} />
-      <Route path="/profile/store/:id" element={<ProtectedRoute><Layout><StoreProfilePage /></Layout></ProtectedRoute>} />
+      <Route path="/profile/store/:id" element={<ProtectedRoute><Layout><StoreDetail /></Layout></ProtectedRoute>} />
       <Route path="/profile/influencer/:id" element={<ProtectedRoute><Layout><InfluencerProfilePage /></Layout></ProtectedRoute>} />
 
       {/* Admin Disputes */}
@@ -1929,6 +1930,15 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin']}>
             <Layout><PayoutReportsPage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
+      {/* Admin Deleted Records OS */}
+      <Route path="/admin/deleted-records" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']}>
+            <Layout><DeletedRecords /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
