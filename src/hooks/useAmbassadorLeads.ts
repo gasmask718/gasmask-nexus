@@ -66,16 +66,22 @@ const STAGE_DISPLAY_NAMES: Record<string, string> = {
 /**
  * Fetch ambassador's leads
  * @param leadType - Optional filter by lead type
- * @param targetUserId - Optional user ID to fetch leads for (for viewing another ambassador's pipeline)
+ * @param pipelineUserId -
+ *   - undefined: use current logged-in user
+ *   - string: scope to that user (recruiter/admin viewing someone else)
+ *   - null: explicit "no pipeline user" (never fall back to current user)
  */
-export function useAmbassadorLeads(leadType?: string, targetUserId?: string | null) {
+export function useAmbassadorLeads(leadType?: string, pipelineUserId?: string | null) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Use targetUserId if provided, otherwise use current user
-  const effectiveUserId = targetUserId || user?.id;
-  // Determine if this is a read-only view (viewing another ambassador's pipeline)
-  const isReadOnly = !!targetUserId && targetUserId !== user?.id;
+  // Route param MUST be able to override session without falling back.
+  const effectiveUserId = pipelineUserId === undefined ? user?.id : pipelineUserId;
+
+  // Determine if this is a read-only view (viewing another user's pipeline or explicit no-user pipeline)
+  const isReadOnly =
+    pipelineUserId === null ||
+    (typeof pipelineUserId === 'string' && !!user?.id && pipelineUserId !== user.id);
 
   const leadsQuery = useQuery({
     queryKey: ['ambassador-leads', effectiveUserId, leadType],
@@ -121,7 +127,7 @@ export function useAmbassadorLeads(leadType?: string, targetUserId?: string | nu
         lead_type: lead.lead_type as 'store' | 'wholesaler' | 'influencer' | 'ambassador',
       }));
     },
-    enabled: !!user?.id,
+    enabled: !!effectiveUserId,
     // CRITICAL: prevent "it saved but I can't see it" by always refreshing on mount/focus
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
@@ -159,6 +165,7 @@ export function useAmbassadorLeads(leadType?: string, targetUserId?: string | nu
       notes?: string;
       lead_type: 'store' | 'wholesaler' | 'ambassador' | 'influencer'; // REQUIRED - no optional
     }) => {
+      if (isReadOnly) throw new Error('Read-only mode: cannot create leads in this view');
       if (!user?.id) throw new Error('Not authenticated');
       
       // CRITICAL: Reject if lead_type is not explicitly provided
@@ -198,6 +205,7 @@ export function useAmbassadorLeads(leadType?: string, targetUserId?: string | nu
   // Update stage mutation
   const updateStageMutation = useMutation({
     mutationFn: async (input: { leadId: string; newStage: string }) => {
+      if (isReadOnly) throw new Error('Read-only mode: cannot change stages in this view');
       const { error } = await supabase
         .from('sales_prospects')
         .update({ 
@@ -225,6 +233,7 @@ export function useAmbassadorLeads(leadType?: string, targetUserId?: string | nu
   // Convert STORE lead to store_master record
   const convertToStoreMutation = useMutation({
     mutationFn: async (input: { leadId: string; lead: Lead }) => {
+      if (isReadOnly) throw new Error('Read-only mode: cannot convert leads in this view');
       if (!user?.id) throw new Error('Not authenticated');
       if (input.lead.lead_type !== 'store') throw new Error('This lead is not a store lead');
 
@@ -302,6 +311,7 @@ export function useAmbassadorLeads(leadType?: string, targetUserId?: string | nu
   // MASTER GENIUS ARCHITECT: Must create BOTH entity AND assignment record
   const convertToWholesalerMutation = useMutation({
     mutationFn: async (input: { leadId: string; lead: Lead }) => {
+      if (isReadOnly) throw new Error('Read-only mode: cannot convert leads in this view');
       if (!user?.id) throw new Error('Not authenticated');
       if (input.lead.lead_type !== 'wholesaler') throw new Error('This lead is not a wholesaler lead');
 
@@ -377,6 +387,7 @@ export function useAmbassadorLeads(leadType?: string, targetUserId?: string | nu
   // MASTER GENIUS ARCHITECT: Must set recruited_by_ambassador_id for Portfolio visibility
   const convertToAmbassadorMutation = useMutation({
     mutationFn: async (input: { leadId: string; lead: Lead }) => {
+      if (isReadOnly) throw new Error('Read-only mode: cannot convert leads in this view');
       if (!user?.id) throw new Error('Not authenticated');
       if (input.lead.lead_type !== 'ambassador') throw new Error('This lead is not an ambassador recruit');
 
@@ -438,6 +449,7 @@ export function useAmbassadorLeads(leadType?: string, targetUserId?: string | nu
   // MASTER GENIUS ARCHITECT: Must create BOTH entity AND assignment record
   const convertToInfluencerMutation = useMutation({
     mutationFn: async (input: { leadId: string; lead: Lead }) => {
+      if (isReadOnly) throw new Error('Read-only mode: cannot convert leads in this view');
       if (!user?.id) throw new Error('Not authenticated');
       if (input.lead.lead_type !== 'influencer') throw new Error('This lead is not an influencer lead');
 
@@ -535,6 +547,7 @@ export function useAmbassadorLeads(leadType?: string, targetUserId?: string | nu
 
   const deleteLeadMutation = useMutation({
     mutationFn: async (leadId: string) => {
+      if (isReadOnly) throw new Error('Read-only mode: cannot delete leads in this view');
       if (!user?.id) throw new Error('Not authenticated');
 
       const ambassadorId = ambassadorQuery.data;

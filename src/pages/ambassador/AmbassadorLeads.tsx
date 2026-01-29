@@ -2,7 +2,7 @@
  * Ambassador Leads Page
  * Real data from useAmbassadorLeads hook - pipelines for store/wholesaler/influencer/ambassador leads
  */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,17 +24,20 @@ import { format } from 'date-fns';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
 import { useAmbassadorLeads, type Lead } from '@/hooks/useAmbassadorLeads';
 import { useAuth } from '@/contexts/AuthContext';
+import { useViewAs } from '@/contexts/ViewAsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye } from 'lucide-react';
 
 export default function AmbassadorLeads() {
   const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { isViewingAs, effectiveAmbassadorId, effectiveUserId } = useViewAs();
   const { ambassadorId: routeAmbassadorId } = useParams<{ ambassadorId?: string }>();
   const [searchQuery, setSearchQuery] = useState('');
   const [addLeadOpen, setAddLeadOpen] = useState(false);
@@ -47,13 +50,13 @@ export default function AmbassadorLeads() {
   const [debugOpen, setDebugOpen] = useState(false);
 
   // Resolve targetUserId from route ambassador ID if present
-  const { data: targetAmbassador } = useQuery({
+  const { data: targetAmbassador, isLoading: isTargetAmbassadorLoading } = useQuery({
     queryKey: ['ambassador-by-id', routeAmbassadorId],
     queryFn: async () => {
       if (!routeAmbassadorId) return null;
       const { data, error } = await supabase
         .from('ambassadors')
-        .select('id, name, user_id')
+        .select('id, name, user_id, recruited_by_ambassador_id')
         .eq('id', routeAmbassadorId)
         .single();
       if (error) {
@@ -65,8 +68,12 @@ export default function AmbassadorLeads() {
     enabled: !!routeAmbassadorId,
   });
 
-  // Determine target user ID for the hook
-  const targetUserId = routeAmbassadorId ? targetAmbassador?.user_id : null;
+  // RESOLUTION RULE (non-negotiable): if routeAmbassadorId exists, it MUST win.
+  // IMPORTANT: if target ambassador has no user_id yet, DO NOT fall back to current user.
+  const pipelineUserId = useMemo(() => {
+    if (routeAmbassadorId) return targetAmbassador?.user_id ?? null;
+    return effectiveUserId ?? user?.id ?? null;
+  }, [routeAmbassadorId, targetAmbassador?.user_id, effectiveUserId, user?.id]);
   
   // Real data from hook - now scoped to target user if viewing another ambassador
   const { 
@@ -86,8 +93,8 @@ export default function AmbassadorLeads() {
     deleteLead, isDeletingLead,
     getStageDisplayName,
     // Read-only mode
-    isReadOnly,
-  } = useAmbassadorLeads(undefined, targetUserId);
+    isReadOnly: hookIsReadOnly,
+  } = useAmbassadorLeads(undefined, pipelineUserId);
 
   // Admin-only debug visibility (DEV always shows)
   const { data: userRoles } = useQuery({
@@ -108,6 +115,28 @@ export default function AmbassadorLeads() {
   });
 
   const isAdmin = import.meta.env.DEV || (userRoles || []).some(r => r === 'admin' || r === 'owner');
+
+  const isViewingOtherAmbassador = !!routeAmbassadorId && routeAmbassadorId !== (effectiveAmbassadorId ?? null);
+  const isReadOnly = isViewingAs || isViewingOtherAmbassador || hookIsReadOnly;
+
+  const canViewScopedPipeline = useMemo(() => {
+    if (!routeAmbassadorId) return true;
+    if (isAdmin) return true;
+    if (!effectiveAmbassadorId) return false;
+    if (routeAmbassadorId === effectiveAmbassadorId) return true;
+    return targetAmbassador?.recruited_by_ambassador_id === effectiveAmbassadorId;
+  }, [routeAmbassadorId, isAdmin, effectiveAmbassadorId, targetAmbassador?.recruited_by_ambassador_id]);
+
+  useEffect(() => {
+    if (!routeAmbassadorId) return;
+    if (isAdmin) return;
+    if (isTargetAmbassadorLoading) return;
+
+    if (!canViewScopedPipeline) {
+      toast.error("You don't have permission to view this pipeline");
+      navigate('/ambassador/leads', { replace: true });
+    }
+  }, [routeAmbassadorId, isAdmin, isTargetAmbassadorLoading, canViewScopedPipeline, navigate]);
 
   const { data: ambassadorId } = useQuery({
     queryKey: ['ambassador-self-debug', user?.id],
@@ -210,12 +239,16 @@ export default function AmbassadorLeads() {
       timestamp: new Date().toISOString(),
       route: location.pathname,
       auth_user_id: user?.id ?? null,
+      effective_user_id: effectiveUserId ?? null,
+      effective_ambassador_id: effectiveAmbassadorId ?? null,
+      route_ambassador_id: routeAmbassadorId ?? null,
+      resolved_pipeline_user_id: pipelineUserId,
       ambassador_id: ambassadorId ?? null,
-      pipeline_query_key: ['ambassador-leads', user?.id, null],
+      pipeline_query_key: ['ambassador-leads', pipelineUserId, null],
       pipeline_query: {
         table: 'sales_prospects',
         filters: {
-          assigned_to: user?.id ?? null,
+          assigned_to: pipelineUserId,
           archived: false,
         },
         order_by: 'created_at desc',
@@ -381,6 +414,23 @@ export default function AmbassadorLeads() {
         title="Leads Pipeline" 
         subtitle="Manage prospects across all channels"
         backPath="/ambassador/dashboard"
+      >
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24" />)}
+          </div>
+          <Skeleton className="h-64" />
+        </div>
+      </EnhancedPortalLayout>
+    );
+  }
+
+  if (routeAmbassadorId && isTargetAmbassadorLoading) {
+    return (
+      <EnhancedPortalLayout 
+        title="Leads Pipeline" 
+        subtitle="Loading pipeline context…"
+        backPath={routeAmbassadorId ? `/profile/ambassador/${routeAmbassadorId}` : "/ambassador/dashboard"}
       >
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
