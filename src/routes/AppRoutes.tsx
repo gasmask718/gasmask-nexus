@@ -1796,6 +1796,14 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+      {/* Scoped pipeline route - view another ambassador's pipeline */}
+      <Route path="/ambassador/:ambassadorId/leads" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <Layout><AmbassadorLeads /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
       <Route path="/ambassador/communications" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>

@@ -65,21 +65,28 @@ const STAGE_DISPLAY_NAMES: Record<string, string> = {
 
 /**
  * Fetch ambassador's leads
+ * @param leadType - Optional filter by lead type
+ * @param targetUserId - Optional user ID to fetch leads for (for viewing another ambassador's pipeline)
  */
-export function useAmbassadorLeads(leadType?: string) {
+export function useAmbassadorLeads(leadType?: string, targetUserId?: string | null) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  // Use targetUserId if provided, otherwise use current user
+  const effectiveUserId = targetUserId || user?.id;
+  // Determine if this is a read-only view (viewing another ambassador's pipeline)
+  const isReadOnly = !!targetUserId && targetUserId !== user?.id;
+
   const leadsQuery = useQuery({
-    queryKey: ['ambassador-leads', user?.id, leadType],
+    queryKey: ['ambassador-leads', effectiveUserId, leadType],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!effectiveUserId) return [];
 
       // Query leads - CRITICAL: filter out archived leads (soft deleted)
       let query = supabase
         .from('sales_prospects')
         .select('*')
-        .eq('assigned_to', user.id)
+        .eq('assigned_to', effectiveUserId)
         .eq('archived', false) // Only show non-archived leads
         .order('created_at', { ascending: false });
 
@@ -594,5 +601,8 @@ export function useAmbassadorLeads(leadType?: string) {
     isDeletingLead: deleteLeadMutation.isPending,
     refetch: () => queryClient.invalidateQueries({ queryKey: ['ambassador-leads'] }),
     getStageDisplayName: (stage: string) => STAGE_DISPLAY_NAMES[stage.toLowerCase()] || stage,
+    // Read-only mode indicator (viewing another ambassador's pipeline)
+    isReadOnly,
+    targetUserId: effectiveUserId,
   };
 }
