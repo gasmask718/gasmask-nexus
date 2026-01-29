@@ -45,6 +45,7 @@ import Communications from '@/pages/Communications';
 import Templates from '@/pages/Templates';
 import Reminders from '@/pages/Reminders';
 import InfluencerDetail from '@/pages/InfluencerDetail';
+import InfluencerAnalyticsCenter from '@/pages/InfluencerAnalyticsCenter';
 import WholesalerDetail from '@/pages/WholesalerDetail';
 import WorkerHome from '@/pages/WorkerHome';
 import AutomationSettings from '@/pages/AutomationSettings';
@@ -706,6 +707,7 @@ export default function AppRoutes() {
         <Route path="/analytics/economics" element={<EconomicAnalytics />} />
         <Route path="/analytics/revenue-brain" element={<RevenueBrain />} />
         <Route path="/influencers" element={<Influencers />} />
+        <Route path="/influencers/analytics" element={<InfluencerAnalyticsCenter />} />
         <Route path="/influencers/:id" element={<InfluencerDetail />} />
         <Route path="/influencers/campaigns" element={<InfluencerCampaigns />} />
         <Route path="/missions" element={<Missions />} />
