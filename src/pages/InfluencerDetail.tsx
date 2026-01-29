@@ -6,7 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Instagram, Mail, Phone, MapPin, TrendingUp, MessageSquare, BarChart3, Wallet, FileText, Users } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Instagram, Mail, Phone, MapPin, TrendingUp, MessageSquare, BarChart3, Wallet, FileText, Users, Eye, AlertCircle } from "lucide-react";
 import { CommunicationTimeline } from "@/components/CommunicationTimeline";
 import { CommunicationStats } from "@/components/communication/CommunicationStats";
 import { CommunicationLogModal } from "@/components/CommunicationLogModal";
@@ -18,13 +19,22 @@ import {
   InfluencerContentTracker,
   InfluencerPayoutsPanel 
 } from "@/components/influencer";
+import { DebugOverlay } from "@/components/ui/DebugOverlay";
+import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useState } from "react";
+import { useInfluencerMetricsAggregate, useInfluencerSocialAccounts, useInfluencerPosts } from "@/hooks/useInfluencerAnalytics";
 
-export default function InfluencerDetail() {
+interface InfluencerDetailProps {
+  isReadOnly?: boolean;
+  viewerContext?: 'admin' | 'ambassador' | 'self';
+}
+
+export default function InfluencerDetail({ isReadOnly = false, viewerContext = 'self' }: InfluencerDetailProps) {
   const { id } = useParams();
   const [logModalOpen, setLogModalOpen] = useState(false);
 
-  const { data: influencer, isLoading } = useQuery({
+  const { data: influencer, isLoading, error } = useQuery({
     queryKey: ['influencer', id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -58,21 +68,42 @@ export default function InfluencerDetail() {
     enabled: !!id,
   });
 
+  // Get metrics for debug overlay
+  const { data: metrics } = useInfluencerMetricsAggregate(id);
+  const { data: socialAccounts } = useInfluencerSocialAccounts(id);
+  const { data: posts } = useInfluencerPosts(id);
+
+  // Determine if user is admin (for debug overlay)
+  // TODO: Replace with actual role check
+  const isAdmin = viewerContext === 'admin';
+  const isEditable = !isReadOnly && viewerContext !== 'ambassador';
+
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-[60vh]">
-          <div className="text-muted-foreground">Loading influencer...</div>
+        <div className="container mx-auto px-4 py-8 space-y-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-10 bg-muted rounded w-64" />
+            <div className="h-6 bg-muted rounded w-48" />
+          </div>
+          <LoadingSkeleton variant="kpi-grid" count={4} />
+          <LoadingSkeleton variant="card" count={2} />
         </div>
       </Layout>
     );
   }
 
-  if (!influencer) {
+  if (error || !influencer) {
     return (
       <Layout>
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold">Influencer not found</h2>
+        <div className="container mx-auto px-4 py-8">
+          <EmptyState
+            icon={AlertCircle}
+            title="Influencer not found"
+            description="The influencer you're looking for doesn't exist or you don't have access to view it."
+            actionLabel="Go Back"
+            onAction={() => window.history.back()}
+          />
         </div>
       </Layout>
     );
@@ -81,6 +112,17 @@ export default function InfluencerDetail() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8 space-y-6">
+        {/* Read-only banner */}
+        {isReadOnly && (
+          <Alert>
+            <Eye className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Viewing Influencer Profile for {influencer.name}</strong> — Read-only mode. 
+              You can view all data but cannot make changes.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Identity Header */}
         <div className="flex items-start justify-between">
           <div>
@@ -100,14 +142,16 @@ export default function InfluencerDetail() {
             )}
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => setLogModalOpen(true)}>
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Log Communication
-            </Button>
+            {!isReadOnly && (
+              <Button onClick={() => setLogModalOpen(true)}>
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Log Communication
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Info Cards */}
+        {/* Info Cards - Clickable where relevant */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">Followers</div>
@@ -135,16 +179,30 @@ export default function InfluencerDetail() {
         <Card className="p-6">
           <h3 className="font-semibold mb-4">Contact Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            {influencer.email && (
+            {influencer.email ? (
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{influencer.email}</span>
+                <a href={`mailto:${influencer.email}`} className="text-primary hover:underline">
+                  {influencer.email}
+                </a>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Mail className="h-4 w-4" />
+                <span>No email provided</span>
               </div>
             )}
-            {influencer.phone && (
+            {influencer.phone ? (
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{influencer.phone}</span>
+                <a href={`tel:${influencer.phone}`} className="text-primary hover:underline">
+                  {influencer.phone}
+                </a>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Phone className="h-4 w-4" />
+                <span>No phone provided</span>
               </div>
             )}
             {influencer.city && (
@@ -192,11 +250,11 @@ export default function InfluencerDetail() {
           </TabsContent>
 
           <TabsContent value="social" className="space-y-6">
-            <InfluencerSocialAccounts influencerId={id!} />
+            <InfluencerSocialAccounts influencerId={id!} isEditable={isEditable} />
           </TabsContent>
 
           <TabsContent value="content" className="space-y-6">
-            <InfluencerContentTracker influencerId={id!} />
+            <InfluencerContentTracker influencerId={id!} isEditable={isEditable} />
           </TabsContent>
 
           <TabsContent value="communication" className="space-y-6">
@@ -207,7 +265,7 @@ export default function InfluencerDetail() {
           </TabsContent>
 
           <TabsContent value="payouts" className="space-y-6">
-            <InfluencerPayoutsPanel influencerId={id!} />
+            <InfluencerPayoutsPanel influencerId={id!} isEditable={isEditable} />
           </TabsContent>
         </Tabs>
       </div>
@@ -219,6 +277,22 @@ export default function InfluencerDetail() {
         entityId={id!}
         entityName={influencer.name}
         onSuccess={() => setLogModalOpen(false)}
+      />
+
+      {/* Debug Overlay - Admin Only */}
+      <DebugOverlay
+        entityType="Influencer"
+        entityId={id}
+        isAdmin={isAdmin}
+        data={[
+          { label: 'Status', value: influencer.status, type: 'status' },
+          { label: 'Followers', value: influencer.followers, type: 'count' },
+          { label: 'Posts Tracked', value: posts?.length || 0, type: 'count' },
+          { label: 'Social Accounts', value: socialAccounts?.length || 0, type: 'count' },
+          { label: 'Total Exposures', value: metrics?.total_exposures || 0, type: 'count' },
+          { label: 'Assignment ID', value: assignment?.id || 'None', type: 'id' },
+          { label: 'Ambassador', value: assignment?.ambassador?.name || 'Unassigned' },
+        ]}
       />
     </Layout>
   );
