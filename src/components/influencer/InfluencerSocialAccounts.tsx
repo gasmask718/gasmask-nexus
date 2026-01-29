@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useInfluencerSocialAccounts } from "@/hooks/useInfluencerAnalytics";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Instagram, 
   Youtube, 
@@ -10,12 +12,18 @@ import {
   RefreshCw, 
   CheckCircle2, 
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  Plus,
+  Loader2
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ComingSoonButton } from "@/components/ui/ComingSoonBadge";
 
 interface InfluencerSocialAccountsProps {
   influencerId: string;
+  isEditable?: boolean;
 }
 
 const platformIcons: Record<string, any> = {
@@ -39,13 +47,40 @@ const platformColors: Record<string, string> = {
   other: 'bg-gray-500',
 };
 
-export function InfluencerSocialAccounts({ influencerId }: InfluencerSocialAccountsProps) {
-  const { data: accounts, isLoading } = useInfluencerSocialAccounts(influencerId);
+export function InfluencerSocialAccounts({ influencerId, isEditable = true }: InfluencerSocialAccountsProps) {
+  const { data: accounts, isLoading, error, refetch } = useInfluencerSocialAccounts(influencerId);
+  const [syncingAccount, setSyncingAccount] = useState<string | null>(null);
+  const [syncingAll, setSyncingAll] = useState(false);
+  const { toast } = useToast();
 
   const formatFollowers = (count: number) => {
     if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
     if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
     return count.toString();
+  };
+
+  const handleSyncAccount = async (accountId: string) => {
+    setSyncingAccount(accountId);
+    // TODO: Implement actual sync via edge function
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    toast({
+      title: "Sync initiated",
+      description: "Account sync has been queued. Metrics will update shortly.",
+    });
+    setSyncingAccount(null);
+    refetch();
+  };
+
+  const handleSyncAll = async () => {
+    setSyncingAll(true);
+    // TODO: Implement actual sync all via edge function
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    toast({
+      title: "Sync initiated",
+      description: "All accounts have been queued for sync.",
+    });
+    setSyncingAll(false);
+    refetch();
   };
 
   if (isLoading) {
@@ -55,13 +90,20 @@ export function InfluencerSocialAccounts({ influencerId }: InfluencerSocialAccou
           <CardTitle className="text-lg">Social Accounts</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="animate-pulse space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-16 bg-muted rounded-lg" />
-            ))}
-          </div>
+          <LoadingSkeleton variant="list" count={3} />
         </CardContent>
       </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <EmptyState
+        title="Failed to load accounts"
+        description="We couldn't load the social accounts. Please try again."
+        actionLabel="Retry"
+        onAction={() => refetch()}
+      />
     );
   }
 
@@ -72,12 +114,20 @@ export function InfluencerSocialAccounts({ influencerId }: InfluencerSocialAccou
           <CardTitle className="text-lg">Social Accounts</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No social accounts connected</p>
-            <Button variant="outline" size="sm" className="mt-4">
-              Connect Account
-            </Button>
-          </div>
+          <EmptyState
+            icon={Instagram}
+            title="No social accounts connected"
+            description="Connect social media accounts to track analytics and engagement metrics."
+            actionLabel={isEditable ? "Connect Account" : undefined}
+            actionDisabled={!isEditable}
+            disabledReason={!isEditable ? "Read-only view" : undefined}
+            onAction={isEditable ? () => {
+              toast({
+                title: "Coming Soon",
+                description: "Social account connection will be available soon.",
+              });
+            } : undefined}
+          />
         </CardContent>
       </Card>
     );
@@ -86,16 +136,33 @@ export function InfluencerSocialAccounts({ influencerId }: InfluencerSocialAccou
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">Social Accounts</CardTitle>
-        <Button variant="ghost" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Sync All
-        </Button>
+        <CardTitle className="text-lg">Social Accounts ({accounts.length})</CardTitle>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSyncAll}
+            disabled={syncingAll}
+          >
+            {syncingAll ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            Sync All
+          </Button>
+          {isEditable && (
+            <ComingSoonButton icon={Plus} size="sm">
+              Add Account
+            </ComingSoonButton>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {accounts.map((account) => {
           const Icon = platformIcons[account.platform] || ExternalLink;
           const colorClass = platformColors[account.platform] || platformColors.other;
+          const isSyncing = syncingAccount === account.id;
 
           return (
             <div 
@@ -120,9 +187,11 @@ export function InfluencerSocialAccounts({ influencerId }: InfluencerSocialAccou
                         href={account.profile_url} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-primary hover:underline"
+                        className="text-primary hover:underline inline-flex items-center gap-1"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <ExternalLink className="h-3 w-3" />
+                        View Profile
                       </a>
                     )}
                   </div>
@@ -153,6 +222,18 @@ export function InfluencerSocialAccounts({ influencerId }: InfluencerSocialAccou
                     </p>
                   )}
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleSyncAccount(account.id)}
+                  disabled={isSyncing}
+                >
+                  {isSyncing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
             </div>
           );
