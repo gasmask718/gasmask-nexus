@@ -26,13 +26,16 @@ import { useAmbassadorLeads, type Lead } from '@/hooks/useAmbassadorLeads';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Eye } from 'lucide-react';
 
 export default function AmbassadorLeads() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { ambassadorId: routeAmbassadorId } = useParams<{ ambassadorId?: string }>();
   const [searchQuery, setSearchQuery] = useState('');
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [selectedLeadType, setSelectedLeadType] = useState<'store' | 'wholesaler' | 'ambassador' | 'influencer'>('store');
@@ -42,8 +45,30 @@ export default function AmbassadorLeads() {
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   const [activeLane, setActiveLane] = useState<'stores' | 'wholesalers' | 'influencers' | 'ambassadors'>('stores');
   const [debugOpen, setDebugOpen] = useState(false);
+
+  // Resolve targetUserId from route ambassador ID if present
+  const { data: targetAmbassador } = useQuery({
+    queryKey: ['ambassador-by-id', routeAmbassadorId],
+    queryFn: async () => {
+      if (!routeAmbassadorId) return null;
+      const { data, error } = await supabase
+        .from('ambassadors')
+        .select('id, name, user_id')
+        .eq('id', routeAmbassadorId)
+        .single();
+      if (error) {
+        console.warn('Failed to fetch target ambassador:', error);
+        return null;
+      }
+      return data;
+    },
+    enabled: !!routeAmbassadorId,
+  });
+
+  // Determine target user ID for the hook
+  const targetUserId = routeAmbassadorId ? targetAmbassador?.user_id : null;
   
-  // Real data from hook
+  // Real data from hook - now scoped to target user if viewing another ambassador
   const { 
     leads,
     storeLeads, wholesalerLeads, influencerLeads, ambassadorLeads,
@@ -59,8 +84,10 @@ export default function AmbassadorLeads() {
     convertToInfluencer, isConvertingToInfluencer,
     // Delete
     deleteLead, isDeletingLead,
-    getStageDisplayName
-  } = useAmbassadorLeads();
+    getStageDisplayName,
+    // Read-only mode
+    isReadOnly,
+  } = useAmbassadorLeads(undefined, targetUserId);
 
   // Admin-only debug visibility (DEV always shows)
   const { data: userRoles } = useQuery({
@@ -367,11 +394,24 @@ export default function AmbassadorLeads() {
 
   return (
     <EnhancedPortalLayout 
-      title="Leads Pipeline" 
-      subtitle="Manage prospects across all channels"
-      backPath="/ambassador/dashboard"
+      title={isReadOnly && targetAmbassador ? `Pipeline for ${targetAmbassador.name || 'Ambassador'}` : "Leads Pipeline"}
+      subtitle={isReadOnly ? "Read-only view — Leads created by this ambassador" : "Manage prospects across all channels"}
+      backPath={routeAmbassadorId ? `/profile/ambassador/${routeAmbassadorId}` : "/ambassador/dashboard"}
     >
       <div className="p-6 space-y-6">
+        {/* Read-Only Context Banner */}
+        {isReadOnly && targetAmbassador && (
+          <Alert className="bg-primary/10 border-primary/30">
+            <Eye className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>
+                <strong>Viewing Pipeline for {targetAmbassador.name}</strong>
+                <span className="ml-2 text-muted-foreground">· Read-only mode · Leads created by this ambassador</span>
+              </span>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Pipeline Debug (Admin-only, DEV always) */}
         {isAdmin && (
           <Collapsible open={debugOpen} onOpenChange={setDebugOpen}>
@@ -511,10 +551,12 @@ export default function AmbassadorLeads() {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <Button onClick={() => setAddLeadOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Lead
-            </Button>
+            {!isReadOnly && (
+              <Button onClick={() => setAddLeadOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Lead
+              </Button>
+            )}
           </div>
 
           {pipelines.map((pipeline) => (
@@ -627,21 +669,26 @@ export default function AmbassadorLeads() {
                   </div>
                   <h3 className="font-medium mb-2">No {pipeline.name}</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Start building your pipeline by adding leads
+                    {isReadOnly 
+                      ? 'This ambassador has not created any leads in this pipeline yet'
+                      : 'Start building your pipeline by adding leads'
+                    }
                   </p>
-                  <Button onClick={() => {
-                    const typeMap: Record<string, 'store' | 'wholesaler' | 'ambassador' | 'influencer'> = {
-                      'stores': 'store',
-                      'wholesalers': 'wholesaler', 
-                      'influencers': 'influencer',
-                      'ambassadors': 'ambassador'
-                    };
-                    setSelectedLeadType(typeMap[pipeline.id] || 'store');
-                    setAddLeadOpen(true);
-                  }}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add {pipeline.name.replace(' Leads', '')}
-                  </Button>
+                  {!isReadOnly && (
+                    <Button onClick={() => {
+                      const typeMap: Record<string, 'store' | 'wholesaler' | 'ambassador' | 'influencer'> = {
+                        'stores': 'store',
+                        'wholesalers': 'wholesaler', 
+                        'influencers': 'influencer',
+                        'ambassadors': 'ambassador'
+                      };
+                      setSelectedLeadType(typeMap[pipeline.id] || 'store');
+                      setAddLeadOpen(true);
+                    }}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add {pipeline.name.replace(' Leads', '')}
+                    </Button>
+                  )}
                 </div>
               )}
             </TabsContent>
@@ -824,27 +871,30 @@ export default function AmbassadorLeads() {
                 </div>
               )}
 
-              <div className="pt-4 border-t space-y-3">
-                <p className="text-sm font-medium">Move to Stage</p>
-                <div className="flex flex-wrap gap-2">
-                  {(selectedLead.lead_type === 'store' ? storeStages :
-                    selectedLead.lead_type === 'wholesaler' ? wholesalerStages :
-                    selectedLead.lead_type === 'influencer' ? influencerStages : ambassadorStages
-                  ).map(stage => (
-                    <Button
-                      key={stage}
-                      variant={selectedLead.stage === stage ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => handleMoveStage(selectedLead, stage)}
-                    >
-                      {stage}
-                    </Button>
-                  ))}
+              {/* Stage movement - disabled in read-only mode */}
+              {!isReadOnly && (
+                <div className="pt-4 border-t space-y-3">
+                  <p className="text-sm font-medium">Move to Stage</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(selectedLead.lead_type === 'store' ? storeStages :
+                      selectedLead.lead_type === 'wholesaler' ? wholesalerStages :
+                      selectedLead.lead_type === 'influencer' ? influencerStages : ambassadorStages
+                    ).map(stage => (
+                      <Button
+                        key={stage}
+                        variant={selectedLead.stage === stage ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleMoveStage(selectedLead, stage)}
+                      >
+                        {stage}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Lane-specific conversion button - shows for all lead types */}
-              {selectedLead.stage !== 'won' && selectedLead.stage !== 'lost' && selectedLead.stage !== 'active' && (
+              {/* Lane-specific conversion button - shows for all lead types, hidden in read-only mode */}
+              {!isReadOnly && selectedLead.stage !== 'won' && selectedLead.stage !== 'lost' && selectedLead.stage !== 'active' && (
                 <div className="pt-4 border-t">
                   <Button 
                     className="w-full" 
@@ -864,19 +914,30 @@ export default function AmbassadorLeads() {
                 </div>
               )}
 
-              {/* Delete Button - always visible */}
-              <div className="pt-4 border-t">
-                <Button 
-                  variant="destructive"
-                  className="w-full" 
-                  onClick={() => handleDeleteClick(selectedLead)}
-                  disabled={isDeletingLead}
-                >
-                  {isDeletingLead && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Lead
-                </Button>
-              </div>
+              {/* Delete Button - hidden in read-only mode */}
+              {!isReadOnly && (
+                <div className="pt-4 border-t">
+                  <Button 
+                    variant="destructive"
+                    className="w-full" 
+                    onClick={() => handleDeleteClick(selectedLead)}
+                    disabled={isDeletingLead}
+                  >
+                    {isDeletingLead && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Lead
+                  </Button>
+                </div>
+              )}
+
+              {/* Read-only notice */}
+              {isReadOnly && (
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-muted-foreground text-center">
+                    You are viewing this lead in read-only mode
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

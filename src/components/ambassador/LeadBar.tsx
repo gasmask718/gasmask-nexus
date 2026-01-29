@@ -144,7 +144,7 @@ export function LeadBar({ ambassadorId, ambassadorUserId, isReadOnly = false }: 
             )}
           </div>
           <Link 
-            to="/ambassador/leads" 
+            to={`/ambassador/${ambassadorId}/leads`}
             className="text-xs text-primary hover:underline flex items-center gap-1"
           >
             View Pipeline <ArrowRight className="h-3 w-3" />
