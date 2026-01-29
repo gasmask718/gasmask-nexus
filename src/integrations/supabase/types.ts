@@ -13361,6 +13361,60 @@ export type Database = {
           },
         ]
       }
+      communications: {
+        Row: {
+          channel: string
+          created_at: string
+          created_by: string | null
+          direction: string
+          entity_id: string
+          entity_type: string
+          external_message_id: string | null
+          id: string
+          message_body: string
+          metadata: Json | null
+          occurred_at: string
+          recipient: string
+          sender: string
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          created_by?: string | null
+          direction: string
+          entity_id: string
+          entity_type: string
+          external_message_id?: string | null
+          id?: string
+          message_body: string
+          metadata?: Json | null
+          occurred_at?: string
+          recipient: string
+          sender: string
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          entity_id?: string
+          entity_type?: string
+          external_message_id?: string | null
+          id?: string
+          message_body?: string
+          metadata?: Json | null
+          occurred_at?: string
+          recipient?: string
+          sender?: string
+          status?: string
+          subject?: string | null
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           boro: string | null
@@ -21214,9 +21268,11 @@ export type Database = {
           created_at: string | null
           email: string | null
           engagement_rate: number
+          facebook_handle: string | null
           followers: number
           id: string
           influencer_health_score: number | null
+          instagram_handle: string | null
           name: string
           niche: string | null
           phone: string | null
@@ -21225,17 +21281,22 @@ export type Database = {
           score: number | null
           status: string
           supported_regions: string[] | null
+          tiktok_handle: string | null
+          twitter_handle: string | null
           updated_at: string | null
           username: string
+          youtube_handle: string | null
         }
         Insert: {
           city?: string | null
           created_at?: string | null
           email?: string | null
           engagement_rate?: number
+          facebook_handle?: string | null
           followers?: number
           id?: string
           influencer_health_score?: number | null
+          instagram_handle?: string | null
           name: string
           niche?: string | null
           phone?: string | null
@@ -21244,17 +21305,22 @@ export type Database = {
           score?: number | null
           status?: string
           supported_regions?: string[] | null
+          tiktok_handle?: string | null
+          twitter_handle?: string | null
           updated_at?: string | null
           username: string
+          youtube_handle?: string | null
         }
         Update: {
           city?: string | null
           created_at?: string | null
           email?: string | null
           engagement_rate?: number
+          facebook_handle?: string | null
           followers?: number
           id?: string
           influencer_health_score?: number | null
+          instagram_handle?: string | null
           name?: string
           niche?: string | null
           phone?: string | null
@@ -21263,8 +21329,11 @@ export type Database = {
           score?: number | null
           status?: string
           supported_regions?: string[] | null
+          tiktok_handle?: string | null
+          twitter_handle?: string | null
           updated_at?: string | null
           username?: string
+          youtube_handle?: string | null
         }
         Relationships: [
           {

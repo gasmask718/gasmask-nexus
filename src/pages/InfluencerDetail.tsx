@@ -7,18 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Instagram, Mail, Phone, MapPin, TrendingUp, MessageSquare, BarChart3, Wallet, FileText, Users, Eye, AlertCircle } from "lucide-react";
-import { CommunicationTimeline } from "@/components/CommunicationTimeline";
-import { CommunicationStats } from "@/components/communication/CommunicationStats";
+import { Instagram, Mail, Phone, MapPin, TrendingUp, MessageSquare, BarChart3, Wallet, FileText, Users, Eye, AlertCircle, Link2 } from "lucide-react";
 import { CommunicationLogModal } from "@/components/CommunicationLogModal";
-import { FollowUpInsights } from "@/components/communication/FollowUpInsights";
-import { AIRelationshipHealth } from "@/components/communication/AIRelationshipHealth";
 import { 
   InfluencerSocialAccounts, 
   InfluencerAnalyticsDashboard, 
   InfluencerContentTracker,
   InfluencerPayoutsPanel 
 } from "@/components/influencer";
+import { InfluencerCommunicationPanel } from "@/components/influencer/InfluencerCommunicationPanel";
+import { SocialIdentitySection } from "@/components/influencer/SocialIdentitySection";
 import { DebugOverlay } from "@/components/ui/DebugOverlay";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -220,6 +218,12 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
           </div>
         </Card>
 
+        {/* Social Identity Section - Always Visible */}
+        <SocialIdentitySection 
+          influencerId={id!} 
+          isEditable={isEditable}
+        />
+
         {/* Tabs */}
         <Tabs defaultValue="analytics" className="space-y-6">
           <TabsList className="flex-wrap">
@@ -258,10 +262,11 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
           </TabsContent>
 
           <TabsContent value="communication" className="space-y-6">
-            <CommunicationStats entityType="influencer" entityId={id!} />
-            <AIRelationshipHealth entityType="influencer" entityId={id!} />
-            <FollowUpInsights entityType="influencer" entityId={id!} />
-            <CommunicationTimeline entityType="influencer" entityId={id!} />
+            <InfluencerCommunicationPanel
+              influencerId={id!}
+              influencerName={influencer.name}
+              isEditable={!isReadOnly}
+            />
           </TabsContent>
 
           <TabsContent value="payouts" className="space-y-6">
