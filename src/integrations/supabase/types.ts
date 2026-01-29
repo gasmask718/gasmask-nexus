@@ -11861,6 +11861,98 @@ export type Database = {
           },
         ]
       }
+      commission_events: {
+        Row: {
+          ambassador_id: string
+          approved_at: string | null
+          approved_by: string | null
+          category: string
+          commission_amount: number
+          commission_rate: number
+          created_at: string
+          gross_amount: number
+          id: string
+          metadata: Json | null
+          paid_at: string | null
+          paid_by: string | null
+          reference_id: string | null
+          source_entity_id: string
+          source_entity_name: string | null
+          source_entity_type: string
+          status: string
+          trigger_type: string
+        }
+        Insert: {
+          ambassador_id: string
+          approved_at?: string | null
+          approved_by?: string | null
+          category: string
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string
+          gross_amount?: number
+          id?: string
+          metadata?: Json | null
+          paid_at?: string | null
+          paid_by?: string | null
+          reference_id?: string | null
+          source_entity_id: string
+          source_entity_name?: string | null
+          source_entity_type: string
+          status?: string
+          trigger_type: string
+        }
+        Update: {
+          ambassador_id?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string
+          gross_amount?: number
+          id?: string
+          metadata?: Json | null
+          paid_at?: string | null
+          paid_by?: string | null
+          reference_id?: string | null
+          source_entity_id?: string
+          source_entity_name?: string | null
+          source_entity_type?: string
+          status?: string
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_events_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_events_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_events_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_events_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+        ]
+      }
       commission_ledger: {
         Row: {
           ambassador_id: string

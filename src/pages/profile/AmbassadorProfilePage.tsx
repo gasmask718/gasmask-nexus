@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 import {
   User, MapPin, Calendar, Phone, Mail, Star, DollarSign,
   Store, Users, Megaphone, TrendingUp, AlertTriangle, CheckCircle2,
-  FileInput
+  FileInput, Wallet
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ProfileLayout, ProfileStatCard, ProfileNotesTab, ProfileNote } from '@/components/profile';
@@ -21,6 +21,7 @@ import { useEntityNotes } from '@/hooks/useEntityNotes';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import { LeadIntakeTab } from '@/components/ambassador/LeadIntakeTab';
 import { LeadBar } from '@/components/ambassador/LeadBar';
+import { CommissionPanel } from '@/components/ambassador/CommissionPanel';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function AmbassadorProfilePage() {
@@ -377,13 +378,24 @@ export default function AmbassadorProfilePage() {
       ),
     },
     {
+      id: 'commissions',
+      label: 'Commissions',
+      content: (
+        <CommissionPanel
+          ambassadorId={id!}
+          ambassadorName={displayName}
+          isReadOnly={false}
+        />
+      ),
+    },
+    {
       id: 'performance',
       label: 'Performance',
       content: (
         <Card>
           <CardHeader>
             <CardTitle>Performance Metrics</CardTitle>
-            <CardDescription>Commissions and KPIs</CardDescription>
+            <CardDescription>Activity and KPIs</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
