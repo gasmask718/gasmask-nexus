@@ -8,7 +8,8 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   User, MapPin, Calendar, Phone, Mail, Star, DollarSign,
-  Store, Users, Megaphone, TrendingUp, AlertTriangle, CheckCircle2
+  Store, Users, Megaphone, TrendingUp, AlertTriangle, CheckCircle2,
+  FileInput
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ProfileLayout, ProfileStatCard, ProfileNotesTab, ProfileNote } from '@/components/profile';
@@ -18,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useEntityNotes } from '@/hooks/useEntityNotes';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
+import { LeadIntakeTab } from '@/components/ambassador/LeadIntakeTab';
 
 export default function AmbassadorProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -402,6 +404,16 @@ export default function AmbassadorProfilePage() {
             </div>
           </CardContent>
         </Card>
+      ),
+    },
+    {
+      id: 'lead-intake',
+      label: 'Lead Intake',
+      content: (
+        <LeadIntakeTab 
+          ambassadorId={id!} 
+          ambassadorUserId={profile?.user_id}
+        />
       ),
     },
     {

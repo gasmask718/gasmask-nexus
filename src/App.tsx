@@ -9,6 +9,8 @@ import { SimulationModeProvider } from "./contexts/SimulationModeContext";
 import { SimulationModeBanner } from "./components/simulation/SimulationModeBanner";
 import { CallProvider } from "./components/communication/CallProvider";
 import { MessageProvider } from "./components/communication/MessageProvider";
+import { ViewAsProvider } from "./contexts/ViewAsContext";
+import { ViewAsBanner } from "./components/admin/ViewAsBanner";
 
 // Initialize Dynasty OS Module System - Auto-registers all modules
 import './modules';
@@ -27,12 +29,15 @@ const App = () => (
         <AuthProvider>
           <BusinessProvider>
             <SimulationModeProvider>
-              <CallProvider>
-                <MessageProvider>
-                  <SimulationModeBanner />
-                  <AppRoutes />
-                </MessageProvider>
-              </CallProvider>
+              <ViewAsProvider>
+                <CallProvider>
+                  <MessageProvider>
+                    <ViewAsBanner />
+                    <SimulationModeBanner />
+                    <AppRoutes />
+                  </MessageProvider>
+                </CallProvider>
+              </ViewAsProvider>
             </SimulationModeProvider>
           </BusinessProvider>
         </AuthProvider>

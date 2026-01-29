@@ -57,6 +57,8 @@ import { AdminOverridesPage, AdminOverrideDetailPage } from '@/pages/admin/overr
 import { AdminPayoutsPage, AdminPayoutDetailPage } from '@/pages/admin/payouts';
 import { FinancialReportsPage, AmbassadorReportsPage, StoreReportsPage, TaxReportsPage, PayoutReportsPage } from '@/pages/admin/reports';
 import DeletedRecords from '@/pages/admin/DeletedRecords';
+import AmbassadorApplications from '@/pages/admin/AmbassadorApplications';
+import AmbassadorApplication from '@/pages/apply/AmbassadorApplication';
 import { AmbassadorEarningsPage } from '@/pages/ambassador/reports';
 import { AmbassadorPayoutsPage, AmbassadorPayoutStatementPage, AmbassadorPayoutSettingsPage } from '@/pages/ambassador/payouts';
 import Expansion from '@/pages/Expansion';
@@ -507,6 +509,8 @@ export default function AppRoutes() {
       <Route path="/portal/register" element={<PortalRegister />} />
       <Route path="/portal/driver/login" element={<DriverLogin />} />
       <Route path="/portal/biker/login" element={<BikerLogin />} />
+      {/* Public Ambassador Application Form */}
+      <Route path="/apply/ambassador" element={<AmbassadorApplication />} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES (Authentication required)                                   */}
@@ -1939,6 +1943,15 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'owner']}>
             <Layout><DeletedRecords /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
+      {/* Admin Ambassador Applications */}
+      <Route path="/admin/ambassador-applications" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']}>
+            <Layout><AmbassadorApplications /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
