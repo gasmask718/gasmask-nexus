@@ -20,6 +20,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useEntityNotes } from '@/hooks/useEntityNotes';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import { LeadIntakeTab } from '@/components/ambassador/LeadIntakeTab';
+import { LeadBar } from '@/components/ambassador/LeadBar';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AmbassadorProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -456,32 +458,40 @@ export default function AmbassadorProfilePage() {
           ],
         }}
         stats={
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <ProfileStatCard
-              icon={<Store className="h-5 w-5 text-primary" />}
-              iconClassName="bg-primary/10"
-              value={storesQuery.data?.count || 0}
-              label="Stores"
-              onClick={() => navigate(`/profile/ambassador/${id}?tab=stores`)}
+          <div className="space-y-4">
+            {/* Lead Bar - MASTER GENIUS ARCHITECT: Must render for ALL ambassador profiles */}
+            <LeadBar 
+              ambassadorId={id!}
+              ambassadorUserId={profile?.user_id}
+              isReadOnly={false}
             />
-            <ProfileStatCard
-              icon={<Users className="h-5 w-5 text-blue-500" />}
-              iconClassName="bg-blue-500/10"
-              value={wholesalersQuery.data?.count || 0}
-              label="Wholesalers"
-            />
-            <ProfileStatCard
-              icon={<Megaphone className="h-5 w-5 text-purple-500" />}
-              iconClassName="bg-purple-500/10"
-              value={influencersQuery.data?.count || 0}
-              label="Influencers"
-            />
-            <ProfileStatCard
-              icon={<DollarSign className="h-5 w-5 text-green-500" />}
-              iconClassName="bg-green-500/10"
-              value={`$${Number(profile?.total_earnings || 0).toFixed(0)}`}
-              label="Earnings"
-            />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <ProfileStatCard
+                icon={<Store className="h-5 w-5 text-primary" />}
+                iconClassName="bg-primary/10"
+                value={storesQuery.data?.count || 0}
+                label="Stores"
+                onClick={() => navigate(`/profile/ambassador/${id}?tab=stores`)}
+              />
+              <ProfileStatCard
+                icon={<Users className="h-5 w-5 text-blue-500" />}
+                iconClassName="bg-blue-500/10"
+                value={wholesalersQuery.data?.count || 0}
+                label="Wholesalers"
+              />
+              <ProfileStatCard
+                icon={<Megaphone className="h-5 w-5 text-purple-500" />}
+                iconClassName="bg-purple-500/10"
+                value={influencersQuery.data?.count || 0}
+                label="Influencers"
+              />
+              <ProfileStatCard
+                icon={<DollarSign className="h-5 w-5 text-green-500" />}
+                iconClassName="bg-green-500/10"
+                value={`$${Number(profile?.total_earnings || 0).toFixed(0)}`}
+                label="Earnings"
+              />
+            </div>
           </div>
         }
         tabs={tabs}

@@ -8,3 +8,6 @@ export { AmbassadorActivityTimeline } from './AmbassadorActivityTimeline';
 export { AmbassadorTerritoryPanel } from './AmbassadorTerritoryPanel';
 export { AmbassadorIdentityHeader } from './AmbassadorIdentityHeader';
 export { PortfolioSection } from './PortfolioSection';
+export { LeadBar } from './LeadBar';
+export { LeadIntakeTab } from './LeadIntakeTab';
+export { ReferralLinkCard } from './ReferralLinkCard';
