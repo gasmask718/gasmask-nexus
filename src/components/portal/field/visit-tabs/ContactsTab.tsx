@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Trash2, Phone, MessageSquare, AlertCircle } from 'lucide-react';
+import { Users, Plus, Trash2, Phone, MessageSquare, AlertCircle, Shirt } from 'lucide-react';
 
 interface Contact {
   id?: string;
@@ -17,6 +17,7 @@ interface Contact {
   responsiveByText: boolean;
   lastResponded: string | null;
   notes: string;
+  shirtSize?: string;
 }
 
 interface ContactsTabProps {
@@ -24,6 +25,8 @@ interface ContactsTabProps {
   onContactsChange: (contacts: Contact[]) => void;
   portalType: 'driver' | 'biker';
 }
+
+const SHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 
 export function ContactsTab({ contacts, onContactsChange, portalType }: ContactsTabProps) {
   const addContact = () => {
@@ -37,6 +40,7 @@ export function ContactsTab({ contacts, onContactsChange, portalType }: Contacts
         responsiveByText: false,
         lastResponded: null,
         notes: '',
+        shirtSize: '',
       },
     ]);
   };
@@ -63,7 +67,7 @@ export function ContactsTab({ contacts, onContactsChange, portalType }: Contacts
               Store Contacts
             </CardTitle>
             <CardDescription>
-              Manage contact information and responsiveness status
+              Manage contact information, responsiveness, and swag sizes
               {portalType === 'biker' && (
                 <span className="block text-amber-600 mt-1">
                   Bikers: Please verify phone numbers for non-responsive contacts
@@ -107,6 +111,12 @@ export function ContactsTab({ contacts, onContactsChange, portalType }: Contacts
                           Non-responsive
                         </div>
                       )}
+                      {contact.shirtSize && (
+                        <Badge variant="outline" className="gap-1">
+                          <Shirt className="h-3 w-3" />
+                          {contact.shirtSize}
+                        </Badge>
+                      )}
                     </div>
                     <Button
                       variant="ghost"
@@ -119,7 +129,7 @@ export function ContactsTab({ contacts, onContactsChange, portalType }: Contacts
                   </div>
 
                   {/* Basic Info */}
-                  <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-4">
                     <div className="space-y-2">
                       <Label>Name</Label>
                       <Input
@@ -154,6 +164,27 @@ export function ContactsTab({ contacts, onContactsChange, portalType }: Contacts
                         placeholder="(555) 123-4567"
                         type="tel"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1">
+                        <Shirt className="h-3 w-3" />
+                        Shirt Size
+                      </Label>
+                      <Select
+                        value={contact.shirtSize || ''}
+                        onValueChange={(value) => updateContact(index, { shirtSize: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SHIRT_SIZES.map((size) => (
+                            <SelectItem key={size} value={size}>
+                              {size}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 

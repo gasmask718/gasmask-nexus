@@ -34876,6 +34876,7 @@ export type Database = {
           responsive_by_call: boolean | null
           responsive_by_text: boolean | null
           role: string | null
+          shirt_size: string | null
           store_id: string
           verified_at: string | null
           verified_by: string | null
@@ -34895,6 +34896,7 @@ export type Database = {
           responsive_by_call?: boolean | null
           responsive_by_text?: boolean | null
           role?: string | null
+          shirt_size?: string | null
           store_id: string
           verified_at?: string | null
           verified_by?: string | null
@@ -34914,6 +34916,7 @@ export type Database = {
           responsive_by_call?: boolean | null
           responsive_by_text?: boolean | null
           role?: string | null
+          shirt_size?: string | null
           store_id?: string
           verified_at?: string | null
           verified_by?: string | null
@@ -36703,6 +36706,57 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_wholesaler_contacts: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_wholesaler_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_wholesaler_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
           },
         ]
       }
