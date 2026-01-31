@@ -26,6 +26,7 @@ import { NotesTab } from './visit-tabs/NotesTab';
 import { ChangeListTab } from './visit-tabs/ChangeListTab';
 import { VisitHistoryTab } from './visit-tabs/VisitHistoryTab';
 import { FieldOrder } from './visit-tabs/CreateOrderSection';
+import { InvoiceMode } from '@/components/invoice/InvoiceModeSelector';
 
 // Updated contact interface with shirt size
 interface Contact {
@@ -118,6 +119,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
   const [store, setStore] = useState<{ id: string; store_name: string; address: string } | null>(null);
   const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
   const [products, setProducts] = useState<{ id: string; name: string; brand_id: string; category: string }[]>([]);
+  const [invoiceMode, setInvoiceMode] = useState<InvoiceMode>('live');
   
   const [visitData, setVisitData] = useState<StoreVisitData>({
     storeId: storeId || '',
@@ -534,7 +536,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
         }
       }
 
-      // Create field orders as invoices with "submitted" status
+      // Create field orders as invoices with proper mode separation
       if (visitData.fieldOrders.length > 0) {
         const { data: userData } = await supabase.auth.getUser();
         const createdBy = userData?.user?.email || portalType;
@@ -543,7 +545,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
           // Generate invoice number
           const invoiceNumber = `FLD-${Date.now()}-${order.brand_id.slice(0, 4).toUpperCase()}`;
           
-          // Create invoice with draft status (field orders need review)
+          // Create invoice with is_historical flag based on mode
           const { data: invoice, error: invoiceError } = await supabase
             .from('invoices')
             .insert({
@@ -558,6 +560,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
               brand: order.brand_name,
               notes: order.notes || `Field order created by ${portalType} during store visit`,
               created_by: createdBy,
+              is_historical: invoiceMode === 'historical', // CRITICAL: Track invoice mode
             })
             .select('id')
             .single();
@@ -584,6 +587,25 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
             await supabase
               .from('invoice_line_items')
               .insert(lineItems);
+
+            // Send receipt text for LIVE invoices only (not historical)
+            if (invoiceMode === 'live') {
+              try {
+                await supabase.functions.invoke('send-invoice-receipt', {
+                  body: {
+                    invoice_id: invoice.id,
+                    store_id: storeId,
+                    invoice_number: invoiceNumber,
+                    total_amount: order.subtotal,
+                    store_name: visitData.storeName,
+                    is_historical: false,
+                  },
+                });
+              } catch (receiptErr) {
+                console.error('Error sending receipt:', receiptErr);
+                // Don't fail submission if receipt fails
+              }
+            }
           }
         }
       }
@@ -667,6 +689,8 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
               onBillToChange={(value) => updateVisitData({ billTo: value })}
               fieldOrders={visitData.fieldOrders}
               onFieldOrdersChange={(fieldOrders) => updateVisitData({ fieldOrders })}
+              invoiceMode={invoiceMode}
+              onInvoiceModeChange={setInvoiceMode}
             />
           </TabsContent>
 

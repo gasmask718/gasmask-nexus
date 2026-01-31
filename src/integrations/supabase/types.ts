@@ -15215,8 +15215,12 @@ export type Database = {
           id: string
           invoice_date: string | null
           invoice_number: string | null
+          is_historical: boolean
           notes: string | null
           pdf_url: string | null
+          receipt_message_sid: string | null
+          receipt_sent_at: string | null
+          receipt_status: string | null
           status: string | null
           subtotal: number | null
           tax: number | null
@@ -15229,8 +15233,12 @@ export type Database = {
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
+          is_historical?: boolean
           notes?: string | null
           pdf_url?: string | null
+          receipt_message_sid?: string | null
+          receipt_sent_at?: string | null
+          receipt_status?: string | null
           status?: string | null
           subtotal?: number | null
           tax?: number | null
@@ -15243,8 +15251,12 @@ export type Database = {
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
+          is_historical?: boolean
           notes?: string | null
           pdf_url?: string | null
+          receipt_message_sid?: string | null
+          receipt_sent_at?: string | null
+          receipt_status?: string | null
           status?: string | null
           subtotal?: number | null
           tax?: number | null
@@ -22789,6 +22801,89 @@ export type Database = {
           },
         ]
       }
+      invoice_receipt_log: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          customer_invoice_id: string | null
+          delivered_at: string | null
+          delivery_status: string | null
+          error_message: string | null
+          id: string
+          invoice_id: string | null
+          is_historical_invoice: boolean
+          message_body: string
+          message_sid: string | null
+          phone_number: string
+          sent_at: string | null
+          sent_reason: string
+          store_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          customer_invoice_id?: string | null
+          delivered_at?: string | null
+          delivery_status?: string | null
+          error_message?: string | null
+          id?: string
+          invoice_id?: string | null
+          is_historical_invoice?: boolean
+          message_body: string
+          message_sid?: string | null
+          phone_number: string
+          sent_at?: string | null
+          sent_reason: string
+          store_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          customer_invoice_id?: string | null
+          delivered_at?: string | null
+          delivery_status?: string | null
+          error_message?: string | null
+          id?: string
+          invoice_id?: string | null
+          is_historical_invoice?: boolean
+          message_body?: string
+          message_sid?: string | null
+          phone_number?: string
+          sent_at?: string | null
+          sent_reason?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_receipt_log_customer_invoice_id_fkey"
+            columns: ["customer_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "customer_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_receipt_log_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_receipt_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_receipt_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount_paid: number
@@ -22802,12 +22897,16 @@ export type Database = {
           id: string
           invoice_number: string
           invoice_pdf_url: string | null
+          is_historical: boolean
           notes: string | null
           order_id: string | null
           paid_at: string | null
           partial_amount: number | null
           payment_method: string | null
           payment_status: string
+          receipt_message_sid: string | null
+          receipt_sent_at: string | null
+          receipt_status: string | null
           received_by: string | null
           store_id: string | null
           subtotal: number | null
@@ -22827,12 +22926,16 @@ export type Database = {
           id?: string
           invoice_number: string
           invoice_pdf_url?: string | null
+          is_historical?: boolean
           notes?: string | null
           order_id?: string | null
           paid_at?: string | null
           partial_amount?: number | null
           payment_method?: string | null
           payment_status?: string
+          receipt_message_sid?: string | null
+          receipt_sent_at?: string | null
+          receipt_status?: string | null
           received_by?: string | null
           store_id?: string | null
           subtotal?: number | null
@@ -22852,12 +22955,16 @@ export type Database = {
           id?: string
           invoice_number?: string
           invoice_pdf_url?: string | null
+          is_historical?: boolean
           notes?: string | null
           order_id?: string | null
           paid_at?: string | null
           partial_amount?: number | null
           payment_method?: string | null
           payment_status?: string
+          receipt_message_sid?: string | null
+          receipt_sent_at?: string | null
+          receipt_status?: string | null
           received_by?: string | null
           store_id?: string | null
           subtotal?: number | null

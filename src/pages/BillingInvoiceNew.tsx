@@ -11,10 +11,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { ArrowLeft, FileText } from 'lucide-react';
+import { InvoiceModeSelector, InvoiceMode } from '@/components/invoice/InvoiceModeSelector';
 
 const BillingInvoiceNew = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [invoiceMode, setInvoiceMode] = useState<InvoiceMode>('live');
   const [formData, setFormData] = useState({
     customer_id: '',
     invoice_number: '',
@@ -44,7 +46,7 @@ const BillingInvoiceNew = () => {
       const tax = parseFloat(formData.tax) || 0;
       const total = subtotal + tax;
 
-      const { error } = await supabase
+      const { data: invoice, error } = await supabase
         .from('customer_invoices')
         .insert({
           customer_id: formData.customer_id,
@@ -56,12 +58,17 @@ const BillingInvoiceNew = () => {
           total_amount: total,
           status: formData.status,
           notes: formData.notes || null,
-        });
+          is_historical: invoiceMode === 'historical', // Track mode
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
+      return invoice;
     },
-    onSuccess: () => {
-      toast.success('Invoice created successfully');
+    onSuccess: (invoice) => {
+      const modeLabel = invoiceMode === 'historical' ? ' (historical - no notifications)' : '';
+      toast.success(`Invoice created successfully${modeLabel}`);
       queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
       navigate('/billing/invoices');
     },
@@ -107,6 +114,12 @@ const BillingInvoiceNew = () => {
 
         <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Invoice Mode Selector */}
+            <InvoiceModeSelector 
+              mode={invoiceMode} 
+              onModeChange={setInvoiceMode} 
+            />
+
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="customer">Customer *</Label>

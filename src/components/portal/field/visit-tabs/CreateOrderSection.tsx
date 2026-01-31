@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, ShoppingCart, Package } from 'lucide-react';
+import { Plus, Trash2, ShoppingCart, Package, Zap } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { InvoiceModeSelector, InvoiceMode } from '@/components/invoice/InvoiceModeSelector';
 
 export interface OrderLineItem {
   id: string;
@@ -29,14 +30,22 @@ export interface FieldOrder {
   line_items: OrderLineItem[];
   subtotal: number;
   notes: string;
+  is_historical: boolean;
 }
 
 interface CreateOrderSectionProps {
   orders: FieldOrder[];
   onOrdersChange: (orders: FieldOrder[]) => void;
+  invoiceMode: InvoiceMode;
+  onInvoiceModeChange: (mode: InvoiceMode) => void;
 }
 
-export function CreateOrderSection({ orders, onOrdersChange }: CreateOrderSectionProps) {
+export function CreateOrderSection({ 
+  orders, 
+  onOrdersChange, 
+  invoiceMode, 
+  onInvoiceModeChange 
+}: CreateOrderSectionProps) {
   const [selectedBrand, setSelectedBrand] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
@@ -129,6 +138,7 @@ export function CreateOrderSection({ orders, onOrdersChange }: CreateOrderSectio
         line_items: [newItem],
         subtotal: lineTotal,
         notes: '',
+        is_historical: invoiceMode === 'historical',
       };
       onOrdersChange([...orders, newOrder]);
     }
@@ -165,6 +175,25 @@ export function CreateOrderSection({ orders, onOrdersChange }: CreateOrderSectio
 
   return (
     <div className="space-y-4">
+      {/* Invoice Mode Selector - CRITICAL for automation control */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Zap className="h-5 w-5" />
+            Invoice Mode
+          </CardTitle>
+          <CardDescription>
+            Choose how this order should be processed
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <InvoiceModeSelector 
+            mode={invoiceMode} 
+            onModeChange={onInvoiceModeChange} 
+          />
+        </CardContent>
+      </Card>
+
       {/* Add Products Section */}
       <Card>
         <CardHeader>

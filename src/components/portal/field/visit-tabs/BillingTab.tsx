@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { CreditCard, Clock, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { CreateOrderSection, FieldOrder } from './CreateOrderSection';
+import { InvoiceMode } from '@/components/invoice/InvoiceModeSelector';
 
 interface BillingTabProps {
   storeId: string;
@@ -15,6 +16,8 @@ interface BillingTabProps {
   onBillToChange: (value: 'bill' | 'pay_upfront') => void;
   fieldOrders: FieldOrder[];
   onFieldOrdersChange: (orders: FieldOrder[]) => void;
+  invoiceMode: InvoiceMode;
+  onInvoiceModeChange: (mode: InvoiceMode) => void;
 }
 
 interface Invoice {
@@ -26,7 +29,15 @@ interface Invoice {
   brand?: string;
 }
 
-export function BillingTab({ storeId, billTo, onBillToChange, fieldOrders, onFieldOrdersChange }: BillingTabProps) {
+export function BillingTab({ 
+  storeId, 
+  billTo, 
+  onBillToChange, 
+  fieldOrders, 
+  onFieldOrdersChange,
+  invoiceMode,
+  onInvoiceModeChange 
+}: BillingTabProps) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastOrderDate, setLastOrderDate] = useState<string | null>(null);
@@ -186,6 +197,8 @@ export function BillingTab({ storeId, billTo, onBillToChange, fieldOrders, onFie
       <CreateOrderSection 
         orders={fieldOrders}
         onOrdersChange={onFieldOrdersChange}
+        invoiceMode={invoiceMode}
+        onInvoiceModeChange={onInvoiceModeChange}
       />
     </div>
   );
