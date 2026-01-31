@@ -16,6 +16,15 @@ interface ReceiptRequest {
   manual_resend?: boolean;
 }
 
+/**
+ * INVOICE RECEIPT AUTOMATION
+ * 
+ * CRITICAL RULES:
+ * 1. This is a SIDE-EFFECT - failures must NEVER block invoice persistence
+ * 2. Historical invoices are PERMANENTLY blocked from automation
+ * 3. Missing phone numbers are logged gracefully, not thrown as errors
+ * 4. Phone is sourced from: provided → store contacts → store record (in priority order)
+ */
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -28,11 +37,11 @@ Deno.serve(async (req) => {
 
     const twilioAccountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
+    const twilioMessagingServiceSid = Deno.env.get('TWILIO_MESSAGING_SERVICE_SID');
 
     const request: ReceiptRequest = await req.json();
     
-    console.log('Invoice Receipt Request:', {
+    console.log('📧 Invoice Receipt Request:', {
       invoice_id: request.invoice_id,
       is_historical: request.is_historical,
       manual_resend: request.manual_resend,
@@ -40,7 +49,7 @@ Deno.serve(async (req) => {
 
     // CRITICAL: Block ALL automation for historical invoices
     if (request.is_historical && !request.manual_resend) {
-      console.log('BLOCKED: Historical invoice - no automatic receipt sent');
+      console.log('🚫 BLOCKED: Historical invoice - no automatic receipt sent');
       
       // Log the blocked attempt for audit trail
       await supabase.from('invoice_receipt_log').insert({
@@ -53,6 +62,13 @@ Deno.serve(async (req) => {
         sent_reason: 'blocked_historical',
       });
 
+      // Update invoice receipt status
+      await supabase
+        .from('invoices')
+        .update({ receipt_status: 'blocked' })
+        .eq('id', request.invoice_id);
+
+      // Return SUCCESS (200) - blocking is expected behavior, not an error
       return new Response(
         JSON.stringify({
           success: true,
@@ -63,10 +79,32 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get phone number from store if not provided
+    // PHONE NUMBER RESOLUTION - Priority order:
+    // 1. Provided phone number (from caller)
+    // 2. Store contacts (billing/primary contact)
+    // 3. Store phone field
     let phoneNumber = request.phone_number;
+    let phoneSource = 'provided';
+
     if (!phoneNumber) {
-      // Try to get phone from store contacts
+      // Try store_contacts first (preferred - these are actual people)
+      const { data: contacts } = await supabase
+        .from('store_contacts')
+        .select('phone, name, role')
+        .eq('store_id', request.store_id)
+        .not('phone', 'is', null)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      
+      if (contacts && contacts.length > 0 && contacts[0].phone) {
+        phoneNumber = contacts[0].phone;
+        phoneSource = `store_contact:${contacts[0].name || 'unknown'}`;
+        console.log(`📞 Using contact phone: ${phoneNumber} (${contacts[0].role || 'no role'})`);
+      }
+    }
+
+    if (!phoneNumber) {
+      // Fallback to store record
       const { data: storeData } = await supabase
         .from('store_master')
         .select('phone, contact_phone')
@@ -74,42 +112,42 @@ Deno.serve(async (req) => {
         .single();
 
       phoneNumber = storeData?.contact_phone || storeData?.phone;
-
-      // Try store_contacts as fallback
-      if (!phoneNumber) {
-        const { data: contacts } = await supabase
-          .from('store_contacts')
-          .select('phone')
-          .eq('store_id', request.store_id)
-          .limit(1);
-        
-        phoneNumber = contacts?.[0]?.phone;
+      if (phoneNumber) {
+        phoneSource = 'store_record';
+        console.log(`📞 Using store phone: ${phoneNumber}`);
       }
     }
 
+    // GRACEFUL HANDLING: No phone = log and return success (not an error)
     if (!phoneNumber) {
-      console.log('No phone number found for store');
+      console.log('⚠️ No phone number found - receipt skipped (not an error)');
       
       await supabase.from('invoice_receipt_log').insert({
         invoice_id: request.invoice_id,
         store_id: request.store_id,
         phone_number: 'MISSING',
-        message_body: 'No phone number available',
-        delivery_status: 'failed',
-        error_message: 'No phone number found for store',
+        message_body: 'Receipt skipped - no phone number available',
+        delivery_status: 'skipped',
+        error_message: 'No phone number found for store contacts or store record',
         is_historical_invoice: false,
         sent_reason: request.manual_resend ? 'manual_resend' : 'auto_live',
       });
 
+      // Update invoice with skip status (not failed)
+      await supabase
+        .from('invoices')
+        .update({ receipt_status: 'skipped' })
+        .eq('id', request.invoice_id);
+
+      // Return SUCCESS (200) - missing phone is expected in some cases, not a system failure
       return new Response(
         JSON.stringify({
-          success: false,
-          error: 'No phone number found for store',
+          success: true,
+          sent: false,
+          reason: 'No phone number available - receipt skipped',
+          receipt_not_sent_reason: 'missing_phone',
         }),
-        { 
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -120,6 +158,8 @@ Deno.serve(async (req) => {
     } else if (normalizedPhone.length === 11 && normalizedPhone.startsWith('09')) {
       // Philippines format
       normalizedPhone = `+63${normalizedPhone.slice(1)}`;
+    } else if (normalizedPhone.startsWith('63') && normalizedPhone.length === 12) {
+      normalizedPhone = `+${normalizedPhone}`;
     } else if (!normalizedPhone.startsWith('+')) {
       normalizedPhone = `+${normalizedPhone}`;
     }
@@ -138,8 +178,8 @@ Deno.serve(async (req) => {
       `Thank you for your business!`;
 
     // Check if Twilio is configured
-    if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
-      console.log('Twilio not configured - logging receipt without sending');
+    if (!twilioAccountSid || !twilioAuthToken || !twilioMessagingServiceSid) {
+      console.log('⚠️ Twilio not configured - logging receipt without sending');
       
       await supabase.from('invoice_receipt_log').insert({
         invoice_id: request.invoice_id,
@@ -152,12 +192,9 @@ Deno.serve(async (req) => {
         sent_reason: request.manual_resend ? 'manual_resend' : 'auto_live',
       });
 
-      // Update invoice with receipt status
       await supabase
         .from('invoices')
-        .update({
-          receipt_status: 'skipped',
-        })
+        .update({ receipt_status: 'skipped' })
         .eq('id', request.invoice_id);
 
       return new Response(
@@ -170,12 +207,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Send SMS via Twilio
+    // Send SMS via Twilio using Messaging Service
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
     const twilioAuth = btoa(`${twilioAccountSid}:${twilioAuthToken}`);
 
     const formData = new URLSearchParams();
-    formData.append('From', twilioPhoneNumber);
+    formData.append('MessagingServiceSid', twilioMessagingServiceSid);
     formData.append('To', normalizedPhone);
     formData.append('Body', messageBody);
 
@@ -191,7 +228,7 @@ Deno.serve(async (req) => {
     const twilioResult = await twilioResponse.json();
 
     if (!twilioResponse.ok) {
-      console.error('Twilio error:', twilioResult);
+      console.error('❌ Twilio error:', twilioResult);
       
       await supabase.from('invoice_receipt_log').insert({
         invoice_id: request.invoice_id,
@@ -206,25 +243,24 @@ Deno.serve(async (req) => {
 
       await supabase
         .from('invoices')
-        .update({
-          receipt_status: 'failed',
-        })
+        .update({ receipt_status: 'failed' })
         .eq('id', request.invoice_id);
 
+      // Still return 200 - Twilio failure is logged but doesn't break the system
       return new Response(
         JSON.stringify({
           success: false,
+          sent: false,
           error: twilioResult.message || 'Failed to send SMS',
+          logged: true,
         }),
-        { 
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Log successful send
     const messageSid = twilioResult.sid;
+    console.log(`✅ Receipt sent successfully: SID=${messageSid}, phone=${normalizedPhone}, source=${phoneSource}`);
     
     await supabase.from('invoice_receipt_log').insert({
       invoice_id: request.invoice_id,
@@ -247,29 +283,30 @@ Deno.serve(async (req) => {
       })
       .eq('id', request.invoice_id);
 
-    console.log('Receipt sent successfully:', { messageSid, phone: normalizedPhone });
-
     return new Response(
       JSON.stringify({
         success: true,
         sent: true,
         message_sid: messageSid,
         phone: normalizedPhone,
+        phone_source: phoneSource,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Send Invoice Receipt Error:', error);
+    console.error('❌ Send Invoice Receipt Error:', error);
+    
+    // Even system errors return 200 - this is a side-effect function
+    // Returning 500 could cause retry storms or block dependent logic
     return new Response(
       JSON.stringify({
         success: false,
+        sent: false,
         error: error instanceof Error ? error.message : String(error),
+        logged: false,
       }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
