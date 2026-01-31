@@ -2,11 +2,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ClipboardList, Plus, X, Building2, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useState } from 'react';
+import { ClipboardList, AlertCircle } from 'lucide-react';
 import { ConnectedStoresSection, type ConnectedStoreData } from './ConnectedStoresSection';
+import { WholesalerSection, type WholesalerAssociation } from './WholesalerSection';
 
 // Questionnaire without storeCount (now derived from connected stores)
 // and without clothing (moved to contacts) and without preset wholesalers
@@ -16,62 +14,36 @@ interface Questionnaire {
   interestedInCleaning: boolean;
 }
 
-interface WholesalerContact {
-  id?: string;
-  name: string;
-  address: string;
-  phone: string;
-}
-
 interface QuestionnaireTabProps {
   questionnaire: Questionnaire & { storeCount?: number; wholesalers?: string[]; clothingSize?: string };
   onQuestionnaireChange: (questionnaire: Questionnaire & { storeCount?: number; wholesalers?: string[]; clothingSize?: string }) => void;
-  wholesalerContacts?: WholesalerContact[];
-  onWholesalerContactsChange?: (contacts: WholesalerContact[]) => void;
   // Connected stores integration
   currentStoreId: string;
   connectedStores?: ConnectedStoreData[];
   onConnectedStoresChange?: (stores: ConnectedStoreData[]) => void;
   isLoadingConnectedStores?: boolean;
+  // Global wholesaler associations
+  wholesalerAssociations?: WholesalerAssociation[];
+  onWholesalerAssociationsChange?: (associations: WholesalerAssociation[]) => void;
+  isLoadingWholesalers?: boolean;
 }
 
 export function QuestionnaireTab({ 
   questionnaire, 
   onQuestionnaireChange,
-  wholesalerContacts = [],
-  onWholesalerContactsChange,
   currentStoreId,
   connectedStores = [],
   onConnectedStoresChange,
   isLoadingConnectedStores = false,
+  wholesalerAssociations = [],
+  onWholesalerAssociationsChange,
+  isLoadingWholesalers = false,
 }: QuestionnaireTabProps) {
-  const [showAddWholesaler, setShowAddWholesaler] = useState(false);
-  const [newWholesaler, setNewWholesaler] = useState<WholesalerContact>({
-    name: '',
-    address: '',
-    phone: '',
-  });
 
   const update = (updates: Partial<Questionnaire>) => {
     // Only update the simplified fields, exclude deprecated arrays and storeCount
     const { wholesalers, clothingSize, storeCount, ...rest } = questionnaire;
     onQuestionnaireChange({ ...rest, ...updates });
-  };
-
-  const addWholesalerContact = () => {
-    if (!newWholesaler.name.trim()) return;
-    
-    if (onWholesalerContactsChange) {
-      onWholesalerContactsChange([...wholesalerContacts, { ...newWholesaler }]);
-    }
-    setNewWholesaler({ name: '', address: '', phone: '' });
-    setShowAddWholesaler(false);
-  };
-
-  const removeWholesalerContact = (index: number) => {
-    if (onWholesalerContactsChange) {
-      onWholesalerContactsChange(wholesalerContacts.filter((_, i) => i !== index));
-    }
   };
 
   return (
@@ -82,6 +54,14 @@ export function QuestionnaireTab({
         connectedStores={connectedStores}
         onConnectedStoresChange={onConnectedStoresChange || (() => {})}
         isLoading={isLoadingConnectedStores}
+      />
+
+      {/* Global Wholesaler Associations - Network-level contacts */}
+      <WholesalerSection
+        storeId={currentStoreId}
+        associations={wholesalerAssociations}
+        onAssociationsChange={onWholesalerAssociationsChange || (() => {})}
+        isLoading={isLoadingWholesalers}
       />
 
       {/* Core Questionnaire */}
@@ -138,119 +118,6 @@ export function QuestionnaireTab({
               onCheckedChange={(checked) => update({ interestedInCleaning: checked })}
             />
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Wholesaler Contacts - Contact-Based Model */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Wholesaler Contacts
-              </CardTitle>
-              <CardDescription>
-                Add external suppliers this store purchases from
-              </CardDescription>
-            </div>
-            <Button 
-              onClick={() => setShowAddWholesaler(true)} 
-              size="sm" 
-              variant="outline"
-              disabled={showAddWholesaler}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Add Wholesaler
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Add New Wholesaler Form */}
-          {showAddWholesaler && (
-            <div className="p-4 rounded-lg border border-primary/30 bg-primary/5 space-y-4">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">New Wholesaler Contact</Label>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => setShowAddWholesaler(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="space-y-2">
-                  <Label>Wholesaler Name *</Label>
-                  <Input
-                    value={newWholesaler.name}
-                    onChange={(e) => setNewWholesaler({ ...newWholesaler, name: e.target.value })}
-                    placeholder="Company name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Address</Label>
-                  <Input
-                    value={newWholesaler.address}
-                    onChange={(e) => setNewWholesaler({ ...newWholesaler, address: e.target.value })}
-                    placeholder="Full address"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Phone Number</Label>
-                  <Input
-                    value={newWholesaler.phone}
-                    onChange={(e) => setNewWholesaler({ ...newWholesaler, phone: e.target.value })}
-                    placeholder="(555) 123-4567"
-                    type="tel"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={() => setShowAddWholesaler(false)}>
-                  Cancel
-                </Button>
-                <Button size="sm" onClick={addWholesalerContact} disabled={!newWholesaler.name.trim()}>
-                  Add Wholesaler
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* List of Wholesaler Contacts */}
-          {wholesalerContacts.length === 0 && !showAddWholesaler ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Building2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No wholesaler contacts added yet.</p>
-              <p className="text-xs mt-1">Add the suppliers this store purchases from.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {wholesalerContacts.map((contact, index) => (
-                <div 
-                  key={contact.id || index} 
-                  className="flex items-center justify-between p-3 rounded-lg border"
-                >
-                  <div className="space-y-1">
-                    <p className="font-medium">{contact.name}</p>
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      {contact.address && <span>{contact.address}</span>}
-                      {contact.phone && <span>• {contact.phone}</span>}
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive"
-                    onClick={() => removeWholesalerContact(index)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
 
           {/* Info about clothing */}
           <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">

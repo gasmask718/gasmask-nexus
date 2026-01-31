@@ -39,12 +39,20 @@ interface Contact {
   shirtSize?: string;
 }
 
-// Wholesaler contact interface
-interface WholesalerContact {
-  id?: string;
+// Global wholesaler interface (network-level, not store-owned)
+interface GlobalWholesaler {
+  id: string;
   name: string;
-  address: string;
-  phone: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  phone: string | null;
+}
+
+interface WholesalerAssociation {
+  wholesaler_id: string;
+  wholesaler: GlobalWholesaler;
+  isNew?: boolean;
 }
 
 // Connected store interface
@@ -76,8 +84,8 @@ export interface StoreVisitData {
   inventory: Record<string, number>;
   // Contacts (now includes shirt size)
   contacts: Contact[];
-  // Wholesaler contacts (contact-based model)
-  wholesalerContacts: WholesalerContact[];
+  // Global wholesaler associations (many-to-many, network-level)
+  wholesalerAssociations: WholesalerAssociation[];
   // Connected stores (replaces storeCount)
   connectedStores: ConnectedStoreData[];
   // Questionnaire (simplified - no storeCount, no wholesalers array, no clothingSize)
@@ -116,7 +124,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
     stickers: initializeStickerDataForAllBrands(), // HARD-LOCKED to 4 approved brands
     inventory: {},
     contacts: [],
-    wholesalerContacts: [],
+    wholesalerAssociations: [], // Global wholesaler associations (network-level)
     connectedStores: [], // Connected stores replaces storeCount
     questionnaire: {
       secureLevel: 'medium',
@@ -129,6 +137,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
     nextFollowUpDate: null,
   });
   const [loadingConnectedStores, setLoadingConnectedStores] = useState(false);
+  const [loadingWholesalers, setLoadingWholesalers] = useState(false);
 
   // Fetch store data, brands (for other sections), and products
   useEffect(() => {
@@ -204,23 +213,35 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
           }));
         }
 
-        // Fetch existing wholesaler contacts
-        const { data: wholesalerData } = await supabase
-          .from('store_wholesaler_contacts')
-          .select('*')
+        // Fetch existing wholesaler associations (global model)
+        setLoadingWholesalers(true);
+        const { data: associationsData } = await supabase
+          .from('store_wholesaler_associations')
+          .select(`
+            wholesaler_id,
+            wholesalers:wholesaler_id (
+              id, name, address, city, state, phone
+            )
+          `)
           .eq('store_id', storeId);
 
-        if (wholesalerData && wholesalerData.length > 0) {
+        if (associationsData && associationsData.length > 0) {
           setVisitData(prev => ({
             ...prev,
-            wholesalerContacts: wholesalerData.map(w => ({
-              id: w.id,
-              name: w.name,
-              address: w.address || '',
-              phone: w.phone || '',
+            wholesalerAssociations: associationsData.map((a: any) => ({
+              wholesaler_id: a.wholesaler_id,
+              wholesaler: {
+                id: a.wholesalers.id,
+                name: a.wholesalers.name,
+                address: a.wholesalers.address,
+                city: a.wholesalers.city,
+                state: a.wholesalers.state,
+                phone: a.wholesalers.phone,
+              },
             })),
           }));
         }
+        setLoadingWholesalers(false);
 
         // Fetch existing questionnaire (simplified fields only - no storeCount)
         const { data: questionnaireData } = await supabase
@@ -429,29 +450,43 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
         }
       }
 
-      // Save wholesaler contacts directly
-      for (const wholesaler of visitData.wholesalerContacts) {
-        if (wholesaler.id) {
-          // Update existing
-          await supabase
-            .from('store_wholesaler_contacts')
-            .update({
-              name: wholesaler.name,
-              address: wholesaler.address,
-              phone: wholesaler.phone,
+      // Save global wholesalers and associations
+      for (const assoc of visitData.wholesalerAssociations) {
+        // Check if it's a new wholesaler (temp ID)
+        if (assoc.wholesaler_id.startsWith('temp-')) {
+          // Create new global wholesaler
+          const { data: newWholesaler, error: wholesalerError } = await supabase
+            .from('wholesalers')
+            .insert({
+              name: assoc.wholesaler.name,
+              address: assoc.wholesaler.address,
+              city: assoc.wholesaler.city,
+              state: assoc.wholesaler.state,
+              phone: assoc.wholesaler.phone,
+              created_by: user.id,
             })
-            .eq('id', wholesaler.id);
-        } else if (wholesaler.name.trim()) {
-          // Insert new
+            .select()
+            .single();
+
+          if (wholesalerError) throw wholesalerError;
+
+          // Create association
           await supabase
-            .from('store_wholesaler_contacts')
+            .from('store_wholesaler_associations')
             .insert({
               store_id: storeId,
-              name: wholesaler.name,
-              address: wholesaler.address,
-              phone: wholesaler.phone,
+              wholesaler_id: newWholesaler.id,
               created_by: user.id,
             });
+        } else if (assoc.isNew) {
+          // Associate existing wholesaler - use upsert to handle duplicates
+          await supabase
+            .from('store_wholesaler_associations')
+            .upsert({
+              store_id: storeId,
+              wholesaler_id: assoc.wholesaler_id,
+              created_by: user.id,
+            }, { onConflict: 'store_id,wholesaler_id', ignoreDuplicates: true });
         }
       }
 
@@ -604,12 +639,13 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
             <QuestionnaireTab 
               questionnaire={visitData.questionnaire}
               onQuestionnaireChange={(questionnaire) => updateVisitData({ questionnaire })}
-              wholesalerContacts={visitData.wholesalerContacts}
-              onWholesalerContactsChange={(wholesalerContacts) => updateVisitData({ wholesalerContacts })}
               currentStoreId={storeId!}
               connectedStores={visitData.connectedStores}
               onConnectedStoresChange={(connectedStores) => updateVisitData({ connectedStores })}
               isLoadingConnectedStores={loadingConnectedStores}
+              wholesalerAssociations={visitData.wholesalerAssociations}
+              onWholesalerAssociationsChange={(wholesalerAssociations) => updateVisitData({ wholesalerAssociations })}
+              isLoadingWholesalers={loadingWholesalers}
             />
           </TabsContent>
 
