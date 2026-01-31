@@ -22,6 +22,7 @@ import { DatePicker } from '@/components/ui/datetime-picker';
 import { PhotoUploadMultiple } from './PhotoUploadMultiple';
 import { BulkStoreSelector } from './BulkStoreSelector';
 import { GRABBA_COMPANY_IDS } from '@/hooks/useVisitProducts';
+import { InvoiceModeSelector, InvoiceMode } from '@/components/invoice/InvoiceModeSelector';
 
 interface CreateStoreInvoiceModalProps {
   open: boolean;
@@ -89,6 +90,7 @@ export function CreateStoreInvoiceModal({
   const [photos, setPhotos] = useState<string[]>([]);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
+  const [invoiceMode, setInvoiceMode] = useState<InvoiceMode>('live');
 
   // Fetch Grabba brands
   const { data: brands = [], isLoading: brandsLoading } = useQuery({
@@ -246,23 +248,24 @@ export function CreateStoreInvoiceModal({
           .from('invoices')
           .insert({
             store_id: targetStoreId,
-          invoice_number: invoiceNumber,
-          subtotal,
-          tax,
-          total,
-          total_amount: total,
-          payment_method: paymentMethod || null,
-          payment_status: paymentStatus,
-          due_date: dueDate ? dueDate.toISOString().split('T')[0] : null,
-          paid_at: paymentStatus === 'paid' || paymentStatus === 'partial' ? invoiceDateToUse : null,
-          partial_amount: paymentStatus === 'partial' ? partialAmountNum : null,
-          received_by: receivedByName || null,
-          delivery_photos: photos.length > 0 ? photos : null,
-          notes: notes || null,
-          brand: brandSummary,
-          created_by: user?.id || 'manual',
-          created_at: invoiceDateToUse, // Use invoice date for backdating
-        })
+            invoice_number: invoiceNumber,
+            subtotal,
+            tax,
+            total,
+            total_amount: total,
+            payment_method: paymentMethod || null,
+            payment_status: paymentStatus,
+            due_date: dueDate ? dueDate.toISOString().split('T')[0] : null,
+            paid_at: paymentStatus === 'paid' || paymentStatus === 'partial' ? invoiceDateToUse : null,
+            partial_amount: paymentStatus === 'partial' ? partialAmountNum : null,
+            received_by: receivedByName || null,
+            delivery_photos: photos.length > 0 ? photos : null,
+            notes: notes || null,
+            brand: brandSummary,
+            created_by: user?.id || 'manual',
+            created_at: invoiceDateToUse,
+            is_historical: invoiceMode === 'historical', // Track invoice mode
+          })
           .select('id')
           .single();
 
@@ -357,6 +360,29 @@ export function CreateStoreInvoiceModal({
             // Don't fail invoice creation if visit log creation fails
           }
         }
+
+        // Send receipt text for LIVE invoices only (not historical)
+        if (invoice && invoiceMode === 'live') {
+          try {
+            const { error: receiptError } = await supabase.functions.invoke('send-invoice-receipt', {
+              body: {
+                invoice_id: invoice.id,
+                store_id: targetStoreId,
+                invoice_number: invoiceNumber,
+                total_amount: total,
+                store_name: storeName,
+                is_historical: false,
+              },
+            });
+            
+            if (receiptError) {
+              console.error('Failed to send receipt:', receiptError);
+              // Don't fail invoice creation if receipt fails
+            }
+          } catch (err) {
+            console.error('Error sending receipt:', err);
+          }
+        }
       }
 
       return createdInvoices[0] || null;
@@ -394,6 +420,7 @@ export function CreateStoreInvoiceModal({
     setPhotos([]);
     setBulkMode(false);
     setSelectedStoreIds([]);
+    setInvoiceMode('live'); // Reset to live mode
   };
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
@@ -419,6 +446,11 @@ export function CreateStoreInvoiceModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Invoice Mode Selector - MUST BE FIRST */}
+          <InvoiceModeSelector 
+            mode={invoiceMode} 
+            onModeChange={setInvoiceMode} 
+          />
 
           {/* Product Selection */}
           <div className="space-y-3 p-4 rounded-lg bg-secondary/30 border border-dashed">
