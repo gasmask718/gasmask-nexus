@@ -36712,6 +36712,58 @@ export type Database = {
           },
         ]
       }
+      store_wholesaler_associations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_primary: boolean | null
+          notes: string | null
+          store_id: string
+          wholesaler_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_primary?: boolean | null
+          notes?: string | null
+          store_id: string
+          wholesaler_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_primary?: boolean | null
+          notes?: string | null
+          store_id?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_wholesaler_associations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_wholesaler_associations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_wholesaler_associations_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_wholesaler_contacts: {
         Row: {
           address: string | null

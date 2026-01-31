@@ -103,14 +103,15 @@ export function ChangeListTab({ visitData, brands, products }: ChangeListTabProp
     });
   }
 
-  // Wholesaler contact changes (contact-based model)
-  visitData.wholesalerContacts?.forEach((wholesaler, index) => {
-    if (wholesaler.name) {
+  // Wholesaler association changes (global model)
+  visitData.wholesalerAssociations?.forEach((assoc, index) => {
+    if (assoc.wholesaler.name) {
+      const addressParts = [assoc.wholesaler.address, assoc.wholesaler.city, assoc.wholesaler.state].filter(Boolean);
       changes.push({
-        category: 'Wholesaler Contacts',
+        category: 'Wholesaler Associations',
         field: `Wholesaler #${index + 1}`,
-        oldValue: wholesaler.id ? 'Updated' : 'New',
-        newValue: `${wholesaler.name}${wholesaler.phone ? ` - ${wholesaler.phone}` : ''}`,
+        oldValue: assoc.isNew ? 'New Association' : 'Existing',
+        newValue: `${assoc.wholesaler.name}${assoc.wholesaler.phone ? ` - ${assoc.wholesaler.phone}` : ''}${addressParts.length > 0 ? ` (${addressParts.join(', ')})` : ''}`,
       });
     }
   });
