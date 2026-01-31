@@ -129,6 +129,27 @@ export function ChangeListTab({ visitData, brands, products }: ChangeListTabProp
     }
   });
 
+  // Field Orders changes
+  visitData.fieldOrders?.forEach((order, index) => {
+    const itemCount = order.line_items.length;
+    const itemSummary = order.line_items.map(item => `${item.product_name} x${item.quantity}`).join(', ');
+    changes.push({
+      category: 'Field Orders',
+      field: `${order.brand_name} Order`,
+      oldValue: 'New Order',
+      newValue: `$${order.subtotal.toFixed(2)} (${itemCount} item${itemCount !== 1 ? 's' : ''})`,
+    });
+    // Add line item details
+    order.line_items.forEach(item => {
+      changes.push({
+        category: 'Field Orders',
+        field: `  └ ${item.product_name}`,
+        oldValue: '—',
+        newValue: `${item.quantity} ${item.unit_type} @ $${item.unit_price.toFixed(2)} = $${item.total.toFixed(2)}`,
+      });
+    });
+  });
+
   // Notes changes
   if (visitData.internalNotes) {
     changes.push({
