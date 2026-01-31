@@ -390,12 +390,21 @@ export function CreateStoreInvoiceModal({
     onSuccess: (data) => {
       const count = bulkMode && selectedStoreIds.length > 0 ? selectedStoreIds.length : 1;
       toast.success(`${count} invoice${count > 1 ? 's' : ''} created successfully`);
-      queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
+      
+      // Invalidate ALL invoice and order-related queries for full system coherence
+      queryClient.invalidateQueries({ queryKey: ['store-invoices'] });
       queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
       queryClient.invalidateQueries({ queryKey: ['contact-interactions'] });
       queryClient.invalidateQueries({ queryKey: ['store-interactions'] });
-      queryClient.invalidateQueries({ queryKey: ['store-orders-history', storeId] }); // Refresh Order History
+      queryClient.invalidateQueries({ queryKey: ['store-orders-history'] });
       queryClient.invalidateQueries({ queryKey: ['visit-logs'] });
+      
+      // CRITICAL: Invalidate ambassador order queries so dashboards update
+      queryClient.invalidateQueries({ queryKey: ['ambassador-store-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['ambassador-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['ambassador-dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['ambassador-quick-stats'] });
+      
       resetForm();
       onOpenChange(false);
       onSuccess?.(data.id);

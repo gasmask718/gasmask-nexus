@@ -78,7 +78,7 @@ export function useAmbassadorOrders(options?: { channel?: string; status?: strin
 
   const storeIds = assignmentsQuery.data || [];
 
-  // Fetch store orders
+  // Fetch store orders from store_orders table
   const storeOrdersQuery = useQuery({
     queryKey: ['ambassador-store-orders', storeIds, status, limit],
     queryFn: async () => {
@@ -121,14 +121,76 @@ export function useAmbassadorOrders(options?: { channel?: string; status?: strin
         tax: Number(order.tax || 0),
         total: Number(order.total_amount || 0),
         created_at: order.created_at,
-        items_count: 0, // Would need join to order_items
+        items_count: 0,
       }));
     },
     enabled: storeIds.length > 0 && (!channel || channel === 'all' || channel === 'store'),
   });
 
-  // Calculate metrics
-  const orders = storeOrdersQuery.data || [];
+  // CRITICAL: Also fetch invoices table (where CreateStoreInvoiceModal saves)
+  const invoicesQuery = useQuery({
+    queryKey: ['ambassador-store-invoices', storeIds, status, limit],
+    queryFn: async () => {
+      if (storeIds.length === 0) return [];
+
+      let query = supabase
+        .from('invoices')
+        .select(`
+          id,
+          invoice_number,
+          store_id,
+          payment_status,
+          subtotal,
+          tax,
+          total_amount,
+          created_at,
+          store:store_master!store_id(store_name)
+        `)
+        .in('store_id', storeIds)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (status && status !== 'all') {
+        // Map order status to invoice payment_status
+        query = query.eq('payment_status', status);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return (data || []).map((invoice: any): AmbassadorOrder => ({
+        id: invoice.id,
+        order_number: invoice.invoice_number || `INV-${invoice.id.slice(0, 8).toUpperCase()}`,
+        channel: 'store',
+        entity_id: invoice.store_id,
+        entity_name: invoice.store?.store_name || 'Unknown Store',
+        status: invoice.payment_status === 'paid' ? 'delivered' : 'pending',
+        payment_status: invoice.payment_status || 'pending',
+        subtotal: Number(invoice.subtotal || invoice.total_amount || 0),
+        tax: Number(invoice.tax || 0),
+        total: Number(invoice.total_amount || 0),
+        created_at: invoice.created_at,
+        items_count: 0,
+      }));
+    },
+    enabled: storeIds.length > 0 && (!channel || channel === 'all' || channel === 'store'),
+  });
+
+  // Combine orders from both tables, deduplicate by ID
+  const storeOrders = storeOrdersQuery.data || [];
+  const invoiceOrders = invoicesQuery.data || [];
+  
+  // Merge and sort by date (invoices + store_orders), avoiding duplicates
+  const allOrdersMap = new Map<string, AmbassadorOrder>();
+  [...storeOrders, ...invoiceOrders].forEach(order => {
+    // Prefer invoice data if same ID exists (shouldn't happen but safety)
+    if (!allOrdersMap.has(order.id)) {
+      allOrdersMap.set(order.id, order);
+    }
+  });
+  
+  const orders = Array.from(allOrdersMap.values())
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   
   const metrics: OrdersMetrics = {
     totalOrders: orders.length,
@@ -136,15 +198,15 @@ export function useAmbassadorOrders(options?: { channel?: string; status?: strin
     storeOrders: orders.filter(o => o.channel === 'store').length,
     wholesaleOrders: orders.filter(o => o.channel === 'wholesale').length,
     affiliateOrders: orders.filter(o => o.channel === 'affiliate').length,
-    pendingPayments: orders.filter(o => o.payment_status === 'pending').length,
+    pendingPayments: orders.filter(o => o.payment_status === 'pending' || o.payment_status === 'unpaid').length,
   };
 
   return {
     orders,
     metrics,
-    isLoading: ambassadorQuery.isLoading || assignmentsQuery.isLoading || storeOrdersQuery.isLoading,
-    isError: ambassadorQuery.isError || assignmentsQuery.isError || storeOrdersQuery.isError,
-    error: ambassadorQuery.error || assignmentsQuery.error || storeOrdersQuery.error,
+    isLoading: ambassadorQuery.isLoading || assignmentsQuery.isLoading || storeOrdersQuery.isLoading || invoicesQuery.isLoading,
+    isError: ambassadorQuery.isError || assignmentsQuery.isError || storeOrdersQuery.isError || invoicesQuery.isError,
+    error: ambassadorQuery.error || assignmentsQuery.error || storeOrdersQuery.error || invoicesQuery.error,
   };
 }
 

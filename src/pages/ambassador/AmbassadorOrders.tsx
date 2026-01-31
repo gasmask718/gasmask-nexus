@@ -54,11 +54,12 @@ export default function AmbassadorOrders() {
     setShowInvoiceModal(true);
   };
 
-  // Handle invoice creation success
+  // Handle invoice creation success - invalidate all order-related queries
   const handleInvoiceSuccess = () => {
     setShowInvoiceModal(false);
     setSelectedStore(null);
-    // Optionally navigate to the new invoice or stay on orders page
+    // Force refresh the orders list to show new invoice
+    // Note: QueryClient invalidation is handled in CreateStoreInvoiceModal
   };
 
   // Fetch real orders
