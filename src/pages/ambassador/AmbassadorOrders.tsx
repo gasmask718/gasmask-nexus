@@ -1,8 +1,9 @@
 /**
  * Ambassador Orders Page
  * Unified view of all orders across channels (store, wholesale, affiliate)
+ * MASTER GENIUS ARCHITECT: Create Order quick action opens store selector, not analytics
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,18 +15,51 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Package, Store, ShoppingCart, TrendingUp, Search, 
   DollarSign, Clock, CheckCircle,
-  XCircle, Eye, Download, AlertCircle
+  XCircle, Eye, Download, AlertCircle, Plus
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
 import { useAmbassadorOrders } from '@/hooks/useAmbassadorOrders';
+import { CreateOrderStoreSelector } from '@/components/ambassador/CreateOrderStoreSelector';
+import { CreateStoreInvoiceModal } from '@/components/store/CreateStoreInvoiceModal';
+import type { PortfolioStore } from '@/hooks/useAmbassadorPortfolio';
 
 export default function AmbassadorOrders() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [channelFilter, setChannelFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  
+  // MASTER GENIUS: Create Order flow state
+  const [showStoreSelector, setShowStoreSelector] = useState(false);
+  const [selectedStore, setSelectedStore] = useState<PortfolioStore | null>(null);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+
+  // Handle ?action=create query param - open store selector immediately
+  useEffect(() => {
+    if (searchParams.get('action') === 'create') {
+      setShowStoreSelector(true);
+      // Clear the query param to prevent re-opening on navigation
+      searchParams.delete('action');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  // Handle store selection - open invoice modal
+  const handleStoreSelected = (store: PortfolioStore) => {
+    setSelectedStore(store);
+    setShowStoreSelector(false);
+    setShowInvoiceModal(true);
+  };
+
+  // Handle invoice creation success
+  const handleInvoiceSuccess = () => {
+    setShowInvoiceModal(false);
+    setSelectedStore(null);
+    // Optionally navigate to the new invoice or stay on orders page
+  };
 
   // Fetch real orders
   const { orders, metrics, isLoading, isError, error } = useAmbassadorOrders({
@@ -203,8 +237,15 @@ export default function AmbassadorOrders() {
           </Card>
         </div>
 
-        {/* Filters */}
+        {/* Filters + Create Order Button */}
         <div className="flex flex-wrap gap-3">
+          <Button 
+            onClick={() => setShowStoreSelector(true)} 
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Create Order
+          </Button>
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
@@ -297,6 +338,24 @@ export default function AmbassadorOrders() {
           </ScrollArea>
         </Card>
       </div>
+
+      {/* MASTER GENIUS: Store Selector Modal */}
+      <CreateOrderStoreSelector
+        open={showStoreSelector}
+        onOpenChange={setShowStoreSelector}
+        onStoreSelected={handleStoreSelected}
+      />
+
+      {/* Invoice Creation Modal - opens after store is selected */}
+      {selectedStore && (
+        <CreateStoreInvoiceModal
+          open={showInvoiceModal}
+          onOpenChange={setShowInvoiceModal}
+          storeId={selectedStore.store_id}
+          storeName={selectedStore.store_name}
+          onSuccess={handleInvoiceSuccess}
+        />
+      )}
     </EnhancedPortalLayout>
   );
 }
