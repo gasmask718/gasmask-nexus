@@ -60,13 +60,22 @@ export function ChangeListTab({ visitData, brands, products }: ChangeListTabProp
     });
   });
 
-  // Questionnaire changes
-  if (visitData.questionnaire.storeCount > 1) {
+  // Connected Stores changes (replaces storeCount)
+  if (visitData.connectedStores && visitData.connectedStores.length > 0) {
+    const totalLocations = visitData.connectedStores.length + 1; // +1 for current store
     changes.push({
-      category: 'Questionnaire',
-      field: 'Store Count',
-      oldValue: '—',
-      newValue: visitData.questionnaire.storeCount.toString(),
+      category: 'Connected Stores',
+      field: 'Total Locations',
+      oldValue: '1',
+      newValue: totalLocations.toString(),
+    });
+    visitData.connectedStores.forEach((store, index) => {
+      changes.push({
+        category: 'Connected Stores',
+        field: `Location ${index + 2}`,
+        oldValue: '—',
+        newValue: `${store.store_name} - ${store.address}, ${store.city}, ${store.state}`,
+      });
     });
   }
   if (visitData.questionnaire.secureLevel !== 'medium') {

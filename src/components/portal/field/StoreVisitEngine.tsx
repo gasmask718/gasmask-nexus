@@ -47,6 +47,17 @@ interface WholesalerContact {
   phone: string;
 }
 
+// Connected store interface
+interface ConnectedStoreData {
+  id?: string;
+  store_name: string;
+  address: string;
+  city: string;
+  state: string;
+  phone: string;
+  isNew?: boolean;
+}
+
 export interface StoreVisitData {
   storeId: string;
   storeName: string;
@@ -67,9 +78,10 @@ export interface StoreVisitData {
   contacts: Contact[];
   // Wholesaler contacts (contact-based model)
   wholesalerContacts: WholesalerContact[];
-  // Questionnaire (simplified - no wholesalers array or clothingSize)
+  // Connected stores (replaces storeCount)
+  connectedStores: ConnectedStoreData[];
+  // Questionnaire (simplified - no storeCount, no wholesalers array, no clothingSize)
   questionnaire: {
-    storeCount: number;
     secureLevel: 'low' | 'medium' | 'high';
     sellsFlowers: boolean;
     interestedInCleaning: boolean;
@@ -105,8 +117,8 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
     inventory: {},
     contacts: [],
     wholesalerContacts: [],
+    connectedStores: [], // Connected stores replaces storeCount
     questionnaire: {
-      storeCount: 1,
       secureLevel: 'medium',
       sellsFlowers: false,
       interestedInCleaning: false,
@@ -116,6 +128,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
     nextFollowUp: '',
     nextFollowUpDate: null,
   });
+  const [loadingConnectedStores, setLoadingConnectedStores] = useState(false);
 
   // Fetch store data, brands (for other sections), and products
   useEffect(() => {
@@ -209,7 +222,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
           }));
         }
 
-        // Fetch existing questionnaire (simplified fields only)
+        // Fetch existing questionnaire (simplified fields only - no storeCount)
         const { data: questionnaireData } = await supabase
           .from('store_questionnaire')
           .select('*')
@@ -220,7 +233,6 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
           setVisitData(prev => ({
             ...prev,
             questionnaire: {
-              storeCount: questionnaireData.total_store_count || 1,
               secureLevel: (questionnaireData.security_level as 'low' | 'medium' | 'high') || 'medium',
               sellsFlowers: questionnaireData.sells_flowers || false,
               interestedInCleaning: questionnaireData.interested_cleaning_service || false,
@@ -228,8 +240,40 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
           }));
         }
 
+        // Fetch connected stores (stores with same connected_group_id)
+        setLoadingConnectedStores(true);
+        const { data: currentStoreData } = await supabase
+          .from('store_master')
+          .select('connected_group_id')
+          .eq('id', storeId)
+          .single();
+
+        if (currentStoreData?.connected_group_id) {
+          const { data: connectedData } = await supabase
+            .from('store_master')
+            .select('id, store_name, address, city, state, phone')
+            .eq('connected_group_id', currentStoreData.connected_group_id)
+            .neq('id', storeId);
+
+          if (connectedData && connectedData.length > 0) {
+            setVisitData(prev => ({
+              ...prev,
+              connectedStores: connectedData.map(s => ({
+                id: s.id,
+                store_name: s.store_name,
+                address: s.address,
+                city: s.city,
+                state: s.state,
+                phone: s.phone || '',
+              })),
+            }));
+          }
+        }
+        setLoadingConnectedStores(false);
+
       } catch (error) {
         console.error('Error fetching data:', error);
+        setLoadingConnectedStores(false);
         toast({
           title: 'Error loading store data',
           variant: 'destructive',
@@ -411,6 +455,46 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
         }
       }
 
+      // Save connected stores - create new store_master records and link them
+      if (visitData.connectedStores.length > 0) {
+        // Ensure current store has a connected_group_id
+        let groupId: string;
+        const { data: currentStore } = await supabase
+          .from('store_master')
+          .select('connected_group_id')
+          .eq('id', storeId)
+          .single();
+
+        if (currentStore?.connected_group_id) {
+          groupId = currentStore.connected_group_id;
+        } else {
+          // Create new group ID and assign to current store
+          groupId = crypto.randomUUID();
+          await supabase
+            .from('store_master')
+            .update({ connected_group_id: groupId })
+            .eq('id', storeId);
+        }
+
+        // Create new connected stores
+        for (const connectedStore of visitData.connectedStores) {
+          if (connectedStore.isNew && connectedStore.store_name.trim()) {
+            // Insert new store with the same connected_group_id
+            await supabase
+              .from('store_master')
+              .insert({
+                store_name: connectedStore.store_name,
+                address: connectedStore.address,
+                city: connectedStore.city,
+                state: connectedStore.state,
+                zip: '', // Required field - empty for now
+                phone: connectedStore.phone,
+                connected_group_id: groupId,
+              });
+          }
+        }
+      }
+
       toast({
         title: 'Visit Submitted',
         description: 'Your changes have been sent to the Change Control Center for review.',
@@ -522,6 +606,10 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
               onQuestionnaireChange={(questionnaire) => updateVisitData({ questionnaire })}
               wholesalerContacts={visitData.wholesalerContacts}
               onWholesalerContactsChange={(wholesalerContacts) => updateVisitData({ wholesalerContacts })}
+              currentStoreId={storeId!}
+              connectedStores={visitData.connectedStores}
+              onConnectedStoresChange={(connectedStores) => updateVisitData({ connectedStores })}
+              isLoadingConnectedStores={loadingConnectedStores}
             />
           </TabsContent>
 
