@@ -1,16 +1,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { ClipboardList, Plus, X, Building2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useState } from 'react';
+import { ConnectedStoresSection, type ConnectedStoreData } from './ConnectedStoresSection';
 
-// Simplified questionnaire without clothing (moved to contacts) and without preset wholesalers
+// Questionnaire without storeCount (now derived from connected stores)
+// and without clothing (moved to contacts) and without preset wholesalers
 interface Questionnaire {
-  storeCount: number;
   secureLevel: 'low' | 'medium' | 'high';
   sellsFlowers: boolean;
   interestedInCleaning: boolean;
@@ -24,10 +24,15 @@ interface WholesalerContact {
 }
 
 interface QuestionnaireTabProps {
-  questionnaire: Questionnaire & { wholesalers?: string[]; clothingSize?: string };
-  onQuestionnaireChange: (questionnaire: Questionnaire & { wholesalers?: string[]; clothingSize?: string }) => void;
+  questionnaire: Questionnaire & { storeCount?: number; wholesalers?: string[]; clothingSize?: string };
+  onQuestionnaireChange: (questionnaire: Questionnaire & { storeCount?: number; wholesalers?: string[]; clothingSize?: string }) => void;
   wholesalerContacts?: WholesalerContact[];
   onWholesalerContactsChange?: (contacts: WholesalerContact[]) => void;
+  // Connected stores integration
+  currentStoreId: string;
+  connectedStores?: ConnectedStoreData[];
+  onConnectedStoresChange?: (stores: ConnectedStoreData[]) => void;
+  isLoadingConnectedStores?: boolean;
 }
 
 export function QuestionnaireTab({ 
@@ -35,6 +40,10 @@ export function QuestionnaireTab({
   onQuestionnaireChange,
   wholesalerContacts = [],
   onWholesalerContactsChange,
+  currentStoreId,
+  connectedStores = [],
+  onConnectedStoresChange,
+  isLoadingConnectedStores = false,
 }: QuestionnaireTabProps) {
   const [showAddWholesaler, setShowAddWholesaler] = useState(false);
   const [newWholesaler, setNewWholesaler] = useState<WholesalerContact>({
@@ -44,8 +53,8 @@ export function QuestionnaireTab({
   });
 
   const update = (updates: Partial<Questionnaire>) => {
-    // Only update the simplified fields, exclude deprecated wholesalers/clothingSize arrays
-    const { wholesalers, clothingSize, ...rest } = questionnaire;
+    // Only update the simplified fields, exclude deprecated arrays and storeCount
+    const { wholesalers, clothingSize, storeCount, ...rest } = questionnaire;
     onQuestionnaireChange({ ...rest, ...updates });
   };
 
@@ -67,6 +76,14 @@ export function QuestionnaireTab({
 
   return (
     <div className="space-y-6">
+      {/* Connected Stores Section - Replaces manual store count */}
+      <ConnectedStoresSection
+        currentStoreId={currentStoreId}
+        connectedStores={connectedStores}
+        onConnectedStoresChange={onConnectedStoresChange || (() => {})}
+        isLoading={isLoadingConnectedStores}
+      />
+
       {/* Core Questionnaire */}
       <Card>
         <CardHeader>
@@ -79,17 +96,6 @@ export function QuestionnaireTab({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Store Count */}
-          <div className="space-y-2">
-            <Label>How many stores do they have?</Label>
-            <Input
-              type="number"
-              min={1}
-              value={questionnaire.storeCount}
-              onChange={(e) => update({ storeCount: parseInt(e.target.value) || 1 })}
-              className="w-32"
-            />
-          </div>
 
           {/* Security Level */}
           <div className="space-y-2">
