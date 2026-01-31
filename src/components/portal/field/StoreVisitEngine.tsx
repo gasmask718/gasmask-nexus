@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Send, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 
 // Sticker configuration - HARD-LOCKED to 4 brands
@@ -25,6 +26,27 @@ import { NotesTab } from './visit-tabs/NotesTab';
 import { ChangeListTab } from './visit-tabs/ChangeListTab';
 import { VisitHistoryTab } from './visit-tabs/VisitHistoryTab';
 
+// Updated contact interface with shirt size
+interface Contact {
+  id?: string;
+  name: string;
+  role: string;
+  phone: string;
+  responsiveByCall: boolean;
+  responsiveByText: boolean;
+  lastResponded: string | null;
+  notes: string;
+  shirtSize?: string;
+}
+
+// Wholesaler contact interface
+interface WholesalerContact {
+  id?: string;
+  name: string;
+  address: string;
+  phone: string;
+}
+
 export interface StoreVisitData {
   storeId: string;
   storeName: string;
@@ -41,24 +63,15 @@ export interface StoreVisitData {
   }>;
   // Inventory counts
   inventory: Record<string, number>;
-  // Contacts
-  contacts: Array<{
-    id?: string;
-    name: string;
-    role: string;
-    phone: string;
-    responsiveByCall: boolean;
-    responsiveByText: boolean;
-    lastResponded: string | null;
-    notes: string;
-  }>;
-  // Questionnaire
+  // Contacts (now includes shirt size)
+  contacts: Contact[];
+  // Wholesaler contacts (contact-based model)
+  wholesalerContacts: WholesalerContact[];
+  // Questionnaire (simplified - no wholesalers array or clothingSize)
   questionnaire: {
     storeCount: number;
     secureLevel: 'low' | 'medium' | 'high';
     sellsFlowers: boolean;
-    wholesalers: string[];
-    clothingSize: string;
     interestedInCleaning: boolean;
   };
   // Notes
@@ -91,12 +104,11 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
     stickers: initializeStickerDataForAllBrands(), // HARD-LOCKED to 4 approved brands
     inventory: {},
     contacts: [],
+    wholesalerContacts: [],
     questionnaire: {
       storeCount: 1,
       secureLevel: 'medium',
       sellsFlowers: false,
-      wholesalers: [],
-      clothingSize: '',
       interestedInCleaning: false,
     },
     internalNotes: '',
@@ -137,8 +149,6 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
 
         if (brandsData) {
           setBrands(brandsData);
-          // NOTE: Stickers are NOT initialized from DB brands anymore
-          // They are HARD-LOCKED to the 4 approved brands in stickerBrands.ts
         }
 
         // Fetch products
@@ -158,7 +168,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
           setVisitData(prev => ({ ...prev, inventory: initialInventory }));
         }
 
-        // Fetch existing store contacts
+        // Fetch existing store contacts (now with shirt_size)
         const { data: contactsData } = await supabase
           .from('store_contacts')
           .select('*')
@@ -176,11 +186,30 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
               responsiveByText: c.responsive_by_text || false,
               lastResponded: c.last_responded_at,
               notes: c.notes || '',
+              shirtSize: c.shirt_size || '',
             })),
           }));
         }
 
-        // Fetch existing questionnaire
+        // Fetch existing wholesaler contacts
+        const { data: wholesalerData } = await supabase
+          .from('store_wholesaler_contacts')
+          .select('*')
+          .eq('store_id', storeId);
+
+        if (wholesalerData && wholesalerData.length > 0) {
+          setVisitData(prev => ({
+            ...prev,
+            wholesalerContacts: wholesalerData.map(w => ({
+              id: w.id,
+              name: w.name,
+              address: w.address || '',
+              phone: w.phone || '',
+            })),
+          }));
+        }
+
+        // Fetch existing questionnaire (simplified fields only)
         const { data: questionnaireData } = await supabase
           .from('store_questionnaire')
           .select('*')
@@ -194,8 +223,6 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
               storeCount: questionnaireData.total_store_count || 1,
               secureLevel: (questionnaireData.security_level as 'low' | 'medium' | 'high') || 'medium',
               sellsFlowers: questionnaireData.sells_flowers || false,
-              wholesalers: questionnaireData.wholesalers_used || [],
-              clothingSize: questionnaireData.clothing_size || '',
               interestedInCleaning: questionnaireData.interested_cleaning_service || false,
             },
           }));
@@ -258,45 +285,130 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
 
       if (changeListError) throw changeListError;
 
-      // Create change list items for inventory
-      const inventoryChanges = Object.entries(visitData.inventory)
-        .filter(([_, count]) => count > 0)
-        .map(([productId, count]) => ({
-          change_list_id: changeList.id,
-          entity_type: 'inventory',
-          entity_id: productId,
-          field_name: 'quantity',
-          new_value: { count },
-        }));
+      // Build change items - entity_id is now TEXT so string IDs work
+      // Type the items to match what Supabase expects
+      interface ChangeItem {
+        change_list_id: string;
+        entity_type: string;
+        entity_id: string;
+        field_name: string;
+        new_value: { count?: number; value?: unknown };
+      }
+      
+      const changeItems: ChangeItem[] = [];
 
-      // Create change list items for stickers
-      const stickerChanges = Object.entries(visitData.stickers).flatMap(([brandId, stickers]) =>
-        Object.entries(stickers).map(([key, value]) => ({
+      // Inventory changes (product IDs are UUIDs, stored as text)
+      Object.entries(visitData.inventory)
+        .filter(([_, count]) => count > 0)
+        .forEach(([productId, count]) => {
+          changeItems.push({
+            change_list_id: changeList.id,
+            entity_type: 'inventory',
+            entity_id: productId,
+            field_name: 'quantity',
+            new_value: { count },
+          });
+        });
+
+      // Sticker changes (brand IDs are strings like "gasmask")
+      const sanitizedStickers = sanitizeStickerData(visitData.stickers);
+      Object.entries(sanitizedStickers).forEach(([brandId, stickers]) => {
+        Object.entries(stickers).forEach(([key, value]) => {
+          changeItems.push({
+            change_list_id: changeList.id,
+            entity_type: 'stickers',
+            entity_id: brandId, // Now works because entity_id is TEXT
+            field_name: key,
+            new_value: { value },
+          });
+        });
+      });
+
+      // Questionnaire changes (only the 4 simplified fields)
+      Object.entries(visitData.questionnaire).forEach(([key, value]) => {
+        changeItems.push({
           change_list_id: changeList.id,
-          entity_type: 'stickers',
-          entity_id: brandId,
+          entity_type: 'questionnaire',
+          entity_id: storeId,
           field_name: key,
           new_value: { value },
-        }))
-      );
+        });
+      });
 
-      // Create change list items for questionnaire
-      const questionnaireChanges = Object.entries(visitData.questionnaire).map(([key, value]) => ({
-        change_list_id: changeList.id,
-        entity_type: 'questionnaire',
-        entity_id: storeId,
-        field_name: key,
-        new_value: { value },
-      }));
-
-      const allChanges = [...inventoryChanges, ...stickerChanges, ...questionnaireChanges];
-
-      if (allChanges.length > 0) {
+      // Insert change list items - use type assertion for JSON compatibility
+      if (changeItems.length > 0) {
+        const insertData = changeItems.map(item => ({
+          change_list_id: item.change_list_id,
+          entity_type: item.entity_type,
+          entity_id: item.entity_id,
+          field_name: item.field_name,
+          new_value: item.new_value as Json,
+        }));
+        
         const { error: itemsError } = await supabase
           .from('change_list_items')
-          .insert(allChanges);
+          .insert(insertData);
 
         if (itemsError) throw itemsError;
+      }
+
+      // Save contacts directly (with shirt sizes)
+      for (const contact of visitData.contacts) {
+        if (contact.id) {
+          // Update existing contact
+          await supabase
+            .from('store_contacts')
+            .update({
+              name: contact.name,
+              role: contact.role,
+              phone: contact.phone,
+              responsive_by_call: contact.responsiveByCall,
+              responsive_by_text: contact.responsiveByText,
+              notes: contact.notes,
+              shirt_size: contact.shirtSize || null,
+            })
+            .eq('id', contact.id);
+        } else if (contact.name.trim()) {
+          // Insert new contact
+          await supabase
+            .from('store_contacts')
+            .insert({
+              store_id: storeId,
+              name: contact.name,
+              role: contact.role,
+              phone: contact.phone,
+              responsive_by_call: contact.responsiveByCall,
+              responsive_by_text: contact.responsiveByText,
+              notes: contact.notes,
+              shirt_size: contact.shirtSize || null,
+            });
+        }
+      }
+
+      // Save wholesaler contacts directly
+      for (const wholesaler of visitData.wholesalerContacts) {
+        if (wholesaler.id) {
+          // Update existing
+          await supabase
+            .from('store_wholesaler_contacts')
+            .update({
+              name: wholesaler.name,
+              address: wholesaler.address,
+              phone: wholesaler.phone,
+            })
+            .eq('id', wholesaler.id);
+        } else if (wholesaler.name.trim()) {
+          // Insert new
+          await supabase
+            .from('store_wholesaler_contacts')
+            .insert({
+              store_id: storeId,
+              name: wholesaler.name,
+              address: wholesaler.address,
+              phone: wholesaler.phone,
+              created_by: user.id,
+            });
+        }
       }
 
       toast({
@@ -309,7 +421,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
       console.error('Error submitting visit:', error);
       toast({
         title: 'Submission Failed',
-        description: 'Could not submit your changes. Please try again.',
+        description: error instanceof Error ? error.message : 'Could not submit your changes. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -408,6 +520,8 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
             <QuestionnaireTab 
               questionnaire={visitData.questionnaire}
               onQuestionnaireChange={(questionnaire) => updateVisitData({ questionnaire })}
+              wholesalerContacts={visitData.wholesalerContacts}
+              onWholesalerContactsChange={(wholesalerContacts) => updateVisitData({ wholesalerContacts })}
             />
           </TabsContent>
 

@@ -85,22 +85,6 @@ export function ChangeListTab({ visitData, brands, products }: ChangeListTabProp
       newValue: 'Yes',
     });
   }
-  if (visitData.questionnaire.wholesalers.length > 0) {
-    changes.push({
-      category: 'Questionnaire',
-      field: 'Wholesalers',
-      oldValue: '—',
-      newValue: visitData.questionnaire.wholesalers.join(', '),
-    });
-  }
-  if (visitData.questionnaire.clothingSize) {
-    changes.push({
-      category: 'Questionnaire',
-      field: 'Clothing Size',
-      oldValue: '—',
-      newValue: visitData.questionnaire.clothingSize,
-    });
-  }
   if (visitData.questionnaire.interestedInCleaning) {
     changes.push({
       category: 'Questionnaire',
@@ -110,14 +94,27 @@ export function ChangeListTab({ visitData, brands, products }: ChangeListTabProp
     });
   }
 
-  // Contact changes
+  // Wholesaler contact changes (contact-based model)
+  visitData.wholesalerContacts?.forEach((wholesaler, index) => {
+    if (wholesaler.name) {
+      changes.push({
+        category: 'Wholesaler Contacts',
+        field: `Wholesaler #${index + 1}`,
+        oldValue: wholesaler.id ? 'Updated' : 'New',
+        newValue: `${wholesaler.name}${wholesaler.phone ? ` - ${wholesaler.phone}` : ''}`,
+      });
+    }
+  });
+
+  // Contact changes (now includes shirt size)
   visitData.contacts.forEach((contact, index) => {
     if (contact.name) {
+      const shirtInfo = contact.shirtSize ? ` | Shirt: ${contact.shirtSize}` : '';
       changes.push({
         category: 'Contacts',
         field: `Contact #${index + 1}`,
         oldValue: contact.id ? 'Updated' : 'New',
-        newValue: `${contact.name} (${contact.role}) - ${contact.phone}`,
+        newValue: `${contact.name} (${contact.role}) - ${contact.phone}${shirtInfo}`,
       });
     }
   });
