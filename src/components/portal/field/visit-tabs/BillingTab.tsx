@@ -4,13 +4,17 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Separator } from '@/components/ui/separator';
 import { CreditCard, Clock, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { CreateOrderSection, FieldOrder } from './CreateOrderSection';
 
 interface BillingTabProps {
   storeId: string;
   billTo: 'bill' | 'pay_upfront';
   onBillToChange: (value: 'bill' | 'pay_upfront') => void;
+  fieldOrders: FieldOrder[];
+  onFieldOrdersChange: (orders: FieldOrder[]) => void;
 }
 
 interface Invoice {
@@ -22,7 +26,7 @@ interface Invoice {
   brand?: string;
 }
 
-export function BillingTab({ storeId, billTo, onBillToChange }: BillingTabProps) {
+export function BillingTab({ storeId, billTo, onBillToChange, fieldOrders, onFieldOrdersChange }: BillingTabProps) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastOrderDate, setLastOrderDate] = useState<string | null>(null);
@@ -175,6 +179,14 @@ export function BillingTab({ storeId, billTo, onBillToChange }: BillingTabProps)
           )}
         </CardContent>
       </Card>
+
+      <Separator className="my-6" />
+
+      {/* Field Order Creation */}
+      <CreateOrderSection 
+        orders={fieldOrders}
+        onOrdersChange={onFieldOrdersChange}
+      />
     </div>
   );
 }

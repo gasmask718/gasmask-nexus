@@ -25,6 +25,7 @@ import { QuestionnaireTab } from './visit-tabs/QuestionnaireTab';
 import { NotesTab } from './visit-tabs/NotesTab';
 import { ChangeListTab } from './visit-tabs/ChangeListTab';
 import { VisitHistoryTab } from './visit-tabs/VisitHistoryTab';
+import { FieldOrder } from './visit-tabs/CreateOrderSection';
 
 // Updated contact interface with shirt size
 interface Contact {
@@ -72,6 +73,8 @@ export interface StoreVisitData {
   storeAddress: string;
   // Billing
   billTo: 'bill' | 'pay_upfront';
+  // Field orders created during visit
+  fieldOrders: FieldOrder[];
   // Stickers per brand
   stickers: Record<string, {
     frontDoor: boolean;
@@ -121,6 +124,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
     storeName: '',
     storeAddress: '',
     billTo: 'bill',
+    fieldOrders: [], // Field orders created during visit
     stickers: initializeStickerDataForAllBrands(), // HARD-LOCKED to 4 approved brands
     inventory: {},
     contacts: [],
@@ -530,6 +534,60 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
         }
       }
 
+      // Create field orders as invoices with "submitted" status
+      if (visitData.fieldOrders.length > 0) {
+        const { data: userData } = await supabase.auth.getUser();
+        const createdBy = userData?.user?.email || portalType;
+        
+        for (const order of visitData.fieldOrders) {
+          // Generate invoice number
+          const invoiceNumber = `FLD-${Date.now()}-${order.brand_id.slice(0, 4).toUpperCase()}`;
+          
+          // Create invoice with draft status (field orders need review)
+          const { data: invoice, error: invoiceError } = await supabase
+            .from('invoices')
+            .insert({
+              invoice_number: invoiceNumber,
+              store_id: storeId,
+              total_amount: order.subtotal,
+              subtotal: order.subtotal,
+              total: order.subtotal,
+              amount_paid: 0,
+              due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days
+              payment_status: 'unpaid',
+              brand: order.brand_name,
+              notes: order.notes || `Field order created by ${portalType} during store visit`,
+              created_by: createdBy,
+            })
+            .select('id')
+            .single();
+
+          if (invoiceError) {
+            console.error('Error creating invoice:', invoiceError);
+            continue;
+          }
+
+          // Create line items
+          if (invoice) {
+            const lineItems = order.line_items.map(item => ({
+              invoice_id: invoice.id,
+              product_id: item.product_id,
+              product_name: item.product_name,
+              brand: item.brand_name,
+              brand_id: item.brand_id,
+              quantity: item.quantity,
+              unit_type: item.unit_type,
+              unit_price: item.unit_price,
+              total: item.total,
+            }));
+
+            await supabase
+              .from('invoice_line_items')
+              .insert(lineItems);
+          }
+        }
+      }
+
       toast({
         title: 'Visit Submitted',
         description: 'Your changes have been sent to the Change Control Center for review.',
@@ -607,6 +665,8 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
               storeId={storeId!} 
               billTo={visitData.billTo}
               onBillToChange={(value) => updateVisitData({ billTo: value })}
+              fieldOrders={visitData.fieldOrders}
+              onFieldOrdersChange={(fieldOrders) => updateVisitData({ fieldOrders })}
             />
           </TabsContent>
 
