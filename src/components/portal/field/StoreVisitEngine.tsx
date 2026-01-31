@@ -8,6 +8,13 @@ import { ArrowLeft, Send, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// Sticker configuration - HARD-LOCKED to 4 brands
+import { 
+  initializeStickerDataForAllBrands, 
+  sanitizeStickerData,
+  type StickerData 
+} from '@/config/stickerBrands';
+
 // Tab Components
 import { BillingTab } from './visit-tabs/BillingTab';
 import { StickersTab } from './visit-tabs/StickersTab';
@@ -81,7 +88,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
     storeName: '',
     storeAddress: '',
     billTo: 'bill',
-    stickers: {},
+    stickers: initializeStickerDataForAllBrands(), // HARD-LOCKED to 4 approved brands
     inventory: {},
     contacts: [],
     questionnaire: {
@@ -98,7 +105,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
     nextFollowUpDate: null,
   });
 
-  // Fetch store data, brands, and products
+  // Fetch store data, brands (for other sections), and products
   useEffect(() => {
     async function fetchData() {
       if (!storeId) return;
@@ -122,7 +129,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
           }));
         }
 
-        // Fetch brands
+        // Fetch brands (for inventory/other sections, NOT for stickers)
         const { data: brandsData } = await supabase
           .from('brands')
           .select('id, name')
@@ -130,18 +137,8 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
 
         if (brandsData) {
           setBrands(brandsData);
-          // Initialize stickers for each brand
-          const initialStickers: Record<string, any> = {};
-          brandsData.forEach(brand => {
-            initialStickers[brand.id] = {
-              frontDoor: false,
-              authorizedRetailer: false,
-              brandCharacter: false,
-              telephoneNumber: false,
-              notes: '',
-            };
-          });
-          setVisitData(prev => ({ ...prev, stickers: initialStickers }));
+          // NOTE: Stickers are NOT initialized from DB brands anymore
+          // They are HARD-LOCKED to the 4 approved brands in stickerBrands.ts
         }
 
         // Fetch products
@@ -384,7 +381,6 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
 
           <TabsContent value="stickers">
             <StickersTab 
-              brands={brands}
               stickers={visitData.stickers}
               onStickersChange={(stickers) => updateVisitData({ stickers })}
             />
