@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Package, ArrowLeft, Download, CreditCard } from 'lucide-react';
-import { ReceiptStatusIndicator } from '@/components/invoice/ReceiptStatusIndicator';
+import { ReceiptStatusIndicator, InvoiceReceiptPanel } from '@/components/invoice';
 import type { ReceiptStatus } from '@/components/invoice/ReceiptStatusIndicator';
 
 const PortalInvoiceDetail = () => {
@@ -29,7 +29,15 @@ const PortalInvoiceDetail = () => {
       if (!customerId) return null;
       const { data, error } = await supabase
         .from('customer_invoices')
-        .select('*')
+        .select(`
+          *,
+          receipt_status,
+          receipt_sent_at,
+          receipt_delivered_at,
+          receipt_failure_reason,
+          receipt_phone_used,
+          receipt_message_sid
+        `)
         .eq('id', id)
         .eq('customer_id', customerId)
         .single();
@@ -148,6 +156,16 @@ const PortalInvoiceDetail = () => {
             )}
           </div>
         </Card>
+
+        {/* Receipt Delivery Audit Panel */}
+        <InvoiceReceiptPanel
+          receiptStatus={(invoice as any).receipt_status as ReceiptStatus}
+          receiptSentAt={(invoice as any).receipt_sent_at}
+          receiptDeliveredAt={(invoice as any).receipt_delivered_at}
+          receiptFailureReason={(invoice as any).receipt_failure_reason}
+          receiptPhoneUsed={(invoice as any).receipt_phone_used}
+          receiptMessageSid={(invoice as any).receipt_message_sid}
+        />
       </div>
     </div>
   );
