@@ -676,8 +676,11 @@ export default function AppSidebar() {
               <Link to="/portal/wholesaler" className={cn("flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors", isPathActive('/portal/wholesaler') ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40")}>
                 <span>📦 Wholesaler Portal</span>
               </Link>
+              <Link to="/portals/production" className={cn("flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors", isPathActive('/portals/production') ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40")}>
+                <span>🏭 Manufacturing OS</span>
+              </Link>
               <Link to="/portal/production" className={cn("flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors", isPathActive('/portal/production') ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40")}>
-                <span>🏭 Production Portal</span>
+                <span>👷 Worker View</span>
               </Link>
               <Link to="/portal/va" className={cn("flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors", isPathActive('/portal/va') ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40")}>
                 <span>👩‍💼 VA Portal</span>

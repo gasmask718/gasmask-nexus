@@ -1,12 +1,14 @@
 /**
- * PRODUCTION PORTAL PAGE
+ * PRODUCTION PORTAL PAGE (MANUFACTURING OS)
  * 
- * Office-based manufacturing OS with:
+ * The authoritative Production Portal for office managers.
  * - Office selection
- * - Daily KPI dashboard
+ * - Daily KPI dashboard with day status
  * - Batch management
- * - Worker management  
+ * - Worker management & attendance
  * - Tools inventory
+ * - Variance tracking
+ * - Day closeouts
  * - Activity history
  */
 
@@ -21,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   useProductionOffices, 
   useDailyKPIs,
+  useDailyCloseout,
 } from '@/hooks/useProductionPortal';
 import {
   ProductionKPICards,
@@ -63,6 +66,7 @@ export default function ProductionPortalPage() {
   
   const selectedOffice = offices.find(o => o.id === selectedOfficeId);
   const { data: kpis, isLoading: kpisLoading } = useDailyKPIs(selectedOfficeId);
+  const { data: closeout } = useDailyCloseout(selectedOfficeId);
 
   // Auto-select first office when loaded
   if (offices.length > 0 && !selectedOfficeId) {
@@ -73,8 +77,8 @@ export default function ProductionPortalPage() {
 
   return (
     <EnhancedPortalLayout
-      title="Production Portal"
-      subtitle="Manufacturing operations & output tracking"
+      title="Manufacturing OS"
+      subtitle="Office production, variance, and daily closeouts"
       portalIcon={<Factory className="h-4 w-4 text-primary-foreground" />}
       quickActions={[
         { label: 'All Offices', href: '/portals/production/offices' },
@@ -177,9 +181,10 @@ export default function ProductionPortalPage() {
                 toolsTotal: 0,
                 totalDefects: 0,
                 defectRate: 0,
-                isDayClosed: false,
+                isDayClosed: closeout?.is_locked || false,
               }} 
               isLoading={kpisLoading}
+              closedAt={closeout?.closed_at ? format(new Date(closeout.closed_at), 'h:mm a') : undefined}
             />
           </div>
 
