@@ -19,6 +19,11 @@ export interface AmbassadorOrder {
   total: number;
   created_at: string;
   items_count: number;
+  // Receipt status tracking
+  receipt_status?: string | null;
+  receipt_sent_at?: string | null;
+  receipt_phone_used?: string | null;
+  receipt_failure_reason?: string | null;
 }
 
 export interface OrdersMetrics {
@@ -144,6 +149,8 @@ export function useAmbassadorOrders(options?: { channel?: string; status?: strin
           tax,
           total_amount,
           created_at,
+          receipt_status,
+          receipt_sent_at,
           store:store_master!store_id(store_name)
         `)
         .in('store_id', storeIds)
@@ -171,6 +178,8 @@ export function useAmbassadorOrders(options?: { channel?: string; status?: strin
         total: Number(invoice.total_amount || 0),
         created_at: invoice.created_at,
         items_count: 0,
+        receipt_status: invoice.receipt_status,
+        receipt_sent_at: invoice.receipt_sent_at,
       }));
     },
     enabled: storeIds.length > 0 && (!channel || channel === 'all' || channel === 'store'),

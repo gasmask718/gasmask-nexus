@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Package, ArrowLeft, FileText, Search } from 'lucide-react';
+import { ReceiptStatusIndicator } from '@/components/invoice/ReceiptStatusIndicator';
+import type { ReceiptStatus } from '@/components/invoice/ReceiptStatusIndicator';
 
 const PortalInvoices = () => {
   const navigate = useNavigate();
@@ -100,7 +102,13 @@ const PortalInvoices = () => {
                       </p>
                     </div>
                   </div>
-                  {getStatusBadge(invoice.status)}
+                  <div className="flex items-center gap-2">
+                    <ReceiptStatusIndicator
+                      status={(invoice as any).receipt_status as ReceiptStatus}
+                      sentAt={(invoice as any).receipt_sent_at}
+                    />
+                    {getStatusBadge(invoice.status)}
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
