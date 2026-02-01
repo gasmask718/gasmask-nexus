@@ -3,6 +3,7 @@
  * 
  * Create and manage production batches.
  * Track inputs (tobacco, tubes, stickers) and outputs (boxes by brand).
+ * Includes defect category guardrails with warnings.
  */
 
 import { useState } from 'react';
@@ -15,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   useTodayBatches, 
   useCreateBatch, 
@@ -24,7 +26,7 @@ import {
   useProductionWorkers,
   ProductionBatch 
 } from '@/hooks/useProductionPortal';
-import { Boxes, Plus, Play, CheckCircle, XCircle, ChevronRight, Scale, Package } from 'lucide-react';
+import { Boxes, Plus, Play, CheckCircle, XCircle, ChevronRight, Scale, Package, AlertTriangle, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
@@ -46,6 +48,18 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-800', icon: <XCircle className="h-4 w-4" /> },
 };
 
+const DEFECT_CATEGORIES = [
+  { value: 'underfilled', label: 'Underfilled' },
+  { value: 'overfilled', label: 'Overfilled' },
+  { value: 'loose_sticker', label: 'Loose Sticker' },
+  { value: 'torn_tube', label: 'Torn Tube' },
+  { value: 'moisture', label: 'Moisture Damage' },
+  { value: 'contamination', label: 'Contamination' },
+  { value: 'label_misaligned', label: 'Label Misaligned' },
+  { value: 'packaging_damage', label: 'Packaging Damage' },
+  { value: 'other', label: 'Other' },
+];
+
 export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
   const { data: batches = [], isLoading } = useTodayBatches(officeId);
   const { data: workers = [] } = useProductionWorkers(officeId);
@@ -59,7 +73,6 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
     shift_label: 'Morning',
     tobacco_lbs: '',
     tubes_total: '',
-    // Material issuance - per brand
     stickers_issued: {} as Record<string, number>,
     empty_boxes_issued: {} as Record<string, number>,
     workers_present: [] as string[],
@@ -92,7 +105,6 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
     });
   };
 
-  // Helper to update issued materials for a brand
   const updateStickersIssued = (brand: string, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -170,7 +182,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
           ) : (
             <div className="space-y-3">
               {batches.map(batch => {
-                const statusConfig = STATUS_CONFIG[batch.status];
+                const statusConfig = STATUS_CONFIG[batch.status || 'open'];
                 const brandConfig = BRANDS.find(b => b.id === batch.brand);
                 
                 return (
@@ -188,8 +200,8 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                             <Badge variant="outline" className="text-xs">
                               {batch.shift_label}
                             </Badge>
-                            <Badge className={cn('text-xs', statusConfig.color)}>
-                              {statusConfig.label}
+                            <Badge className={cn('text-xs', statusConfig?.color)}>
+                              {statusConfig?.label}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
@@ -198,7 +210,13 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                               {batch.tobacco_lbs ?? 0} lbs
                             </span>
                             <span>{batch.tubes_total?.toLocaleString() || 0} tubes</span>
-                            <span>{batch.boxes_produced || 0} boxes</span>
+                            <span className="text-primary font-medium">{batch.boxes_produced || 0} boxes</span>
+                            {(batch.total_defects || 0) > 0 && (
+                              <span className="text-destructive flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                {batch.total_defects} defects
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -404,6 +422,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
       {selectedBatch && (
         <BatchDetailModal 
           batch={selectedBatch} 
+          officeId={officeId}
           onClose={() => setSelectedBatch(null)} 
         />
       )}
@@ -412,29 +431,18 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
 }
 
 // ============================================================
-// BATCH DETAIL MODAL
+// BATCH DETAIL MODAL WITH DEFECT GUARDRAILS
 // ============================================================
 
 interface BatchDetailModalProps {
   batch: ProductionBatch;
+  officeId: string;
   onClose: () => void;
 }
 
-const DEFECT_CATEGORIES = [
-  { value: 'underfilled', label: 'Underfilled' },
-  { value: 'overfilled', label: 'Overfilled' },
-  { value: 'loose_sticker', label: 'Loose Sticker' },
-  { value: 'torn_tube', label: 'Torn Tube' },
-  { value: 'moisture', label: 'Moisture Damage' },
-  { value: 'contamination', label: 'Contamination' },
-  { value: 'label_misaligned', label: 'Label Misaligned' },
-  { value: 'packaging_damage', label: 'Packaging Damage' },
-  { value: 'other', label: 'Other' },
-];
-
-function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
+function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
   const { data: outputs = [], isLoading } = useBatchOutputs(batch.id);
-  const { data: workers = [] } = useProductionWorkers(batch.office_id || '');
+  const { data: workers = [] } = useProductionWorkers(officeId);
   const recordOutput = useRecordOutput();
   
   const [outputForm, setOutputForm] = useState({
@@ -452,13 +460,22 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
     notes: '',
   });
 
-  // Get workers who are present in this batch
+  const [showDefectWarning, setShowDefectWarning] = useState(false);
+
   const availableWorkers = workers.filter(w => 
     w.status === 'active' && 
-    (batch.workers_present?.includes(w.id) || true) // Show all active workers
+    (batch.workers_present?.includes(w.id) || true)
   );
 
+  const defectsEntered = parseInt(outputForm.defects_count) > 0;
+  const categoryMissing = defectsEntered && !outputForm.defect_category;
+
   const handleRecordOutput = async () => {
+    // Show warning if defects without category, but don't block
+    if (categoryMissing) {
+      setShowDefectWarning(true);
+    }
+    
     const stickersIssued = (batch.stickers_issued as Record<string, number>)?.[outputForm.brand] || 0;
     const boxesIssued = (batch.empty_boxes_issued as Record<string, number>)?.[outputForm.brand] || 0;
     
@@ -494,6 +511,7 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
       sticker_apply_seconds: '',
       notes: '',
     });
+    setShowDefectWarning(false);
   };
 
   // Calculate totals from outputs
@@ -501,10 +519,13 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
   const totalTubes = outputs.reduce((sum, o) => sum + o.tubes_used, 0);
   const totalStickersUsed = outputs.reduce((sum, o) => sum + o.stickers_used, 0);
   const totalEmptyBoxesUsed = outputs.reduce((sum, o) => sum + o.empty_boxes_used, 0);
+  const totalDefects = outputs.reduce((sum, o) => sum + o.defects_count, 0);
 
   // Calculate totals from issued materials
   const totalStickersIssued = Object.values((batch.stickers_issued as Record<string, number>) || {}).reduce((a, b) => a + b, 0);
   const totalEmptyBoxesIssued = Object.values((batch.empty_boxes_issued as Record<string, number>) || {}).reduce((a, b) => a + b, 0);
+
+  const workerMap = new Map(workers.map(w => [w.id, w.full_name]));
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -512,8 +533,8 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Batch Details
-            <Badge className={cn(STATUS_CONFIG[batch.status].color)}>
-              {STATUS_CONFIG[batch.status].label}
+            <Badge className={cn(STATUS_CONFIG[batch.status || 'open'].color)}>
+              {STATUS_CONFIG[batch.status || 'open'].label}
             </Badge>
           </DialogTitle>
         </DialogHeader>
@@ -522,8 +543,8 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
           {/* Issued vs Used - Material Reconciliation */}
           <div className="grid grid-cols-2 gap-4">
             {/* Issued Column */}
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
+            <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+              <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 Issued to Office
               </h4>
@@ -548,8 +569,8 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
             </div>
 
             {/* Used Column */}
-            <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-              <h4 className="font-medium text-emerald-800 mb-3 flex items-center gap-2">
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800">
+              <h4 className="font-medium text-emerald-800 dark:text-emerald-200 mb-3 flex items-center gap-2">
                 <Scale className="h-4 w-4" />
                 Used in Production
               </h4>
@@ -608,6 +629,31 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
             </div>
           </div>
 
+          {/* Defects Summary */}
+          {totalDefects > 0 && (
+            <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
+              <h4 className="font-medium text-red-800 dark:text-red-200 mb-2 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Defects: {totalDefects}
+              </h4>
+              <div className="space-y-1">
+                {outputs.filter(o => o.defects_count > 0).map(o => (
+                  <div key={o.id} className="text-sm flex items-center gap-2">
+                    <Badge variant="destructive" className="text-xs">{o.defects_count}</Badge>
+                    {o.defect_category ? (
+                      <Badge variant="outline" className="text-xs">{o.defect_category}</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                        No Category
+                      </Badge>
+                    )}
+                    <span className="text-muted-foreground">{o.brand}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Recorded Outputs */}
           <div>
             <h4 className="font-medium mb-2">Recorded Outputs by Brand</h4>
@@ -617,7 +663,7 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
               <div className="space-y-2">
                 {outputs.map(output => {
                   const brandConfig = BRANDS.find(b => b.id === output.brand);
-                  const workerName = workers.find(w => w.id === (output as any).worker_id)?.full_name;
+                  const workerName = output.worker_id ? workerMap.get(output.worker_id) : null;
                   return (
                     <div key={output.id} className="p-3 bg-muted/50 rounded border">
                       <div className="flex items-center justify-between mb-2">
@@ -625,7 +671,8 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
                           <div className={cn('w-2 h-2 rounded-full', brandConfig?.color)} />
                           <span className="font-medium">{brandConfig?.label}</span>
                           {workerName && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-xs flex items-center gap-1">
+                              <User className="h-3 w-3" />
                               {workerName}
                             </Badge>
                           )}
@@ -643,8 +690,8 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
                         <span>{output.tubes_used} tubes</span>
                         <span>{output.stickers_used} stickers</span>
                         <span>{output.empty_boxes_used} boxes</span>
-                        {(output as any).defect_category && (
-                          <span className="text-destructive">{(output as any).defect_category}</span>
+                        {output.defect_category && (
+                          <span className="text-destructive">{output.defect_category}</span>
                         )}
                       </div>
                     </div>
@@ -659,10 +706,23 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
             <div className="border-t pt-4">
               <h4 className="font-medium mb-3">Record Output</h4>
               
+              {/* Defect Category Warning */}
+              {showDefectWarning && (
+                <Alert variant="default" className="mb-3 border-amber-200 bg-amber-50 dark:bg-amber-950/30">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-800 dark:text-amber-200">
+                    Recording defects without a category. For better analytics, select a defect category.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* Worker Selection (Required for attribution) */}
               {availableWorkers.length > 0 && (
                 <div className="mb-3">
-                  <Label>Worker (Required for tracking)</Label>
+                  <Label className="flex items-center gap-1">
+                    <User className="h-3 w-3" />
+                    Worker (Required for tracking)
+                  </Label>
                   <Select
                     value={outputForm.worker_id}
                     onValueChange={(value) => setOutputForm({ ...outputForm, worker_id: value })}
@@ -743,7 +803,10 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
                   <Input
                     type="number"
                     value={outputForm.defects_count}
-                    onChange={(e) => setOutputForm({ ...outputForm, defects_count: e.target.value })}
+                    onChange={(e) => {
+                      setOutputForm({ ...outputForm, defects_count: e.target.value });
+                      setShowDefectWarning(false);
+                    }}
                     placeholder="0"
                   />
                 </div>
@@ -773,16 +836,29 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
                 </div>
               </div>
               
-              {/* Defect Details */}
-              {parseInt(outputForm.defects_count) > 0 && (
-                <div className="grid grid-cols-2 gap-3 mt-3">
+              {/* Defect Details - REQUIRED when defects > 0 */}
+              {defectsEntered && (
+                <div className={cn(
+                  "grid grid-cols-2 gap-3 mt-3 p-3 rounded-lg border",
+                  categoryMissing 
+                    ? "border-amber-300 bg-amber-50 dark:bg-amber-950/30" 
+                    : "border-muted"
+                )}>
                   <div>
-                    <Label>Defect Category</Label>
+                    <Label className="flex items-center gap-1">
+                      Defect Category
+                      {categoryMissing && (
+                        <AlertTriangle className="h-3 w-3 text-amber-600" />
+                      )}
+                    </Label>
                     <Select
                       value={outputForm.defect_category}
-                      onValueChange={(value) => setOutputForm({ ...outputForm, defect_category: value })}
+                      onValueChange={(value) => {
+                        setOutputForm({ ...outputForm, defect_category: value });
+                        setShowDefectWarning(false);
+                      }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={categoryMissing ? "border-amber-400" : ""}>
                         <SelectValue placeholder="Select category..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -793,6 +869,11 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                    {categoryMissing && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        Recommended for defect analytics
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>Defect Notes</Label>

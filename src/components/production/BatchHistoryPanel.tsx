@@ -3,6 +3,7 @@
  * 
  * Calendar-navigable batch history with filtering.
  * Supports date ranges, quick filters, and CSV export.
+ * Fetches ALL batches (not just current date) for history view.
  */
 
 import { useState, useMemo } from 'react';
@@ -14,11 +15,14 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { 
-  useProductionBatches, 
   useBatchOutputs,
   ProductionBatch 
 } from '@/hooks/useProductionPortal';
+import { useProductionWorkers } from '@/hooks/useWorkerPerformance';
 import { exportData } from '@/utils/exportUtils';
 import { 
   CalendarDays, 
@@ -30,9 +34,11 @@ import {
   Clock,
   AlertTriangle,
   TrendingUp,
-  Download
+  Download,
+  User,
+  Lock,
 } from 'lucide-react';
-import { format, addDays, subDays, startOfDay, isToday, subWeeks, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { format, addDays, subDays, isToday, subWeeks, subMonths, startOfMonth, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface BatchHistoryPanelProps {
@@ -54,6 +60,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-800' },
 };
 
+type DateRangeMode = 'single' | 'range' | 'all';
+
 const QUICK_FILTERS = [
   { label: 'Today', getValue: () => ({ start: new Date(), end: new Date() }) },
   { label: 'Last 7 Days', getValue: () => ({ start: subWeeks(new Date(), 1), end: new Date() }) },
@@ -61,32 +69,77 @@ const QUICK_FILTERS = [
   { label: 'This Month', getValue: () => ({ start: startOfMonth(new Date()), end: new Date() }) },
 ];
 
+// Hook to fetch ALL batches for history (no date filter)
+function useAllBatches(officeId: string | undefined) {
+  return useQuery({
+    queryKey: ['production-batches-all', officeId],
+    queryFn: async () => {
+      if (!officeId) return [];
+      
+      const { data, error } = await supabase
+        .from('production_batches')
+        .select('*, office:production_offices(id, name)')
+        .eq('office_id', officeId)
+        .order('created_at', { ascending: false })
+        .limit(500); // Get last 500 batches
+      
+      if (error) throw error;
+      return (data || []) as ProductionBatch[];
+    },
+    enabled: !!officeId,
+    staleTime: 1000 * 60, // 1 minute
+  });
+}
+
 export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
+  const [dateRangeMode, setDateRangeMode] = useState<DateRangeMode>('single');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [dateRangeMode, setDateRangeMode] = useState<'single' | 'range'>('single');
-  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [startDate, setStartDate] = useState<Date>(subWeeks(new Date(), 1));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [brandFilter, setBrandFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedBatch, setSelectedBatch] = useState<ProductionBatch | null>(null);
   
-  const { data: batches = [], isLoading } = useProductionBatches(officeId, selectedDate);
+  const { data: allBatches = [], isLoading } = useAllBatches(officeId);
   
-  // Apply client-side filters
-  const filteredBatches = batches.filter(batch => {
-    if (brandFilter !== 'all' && batch.brand !== brandFilter) return false;
-    if (statusFilter !== 'all' && batch.status !== statusFilter) return false;
-    return true;
-  });
+  // Filter batches based on date range mode and filters
+  const filteredBatches = useMemo(() => {
+    return allBatches.filter(batch => {
+      // Date filter
+      if (dateRangeMode === 'single') {
+        const batchDate = batch.batch_date ? new Date(batch.batch_date) : null;
+        if (!batchDate) return false;
+        const targetDateStr = format(selectedDate, 'yyyy-MM-dd');
+        const batchDateStr = format(batchDate, 'yyyy-MM-dd');
+        if (targetDateStr !== batchDateStr) return false;
+      } else if (dateRangeMode === 'range') {
+        const batchDate = batch.batch_date ? new Date(batch.batch_date) : null;
+        if (!batchDate) return false;
+        if (!isWithinInterval(batchDate, { 
+          start: startOfDay(startDate), 
+          end: endOfDay(endDate) 
+        })) return false;
+      }
+      // 'all' mode shows everything
+      
+      // Brand filter
+      if (brandFilter !== 'all' && batch.brand !== brandFilter) return false;
+      
+      // Status filter
+      if (statusFilter !== 'all' && batch.status !== statusFilter) return false;
+      
+      return true;
+    });
+  }, [allBatches, dateRangeMode, selectedDate, startDate, endDate, brandFilter, statusFilter]);
 
-  // Calculate daily summary
-  const dailySummary = {
+  // Calculate summary for visible batches
+  const summary = useMemo(() => ({
     totalBatches: filteredBatches.length,
     totalBoxes: filteredBatches.reduce((sum, b) => sum + (b.boxes_produced || 0), 0),
     totalTubes: filteredBatches.reduce((sum, b) => sum + (b.total_tubes_used || 0), 0),
     totalDefects: filteredBatches.reduce((sum, b) => sum + (b.total_defects || 0), 0),
     totalTobacco: filteredBatches.reduce((sum, b) => sum + (Number(b.tobacco_lbs) || 0), 0),
-  };
+  }), [filteredBatches]);
 
   const navigateDate = (direction: 'prev' | 'next') => {
     setSelectedDate(prev => 
@@ -95,6 +148,41 @@ export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
   };
 
   const goToToday = () => setSelectedDate(new Date());
+
+  const applyQuickFilter = (filter: typeof QUICK_FILTERS[0]) => {
+    const range = filter.getValue();
+    setStartDate(range.start);
+    setEndDate(range.end);
+    setDateRangeMode('range');
+  };
+
+  const handleExport = () => {
+    const exportRows = filteredBatches.map(b => ({
+      date: b.batch_date,
+      brand: b.brand,
+      shift: b.shift_label,
+      status: b.status,
+      tobacco_lbs: b.tobacco_lbs,
+      tubes_issued: b.tubes_total,
+      tubes_used: b.total_tubes_used,
+      boxes_produced: b.boxes_produced,
+      defects: b.total_defects,
+      efficiency_pct: b.efficiency_pct,
+      is_locked: b.is_locked ? 'Yes' : 'No',
+    }));
+    
+    const filename = dateRangeMode === 'single' 
+      ? `production-batches-${format(selectedDate, 'yyyy-MM-dd')}`
+      : dateRangeMode === 'range'
+        ? `production-batches-${format(startDate, 'yyyy-MM-dd')}-to-${format(endDate, 'yyyy-MM-dd')}`
+        : `production-batches-all`;
+    
+    exportData({
+      filename,
+      format: 'csv',
+      data: exportRows,
+    });
+  };
 
   return (
     <>
@@ -106,8 +194,30 @@ export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
               Batch History
             </CardTitle>
             
-            {/* Date Navigation */}
-            <div className="flex items-center gap-2">
+            {/* Export Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={filteredBatches.length === 0}
+              onClick={handleExport}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Export CSV
+            </Button>
+          </div>
+          
+          {/* Date Mode Selector */}
+          <Tabs value={dateRangeMode} onValueChange={(v) => setDateRangeMode(v as DateRangeMode)} className="mt-3">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="single">Single Day</TabsTrigger>
+              <TabsTrigger value="range">Date Range</TabsTrigger>
+              <TabsTrigger value="all">All History</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Date Navigation - Single Mode */}
+          {dateRangeMode === 'single' && (
+            <div className="flex items-center gap-2 mt-3">
               <Button variant="outline" size="icon" onClick={() => navigateDate('prev')}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -122,7 +232,7 @@ export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={selectedDate}
@@ -148,7 +258,58 @@ export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
                 </Button>
               )}
             </div>
-          </div>
+          )}
+
+          {/* Date Range - Range Mode */}
+          {dateRangeMode === 'range' && (
+            <div className="space-y-3 mt-3">
+              <div className="flex flex-wrap gap-2">
+                {QUICK_FILTERS.map(filter => (
+                  <Button
+                    key={filter.label}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applyQuickFilter(filter)}
+                  >
+                    {filter.label}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      {format(startDate, 'MMM d, yyyy')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={(date) => date && setStartDate(date)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <span className="text-muted-foreground">to</span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      {format(endDate, 'MMM d, yyyy')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={(date) => date && setEndDate(date)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          )}
           
           {/* Filters */}
           <div className="flex items-center gap-3 mt-3">
@@ -181,63 +342,43 @@ export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
               </SelectContent>
             </Select>
             
-            {/* Export Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="ml-auto"
-              disabled={filteredBatches.length === 0}
-              onClick={() => {
-                const exportRows = filteredBatches.map(b => ({
-                  date: b.batch_date,
-                  brand: b.brand,
-                  shift: b.shift_label,
-                  status: b.status,
-                  tobacco_lbs: b.tobacco_lbs,
-                  tubes_total: b.tubes_total,
-                  tubes_used: b.total_tubes_used,
-                  boxes_produced: b.boxes_produced,
-                  defects: b.total_defects,
-                  efficiency: b.efficiency_pct,
-                }));
-                exportData({
-                  filename: `production-batches-${format(selectedDate, 'yyyy-MM-dd')}`,
-                  format: 'csv',
-                  data: exportRows,
-                });
-              }}
-            >
-              <Download className="h-4 w-4 mr-1" />
-              Export CSV
-            </Button>
+            {(brandFilter !== 'all' || statusFilter !== 'all') && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => { setBrandFilter('all'); setStatusFilter('all'); }}
+              >
+                Clear
+              </Button>
+            )}
           </div>
         </CardHeader>
         
         <CardContent>
-          {/* Daily Summary */}
+          {/* Summary Stats */}
           <div className="grid grid-cols-5 gap-3 mb-4 p-3 bg-muted/50 rounded-lg">
             <div className="text-center">
-              <p className="text-2xl font-bold">{dailySummary.totalBatches}</p>
+              <p className="text-2xl font-bold">{summary.totalBatches}</p>
               <p className="text-xs text-muted-foreground">Batches</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-primary">{dailySummary.totalBoxes}</p>
+              <p className="text-2xl font-bold text-primary">{summary.totalBoxes}</p>
               <p className="text-xs text-muted-foreground">Boxes</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold">{dailySummary.totalTubes.toLocaleString()}</p>
+              <p className="text-2xl font-bold">{summary.totalTubes.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">Tubes Used</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold">{dailySummary.totalTobacco.toFixed(1)}</p>
+              <p className="text-2xl font-bold">{summary.totalTobacco.toFixed(1)}</p>
               <p className="text-xs text-muted-foreground">Tobacco (lbs)</p>
             </div>
             <div className="text-center">
               <p className={cn(
                 "text-2xl font-bold",
-                dailySummary.totalDefects > 0 ? "text-destructive" : "text-emerald-600"
+                summary.totalDefects > 0 ? "text-destructive" : "text-emerald-600"
               )}>
-                {dailySummary.totalDefects}
+                {summary.totalDefects}
               </p>
               <p className="text-xs text-muted-foreground">Defects</p>
             </div>
@@ -253,7 +394,7 @@ export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
           ) : filteredBatches.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No batches found for {format(selectedDate, 'MMMM d, yyyy')}</p>
+              <p>No batches found for the selected criteria</p>
               {(brandFilter !== 'all' || statusFilter !== 'all') && (
                 <Button variant="link" onClick={() => { setBrandFilter('all'); setStatusFilter('all'); }}>
                   Clear filters
@@ -265,10 +406,11 @@ export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
               <div className="space-y-2 pr-4">
                 {filteredBatches.map(batch => {
                   const brandConfig = BRANDS.find(b => b.id === batch.brand);
-                  const statusConfig = STATUS_CONFIG[batch.status];
-                  const defectRate = batch.total_tubes_used > 0 
+                  const statusConfig = STATUS_CONFIG[batch.status || 'open'];
+                  const defectRate = batch.total_tubes_used && batch.total_tubes_used > 0 
                     ? ((batch.total_defects || 0) / batch.total_tubes_used * 100).toFixed(1)
                     : '0';
+                  const batchDate = batch.batch_date ? new Date(batch.batch_date) : null;
                   
                   return (
                     <div 
@@ -276,7 +418,7 @@ export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
                       className={cn(
                         "p-4 rounded-lg border cursor-pointer transition-colors",
                         "hover:border-primary/50 hover:bg-muted/50",
-                        !isToday(selectedDate) && "opacity-90"
+                        batch.is_locked && "bg-muted/30"
                       )}
                       onClick={() => setSelectedBatch(batch)}
                     >
@@ -288,8 +430,16 @@ export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
                               <span className="font-medium">{brandConfig?.label}</span>
                               <Badge variant="outline" className="text-xs">{batch.shift_label}</Badge>
                               <Badge className={cn('text-xs', statusConfig?.color)}>{statusConfig?.label}</Badge>
+                              {batch.is_locked && (
+                                <Lock className="h-3 w-3 text-muted-foreground" />
+                              )}
                             </div>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                              {batchDate && (
+                                <span className="font-medium">
+                                  {format(batchDate, 'MMM d, yyyy')}
+                                </span>
+                              )}
                               <span className="flex items-center gap-1">
                                 <Scale className="h-3 w-3" />
                                 {batch.tobacco_lbs ?? 0} lbs
@@ -307,7 +457,7 @@ export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
                         </div>
                         
                         <div className="text-right text-sm text-muted-foreground">
-                          <p>{format(new Date(batch.created_at), 'h:mm a')}</p>
+                          <p>{batch.created_at && format(new Date(batch.created_at), 'h:mm a')}</p>
                           {batch.efficiency_pct && (
                             <p className="flex items-center gap-1 text-emerald-600">
                               <TrendingUp className="h-3 w-3" />
@@ -325,11 +475,12 @@ export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
         </CardContent>
       </Card>
       
-      {/* Batch Detail Modal (read-only for past days) */}
+      {/* Batch Detail Modal */}
       {selectedBatch && (
         <BatchHistoryDetailModal 
           batch={selectedBatch}
-          isReadOnly={!isToday(selectedDate)}
+          officeId={officeId}
+          isReadOnly={selectedBatch.is_locked || false}
           onClose={() => setSelectedBatch(null)}
         />
       )}
@@ -338,17 +489,19 @@ export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
 }
 
 // ============================================================
-// BATCH HISTORY DETAIL MODAL (Read-only for past days)
+// BATCH HISTORY DETAIL MODAL (Read-only for locked batches)
 // ============================================================
 
 interface BatchHistoryDetailModalProps {
   batch: ProductionBatch;
+  officeId: string;
   isReadOnly: boolean;
   onClose: () => void;
 }
 
-function BatchHistoryDetailModal({ batch, isReadOnly, onClose }: BatchHistoryDetailModalProps) {
+function BatchHistoryDetailModal({ batch, officeId, isReadOnly, onClose }: BatchHistoryDetailModalProps) {
   const { data: outputs = [] } = useBatchOutputs(batch.id);
+  const { data: workers = [] } = useProductionWorkers(officeId);
   
   // Calculate totals
   const totalBoxes = outputs.reduce((sum, o) => sum + o.boxes_completed, 0);
@@ -362,17 +515,22 @@ function BatchHistoryDetailModal({ batch, isReadOnly, onClose }: BatchHistoryDet
 
   const defectRate = totalTubes > 0 ? (totalDefects / totalTubes * 100).toFixed(2) : '0';
 
+  const workerMap = new Map(workers.map(w => [w.id, w.full_name]));
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Batch Details
-            <Badge className={cn(STATUS_CONFIG[batch.status]?.color)}>
-              {STATUS_CONFIG[batch.status]?.label}
+            <Badge className={cn(STATUS_CONFIG[batch.status || 'open']?.color)}>
+              {STATUS_CONFIG[batch.status || 'open']?.label}
             </Badge>
             {isReadOnly && (
-              <Badge variant="outline" className="ml-2">Read Only</Badge>
+              <Badge variant="outline" className="ml-2 flex items-center gap-1">
+                <Lock className="h-3 w-3" />
+                Read Only
+              </Badge>
             )}
           </DialogTitle>
         </DialogHeader>
@@ -390,56 +548,27 @@ function BatchHistoryDetailModal({ batch, isReadOnly, onClose }: BatchHistoryDet
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Date</p>
-              <p className="font-medium">{format(new Date(batch.batch_date), 'MMM d, yyyy')}</p>
+              <p className="font-medium">
+                {batch.batch_date && format(new Date(batch.batch_date), 'MMM d, yyyy')}
+              </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Created</p>
-              <p className="font-medium">{format(new Date(batch.created_at), 'h:mm a')}</p>
+              <p className="font-medium">
+                {batch.created_at && format(new Date(batch.created_at), 'h:mm a')}
+              </p>
             </div>
           </div>
 
-          {/* Time & Motion Metrics (if recorded) */}
-          {(batch.tobacco_heatup_minutes || batch.avg_tube_fill_seconds || batch.avg_sticker_apply_seconds) && (
-            <div className="p-4 bg-violet-50 rounded-lg border border-violet-200">
-              <h4 className="font-medium text-violet-800 mb-3 flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Time & Motion Metrics
-              </h4>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                {batch.tobacco_heatup_minutes && (
-                  <div>
-                    <p className="text-muted-foreground">Heat-up Time</p>
-                    <p className="text-lg font-bold">{batch.tobacco_heatup_minutes} min</p>
-                  </div>
-                )}
-                {batch.avg_tube_fill_seconds && (
-                  <div>
-                    <p className="text-muted-foreground">Avg Tube Fill</p>
-                    <p className="text-lg font-bold">{batch.avg_tube_fill_seconds} sec</p>
-                  </div>
-                )}
-                {batch.avg_sticker_apply_seconds && (
-                  <div>
-                    <p className="text-muted-foreground">Avg Sticker Apply</p>
-                    <p className="text-lg font-bold">{batch.avg_sticker_apply_seconds} sec</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Issued vs Used */}
+          {/* Issued vs Used - Material Reconciliation */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
+            {/* Issued Column */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+              <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                Issued to Office
+                Issued
               </h4>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tobacco</span>
-                  <span className="font-medium">{batch.tobacco_lbs ?? 0} lbs</span>
-                </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Tubes</span>
                   <span className="font-medium">{(batch.tubes_total || 0).toLocaleString()}</span>
@@ -455,61 +584,83 @@ function BatchHistoryDetailModal({ batch, isReadOnly, onClose }: BatchHistoryDet
               </div>
             </div>
 
-            <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-              <h4 className="font-medium text-emerald-800 mb-3 flex items-center gap-2">
+            {/* Used Column */}
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800">
+              <h4 className="font-medium text-emerald-800 dark:text-emerald-200 mb-3 flex items-center gap-2">
                 <Scale className="h-4 w-4" />
-                Used in Production
+                Used
               </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Boxes Completed</span>
-                  <span className="font-medium text-primary">{totalBoxes.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tubes Used</span>
+                  <span className="text-muted-foreground">Tubes</span>
                   <span className="font-medium">{totalTubes.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Stickers Used</span>
+                  <span className="text-muted-foreground">Stickers</span>
                   <span className="font-medium">{totalStickersUsed.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Empty Boxes Used</span>
+                  <span className="text-muted-foreground">Empty Boxes</span>
                   <span className="font-medium">{totalEmptyBoxesUsed.toLocaleString()}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Defect Summary */}
-          {totalDefects > 0 && (
-            <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-              <h4 className="font-medium text-red-800 mb-3 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                Defect Summary
-              </h4>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-destructive">{totalDefects}</p>
-                  <p className="text-xs text-muted-foreground">Total Defects</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-destructive">{defectRate}%</p>
-                  <p className="text-xs text-muted-foreground">Defect Rate</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{(totalTubes - totalDefects).toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Good Tubes</p>
-                </div>
+          {/* Variance Summary */}
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <h4 className="font-medium mb-2 text-sm">Variance (Issued - Used)</h4>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className={cn(
+                  "text-lg font-bold",
+                  (batch.tubes_total || 0) - totalTubes === 0 ? "text-emerald-600" : 
+                  (batch.tubes_total || 0) - totalTubes > 0 ? "text-amber-600" : "text-red-600"
+                )}>
+                  {((batch.tubes_total || 0) - totalTubes) >= 0 ? '+' : ''}{(batch.tubes_total || 0) - totalTubes}
+                </p>
+                <p className="text-xs text-muted-foreground">Tubes</p>
               </div>
-              
-              {/* Per-output defect reasons */}
-              <div className="mt-3 space-y-1">
-                {outputs.filter(o => o.defects_count > 0).map(output => (
-                  <div key={output.id} className="text-sm flex items-center justify-between p-2 bg-background rounded">
-                    <span>{output.brand}: {output.defects_count} defects</span>
-                    {output.defect_reason && (
-                      <span className="text-muted-foreground italic">{output.defect_reason}</span>
+              <div>
+                <p className={cn(
+                  "text-lg font-bold",
+                  totalStickersIssued - totalStickersUsed === 0 ? "text-emerald-600" : 
+                  totalStickersIssued - totalStickersUsed > 0 ? "text-amber-600" : "text-red-600"
+                )}>
+                  {(totalStickersIssued - totalStickersUsed) >= 0 ? '+' : ''}{totalStickersIssued - totalStickersUsed}
+                </p>
+                <p className="text-xs text-muted-foreground">Stickers</p>
+              </div>
+              <div>
+                <p className={cn(
+                  "text-lg font-bold",
+                  totalEmptyBoxesIssued - totalEmptyBoxesUsed === 0 ? "text-emerald-600" : 
+                  totalEmptyBoxesIssued - totalEmptyBoxesUsed > 0 ? "text-amber-600" : "text-red-600"
+                )}>
+                  {(totalEmptyBoxesIssued - totalEmptyBoxesUsed) >= 0 ? '+' : ''}{totalEmptyBoxesIssued - totalEmptyBoxesUsed}
+                </p>
+                <p className="text-xs text-muted-foreground">Empty Boxes</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Defects Summary */}
+          {totalDefects > 0 && (
+            <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
+              <h4 className="font-medium text-red-800 dark:text-red-200 mb-2 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Defects: {totalDefects} ({defectRate}%)
+              </h4>
+              <div className="space-y-1">
+                {outputs.filter(o => o.defects_count > 0).map(o => (
+                  <div key={o.id} className="text-sm flex items-center gap-2">
+                    <Badge variant="destructive" className="text-xs">{o.defects_count}</Badge>
+                    {o.defect_category && (
+                      <Badge variant="outline" className="text-xs">{o.defect_category}</Badge>
+                    )}
+                    <span className="text-muted-foreground">{o.brand}</span>
+                    {o.defect_reason && (
+                      <span className="text-muted-foreground">— {o.defect_reason}</span>
                     )}
                   </div>
                 ))}
@@ -517,29 +668,69 @@ function BatchHistoryDetailModal({ batch, isReadOnly, onClose }: BatchHistoryDet
             </div>
           )}
 
-          {/* Outputs by Brand */}
+          {/* Time & Motion Metrics */}
+          {(batch.avg_tube_fill_seconds || batch.avg_sticker_apply_seconds) && (
+            <div className="p-4 bg-violet-50 dark:bg-violet-950/30 rounded-lg border border-violet-200 dark:border-violet-800">
+              <h4 className="font-medium text-violet-800 dark:text-violet-200 mb-3 flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Time & Motion
+              </h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                {batch.avg_tube_fill_seconds && (
+                  <div>
+                    <p className="text-muted-foreground">Avg Tube Fill</p>
+                    <p className="text-lg font-bold">{batch.avg_tube_fill_seconds}s</p>
+                  </div>
+                )}
+                {batch.avg_sticker_apply_seconds && (
+                  <div>
+                    <p className="text-muted-foreground">Avg Sticker Apply</p>
+                    <p className="text-lg font-bold">{batch.avg_sticker_apply_seconds}s</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Output Records with Worker Attribution */}
           <div>
-            <h4 className="font-medium mb-2">Outputs by Brand</h4>
+            <h4 className="font-medium mb-2">Output Records</h4>
             {outputs.length === 0 ? (
               <p className="text-sm text-muted-foreground">No outputs recorded.</p>
             ) : (
               <div className="space-y-2">
                 {outputs.map(output => {
                   const brandConfig = BRANDS.find(b => b.id === output.brand);
+                  const workerName = output.worker_id ? workerMap.get(output.worker_id) : null;
+                  
                   return (
-                    <div key={output.id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                      <div className="flex items-center gap-2">
-                        <div className={cn('w-2 h-2 rounded-full', brandConfig?.color)} />
-                        <span className="font-medium">{brandConfig?.label}</span>
+                    <div key={output.id} className="p-3 bg-muted/50 rounded border">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={cn('w-2 h-2 rounded-full', brandConfig?.color)} />
+                          <span className="font-medium">{brandConfig?.label}</span>
+                          {workerName && (
+                            <Badge variant="outline" className="text-xs flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {workerName}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-primary font-medium">{output.boxes_completed} boxes</span>
+                          {output.defects_count > 0 && (
+                            <Badge variant="destructive" className="text-xs">
+                              {output.defects_count} defects
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span>{output.boxes_completed} boxes</span>
+                      <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
                         <span>{output.tubes_used} tubes</span>
                         <span>{output.stickers_used} stickers</span>
-                        {output.defects_count > 0 && (
-                          <Badge variant="destructive" className="text-xs">
-                            {output.defects_count} defects
-                          </Badge>
+                        <span>{output.empty_boxes_used} boxes</span>
+                        {output.defect_category && (
+                          <span className="text-destructive">{output.defect_category}</span>
                         )}
                       </div>
                     </div>
@@ -548,10 +739,35 @@ function BatchHistoryDetailModal({ batch, isReadOnly, onClose }: BatchHistoryDet
               </div>
             )}
           </div>
+
+          {/* Output Results */}
+          <div className="p-3 bg-primary/5 rounded-lg">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-2xl font-bold text-primary">{totalBoxes}</p>
+                <p className="text-xs text-muted-foreground">Boxes Completed</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{batch.efficiency_pct || 0}%</p>
+                <p className="text-xs text-muted-foreground">Efficiency</p>
+              </div>
+              <div>
+                <p className={cn(
+                  "text-2xl font-bold",
+                  totalDefects > 0 ? "text-destructive" : "text-emerald-600"
+                )}>
+                  {defectRate}%
+                </p>
+                <p className="text-xs text-muted-foreground">Defect Rate</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
