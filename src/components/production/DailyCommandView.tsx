@@ -10,6 +10,7 @@
  * - Top contributors today
  * - Soft alerts with manager prompts
  * - Today's Worker Grid (clickable, opens profile dialog)
+ * - Scenario Planning (what-if simulation)
  */
 
 import { useState, useMemo } from 'react';
@@ -61,6 +62,15 @@ import { format, differenceInDays } from 'date-fns';
 import { WorkerProfileDialog } from './performance/WorkerProfileDialog';
 import { ProductionWorker } from '@/hooks/useProductionPortal';
 import { generateSoftAlerts, SoftAlertPanel } from './alerts';
+import {
+  useScenarioSimulation,
+  ScenarioToggle,
+  ScenarioBanner,
+  ScenarioControlsPanel,
+  ScenarioOutputPanel,
+  WorkerImpactPanel,
+  ScenarioComparison,
+} from './scenario';
 
 interface DailyCommandViewProps {
   officeId: string;
@@ -248,6 +258,16 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
     });
   }, [profiles, presentWorkerIds, communicationStats, targetBoxes, throughputMetrics.totalCapacity]);
 
+  // Scenario Planning Simulation Hook
+  const scenario = useScenarioSimulation({
+    profiles,
+    workers,
+    presentWorkerIds,
+    targetBoxes,
+    boxesCompleted: throughputMetrics.totalBoxesToday,
+    defaultBoxesPerHour,
+  });
+
   const handleWorkerClick = (enriched: EnrichedWorker) => {
     setSelectedWorker({ profile: enriched.profile, worker: enriched.worker });
     setDialogOpen(true);
@@ -283,6 +303,11 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
   return (
     <TooltipProvider>
       <div className="space-y-6">
+        {/* Scenario Mode Banner */}
+        {scenario.isScenarioMode && (
+          <ScenarioBanner onExit={scenario.exitScenarioMode} />
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -293,27 +318,76 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
             <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
               <Clock className="h-4 w-4" />
               {format(today, 'EEEE, MMMM d, yyyy')}
-              <Badge variant="outline" className="ml-2 text-xs">
-                <Info className="h-3 w-3 mr-1" />
-                Live View
-              </Badge>
+              {!scenario.isScenarioMode && (
+                <Badge variant="outline" className="ml-2 text-xs">
+                  <Info className="h-3 w-3 mr-1" />
+                  Live View
+                </Badge>
+              )}
             </p>
           </div>
+          <ScenarioToggle
+            isActive={scenario.isScenarioMode}
+            onEnter={scenario.enterScenarioMode}
+            onExit={scenario.exitScenarioMode}
+          />
         </div>
 
-        {/* Data Governance Notice */}
-        <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 flex items-center gap-2">
-          <Shield className="h-4 w-4" />
-          Metrics are rolling 7-day indicators for operational planning, not disciplinary decisions.
-        </div>
+        {/* Data Governance Notice (hide in scenario mode) */}
+        {!scenario.isScenarioMode && (
+          <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Metrics are rolling 7-day indicators for operational planning, not disciplinary decisions.
+          </div>
+        )}
 
-        {/* Soft Alert Panel with Manager Prompts */}
-        <SoftAlertPanel 
-          alerts={softAlerts} 
-          maxVisible={3} 
-        />
+        {/* Soft Alert Panel with Manager Prompts (hide in scenario mode) */}
+        {!scenario.isScenarioMode && (
+          <SoftAlertPanel 
+            alerts={softAlerts} 
+            maxVisible={3} 
+          />
+        )}
 
-        {/* Main Stats Grid */}
+        {/* Scenario Planning Layout */}
+        {scenario.isScenarioMode ? (
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Left Column: Controls */}
+            <div className="space-y-4">
+              <ScenarioControlsPanel
+                workers={scenario.simulationWorkers}
+                inputs={scenario.inputs}
+                onUpdateWorkerPresence={scenario.updateWorkerPresence}
+                onUpdateWorkerRate={scenario.updateWorkerRate}
+                onUpdateGlobalModifiers={scenario.updateGlobalModifiers}
+                onUpdateTimeConstraints={scenario.updateTimeConstraints}
+                onReset={scenario.exitScenarioMode}
+              />
+              <ScenarioComparison
+                savedScenarios={scenario.savedScenarios}
+                baseline={scenario.baseline}
+                currentSimulated={scenario.simulatedOutput}
+                onSave={scenario.saveScenario}
+                onDelete={scenario.deleteScenario}
+                onLoad={scenario.loadScenario}
+              />
+            </div>
+
+            {/* Right Column: Output & Impacts */}
+            <div className="lg:col-span-2 space-y-4">
+              <ScenarioOutputPanel
+                baseline={scenario.baseline}
+                simulated={scenario.simulatedOutput}
+                targetBoxes={targetBoxes}
+                boxesCompleted={throughputMetrics.totalBoxesToday}
+                isScenarioMode={true}
+              />
+              <WorkerImpactPanel impacts={scenario.workerImpacts} />
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Main Stats Grid */}
         <div className="grid md:grid-cols-4 gap-4">
           {/* Workers Present */}
           <Card>
@@ -652,6 +726,8 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
             </CardContent>
           </Card>
         </div>
+          </>
+        )}
 
         {/* Worker Profile Dialog */}
         <WorkerProfileDialog
