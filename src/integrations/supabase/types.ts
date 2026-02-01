@@ -22913,7 +22913,10 @@ export type Database = {
           partial_amount: number | null
           payment_method: string | null
           payment_status: string
+          receipt_delivered_at: string | null
+          receipt_failure_reason: string | null
           receipt_message_sid: string | null
+          receipt_phone_used: string | null
           receipt_sent_at: string | null
           receipt_status: string | null
           received_by: string | null
@@ -22942,7 +22945,10 @@ export type Database = {
           partial_amount?: number | null
           payment_method?: string | null
           payment_status?: string
+          receipt_delivered_at?: string | null
+          receipt_failure_reason?: string | null
           receipt_message_sid?: string | null
+          receipt_phone_used?: string | null
           receipt_sent_at?: string | null
           receipt_status?: string | null
           received_by?: string | null
@@ -22971,7 +22977,10 @@ export type Database = {
           partial_amount?: number | null
           payment_method?: string | null
           payment_status?: string
+          receipt_delivered_at?: string | null
+          receipt_failure_reason?: string | null
           receipt_message_sid?: string | null
+          receipt_phone_used?: string | null
           receipt_sent_at?: string | null
           receipt_status?: string | null
           received_by?: string | null
