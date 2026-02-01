@@ -420,8 +420,21 @@ interface BatchDetailModalProps {
   onClose: () => void;
 }
 
+const DEFECT_CATEGORIES = [
+  { value: 'underfilled', label: 'Underfilled' },
+  { value: 'overfilled', label: 'Overfilled' },
+  { value: 'loose_sticker', label: 'Loose Sticker' },
+  { value: 'torn_tube', label: 'Torn Tube' },
+  { value: 'moisture', label: 'Moisture Damage' },
+  { value: 'contamination', label: 'Contamination' },
+  { value: 'label_misaligned', label: 'Label Misaligned' },
+  { value: 'packaging_damage', label: 'Packaging Damage' },
+  { value: 'other', label: 'Other' },
+];
+
 function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
   const { data: outputs = [], isLoading } = useBatchOutputs(batch.id);
+  const { data: workers = [] } = useProductionWorkers(batch.office_id || '');
   const recordOutput = useRecordOutput();
   
   const [outputForm, setOutputForm] = useState({
@@ -431,12 +444,21 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
     stickers_used: '',
     empty_boxes_used: '',
     defects_count: '',
+    defect_category: '',
     defect_reason: '',
+    worker_id: '',
+    tube_fill_seconds: '',
+    sticker_apply_seconds: '',
     notes: '',
   });
 
+  // Get workers who are present in this batch
+  const availableWorkers = workers.filter(w => 
+    w.status === 'active' && 
+    (batch.workers_present?.includes(w.id) || true) // Show all active workers
+  );
+
   const handleRecordOutput = async () => {
-    // Get issued values for the selected brand from the batch
     const stickersIssued = (batch.stickers_issued as Record<string, number>)?.[outputForm.brand] || 0;
     const boxesIssued = (batch.empty_boxes_issued as Record<string, number>)?.[outputForm.brand] || 0;
     
@@ -448,7 +470,11 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
       stickers_used: parseInt(outputForm.stickers_used) || 0,
       empty_boxes_used: parseInt(outputForm.empty_boxes_used) || 0,
       defects_count: parseInt(outputForm.defects_count) || 0,
+      defect_category: outputForm.defect_category || null,
       defect_reason: outputForm.defect_reason || null,
+      worker_id: outputForm.worker_id || null,
+      tube_fill_seconds: parseFloat(outputForm.tube_fill_seconds) || null,
+      sticker_apply_seconds: parseFloat(outputForm.sticker_apply_seconds) || null,
       notes: outputForm.notes || null,
       stickers_issued: stickersIssued,
       empty_boxes_issued: boxesIssued,
@@ -461,7 +487,11 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
       stickers_used: '',
       empty_boxes_used: '',
       defects_count: '',
+      defect_category: '',
       defect_reason: '',
+      worker_id: '',
+      tube_fill_seconds: '',
+      sticker_apply_seconds: '',
       notes: '',
     });
   };
@@ -587,21 +617,34 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
               <div className="space-y-2">
                 {outputs.map(output => {
                   const brandConfig = BRANDS.find(b => b.id === output.brand);
+                  const workerName = workers.find(w => w.id === (output as any).worker_id)?.full_name;
                   return (
-                    <div key={output.id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                      <div className="flex items-center gap-2">
-                        <div className={cn('w-2 h-2 rounded-full', brandConfig?.color)} />
-                        <span className="font-medium">{brandConfig?.label}</span>
+                    <div key={output.id} className="p-3 bg-muted/50 rounded border">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={cn('w-2 h-2 rounded-full', brandConfig?.color)} />
+                          <span className="font-medium">{brandConfig?.label}</span>
+                          {workerName && (
+                            <Badge variant="outline" className="text-xs">
+                              {workerName}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-primary font-medium">{output.boxes_completed} boxes</span>
+                          {output.defects_count > 0 && (
+                            <Badge variant="destructive" className="text-xs">
+                              {output.defects_count} defects
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span>{output.boxes_completed} boxes</span>
+                      <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
                         <span>{output.tubes_used} tubes</span>
                         <span>{output.stickers_used} stickers</span>
                         <span>{output.empty_boxes_used} boxes</span>
-                        {output.defects_count > 0 && (
-                          <Badge variant="destructive" className="text-xs">
-                            {output.defects_count} defects
-                          </Badge>
+                        {(output as any).defect_category && (
+                          <span className="text-destructive">{(output as any).defect_category}</span>
                         )}
                       </div>
                     </div>
@@ -615,6 +658,29 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
           {batch.status !== 'completed' && batch.status !== 'cancelled' && (
             <div className="border-t pt-4">
               <h4 className="font-medium mb-3">Record Output</h4>
+              
+              {/* Worker Selection (Required for attribution) */}
+              {availableWorkers.length > 0 && (
+                <div className="mb-3">
+                  <Label>Worker (Required for tracking)</Label>
+                  <Select
+                    value={outputForm.worker_id}
+                    onValueChange={(value) => setOutputForm({ ...outputForm, worker_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select worker..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableWorkers.map(worker => (
+                        <SelectItem key={worker.id} value={worker.id}>
+                          {worker.full_name} ({worker.role})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <Label>Brand</Label>
@@ -682,16 +748,63 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
                   />
                 </div>
               </div>
-              {parseInt(outputForm.defects_count) > 0 && (
-                <div className="mt-3">
-                  <Label>Defect Reason</Label>
+              
+              {/* Time & Motion (Optional) */}
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <div>
+                  <Label>Avg Tube Fill (seconds)</Label>
                   <Input
-                    value={outputForm.defect_reason}
-                    onChange={(e) => setOutputForm({ ...outputForm, defect_reason: e.target.value })}
-                    placeholder="Describe the defect reason..."
+                    type="number"
+                    step="0.1"
+                    value={outputForm.tube_fill_seconds}
+                    onChange={(e) => setOutputForm({ ...outputForm, tube_fill_seconds: e.target.value })}
+                    placeholder="Optional"
                   />
                 </div>
+                <div>
+                  <Label>Avg Sticker Apply (seconds)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={outputForm.sticker_apply_seconds}
+                    onChange={(e) => setOutputForm({ ...outputForm, sticker_apply_seconds: e.target.value })}
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+              
+              {/* Defect Details */}
+              {parseInt(outputForm.defects_count) > 0 && (
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <Label>Defect Category</Label>
+                    <Select
+                      value={outputForm.defect_category}
+                      onValueChange={(value) => setOutputForm({ ...outputForm, defect_category: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DEFECT_CATEGORIES.map(cat => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Defect Notes</Label>
+                    <Input
+                      value={outputForm.defect_reason}
+                      onChange={(e) => setOutputForm({ ...outputForm, defect_reason: e.target.value })}
+                      placeholder="Additional details..."
+                    />
+                  </div>
+                </div>
               )}
+              
               <Button 
                 className="mt-3" 
                 onClick={handleRecordOutput}
