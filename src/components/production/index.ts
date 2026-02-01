@@ -25,3 +25,6 @@ export { DailyCommandView } from './DailyCommandView';
 
 // Soft Alert System
 export * from './alerts';
+
+// Scenario Planning (What-If Simulation)
+export * from './scenario';
