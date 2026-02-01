@@ -1,0 +1,503 @@
+/**
+ * Floor 8 — Ambassador Profile (Admin View)
+ * Individual accountability + growth intelligence
+ * Tabs: Overview, Stores, Commissions, Payouts, Communication
+ */
+import { useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import {
+  ArrowLeft, User, MapPin, Phone, Mail, Store, DollarSign,
+  TrendingUp, TrendingDown, Minus, MessageSquare, Activity,
+  AlertTriangle, CheckCircle2, Clock, Building2, Wallet, Star
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import Layout from '@/components/Layout';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
+import { cn } from '@/lib/utils';
+
+export default function AmbassadorProfilePage() {
+  const { ambassadorId } = useParams<{ ambassadorId: string }>();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('overview');
+
+  // Fetch ambassador profile
+  const { data: ambassador, isLoading } = useQuery({
+    queryKey: ['floor8-ambassador-profile', ambassadorId],
+    queryFn: async () => {
+      if (!ambassadorId) return null;
+      const { data, error } = await supabase
+        .from('ambassadors')
+        .select(`
+          *,
+          profiles:user_id (name, email, avatar_url)
+        `)
+        .eq('id', ambassadorId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!ambassadorId,
+  });
+
+  // Fetch assigned stores
+  const { data: stores = [] } = useQuery({
+    queryKey: ['floor8-ambassador-stores', ambassadorId],
+    queryFn: async () => {
+      if (!ambassadorId) return [];
+      const { data, error } = await supabase
+        .from('ambassador_assignments')
+        .select(`
+          *,
+          store:store_id (id, store_name, city, neighborhood, status)
+        `)
+        .eq('ambassador_id', ambassadorId)
+        .eq('active', true)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!ambassadorId,
+  });
+
+  // Fetch commission events
+  const { data: commissions = [] } = useQuery({
+    queryKey: ['floor8-ambassador-commissions', ambassadorId],
+    queryFn: async () => {
+      if (!ambassadorId) return [];
+      const { data, error } = await supabase
+        .from('commission_events')
+        .select('*')
+        .eq('ambassador_id', ambassadorId)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!ambassadorId,
+  });
+
+  // Payouts are derived from paid commissions
+  const payouts = commissions.filter(c => c.status === 'paid');
+
+  // Fetch communications
+  const { data: communications = [] } = useQuery({
+    queryKey: ['floor8-ambassador-communications', ambassadorId],
+    queryFn: async () => {
+      if (!ambassadorId) return [];
+      const { data, error } = await supabase
+        .from('communications')
+        .select('*')
+        .eq('entity_type', 'ambassador')
+        .eq('entity_id', ambassadorId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!ambassadorId,
+  });
+
+  // Calculate metrics
+  const pendingCommissions = commissions.filter(c => c.status === 'pending');
+  const paidCommissions = commissions.filter(c => c.status === 'paid');
+  const totalPending = pendingCommissions.reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
+  const totalPaid = paidCommissions.reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
+  const totalRevenue = commissions.reduce((sum, c) => sum + Number(c.gross_amount || 0), 0);
+  const activeStores = stores.filter(s => s.active).length;
+
+  // Calculate trend (based on last 30 days vs previous 30 days)
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+  
+  const recentCommissions = commissions.filter(c => new Date(c.created_at) >= thirtyDaysAgo);
+  const previousCommissions = commissions.filter(c => 
+    new Date(c.created_at) >= sixtyDaysAgo && new Date(c.created_at) < thirtyDaysAgo
+  );
+  
+  let trend: 'improving' | 'stable' | 'declining' = 'stable';
+  if (recentCommissions.length > previousCommissions.length * 1.2) trend = 'improving';
+  else if (recentCommissions.length < previousCommissions.length * 0.8) trend = 'declining';
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center p-12">
+          <div className="animate-pulse text-muted-foreground">Loading ambassador...</div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!ambassador) {
+    return (
+      <Layout>
+        <div className="text-center py-12">
+          <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
+          <h2 className="text-xl font-bold mb-2">Ambassador Not Found</h2>
+          <Button onClick={() => navigate('/ambassadors')}>Back to Ambassadors</Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  const displayName = ambassador.name || ambassador.profiles?.name || 'Ambassador';
+  const territory = [ambassador.neighborhood, ambassador.city, ambassador.state].filter(Boolean).join(', ');
+
+  const TrendIcon = trend === 'improving' ? TrendingUp : trend === 'declining' ? TrendingDown : Minus;
+  const trendColor = trend === 'improving' ? 'text-green-500' : trend === 'declining' ? 'text-red-500' : 'text-muted-foreground';
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/ambassadors')}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-1">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">{displayName}</h1>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  {territory && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-4 w-4" /> {territory}
+                    </span>
+                  )}
+                  <Badge variant={ambassador.is_active ? 'default' : 'secondary'}>
+                    {ambassador.is_active ? 'Active' : 'Paused'}
+                  </Badge>
+                  <Badge variant="outline" className="capitalize">{ambassador.tier || 'starter'}</Badge>
+                  <TrendIcon className={cn('h-4 w-4', trendColor)} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-sm text-muted-foreground">Stores Acquired</div>
+              <div className="text-2xl font-bold">{stores.length}</div>
+              <div className="text-xs text-muted-foreground">{activeStores} active</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-sm text-muted-foreground">Revenue Generated</div>
+              <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-sm text-muted-foreground">Pending Payout</div>
+              <div className="text-2xl font-bold text-amber-500">${totalPending.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-sm text-muted-foreground">Total Paid</div>
+              <div className="text-2xl font-bold text-green-500">${totalPaid.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-sm text-muted-foreground">Trend</div>
+              <div className="flex items-center gap-2">
+                <TrendIcon className={cn('h-5 w-5', trendColor)} />
+                <span className={cn('font-semibold capitalize', trendColor)}>{trend}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="stores">Stores ({stores.length})</TabsTrigger>
+            <TabsTrigger value="commissions">Commissions ({commissions.length})</TabsTrigger>
+            <TabsTrigger value="payouts">Payouts</TabsTrigger>
+            <TabsTrigger value="communication">Communication</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="mt-4">
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Contact Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {ambassador.phone_primary && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50">
+                      <Phone className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Phone</p>
+                        <ClickablePhone 
+                          phone={ambassador.phone_primary}
+                          entityType="ambassador"
+                          entityId={ambassadorId!}
+                          entityName={displayName}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {ambassador.profiles?.email && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg">
+                      <Mail className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p>{ambassador.profiles.email}</p>
+                      </div>
+                    </div>
+                  )}
+                  {ambassador.tracking_code && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                      <Star className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Tracking Code</p>
+                        <p className="font-mono">{ambassador.tracking_code}</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Performance Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Earnings</span>
+                    <span className="font-bold">${Number(ambassador.total_earnings || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Attribution Confidence</span>
+                    <Badge variant="outline">High</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Last Activity</span>
+                    <span>{commissions[0] ? format(new Date(commissions[0].created_at), 'MMM d, yyyy') : 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Member Since</span>
+                    <span>{format(new Date(ambassador.created_at), 'MMM d, yyyy')}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="stores" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Acquired Stores</CardTitle>
+                <CardDescription>All stores attributed to this ambassador</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {stores.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Store className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No stores acquired yet</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Store</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Acquired</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {stores.map((assignment: any) => (
+                        <TableRow 
+                          key={assignment.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => navigate(`/stores/${assignment.store?.id}`)}
+                        >
+                          <TableCell className="font-medium">
+                            {assignment.store?.store_name || 'Unknown Store'}
+                          </TableCell>
+                          <TableCell>
+                            {assignment.store?.city}, {assignment.store?.neighborhood}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={assignment.active ? 'default' : 'secondary'}>
+                              {assignment.store?.status || 'active'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(assignment.created_at), 'MMM d, yyyy')}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="commissions" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Commission Events</CardTitle>
+                <CardDescription>All commission transactions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {commissions.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No commissions yet</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Gross Amount</TableHead>
+                        <TableHead>Commission</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {commissions.map((comm: any) => (
+                        <TableRow key={comm.id}>
+                          <TableCell>
+                            {format(new Date(comm.created_at), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{comm.source_type || 'order'}</Badge>
+                          </TableCell>
+                          <TableCell>${Number(comm.gross_amount || 0).toFixed(2)}</TableCell>
+                          <TableCell className="font-bold">
+                            ${Number(comm.commission_amount || 0).toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={comm.status === 'paid' ? 'default' : comm.status === 'pending' ? 'secondary' : 'destructive'}
+                            >
+                              {comm.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="payouts" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Payout History</CardTitle>
+                <CardDescription>All payouts to this ambassador</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {payouts.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Wallet className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No payouts yet</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Period</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Method</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {payouts.map((payout: any) => (
+                        <TableRow key={payout.id}>
+                          <TableCell>
+                            {format(new Date(payout.created_at), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell>{payout.period || 'N/A'}</TableCell>
+                          <TableCell className="font-bold">${Number(payout.amount || 0).toFixed(2)}</TableCell>
+                          <TableCell>{payout.method || 'N/A'}</TableCell>
+                          <TableCell>
+                            <Badge variant={payout.status === 'paid' ? 'default' : 'secondary'}>
+                              {payout.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="communication" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Communication Log</CardTitle>
+                <CardDescription>SMS, WhatsApp, and call history</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {communications.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No communication history</p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[400px]">
+                    <div className="space-y-3">
+                      {communications.map((comm: any) => (
+                        <div 
+                          key={comm.id}
+                          className={cn(
+                            "p-4 rounded-lg border",
+                            comm.direction === 'outbound' ? 'bg-primary/5 ml-8' : 'bg-muted/30 mr-8'
+                          )}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <Badge variant="outline">{comm.channel}</Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(comm.created_at), 'MMM d, h:mm a')}
+                            </span>
+                          </div>
+                          <p className="text-sm">{comm.message_body}</p>
+                          {comm.status && (
+                            <Badge variant="secondary" className="mt-2 text-xs">
+                              {comm.status}
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </Layout>
+  );
+}
