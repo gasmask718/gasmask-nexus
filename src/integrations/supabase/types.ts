@@ -31422,7 +31422,8 @@ export type Database = {
       }
       production_worker_attendance: {
         Row: {
-          batch_id: string
+          attendance_date: string | null
+          batch_id: string | null
           check_in_at: string | null
           check_out_at: string | null
           checked_in_at: string | null
@@ -31431,13 +31432,15 @@ export type Database = {
           hours_worked: number | null
           id: string
           notes: string | null
+          office_id: string | null
           recorded_by: string | null
           role_during_shift: string | null
           shift_label: string | null
           worker_id: string
         }
         Insert: {
-          batch_id: string
+          attendance_date?: string | null
+          batch_id?: string | null
           check_in_at?: string | null
           check_out_at?: string | null
           checked_in_at?: string | null
@@ -31446,13 +31449,15 @@ export type Database = {
           hours_worked?: number | null
           id?: string
           notes?: string | null
+          office_id?: string | null
           recorded_by?: string | null
           role_during_shift?: string | null
           shift_label?: string | null
           worker_id: string
         }
         Update: {
-          batch_id?: string
+          attendance_date?: string | null
+          batch_id?: string | null
           check_in_at?: string | null
           check_out_at?: string | null
           checked_in_at?: string | null
@@ -31461,6 +31466,7 @@ export type Database = {
           hours_worked?: number | null
           id?: string
           notes?: string | null
+          office_id?: string | null
           recorded_by?: string | null
           role_during_shift?: string | null
           shift_label?: string | null
@@ -31472,6 +31478,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_worker_attendance_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
             referencedColumns: ["id"]
           },
           {
