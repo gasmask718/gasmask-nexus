@@ -30722,51 +30722,69 @@ export type Database = {
           boxes_completed: number | null
           brand: string
           created_at: string | null
+          defect_category: string | null
           defect_reason: string | null
           defects_count: number | null
           empty_boxes_issued: number | null
           empty_boxes_used: number | null
+          fill_worker_id: string | null
           id: string
           notes: string | null
+          sticker_apply_seconds: number | null
+          sticker_worker_id: string | null
           stickers_issued: number | null
           stickers_used: number | null
+          tube_fill_seconds: number | null
           tubes_used: number | null
           variance_boxes: number | null
           variance_stickers: number | null
+          worker_id: string | null
         }
         Insert: {
           batch_id: string
           boxes_completed?: number | null
           brand: string
           created_at?: string | null
+          defect_category?: string | null
           defect_reason?: string | null
           defects_count?: number | null
           empty_boxes_issued?: number | null
           empty_boxes_used?: number | null
+          fill_worker_id?: string | null
           id?: string
           notes?: string | null
+          sticker_apply_seconds?: number | null
+          sticker_worker_id?: string | null
           stickers_issued?: number | null
           stickers_used?: number | null
+          tube_fill_seconds?: number | null
           tubes_used?: number | null
           variance_boxes?: number | null
           variance_stickers?: number | null
+          worker_id?: string | null
         }
         Update: {
           batch_id?: string
           boxes_completed?: number | null
           brand?: string
           created_at?: string | null
+          defect_category?: string | null
           defect_reason?: string | null
           defects_count?: number | null
           empty_boxes_issued?: number | null
           empty_boxes_used?: number | null
+          fill_worker_id?: string | null
           id?: string
           notes?: string | null
+          sticker_apply_seconds?: number | null
+          sticker_worker_id?: string | null
           stickers_issued?: number | null
           stickers_used?: number | null
+          tube_fill_seconds?: number | null
           tubes_used?: number | null
           variance_boxes?: number | null
           variance_stickers?: number | null
+          worker_id?: string | null
         }
         Relationships: [
           {
@@ -30774,6 +30792,27 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_batch_outputs_fill_worker_id_fkey"
+            columns: ["fill_worker_id"]
+            isOneToOne: false
+            referencedRelation: "production_workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_batch_outputs_sticker_worker_id_fkey"
+            columns: ["sticker_worker_id"]
+            isOneToOne: false
+            referencedRelation: "production_workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_batch_outputs_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "production_workers"
             referencedColumns: ["id"]
           },
         ]
@@ -31030,6 +31069,54 @@ export type Database = {
           production_date?: string
           quantity_produced?: number
           total_cost?: number
+        }
+        Relationships: []
+      }
+      production_cycle_benchmarks: {
+        Row: {
+          brand: string | null
+          created_at: string
+          expected_batch_completion_minutes: number
+          expected_boxes_per_hour: number
+          expected_sticker_apply_seconds: number
+          expected_tube_fill_seconds: number
+          id: string
+          notes: string | null
+          scope_id: string | null
+          scope_type: string
+          set_by: string | null
+          updated_at: string
+          variance_threshold_pct: number
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          expected_batch_completion_minutes?: number
+          expected_boxes_per_hour?: number
+          expected_sticker_apply_seconds?: number
+          expected_tube_fill_seconds?: number
+          id?: string
+          notes?: string | null
+          scope_id?: string | null
+          scope_type?: string
+          set_by?: string | null
+          updated_at?: string
+          variance_threshold_pct?: number
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          expected_batch_completion_minutes?: number
+          expected_boxes_per_hour?: number
+          expected_sticker_apply_seconds?: number
+          expected_tube_fill_seconds?: number
+          id?: string
+          notes?: string | null
+          scope_id?: string | null
+          scope_type?: string
+          set_by?: string | null
+          updated_at?: string
+          variance_threshold_pct?: number
         }
         Relationships: []
       }
@@ -45525,6 +45612,10 @@ export type Database = {
         Args: { _crm_id: string; _user_id: string }
         Returns: boolean
       }
+      can_access_office: {
+        Args: { _office_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_access_own_or_admin: {
         Args: { _owner_id: string; _user_id: string }
         Returns: boolean
@@ -45684,6 +45775,7 @@ export type Database = {
         }[]
       }
       get_intent_queue_health: { Args: never; Returns: Json }
+      get_managed_office_ids: { Args: { _user_id: string }; Returns: string[] }
       get_payout_statement: { Args: { p_batch_id: string }; Returns: Json }
       get_phase5_mode: { Args: never; Returns: Json }
       get_portal_queue_health: { Args: never; Returns: Json }
@@ -45726,6 +45818,10 @@ export type Database = {
         Args: { _role: string; _user_id: string }
         Returns: boolean
       }
+      has_production_elevated_role: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       has_production_office_access: {
         Args: { _office_id: string; _user_id: string }
         Returns: boolean
@@ -45765,6 +45861,10 @@ export type Database = {
         | { Args: { _user_id: string }; Returns: boolean }
       is_live_mode_authorized: {
         Args: { p_business_id: string; p_route_id?: string }
+        Returns: boolean
+      }
+      is_office_manager: {
+        Args: { _office_id: string; _user_id: string }
         Returns: boolean
       }
       is_org_member: {
@@ -45865,6 +45965,10 @@ export type Database = {
       quarantine_portal_device: {
         Args: { _device_id: string; _reason: string }
         Returns: boolean
+      }
+      recalculate_worker_skill_profiles: {
+        Args: { p_for_date?: string; p_office_id: string }
+        Returns: undefined
       }
       request_ai_approval: {
         Args: {

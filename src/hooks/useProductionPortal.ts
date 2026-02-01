@@ -98,8 +98,16 @@ export interface ProductionBatchOutput {
   empty_boxes_used: number;
   defects_count: number;
   defect_reason: string | null;
+  defect_category: string | null;
   notes: string | null;
   created_at: string;
+  // Worker attribution
+  worker_id: string | null;
+  sticker_worker_id: string | null;
+  fill_worker_id: string | null;
+  // Time & Motion
+  tube_fill_seconds: number | null;
+  sticker_apply_seconds: number | null;
   // Variance fields
   stickers_issued: number;
   empty_boxes_issued: number;
@@ -693,18 +701,52 @@ export function useRecordOutput() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (output: Omit<ProductionBatchOutput, 'id' | 'created_at' | 'variance_stickers' | 'variance_boxes'>) => {
+    mutationFn: async (output: {
+      batch_id: string;
+      brand: 'gasmask' | 'hotmama' | 'hotscolati' | 'grabba-rus';
+      boxes_completed: number;
+      tubes_used: number;
+      stickers_used: number;
+      empty_boxes_used: number;
+      defects_count: number;
+      defect_reason?: string | null;
+      defect_category?: string | null;
+      notes?: string | null;
+      worker_id?: string | null;
+      sticker_worker_id?: string | null;
+      fill_worker_id?: string | null;
+      tube_fill_seconds?: number | null;
+      sticker_apply_seconds?: number | null;
+      stickers_issued?: number;
+      empty_boxes_issued?: number;
+    }) => {
       // Calculate variance fields
       const variance_stickers = (output.stickers_issued || 0) - output.stickers_used;
       const variance_boxes = (output.empty_boxes_issued || 0) - output.empty_boxes_used;
       
       const { data, error } = await supabase
         .from('production_batch_outputs')
-        .upsert({
-          ...output,
+        .insert({
+          batch_id: output.batch_id,
+          brand: output.brand,
+          boxes_completed: output.boxes_completed,
+          tubes_used: output.tubes_used,
+          stickers_used: output.stickers_used,
+          empty_boxes_used: output.empty_boxes_used,
+          defects_count: output.defects_count,
+          defect_reason: output.defect_reason || null,
+          defect_category: output.defect_category || null,
+          notes: output.notes || null,
+          worker_id: output.worker_id || null,
+          sticker_worker_id: output.sticker_worker_id || null,
+          fill_worker_id: output.fill_worker_id || null,
+          tube_fill_seconds: output.tube_fill_seconds || null,
+          sticker_apply_seconds: output.sticker_apply_seconds || null,
+          stickers_issued: output.stickers_issued || 0,
+          empty_boxes_issued: output.empty_boxes_issued || 0,
           variance_stickers,
           variance_boxes,
-        }, { onConflict: 'batch_id,brand' })
+        })
         .select()
         .single();
       
@@ -716,6 +758,7 @@ export function useRecordOutput() {
       queryClient.invalidateQueries({ queryKey: ['production-daily-kpis'] });
       queryClient.invalidateQueries({ queryKey: ['production-batches'] });
       queryClient.invalidateQueries({ queryKey: ['production-history'] });
+      queryClient.invalidateQueries({ queryKey: ['worker-skill-profiles'] });
       toast({ title: 'Output recorded successfully' });
     },
     onError: (error: Error) => {

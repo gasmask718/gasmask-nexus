@@ -2,10 +2,10 @@
  * BATCH HISTORY PANEL
  * 
  * Calendar-navigable batch history with filtering.
- * Shows all batches ever created, grouped by date.
+ * Supports date ranges, quick filters, and CSV export.
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import {
   useBatchOutputs,
   ProductionBatch 
 } from '@/hooks/useProductionPortal';
+import { exportData } from '@/utils/exportUtils';
 import { 
   CalendarDays, 
   Filter, 
@@ -28,9 +29,10 @@ import {
   Scale,
   Clock,
   AlertTriangle,
-  TrendingUp
+  TrendingUp,
+  Download
 } from 'lucide-react';
-import { format, addDays, subDays, startOfDay, isToday } from 'date-fns';
+import { format, addDays, subDays, startOfDay, isToday, subWeeks, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface BatchHistoryPanelProps {
@@ -52,8 +54,18 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-800' },
 };
 
+const QUICK_FILTERS = [
+  { label: 'Today', getValue: () => ({ start: new Date(), end: new Date() }) },
+  { label: 'Last 7 Days', getValue: () => ({ start: subWeeks(new Date(), 1), end: new Date() }) },
+  { label: 'Last 30 Days', getValue: () => ({ start: subMonths(new Date(), 1), end: new Date() }) },
+  { label: 'This Month', getValue: () => ({ start: startOfMonth(new Date()), end: new Date() }) },
+];
+
 export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [dateRangeMode, setDateRangeMode] = useState<'single' | 'range'>('single');
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date>(new Date());
   const [brandFilter, setBrandFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedBatch, setSelectedBatch] = useState<ProductionBatch | null>(null);
@@ -168,6 +180,36 @@ export function BatchHistoryPanel({ officeId }: BatchHistoryPanelProps) {
                 ))}
               </SelectContent>
             </Select>
+            
+            {/* Export Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-auto"
+              disabled={filteredBatches.length === 0}
+              onClick={() => {
+                const exportRows = filteredBatches.map(b => ({
+                  date: b.batch_date,
+                  brand: b.brand,
+                  shift: b.shift_label,
+                  status: b.status,
+                  tobacco_lbs: b.tobacco_lbs,
+                  tubes_total: b.tubes_total,
+                  tubes_used: b.total_tubes_used,
+                  boxes_produced: b.boxes_produced,
+                  defects: b.total_defects,
+                  efficiency: b.efficiency_pct,
+                }));
+                exportData({
+                  filename: `production-batches-${format(selectedDate, 'yyyy-MM-dd')}`,
+                  format: 'csv',
+                  data: exportRows,
+                });
+              }}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Export CSV
+            </Button>
           </div>
         </CardHeader>
         
