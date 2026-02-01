@@ -27,7 +27,7 @@ import {
   useProductionOffices, 
   useDailyKPIs,
   useDailyCloseout,
-  useProductionBatches,
+  useTodayBatches,
   useCloseDay,
 } from '@/hooks/useProductionPortal';
 import {
@@ -85,7 +85,7 @@ export default function ProductionPortalPage() {
   const selectedOffice = offices.find(o => o.id === selectedOfficeId);
   const { data: kpis, isLoading: kpisLoading } = useDailyKPIs(selectedOfficeId);
   const { data: closeout } = useDailyCloseout(selectedOfficeId);
-  const { data: batches = [] } = useProductionBatches(selectedOfficeId);
+  const { data: batches = [] } = useTodayBatches(selectedOfficeId);
   const closeDay = useCloseDay();
 
   // Check if wizard was completed for this office
