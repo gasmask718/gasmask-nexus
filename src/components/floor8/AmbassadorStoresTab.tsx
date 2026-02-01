@@ -11,13 +11,13 @@
  * - Inline actions for operational accountability
  * - Ambassador-level alerts
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
 import { 
   Store, Users, AlertTriangle, CheckCircle2, 
   TrendingUp, MapPin, Calendar, DollarSign,
-  Clock, MessageSquare, Eye, ChevronRight, Info
+  Clock, MessageSquare, Eye, ChevronRight, Info, Plus, UserPlus
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,8 @@ import {
 import { StoreHealthIndicator, HealthRulesReference } from './StoreHealthIndicator';
 import { AmbassadorAlertsPanel } from './AmbassadorAlertsPanel';
 import { AssignedStoreActions } from './AssignedStoreActions';
+import { AssignStoreToAmbassadorModal } from './AssignStoreToAmbassadorModal';
+import { usePortalPermissions } from '@/hooks/usePortalPermission';
 
 interface StoreData {
   id: string;
@@ -81,6 +83,7 @@ interface AmbassadorStoresTabProps {
   assignedStores: AssignedStore[];
   pipeline: PipelineStage[];
   onMessage?: (storeId: string) => void;
+  onRefresh?: () => void;
 }
 
 const stageConfig: Record<string, { color: string; bgClass: string }> = {
@@ -106,8 +109,14 @@ export function AmbassadorStoresTab({
   assignedStores,
   pipeline,
   onMessage,
+  onRefresh,
 }: AmbassadorStoresTabProps) {
   const navigate = useNavigate();
+  const { can } = usePortalPermissions();
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  
+  // Only admins and VAs can assign stores
+  const canAssignStores = can('admin_full_access') || can('assign_tasks');
 
   // Calculate health for each assigned store
   const assignedStoresWithHealth = useMemo(() => {
@@ -335,6 +344,12 @@ export function AmbassadorStoresTab({
                 </Badge>
               )}
               <Badge variant="outline">{assignedCount} stores</Badge>
+              {canAssignStores && (
+                <Button size="sm" onClick={() => setShowAssignModal(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Assign Store
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -342,7 +357,13 @@ export function AmbassadorStoresTab({
           {assignedStoresWithHealth.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>No stores currently assigned</p>
+              <p className="mb-4">No stores currently assigned</p>
+              {canAssignStores && (
+                <Button onClick={() => setShowAssignModal(true)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Assign First Store
+                </Button>
+              )}
             </div>
           ) : (
             <Table>
@@ -542,6 +563,16 @@ export function AmbassadorStoresTab({
           </div>
         </CardContent>
       </Card>
+
+      {/* Assign Store Modal */}
+      <AssignStoreToAmbassadorModal
+        isOpen={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        ambassadorId={ambassadorId}
+        ambassadorName={ambassadorName}
+        existingStoreIds={assignedStores.map(s => s.store.id)}
+        onSuccess={onRefresh}
+      />
     </div>
   );
 }
