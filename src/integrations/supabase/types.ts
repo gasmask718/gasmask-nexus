@@ -30722,6 +30722,7 @@ export type Database = {
           boxes_completed: number | null
           brand: string
           created_at: string | null
+          defect_reason: string | null
           defects_count: number | null
           empty_boxes_issued: number | null
           empty_boxes_used: number | null
@@ -30738,6 +30739,7 @@ export type Database = {
           boxes_completed?: number | null
           brand: string
           created_at?: string | null
+          defect_reason?: string | null
           defects_count?: number | null
           empty_boxes_issued?: number | null
           empty_boxes_used?: number | null
@@ -30754,6 +30756,7 @@ export type Database = {
           boxes_completed?: number | null
           brand?: string
           created_at?: string | null
+          defect_reason?: string | null
           defects_count?: number | null
           empty_boxes_issued?: number | null
           empty_boxes_used?: number | null
@@ -30777,6 +30780,8 @@ export type Database = {
       }
       production_batches: {
         Row: {
+          avg_sticker_apply_seconds: number | null
+          avg_tube_fill_seconds: number | null
           batch_date: string | null
           boxes_produced: number | null
           brand: string
@@ -30797,6 +30802,7 @@ export type Database = {
           status: string | null
           stickers_issued: Json | null
           stickers_used: Json | null
+          tobacco_heatup_minutes: number | null
           tobacco_lbs: number | null
           tools_used: Json | null
           total_defects: number | null
@@ -30811,6 +30817,8 @@ export type Database = {
           workers_present: string[] | null
         }
         Insert: {
+          avg_sticker_apply_seconds?: number | null
+          avg_tube_fill_seconds?: number | null
           batch_date?: string | null
           boxes_produced?: number | null
           brand: string
@@ -30831,6 +30839,7 @@ export type Database = {
           status?: string | null
           stickers_issued?: Json | null
           stickers_used?: Json | null
+          tobacco_heatup_minutes?: number | null
           tobacco_lbs?: number | null
           tools_used?: Json | null
           total_defects?: number | null
@@ -30845,6 +30854,8 @@ export type Database = {
           workers_present?: string[] | null
         }
         Update: {
+          avg_sticker_apply_seconds?: number | null
+          avg_tube_fill_seconds?: number | null
           batch_date?: string | null
           boxes_produced?: number | null
           brand?: string
@@ -30865,6 +30876,7 @@ export type Database = {
           status?: string | null
           stickers_issued?: Json | null
           stickers_used?: Json | null
+          tobacco_heatup_minutes?: number | null
           tobacco_lbs?: number | null
           tools_used?: Json | null
           total_defects?: number | null

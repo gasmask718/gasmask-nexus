@@ -9,6 +9,7 @@ export { WorkerManagement } from './WorkerManagement';
 export { DailyBatchEntry } from './DailyBatchEntry';
 export { ToolsInventory } from './ToolsInventory';
 export { ProductionHistoryPanel } from './ProductionHistory';
+export { BatchHistoryPanel } from './BatchHistoryPanel';
 export { VariancePanel } from './VariancePanel';
 export { DayClosePanel } from './DayClosePanel';
 export { WorkerAttendance } from './WorkerAttendance';

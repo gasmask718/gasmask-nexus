@@ -77,6 +77,10 @@ export interface ProductionBatch {
   total_defects: number | null;
   variance_tubes: number | null;
   variance_notes: string | null;
+  // Time & Motion metrics
+  tobacco_heatup_minutes: number | null;
+  avg_tube_fill_seconds: number | null;
+  avg_sticker_apply_seconds: number | null;
   office?: { id: string; name: string } | null;
 }
 
@@ -89,6 +93,7 @@ export interface ProductionBatchOutput {
   stickers_used: number;
   empty_boxes_used: number;
   defects_count: number;
+  defect_reason: string | null;
   notes: string | null;
   created_at: string;
   // Variance fields

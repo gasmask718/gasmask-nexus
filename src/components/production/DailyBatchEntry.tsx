@@ -431,6 +431,7 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
     stickers_used: '',
     empty_boxes_used: '',
     defects_count: '',
+    defect_reason: '',
     notes: '',
   });
 
@@ -447,6 +448,7 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
       stickers_used: parseInt(outputForm.stickers_used) || 0,
       empty_boxes_used: parseInt(outputForm.empty_boxes_used) || 0,
       defects_count: parseInt(outputForm.defects_count) || 0,
+      defect_reason: outputForm.defect_reason || null,
       notes: outputForm.notes || null,
       stickers_issued: stickersIssued,
       empty_boxes_issued: boxesIssued,
@@ -459,6 +461,7 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
       stickers_used: '',
       empty_boxes_used: '',
       defects_count: '',
+      defect_reason: '',
       notes: '',
     });
   };
@@ -679,6 +682,16 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
                   />
                 </div>
               </div>
+              {parseInt(outputForm.defects_count) > 0 && (
+                <div className="mt-3">
+                  <Label>Defect Reason</Label>
+                  <Input
+                    value={outputForm.defect_reason}
+                    onChange={(e) => setOutputForm({ ...outputForm, defect_reason: e.target.value })}
+                    placeholder="Describe the defect reason..."
+                  />
+                </div>
+              )}
               <Button 
                 className="mt-3" 
                 onClick={handleRecordOutput}
