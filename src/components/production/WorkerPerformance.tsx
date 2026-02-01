@@ -403,6 +403,7 @@ export function WorkerPerformance({ officeId, targetBoxes = 100 }: WorkerPerform
         worker={selectedWorker || null}
         benchmark={globalBenchmark}
         officeBenchmarks={officeBenchmarks}
+        officeId={officeId}
       />
     </div>
   );

@@ -6,6 +6,7 @@
  * - Task time model
  * - Performance history chart
  * - Worker setup/edit panel
+ * - Communication history tab
  */
 
 import { useState } from 'react';
@@ -49,10 +50,13 @@ import {
   Timer,
   Award,
   AlertTriangle,
+  MessageSquare,
+  Info,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WorkerSkillProfile, CycleBenchmark, useWorkerPerformanceHistory } from '@/hooks/useWorkerPerformance';
 import { useUpdateWorker, ProductionWorker } from '@/hooks/useProductionPortal';
+import { WorkerCommunicationTab } from './WorkerCommunicationTab';
 
 interface WorkerProfileDialogProps {
   open: boolean;
@@ -66,6 +70,7 @@ interface WorkerProfileDialogProps {
     avgBoxesPerHour: number;
     avgDefectRate: number;
   };
+  officeId?: string;
 }
 
 const TREND_CONFIG = {
@@ -84,6 +89,7 @@ export function WorkerProfileDialog({
   worker,
   benchmark,
   officeBenchmarks,
+  officeId,
 }: WorkerProfileDialogProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const { data: historyData = [] } = useWorkerPerformanceHistory(worker?.id, 30);
@@ -179,15 +185,25 @@ export function WorkerProfileDialog({
           </DialogTitle>
         </DialogHeader>
 
+        {/* Data Governance Notice */}
+        <div className="mt-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 flex items-center gap-2">
+          <Info className="h-4 w-4" />
+          Scores are rolling 7-day indicators, not disciplinary metrics.
+        </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">
               <Target className="h-4 w-4 mr-2" />
               Overview
             </TabsTrigger>
             <TabsTrigger value="tasks">
               <Timer className="h-4 w-4 mr-2" />
-              Task Times
+              Tasks
+            </TabsTrigger>
+            <TabsTrigger value="comms">
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Comms
             </TabsTrigger>
             <TabsTrigger value="setup">
               <Settings className="h-4 w-4 mr-2" />
@@ -359,6 +375,17 @@ export function WorkerProfileDialog({
                 </div>
               </div>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="comms" className="mt-4">
+            {officeId ? (
+              <WorkerCommunicationTab worker={worker} officeId={officeId} />
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>Communication history not available</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="setup" className="space-y-4 mt-4">

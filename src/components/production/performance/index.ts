@@ -12,3 +12,4 @@ export { WorkerProfileCard } from './WorkerProfileCard';
 export { WorkerIntelligenceTable } from './WorkerIntelligenceTable';
 export { TimeToCompleteEstimator } from './TimeToCompleteEstimator';
 export { WorkerProfileDialog } from './WorkerProfileDialog';
+export { WorkerCommunicationTab } from './WorkerCommunicationTab';
