@@ -31490,6 +31490,41 @@ export type Database = {
         }
         Relationships: []
       }
+      production_recalc_queue: {
+        Row: {
+          batch_date: string
+          error_message: string | null
+          id: string
+          office_id: string
+          processed_at: string | null
+          requested_at: string
+        }
+        Insert: {
+          batch_date?: string
+          error_message?: string | null
+          id?: string
+          office_id: string
+          processed_at?: string | null
+          requested_at?: string
+        }
+        Update: {
+          batch_date?: string
+          error_message?: string | null
+          id?: string
+          office_id?: string
+          processed_at?: string | null
+          requested_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_recalc_queue_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_tools_issued: {
         Row: {
           id: string
@@ -45962,6 +45997,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      process_recalc_queue: { Args: never; Returns: number }
       quarantine_portal_device: {
         Args: { _device_id: string; _reason: string }
         Returns: boolean
