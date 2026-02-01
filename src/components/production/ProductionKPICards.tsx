@@ -3,17 +3,20 @@
  * 
  * Daily KPI dashboard for production portal.
  * Shows boxes completed, tobacco used, efficiency, workers, tools.
+ * Now includes day status (OPEN/CLOSED) indicator.
  */
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Boxes, Scale, Gauge, Users, Wrench, TrendingUp } from 'lucide-react';
+import { Boxes, Scale, Gauge, Users, Wrench, TrendingUp, Lock, Unlock, AlertTriangle } from 'lucide-react';
 import { DailyKPIs } from '@/hooks/useProductionPortal';
 import { cn } from '@/lib/utils';
 
 interface ProductionKPICardsProps {
   kpis: DailyKPIs;
   isLoading?: boolean;
+  closedBy?: string;
+  closedAt?: string;
 }
 
 const BRAND_COLORS: Record<string, string> = {
@@ -30,7 +33,7 @@ const BRAND_LABELS: Record<string, string> = {
   'grabba-rus': 'GrabbaRus',
 };
 
-export function ProductionKPICards({ kpis, isLoading }: ProductionKPICardsProps) {
+export function ProductionKPICards({ kpis, isLoading, closedBy, closedAt }: ProductionKPICardsProps) {
   const getEfficiencyColor = (pct: number) => {
     if (pct >= 90) return 'text-emerald-600';
     if (pct >= 70) return 'text-amber-600';
@@ -62,10 +65,69 @@ export function ProductionKPICards({ kpis, isLoading }: ProductionKPICardsProps)
 
   return (
     <div className="space-y-4">
+      {/* Day Status Banner */}
+      <div className={cn(
+        'flex items-center justify-between p-3 rounded-lg',
+        kpis.isDayClosed 
+          ? 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800' 
+          : 'bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800'
+      )}>
+        <div className="flex items-center gap-3">
+          {kpis.isDayClosed ? (
+            <>
+              <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center">
+                <Lock className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-emerald-800 dark:text-emerald-200">DAY CLOSED</span>
+                  <Badge className="bg-emerald-200 text-emerald-800 text-xs">Locked</Badge>
+                </div>
+                {closedAt && (
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                    {closedBy && `Closed by ${closedBy} • `}{closedAt}
+                  </p>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center">
+                <Unlock className="h-4 w-4 text-amber-600" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-amber-800 dark:text-amber-200">DAY OPEN</span>
+                  <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">Editable</Badge>
+                </div>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Batches and outputs can be modified
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Variance Alert */}
+        {kpis.tubesVariance !== 0 && (
+          <div className="flex items-center gap-2 text-sm">
+            <AlertTriangle className={cn(
+              'h-4 w-4',
+              kpis.tubesVariance < 0 ? 'text-red-600' : 'text-amber-600'
+            )} />
+            <span className={cn(
+              kpis.tubesVariance < 0 ? 'text-red-700' : 'text-amber-700'
+            )}>
+              Tube variance: {kpis.tubesVariance > 0 ? '+' : ''}{kpis.tubesVariance}
+            </span>
+          </div>
+        )}
+      </div>
+
       {/* Main KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {/* Total Boxes */}
-        <Card className="border-primary/20">
+        <Card className={cn('border-primary/20', kpis.isDayClosed && 'opacity-90')}>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Boxes className="h-4 w-4" />
@@ -76,7 +138,7 @@ export function ProductionKPICards({ kpis, isLoading }: ProductionKPICardsProps)
         </Card>
 
         {/* Tobacco Used */}
-        <Card>
+        <Card className={cn(kpis.isDayClosed && 'opacity-90')}>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Scale className="h-4 w-4" />
@@ -87,7 +149,7 @@ export function ProductionKPICards({ kpis, isLoading }: ProductionKPICardsProps)
         </Card>
 
         {/* Efficiency */}
-        <Card>
+        <Card className={cn(kpis.isDayClosed && 'opacity-90')}>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Gauge className="h-4 w-4" />
@@ -100,7 +162,7 @@ export function ProductionKPICards({ kpis, isLoading }: ProductionKPICardsProps)
         </Card>
 
         {/* Workers Present */}
-        <Card>
+        <Card className={cn(kpis.isDayClosed && 'opacity-90')}>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Users className="h-4 w-4" />
@@ -111,7 +173,7 @@ export function ProductionKPICards({ kpis, isLoading }: ProductionKPICardsProps)
         </Card>
 
         {/* Tools Status */}
-        <Card>
+        <Card className={cn(kpis.isDayClosed && 'opacity-90')}>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Wrench className="h-4 w-4" />
@@ -124,26 +186,27 @@ export function ProductionKPICards({ kpis, isLoading }: ProductionKPICardsProps)
           </CardContent>
         </Card>
 
-        {/* Yield Indicator */}
-        <Card>
+        {/* Defect Rate */}
+        <Card className={cn(kpis.isDayClosed && 'opacity-90')}>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <TrendingUp className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase tracking-wide">Yield</span>
+              <span className="text-xs font-medium uppercase tracking-wide">Defects</span>
             </div>
-            <p className="text-3xl font-bold">
-              {kpis.tobaccoUsed > 0 
-                ? (kpis.totalBoxes / kpis.tobaccoUsed).toFixed(1) 
-                : '—'}
+            <p className={cn(
+              'text-3xl font-bold',
+              kpis.defectRate > 5 ? 'text-red-600' : kpis.defectRate > 2 ? 'text-amber-600' : 'text-emerald-600'
+            )}>
+              {kpis.defectRate}%
             </p>
-            <p className="text-xs text-muted-foreground">boxes/lb</p>
+            <p className="text-xs text-muted-foreground">{kpis.totalDefects} total</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Per-Brand Breakdown */}
       {Object.keys(kpis.boxesByBrand).length > 0 && (
-        <Card>
+        <Card className={cn(kpis.isDayClosed && 'opacity-90')}>
           <CardContent className="p-4">
             <h4 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">
               Boxes by Brand

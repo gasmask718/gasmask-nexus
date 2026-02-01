@@ -230,7 +230,8 @@ const DYNASTY_NAVIGATION = {
       name: '🏭 Floor 6 — Production',
       items: [
         { path: '/grabba/production', label: 'Production Dashboard', icon: Factory },
-        { path: '/portal/production', label: 'Production Portal', icon: Settings },
+        { path: '/portals/production', label: 'Manufacturing OS', icon: Factory },
+        { path: '/portal/production', label: 'Worker View (Read-Only)', icon: Settings },
       ],
     },
     {
@@ -421,7 +422,8 @@ const DYNASTY_NAVIGATION = {
     { path: '/portal/ambassador', label: '🎖️ Ambassador Portal', icon: Award },
     { path: '/portal/store', label: '🏪 Store Portal', icon: Store },
     { path: '/portal/wholesaler', label: '📦 Wholesaler Portal', icon: Package },
-    { path: '/portal/production', label: '🏭 Production Portal', icon: Factory },
+    { path: '/portals/production', label: '🏭 Manufacturing OS', icon: Factory },
+    { path: '/portal/production', label: '👷 Worker View (Read-Only)', icon: Factory },
     { path: '/portal/va', label: '💼 VA Portal', icon: Briefcase },
     { path: '/portal/customer', label: '👤 Customer Portal', icon: User },
     { path: '/portal/national-wholesale', label: '🌎 National Wholesale Portal', icon: Globe },

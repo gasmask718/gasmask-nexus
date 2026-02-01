@@ -1,23 +1,31 @@
-import { Factory, ClipboardList, CheckSquare, AlertTriangle } from 'lucide-react';
+/**
+ * PRODUCTION WORKER PORTAL (READ-ONLY VIEW)
+ * 
+ * Simplified view for production workers to see:
+ * - Today's progress and targets
+ * - Assigned batches
+ * - QC notes
+ * 
+ * Workers CANNOT edit batches, inputs, or outputs.
+ * All editing is done via the Manufacturing OS (/portals/production).
+ */
+
+import { Factory, ClipboardList, AlertTriangle, Eye, Lock, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import PortalLayout from '@/components/portal/PortalLayout';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 
-// Mock data
+// Mock data - in real app this would come from useProductionPortal hooks
 const todayBatches = [
   { id: 'B-001', product: 'GasMask Tubes', target: 500, completed: 320, status: 'in_progress' },
   { id: 'B-002', product: 'Hot Mama Boxes', target: 200, completed: 200, status: 'complete' },
   { id: 'B-003', product: 'Grabba R Us', target: 150, completed: 0, status: 'pending' },
-];
-
-const todayTasks = [
-  { id: 1, task: 'Roll 500 GasMask Tubes', priority: 'high', status: 'in_progress' },
-  { id: 2, task: 'QC Check - Batch B-002', priority: 'medium', status: 'pending' },
-  { id: 3, task: 'Package completed boxes', priority: 'low', status: 'pending' },
 ];
 
 const qcNotes = [
@@ -28,20 +36,47 @@ const qcNotes = [
 export default function ProductionPortal() {
   const { data: profileData } = useCurrentUserProfile();
   const productionProfile = profileData?.roleProfile as any;
+  const userRole = profileData?.profile?.primary_role;
+  const isManager = ['admin', 'ceo', 'production'].includes(userRole || '');
 
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
       roller: 'Roller',
       packager: 'Packager',
       qc: 'Quality Control',
-      supervisor: 'Supervisor'
+      supervisor: 'Supervisor',
+      packer: 'Packer',
+      shredder: 'Shredder',
+      machine_operator: 'Machine Operator',
+      laborer: 'Laborer',
     };
     return labels[role] || role;
   };
 
   return (
-    <PortalLayout title="Production Portal">
+    <PortalLayout title="Worker View">
       <div className="space-y-6">
+        {/* Read-Only Banner */}
+        <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/30">
+          <Eye className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Lock className="h-3 w-3 text-amber-600" />
+              <span className="text-amber-800 dark:text-amber-200">
+                This is a <strong>read-only view</strong> for production workers.
+              </span>
+            </div>
+            {isManager && (
+              <Button asChild variant="outline" size="sm">
+                <Link to="/portals/production">
+                  Open Manufacturing OS
+                  <ArrowRight className="h-4 w-4 ml-1" />
+                </Link>
+              </Button>
+            )}
+          </AlertDescription>
+        </Alert>
+
         {/* Worker Info */}
         <Card>
           <CardContent className="pt-6">
@@ -61,9 +96,9 @@ export default function ProductionPortal() {
           </CardContent>
         </Card>
 
-        {/* Stats */}
+        {/* Stats (Read-Only) */}
         <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
+          <Card className="border-muted">
             <CardHeader className="pb-2">
               <CardDescription>Today's Target</CardDescription>
               <CardTitle className="text-3xl">850</CardTitle>
@@ -72,19 +107,19 @@ export default function ProductionPortal() {
               <span className="text-sm text-muted-foreground">Units to produce</span>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-muted">
             <CardHeader className="pb-2">
               <CardDescription>Completed</CardDescription>
-              <CardTitle className="text-3xl text-green-500">520</CardTitle>
+              <CardTitle className="text-3xl text-emerald-600">520</CardTitle>
             </CardHeader>
             <CardContent>
               <Progress value={61} className="h-2" />
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-muted">
             <CardHeader className="pb-2">
               <CardDescription>QC Issues</CardDescription>
-              <CardTitle className="text-3xl text-yellow-500">5</CardTitle>
+              <CardTitle className="text-3xl text-amber-600">5</CardTitle>
             </CardHeader>
             <CardContent>
               <span className="text-sm text-muted-foreground">Units under review</span>
@@ -92,19 +127,27 @@ export default function ProductionPortal() {
           </Card>
         </div>
 
-        {/* Assigned Batches */}
+        {/* Assigned Batches (Read-Only) */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Factory className="h-5 w-5 text-primary" />
-              Today's Batches
-            </CardTitle>
-            <CardDescription>Production batches assigned to you</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Factory className="h-5 w-5 text-primary" />
+                  Today's Batches
+                </CardTitle>
+                <CardDescription>Production batches assigned to your office</CardDescription>
+              </div>
+              <Badge variant="outline" className="text-muted-foreground">
+                <Eye className="h-3 w-3 mr-1" />
+                View Only
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {todayBatches.map((batch) => (
-                <div key={batch.id} className="p-4 rounded-lg border">
+                <div key={batch.id} className="p-4 rounded-lg border bg-muted/30">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="font-medium">{batch.product}</p>
@@ -130,71 +173,67 @@ export default function ProductionPortal() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Tasks */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-primary" />
-                Today's Tasks
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {todayTasks.map((task) => (
-                  <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg border">
-                    <Button variant="ghost" size="icon" className="shrink-0">
-                      <CheckSquare className="h-5 w-5" />
-                    </Button>
-                    <div className="flex-1">
-                      <p className="font-medium">{task.task}</p>
-                    </div>
-                    <Badge variant={
-                      task.priority === 'high' ? 'destructive' :
-                      task.priority === 'medium' ? 'secondary' : 'outline'
-                    }>
-                      {task.priority}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* QC Notes */}
-          <Card>
-            <CardHeader>
+        {/* QC Notes (Read-Only) */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-primary" />
                 QC Notes
               </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Batch</TableHead>
-                    <TableHead>Result</TableHead>
-                    <TableHead>Notes</TableHead>
+              <Badge variant="outline" className="text-muted-foreground">
+                <Eye className="h-3 w-3 mr-1" />
+                View Only
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Batch</TableHead>
+                  <TableHead>Result</TableHead>
+                  <TableHead>Notes</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {qcNotes.map((note, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell className="font-mono">{note.batch}</TableCell>
+                    <TableCell>
+                      <Badge variant={note.result === 'passed' ? 'default' : 'secondary'}>
+                        {note.result}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{note.notes}</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {qcNotes.map((note, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell className="font-mono">{note.batch}</TableCell>
-                      <TableCell>
-                        <Badge variant={note.result === 'passed' ? 'default' : 'secondary'}>
-                          {note.result}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{note.notes}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Manager CTA */}
+        {isManager && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold">Need to manage production?</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Use the Manufacturing OS to create batches, record outputs, and close days.
+                  </p>
+                </div>
+                <Button asChild>
+                  <Link to="/portals/production">
+                    Open Manufacturing OS
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
-        </div>
+        )}
       </div>
     </PortalLayout>
   );
