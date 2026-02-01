@@ -1,253 +1,215 @@
-import React, { useState } from 'react';
+/**
+ * PRODUCTION PORTAL PAGE
+ * 
+ * Office-based manufacturing OS with:
+ * - Office selection
+ * - Daily KPI dashboard
+ * - Batch management
+ * - Worker management  
+ * - Tools inventory
+ * - Activity history
+ */
+
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { EnhancedPortalLayout, CommandCenterKPI, ActivityFeed, ActivityItem } from '@/components/portal';
-import { useSimulationMode } from '@/contexts/SimulationModeContext';
-import { useResolvedData } from '@/hooks/useResolvedData';
-import { Factory, Boxes, ClipboardList, CheckCircle, AlertTriangle, Truck, ChevronUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { EnhancedPortalLayout } from '@/components/portal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  useProductionOffices, 
+  useDailyKPIs,
+} from '@/hooks/useProductionPortal';
+import {
+  ProductionKPICards,
+  WorkerManagement,
+  DailyBatchEntry,
+  ToolsInventory,
+  ProductionHistoryPanel,
+} from '@/components/production';
+import { 
+  Factory, 
+  Building2, 
+  Boxes, 
+  Users, 
+  Wrench, 
+  History,
+  MapPin,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
-const SIMULATION_BATCHES = [
-  { id: 'BATCH-001', product: 'Premium Widget A', quantity: 500, progress: 75, status: 'in_progress' },
-  { id: 'BATCH-002', product: 'Standard Widget B', quantity: 300, progress: 100, status: 'completed' },
-];
-
-const SIMULATION_WORK_ORDERS = [
-  { id: 'WO-001', task: 'Package Batch 001', assignee: 'Team A', priority: 'high', status: 'in_progress' },
-  { id: 'WO-002', task: 'Label Batch 002', assignee: 'Team B', priority: 'medium', status: 'pending' },
-  { id: 'WO-003', task: 'QC Inspection', assignee: 'QC Team', priority: 'high', status: 'pending' },
-  { id: 'WO-004', task: 'Prepare Shipment', assignee: 'Shipping', priority: 'low', status: 'pending' },
-  { id: 'WO-005', task: 'Raw Material Check', assignee: 'Inventory', priority: 'medium', status: 'completed' },
-];
-
-const SIMULATION_QC = [
-  { id: 'QC-001', batch: 'BATCH-001', result: 'pass', notes: 'All units meet spec', date: '2024-01-20' },
-  { id: 'QC-002', batch: 'BATCH-002', result: 'pass', notes: 'Minor cosmetic issues on 2 units', date: '2024-01-19' },
-];
-
-const SIMULATION_ACTIVITY: ActivityItem[] = [
-  { id: '1', type: 'success', title: 'Batch Completed', description: 'BATCH-002 ready for shipment', timestamp: new Date(Date.now() - 60 * 60 * 1000) },
-  { id: '2', type: 'success', title: 'QC Passed', description: 'BATCH-001 passed inspection', timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000) },
-  { id: '3', type: 'info', title: 'New Work Order', description: 'WO-003 assigned to QC Team', timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000) },
-];
-
-type KpiType = 'batches' | 'workOrders' | 'qcPending' | 'shipped' | 'incidents' | null;
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  active: { label: 'Active', color: 'bg-emerald-100 text-emerald-800', icon: <CheckCircle className="h-3 w-3" /> },
+  closed: { label: 'Closed', color: 'bg-gray-100 text-gray-800', icon: null },
+  maintenance: { label: 'Maintenance', color: 'bg-amber-100 text-amber-800', icon: <AlertTriangle className="h-3 w-3" /> },
+};
 
 export default function ProductionPortalPage() {
   const navigate = useNavigate();
-  const { simulationMode } = useSimulationMode();
-  const [selectedKpi, setSelectedKpi] = useState<KpiType>(null);
+  const { data: offices = [], isLoading: officesLoading } = useProductionOffices();
+  const [selectedOfficeId, setSelectedOfficeId] = useState<string>('');
+  
+  const selectedOffice = offices.find(o => o.id === selectedOfficeId);
+  const { data: kpis, isLoading: kpisLoading } = useDailyKPIs(selectedOfficeId);
 
-  const batchesResult = useResolvedData([], SIMULATION_BATCHES);
-  const workOrdersResult = useResolvedData([], SIMULATION_WORK_ORDERS);
-  const qcResult = useResolvedData([], SIMULATION_QC);
-  const activityResult = useResolvedData([], SIMULATION_ACTIVITY);
+  // Auto-select first office when loaded
+  if (offices.length > 0 && !selectedOfficeId) {
+    setSelectedOfficeId(offices[0].id);
+  }
 
-  const batches = batchesResult.data;
-  const workOrders = workOrdersResult.data;
-  const qcResults = qcResult.data;
-  const activity = activityResult.data;
-
-  const activeBatches = batches.filter(b => b.status === 'in_progress');
-  const completedBatches = batches.filter(b => b.status === 'completed');
-
-  const kpis = [
-    { key: 'batches' as KpiType, label: 'Active Batches', value: activeBatches.length.toString(), variant: 'cyan' as const },
-    { key: 'workOrders' as KpiType, label: 'Work Orders', value: workOrders.length.toString(), variant: 'amber' as const },
-    { key: 'qcPending' as KpiType, label: 'QC Pending', value: '1', variant: 'purple' as const },
-    { key: 'shipped' as KpiType, label: 'Ready to Ship', value: completedBatches.length.toString(), variant: 'green' as const },
-    { key: 'incidents' as KpiType, label: 'Incidents', value: '0', variant: 'red' as const },
-  ];
-
-  const handleKpiClick = (kpi: KpiType) => {
-    setSelectedKpi(selectedKpi === kpi ? null : kpi);
-  };
-
-  const getStatusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      in_progress: 'bg-blue-100 text-blue-800',
-      completed: 'bg-emerald-100 text-emerald-800',
-      pending: 'bg-amber-100 text-amber-800',
-      pass: 'bg-emerald-100 text-emerald-800',
-      fail: 'bg-red-100 text-red-800',
-    };
-    return <Badge className={colors[status] || 'bg-muted'}>{status.replace('_', ' ')}</Badge>;
-  };
-
-  const getPriorityBadge = (priority: string) => {
-    const colors: Record<string, string> = {
-      high: 'bg-red-100 text-red-800',
-      medium: 'bg-amber-100 text-amber-800',
-      low: 'bg-blue-100 text-blue-800',
-    };
-    return <Badge variant="outline" className={colors[priority]}>{priority}</Badge>;
-  };
-
-  const renderDetailContent = () => {
-    switch (selectedKpi) {
-      case 'batches':
-        return (
-          <div className="space-y-3">
-            <h4 className="font-semibold">Active Production Batches</h4>
-            {activeBatches.map(batch => (
-              <div key={batch.id} className="p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <p className="font-medium">{batch.id}</p>
-                    <p className="text-sm text-muted-foreground">{batch.product} • Qty: {batch.quantity}</p>
-                  </div>
-                  {getStatusBadge(batch.status)}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Progress value={batch.progress} className="flex-1" />
-                  <span className="text-sm font-medium">{batch.progress}%</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        );
-      case 'workOrders':
-        return (
-          <div className="space-y-2">
-            <h4 className="font-semibold">Work Orders</h4>
-            {workOrders.map(wo => (
-              <div key={wo.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="font-medium">{wo.task}</p>
-                  <p className="text-sm text-muted-foreground">{wo.assignee}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {getPriorityBadge(wo.priority)}
-                  {getStatusBadge(wo.status)}
-                </div>
-              </div>
-            ))}
-          </div>
-        );
-      case 'qcPending':
-        return (
-          <div className="space-y-2">
-            <h4 className="font-semibold">QC Results</h4>
-            {qcResults.map(qc => (
-              <div key={qc.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="font-medium">{qc.batch}</p>
-                  <p className="text-sm text-muted-foreground">{qc.notes}</p>
-                </div>
-                {getStatusBadge(qc.result)}
-              </div>
-            ))}
-          </div>
-        );
-      case 'shipped':
-        return (
-          <div className="space-y-2">
-            <h4 className="font-semibold">Ready for Shipment</h4>
-            {completedBatches.map(batch => (
-              <div key={batch.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="font-medium">{batch.id}</p>
-                  <p className="text-sm text-muted-foreground">{batch.product} • Qty: {batch.quantity}</p>
-                </div>
-                <Button size="sm" variant="outline">Prepare Shipment</Button>
-              </div>
-            ))}
-          </div>
-        );
-      case 'incidents':
-        return (
-          <div className="text-center py-6">
-            <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-2" />
-            <p className="font-medium">No Active Incidents</p>
-            <p className="text-sm text-muted-foreground">All systems operating normally</p>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+  const activeOffices = offices.filter(o => o.active !== false);
 
   return (
     <EnhancedPortalLayout
       title="Production Portal"
-      subtitle="Manufacturing, QC, and batch tracking"
+      subtitle="Manufacturing operations & output tracking"
       portalIcon={<Factory className="h-4 w-4 text-primary-foreground" />}
       quickActions={[
-        { label: 'New Batch', href: '/portals/production/batches/new' },
-        { label: 'Work Orders', href: '/portals/production/work-orders' },
-        { label: 'QC Dashboard', href: '/portals/production/qc' },
+        { label: 'All Offices', href: '/portals/production/offices' },
+        { label: 'Reports', href: '/portals/production/reports' },
       ]}
     >
-      {/* KPI Command Center */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        {kpis.map(kpi => (
-          <CommandCenterKPI
-            key={kpi.key}
-            label={kpi.label}
-            value={kpi.value}
-            variant={kpi.variant}
-            isActive={selectedKpi === kpi.key}
-            onClick={() => handleKpiClick(kpi.key)}
-            isSimulated={batchesResult.isSimulated}
-          />
-        ))}
-      </div>
-
-      {/* View Details Bar */}
-      {selectedKpi && (
-        <Card className="mb-6 border-primary/20">
-          <CardHeader className="py-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium">Details</CardTitle>
-            <Button size="sm" variant="ghost" onClick={() => setSelectedKpi(null)}>
-              <ChevronUp className="h-4 w-4 mr-1" /> Close
-            </Button>
-          </CardHeader>
-          <CardContent>{renderDetailContent()}</CardContent>
-        </Card>
-      )}
-
-      {/* Quick Actions Grid */}
-      <div className="grid md:grid-cols-3 gap-4 mb-6">
-        <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate('/portals/production/batches')}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Boxes className="h-8 w-8 text-primary" />
-            <div>
-              <p className="font-medium">Production Runs</p>
-              <p className="text-sm text-muted-foreground">View all batches</p>
+      {/* Office Selector */}
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Building2 className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">Select Office</p>
+                <Select
+                  value={selectedOfficeId}
+                  onValueChange={setSelectedOfficeId}
+                >
+                  <SelectTrigger className="w-[280px] mt-1">
+                    <SelectValue placeholder="Choose an office..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeOffices.map(office => {
+                      const status = STATUS_CONFIG[office.status] || STATUS_CONFIG.active;
+                      return (
+                        <SelectItem key={office.id} value={office.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{office.name}</span>
+                            {office.status !== 'active' && (
+                              <Badge className={cn('text-xs ml-2', status.color)}>
+                                {status.label}
+                              </Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate('/portals/production/work-orders')}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <ClipboardList className="h-8 w-8 text-amber-500" />
-            <div>
-              <p className="font-medium">Work Orders</p>
-              <p className="text-sm text-muted-foreground">Manage tasks</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate('/portals/production/qc')}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <CheckCircle className="h-8 w-8 text-emerald-500" />
-            <div>
-              <p className="font-medium">Quality Control</p>
-              <p className="text-sm text-muted-foreground">QC checks & reports</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Activity Feed */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ActivityFeed items={activity} isSimulated={activityResult.isSimulated} />
+            {selectedOffice && (
+              <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                {selectedOffice.location && (
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    <span>{selectedOffice.location}</span>
+                  </div>
+                )}
+                {selectedOffice.operating_hours && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    <span>
+                      {(selectedOffice.operating_hours as any).start} - {(selectedOffice.operating_hours as any).end}
+                    </span>
+                  </div>
+                )}
+                <Badge className={cn(STATUS_CONFIG[selectedOffice.status]?.color)}>
+                  {STATUS_CONFIG[selectedOffice.status]?.icon}
+                  <span className="ml-1">{STATUS_CONFIG[selectedOffice.status]?.label}</span>
+                </Badge>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
+
+      {!selectedOfficeId ? (
+        <Card>
+          <CardContent className="py-16 text-center">
+            <Building2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+            <h3 className="text-lg font-medium mb-2">Select an Office</h3>
+            <p className="text-muted-foreground">
+              Choose a production office to view its dashboard, manage batches, and track output.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Daily KPIs */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Factory className="h-5 w-5" />
+                Today's Production — {format(new Date(), 'EEEE, MMMM d')}
+              </h2>
+            </div>
+            <ProductionKPICards 
+              kpis={kpis || {
+                totalBoxes: 0,
+                boxesByBrand: {},
+                tobaccoUsed: 0,
+                efficiencyPct: 0,
+                workersPresent: 0,
+                toolsOperational: 0,
+                toolsTotal: 0,
+              }} 
+              isLoading={kpisLoading}
+            />
+          </div>
+
+          {/* Tabbed Sections */}
+          <Tabs defaultValue="batches" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="batches" className="flex items-center gap-2">
+                <Boxes className="h-4 w-4" />
+                <span className="hidden sm:inline">Batches</span>
+              </TabsTrigger>
+              <TabsTrigger value="workers" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Workers</span>
+              </TabsTrigger>
+              <TabsTrigger value="tools" className="flex items-center gap-2">
+                <Wrench className="h-4 w-4" />
+                <span className="hidden sm:inline">Tools</span>
+              </TabsTrigger>
+              <TabsTrigger value="history" className="flex items-center gap-2">
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline">History</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="batches">
+              <DailyBatchEntry officeId={selectedOfficeId} />
+            </TabsContent>
+
+            <TabsContent value="workers">
+              <WorkerManagement officeId={selectedOfficeId} />
+            </TabsContent>
+
+            <TabsContent value="tools">
+              <ToolsInventory officeId={selectedOfficeId} />
+            </TabsContent>
+
+            <TabsContent value="history">
+              <ProductionHistoryPanel officeId={selectedOfficeId} />
+            </TabsContent>
+          </Tabs>
+        </>
+      )}
     </EnhancedPortalLayout>
   );
 }
