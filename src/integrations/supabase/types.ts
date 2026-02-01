@@ -3981,6 +3981,7 @@ export type Database = {
         Row: {
           active: boolean | null
           ambassador_id: string | null
+          assignment_role: string | null
           assignment_type: string | null
           commission_rate: number | null
           company_id: string | null
@@ -4000,6 +4001,7 @@ export type Database = {
         Insert: {
           active?: boolean | null
           ambassador_id?: string | null
+          assignment_role?: string | null
           assignment_type?: string | null
           commission_rate?: number | null
           company_id?: string | null
@@ -4019,6 +4021,7 @@ export type Database = {
         Update: {
           active?: boolean | null
           ambassador_id?: string | null
+          assignment_role?: string | null
           assignment_type?: string | null
           commission_rate?: number | null
           company_id?: string | null
@@ -36209,6 +36212,7 @@ export type Database = {
       store_master: {
         Row: {
           address: string
+          assigned_ambassador_id: string | null
           borough_id: string | null
           brand_id: string | null
           city: string
@@ -36224,11 +36228,14 @@ export type Database = {
           formality_level: string | null
           frustration_triggers: string[] | null
           has_expansion: boolean | null
+          health_status: string | null
           id: string
           influence_level: string | null
           is_simulation: boolean | null
           language_preference: string | null
           languages: string[] | null
+          last_order_at: string | null
+          last_visit_at: string | null
           loyalty_triggers: string[] | null
           new_store_addresses: string[] | null
           nickname: string | null
@@ -36240,6 +36247,8 @@ export type Database = {
           phone: string | null
           preferred_channel: string | null
           risk_score: string | null
+          sourced_at: string | null
+          sourced_by_ambassador_id: string | null
           state: string
           sticker_in_store: boolean | null
           sticker_notes: string | null
@@ -36252,6 +36261,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          assigned_ambassador_id?: string | null
           borough_id?: string | null
           brand_id?: string | null
           city: string
@@ -36267,11 +36277,14 @@ export type Database = {
           formality_level?: string | null
           frustration_triggers?: string[] | null
           has_expansion?: boolean | null
+          health_status?: string | null
           id?: string
           influence_level?: string | null
           is_simulation?: boolean | null
           language_preference?: string | null
           languages?: string[] | null
+          last_order_at?: string | null
+          last_visit_at?: string | null
           loyalty_triggers?: string[] | null
           new_store_addresses?: string[] | null
           nickname?: string | null
@@ -36283,6 +36296,8 @@ export type Database = {
           phone?: string | null
           preferred_channel?: string | null
           risk_score?: string | null
+          sourced_at?: string | null
+          sourced_by_ambassador_id?: string | null
           state: string
           sticker_in_store?: boolean | null
           sticker_notes?: string | null
@@ -36295,6 +36310,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          assigned_ambassador_id?: string | null
           borough_id?: string | null
           brand_id?: string | null
           city?: string
@@ -36310,11 +36326,14 @@ export type Database = {
           formality_level?: string | null
           frustration_triggers?: string[] | null
           has_expansion?: boolean | null
+          health_status?: string | null
           id?: string
           influence_level?: string | null
           is_simulation?: boolean | null
           language_preference?: string | null
           languages?: string[] | null
+          last_order_at?: string | null
+          last_visit_at?: string | null
           loyalty_triggers?: string[] | null
           new_store_addresses?: string[] | null
           nickname?: string | null
@@ -36326,6 +36345,8 @@ export type Database = {
           phone?: string | null
           preferred_channel?: string | null
           risk_score?: string | null
+          sourced_at?: string | null
+          sourced_by_ambassador_id?: string | null
           state?: string
           sticker_in_store?: boolean | null
           sticker_notes?: string | null
@@ -36337,6 +36358,34 @@ export type Database = {
           zip?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "store_master_assigned_ambassador_id_fkey"
+            columns: ["assigned_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_master_assigned_ambassador_id_fkey"
+            columns: ["assigned_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_master_assigned_ambassador_id_fkey"
+            columns: ["assigned_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_master_assigned_ambassador_id_fkey"
+            columns: ["assigned_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
           {
             foreignKeyName: "store_master_borough_id_fkey"
             columns: ["borough_id"]
@@ -36357,6 +36406,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "personality_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_master_sourced_by_ambassador_id_fkey"
+            columns: ["sourced_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_master_sourced_by_ambassador_id_fkey"
+            columns: ["sourced_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_master_sourced_by_ambassador_id_fkey"
+            columns: ["sourced_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_master_sourced_by_ambassador_id_fkey"
+            columns: ["sourced_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
           },
         ]
       }

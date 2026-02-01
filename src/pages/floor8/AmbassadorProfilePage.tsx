@@ -4,13 +4,13 @@
  * Tabs: Overview, Stores, Commissions, Payouts, Communication
  */
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   ArrowLeft, User, MapPin, Phone, Mail, Store, DollarSign,
-  TrendingUp, TrendingDown, Minus, MessageSquare, Activity,
-  AlertTriangle, CheckCircle2, Clock, Building2, Wallet, Star
+  TrendingUp, TrendingDown, Minus, MessageSquare,
+  AlertTriangle, Wallet, Star
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
@@ -21,6 +21,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
+import { AmbassadorStoresTab } from '@/components/floor8/AmbassadorStoresTab';
+import { useAmbassadorStoreData } from '@/hooks/useAmbassadorStoreData';
 import { cn } from '@/lib/utils';
 
 export default function AmbassadorProfilePage() {
@@ -105,6 +107,9 @@ export default function AmbassadorProfilePage() {
     enabled: !!ambassadorId,
   });
 
+  // Fetch separated store data (sourced vs assigned vs pipeline)
+  const { sourcedStores, assignedStores, pipeline } = useAmbassadorStoreData(ambassadorId);
+
   // Calculate metrics
   const pendingCommissions = commissions.filter(c => c.status === 'pending');
   const paidCommissions = commissions.filter(c => c.status === 'paid');
@@ -187,13 +192,20 @@ export default function AmbassadorProfilePage() {
           </div>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {/* KPI Cards - Distinct sourced vs managed counts */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           <Card>
             <CardContent className="pt-4">
-              <div className="text-sm text-muted-foreground">Stores Acquired</div>
-              <div className="text-2xl font-bold">{stores.length}</div>
-              <div className="text-xs text-muted-foreground">{activeStores} active</div>
+              <div className="text-sm text-muted-foreground">Stores Sourced</div>
+              <div className="text-2xl font-bold">{sourcedStores.length}</div>
+              <div className="text-xs text-primary">Attribution credit</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-sm text-muted-foreground">Stores Managed</div>
+              <div className="text-2xl font-bold">{assignedStores.length}</div>
+              <div className="text-xs text-cyan-400">Operational</div>
             </CardContent>
           </Card>
           <Card>
@@ -229,7 +241,7 @@ export default function AmbassadorProfilePage() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="stores">Stores ({stores.length})</TabsTrigger>
+            <TabsTrigger value="stores">Stores ({sourcedStores.length + assignedStores.length})</TabsTrigger>
             <TabsTrigger value="commissions">Commissions ({commissions.length})</TabsTrigger>
             <TabsTrigger value="payouts">Payouts</TabsTrigger>
             <TabsTrigger value="communication">Communication</TabsTrigger>
@@ -304,55 +316,21 @@ export default function AmbassadorProfilePage() {
           </TabsContent>
 
           <TabsContent value="stores" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Acquired Stores</CardTitle>
-                <CardDescription>All stores attributed to this ambassador</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {stores.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Store className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>No stores acquired yet</p>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Store</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Acquired</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {stores.map((assignment: any) => (
-                        <TableRow 
-                          key={assignment.id}
-                          className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => navigate(`/stores/${assignment.store?.id}`)}
-                        >
-                          <TableCell className="font-medium">
-                            {assignment.store?.store_name || 'Unknown Store'}
-                          </TableCell>
-                          <TableCell>
-                            {assignment.store?.city}, {assignment.store?.neighborhood}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={assignment.active ? 'default' : 'secondary'}>
-                              {assignment.store?.status || 'active'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(assignment.created_at), 'MMM d, yyyy')}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+            <AmbassadorStoresTab
+              ambassadorId={ambassadorId!}
+              ambassadorName={displayName}
+              sourcedStores={sourcedStores}
+              assignedStores={assignedStores}
+              pipeline={pipeline}
+              onLogVisit={(storeId) => {
+                // TODO: Open log visit modal
+                console.log('Log visit for store:', storeId);
+              }}
+              onMessage={(storeId) => {
+                // TODO: Open message modal
+                console.log('Message store:', storeId);
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="commissions" className="mt-4">
