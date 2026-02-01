@@ -134,6 +134,65 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`⚠️ No matching message found for SID: ${messageSid}`);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // INVOICE RECEIPT LOG UPDATE - Append delivery status to audit trail
+    // ═══════════════════════════════════════════════════════════════════════════
+    const { data: receiptLogEntry, error: receiptLogFindError } = await supabase
+      .from("invoice_receipt_log")
+      .select("id, invoice_id")
+      .eq("message_sid", messageSid)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (receiptLogFindError) {
+      console.error("❌ Error finding invoice_receipt_log entry:", receiptLogFindError);
+    }
+
+    if (receiptLogEntry) {
+      // Update the existing receipt log entry with delivery confirmation
+      const { error: receiptUpdateError } = await supabase
+        .from("invoice_receipt_log")
+        .update({
+          delivery_status: dbStatus,
+          delivered_at: dbStatus === "delivered" ? new Date().toISOString() : null,
+          error_message: isError ? (errorMessage || errorCode || "Delivery failed") : null,
+        })
+        .eq("id", receiptLogEntry.id);
+
+      if (receiptUpdateError) {
+        console.error("❌ Error updating invoice_receipt_log:", receiptUpdateError);
+      } else {
+        console.log(`✅ Updated invoice_receipt_log: ${receiptLogEntry.id} → ${dbStatus}`);
+      }
+
+      // Also update the invoice record itself if we have the invoice_id
+      if (receiptLogEntry.invoice_id) {
+        const invoiceUpdatePayload: Record<string, any> = {
+          receipt_status: dbStatus,
+        };
+
+        if (dbStatus === "delivered") {
+          invoiceUpdatePayload.receipt_delivered_at = new Date().toISOString();
+        } else if (isError) {
+          invoiceUpdatePayload.receipt_failure_reason = errorMessage || errorCode || "Delivery failed";
+        }
+
+        const { error: invoiceUpdateError } = await supabase
+          .from("invoices")
+          .update(invoiceUpdatePayload)
+          .eq("id", receiptLogEntry.invoice_id);
+
+        if (invoiceUpdateError) {
+          console.error("❌ Error updating invoice receipt status:", invoiceUpdateError);
+        } else {
+          console.log(`✅ Updated invoice receipt_status: ${receiptLogEntry.invoice_id} → ${dbStatus}`);
+        }
+      }
+    } else {
+      console.log(`📝 No invoice_receipt_log entry found for SID: ${messageSid} (may be non-invoice SMS)`);
+    }
+
     // Also update communication_logs if there's a matching record
     const { error: logUpdateError } = await supabase
       .from("communication_logs")

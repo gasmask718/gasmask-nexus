@@ -6,3 +6,4 @@ export {
 } from './ReceiptStatusIndicator';
 export { InvoiceModeSelector, type InvoiceMode } from './InvoiceModeSelector';
 export { InvoiceReceiptPanel, type InvoiceReceiptPanelProps } from './InvoiceReceiptPanel';
+export { InvoiceActivityTimeline } from './InvoiceActivityTimeline';
