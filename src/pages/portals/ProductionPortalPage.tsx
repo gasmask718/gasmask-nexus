@@ -44,6 +44,7 @@ import {
   DailyChecklist,
   TrainingModeBanner,
   TrainingModeToggle,
+  ActiveBatchBanner,
 } from '@/components/production';
 import { 
   Factory, 
@@ -254,6 +255,16 @@ export default function ProductionPortalPage() {
               onDismiss={handleWizardDismiss}
             />
           )}
+
+          {/* Active Batch Banner */}
+          <ActiveBatchBanner 
+            batches={batches}
+            onCreateBatch={() => {
+              // Navigate to batches tab and trigger create
+              const batchesTab = document.querySelector('[value="batches"]') as HTMLElement;
+              batchesTab?.click();
+            }}
+          />
 
           {/* Daily KPIs */}
           <div className="mb-6">
