@@ -5,7 +5,7 @@
  */
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   ArrowLeft, User, MapPin, Phone, Mail, Store, DollarSign,
@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 export default function AmbassadorProfilePage() {
   const { ambassadorId } = useParams<{ ambassadorId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('overview');
 
   // Fetch ambassador profile
@@ -325,6 +326,11 @@ export default function AmbassadorProfilePage() {
               onMessage={(storeId) => {
                 // TODO: Open message modal
                 console.log('Message store:', storeId);
+              }}
+              onRefresh={() => {
+                queryClient.invalidateQueries({ queryKey: ['ambassador-assigned-stores', ambassadorId] });
+                queryClient.invalidateQueries({ queryKey: ['ambassador-sourced-stores', ambassadorId] });
+                queryClient.invalidateQueries({ queryKey: ['floor8-ambassador-stores', ambassadorId] });
               }}
             />
           </TabsContent>
