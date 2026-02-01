@@ -4,15 +4,18 @@
  * The authoritative Production Portal for office managers.
  * - Office selection
  * - Daily KPI dashboard with day status
+ * - First-time wizard for new managers
+ * - Daily checklist enforcement
  * - Batch management
  * - Worker management & attendance
  * - Tools inventory
  * - Variance tracking
  * - Day closeouts
  * - Activity history
+ * - Training mode
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EnhancedPortalLayout } from '@/components/portal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +27,8 @@ import {
   useProductionOffices, 
   useDailyKPIs,
   useDailyCloseout,
+  useProductionBatches,
+  useCloseDay,
 } from '@/hooks/useProductionPortal';
 import {
   ProductionKPICards,
@@ -35,6 +40,10 @@ import {
   DayClosePanel,
   WorkerAttendance,
   CommunicationsLog,
+  FirstTimeWizard,
+  DailyChecklist,
+  TrainingModeBanner,
+  TrainingModeToggle,
 } from '@/components/production';
 import { 
   Factory, 
@@ -49,6 +58,8 @@ import {
   AlertTriangle,
   MessageSquare,
   Scale,
+  Settings,
+  UserPlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -59,19 +70,71 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   maintenance: { label: 'Maintenance', color: 'bg-amber-100 text-amber-800', icon: <AlertTriangle className="h-3 w-3" /> },
 };
 
+// Local storage key for tracking wizard completion
+const WIZARD_COMPLETE_KEY = 'production-wizard-complete';
+
 export default function ProductionPortalPage() {
   const navigate = useNavigate();
   const { data: offices = [], isLoading: officesLoading } = useProductionOffices();
   const [selectedOfficeId, setSelectedOfficeId] = useState<string>('');
+  const [isTrainingMode, setIsTrainingMode] = useState(false);
+  const [wizardDismissed, setWizardDismissed] = useState(false);
+  const [varianceAcknowledged, setVarianceAcknowledged] = useState(false);
   
   const selectedOffice = offices.find(o => o.id === selectedOfficeId);
   const { data: kpis, isLoading: kpisLoading } = useDailyKPIs(selectedOfficeId);
   const { data: closeout } = useDailyCloseout(selectedOfficeId);
+  const { data: batches = [] } = useProductionBatches(selectedOfficeId);
+  const closeDay = useCloseDay();
+
+  // Check if wizard was completed for this office
+  useEffect(() => {
+    if (selectedOfficeId) {
+      const completedOffices = JSON.parse(localStorage.getItem(WIZARD_COMPLETE_KEY) || '[]');
+      setWizardDismissed(completedOffices.includes(selectedOfficeId));
+    }
+  }, [selectedOfficeId]);
 
   // Auto-select first office when loaded
-  if (offices.length > 0 && !selectedOfficeId) {
-    setSelectedOfficeId(offices[0].id);
-  }
+  useEffect(() => {
+    if (offices.length > 0 && !selectedOfficeId) {
+      setSelectedOfficeId(offices[0].id);
+    }
+  }, [offices, selectedOfficeId]);
+
+  const handleWizardDismiss = () => {
+    const completedOffices = JSON.parse(localStorage.getItem(WIZARD_COMPLETE_KEY) || '[]');
+    if (!completedOffices.includes(selectedOfficeId)) {
+      completedOffices.push(selectedOfficeId);
+      localStorage.setItem(WIZARD_COMPLETE_KEY, JSON.stringify(completedOffices));
+    }
+    setWizardDismissed(true);
+  };
+
+  const handleCloseDay = async () => {
+    if (!selectedOfficeId) return;
+    await closeDay.mutateAsync({ 
+      officeId: selectedOfficeId,
+      summary: {
+        totalBoxes: kpis?.totalBoxes || 0,
+        totalTobaccoLbs: kpis?.tobaccoUsed || 0,
+        totalTubesUsed: kpis?.tubesUsed || 0,
+        totalDefects: kpis?.totalDefects || 0,
+        varianceSummary: {
+          tubes: kpis?.tubesVariance || 0,
+        },
+      },
+    });
+  };
+
+  // Derive checklist state from actual data
+  const hasBatch = batches.length > 0;
+  const hasOutput = batches.some(b => (b.boxes_produced || 0) > 0);
+  const isDayClosed = closeout?.is_locked || kpis?.isDayClosed || false;
+  const varianceAmount = kpis?.tubesVariance || 0;
+
+  // Show wizard if not dismissed and office is selected
+  const showWizard = selectedOfficeId && !wizardDismissed && !isDayClosed;
 
   const activeOffices = offices.filter(o => o.active !== false);
 
@@ -82,9 +145,16 @@ export default function ProductionPortalPage() {
       portalIcon={<Factory className="h-4 w-4 text-primary-foreground" />}
       quickActions={[
         { label: 'All Offices', href: '/portals/production/offices' },
+        { label: 'Staff', href: '/portals/production/staff' },
         { label: 'Reports', href: '/portals/production/reports' },
       ]}
     >
+      {/* Training Mode Banner */}
+      <TrainingModeBanner 
+        isTrainingMode={isTrainingMode}
+        onToggle={setIsTrainingMode}
+      />
+
       {/* Office Selector */}
       <Card className="mb-6">
         <CardContent className="p-4">
@@ -122,25 +192,39 @@ export default function ProductionPortalPage() {
             </div>
 
             {selectedOffice && (
-              <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                {selectedOffice.location && (
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
-                    <span>{selectedOffice.location}</span>
-                  </div>
-                )}
-                {selectedOffice.operating_hours && (
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>
-                      {(selectedOffice.operating_hours as any).start} - {(selectedOffice.operating_hours as any).end}
-                    </span>
-                  </div>
-                )}
-                <Badge className={cn(STATUS_CONFIG[selectedOffice.status]?.color)}>
-                  {STATUS_CONFIG[selectedOffice.status]?.icon}
-                  <span className="ml-1">{STATUS_CONFIG[selectedOffice.status]?.label}</span>
-                </Badge>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                  {selectedOffice.location && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-4 w-4" />
+                      <span>{selectedOffice.location}</span>
+                    </div>
+                  )}
+                  {selectedOffice.operating_hours && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      <span>
+                        {(selectedOffice.operating_hours as any).start} - {(selectedOffice.operating_hours as any).end}
+                      </span>
+                    </div>
+                  )}
+                  <Badge className={cn(STATUS_CONFIG[selectedOffice.status]?.color)}>
+                    {STATUS_CONFIG[selectedOffice.status]?.icon}
+                    <span className="ml-1">{STATUS_CONFIG[selectedOffice.status]?.label}</span>
+                  </Badge>
+                </div>
+                
+                {/* Quick Actions */}
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate('/portals/production/staff')}
+                  >
+                    <UserPlus className="h-4 w-4 mr-1" />
+                    Staff
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -159,6 +243,18 @@ export default function ProductionPortalPage() {
         </Card>
       ) : (
         <>
+          {/* First Time Wizard */}
+          {showWizard && (
+            <FirstTimeWizard
+              officeId={selectedOfficeId}
+              officeName={selectedOffice?.name || 'Production Office'}
+              hasBatch={hasBatch}
+              hasOutput={hasOutput}
+              isClosed={isDayClosed}
+              onDismiss={handleWizardDismiss}
+            />
+          )}
+
           {/* Daily KPIs */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -166,6 +262,10 @@ export default function ProductionPortalPage() {
                 <Factory className="h-5 w-5" />
                 Today's Production — {format(new Date(), 'EEEE, MMMM d')}
               </h2>
+              <TrainingModeToggle 
+                isTrainingMode={isTrainingMode}
+                onToggle={setIsTrainingMode}
+              />
             </div>
             <ProductionKPICards 
               kpis={kpis || {
@@ -181,7 +281,7 @@ export default function ProductionPortalPage() {
                 toolsTotal: 0,
                 totalDefects: 0,
                 defectRate: 0,
-                isDayClosed: closeout?.is_locked || false,
+                isDayClosed: isDayClosed,
               }} 
               isLoading={kpisLoading}
               closedAt={closeout?.closed_at ? format(new Date(closeout.closed_at), 'h:mm a') : undefined}
@@ -223,14 +323,24 @@ export default function ProductionPortalPage() {
                   <DailyBatchEntry officeId={selectedOfficeId} />
                 </div>
                 <div className="space-y-4">
-                  <DayClosePanel officeId={selectedOfficeId} isAdmin={true} />
+                  {/* Daily Checklist replaces simple close panel */}
+                  <DailyChecklist
+                    hasBatch={hasBatch}
+                    hasOutput={hasOutput}
+                    hasVarianceReview={varianceAcknowledged || varianceAmount === 0}
+                    varianceAmount={varianceAmount}
+                    boxCount={kpis?.totalBoxes || 0}
+                    onCloseDay={handleCloseDay}
+                    isClosing={closeDay.isPending}
+                    isDayClosed={isDayClosed}
+                  />
                   <VariancePanel officeId={selectedOfficeId} />
                 </div>
               </div>
             </TabsContent>
 
             <TabsContent value="attendance">
-              <WorkerAttendance officeId={selectedOfficeId} isDayLocked={kpis?.isDayClosed} />
+              <WorkerAttendance officeId={selectedOfficeId} isDayLocked={isDayClosed} />
             </TabsContent>
 
             <TabsContent value="workers">
