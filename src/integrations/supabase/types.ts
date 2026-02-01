@@ -31493,27 +31493,42 @@ export type Database = {
       production_recalc_queue: {
         Row: {
           batch_date: string
+          duration_ms: number | null
           error_message: string | null
           id: string
           office_id: string
           processed_at: string | null
           requested_at: string
+          retry_count: number | null
+          started_at: string | null
+          status: string | null
+          worker_count: number | null
         }
         Insert: {
           batch_date?: string
+          duration_ms?: number | null
           error_message?: string | null
           id?: string
           office_id: string
           processed_at?: string | null
           requested_at?: string
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          worker_count?: number | null
         }
         Update: {
           batch_date?: string
+          duration_ms?: number | null
           error_message?: string | null
           id?: string
           office_id?: string
           processed_at?: string | null
           requested_at?: string
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          worker_count?: number | null
         }
         Relationships: [
           {
@@ -31651,6 +31666,8 @@ export type Database = {
           defects_count: number | null
           hours_worked: number | null
           id: string
+          is_locked: boolean | null
+          locked_at: string | null
           office_id: string | null
           snapshot_date: string
           stickers_applied: number | null
@@ -31668,6 +31685,8 @@ export type Database = {
           defects_count?: number | null
           hours_worked?: number | null
           id?: string
+          is_locked?: boolean | null
+          locked_at?: string | null
           office_id?: string | null
           snapshot_date: string
           stickers_applied?: number | null
@@ -31685,6 +31704,8 @@ export type Database = {
           defects_count?: number | null
           hours_worked?: number | null
           id?: string
+          is_locked?: boolean | null
+          locked_at?: string | null
           office_id?: string | null
           snapshot_date?: string
           stickers_applied?: number | null
@@ -31715,10 +31736,15 @@ export type Database = {
           avg_sticker_apply_seconds: number | null
           avg_tube_fill_seconds: number | null
           boxes_per_hour: number | null
+          calculation_version: number | null
           created_at: string | null
           defect_rate_per_thousand: number | null
           id: string
+          is_locked: boolean | null
           last_calculated_at: string | null
+          lock_reason: string | null
+          locked_at: string | null
+          locked_by: string | null
           office_id: string | null
           overall_score: number | null
           quality_score: number | null
@@ -31744,10 +31770,15 @@ export type Database = {
           avg_sticker_apply_seconds?: number | null
           avg_tube_fill_seconds?: number | null
           boxes_per_hour?: number | null
+          calculation_version?: number | null
           created_at?: string | null
           defect_rate_per_thousand?: number | null
           id?: string
+          is_locked?: boolean | null
           last_calculated_at?: string | null
+          lock_reason?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
           office_id?: string | null
           overall_score?: number | null
           quality_score?: number | null
@@ -31773,10 +31804,15 @@ export type Database = {
           avg_sticker_apply_seconds?: number | null
           avg_tube_fill_seconds?: number | null
           boxes_per_hour?: number | null
+          calculation_version?: number | null
           created_at?: string | null
           defect_rate_per_thousand?: number | null
           id?: string
+          is_locked?: boolean | null
           last_calculated_at?: string | null
+          lock_reason?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
           office_id?: string | null
           overall_score?: number | null
           quality_score?: number | null
@@ -45528,6 +45564,21 @@ export type Database = {
         }
         Relationships: []
       }
+      v_recalc_queue_health: {
+        Row: {
+          avg_duration_ms_24h: number | null
+          checked_at: string | null
+          error_rate_24h: number | null
+          failed_24h: number | null
+          health_status: string | null
+          max_duration_ms_24h: number | null
+          oldest_pending_seconds: number | null
+          pending_count: number | null
+          processing_count: number | null
+          success_24h: number | null
+        }
+        Relationships: []
+      }
       v_store_commission_performance: {
         Row: {
           ambassadors_involved: number | null
@@ -45603,6 +45654,10 @@ export type Database = {
         Args: { p_admin_notes?: string; p_dispute_id: string }
         Returns: undefined
       }
+      admin_unlock_profile: {
+        Args: { p_reason?: string; p_unlocked_by: string; p_worker_id: string }
+        Returns: boolean
+      }
       apply_commission_overrides: {
         Args: { p_commission_id: string }
         Returns: undefined
@@ -45630,6 +45685,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      auto_lock_old_profiles: { Args: { p_days_old?: number }; Returns: number }
       backfill_final_results: { Args: never; Returns: number }
       bulk_approve_commissions: {
         Args: { p_ambassador_id?: string; p_before_date?: string }
@@ -45679,6 +45735,10 @@ export type Database = {
       check_portal_rate_limit: {
         Args: { _device_id: string; _endpoint_name: string }
         Returns: boolean
+      }
+      cleanup_old_recalc_items: {
+        Args: { p_days_old?: number }
+        Returns: number
       }
       compute_device_reliability: {
         Args: { p_device_id: string }
@@ -45997,7 +46057,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      process_recalc_queue: { Args: never; Returns: number }
+      process_recalc_queue: { Args: never; Returns: Json }
       quarantine_portal_device: {
         Args: { _device_id: string; _reason: string }
         Returns: boolean
@@ -46028,6 +46088,10 @@ export type Database = {
       restore_soft_deleted: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
+      }
+      retry_failed_recalc_items: {
+        Args: { p_max_retries?: number }
+        Returns: number
       }
       revoke_portal_device: {
         Args: { _device_id: string; _reason?: string }
