@@ -3,6 +3,7 @@
  * 
  * Central data fetching and mutations for the Production Portal.
  * Office-scoped manufacturing data with per-brand accountability.
+ * Production-grade: variance tracking, day locking, attendance ledger.
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -42,6 +43,8 @@ export interface ProductionWorker {
   created_at: string;
 }
 
+export type BrandInputs = Record<string, number>;
+
 export interface ProductionBatch {
   id: string;
   office_id: string;
@@ -51,6 +54,8 @@ export interface ProductionBatch {
   tobacco_lbs: number;
   tubes_total: number | null;
   boxes_produced: number | null;
+  stickers_issued: BrandInputs | null;
+  empty_boxes_issued: BrandInputs | null;
   stickers_used: Record<string, any> | null;
   empty_boxes_used: Record<string, any> | null;
   tools_used: any[] | null;
@@ -62,6 +67,16 @@ export interface ProductionBatch {
   created_by: string | null;
   completed_at: string | null;
   created_at: string;
+  // New variance fields
+  is_locked: boolean;
+  locked_at: string | null;
+  locked_by: string | null;
+  total_tubes_used: number;
+  total_stickers_used: number;
+  total_empty_boxes_used: number;
+  total_defects: number;
+  variance_tubes: number;
+  variance_notes: string | null;
   office?: { id: string; name: string } | null;
 }
 
@@ -76,6 +91,11 @@ export interface ProductionBatchOutput {
   defects_count: number;
   notes: string | null;
   created_at: string;
+  // Variance fields
+  stickers_issued: number;
+  empty_boxes_issued: number;
+  variance_stickers: number;
+  variance_boxes: number;
 }
 
 export interface ProductionOfficeTool {
@@ -101,14 +121,63 @@ export interface ProductionHistory {
   created_at: string;
 }
 
+export interface ProductionDailyCloseout {
+  id: string;
+  office_id: string;
+  close_date: string;
+  closed_by: string;
+  closed_at: string;
+  unlocked_by: string | null;
+  unlocked_at: string | null;
+  is_locked: boolean;
+  total_boxes: number;
+  total_tobacco_lbs: number;
+  total_tubes_used: number;
+  total_defects: number;
+  variance_summary: Record<string, any>;
+  notes: string | null;
+}
+
+export interface WorkerAttendance {
+  id: string;
+  office_id: string;
+  worker_id: string;
+  batch_id: string | null;
+  attendance_date: string;
+  shift_label: string | null;
+  checked_in_at: string | null;
+  checked_out_at: string | null;
+  hours_worked: number | null;
+  notes: string | null;
+  recorded_by: string | null;
+  created_at: string;
+}
+
 export interface DailyKPIs {
   totalBoxes: number;
   boxesByBrand: Record<string, number>;
   tobaccoUsed: number;
+  tubesIssued: number;
+  tubesUsed: number;
+  tubesVariance: number;
   efficiencyPct: number;
   workersPresent: number;
   toolsOperational: number;
   toolsTotal: number;
+  totalDefects: number;
+  defectRate: number;
+  isDayClosed: boolean;
+}
+
+export interface VarianceSummary {
+  tubesIssued: number;
+  tubesUsed: number;
+  tubesVariance: number;
+  stickersByBrand: Record<string, { issued: number; used: number; variance: number }>;
+  boxesByBrand: Record<string, { issued: number; used: number; variance: number }>;
+  expectedBoxes: number;
+  actualBoxes: number;
+  efficiencyPct: number;
 }
 
 // ============================================================
@@ -224,6 +293,139 @@ export function useUpdateWorker() {
 }
 
 // ============================================================
+// WORKER ATTENDANCE HOOKS
+// ============================================================
+
+export function useWorkerAttendance(officeId: string | undefined, date?: Date) {
+  const targetDate = date || new Date();
+  const dateStr = format(targetDate, 'yyyy-MM-dd');
+
+  return useQuery({
+    queryKey: ['worker-attendance', officeId, dateStr],
+    queryFn: async (): Promise<(WorkerAttendance & { worker: ProductionWorker | null })[]> => {
+      if (!officeId) return [];
+      
+      const { data, error } = await (supabase as any)
+        .from('production_worker_attendance')
+        .select('id, worker_id, batch_id, shift_label, checked_in_at, checked_out_at, hours_worked, notes, recorded_by, created_at')
+        .eq('office_id', officeId)
+        .eq('attendance_date', dateStr)
+        .order('checked_in_at', { ascending: true });
+      
+      if (error) throw error;
+      // Map to our expected interface
+      return (data || []).map((d) => ({
+        id: d.id,
+        office_id: officeId,
+        worker_id: d.worker_id,
+        batch_id: d.batch_id,
+        attendance_date: dateStr,
+        shift_label: d.shift_label,
+        checked_in_at: d.checked_in_at,
+        checked_out_at: d.checked_out_at,
+        hours_worked: d.hours_worked,
+        notes: d.notes,
+        recorded_by: d.recorded_by,
+        created_at: d.created_at,
+        worker: null, // Will be joined client-side if needed
+      }));
+    },
+    enabled: !!officeId,
+  });
+}
+
+export function useCheckInWorker() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ 
+      officeId, 
+      workerId, 
+      shiftLabel,
+      batchId 
+    }: { 
+      officeId: string; 
+      workerId: string; 
+      shiftLabel?: string;
+      batchId?: string;
+    }) => {
+      const { data: userData } = await supabase.auth.getUser();
+      const now = new Date();
+      
+      const { data, error } = await supabase
+        .from('production_worker_attendance')
+        .insert({
+          office_id: officeId,
+          worker_id: workerId,
+          batch_id: batchId || null,
+          attendance_date: format(now, 'yyyy-MM-dd'),
+          shift_label: shiftLabel || null,
+          checked_in_at: now.toISOString(),
+          recorded_by: userData.user?.id,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return { id: data.id, officeId };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['worker-attendance', data.officeId] });
+      queryClient.invalidateQueries({ queryKey: ['production-daily-kpis'] });
+      toast({ title: 'Worker checked in' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Check-in failed', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+export function useCheckOutWorker() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ attendanceId, officeId }: { attendanceId: string; officeId: string }) => {
+      const now = new Date();
+      
+      // Get check-in time to calculate hours worked
+      const { data: attendance } = await supabase
+        .from('production_worker_attendance')
+        .select('checked_in_at')
+        .eq('id', attendanceId)
+        .single();
+      
+      let hoursWorked = null;
+      if (attendance?.checked_in_at) {
+        const checkIn = new Date(attendance.checked_in_at);
+        hoursWorked = Math.round((now.getTime() - checkIn.getTime()) / (1000 * 60 * 60) * 100) / 100;
+      }
+      
+      const { data, error } = await supabase
+        .from('production_worker_attendance')
+        .update({
+          checked_out_at: now.toISOString(),
+          hours_worked: hoursWorked,
+        })
+        .eq('id', attendanceId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return { id: data.id, officeId };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['worker-attendance', data.officeId] });
+      toast({ title: 'Worker checked out' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Check-out failed', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+// ============================================================
 // BATCH HOOKS
 // ============================================================
 
@@ -267,18 +469,20 @@ export function useCreateBatch() {
       
       const { data, error } = await supabase
         .from('production_batches')
-        .insert({
+        .insert([{
           office_id: batch.office_id,
           brand: batch.brand || 'gasmask',
           shift_label: batch.shift_label,
           tobacco_lbs: batch.tobacco_lbs,
           tubes_total: batch.tubes_total,
+          stickers_issued: (batch.stickers_issued as Record<string, any>) || {},
+          empty_boxes_issued: (batch.empty_boxes_issued as Record<string, any>) || {},
           workers_present: batch.workers_present,
           notes: batch.notes,
           status: batch.status || 'open',
           created_by: userData.user?.id,
           batch_date: batch.batch_date || format(new Date(), 'yyyy-MM-dd'),
-        })
+        }])
         .select()
         .single();
       
@@ -288,6 +492,7 @@ export function useCreateBatch() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['production-batches', variables.office_id] });
       queryClient.invalidateQueries({ queryKey: ['production-daily-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['production-history'] });
       toast({ title: 'Batch created successfully' });
     },
     onError: (error: Error) => {
@@ -302,12 +507,27 @@ export function useUpdateBatch() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<ProductionBatch> & { id: string }) => {
+      // Clean the updates to remove non-DB fields and convert types
+      const cleanUpdates: Record<string, any> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (updates.brand !== undefined) cleanUpdates.brand = updates.brand;
+      if (updates.shift_label !== undefined) cleanUpdates.shift_label = updates.shift_label;
+      if (updates.tobacco_lbs !== undefined) cleanUpdates.tobacco_lbs = updates.tobacco_lbs;
+      if (updates.tubes_total !== undefined) cleanUpdates.tubes_total = updates.tubes_total;
+      if (updates.stickers_issued !== undefined) cleanUpdates.stickers_issued = updates.stickers_issued;
+      if (updates.empty_boxes_issued !== undefined) cleanUpdates.empty_boxes_issued = updates.empty_boxes_issued;
+      if (updates.workers_present !== undefined) cleanUpdates.workers_present = updates.workers_present;
+      if (updates.notes !== undefined) cleanUpdates.notes = updates.notes;
+      if (updates.status !== undefined) cleanUpdates.status = updates.status;
+      if (updates.completed_at !== undefined) cleanUpdates.completed_at = updates.completed_at;
+      if (updates.is_locked !== undefined) cleanUpdates.is_locked = updates.is_locked;
+      if (updates.locked_at !== undefined) cleanUpdates.locked_at = updates.locked_at;
+      if (updates.locked_by !== undefined) cleanUpdates.locked_by = updates.locked_by;
+      
       const { data, error } = await supabase
         .from('production_batches')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
+        .update(cleanUpdates)
         .eq('id', id)
         .select()
         .single();
@@ -318,10 +538,44 @@ export function useUpdateBatch() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['production-batches', data.office_id] });
       queryClient.invalidateQueries({ queryKey: ['production-daily-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['production-history'] });
       toast({ title: 'Batch updated successfully' });
     },
     onError: (error: Error) => {
       toast({ title: 'Failed to update batch', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+export function useLockBatch() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ batchId, officeId }: { batchId: string; officeId: string }) => {
+      const { data: userData } = await supabase.auth.getUser();
+      
+      const { data, error } = await supabase
+        .from('production_batches')
+        .update({
+          is_locked: true,
+          locked_at: new Date().toISOString(),
+          locked_by: userData.user?.id,
+        })
+        .eq('id', batchId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return { ...data, officeId };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['production-batches', data.officeId] });
+      queryClient.invalidateQueries({ queryKey: ['production-history'] });
+      toast({ title: 'Batch locked' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to lock batch', description: error.message, variant: 'destructive' });
     },
   });
 }
@@ -354,11 +608,18 @@ export function useRecordOutput() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (output: Omit<ProductionBatchOutput, 'id' | 'created_at'>) => {
-      // Upsert: update if exists, insert if not
+    mutationFn: async (output: Omit<ProductionBatchOutput, 'id' | 'created_at' | 'variance_stickers' | 'variance_boxes'>) => {
+      // Calculate variance fields
+      const variance_stickers = (output.stickers_issued || 0) - output.stickers_used;
+      const variance_boxes = (output.empty_boxes_issued || 0) - output.empty_boxes_used;
+      
       const { data, error } = await supabase
         .from('production_batch_outputs')
-        .upsert(output, { onConflict: 'batch_id,brand' })
+        .upsert({
+          ...output,
+          variance_stickers,
+          variance_boxes,
+        }, { onConflict: 'batch_id,brand' })
         .select()
         .single();
       
@@ -368,6 +629,8 @@ export function useRecordOutput() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['production-batch-outputs', variables.batch_id] });
       queryClient.invalidateQueries({ queryKey: ['production-daily-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['production-batches'] });
+      queryClient.invalidateQueries({ queryKey: ['production-history'] });
       toast({ title: 'Output recorded successfully' });
     },
     onError: (error: Error) => {
@@ -451,7 +714,142 @@ export function useUpdateTool() {
 }
 
 // ============================================================
-// DAILY KPI HOOK
+// DAILY CLOSEOUT HOOKS
+// ============================================================
+
+export function useDailyCloseout(officeId: string | undefined, date?: Date) {
+  const targetDate = date || new Date();
+  const dateStr = format(targetDate, 'yyyy-MM-dd');
+
+  return useQuery({
+    queryKey: ['production-closeout', officeId, dateStr],
+    queryFn: async () => {
+      if (!officeId) return null;
+      
+      const { data, error } = await supabase
+        .from('production_daily_closeouts')
+        .select('*')
+        .eq('office_id', officeId)
+        .eq('close_date', dateStr)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data as ProductionDailyCloseout | null;
+    },
+    enabled: !!officeId,
+  });
+}
+
+export function useCloseDay() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ 
+      officeId, 
+      date,
+      summary 
+    }: { 
+      officeId: string; 
+      date?: Date;
+      summary: {
+        totalBoxes: number;
+        totalTobaccoLbs: number;
+        totalTubesUsed: number;
+        totalDefects: number;
+        varianceSummary: Record<string, any>;
+      };
+    }) => {
+      const { data: userData } = await supabase.auth.getUser();
+      const closeDate = format(date || new Date(), 'yyyy-MM-dd');
+      
+      // Lock all batches for this day
+      await supabase
+        .from('production_batches')
+        .update({ 
+          is_locked: true, 
+          locked_at: new Date().toISOString(),
+          locked_by: userData.user?.id,
+        })
+        .eq('office_id', officeId)
+        .eq('batch_date', closeDate)
+        .eq('is_locked', false);
+      
+      // Create closeout record
+      const { data, error } = await supabase
+        .from('production_daily_closeouts')
+        .insert({
+          office_id: officeId,
+          close_date: closeDate,
+          closed_by: userData.user?.id,
+          total_boxes: summary.totalBoxes,
+          total_tobacco_lbs: summary.totalTobaccoLbs,
+          total_tubes_used: summary.totalTubesUsed,
+          total_defects: summary.totalDefects,
+          variance_summary: summary.varianceSummary,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['production-closeout', data.office_id] });
+      queryClient.invalidateQueries({ queryKey: ['production-batches', data.office_id] });
+      queryClient.invalidateQueries({ queryKey: ['production-daily-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['production-history'] });
+      toast({ title: 'Day closed successfully', description: 'All batches have been locked.' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to close day', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+export function useUnlockDay() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ closeoutId, officeId }: { closeoutId: string; officeId: string }) => {
+      const { data: userData } = await supabase.auth.getUser();
+      
+      const { data, error } = await supabase
+        .from('production_daily_closeouts')
+        .update({
+          is_locked: false,
+          unlocked_by: userData.user?.id,
+          unlocked_at: new Date().toISOString(),
+        })
+        .eq('id', closeoutId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Also unlock batches for that day
+      await supabase
+        .from('production_batches')
+        .update({ is_locked: false })
+        .eq('office_id', officeId)
+        .eq('batch_date', data.close_date);
+      
+      return { ...data, officeId };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['production-closeout', data.officeId] });
+      queryClient.invalidateQueries({ queryKey: ['production-batches', data.officeId] });
+      toast({ title: 'Day unlocked', description: 'Batches can now be edited.' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to unlock day', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+// ============================================================
+// DAILY KPI HOOK (ENHANCED WITH VARIANCE)
 // ============================================================
 
 export function useDailyKPIs(officeId: string | undefined, date?: Date) {
@@ -466,17 +864,23 @@ export function useDailyKPIs(officeId: string | undefined, date?: Date) {
           totalBoxes: 0,
           boxesByBrand: {},
           tobaccoUsed: 0,
+          tubesIssued: 0,
+          tubesUsed: 0,
+          tubesVariance: 0,
           efficiencyPct: 0,
           workersPresent: 0,
           toolsOperational: 0,
           toolsTotal: 0,
+          totalDefects: 0,
+          defectRate: 0,
+          isDayClosed: false,
         };
       }
 
       // Get today's batches
       const { data: batches } = await supabase
         .from('production_batches')
-        .select('id, tobacco_lbs, workers_present')
+        .select('id, tobacco_lbs, tubes_total, workers_present, total_tubes_used, total_defects, variance_tubes')
         .eq('office_id', officeId)
         .eq('batch_date', dateStr);
 
@@ -498,39 +902,167 @@ export function useDailyKPIs(officeId: string | undefined, date?: Date) {
         .select('quantity, operational_count')
         .eq('office_id', officeId);
 
+      // Get attendance count
+      const attendanceResult = await (supabase as any)
+        .from('production_worker_attendance')
+        .select('id', { count: 'exact', head: true })
+        .eq('office_id', officeId)
+        .eq('attendance_date', dateStr);
+      const attendanceCount = attendanceResult?.count || 0;
+
+      // Check if day is closed
+      const { data: closeout } = await supabase
+        .from('production_daily_closeouts')
+        .select('is_locked')
+        .eq('office_id', officeId)
+        .eq('close_date', dateStr)
+        .maybeSingle();
+
       // Calculate KPIs
       const boxesByBrand: Record<string, number> = {};
       let totalBoxes = 0;
+      let totalDefectsFromOutputs = 0;
       
       for (const output of outputs) {
         boxesByBrand[output.brand] = (boxesByBrand[output.brand] || 0) + output.boxes_completed;
         totalBoxes += output.boxes_completed;
+        totalDefectsFromOutputs += output.defects_count || 0;
       }
 
       const tobaccoUsed = (batches || []).reduce((sum, b) => sum + (Number(b.tobacco_lbs) || 0), 0);
+      const tubesIssued = (batches || []).reduce((sum, b) => sum + (Number(b.tubes_total) || 0), 0);
+      const tubesUsed = (batches || []).reduce((sum, b) => sum + (Number(b.total_tubes_used) || 0), 0);
+      const tubesVariance = tubesIssued - tubesUsed;
+      const totalDefects = (batches || []).reduce((sum, b) => sum + (Number(b.total_defects) || 0), 0);
       
-      // Unique workers across all batches
+      // Unique workers across all batches (legacy) + attendance ledger
       const allWorkers = new Set<string>();
       (batches || []).forEach(b => {
         (b.workers_present || []).forEach((w: string) => allWorkers.add(w));
       });
+      const workersPresent = Math.max(allWorkers.size, attendanceCount || 0);
 
       const toolsTotal = (tools || []).reduce((sum, t) => sum + (t.quantity || 0), 0);
       const toolsOperational = (tools || []).reduce((sum, t) => sum + (t.operational_count || 0), 0);
 
-      // Calculate average efficiency
-      const totalTubes = outputs.reduce((sum, o) => sum + (o.tubes_used || 0), 0);
-      const expectedBoxes = totalTubes / 20;
+      // Calculate efficiency and defect rate
+      const expectedBoxes = tubesUsed / 20;
       const efficiencyPct = expectedBoxes > 0 ? Math.round((totalBoxes / expectedBoxes) * 100) : 0;
+      const defectRate = totalBoxes > 0 ? Math.round((totalDefects / totalBoxes) * 100 * 10) / 10 : 0;
 
       return {
         totalBoxes,
         boxesByBrand,
         tobaccoUsed,
+        tubesIssued,
+        tubesUsed,
+        tubesVariance,
         efficiencyPct,
-        workersPresent: allWorkers.size,
+        workersPresent,
         toolsOperational,
         toolsTotal,
+        totalDefects,
+        defectRate,
+        isDayClosed: closeout?.is_locked || false,
+      };
+    },
+    enabled: !!officeId,
+  });
+}
+
+// ============================================================
+// VARIANCE SUMMARY HOOK
+// ============================================================
+
+export function useVarianceSummary(officeId: string | undefined, date?: Date) {
+  const targetDate = date || new Date();
+  const dateStr = format(targetDate, 'yyyy-MM-dd');
+
+  return useQuery({
+    queryKey: ['production-variance', officeId, dateStr],
+    queryFn: async (): Promise<VarianceSummary> => {
+      if (!officeId) {
+        return {
+          tubesIssued: 0,
+          tubesUsed: 0,
+          tubesVariance: 0,
+          stickersByBrand: {},
+          boxesByBrand: {},
+          expectedBoxes: 0,
+          actualBoxes: 0,
+          efficiencyPct: 0,
+        };
+      }
+
+      // Get batches with their issued inputs
+      const { data: batches } = await supabase
+        .from('production_batches')
+        .select('id, tubes_total, stickers_issued, empty_boxes_issued, total_tubes_used')
+        .eq('office_id', officeId)
+        .eq('batch_date', dateStr);
+
+      const batchIds = (batches || []).map(b => b.id);
+
+      // Get outputs
+      let outputs: ProductionBatchOutput[] = [];
+      if (batchIds.length > 0) {
+        const { data } = await supabase
+          .from('production_batch_outputs')
+          .select('*')
+          .in('batch_id', batchIds);
+        outputs = (data || []) as ProductionBatchOutput[];
+      }
+
+      // Calculate totals
+      const tubesIssued = (batches || []).reduce((sum, b) => sum + (Number(b.tubes_total) || 0), 0);
+      const tubesUsed = (batches || []).reduce((sum, b) => sum + (Number(b.total_tubes_used) || 0), 0);
+      
+      // Aggregate per-brand stickers and boxes issued from batches
+      const stickersByBrand: Record<string, { issued: number; used: number; variance: number }> = {};
+      const boxesByBrand: Record<string, { issued: number; used: number; variance: number }> = {};
+      
+      const brands = ['gasmask', 'hotmama', 'hotscolati', 'grabba-rus'];
+      brands.forEach(brand => {
+        let stickersIssued = 0;
+        let emptyBoxesIssued = 0;
+        
+        (batches || []).forEach(b => {
+          const si = b.stickers_issued as BrandInputs;
+          const ebi = b.empty_boxes_issued as BrandInputs;
+          stickersIssued += si?.[brand as keyof BrandInputs] || 0;
+          emptyBoxesIssued += ebi?.[brand as keyof BrandInputs] || 0;
+        });
+        
+        const brandOutputs = outputs.filter(o => o.brand === brand);
+        const stickersUsed = brandOutputs.reduce((sum, o) => sum + (o.stickers_used || 0), 0);
+        const emptyBoxesUsed = brandOutputs.reduce((sum, o) => sum + (o.empty_boxes_used || 0), 0);
+        
+        stickersByBrand[brand] = {
+          issued: stickersIssued,
+          used: stickersUsed,
+          variance: stickersIssued - stickersUsed,
+        };
+        
+        boxesByBrand[brand] = {
+          issued: emptyBoxesIssued,
+          used: emptyBoxesUsed,
+          variance: emptyBoxesIssued - emptyBoxesUsed,
+        };
+      });
+
+      const actualBoxes = outputs.reduce((sum, o) => sum + o.boxes_completed, 0);
+      const expectedBoxes = tubesUsed / 20;
+      const efficiencyPct = expectedBoxes > 0 ? Math.round((actualBoxes / expectedBoxes) * 100) : 0;
+
+      return {
+        tubesIssued,
+        tubesUsed,
+        tubesVariance: tubesIssued - tubesUsed,
+        stickersByBrand,
+        boxesByBrand,
+        expectedBoxes: Math.round(expectedBoxes),
+        actualBoxes,
+        efficiencyPct,
       };
     },
     enabled: !!officeId,
@@ -558,5 +1090,68 @@ export function useProductionHistory(officeId: string | undefined, limit = 50) {
       return (data || []) as ProductionHistory[];
     },
     enabled: !!officeId,
+  });
+}
+
+// ============================================================
+// COMMUNICATION LOG HOOK
+// ============================================================
+
+export function useProductionCommunications(officeId: string | undefined, limit = 50) {
+  return useQuery({
+    queryKey: ['production-communications', officeId, limit],
+    queryFn: async () => {
+      if (!officeId) return [];
+      
+      const { data, error } = await supabase
+        .from('production_communication_log')
+        .select('*, worker:production_workers(id, full_name)')
+        .eq('office_id', officeId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!officeId,
+  });
+}
+
+export function useLogCommunication() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (log: {
+      officeId: string;
+      workerId?: string;
+      batchId?: string;
+      channel: 'sms' | 'whatsapp' | 'call';
+      phoneUsed: string;
+      messageBody?: string;
+    }) => {
+      const { data: userData } = await supabase.auth.getUser();
+      
+      const { data, error } = await supabase
+        .from('production_communication_log')
+        .insert({
+          office_id: log.officeId,
+          worker_id: log.workerId || null,
+          batch_id: log.batchId || null,
+          channel: log.channel,
+          phone_used: log.phoneUsed,
+          message_body: log.messageBody || null,
+          sent_by: userData.user?.id,
+          status: 'queued',
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['production-communications', data.office_id] });
+      queryClient.invalidateQueries({ queryKey: ['production-history', data.office_id] });
+    },
   });
 }

@@ -30723,11 +30723,15 @@ export type Database = {
           brand: string
           created_at: string | null
           defects_count: number | null
+          empty_boxes_issued: number | null
           empty_boxes_used: number | null
           id: string
           notes: string | null
+          stickers_issued: number | null
           stickers_used: number | null
           tubes_used: number | null
+          variance_boxes: number | null
+          variance_stickers: number | null
         }
         Insert: {
           batch_id: string
@@ -30735,11 +30739,15 @@ export type Database = {
           brand: string
           created_at?: string | null
           defects_count?: number | null
+          empty_boxes_issued?: number | null
           empty_boxes_used?: number | null
           id?: string
           notes?: string | null
+          stickers_issued?: number | null
           stickers_used?: number | null
           tubes_used?: number | null
+          variance_boxes?: number | null
+          variance_stickers?: number | null
         }
         Update: {
           batch_id?: string
@@ -30747,11 +30755,15 @@ export type Database = {
           brand?: string
           created_at?: string | null
           defects_count?: number | null
+          empty_boxes_issued?: number | null
           empty_boxes_used?: number | null
           id?: string
           notes?: string | null
+          stickers_issued?: number | null
           stickers_used?: number | null
           tubes_used?: number | null
+          variance_boxes?: number | null
+          variance_stickers?: number | null
         }
         Relationships: [
           {
@@ -30772,18 +30784,29 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           efficiency_pct: number | null
+          empty_boxes_issued: Json | null
           empty_boxes_used: Json | null
           id: string
+          is_locked: boolean | null
+          locked_at: string | null
+          locked_by: string | null
           notes: string | null
           office_id: string | null
           produced_by: string | null
           shift_label: string | null
           status: string | null
+          stickers_issued: Json | null
           stickers_used: Json | null
           tobacco_lbs: number | null
           tools_used: Json | null
+          total_defects: number | null
+          total_empty_boxes_used: number | null
+          total_stickers_used: number | null
+          total_tubes_used: number | null
           tubes_total: number | null
           updated_at: string | null
+          variance_notes: string | null
+          variance_tubes: number | null
           waste_lbs: number | null
           workers_present: string[] | null
         }
@@ -30795,18 +30818,29 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           efficiency_pct?: number | null
+          empty_boxes_issued?: Json | null
           empty_boxes_used?: Json | null
           id?: string
+          is_locked?: boolean | null
+          locked_at?: string | null
+          locked_by?: string | null
           notes?: string | null
           office_id?: string | null
           produced_by?: string | null
           shift_label?: string | null
           status?: string | null
+          stickers_issued?: Json | null
           stickers_used?: Json | null
           tobacco_lbs?: number | null
           tools_used?: Json | null
+          total_defects?: number | null
+          total_empty_boxes_used?: number | null
+          total_stickers_used?: number | null
+          total_tubes_used?: number | null
           tubes_total?: number | null
           updated_at?: string | null
+          variance_notes?: string | null
+          variance_tubes?: number | null
           waste_lbs?: number | null
           workers_present?: string[] | null
         }
@@ -30818,18 +30852,29 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           efficiency_pct?: number | null
+          empty_boxes_issued?: Json | null
           empty_boxes_used?: Json | null
           id?: string
+          is_locked?: boolean | null
+          locked_at?: string | null
+          locked_by?: string | null
           notes?: string | null
           office_id?: string | null
           produced_by?: string | null
           shift_label?: string | null
           status?: string | null
+          stickers_issued?: Json | null
           stickers_used?: Json | null
           tobacco_lbs?: number | null
           tools_used?: Json | null
+          total_defects?: number | null
+          total_empty_boxes_used?: number | null
+          total_stickers_used?: number | null
+          total_tubes_used?: number | null
           tubes_total?: number | null
           updated_at?: string | null
+          variance_notes?: string | null
+          variance_tubes?: number | null
           waste_lbs?: number | null
           workers_present?: string[] | null
         }
@@ -30839,6 +30884,82 @@ export type Database = {
             columns: ["office_id"]
             isOneToOne: false
             referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_communication_log: {
+        Row: {
+          batch_id: string | null
+          channel: string
+          created_at: string | null
+          delivered_at: string | null
+          direction: string | null
+          error_message: string | null
+          id: string
+          message_body: string | null
+          office_id: string
+          phone_used: string | null
+          provider_message_id: string | null
+          sent_by: string | null
+          status: string | null
+          updated_at: string | null
+          worker_id: string | null
+        }
+        Insert: {
+          batch_id?: string | null
+          channel: string
+          created_at?: string | null
+          delivered_at?: string | null
+          direction?: string | null
+          error_message?: string | null
+          id?: string
+          message_body?: string | null
+          office_id: string
+          phone_used?: string | null
+          provider_message_id?: string | null
+          sent_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+          worker_id?: string | null
+        }
+        Update: {
+          batch_id?: string | null
+          channel?: string
+          created_at?: string | null
+          delivered_at?: string | null
+          direction?: string | null
+          error_message?: string | null
+          id?: string
+          message_body?: string | null
+          office_id?: string
+          phone_used?: string | null
+          provider_message_id?: string | null
+          sent_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_communication_log_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_communication_log_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_communication_log_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "production_workers"
             referencedColumns: ["id"]
           },
         ]
@@ -30890,6 +31011,68 @@ export type Database = {
           total_cost?: number
         }
         Relationships: []
+      }
+      production_daily_closeouts: {
+        Row: {
+          close_date: string
+          closed_at: string | null
+          closed_by: string
+          created_at: string | null
+          id: string
+          is_locked: boolean | null
+          notes: string | null
+          office_id: string
+          total_boxes: number | null
+          total_defects: number | null
+          total_tobacco_lbs: number | null
+          total_tubes_used: number | null
+          unlocked_at: string | null
+          unlocked_by: string | null
+          variance_summary: Json | null
+        }
+        Insert: {
+          close_date: string
+          closed_at?: string | null
+          closed_by: string
+          created_at?: string | null
+          id?: string
+          is_locked?: boolean | null
+          notes?: string | null
+          office_id: string
+          total_boxes?: number | null
+          total_defects?: number | null
+          total_tobacco_lbs?: number | null
+          total_tubes_used?: number | null
+          unlocked_at?: string | null
+          unlocked_by?: string | null
+          variance_summary?: Json | null
+        }
+        Update: {
+          close_date?: string
+          closed_at?: string | null
+          closed_by?: string
+          created_at?: string | null
+          id?: string
+          is_locked?: boolean | null
+          notes?: string | null
+          office_id?: string
+          total_boxes?: number | null
+          total_defects?: number | null
+          total_tobacco_lbs?: number | null
+          total_tubes_used?: number | null
+          unlocked_at?: string | null
+          unlocked_by?: string | null
+          variance_summary?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_daily_closeouts_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       production_history: {
         Row: {
@@ -31074,6 +31257,53 @@ export type Database = {
           },
         ]
       }
+      production_office_users: {
+        Row: {
+          active: boolean | null
+          assigned_at: string | null
+          assigned_by: string | null
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          office_id: string
+          role: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          office_id: string
+          role: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          office_id?: string
+          role?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_office_users_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_offices: {
         Row: {
           active: boolean | null
@@ -31195,33 +31425,45 @@ export type Database = {
           batch_id: string
           check_in_at: string | null
           check_out_at: string | null
+          checked_in_at: string | null
+          checked_out_at: string | null
           created_at: string | null
           hours_worked: number | null
           id: string
           notes: string | null
+          recorded_by: string | null
           role_during_shift: string | null
+          shift_label: string | null
           worker_id: string
         }
         Insert: {
           batch_id: string
           check_in_at?: string | null
           check_out_at?: string | null
+          checked_in_at?: string | null
+          checked_out_at?: string | null
           created_at?: string | null
           hours_worked?: number | null
           id?: string
           notes?: string | null
+          recorded_by?: string | null
           role_during_shift?: string | null
+          shift_label?: string | null
           worker_id: string
         }
         Update: {
           batch_id?: string
           check_in_at?: string | null
           check_out_at?: string | null
+          checked_in_at?: string | null
+          checked_out_at?: string | null
           created_at?: string | null
           hours_worked?: number | null
           id?: string
           notes?: string | null
+          recorded_by?: string | null
           role_during_shift?: string | null
+          shift_label?: string | null
           worker_id?: string
         }
         Relationships: [
@@ -45268,6 +45510,10 @@ export type Database = {
         Args: { _role: string; _user_id: string }
         Returns: boolean
       }
+      has_production_office_access: {
+        Args: { _office_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -45314,6 +45560,7 @@ export type Database = {
         Args: { _session_id: string }
         Returns: boolean
       }
+      is_production_admin: { Args: { _user_id: string }; Returns: boolean }
       is_simulation_mode: { Args: never; Returns: boolean }
       is_va: { Args: { _user_id: string }; Returns: boolean }
       log_ai_audit_event: {
