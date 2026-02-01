@@ -371,6 +371,8 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
       empty_boxes_used: parseInt(outputForm.empty_boxes_used) || 0,
       defects_count: parseInt(outputForm.defects_count) || 0,
       notes: outputForm.notes || null,
+      stickers_issued: 0,
+      empty_boxes_issued: 0,
     });
     
     setOutputForm({

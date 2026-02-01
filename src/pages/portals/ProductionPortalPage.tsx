@@ -28,6 +28,10 @@ import {
   DailyBatchEntry,
   ToolsInventory,
   ProductionHistoryPanel,
+  VariancePanel,
+  DayClosePanel,
+  WorkerAttendance,
+  CommunicationsLog,
 } from '@/components/production';
 import { 
   Factory, 
@@ -40,6 +44,8 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
+  MessageSquare,
+  Scale,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -162,10 +168,16 @@ export default function ProductionPortalPage() {
                 totalBoxes: 0,
                 boxesByBrand: {},
                 tobaccoUsed: 0,
+                tubesIssued: 0,
+                tubesUsed: 0,
+                tubesVariance: 0,
                 efficiencyPct: 0,
                 workersPresent: 0,
                 toolsOperational: 0,
                 toolsTotal: 0,
+                totalDefects: 0,
+                defectRate: 0,
+                isDayClosed: false,
               }} 
               isLoading={kpisLoading}
             />
@@ -173,10 +185,14 @@ export default function ProductionPortalPage() {
 
           {/* Tabbed Sections */}
           <Tabs defaultValue="batches" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="batches" className="flex items-center gap-2">
                 <Boxes className="h-4 w-4" />
                 <span className="hidden sm:inline">Batches</span>
+              </TabsTrigger>
+              <TabsTrigger value="attendance" className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline">Attendance</span>
               </TabsTrigger>
               <TabsTrigger value="workers" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
@@ -186,6 +202,10 @@ export default function ProductionPortalPage() {
                 <Wrench className="h-4 w-4" />
                 <span className="hidden sm:inline">Tools</span>
               </TabsTrigger>
+              <TabsTrigger value="messages" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden sm:inline">Messages</span>
+              </TabsTrigger>
               <TabsTrigger value="history" className="flex items-center gap-2">
                 <History className="h-4 w-4" />
                 <span className="hidden sm:inline">History</span>
@@ -193,7 +213,19 @@ export default function ProductionPortalPage() {
             </TabsList>
 
             <TabsContent value="batches">
-              <DailyBatchEntry officeId={selectedOfficeId} />
+              <div className="grid lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
+                  <DailyBatchEntry officeId={selectedOfficeId} />
+                </div>
+                <div className="space-y-4">
+                  <DayClosePanel officeId={selectedOfficeId} isAdmin={true} />
+                  <VariancePanel officeId={selectedOfficeId} />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="attendance">
+              <WorkerAttendance officeId={selectedOfficeId} isDayLocked={kpis?.isDayClosed} />
             </TabsContent>
 
             <TabsContent value="workers">
@@ -202,6 +234,10 @@ export default function ProductionPortalPage() {
 
             <TabsContent value="tools">
               <ToolsInventory officeId={selectedOfficeId} />
+            </TabsContent>
+
+            <TabsContent value="messages">
+              <CommunicationsLog officeId={selectedOfficeId} />
             </TabsContent>
 
             <TabsContent value="history">
