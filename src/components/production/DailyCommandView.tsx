@@ -8,7 +8,7 @@
  * - Time-to-complete estimate
  * - At-risk workers (low predictability or declining)
  * - Top contributors today
- * - Visual alerts for operational warnings
+ * - Soft alerts with manager prompts
  * - Today's Worker Grid (clickable, opens profile dialog)
  */
 
@@ -17,7 +17,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -41,15 +40,14 @@ import {
   Clock,
   AlertTriangle,
   Award,
-  Target,
   Activity,
   CheckCircle2,
   AlertCircle,
   Gauge,
   Package,
   Shield,
-  Info,
   ChevronRight,
+  Info,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -58,22 +56,15 @@ import {
   useCycleBenchmarks,
   WorkerSkillProfile 
 } from '@/hooks/useWorkerPerformance';
-import { useWorkerAttendance, useProductionBatches } from '@/hooks/useProductionPortal';
-import { format } from 'date-fns';
+import { useWorkerAttendance, useProductionBatches, useProductionCommunications } from '@/hooks/useProductionPortal';
+import { format, differenceInDays } from 'date-fns';
 import { WorkerProfileDialog } from './performance/WorkerProfileDialog';
 import { ProductionWorker } from '@/hooks/useProductionPortal';
+import { generateSoftAlerts, SoftAlertPanel } from './alerts';
 
 interface DailyCommandViewProps {
   officeId: string;
   targetBoxes?: number;
-}
-
-interface OperationalAlert {
-  id: string;
-  severity: 'warning' | 'error' | 'info';
-  title: string;
-  description: string;
-  icon: React.ReactNode;
 }
 
 interface EnrichedWorker {
@@ -110,6 +101,7 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
   const { data: attendance = [] } = useWorkerAttendance(officeId, today);
   const { data: batches = [] } = useProductionBatches(officeId, today);
   const { data: benchmarks = [] } = useCycleBenchmarks(officeId);
+  const { data: allCommunications = [] } = useProductionCommunications(officeId, 500);
 
   // Profile Dialog State
   const [selectedWorker, setSelectedWorker] = useState<{
@@ -203,61 +195,58 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
     [enrichedWorkers]
   );
 
-  // Operational alerts
-  const alerts = useMemo<OperationalAlert[]>(() => {
-    const result: OperationalAlert[] = [];
+  // Communication stats for soft alerts
+  const communicationStats = useMemo(() => {
+    const stats = new Map<string, {
+      daysSinceContact: number | null;
+      last7Days: number;
+      hasDecliningTrend: boolean;
+      isImproving: boolean;
+    }>();
 
-    // Declining trend 3+ days
-    const decliningWorkers = presentProfiles.filter(
-      p => p.trend_speed === 'declining' || p.trend_quality === 'declining'
-    );
-    if (decliningWorkers.length > 0) {
-      result.push({
-        id: 'declining-trend',
-        severity: decliningWorkers.length > 2 ? 'error' : 'warning',
-        title: `${decliningWorkers.length} worker(s) with declining trends`,
-        description: 'Performance declining compared to previous week.',
-        icon: <TrendingDown className="h-4 w-4" />,
-      });
-    }
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // Low predictability on critical batch
-    const lowPredictability = presentProfiles.filter(p => calculatePredictability(p) < 50);
-    if (lowPredictability.length > presentProfiles.length / 2 && presentProfiles.length > 0) {
-      result.push({
-        id: 'low-predictability',
-        severity: 'warning',
-        title: 'Low team predictability',
-        description: 'Majority of workers have predictability scores below 50.',
-        icon: <Gauge className="h-4 w-4" />,
-      });
-    }
+    presentWorkerIds.forEach(workerId => {
+      const workerComms = allCommunications.filter((c: any) => c.worker_id === workerId);
+      const profile = presentProfiles.find(p => p.worker_id === workerId);
+      
+      if (workerComms.length === 0) {
+        stats.set(workerId, {
+          daysSinceContact: null,
+          last7Days: 0,
+          hasDecliningTrend: profile?.trend_speed === 'declining' || profile?.trend_quality === 'declining',
+          isImproving: profile?.trend_speed === 'improving' || profile?.trend_quality === 'improving',
+        });
+      } else {
+        const sorted = [...workerComms].sort(
+          (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        const lastContact = new Date(sorted[0].created_at);
+        const last7Days = workerComms.filter((c: any) => new Date(c.created_at) >= sevenDaysAgo).length;
 
-    // Defect spike
-    const highDefects = presentProfiles.filter(p => (p.defect_rate_per_thousand || 0) > 15);
-    if (highDefects.length > 0) {
-      result.push({
-        id: 'defect-spike',
-        severity: highDefects.length > 2 ? 'error' : 'warning',
-        title: `${highDefects.length} worker(s) with high defect rates`,
-        description: 'Defect rate exceeds 15 per 1,000 units.',
-        icon: <AlertTriangle className="h-4 w-4" />,
-      });
-    }
+        stats.set(workerId, {
+          daysSinceContact: differenceInDays(now, lastContact),
+          last7Days,
+          hasDecliningTrend: profile?.trend_speed === 'declining' || profile?.trend_quality === 'declining',
+          isImproving: profile?.trend_speed === 'improving' || profile?.trend_quality === 'improving',
+        });
+      }
+    });
 
-    // Staffing below threshold
-    if (presentWorkerIds.length < 3) {
-      result.push({
-        id: 'understaffed',
-        severity: presentWorkerIds.length < 2 ? 'error' : 'warning',
-        title: 'Low staffing',
-        description: `Only ${presentWorkerIds.length} worker(s) present today.`,
-        icon: <Users className="h-4 w-4" />,
-      });
-    }
+    return stats;
+  }, [allCommunications, presentWorkerIds, presentProfiles]);
 
-    return result;
-  }, [presentProfiles, presentWorkerIds]);
+  // Soft alerts with manager prompts
+  const softAlerts = useMemo(() => {
+    return generateSoftAlerts({
+      profiles,
+      presentWorkerIds,
+      communicationStats,
+      targetCapacity: targetBoxes,
+      currentCapacity: throughputMetrics.totalCapacity * 8, // 8-hour day estimate
+    });
+  }, [profiles, presentWorkerIds, communicationStats, targetBoxes, throughputMetrics.totalCapacity]);
 
   const handleWorkerClick = (enriched: EnrichedWorker) => {
     setSelectedWorker({ profile: enriched.profile, worker: enriched.worker });
@@ -318,25 +307,11 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
           Metrics are rolling 7-day indicators for operational planning, not disciplinary decisions.
         </div>
 
-        {/* Operational Alerts */}
-        {alerts.length > 0 && (
-          <div className="space-y-2">
-            {alerts.map(alert => (
-              <Alert 
-                key={alert.id} 
-                variant={alert.severity === 'error' ? 'destructive' : 'default'}
-                className={cn(
-                  alert.severity === 'warning' && 'border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20',
-                  alert.severity === 'info' && 'border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20'
-                )}
-              >
-                {alert.icon}
-                <AlertTitle>{alert.title}</AlertTitle>
-                <AlertDescription>{alert.description}</AlertDescription>
-              </Alert>
-            ))}
-          </div>
-        )}
+        {/* Soft Alert Panel with Manager Prompts */}
+        <SoftAlertPanel 
+          alerts={softAlerts} 
+          maxVisible={3} 
+        />
 
         {/* Main Stats Grid */}
         <div className="grid md:grid-cols-4 gap-4">

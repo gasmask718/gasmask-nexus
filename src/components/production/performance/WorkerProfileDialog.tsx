@@ -7,9 +7,10 @@
  * - Performance history chart
  * - Worker setup/edit panel
  * - Communication history tab
+ * - Worker-specific prompts (soft alerts)
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -43,20 +44,19 @@ import {
   Target,
   Activity,
   Gauge,
-  BarChart3,
   Calendar,
   Settings,
   Package,
   Timer,
-  Award,
-  AlertTriangle,
   MessageSquare,
   Info,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WorkerSkillProfile, CycleBenchmark, useWorkerPerformanceHistory } from '@/hooks/useWorkerPerformance';
-import { useUpdateWorker, ProductionWorker } from '@/hooks/useProductionPortal';
+import { useUpdateWorker, ProductionWorker, useProductionCommunications } from '@/hooks/useProductionPortal';
 import { WorkerCommunicationTab } from './WorkerCommunicationTab';
+import { generateWorkerPrompts, WorkerPromptBadges } from '../alerts';
+import { differenceInDays } from 'date-fns';
 
 interface WorkerProfileDialogProps {
   open: boolean;
@@ -93,6 +93,7 @@ export function WorkerProfileDialog({
 }: WorkerProfileDialogProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const { data: historyData = [] } = useWorkerPerformanceHistory(worker?.id, 30);
+  const { data: allCommunications = [] } = useProductionCommunications(officeId || '', 500);
   const updateWorker = useUpdateWorker();
 
   // Worker setup form state
@@ -101,6 +102,35 @@ export function WorkerProfileDialog({
   const [secondaryRole, setSecondaryRole] = useState<string>('');
   const [maxPace, setMaxPace] = useState<string>('');
   const [limitations, setLimitations] = useState<string>('');
+
+  // Communication stats for this worker (used for prompts)
+  const communicationStats = useMemo(() => {
+    if (!worker || !allCommunications.length) return undefined;
+    
+    const workerComms = allCommunications.filter((c: any) => c.worker_id === worker.id);
+    if (workerComms.length === 0) {
+      return { daysSinceContact: null, last7Days: 0 };
+    }
+
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const sorted = [...workerComms].sort(
+      (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    const lastContact = new Date(sorted[0].created_at);
+    const last7Days = workerComms.filter((c: any) => new Date(c.created_at) >= sevenDaysAgo).length;
+
+    return {
+      daysSinceContact: differenceInDays(now, lastContact),
+      last7Days,
+    };
+  }, [worker, allCommunications]);
+
+  // Generate worker-specific prompts
+  const workerPrompts = useMemo(() => {
+    if (!profile) return [];
+    return generateWorkerPrompts(profile, communicationStats);
+  }, [profile, communicationStats]);
 
   if (!profile || !worker) {
     return null;
@@ -212,6 +242,11 @@ export function WorkerProfileDialog({
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">
+            {/* Worker-Specific Prompts */}
+            {workerPrompts.length > 0 && (
+              <WorkerPromptBadges prompts={workerPrompts} />
+            )}
+
             {/* Overall Score */}
             <div className="text-center py-4 rounded-lg bg-gradient-to-r from-primary/5 to-primary/10">
               <p className="text-5xl font-bold text-primary">{profile.overall_score || 50}</p>
