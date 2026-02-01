@@ -16,3 +16,4 @@ export { CommunicationsLog } from './CommunicationsLog';
 export { FirstTimeWizard } from './FirstTimeWizard';
 export { DailyChecklist } from './DailyChecklist';
 export { TrainingModeBanner, TrainingModeToggle } from './TrainingMode';
+export { ActiveBatchBanner } from './ActiveBatchBanner';

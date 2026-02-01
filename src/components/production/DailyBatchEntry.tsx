@@ -59,6 +59,9 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
     shift_label: 'Morning',
     tobacco_lbs: '',
     tubes_total: '',
+    // Material issuance - per brand
+    stickers_issued: {} as Record<string, number>,
+    empty_boxes_issued: {} as Record<string, number>,
     workers_present: [] as string[],
     notes: '',
   });
@@ -70,6 +73,8 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
       shift_label: formData.shift_label,
       tobacco_lbs: parseFloat(formData.tobacco_lbs) || 0,
       tubes_total: parseInt(formData.tubes_total) || 0,
+      stickers_issued: formData.stickers_issued,
+      empty_boxes_issued: formData.empty_boxes_issued,
       workers_present: formData.workers_present,
       notes: formData.notes,
       status: 'open',
@@ -80,9 +85,32 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
       shift_label: 'Morning',
       tobacco_lbs: '',
       tubes_total: '',
+      stickers_issued: {},
+      empty_boxes_issued: {},
       workers_present: [],
       notes: '',
     });
+  };
+
+  // Helper to update issued materials for a brand
+  const updateStickersIssued = (brand: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      stickers_issued: {
+        ...prev.stickers_issued,
+        [brand]: parseInt(value) || 0,
+      },
+    }));
+  };
+
+  const updateBoxesIssued = (brand: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      empty_boxes_issued: {
+        ...prev.empty_boxes_issued,
+        [brand]: parseInt(value) || 0,
+      },
+    }));
   };
 
   const handleStartBatch = async (batch: ProductionBatch) => {
@@ -208,12 +236,13 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
 
       {/* Create Batch Modal */}
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create New Batch</DialogTitle>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
+            {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>Brand *</Label>
@@ -256,28 +285,72 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="tobacco">Tobacco (lbs)</Label>
-                <Input
-                  id="tobacco"
-                  type="number"
-                  step="0.1"
-                  value={formData.tobacco_lbs}
-                  onChange={(e) => setFormData({ ...formData, tobacco_lbs: e.target.value })}
-                  placeholder="0.0"
-                />
+            {/* Materials Issued Section */}
+            <div className="border rounded-lg p-4 bg-muted/30">
+              <h4 className="font-medium mb-3 flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Materials Issued to Office
+              </h4>
+              <p className="text-xs text-muted-foreground mb-3">
+                Enter what materials are being issued for this batch. These values are locked after creation.
+              </p>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="tobacco">Tobacco (lbs) *</Label>
+                  <Input
+                    id="tobacco"
+                    type="number"
+                    step="0.1"
+                    value={formData.tobacco_lbs}
+                    onChange={(e) => setFormData({ ...formData, tobacco_lbs: e.target.value })}
+                    placeholder="0.0"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="tubes">Tubes (qty) *</Label>
+                  <Input
+                    id="tubes"
+                    type="number"
+                    value={formData.tubes_total}
+                    onChange={(e) => setFormData({ ...formData, tubes_total: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
               </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="tubes">Tubes (qty)</Label>
-                <Input
-                  id="tubes"
-                  type="number"
-                  value={formData.tubes_total}
-                  onChange={(e) => setFormData({ ...formData, tubes_total: e.target.value })}
-                  placeholder="0"
-                />
+              {/* Per-brand issued materials */}
+              <div className="mt-4 space-y-3">
+                <Label className="text-sm">Stickers & Boxes by Brand</Label>
+                <div className="grid gap-3">
+                  {BRANDS.map(brand => (
+                    <div key={brand.id} className="flex items-center gap-3 p-2 bg-background rounded border">
+                      <div className={cn('w-3 h-3 rounded-full flex-shrink-0', brand.color)} />
+                      <span className="text-sm font-medium w-24">{brand.label}</span>
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <div>
+                          <Input
+                            type="number"
+                            placeholder="Stickers"
+                            className="h-8 text-sm"
+                            value={formData.stickers_issued[brand.id] || ''}
+                            onChange={(e) => updateStickersIssued(brand.id, e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Input
+                            type="number"
+                            placeholder="Empty Boxes"
+                            className="h-8 text-sm"
+                            value={formData.empty_boxes_issued[brand.id] || ''}
+                            onChange={(e) => updateBoxesIssued(brand.id, e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -362,6 +435,10 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
   });
 
   const handleRecordOutput = async () => {
+    // Get issued values for the selected brand from the batch
+    const stickersIssued = (batch.stickers_issued as Record<string, number>)?.[outputForm.brand] || 0;
+    const boxesIssued = (batch.empty_boxes_issued as Record<string, number>)?.[outputForm.brand] || 0;
+    
     await recordOutput.mutateAsync({
       batch_id: batch.id,
       brand: outputForm.brand,
@@ -371,8 +448,8 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
       empty_boxes_used: parseInt(outputForm.empty_boxes_used) || 0,
       defects_count: parseInt(outputForm.defects_count) || 0,
       notes: outputForm.notes || null,
-      stickers_issued: 0,
-      empty_boxes_issued: 0,
+      stickers_issued: stickersIssued,
+      empty_boxes_issued: boxesIssued,
     });
     
     setOutputForm({
@@ -386,8 +463,15 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
     });
   };
 
+  // Calculate totals from outputs
   const totalBoxes = outputs.reduce((sum, o) => sum + o.boxes_completed, 0);
   const totalTubes = outputs.reduce((sum, o) => sum + o.tubes_used, 0);
+  const totalStickersUsed = outputs.reduce((sum, o) => sum + o.stickers_used, 0);
+  const totalEmptyBoxesUsed = outputs.reduce((sum, o) => sum + o.empty_boxes_used, 0);
+
+  // Calculate totals from issued materials
+  const totalStickersIssued = Object.values((batch.stickers_issued as Record<string, number>) || {}).reduce((a, b) => a + b, 0);
+  const totalEmptyBoxesIssued = Object.values((batch.empty_boxes_issued as Record<string, number>) || {}).reduce((a, b) => a + b, 0);
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -402,29 +486,98 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Batch Summary */}
-          <div className="grid grid-cols-4 gap-4">
-            <div className="text-center p-3 bg-muted/50 rounded-lg">
-              <p className="text-2xl font-bold">{batch.tobacco_lbs ?? 0}</p>
-              <p className="text-xs text-muted-foreground">lbs tobacco</p>
+          {/* Issued vs Used - Material Reconciliation */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Issued Column */}
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Issued to Office
+              </h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tobacco</span>
+                  <span className="font-medium">{batch.tobacco_lbs ?? 0} lbs</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tubes</span>
+                  <span className="font-medium">{(batch.tubes_total || 0).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Stickers</span>
+                  <span className="font-medium">{totalStickersIssued.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Empty Boxes</span>
+                  <span className="font-medium">{totalEmptyBoxesIssued.toLocaleString()}</span>
+                </div>
+              </div>
             </div>
-            <div className="text-center p-3 bg-muted/50 rounded-lg">
-              <p className="text-2xl font-bold">{batch.tubes_total?.toLocaleString() || 0}</p>
-              <p className="text-xs text-muted-foreground">tubes input</p>
+
+            {/* Used Column */}
+            <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+              <h4 className="font-medium text-emerald-800 mb-3 flex items-center gap-2">
+                <Scale className="h-4 w-4" />
+                Used in Production
+              </h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Boxes Completed</span>
+                  <span className="font-medium text-primary">{totalBoxes.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tubes Used</span>
+                  <span className="font-medium">{totalTubes.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Stickers Used</span>
+                  <span className="font-medium">{totalStickersUsed.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Empty Boxes Used</span>
+                  <span className="font-medium">{totalEmptyBoxesUsed.toLocaleString()}</span>
+                </div>
+              </div>
             </div>
-            <div className="text-center p-3 bg-muted/50 rounded-lg">
-              <p className="text-2xl font-bold text-primary">{totalBoxes.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">boxes output</p>
-            </div>
-            <div className="text-center p-3 bg-muted/50 rounded-lg">
-              <p className="text-2xl font-bold">{batch.efficiency_pct || '—'}%</p>
-              <p className="text-xs text-muted-foreground">efficiency</p>
+          </div>
+
+          {/* Variance Summary */}
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <h4 className="font-medium mb-2 text-sm">Variance</h4>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className={cn(
+                  "text-lg font-bold",
+                  (batch.tubes_total || 0) - totalTubes === 0 ? "text-emerald-600" : "text-amber-600"
+                )}>
+                  {((batch.tubes_total || 0) - totalTubes) >= 0 ? '+' : ''}{(batch.tubes_total || 0) - totalTubes}
+                </p>
+                <p className="text-xs text-muted-foreground">Tubes</p>
+              </div>
+              <div>
+                <p className={cn(
+                  "text-lg font-bold",
+                  totalStickersIssued - totalStickersUsed === 0 ? "text-emerald-600" : "text-amber-600"
+                )}>
+                  {(totalStickersIssued - totalStickersUsed) >= 0 ? '+' : ''}{totalStickersIssued - totalStickersUsed}
+                </p>
+                <p className="text-xs text-muted-foreground">Stickers</p>
+              </div>
+              <div>
+                <p className={cn(
+                  "text-lg font-bold",
+                  totalEmptyBoxesIssued - totalEmptyBoxesUsed === 0 ? "text-emerald-600" : "text-amber-600"
+                )}>
+                  {(totalEmptyBoxesIssued - totalEmptyBoxesUsed) >= 0 ? '+' : ''}{totalEmptyBoxesIssued - totalEmptyBoxesUsed}
+                </p>
+                <p className="text-xs text-muted-foreground">Empty Boxes</p>
+              </div>
             </div>
           </div>
 
           {/* Recorded Outputs */}
           <div>
-            <h4 className="font-medium mb-2">Recorded Outputs</h4>
+            <h4 className="font-medium mb-2">Recorded Outputs by Brand</h4>
             {outputs.length === 0 ? (
               <p className="text-sm text-muted-foreground">No outputs recorded yet.</p>
             ) : (
@@ -440,6 +593,8 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
                       <div className="flex items-center gap-4 text-sm">
                         <span>{output.boxes_completed} boxes</span>
                         <span>{output.tubes_used} tubes</span>
+                        <span>{output.stickers_used} stickers</span>
+                        <span>{output.empty_boxes_used} boxes</span>
                         {output.defects_count > 0 && (
                           <Badge variant="destructive" className="text-xs">
                             {output.defects_count} defects
