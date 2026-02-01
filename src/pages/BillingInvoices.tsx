@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Plus, Search, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ReceiptStatusIndicator } from '@/components/invoice/ReceiptStatusIndicator';
+import type { ReceiptStatus } from '@/components/invoice/ReceiptStatusIndicator';
 
 const BillingInvoices = () => {
   const navigate = useNavigate();
@@ -114,6 +116,11 @@ const BillingInvoices = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-6">
+                    <ReceiptStatusIndicator
+                      status={(invoice as any).receipt_status as ReceiptStatus}
+                      sentAt={(invoice as any).receipt_sent_at}
+                      showLabel
+                    />
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">Amount</p>
                       <p className="text-xl font-bold">${Number(invoice.total_amount).toFixed(2)}</p>

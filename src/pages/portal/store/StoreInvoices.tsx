@@ -5,6 +5,8 @@ import { useStoreInvoices } from "@/services/store/useStoreInvoices";
 import { FileText, Download, CreditCard, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
+import { ReceiptStatusIcon } from "@/components/invoice/ReceiptStatusIndicator";
+import type { ReceiptStatus } from "@/components/invoice/ReceiptStatusIndicator";
 
 export default function StoreInvoices() {
   const { data: invoices, isLoading } = useStoreInvoices();
@@ -109,6 +111,10 @@ export default function StoreInvoices() {
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-medium">INV-{invoice.orderNumber}</p>
+                          <ReceiptStatusIcon
+                            status={(invoice as any).receipt_status as ReceiptStatus}
+                            sentAt={(invoice as any).receipt_sent_at}
+                          />
                           <Badge variant={getStatusColor(invoice.status)}>
                             {invoice.status}
                           </Badge>

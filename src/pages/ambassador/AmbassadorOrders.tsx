@@ -17,6 +17,8 @@ import {
   DollarSign, Clock, CheckCircle,
   XCircle, Eye, Download, AlertCircle, Plus
 } from 'lucide-react';
+import { ReceiptStatusIcon } from '@/components/invoice/ReceiptStatusIndicator';
+import type { ReceiptStatus } from '@/components/invoice/ReceiptStatusIndicator';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
@@ -298,6 +300,7 @@ export default function AmbassadorOrders() {
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Payment</TableHead>
+                  <TableHead>Receipt</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -316,6 +319,12 @@ export default function AmbassadorOrders() {
                     <TableCell className="text-right font-semibold">${order.total.toFixed(2)}</TableCell>
                     <TableCell>{getStatusBadge(order.status)}</TableCell>
                     <TableCell>{getPaymentStatusBadge(order.payment_status)}</TableCell>
+                    <TableCell>
+                      <ReceiptStatusIcon
+                        status={order.receipt_status as ReceiptStatus}
+                        sentAt={order.receipt_sent_at}
+                      />
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {format(new Date(order.created_at), 'MMM d, yyyy')}
                     </TableCell>
@@ -328,7 +337,7 @@ export default function AmbassadorOrders() {
                 ))}
                 {filteredOrders.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                       <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>No orders found matching your filters</p>
                     </TableCell>

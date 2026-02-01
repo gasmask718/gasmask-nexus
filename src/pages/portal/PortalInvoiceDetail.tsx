@@ -6,6 +6,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Package, ArrowLeft, Download, CreditCard } from 'lucide-react';
+import { ReceiptStatusIndicator } from '@/components/invoice/ReceiptStatusIndicator';
+import type { ReceiptStatus } from '@/components/invoice/ReceiptStatusIndicator';
 
 const PortalInvoiceDetail = () => {
   const { id } = useParams();
@@ -91,7 +93,14 @@ const PortalInvoiceDetail = () => {
                 Invoice Date: {new Date(invoice.invoice_date).toLocaleDateString()}
               </p>
             </div>
-            {getStatusBadge(invoice.status)}
+            <div className="flex items-center gap-3">
+              <ReceiptStatusIndicator
+                status={(invoice as any).receipt_status as ReceiptStatus}
+                sentAt={(invoice as any).receipt_sent_at}
+                showLabel
+              />
+              {getStatusBadge(invoice.status)}
+            </div>
           </div>
 
           <div className="space-y-4 pb-6 border-b">
