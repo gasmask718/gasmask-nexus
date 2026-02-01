@@ -258,6 +258,7 @@ import {
   NationalWholesalePortalPage,
   MarketplaceAdminPortalPage,
 } from '@/pages/portals';
+import OfficesManagementPage from '@/pages/portals/production/OfficesManagementPage';
 
 // HR
 import HR from '@/pages/HR';
@@ -1300,6 +1301,7 @@ export default function AppRoutes() {
         <Route path="/portals/store" element={<StorePortalPage />} />
         <Route path="/portals/wholesaler" element={<WholesalerPortalPage />} />
         <Route path="/portals/production" element={<ProductionPortalPage />} />
+        <Route path="/portals/production/offices" element={<OfficesManagementPage />} />
         <Route path="/portals/va" element={<VAPortalPage />} />
         <Route path="/portals/customer" element={<CustomerPortalPage />} />
         <Route path="/portals/national-wholesale" element={<NationalWholesalePortalPage />} />

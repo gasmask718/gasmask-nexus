@@ -217,6 +217,56 @@ export function useProductionOffice(officeId: string | undefined) {
     enabled: !!officeId,
   });
 }
+export function useCreateOffice() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (office: Omit<ProductionOffice, 'id' | 'created_at'>) => {
+      const { data, error } = await supabase
+        .from('production_offices')
+        .insert(office)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production-offices'] });
+      toast({ title: 'Office created successfully' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to create office', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+export function useUpdateOffice() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<ProductionOffice> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('production_offices')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production-offices'] });
+      toast({ title: 'Office updated successfully' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to update office', description: error.message, variant: 'destructive' });
+    },
+  });
+}
 
 // ============================================================
 // WORKER HOOKS
