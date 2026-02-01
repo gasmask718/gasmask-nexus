@@ -3,9 +3,13 @@
  * 
  * Displays skill profiles for workers with:
  * - Speed/Quality/Reliability scores
- * - Trend indicators
+ * - Trend indicators (↑ ↓ →)
  * - Rolling metrics (7/30/90 day)
  * - Performance comparison
+ * - Clear label: "Last 7 Days (Rolling)"
+ * 
+ * IMPORTANT: This pulls ONLY from production_worker_skill_profiles (live profiles)
+ * History view should use production_worker_performance_snapshots
  */
 
 import { useState } from 'react';
@@ -14,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { 
   useWorkerSkillProfiles, 
   useProductionWorkers,
@@ -30,6 +35,10 @@ import {
   Target,
   Award,
   AlertTriangle,
+  Info,
+  Lock,
+  Calendar,
+  ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -41,6 +50,12 @@ const TREND_ICONS = {
   improving: <TrendingUp className="h-3 w-3 text-emerald-500" />,
   stable: <Minus className="h-3 w-3 text-muted-foreground" />,
   declining: <TrendingDown className="h-3 w-3 text-red-500" />,
+};
+
+const TREND_LABELS = {
+  improving: 'Improving',
+  stable: 'Stable',
+  declining: 'Declining',
 };
 
 const SCORE_COLORS = {
@@ -63,14 +78,25 @@ function getScoreLabel(score: number): string {
   return 'Critical';
 }
 
+function getScoreTextColor(score: number): string {
+  if (score >= 60) return 'text-emerald-600';
+  if (score >= 40) return 'text-amber-600';
+  return 'text-red-600';
+}
+
 interface WorkerCardProps {
   profile: WorkerSkillProfile;
   workerName: string;
 }
 
 function WorkerCard({ profile, workerName }: WorkerCardProps) {
+  const isLocked = (profile as any).is_locked;
+  
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className={cn(
+      "hover:shadow-md transition-shadow",
+      isLocked && "border-muted"
+    )}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -78,18 +104,17 @@ function WorkerCard({ profile, workerName }: WorkerCardProps) {
               <User className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-sm font-medium">{workerName}</CardTitle>
+              <CardTitle className="text-sm font-medium flex items-center gap-1">
+                {workerName}
+                {isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
+              </CardTitle>
               <p className="text-xs text-muted-foreground">
                 Overall: {getScoreLabel(profile.overall_score || 50)}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1 text-sm font-semibold">
-            <span className={cn(
-              "text-lg",
-              (profile.overall_score || 50) >= 60 ? "text-emerald-600" : 
-              (profile.overall_score || 50) >= 40 ? "text-amber-600" : "text-red-600"
-            )}>
+            <span className={cn("text-lg", getScoreTextColor(profile.overall_score || 50))}>
               {profile.overall_score || 50}
             </span>
             <span className="text-muted-foreground text-xs">/100</span>
@@ -97,7 +122,7 @@ function WorkerCard({ profile, workerName }: WorkerCardProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Skill Bars */}
+        {/* Skill Bars with Trend Indicators */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Zap className="h-3 w-3 text-amber-500" />
@@ -107,7 +132,9 @@ function WorkerCard({ profile, workerName }: WorkerCardProps) {
               className="flex-1 h-2"
             />
             <span className="text-xs w-8 text-right">{profile.speed_score || 50}</span>
-            {TREND_ICONS[profile.trend_speed || 'stable']}
+            <div className="flex items-center gap-0.5" title={TREND_LABELS[profile.trend_speed || 'stable']}>
+              {TREND_ICONS[profile.trend_speed || 'stable']}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Shield className="h-3 w-3 text-blue-500" />
@@ -117,7 +144,9 @@ function WorkerCard({ profile, workerName }: WorkerCardProps) {
               className="flex-1 h-2"
             />
             <span className="text-xs w-8 text-right">{profile.quality_score || 50}</span>
-            {TREND_ICONS[profile.trend_quality || 'stable']}
+            <div className="flex items-center gap-0.5" title={TREND_LABELS[profile.trend_quality || 'stable']}>
+              {TREND_ICONS[profile.trend_quality || 'stable']}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-3 w-3 text-purple-500" />
@@ -127,6 +156,8 @@ function WorkerCard({ profile, workerName }: WorkerCardProps) {
               className="flex-1 h-2"
             />
             <span className="text-xs w-8 text-right">{profile.reliability_score || 50}</span>
+            {/* No trend for reliability yet */}
+            <div className="w-3" />
           </div>
         </div>
 
@@ -140,7 +171,10 @@ function WorkerCard({ profile, workerName }: WorkerCardProps) {
           </div>
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Defect Rate</p>
-            <p className="text-sm font-medium">
+            <p className={cn(
+              "text-sm font-medium",
+              (profile.defect_rate_per_thousand || 0) > 10 ? "text-destructive" : ""
+            )}>
               {profile.defect_rate_per_thousand != null 
                 ? `${profile.defect_rate_per_thousand.toFixed(1)}‰` 
                 : '—'}
@@ -153,6 +187,13 @@ function WorkerCard({ profile, workerName }: WorkerCardProps) {
             </p>
           </div>
         </div>
+
+        {/* Last Calculated */}
+        {profile.last_calculated_at && (
+          <p className="text-xs text-muted-foreground text-center pt-1 border-t">
+            Updated: {new Date(profile.last_calculated_at).toLocaleDateString()}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
@@ -166,6 +207,8 @@ function PerformanceLeaderboard({ profiles, workers }: {
   const sorted = [...profiles].sort((a, b) => (b.overall_score || 0) - (a.overall_score || 0));
   const top = sorted.slice(0, 3);
   const needsAttention = sorted.filter(p => (p.overall_score || 50) < 40);
+  const improving = sorted.filter(p => p.trend_speed === 'improving' || p.trend_quality === 'improving');
+  const declining = sorted.filter(p => p.trend_speed === 'declining' || p.trend_quality === 'declining');
 
   return (
     <div className="grid md:grid-cols-2 gap-4">
@@ -193,6 +236,10 @@ function PerformanceLeaderboard({ profiles, workers }: {
                   <span className="flex-1 text-sm font-medium truncate">
                     {workerMap.get(profile.worker_id) || 'Unknown'}
                   </span>
+                  <div className="flex items-center gap-1">
+                    {profile.trend_speed === 'improving' && TREND_ICONS.improving}
+                    {profile.trend_quality === 'improving' && TREND_ICONS.improving}
+                  </div>
                   <Badge variant="secondary" className="text-xs">
                     {profile.overall_score || 50}
                   </Badge>
@@ -203,7 +250,7 @@ function PerformanceLeaderboard({ profiles, workers }: {
         </CardContent>
       </Card>
 
-      {/* Needs Attention */}
+      {/* Needs Attention / Trending */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -212,18 +259,31 @@ function PerformanceLeaderboard({ profiles, workers }: {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {needsAttention.length === 0 ? (
+          {needsAttention.length === 0 && declining.length === 0 ? (
             <p className="text-sm text-muted-foreground">All workers performing well</p>
           ) : (
             <div className="space-y-2">
-              {needsAttention.map(profile => (
+              {/* Low scores */}
+              {needsAttention.slice(0, 3).map(profile => (
                 <div key={profile.id} className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span className="flex-1 text-sm truncate">
                     {workerMap.get(profile.worker_id) || 'Unknown'}
                   </span>
                   <Badge variant="destructive" className="text-xs">
-                    {profile.overall_score || 50}
+                    Score: {profile.overall_score || 50}
+                  </Badge>
+                </div>
+              ))}
+              {/* Declining trend */}
+              {declining.slice(0, 2).map(profile => (
+                <div key={`decline-${profile.id}`} className="flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-red-500" />
+                  <span className="flex-1 text-sm truncate">
+                    {workerMap.get(profile.worker_id) || 'Unknown'}
+                  </span>
+                  <Badge variant="outline" className="text-xs text-red-600">
+                    Declining
                   </Badge>
                 </div>
               ))}
@@ -255,21 +315,42 @@ export function WorkerPerformance({ officeId }: WorkerPerformanceProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with Data Source Label */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Target className="h-5 w-5" />
             Worker Performance
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Skill profiles derived from production activity
+          <p className="text-sm text-muted-foreground flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            Last 7 Days (Rolling)
+            <span className="text-xs ml-2">• Data from skill profiles</span>
           </p>
         </div>
-        <Badge variant="outline" className="text-xs">
-          {profiles.length} workers tracked
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs flex items-center gap-1">
+            <Info className="h-3 w-3" />
+            {profiles.length} workers tracked
+          </Badge>
+        </div>
       </div>
+
+      {/* Trend Legend */}
+      <Card className="p-3">
+        <div className="flex items-center gap-6 text-xs">
+          <span className="text-muted-foreground font-medium">Trend Indicators:</span>
+          <span className="flex items-center gap-1">
+            {TREND_ICONS.improving} Improving (↑10%+)
+          </span>
+          <span className="flex items-center gap-1">
+            {TREND_ICONS.stable} Stable
+          </span>
+          <span className="flex items-center gap-1">
+            {TREND_ICONS.declining} Declining (↓10%+)
+          </span>
+        </div>
+      </Card>
 
       {/* Leaderboard Summary */}
       <PerformanceLeaderboard profiles={profiles} workers={workers} />
@@ -280,6 +361,7 @@ export function WorkerPerformance({ officeId }: WorkerPerformanceProps) {
           <TabsTrigger value="all">All Workers</TabsTrigger>
           <TabsTrigger value="speed">By Speed</TabsTrigger>
           <TabsTrigger value="quality">By Quality</TabsTrigger>
+          <TabsTrigger value="improving">Improving</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
@@ -290,6 +372,9 @@ export function WorkerPerformance({ officeId }: WorkerPerformanceProps) {
                   <User className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
                   <p className="text-muted-foreground">
                     No skill profiles yet. Worker metrics will appear after production activity.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Profiles are calculated automatically from output recordings with worker attribution.
                   </p>
                 </CardContent>
               </Card>
@@ -330,6 +415,36 @@ export function WorkerPerformance({ officeId }: WorkerPerformanceProps) {
                   workerName={workerMap.get(profile.worker_id) || 'Unknown Worker'}
                 />
               ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="improving">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {profiles.filter(p => 
+              p.trend_speed === 'improving' || p.trend_quality === 'improving'
+            ).length === 0 ? (
+              <Card className="col-span-full">
+                <CardContent className="py-8 text-center">
+                  <TrendingUp className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                  <p className="text-muted-foreground">
+                    No workers currently showing improvement trends.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Trends are calculated by comparing last 7 days vs previous 7 days.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              profiles
+                .filter(p => p.trend_speed === 'improving' || p.trend_quality === 'improving')
+                .map(profile => (
+                  <WorkerCard 
+                    key={profile.id} 
+                    profile={profile}
+                    workerName={workerMap.get(profile.worker_id) || 'Unknown Worker'}
+                  />
+                ))
+            )}
           </div>
         </TabsContent>
       </Tabs>
