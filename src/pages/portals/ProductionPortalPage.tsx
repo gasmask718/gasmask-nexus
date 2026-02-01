@@ -49,6 +49,7 @@ import {
   WorkerPerformance,
   DailyCycleTimeSummary,
   StaffingForecast,
+  DailyCommandView,
 } from '@/components/production';
 import { 
   Factory, 
@@ -66,6 +67,7 @@ import {
   Settings,
   UserPlus,
   Target,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -305,8 +307,12 @@ export default function ProductionPortalPage() {
           </div>
 
           {/* Tabbed Sections */}
-          <Tabs defaultValue="batches" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-7">
+          <Tabs defaultValue="command" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-8">
+              <TabsTrigger value="command" className="flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                <span className="hidden sm:inline">Command</span>
+              </TabsTrigger>
               <TabsTrigger value="batches" className="flex items-center gap-2">
                 <Boxes className="h-4 w-4" />
                 <span className="hidden sm:inline">Batches</span>
@@ -336,6 +342,10 @@ export default function ProductionPortalPage() {
                 <span className="hidden sm:inline">History</span>
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="command">
+              <DailyCommandView officeId={selectedOfficeId} targetBoxes={100} />
+            </TabsContent>
 
             <TabsContent value="batches">
               <div className="grid lg:grid-cols-3 gap-4">
