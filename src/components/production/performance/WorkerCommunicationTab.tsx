@@ -8,6 +8,7 @@
  * - Communication type breakdown
  * - Quick action buttons
  * - Recent communications list
+ * - Performance-communication correlation insights
  */
 
 import { useMemo } from 'react';
@@ -16,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   MessageSquare,
   Phone,
@@ -26,10 +28,15 @@ import {
   ArrowDownLeft,
   CheckCircle,
   XCircle,
+  TrendingDown,
+  AlertTriangle,
+  Lightbulb,
+  Info,
 } from 'lucide-react';
 import { format, formatDistanceToNow, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useProductionCommunications } from '@/hooks/useProductionPortal';
+import { useWorkerSkillProfiles } from '@/hooks/useWorkerPerformance';
 import { useMessage } from '@/components/communication/MessageProvider';
 import { ProductionWorker } from '@/hooks/useProductionPortal';
 
@@ -52,9 +59,24 @@ const STATUS_CONFIG: Record<string, { color: string }> = {
   read: { color: 'bg-emerald-200 text-emerald-900 dark:bg-emerald-800/30 dark:text-emerald-200' },
 };
 
+interface InsightItem {
+  id: string;
+  severity: 'warning' | 'info' | 'success';
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}
+
 export function WorkerCommunicationTab({ worker, officeId }: WorkerCommunicationTabProps) {
   const { data: allCommunications = [] } = useProductionCommunications(officeId, 500);
+  const { data: profiles = [] } = useWorkerSkillProfiles(officeId);
   const { initiateMessage } = useMessage();
+
+  // Get this worker's profile
+  const workerProfile = useMemo(() => 
+    profiles.find(p => p.worker_id === worker.id),
+    [profiles, worker.id]
+  );
 
   // Filter communications for this worker
   const workerCommunications = useMemo(() => {
@@ -67,11 +89,14 @@ export function WorkerCommunicationTab({ worker, officeId }: WorkerCommunication
       return {
         lastContact: null,
         lastContactAgo: null,
+        daysSinceContact: null,
         totalContacts: 0,
+        last7Days: 0,
         last30Days: 0,
         byChannel: { sms: 0, whatsapp: 0, call: 0 },
         inbound: 0,
         outbound: 0,
+        missedCount: 0,
       };
     }
 
@@ -81,12 +106,15 @@ export function WorkerCommunicationTab({ worker, officeId }: WorkerCommunication
 
     const lastContact = new Date(sorted[0].created_at);
     const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const byChannel = { sms: 0, whatsapp: 0, call: 0 };
     let inbound = 0;
     let outbound = 0;
+    let last7Days = 0;
     let last30Days = 0;
+    let missedCount = 0;
 
     workerCommunications.forEach((c: any) => {
       if (byChannel.hasOwnProperty(c.channel)) {
@@ -94,7 +122,9 @@ export function WorkerCommunicationTab({ worker, officeId }: WorkerCommunication
       }
       if (c.direction === 'inbound') inbound++;
       else outbound++;
+      if (new Date(c.created_at) >= sevenDaysAgo) last7Days++;
       if (new Date(c.created_at) >= thirtyDaysAgo) last30Days++;
+      if (c.status === 'failed') missedCount++;
     });
 
     return {
@@ -102,12 +132,84 @@ export function WorkerCommunicationTab({ worker, officeId }: WorkerCommunication
       lastContactAgo: formatDistanceToNow(lastContact, { addSuffix: true }),
       daysSinceContact: differenceInDays(now, lastContact),
       totalContacts: workerCommunications.length,
+      last7Days,
       last30Days,
       byChannel,
       inbound,
       outbound,
+      missedCount,
     };
   }, [workerCommunications]);
+
+  // Performance-Communication Correlation Insights
+  const insights = useMemo<InsightItem[]>(() => {
+    const result: InsightItem[] = [];
+    
+    if (!workerProfile) return result;
+
+    const hasDecliningTrend = workerProfile.trend_speed === 'declining' || workerProfile.trend_quality === 'declining';
+    const hasNoCommunication = stats.daysSinceContact === null || stats.daysSinceContact > 10;
+    const hasLowCommunication = stats.last7Days < 2;
+    const hasRecentCommunication = stats.last7Days >= 3;
+    const isImproving = workerProfile.trend_speed === 'improving' || workerProfile.trend_quality === 'improving';
+
+    // Critical: Declining performance + no communication
+    if (hasDecliningTrend && hasNoCommunication) {
+      result.push({
+        id: 'declining-no-contact',
+        severity: 'warning',
+        icon: <AlertTriangle className="h-4 w-4" />,
+        title: 'Declining performance with no recent contact',
+        description: `No outbound communication in ${stats.daysSinceContact ?? 'over 10'} days during declining ${workerProfile.trend_speed === 'declining' ? 'speed' : 'quality'} trend. Consider reaching out.`,
+      });
+    }
+
+    // Warning: Declining performance + low communication
+    if (hasDecliningTrend && hasLowCommunication && !hasNoCommunication) {
+      result.push({
+        id: 'declining-low-contact',
+        severity: 'warning',
+        icon: <TrendingDown className="h-4 w-4" />,
+        title: 'Low engagement during performance decline',
+        description: `Only ${stats.last7Days} contact(s) in the past week while performance is declining. Increased coaching may help.`,
+      });
+    }
+
+    // Positive: Improvement after recent contact
+    if (isImproving && hasRecentCommunication) {
+      result.push({
+        id: 'improvement-with-contact',
+        severity: 'success',
+        icon: <CheckCircle className="h-4 w-4" />,
+        title: 'Improvement correlated with engagement',
+        description: `${stats.last7Days} contacts in the past week coincides with improving ${workerProfile.trend_speed === 'improving' ? 'speed' : 'quality'} trend.`,
+      });
+    }
+
+    // Info: All outbound, no responses
+    if (stats.inbound === 0 && stats.outbound > 5) {
+      result.push({
+        id: 'no-responses',
+        severity: 'info',
+        icon: <ArrowUpRight className="h-4 w-4" />,
+        title: 'No inbound responses recorded',
+        description: `${stats.outbound} outbound contacts but no inbound responses logged. Consider trying a different channel.`,
+      });
+    }
+
+    // Info: High missed/failed rate
+    if (stats.missedCount > 3 && stats.missedCount / stats.totalContacts > 0.3) {
+      result.push({
+        id: 'high-failure-rate',
+        severity: 'warning',
+        icon: <XCircle className="h-4 w-4" />,
+        title: 'High communication failure rate',
+        description: `${stats.missedCount} of ${stats.totalContacts} communications failed. Verify contact information.`,
+      });
+    }
+
+    return result;
+  }, [workerProfile, stats]);
 
   const handleQuickAction = (channel: 'sms' | 'whatsapp' | 'call') => {
     const phone = worker.phone || worker.whatsapp;
@@ -124,6 +226,17 @@ export function WorkerCommunicationTab({ worker, officeId }: WorkerCommunication
 
   const hasPhone = !!(worker.phone || worker.whatsapp);
 
+  // Determine engagement label
+  const getEngagementLabel = () => {
+    if (stats.daysSinceContact === null) return null;
+    if (stats.daysSinceContact <= 3) return { label: 'Recently Contacted', color: 'bg-emerald-100 text-emerald-800' };
+    if (stats.daysSinceContact <= 7) return { label: 'Active', color: 'bg-blue-100 text-blue-800' };
+    if (stats.daysSinceContact <= 14) return { label: 'Low Communication', color: 'bg-amber-100 text-amber-800' };
+    return { label: 'Missed Follow-ups', color: 'bg-red-100 text-red-800' };
+  };
+
+  const engagementLabel = getEngagementLabel();
+
   return (
     <div className="space-y-4">
       {/* Quick Actions */}
@@ -133,6 +246,11 @@ export function WorkerCommunicationTab({ worker, officeId }: WorkerCommunication
           {!hasPhone && (
             <Badge variant="outline" className="text-xs text-muted-foreground">
               No phone on file
+            </Badge>
+          )}
+          {engagementLabel && (
+            <Badge className={cn("text-xs", engagementLabel.color)}>
+              {engagementLabel.label}
             </Badge>
           )}
         </div>
@@ -170,6 +288,33 @@ export function WorkerCommunicationTab({ worker, officeId }: WorkerCommunication
         </div>
       </Card>
 
+      {/* Performance-Communication Insights */}
+      {insights.length > 0 && (
+        <Card className="p-4">
+          <CardTitle className="text-sm mb-3 flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-amber-500" />
+            Performance-Communication Insights
+          </CardTitle>
+          <div className="space-y-2">
+            {insights.map(insight => (
+              <Alert 
+                key={insight.id}
+                variant={insight.severity === 'warning' ? 'destructive' : 'default'}
+                className={cn(
+                  "py-2",
+                  insight.severity === 'success' && 'border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20',
+                  insight.severity === 'info' && 'border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20'
+                )}
+              >
+                {insight.icon}
+                <AlertTitle className="text-sm">{insight.title}</AlertTitle>
+                <AlertDescription className="text-xs">{insight.description}</AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* Stats Overview */}
       <Card className="p-4">
         <CardTitle className="text-sm mb-3 flex items-center gap-2">
@@ -190,7 +335,9 @@ export function WorkerCommunicationTab({ worker, officeId }: WorkerCommunication
               <div className="text-center p-3 rounded-lg bg-muted/50">
                 <p className="text-xs text-muted-foreground mb-1">Total Contacts</p>
                 <p className="text-2xl font-bold">{stats.totalContacts}</p>
-                <p className="text-xs text-muted-foreground">{stats.last30Days} in last 30 days</p>
+                <p className="text-xs text-muted-foreground">
+                  {stats.last7Days} in 7d • {stats.last30Days} in 30d
+                </p>
               </div>
             </div>
 
@@ -219,6 +366,11 @@ export function WorkerCommunicationTab({ worker, officeId }: WorkerCommunication
               <span className="flex items-center gap-1">
                 <ArrowDownLeft className="h-3 w-3" /> Inbound: {stats.inbound}
               </span>
+              {stats.missedCount > 0 && (
+                <span className="flex items-center gap-1 text-red-600">
+                  <XCircle className="h-3 w-3" /> Failed: {stats.missedCount}
+                </span>
+              )}
             </div>
           </>
         ) : (
@@ -285,32 +437,11 @@ export function WorkerCommunicationTab({ worker, officeId }: WorkerCommunication
         </Card>
       )}
 
-      {/* Pattern Insights */}
-      {stats.lastContact && stats.daysSinceContact !== undefined && (
-        <Card className="p-4">
-          <CardTitle className="text-sm mb-3">Insights</CardTitle>
-          <div className="space-y-2 text-sm">
-            {stats.daysSinceContact > 14 && (
-              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                <Clock className="h-4 w-4" />
-                No contact in {stats.daysSinceContact} days
-              </div>
-            )}
-            {stats.inbound === 0 && stats.outbound > 3 && (
-              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                <ArrowUpRight className="h-4 w-4" />
-                All outbound, no responses received
-              </div>
-            )}
-            {stats.last30Days > 10 && (
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                <CheckCircle className="h-4 w-4" />
-                High engagement ({stats.last30Days} contacts in 30 days)
-              </div>
-            )}
-          </div>
-        </Card>
-      )}
+      {/* Data Governance Notice */}
+      <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 flex items-center gap-2">
+        <Info className="h-4 w-4" />
+        Communication insights are observational patterns, not automated conclusions.
+      </div>
     </div>
   );
 }

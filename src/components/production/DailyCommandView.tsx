@@ -9,19 +9,35 @@
  * - At-risk workers (low predictability or declining)
  * - Top contributors today
  * - Visual alerts for operational warnings
+ * - Today's Worker Grid (clickable, opens profile dialog)
  */
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   Users,
   TrendingUp,
   TrendingDown,
+  Minus,
   Clock,
   AlertTriangle,
   Award,
@@ -33,6 +49,7 @@ import {
   Package,
   Shield,
   Info,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -43,6 +60,8 @@ import {
 } from '@/hooks/useWorkerPerformance';
 import { useWorkerAttendance, useProductionBatches } from '@/hooks/useProductionPortal';
 import { format } from 'date-fns';
+import { WorkerProfileDialog } from './performance/WorkerProfileDialog';
+import { ProductionWorker } from '@/hooks/useProductionPortal';
 
 interface DailyCommandViewProps {
   officeId: string;
@@ -55,6 +74,14 @@ interface OperationalAlert {
   title: string;
   description: string;
   icon: React.ReactNode;
+}
+
+interface EnrichedWorker {
+  profile: WorkerSkillProfile;
+  worker: ProductionWorker;
+  predictability: number;
+  contributionPct: number;
+  isAtRisk: boolean;
 }
 
 function calculatePredictability(profile: WorkerSkillProfile): number {
@@ -70,6 +97,12 @@ function calculatePredictability(profile: WorkerSkillProfile): number {
   );
 }
 
+const TREND_ICONS = {
+  improving: <TrendingUp className="h-3 w-3 text-emerald-500" />,
+  stable: <Minus className="h-3 w-3 text-muted-foreground" />,
+  declining: <TrendingDown className="h-3 w-3 text-red-500" />,
+};
+
 export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandViewProps) {
   const today = new Date();
   const { data: profiles = [], isLoading: profilesLoading } = useWorkerSkillProfiles(officeId);
@@ -77,6 +110,13 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
   const { data: attendance = [] } = useWorkerAttendance(officeId, today);
   const { data: batches = [] } = useProductionBatches(officeId, today);
   const { data: benchmarks = [] } = useCycleBenchmarks(officeId);
+
+  // Profile Dialog State
+  const [selectedWorker, setSelectedWorker] = useState<{
+    profile: WorkerSkillProfile;
+    worker: ProductionWorker;
+  } | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const isLoading = profilesLoading || workersLoading;
   const workerMap = new Map(workers.map(w => [w.id, w]));
@@ -129,29 +169,39 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
     };
   }, [batches, presentProfiles, targetBoxes, defaultBoxesPerHour]);
 
+  // Enriched workers with all metrics
+  const enrichedWorkers = useMemo<EnrichedWorker[]>(() => {
+    return presentProfiles.map(profile => {
+      const worker = workerMap.get(profile.worker_id);
+      const predictability = calculatePredictability(profile);
+      const contributionPct = throughputMetrics.totalCapacity > 0 
+        ? Math.round(((profile.boxes_per_hour || defaultBoxesPerHour) / throughputMetrics.totalCapacity) * 100)
+        : 0;
+      const isAtRisk = predictability < 50 || 
+        profile.trend_speed === 'declining' || 
+        profile.trend_quality === 'declining';
+
+      return {
+        profile,
+        worker: worker || { id: profile.worker_id, full_name: 'Unknown' } as ProductionWorker,
+        predictability,
+        contributionPct,
+        isAtRisk,
+      };
+    }).sort((a, b) => (b.profile.boxes_per_hour || 0) - (a.profile.boxes_per_hour || 0));
+  }, [presentProfiles, workerMap, throughputMetrics.totalCapacity, defaultBoxesPerHour]);
+
   // At-risk workers
-  const atRiskWorkers = useMemo(() => {
-    return presentProfiles.filter(p => {
-      const predictability = calculatePredictability(p);
-      return predictability < 50 || p.trend_speed === 'declining' || p.trend_quality === 'declining';
-    }).map(p => ({
-      ...p,
-      name: workerMap.get(p.worker_id)?.full_name || 'Unknown',
-      predictability: calculatePredictability(p),
-    }));
-  }, [presentProfiles, workerMap]);
+  const atRiskWorkers = useMemo(() => 
+    enrichedWorkers.filter(w => w.isAtRisk),
+    [enrichedWorkers]
+  );
 
   // Top contributors
-  const topContributors = useMemo(() => {
-    return [...presentProfiles]
-      .sort((a, b) => (b.boxes_per_hour || 0) - (a.boxes_per_hour || 0))
-      .slice(0, 5)
-      .map(p => ({
-        ...p,
-        name: workerMap.get(p.worker_id)?.full_name || 'Unknown',
-        predictability: calculatePredictability(p),
-      }));
-  }, [presentProfiles, workerMap]);
+  const topContributors = useMemo(() => 
+    enrichedWorkers.slice(0, 3),
+    [enrichedWorkers]
+  );
 
   // Operational alerts
   const alerts = useMemo<OperationalAlert[]>(() => {
@@ -209,267 +259,435 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
     return result;
   }, [presentProfiles, presentWorkerIds]);
 
+  const handleWorkerClick = (enriched: EnrichedWorker) => {
+    setSelectedWorker({ profile: enriched.profile, worker: enriched.worker });
+    setDialogOpen(true);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-32 w-full" />
-        <div className="grid md:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-48" />)}
+        <div className="grid md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
         </div>
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
 
   const confidenceColors = {
-    high: 'text-emerald-600 bg-emerald-100',
-    medium: 'text-amber-600 bg-amber-100',
-    low: 'text-red-600 bg-red-100',
+    high: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30',
+    medium: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30',
+    low: 'text-red-600 bg-red-100 dark:bg-red-900/30',
   };
 
+  const getPredictabilityBadge = (score: number) => {
+    if (score >= 70) return <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">{score}</Badge>;
+    if (score >= 50) return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">{score}</Badge>;
+    return <Badge variant="destructive">{score}</Badge>;
+  };
+
+  const getHealthColor = (isAtRisk: boolean) => 
+    isAtRisk ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400';
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Activity className="h-6 w-6 text-primary" />
-            Daily Production Command
-          </h2>
-          <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
-            <Clock className="h-4 w-4" />
-            {format(today, 'EEEE, MMMM d, yyyy')}
-            <Badge variant="outline" className="ml-2 text-xs">
-              <Info className="h-3 w-3 mr-1" />
-              Live View
-            </Badge>
-          </p>
-        </div>
-      </div>
-
-      {/* Data Governance Notice */}
-      <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 flex items-center gap-2">
-        <Shield className="h-4 w-4" />
-        Scores are rolling 7-day indicators, not disciplinary metrics.
-      </div>
-
-      {/* Operational Alerts */}
-      {alerts.length > 0 && (
-        <div className="space-y-2">
-          {alerts.map(alert => (
-            <Alert 
-              key={alert.id} 
-              variant={alert.severity === 'error' ? 'destructive' : 'default'}
-              className={cn(
-                alert.severity === 'warning' && 'border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20',
-                alert.severity === 'info' && 'border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20'
-              )}
-            >
-              {alert.icon}
-              <AlertTitle>{alert.title}</AlertTitle>
-              <AlertDescription>{alert.description}</AlertDescription>
-            </Alert>
-          ))}
-        </div>
-      )}
-
-      {/* Main Stats Grid */}
-      <div className="grid md:grid-cols-4 gap-4">
-        {/* Workers Present */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Users className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-3xl font-bold">{presentWorkerIds.length}</p>
-                <p className="text-sm text-muted-foreground">Workers Present</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Current Throughput */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-3xl font-bold">
-                  {throughputMetrics.totalCapacity.toFixed(1)}
-                </p>
-                <p className="text-sm text-muted-foreground">Boxes/Hour Capacity</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Today's Output */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <Package className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-3xl font-bold">{throughputMetrics.totalBoxesToday}</p>
-                <p className="text-sm text-muted-foreground">Boxes Today</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Time to Complete */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "h-12 w-12 rounded-full flex items-center justify-center",
-                throughputMetrics.isOnTrack 
-                  ? "bg-emerald-100 dark:bg-emerald-900/30" 
-                  : "bg-red-100 dark:bg-red-900/30"
-              )}>
-                {throughputMetrics.isOnTrack ? (
-                  <CheckCircle2 className="h-6 w-6 text-emerald-600" />
-                ) : (
-                  <AlertCircle className="h-6 w-6 text-red-600" />
-                )}
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {throughputMetrics.hoursToComplete > 0 && `${throughputMetrics.hoursToComplete}h `}
-                  {throughputMetrics.minutesToComplete}m
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  to complete {targetBoxes - throughputMetrics.totalBoxesToday} remaining
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Progress Bar */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="font-medium">Daily Target Progress</span>
-              <span className="text-muted-foreground">
-                {throughputMetrics.totalBoxesToday} / {targetBoxes} boxes
-              </span>
-            </div>
-            <Progress 
-              value={Math.min(100, (throughputMetrics.totalBoxesToday / targetBoxes) * 100)} 
-              className="h-3"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{Math.round((throughputMetrics.totalBoxesToday / targetBoxes) * 100)}% complete</span>
-              <Badge variant="outline" className={confidenceColors[throughputMetrics.confidenceLevel]}>
-                <Gauge className="h-3 w-3 mr-1" />
-                {throughputMetrics.confidenceLevel} confidence
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Activity className="h-6 w-6 text-primary" />
+              Daily Production Command
+            </h2>
+            <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+              <Clock className="h-4 w-4" />
+              {format(today, 'EEEE, MMMM d, yyyy')}
+              <Badge variant="outline" className="ml-2 text-xs">
+                <Info className="h-3 w-3 mr-1" />
+                Live View
               </Badge>
-            </div>
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Two Column Layout */}
-      <div className="grid md:grid-cols-2 gap-4">
-        {/* Top Contributors */}
+        {/* Data Governance Notice */}
+        <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 flex items-center gap-2">
+          <Shield className="h-4 w-4" />
+          Metrics are rolling 7-day indicators for operational planning, not disciplinary decisions.
+        </div>
+
+        {/* Operational Alerts */}
+        {alerts.length > 0 && (
+          <div className="space-y-2">
+            {alerts.map(alert => (
+              <Alert 
+                key={alert.id} 
+                variant={alert.severity === 'error' ? 'destructive' : 'default'}
+                className={cn(
+                  alert.severity === 'warning' && 'border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20',
+                  alert.severity === 'info' && 'border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20'
+                )}
+              >
+                {alert.icon}
+                <AlertTitle>{alert.title}</AlertTitle>
+                <AlertDescription>{alert.description}</AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        )}
+
+        {/* Main Stats Grid */}
+        <div className="grid md:grid-cols-4 gap-4">
+          {/* Workers Present */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Users className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold">{presentWorkerIds.length}</p>
+                  <p className="text-sm text-muted-foreground">Workers Present</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Current Throughput */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold">
+                    {throughputMetrics.totalCapacity.toFixed(1)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Boxes/Hour Capacity</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Today's Output */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <Package className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold">{throughputMetrics.totalBoxesToday}</p>
+                  <p className="text-sm text-muted-foreground">Boxes Today</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Time to Complete */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "h-12 w-12 rounded-full flex items-center justify-center",
+                  throughputMetrics.isOnTrack 
+                    ? "bg-emerald-100 dark:bg-emerald-900/30" 
+                    : "bg-red-100 dark:bg-red-900/30"
+                )}>
+                  {throughputMetrics.isOnTrack ? (
+                    <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                  ) : (
+                    <AlertCircle className="h-6 w-6 text-red-600" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {throughputMetrics.hoursToComplete > 0 && `${throughputMetrics.hoursToComplete}h `}
+                    {throughputMetrics.minutesToComplete}m
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    to complete {targetBoxes - throughputMetrics.totalBoxesToday} remaining
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Progress Bar */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">Daily Target Progress</span>
+                <span className="text-muted-foreground">
+                  {throughputMetrics.totalBoxesToday} / {targetBoxes} boxes
+                </span>
+              </div>
+              <Progress 
+                value={Math.min(100, (throughputMetrics.totalBoxesToday / targetBoxes) * 100)} 
+                className="h-3"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{Math.round((throughputMetrics.totalBoxesToday / targetBoxes) * 100)}% complete</span>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Badge variant="outline" className={confidenceColors[throughputMetrics.confidenceLevel]}>
+                      <Gauge className="h-3 w-3 mr-1" />
+                      {throughputMetrics.confidenceLevel} confidence
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Based on team predictability scores ({throughputMetrics.avgPredictability}% avg)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Today's Worker Grid */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Award className="h-5 w-5 text-amber-500" />
-              Top Contributors Today
+              <Users className="h-5 w-5" />
+              Today's Workers
+              <Badge variant="secondary" className="ml-2">{enrichedWorkers.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {topContributors.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No workers with performance data present
-              </p>
+            {enrichedWorkers.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No workers with performance data present today</p>
+              </div>
             ) : (
-              <div className="space-y-3">
-                {topContributors.map((worker, idx) => (
-                  <div key={worker.id} className="flex items-center gap-3">
-                    <div className={cn(
-                      "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white",
-                      idx === 0 ? "bg-amber-500" : idx === 1 ? "bg-gray-400" : idx === 2 ? "bg-amber-700" : "bg-muted text-muted-foreground"
-                    )}>
-                      {idx + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{worker.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {worker.boxes_per_hour?.toFixed(1) || '—'} boxes/hr
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {worker.trend_speed === 'improving' && <TrendingUp className="h-4 w-4 text-emerald-500" />}
-                      {worker.trend_speed === 'declining' && <TrendingDown className="h-4 w-4 text-red-500" />}
-                      <Badge variant="secondary" className="text-xs">
-                        {worker.predictability}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+              <div className="rounded-md border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Worker</TableHead>
+                      <TableHead className="text-center">
+                        <Tooltip>
+                          <TooltipTrigger className="cursor-help">Speed</TooltipTrigger>
+                          <TooltipContent>7-day rolling speed score</TooltipContent>
+                        </Tooltip>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <Tooltip>
+                          <TooltipTrigger className="cursor-help">Quality</TooltipTrigger>
+                          <TooltipContent>7-day rolling quality score</TooltipContent>
+                        </Tooltip>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <Tooltip>
+                          <TooltipTrigger className="cursor-help">Predictability</TooltipTrigger>
+                          <TooltipContent>Reliability + consistency + trend stability</TooltipContent>
+                        </Tooltip>
+                      </TableHead>
+                      <TableHead className="text-center">Trends</TableHead>
+                      <TableHead className="text-right">Boxes/hr</TableHead>
+                      <TableHead className="text-right">Defects‰</TableHead>
+                      <TableHead className="text-right">
+                        <Tooltip>
+                          <TooltipTrigger className="cursor-help">Contrib%</TooltipTrigger>
+                          <TooltipContent>Contribution to total team capacity</TooltipContent>
+                        </Tooltip>
+                      </TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {enrichedWorkers.map((enriched, idx) => (
+                      <TableRow 
+                        key={enriched.profile.id}
+                        className={cn(
+                          "cursor-pointer transition-colors hover:bg-muted/50",
+                          enriched.isAtRisk && "bg-red-50/50 dark:bg-red-950/10"
+                        )}
+                        onClick={() => handleWorkerClick(enriched)}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {idx < 3 && (
+                              <div className={cn(
+                                "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0",
+                                idx === 0 ? "bg-amber-500" : idx === 1 ? "bg-gray-400" : "bg-amber-700"
+                              )}>
+                                {idx + 1}
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium">{enriched.worker.full_name}</p>
+                              <p className="text-xs text-muted-foreground capitalize">{enriched.worker.role}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className={cn("font-medium", getHealthColor(enriched.profile.speed_score < 50))}>
+                            {enriched.profile.speed_score || '—'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className={cn("font-medium", getHealthColor(enriched.profile.quality_score < 50))}>
+                            {enriched.profile.quality_score || '—'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getPredictabilityBadge(enriched.predictability)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Tooltip>
+                              <TooltipTrigger>{TREND_ICONS[enriched.profile.trend_speed] || TREND_ICONS.stable}</TooltipTrigger>
+                              <TooltipContent>Speed: {enriched.profile.trend_speed}</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger>{TREND_ICONS[enriched.profile.trend_quality] || TREND_ICONS.stable}</TooltipTrigger>
+                              <TooltipContent>Quality: {enriched.profile.trend_quality}</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {enriched.profile.boxes_per_hour?.toFixed(1) || '—'}
+                        </TableCell>
+                        <TableCell className={cn(
+                          "text-right font-mono",
+                          (enriched.profile.defect_rate_per_thousand || 0) > 15 && "text-red-600"
+                        )}>
+                          {enriched.profile.defect_rate_per_thousand?.toFixed(1) || '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="outline" className="text-xs">{enriched.contributionPct}%</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* At-Risk Workers */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              At-Risk Workers
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {atRiskWorkers.length === 0 ? (
-              <div className="text-center py-4">
-                <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-500" />
-                <p className="text-sm text-muted-foreground">All workers performing well</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {atRiskWorkers.map(worker => (
-                  <div key={worker.id} className="flex items-center gap-3 p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20">
-                    <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{worker.name}</p>
-                      <div className="flex gap-2 text-xs text-muted-foreground">
-                        {worker.trend_speed === 'declining' && (
-                          <span className="text-red-600 flex items-center gap-0.5">
-                            <TrendingDown className="h-3 w-3" /> Speed
-                          </span>
-                        )}
-                        {worker.trend_quality === 'declining' && (
-                          <span className="text-red-600 flex items-center gap-0.5">
-                            <TrendingDown className="h-3 w-3" /> Quality
-                          </span>
-                        )}
-                        {worker.predictability < 50 && (
-                          <span className="text-amber-600">
-                            Predictability: {worker.predictability}
-                          </span>
-                        )}
+        {/* Two Column Layout */}
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Top Contributors */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Award className="h-5 w-5 text-amber-500" />
+                Top Contributors Today
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {topContributors.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No workers with performance data present
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {topContributors.map((enriched, idx) => (
+                    <div 
+                      key={enriched.profile.id} 
+                      className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 rounded-lg p-2 -mx-2 transition-colors"
+                      onClick={() => handleWorkerClick(enriched)}
+                    >
+                      <div className={cn(
+                        "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white",
+                        idx === 0 ? "bg-amber-500" : idx === 1 ? "bg-gray-400" : "bg-amber-700"
+                      )}>
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{enriched.worker.full_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {enriched.profile.boxes_per_hour?.toFixed(1) || '—'} boxes/hr • {enriched.contributionPct}% of capacity
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {TREND_ICONS[enriched.profile.trend_speed] || TREND_ICONS.stable}
+                        {getPredictabilityBadge(enriched.predictability)}
                       </div>
                     </div>
-                    <Badge variant="destructive" className="text-xs shrink-0">
-                      At Risk
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* At-Risk Workers */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                At-Risk Workers
+                {atRiskWorkers.length > 0 && (
+                  <Badge variant="destructive" className="ml-2">{atRiskWorkers.length}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {atRiskWorkers.length === 0 ? (
+                <div className="text-center py-4">
+                  <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-500" />
+                  <p className="text-sm text-muted-foreground">All workers performing well</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {atRiskWorkers.map(enriched => (
+                    <div 
+                      key={enriched.profile.id} 
+                      className="flex items-center gap-3 p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 cursor-pointer hover:bg-amber-100/50 dark:hover:bg-amber-950/30 transition-colors"
+                      onClick={() => handleWorkerClick(enriched)}
+                    >
+                      <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{enriched.worker.full_name}</p>
+                        <div className="flex gap-2 text-xs text-muted-foreground flex-wrap">
+                          {enriched.profile.trend_speed === 'declining' && (
+                            <span className="text-red-600 flex items-center gap-0.5">
+                              <TrendingDown className="h-3 w-3" /> Speed
+                            </span>
+                          )}
+                          {enriched.profile.trend_quality === 'declining' && (
+                            <span className="text-red-600 flex items-center gap-0.5">
+                              <TrendingDown className="h-3 w-3" /> Quality
+                            </span>
+                          )}
+                          {enriched.predictability < 50 && (
+                            <span className="text-amber-600">
+                              Predictability: {enriched.predictability}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <Badge variant="destructive" className="text-xs shrink-0">
+                        At Risk
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Worker Profile Dialog */}
+        <WorkerProfileDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          profile={selectedWorker?.profile || null}
+          worker={selectedWorker?.worker || null}
+          benchmark={globalBenchmark}
+          officeId={officeId}
+        />
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
