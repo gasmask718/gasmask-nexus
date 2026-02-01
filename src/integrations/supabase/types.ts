@@ -15218,7 +15218,10 @@ export type Database = {
           is_historical: boolean
           notes: string | null
           pdf_url: string | null
+          receipt_delivered_at: string | null
+          receipt_failure_reason: string | null
           receipt_message_sid: string | null
+          receipt_phone_used: string | null
           receipt_sent_at: string | null
           receipt_status: string | null
           status: string | null
@@ -15236,7 +15239,10 @@ export type Database = {
           is_historical?: boolean
           notes?: string | null
           pdf_url?: string | null
+          receipt_delivered_at?: string | null
+          receipt_failure_reason?: string | null
           receipt_message_sid?: string | null
+          receipt_phone_used?: string | null
           receipt_sent_at?: string | null
           receipt_status?: string | null
           status?: string | null
@@ -15254,7 +15260,10 @@ export type Database = {
           is_historical?: boolean
           notes?: string | null
           pdf_url?: string | null
+          receipt_delivered_at?: string | null
+          receipt_failure_reason?: string | null
           receipt_message_sid?: string | null
+          receipt_phone_used?: string | null
           receipt_sent_at?: string | null
           receipt_status?: string | null
           status?: string | null
