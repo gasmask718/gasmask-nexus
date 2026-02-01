@@ -30716,36 +30716,122 @@ export type Database = {
           },
         ]
       }
-      production_batches: {
+      production_batch_outputs: {
         Row: {
-          boxes_produced: number | null
+          batch_id: string
+          boxes_completed: number | null
           brand: string
           created_at: string | null
+          defects_count: number | null
+          empty_boxes_used: number | null
           id: string
+          notes: string | null
+          stickers_used: number | null
+          tubes_used: number | null
+        }
+        Insert: {
+          batch_id: string
+          boxes_completed?: number | null
+          brand: string
+          created_at?: string | null
+          defects_count?: number | null
+          empty_boxes_used?: number | null
+          id?: string
+          notes?: string | null
+          stickers_used?: number | null
+          tubes_used?: number | null
+        }
+        Update: {
+          batch_id?: string
+          boxes_completed?: number | null
+          brand?: string
+          created_at?: string | null
+          defects_count?: number | null
+          empty_boxes_used?: number | null
+          id?: string
+          notes?: string | null
+          stickers_used?: number | null
+          tubes_used?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_batch_outputs_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_batches: {
+        Row: {
+          batch_date: string | null
+          boxes_produced: number | null
+          brand: string
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          efficiency_pct: number | null
+          empty_boxes_used: Json | null
+          id: string
+          notes: string | null
           office_id: string | null
           produced_by: string | null
           shift_label: string | null
+          status: string | null
+          stickers_used: Json | null
+          tobacco_lbs: number | null
+          tools_used: Json | null
           tubes_total: number | null
+          updated_at: string | null
+          waste_lbs: number | null
+          workers_present: string[] | null
         }
         Insert: {
+          batch_date?: string | null
           boxes_produced?: number | null
           brand: string
+          completed_at?: string | null
           created_at?: string | null
+          created_by?: string | null
+          efficiency_pct?: number | null
+          empty_boxes_used?: Json | null
           id?: string
+          notes?: string | null
           office_id?: string | null
           produced_by?: string | null
           shift_label?: string | null
+          status?: string | null
+          stickers_used?: Json | null
+          tobacco_lbs?: number | null
+          tools_used?: Json | null
           tubes_total?: number | null
+          updated_at?: string | null
+          waste_lbs?: number | null
+          workers_present?: string[] | null
         }
         Update: {
+          batch_date?: string | null
           boxes_produced?: number | null
           brand?: string
+          completed_at?: string | null
           created_at?: string | null
+          created_by?: string | null
+          efficiency_pct?: number | null
+          empty_boxes_used?: Json | null
           id?: string
+          notes?: string | null
           office_id?: string | null
           produced_by?: string | null
           shift_label?: string | null
+          status?: string | null
+          stickers_used?: Json | null
+          tobacco_lbs?: number | null
+          tools_used?: Json | null
           tubes_total?: number | null
+          updated_at?: string | null
+          waste_lbs?: number | null
+          workers_present?: string[] | null
         }
         Relationships: [
           {
@@ -30805,6 +30891,51 @@ export type Database = {
         }
         Relationships: []
       }
+      production_history: {
+        Row: {
+          batch_id: string | null
+          created_at: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          office_id: string | null
+          performed_by: string | null
+        }
+        Insert: {
+          batch_id?: string | null
+          created_at?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          office_id?: string | null
+          performed_by?: string | null
+        }
+        Update: {
+          batch_id?: string | null
+          created_at?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          office_id?: string | null
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_history_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_logs: {
         Row: {
           boxes_packed: number | null
@@ -30855,27 +30986,136 @@ export type Database = {
           },
         ]
       }
+      production_office_managers: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          id: string
+          is_primary: boolean | null
+          office_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          is_primary?: boolean | null
+          office_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          is_primary?: boolean | null
+          office_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_office_managers_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_office_tools: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_service_date: string | null
+          next_service_date: string | null
+          notes: string | null
+          office_id: string
+          operational_count: number | null
+          quantity: number | null
+          status: string | null
+          tool_name: string
+          tool_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_service_date?: string | null
+          next_service_date?: string | null
+          notes?: string | null
+          office_id: string
+          operational_count?: number | null
+          quantity?: number | null
+          status?: string | null
+          tool_name: string
+          tool_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_service_date?: string | null
+          next_service_date?: string | null
+          notes?: string | null
+          office_id?: string
+          operational_count?: number | null
+          quantity?: number | null
+          status?: string | null
+          tool_name?: string
+          tool_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_office_tools_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_offices: {
         Row: {
           active: boolean | null
+          address_line_1: string | null
+          city: string | null
           created_at: string | null
           id: string
           location: string | null
           name: string
+          operating_hours: Json | null
+          state: string | null
+          status: string | null
+          updated_at: string | null
+          zip_code: string | null
         }
         Insert: {
           active?: boolean | null
+          address_line_1?: string | null
+          city?: string | null
           created_at?: string | null
           id?: string
           location?: string | null
           name: string
+          operating_hours?: Json | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          zip_code?: string | null
         }
         Update: {
           active?: boolean | null
+          address_line_1?: string | null
+          city?: string | null
           created_at?: string | null
           id?: string
           location?: string | null
           name?: string
+          operating_hours?: Json | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          zip_code?: string | null
         }
         Relationships: []
       }
@@ -30946,6 +31186,120 @@ export type Database = {
             columns: ["office_id"]
             isOneToOne: false
             referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_worker_attendance: {
+        Row: {
+          batch_id: string
+          check_in_at: string | null
+          check_out_at: string | null
+          created_at: string | null
+          hours_worked: number | null
+          id: string
+          notes: string | null
+          role_during_shift: string | null
+          worker_id: string
+        }
+        Insert: {
+          batch_id: string
+          check_in_at?: string | null
+          check_out_at?: string | null
+          created_at?: string | null
+          hours_worked?: number | null
+          id?: string
+          notes?: string | null
+          role_during_shift?: string | null
+          worker_id: string
+        }
+        Update: {
+          batch_id?: string
+          check_in_at?: string | null
+          check_out_at?: string | null
+          created_at?: string | null
+          hours_worked?: number | null
+          id?: string
+          notes?: string | null
+          role_during_shift?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_worker_attendance_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_worker_attendance_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "production_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_workers: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string
+          hire_date: string | null
+          id: string
+          notes: string | null
+          office_id: string
+          person_id: string | null
+          phone: string | null
+          role: string
+          status: string | null
+          updated_at: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name: string
+          hire_date?: string | null
+          id?: string
+          notes?: string | null
+          office_id: string
+          person_id?: string | null
+          phone?: string | null
+          role: string
+          status?: string | null
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string
+          hire_date?: string | null
+          id?: string
+          notes?: string | null
+          office_id?: string
+          person_id?: string | null
+          phone?: string | null
+          role?: string
+          status?: string | null
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_workers_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_workers_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
