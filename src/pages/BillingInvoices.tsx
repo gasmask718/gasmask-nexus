@@ -22,7 +22,14 @@ const BillingInvoices = () => {
       const { data, error } = await supabase
         .from('customer_invoices')
         .select(`
-          *,
+          id,
+          invoice_number,
+          total_amount,
+          due_date,
+          status,
+          created_at,
+          receipt_status,
+          receipt_sent_at,
           crm_customers(name, email, business_type)
         `)
         .order('created_at', { ascending: false });
