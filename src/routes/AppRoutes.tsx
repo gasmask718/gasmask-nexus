@@ -1694,14 +1694,14 @@ export default function AppRoutes() {
       <Route path="/grabba/ambassadors/:ambassadorId" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'ambassador', 'csr', 'accountant']}>
-            <Layout><GrabbaLayout><AmbassadorProfile /></GrabbaLayout></Layout>
+            <Layout><GrabbaLayout><Floor8AmbassadorProfile /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassadors/:ambassadorId" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'ambassador', 'csr', 'accountant']}>
-            <Layout><GrabbaLayout><AmbassadorProfile /></GrabbaLayout></Layout>
+            <Layout><GrabbaLayout><Floor8AmbassadorProfile /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />

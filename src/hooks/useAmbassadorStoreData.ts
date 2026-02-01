@@ -92,12 +92,74 @@ export function useAmbassadorStoreData(ambassadorId: string | undefined) {
   });
 
   // Fetch stores assigned to this ambassador (operational responsibility)
+  // Uses BOTH direct store_master.assigned_ambassador_id AND ambassador_assignments table
   const { data: assignedStoresData = [], isLoading: isLoadingAssigned } = useQuery({
     queryKey: ['ambassador-assigned-stores', ambassadorId],
     queryFn: async () => {
       if (!ambassadorId) return [];
 
-      // Primary: direct assignment on store_master
+      const storeMap = new Map<string, any>();
+
+      // 1. Primary: ambassador_assignments table (legacy/primary source)
+      const { data: assignments, error: assignError } = await supabase
+        .from('ambassador_assignments')
+        .select(`
+          id,
+          store_id,
+          created_at,
+          assignment_role,
+          commission_rate
+        `)
+        .eq('ambassador_id', ambassadorId)
+        .eq('active', true);
+
+      if (assignError) {
+        console.error('Error fetching assignments:', assignError);
+      }
+
+      // Fetch store details for assignments
+      const assignmentStoreIds = (assignments || [])
+        .map((a: any) => a.store_id)
+        .filter(Boolean);
+
+      if (assignmentStoreIds.length > 0) {
+        const { data: assignedStoreDetails } = await supabase
+          .from('store_master')
+          .select(`
+            id,
+            store_name,
+            city,
+            address,
+            sourced_by_ambassador_id,
+            health_status,
+            last_visit_at,
+            last_order_at,
+            created_at
+          `)
+          .in('id', assignmentStoreIds);
+
+        // Build map from store details
+        const storeDetailsMap = new Map<string, any>();
+        (assignedStoreDetails || []).forEach((s: any) => {
+          storeDetailsMap.set(s.id, s);
+        });
+
+        // Merge assignments with store details
+        (assignments || []).forEach((a: any) => {
+          const storeDetails = storeDetailsMap.get(a.store_id);
+          if (storeDetails && !storeMap.has(storeDetails.id)) {
+            storeMap.set(storeDetails.id, {
+              store: storeDetails,
+              assignedAt: a.created_at,
+              fromAssignment: true,
+              role: a.assignment_role,
+              commissionRate: a.commission_rate,
+            });
+          }
+        });
+      }
+
+      // 2. Secondary: direct assignment on store_master (new column)
       const { data: directAssigned, error: directError } = await supabase
         .from('store_master')
         .select(`
@@ -118,53 +180,13 @@ export function useAmbassadorStoreData(ambassadorId: string | undefined) {
         console.error('Error fetching direct assigned stores:', directError);
       }
 
-      // Secondary: via ambassador_assignments table
-      const { data: assignments, error: assignError } = await supabase
-        .from('ambassador_assignments')
-        .select(`
-          id,
-          store_id,
-          created_at,
-          assignment_role,
-          store:store_id (
-            id,
-            store_name,
-            city,
-            address,
-            sourced_by_ambassador_id,
-            health_status,
-            last_visit_at,
-            last_order_at
-          )
-        `)
-        .eq('ambassador_id', ambassadorId)
-        .eq('active', true)
-        .not('store_id', 'is', null);
-
-      if (assignError) {
-        console.error('Error fetching assignment stores:', assignError);
-      }
-
-      // Merge and dedupe by store ID
-      const storeMap = new Map<string, any>();
-
-      // Add direct assignments first
-      (directAssigned || []).forEach(store => {
-        storeMap.set(store.id, {
-          store,
-          assignedAt: store.created_at,
-          fromAssignment: false,
-        });
-      });
-
-      // Add assignment-table stores (may overlap)
-      ((assignments || []) as any[]).forEach((a: any) => {
-        if (a.store && !storeMap.has(a.store.id)) {
-          storeMap.set(a.store.id, {
-            store: a.store,
-            assignedAt: a.created_at,
-            fromAssignment: true,
-            role: a.assignment_role,
+      // Add direct assignments (these take precedence if not already in map)
+      (directAssigned || []).forEach((store: any) => {
+        if (!storeMap.has(store.id)) {
+          storeMap.set(store.id, {
+            store,
+            assignedAt: store.created_at,
+            fromAssignment: false,
           });
         }
       });
@@ -206,6 +228,7 @@ export function useAmbassadorStoreData(ambassadorId: string | undefined) {
   });
 
   // Fetch commission data for sourced stores
+  // Note: commission_events uses source_entity_id for store reference
   const { data: commissionData = [] } = useQuery({
     queryKey: ['ambassador-store-commissions', ambassadorId],
     queryFn: async () => {
@@ -213,8 +236,9 @@ export function useAmbassadorStoreData(ambassadorId: string | undefined) {
 
       const { data, error } = await supabase
         .from('commission_events')
-        .select('store_id, gross_amount, commission_amount')
-        .eq('ambassador_id', ambassadorId);
+        .select('source_entity_id, source_entity_type, gross_amount, commission_amount')
+        .eq('ambassador_id', ambassadorId)
+        .eq('source_entity_type', 'store');
 
       if (error) {
         console.error('Error fetching commissions:', error);
@@ -263,7 +287,8 @@ export function useAmbassadorStoreData(ambassadorId: string | undefined) {
   // 1. Sourced Stores
   const sourcedStores: SourcedStore[] = sourcedStoresData.map((store: any) => {
     // Calculate revenue and commission for this store
-    const storeCommissions = commissionData.filter((c: any) => c.store_id === store.id);
+    // Note: commission_events uses source_entity_id for store reference
+    const storeCommissions = commissionData.filter((c: any) => c.source_entity_id === store.id);
     const lifetimeRevenue = storeCommissions.reduce((sum, c: any) => sum + Number(c.gross_amount || 0), 0);
     const commissionEarned = storeCommissions.reduce((sum, c: any) => sum + Number(c.commission_amount || 0), 0);
 
@@ -287,6 +312,8 @@ export function useAmbassadorStoreData(ambassadorId: string | undefined) {
   // 2. Assigned Stores
   const assignedStores: AssignedStore[] = assignedStoresData.map((item: any) => {
     const store = item.store;
+    if (!store) return null; // Skip if no store data
+
     const sourcedById = store.sourced_by_ambassador_id;
 
     // Determine health status
@@ -306,7 +333,7 @@ export function useAmbassadorStoreData(ambassadorId: string | undefined) {
         id: store.id,
         store_name: store.store_name,
         city: store.city,
-        neighborhood: store.address, // Use address as fallback for neighborhood
+        neighborhood: store.neighborhood || store.address, // Prefer neighborhood, fallback to address
         health_status: store.health_status,
       },
       assignedAt: item.assignedAt,
@@ -315,8 +342,9 @@ export function useAmbassadorStoreData(ambassadorId: string | undefined) {
       lastVisit: store.last_visit_at,
       lastOrder: store.last_order_at,
       healthStatus,
+      commissionRate: item.commissionRate,
     };
-  });
+  }).filter(Boolean) as AssignedStore[];
 
   // 3. Pipeline Stages
   const pipeline: PipelineStage[] = PIPELINE_STAGES.map(({ stage, label }) => {

@@ -49,7 +49,7 @@ export default function AmbassadorProfilePage() {
     enabled: !!ambassadorId,
   });
 
-  // Fetch assigned stores
+  // Fetch assigned stores (legacy query, now supplemented by useAmbassadorStoreData)
   const { data: stores = [] } = useQuery({
     queryKey: ['floor8-ambassador-stores', ambassadorId],
     queryFn: async () => {
@@ -58,7 +58,7 @@ export default function AmbassadorProfilePage() {
         .from('ambassador_assignments')
         .select(`
           *,
-          store:store_id (id, store_name, city, neighborhood, status)
+          store:store_id (id, store_name, city, address, health_status)
         `)
         .eq('ambassador_id', ambassadorId)
         .eq('active', true)
