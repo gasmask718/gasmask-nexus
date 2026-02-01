@@ -259,6 +259,7 @@ import {
   MarketplaceAdminPortalPage,
 } from '@/pages/portals';
 import OfficesManagementPage from '@/pages/portals/production/OfficesManagementPage';
+import StaffManagementPage from '@/pages/portals/production/StaffManagementPage';
 
 // HR
 import HR from '@/pages/HR';
@@ -1302,6 +1303,7 @@ export default function AppRoutes() {
         <Route path="/portals/wholesaler" element={<WholesalerPortalPage />} />
         <Route path="/portals/production" element={<ProductionPortalPage />} />
         <Route path="/portals/production/offices" element={<OfficesManagementPage />} />
+        <Route path="/portals/production/staff" element={<StaffManagementPage />} />
         <Route path="/portals/va" element={<VAPortalPage />} />
         <Route path="/portals/customer" element={<CustomerPortalPage />} />
         <Route path="/portals/national-wholesale" element={<NationalWholesalePortalPage />} />

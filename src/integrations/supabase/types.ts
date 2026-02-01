@@ -45503,6 +45503,14 @@ export type Database = {
           member_role: string
         }[]
       }
+      get_user_office_role: {
+        Args: { _office_id: string; _user_id: string }
+        Returns: string
+      }
+      get_user_production_offices: {
+        Args: { _user_id: string }
+        Returns: string[]
+      }
       get_vertical_guardrails: {
         Args: { p_vertical_slug: string }
         Returns: {
