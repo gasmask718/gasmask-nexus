@@ -46,6 +46,9 @@ import {
   TrainingModeBanner,
   TrainingModeToggle,
   ActiveBatchBanner,
+  WorkerPerformance,
+  DailyCycleTimeSummary,
+  StaffingForecast,
 } from '@/components/production';
 import { 
   Factory, 
@@ -62,6 +65,7 @@ import {
   Scale,
   Settings,
   UserPlus,
+  Target,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -302,7 +306,7 @@ export default function ProductionPortalPage() {
 
           {/* Tabbed Sections */}
           <Tabs defaultValue="batches" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="batches" className="flex items-center gap-2">
                 <Boxes className="h-4 w-4" />
                 <span className="hidden sm:inline">Batches</span>
@@ -314,6 +318,10 @@ export default function ProductionPortalPage() {
               <TabsTrigger value="workers" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Workers</span>
+              </TabsTrigger>
+              <TabsTrigger value="performance" className="flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                <span className="hidden sm:inline">Performance</span>
               </TabsTrigger>
               <TabsTrigger value="tools" className="flex items-center gap-2">
                 <Wrench className="h-4 w-4" />
@@ -357,6 +365,18 @@ export default function ProductionPortalPage() {
 
             <TabsContent value="workers">
               <WorkerManagement officeId={selectedOfficeId} />
+            </TabsContent>
+
+            <TabsContent value="performance">
+              <div className="grid lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
+                  <WorkerPerformance officeId={selectedOfficeId} />
+                </div>
+                <div className="space-y-4">
+                  <DailyCycleTimeSummary batches={batches} officeId={selectedOfficeId} />
+                  <StaffingForecast officeId={selectedOfficeId} />
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="tools">
