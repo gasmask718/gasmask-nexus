@@ -1,49 +1,55 @@
 /**
  * WORKER PERFORMANCE TAB
  * 
- * Displays skill profiles for workers with:
- * - Speed/Quality/Reliability scores
+ * Enhanced worker analytics with:
+ * - Skill breakdown (speed, quality, reliability, consistency)
  * - Trend indicators (↑ ↓ →)
- * - Rolling metrics (7/30/90 day)
- * - Performance comparison
- * - Clear label: "Last 7 Days (Rolling)"
+ * - Predictability scoring
+ * - Worker intelligence table with filters
+ * - Time-to-complete estimator
+ * - Full profile dialog
  * 
  * IMPORTANT: This pulls ONLY from production_worker_skill_profiles (live profiles)
  * History view should use production_worker_performance_snapshots
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
 import { 
   useWorkerSkillProfiles, 
   useProductionWorkers,
+  useCycleBenchmarks,
   WorkerSkillProfile 
 } from '@/hooks/useWorkerPerformance';
+import { useWorkerAttendance, ProductionWorker } from '@/hooks/useProductionPortal';
 import { 
   User, 
   TrendingUp, 
   TrendingDown, 
   Minus,
-  Zap,
-  Shield,
-  Clock,
   Target,
   Award,
   AlertTriangle,
   Info,
-  Lock,
   Calendar,
-  ArrowRight,
+  LayoutGrid,
+  Table2,
+  Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { 
+  WorkerProfileCard, 
+  WorkerIntelligenceTable, 
+  TimeToCompleteEstimator,
+  WorkerProfileDialog 
+} from './performance';
 
 interface WorkerPerformanceProps {
   officeId: string;
+  targetBoxes?: number;
 }
 
 const TREND_ICONS = {
@@ -51,153 +57,6 @@ const TREND_ICONS = {
   stable: <Minus className="h-3 w-3 text-muted-foreground" />,
   declining: <TrendingDown className="h-3 w-3 text-red-500" />,
 };
-
-const TREND_LABELS = {
-  improving: 'Improving',
-  stable: 'Stable',
-  declining: 'Declining',
-};
-
-const SCORE_COLORS = {
-  high: 'bg-emerald-500',
-  medium: 'bg-amber-500',
-  low: 'bg-red-500',
-};
-
-function getScoreColor(score: number): string {
-  if (score >= 70) return SCORE_COLORS.high;
-  if (score >= 40) return SCORE_COLORS.medium;
-  return SCORE_COLORS.low;
-}
-
-function getScoreLabel(score: number): string {
-  if (score >= 80) return 'Excellent';
-  if (score >= 60) return 'Good';
-  if (score >= 40) return 'Average';
-  if (score >= 20) return 'Needs Work';
-  return 'Critical';
-}
-
-function getScoreTextColor(score: number): string {
-  if (score >= 60) return 'text-emerald-600';
-  if (score >= 40) return 'text-amber-600';
-  return 'text-red-600';
-}
-
-interface WorkerCardProps {
-  profile: WorkerSkillProfile;
-  workerName: string;
-}
-
-function WorkerCard({ profile, workerName }: WorkerCardProps) {
-  const isLocked = (profile as any).is_locked;
-  
-  return (
-    <Card className={cn(
-      "hover:shadow-md transition-shadow",
-      isLocked && "border-muted"
-    )}>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-sm font-medium flex items-center gap-1">
-                {workerName}
-                {isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Overall: {getScoreLabel(profile.overall_score || 50)}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 text-sm font-semibold">
-            <span className={cn("text-lg", getScoreTextColor(profile.overall_score || 50))}>
-              {profile.overall_score || 50}
-            </span>
-            <span className="text-muted-foreground text-xs">/100</span>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {/* Skill Bars with Trend Indicators */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Zap className="h-3 w-3 text-amber-500" />
-            <span className="text-xs w-16">Speed</span>
-            <Progress 
-              value={profile.speed_score || 50} 
-              className="flex-1 h-2"
-            />
-            <span className="text-xs w-8 text-right">{profile.speed_score || 50}</span>
-            <div className="flex items-center gap-0.5" title={TREND_LABELS[profile.trend_speed || 'stable']}>
-              {TREND_ICONS[profile.trend_speed || 'stable']}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Shield className="h-3 w-3 text-blue-500" />
-            <span className="text-xs w-16">Quality</span>
-            <Progress 
-              value={profile.quality_score || 50} 
-              className="flex-1 h-2"
-            />
-            <span className="text-xs w-8 text-right">{profile.quality_score || 50}</span>
-            <div className="flex items-center gap-0.5" title={TREND_LABELS[profile.trend_quality || 'stable']}>
-              {TREND_ICONS[profile.trend_quality || 'stable']}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-3 w-3 text-purple-500" />
-            <span className="text-xs w-16">Reliability</span>
-            <Progress 
-              value={profile.reliability_score || 50} 
-              className="flex-1 h-2"
-            />
-            <span className="text-xs w-8 text-right">{profile.reliability_score || 50}</span>
-            {/* No trend for reliability yet */}
-            <div className="w-3" />
-          </div>
-        </div>
-
-        {/* Key Metrics */}
-        <div className="grid grid-cols-3 gap-2 pt-2 border-t">
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">Boxes/Hr</p>
-            <p className="text-sm font-medium">
-              {profile.boxes_per_hour?.toFixed(1) || '—'}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">Defect Rate</p>
-            <p className={cn(
-              "text-sm font-medium",
-              (profile.defect_rate_per_thousand || 0) > 10 ? "text-destructive" : ""
-            )}>
-              {profile.defect_rate_per_thousand != null 
-                ? `${profile.defect_rate_per_thousand.toFixed(1)}‰` 
-                : '—'}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">7d Boxes</p>
-            <p className="text-sm font-medium">
-              {profile.rolling_7_day_boxes || 0}
-            </p>
-          </div>
-        </div>
-
-        {/* Last Calculated */}
-        {profile.last_calculated_at && (
-          <p className="text-xs text-muted-foreground text-center pt-1 border-t">
-            Updated: {new Date(profile.last_calculated_at).toLocaleDateString()}
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 function PerformanceLeaderboard({ profiles, workers }: { 
   profiles: WorkerSkillProfile[]; 
@@ -207,7 +66,6 @@ function PerformanceLeaderboard({ profiles, workers }: {
   const sorted = [...profiles].sort((a, b) => (b.overall_score || 0) - (a.overall_score || 0));
   const top = sorted.slice(0, 3);
   const needsAttention = sorted.filter(p => (p.overall_score || 50) < 40);
-  const improving = sorted.filter(p => p.trend_speed === 'improving' || p.trend_quality === 'improving');
   const declining = sorted.filter(p => p.trend_speed === 'declining' || p.trend_quality === 'declining');
 
   return (
@@ -250,7 +108,7 @@ function PerformanceLeaderboard({ profiles, workers }: {
         </CardContent>
       </Card>
 
-      {/* Needs Attention / Trending */}
+      {/* Needs Attention */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -263,7 +121,6 @@ function PerformanceLeaderboard({ profiles, workers }: {
             <p className="text-sm text-muted-foreground">All workers performing well</p>
           ) : (
             <div className="space-y-2">
-              {/* Low scores */}
               {needsAttention.slice(0, 3).map(profile => (
                 <div key={profile.id} className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
@@ -275,7 +132,6 @@ function PerformanceLeaderboard({ profiles, workers }: {
                   </Badge>
                 </div>
               ))}
-              {/* Declining trend */}
               {declining.slice(0, 2).map(profile => (
                 <div key={`decline-${profile.id}`} className="flex items-center gap-2">
                   <TrendingDown className="h-4 w-4 text-red-500" />
@@ -295,12 +151,45 @@ function PerformanceLeaderboard({ profiles, workers }: {
   );
 }
 
-export function WorkerPerformance({ officeId }: WorkerPerformanceProps) {
+export function WorkerPerformance({ officeId, targetBoxes = 100 }: WorkerPerformanceProps) {
   const { data: profiles = [], isLoading: profilesLoading } = useWorkerSkillProfiles(officeId);
   const { data: workers = [], isLoading: workersLoading } = useProductionWorkers(officeId);
+  const { data: attendance = [] } = useWorkerAttendance(officeId);
+  const { data: benchmarks = [] } = useCycleBenchmarks(officeId);
+  
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
 
   const isLoading = profilesLoading || workersLoading;
-  const workerMap = new Map(workers.map(w => [w.id, w.full_name]));
+  const workerMap = new Map(workers.map(w => [w.id, w]));
+
+  // Get present worker IDs from today's attendance
+  const presentWorkerIds = useMemo(() => 
+    attendance.map(a => a.worker_id),
+    [attendance]
+  );
+
+  // Calculate office-wide benchmarks
+  const officeBenchmarks = useMemo(() => {
+    if (profiles.length === 0) return undefined;
+    
+    const avgTubeFillSeconds = profiles.reduce((sum, p) => sum + (p.avg_tube_fill_seconds || 0), 0) / profiles.length;
+    const avgStickerApplySeconds = profiles.reduce((sum, p) => sum + (p.avg_sticker_apply_seconds || 0), 0) / profiles.length;
+    const avgBoxesPerHour = profiles.reduce((sum, p) => sum + (p.boxes_per_hour || 0), 0) / profiles.length;
+    const avgDefectRate = profiles.reduce((sum, p) => sum + (p.defect_rate_per_thousand || 0), 0) / profiles.length;
+    
+    return { avgTubeFillSeconds, avgStickerApplySeconds, avgBoxesPerHour, avgDefectRate };
+  }, [profiles]);
+
+  const globalBenchmark = benchmarks.find(b => b.scope_type === 'global');
+  const selectedProfile = profiles.find(p => p.worker_id === selectedWorkerId);
+  const selectedWorker = selectedWorkerId ? workerMap.get(selectedWorkerId) : null;
+
+  const handleWorkerClick = (workerId: string) => {
+    setSelectedWorkerId(workerId);
+    setProfileDialogOpen(true);
+  };
 
   if (isLoading) {
     return (
@@ -320,7 +209,7 @@ export function WorkerPerformance({ officeId }: WorkerPerformanceProps) {
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Target className="h-5 w-5" />
-            Worker Performance
+            Worker Performance Intelligence
           </h2>
           <p className="text-sm text-muted-foreground flex items-center gap-1">
             <Calendar className="h-3 w-3" />
@@ -333,12 +222,35 @@ export function WorkerPerformance({ officeId }: WorkerPerformanceProps) {
             <Info className="h-3 w-3" />
             {profiles.length} workers tracked
           </Badge>
+          {/* View Toggle */}
+          <div className="flex items-center border rounded-md p-0.5">
+            <button
+              onClick={() => setViewMode('cards')}
+              className={cn(
+                "p-1.5 rounded",
+                viewMode === 'cards' && "bg-muted"
+              )}
+              title="Card View"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={cn(
+                "p-1.5 rounded",
+                viewMode === 'table' && "bg-muted"
+              )}
+              title="Table View"
+            >
+              <Table2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Trend Legend */}
       <Card className="p-3">
-        <div className="flex items-center gap-6 text-xs">
+        <div className="flex flex-wrap items-center gap-4 text-xs">
           <span className="text-muted-foreground font-medium">Trend Indicators:</span>
           <span className="flex items-center gap-1">
             {TREND_ICONS.improving} Improving (↑10%+)
@@ -352,102 +264,146 @@ export function WorkerPerformance({ officeId }: WorkerPerformanceProps) {
         </div>
       </Card>
 
-      {/* Leaderboard Summary */}
-      <PerformanceLeaderboard profiles={profiles} workers={workers} />
+      {/* Time to Complete Estimator */}
+      <div className="grid lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <PerformanceLeaderboard profiles={profiles} workers={workers} />
+        </div>
+        <TimeToCompleteEstimator
+          targetBoxes={targetBoxes}
+          profiles={profiles}
+          presentWorkerIds={presentWorkerIds}
+          benchmark={globalBenchmark}
+        />
+      </div>
 
-      {/* Worker Grid */}
-      <Tabs defaultValue="all" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="all">All Workers</TabsTrigger>
-          <TabsTrigger value="speed">By Speed</TabsTrigger>
-          <TabsTrigger value="quality">By Quality</TabsTrigger>
-          <TabsTrigger value="improving">Improving</TabsTrigger>
-        </TabsList>
+      {/* Main Content - Cards or Table View */}
+      {viewMode === 'table' ? (
+        <WorkerIntelligenceTable
+          profiles={profiles}
+          workers={workers.map(w => ({ id: w.id, full_name: w.full_name, role: w.role, status: w.status }))}
+          onWorkerClick={handleWorkerClick}
+        />
+      ) : (
+        <Tabs defaultValue="all" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="all">All Workers</TabsTrigger>
+            <TabsTrigger value="speed">By Speed</TabsTrigger>
+            <TabsTrigger value="quality">By Quality</TabsTrigger>
+            <TabsTrigger value="improving">Improving</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="all">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {profiles.length === 0 ? (
-              <Card className="col-span-full">
-                <CardContent className="py-8 text-center">
-                  <User className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-                  <p className="text-muted-foreground">
-                    No skill profiles yet. Worker metrics will appear after production activity.
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Profiles are calculated automatically from output recordings with worker attribution.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              profiles.map(profile => (
-                <WorkerCard 
-                  key={profile.id} 
-                  profile={profile}
-                  workerName={workerMap.get(profile.worker_id) || 'Unknown Worker'}
-                />
-              ))
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="speed">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...profiles]
-              .sort((a, b) => (b.speed_score || 0) - (a.speed_score || 0))
-              .map(profile => (
-                <WorkerCard 
-                  key={profile.id} 
-                  profile={profile}
-                  workerName={workerMap.get(profile.worker_id) || 'Unknown Worker'}
-                />
-              ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="quality">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...profiles]
-              .sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0))
-              .map(profile => (
-                <WorkerCard 
-                  key={profile.id} 
-                  profile={profile}
-                  workerName={workerMap.get(profile.worker_id) || 'Unknown Worker'}
-                />
-              ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="improving">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {profiles.filter(p => 
-              p.trend_speed === 'improving' || p.trend_quality === 'improving'
-            ).length === 0 ? (
-              <Card className="col-span-full">
-                <CardContent className="py-8 text-center">
-                  <TrendingUp className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-                  <p className="text-muted-foreground">
-                    No workers currently showing improvement trends.
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Trends are calculated by comparing last 7 days vs previous 7 days.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              profiles
-                .filter(p => p.trend_speed === 'improving' || p.trend_quality === 'improving')
-                .map(profile => (
-                  <WorkerCard 
+          <TabsContent value="all">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {profiles.length === 0 ? (
+                <Card className="col-span-full">
+                  <CardContent className="py-8 text-center">
+                    <User className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                    <p className="text-muted-foreground">
+                      No skill profiles yet. Worker metrics will appear after production activity.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Profiles are calculated automatically from output recordings with worker attribution.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                profiles.map(profile => (
+                  <WorkerProfileCard 
                     key={profile.id} 
                     profile={profile}
-                    workerName={workerMap.get(profile.worker_id) || 'Unknown Worker'}
+                    workerName={workerMap.get(profile.worker_id)?.full_name || 'Unknown Worker'}
+                    workerRole={workerMap.get(profile.worker_id)?.role}
+                    officeBenchmarks={officeBenchmarks}
+                    benchmark={globalBenchmark}
+                    onViewDetails={() => handleWorkerClick(profile.worker_id)}
                   />
                 ))
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="speed">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...profiles]
+                .sort((a, b) => (b.speed_score || 0) - (a.speed_score || 0))
+                .map(profile => (
+                  <WorkerProfileCard 
+                    key={profile.id} 
+                    profile={profile}
+                    workerName={workerMap.get(profile.worker_id)?.full_name || 'Unknown Worker'}
+                    workerRole={workerMap.get(profile.worker_id)?.role}
+                    officeBenchmarks={officeBenchmarks}
+                    benchmark={globalBenchmark}
+                    onViewDetails={() => handleWorkerClick(profile.worker_id)}
+                  />
+                ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="quality">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...profiles]
+                .sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0))
+                .map(profile => (
+                  <WorkerProfileCard 
+                    key={profile.id} 
+                    profile={profile}
+                    workerName={workerMap.get(profile.worker_id)?.full_name || 'Unknown Worker'}
+                    workerRole={workerMap.get(profile.worker_id)?.role}
+                    officeBenchmarks={officeBenchmarks}
+                    benchmark={globalBenchmark}
+                    onViewDetails={() => handleWorkerClick(profile.worker_id)}
+                  />
+                ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="improving">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {profiles.filter(p => 
+                p.trend_speed === 'improving' || p.trend_quality === 'improving'
+              ).length === 0 ? (
+                <Card className="col-span-full">
+                  <CardContent className="py-8 text-center">
+                    <TrendingUp className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                    <p className="text-muted-foreground">
+                      No workers currently showing improvement trends.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Trends are calculated by comparing last 7 days vs previous 7 days.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                profiles
+                  .filter(p => p.trend_speed === 'improving' || p.trend_quality === 'improving')
+                  .map(profile => (
+                    <WorkerProfileCard 
+                      key={profile.id} 
+                      profile={profile}
+                      workerName={workerMap.get(profile.worker_id)?.full_name || 'Unknown Worker'}
+                      workerRole={workerMap.get(profile.worker_id)?.role}
+                      officeBenchmarks={officeBenchmarks}
+                      benchmark={globalBenchmark}
+                      onViewDetails={() => handleWorkerClick(profile.worker_id)}
+                    />
+                  ))
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      )}
+
+      {/* Worker Profile Dialog */}
+      <WorkerProfileDialog
+        open={profileDialogOpen}
+        onOpenChange={setProfileDialogOpen}
+        profile={selectedProfile || null}
+        worker={selectedWorker || null}
+        benchmark={globalBenchmark}
+        officeBenchmarks={officeBenchmarks}
+      />
     </div>
   );
 }
