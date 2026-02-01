@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { ArrowLeft, FileText, Download, DollarSign, Calendar, Store, CreditCard, Check } from 'lucide-react';
 import { format } from 'date-fns';
+import { InvoiceActivityTimeline } from '@/components/invoice';
 
 const PAYMENT_METHODS = [
   { value: 'cash', label: 'Cash' },
@@ -330,6 +331,12 @@ const BillingInvoiceDetail = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Invoice Activity Timeline - Full audit trail */}
+        <InvoiceActivityTimeline
+          invoiceId={invoice.id}
+          invoiceCreatedAt={invoice.created_at}
+        />
 
         {/* Notes */}
         {invoice.notes && (

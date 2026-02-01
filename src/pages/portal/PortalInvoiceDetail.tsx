@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Package, ArrowLeft, Download, CreditCard } from 'lucide-react';
-import { ReceiptStatusIndicator, InvoiceReceiptPanel } from '@/components/invoice';
+import { ReceiptStatusIndicator, InvoiceReceiptPanel, InvoiceActivityTimeline } from '@/components/invoice';
 import type { ReceiptStatus } from '@/components/invoice/ReceiptStatusIndicator';
 
 const PortalInvoiceDetail = () => {
@@ -156,6 +156,12 @@ const PortalInvoiceDetail = () => {
             )}
           </div>
         </Card>
+
+        {/* Invoice Activity Timeline - Full audit trail */}
+        <InvoiceActivityTimeline
+          invoiceId={invoice.id}
+          invoiceCreatedAt={invoice.created_at}
+        />
 
         {/* Receipt Delivery Audit Panel */}
         <InvoiceReceiptPanel
