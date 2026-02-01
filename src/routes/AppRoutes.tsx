@@ -53,6 +53,7 @@ import Training from '@/pages/Training';
 import Ambassadors from '@/pages/Ambassadors';
 import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, AmbassadorWholesalersList, AmbassadorCommissions, AmbassadorRoutes, AmbassadorOrders, AmbassadorCommunications, AmbassadorLeads, AmbassadorDisputes, AmbassadorDisputeDetail } from '@/pages/ambassador';
 import { AmbassadorProfilePage, WholesalerProfilePage, StoreProfilePage, InfluencerProfilePage } from '@/pages/profile';
+import { AmbassadorCommandDashboard, AllAmbassadorsTable } from '@/pages/floor8';
 import { AdminDisputesQueue, AdminDisputeDetail } from '@/pages/admin/disputes';
 import { AdminOverridesPage, AdminOverrideDetailPage } from '@/pages/admin/overrides';
 import { AdminPayoutsPage, AdminPayoutDetailPage } from '@/pages/admin/payouts';
@@ -721,7 +722,8 @@ export default function AppRoutes() {
         <Route path="/settings/automation" element={<AutomationSettings />} />
         <Route path="/settings/automation/communications" element={<CommunicationAutomation />} />
         <Route path="/training" element={<Training />} />
-        <Route path="/ambassadors" element={<Ambassadors />} />
+        <Route path="/ambassadors" element={<AllAmbassadorsTable />} />
+        <Route path="/ambassadors/command" element={<AmbassadorCommandDashboard />} />
         <Route path="/ambassadors/regions" element={<AmbassadorRegions />} />
         <Route path="/expansion" element={<Expansion />} />
         <Route path="/expansion/regions" element={<ExpansionRegions />} />
