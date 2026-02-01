@@ -4,20 +4,36 @@
  * 1. Stores Sourced (attribution/credit - immutable)
  * 2. Stores Assigned (operational responsibility - can change)
  * 3. Store Intake Pipeline (lead flow)
+ * 
+ * Now includes:
+ * - Visible store health rules
+ * - Visit/follow-up cadence indicators
+ * - Inline actions for operational accountability
+ * - Ambassador-level alerts
  */
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { 
   Store, Users, AlertTriangle, CheckCircle2, 
   TrendingUp, MapPin, Calendar, DollarSign,
-  Clock, MessageSquare, Eye, ChevronRight
+  Clock, MessageSquare, Eye, ChevronRight, Info
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { 
+  calculateStoreHealth, 
+  generateAmbassadorAlerts,
+  DEFAULT_VISIT_CADENCE,
+  type HealthCalculationResult 
+} from '@/lib/storeHealthRules';
+import { StoreHealthIndicator, HealthRulesReference } from './StoreHealthIndicator';
+import { AmbassadorAlertsPanel } from './AmbassadorAlertsPanel';
+import { AssignedStoreActions } from './AssignedStoreActions';
 
 interface StoreData {
   id: string;
@@ -64,9 +80,7 @@ interface AmbassadorStoresTabProps {
   sourcedStores: SourcedStore[];
   assignedStores: AssignedStore[];
   pipeline: PipelineStage[];
-  onLogVisit?: (storeId: string) => void;
   onMessage?: (storeId: string) => void;
-  onReassign?: (storeId: string) => void;
 }
 
 const stageConfig: Record<string, { color: string; bgClass: string }> = {
@@ -91,23 +105,61 @@ export function AmbassadorStoresTab({
   sourcedStores,
   assignedStores,
   pipeline,
-  onLogVisit,
   onMessage,
-  onReassign,
 }: AmbassadorStoresTabProps) {
   const navigate = useNavigate();
+
+  // Calculate health for each assigned store
+  const assignedStoresWithHealth = useMemo(() => {
+    return assignedStores.map(item => {
+      const healthResult = calculateStoreHealth({
+        lastVisitAt: item.lastVisit,
+        lastOrderAt: item.lastOrder,
+        expectedCadenceDays: DEFAULT_VISIT_CADENCE.daysInterval,
+        healthStatusOverride: item.store.health_status,
+      });
+      return { ...item, healthResult };
+    });
+  }, [assignedStores]);
+
+  // Generate alerts based on health calculations
+  const alertSummary = useMemo(() => {
+    return generateAmbassadorAlerts(
+      assignedStoresWithHealth.map(item => ({
+        store: item.store,
+        healthResult: item.healthResult,
+      }))
+    );
+  }, [assignedStoresWithHealth]);
 
   // Calculate summary stats
   const sourcedCount = sourcedStores.length;
   const assignedCount = assignedStores.length;
-  const atRiskCount = assignedStores.filter(s => s.healthStatus === 'at_risk' || s.healthStatus === 'dormant').length;
+  const atRiskCount = assignedStoresWithHealth.filter(s => 
+    s.healthResult.status === 'at_risk' || s.healthResult.status === 'dormant'
+  ).length;
   const totalSourcedRevenue = sourcedStores.reduce((sum, s) => sum + s.lifetimeRevenue, 0);
   const totalCommissionEarned = sourcedStores.reduce((sum, s) => sum + s.commissionEarned, 0);
 
+  // Count overdue visits
+  const overdueVisitCount = assignedStoresWithHealth.filter(s => s.healthResult.visitOverdue).length;
+
   return (
     <div className="space-y-6">
+      {/* Ambassador-Level Alerts */}
+      {alertSummary.totalAlertCount > 0 && (
+        <AmbassadorAlertsPanel
+          alertSummary={alertSummary}
+          onViewStore={(storeId) => navigate(`/stores/${storeId}`)}
+          onAlertAction={(alert) => {
+            // Navigate to store for action
+            navigate(`/stores/${alert.storeId}`);
+          }}
+        />
+      )}
+
       {/* Summary KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
@@ -127,6 +179,20 @@ export function AmbassadorStoresTab({
             <div className="text-2xl font-bold mt-1">{assignedCount}</div>
             <div className="text-xs text-muted-foreground">
               {atRiskCount > 0 && <span className="text-amber-500">{atRiskCount} at risk</span>}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-amber-500" />
+              <span className="text-sm text-muted-foreground">Overdue Visits</span>
+            </div>
+            <div className={cn("text-2xl font-bold mt-1", overdueVisitCount > 0 && "text-amber-500")}>
+              {overdueVisitCount}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Cadence: {DEFAULT_VISIT_CADENCE.label}
             </div>
           </CardContent>
         </Card>
@@ -248,13 +314,23 @@ export function AmbassadorStoresTab({
                 <Users className="h-5 w-5 text-cyan-400" />
                 Stores Assigned to {ambassadorName}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="flex items-center gap-2">
                 Operational responsibility — current store management duties
+                <Badge variant="outline" className="text-xs">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {DEFAULT_VISIT_CADENCE.label} visit cadence
+                </Badge>
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
+              {overdueVisitCount > 0 && (
+                <Badge variant="outline" className="bg-amber-500/20 text-amber-500 border-amber-500/30">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {overdueVisitCount} overdue
+                </Badge>
+              )}
               {atRiskCount > 0 && (
-                <Badge variant="destructive" className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                <Badge variant="destructive" className="bg-red-500/20 text-red-400 border-red-500/30">
                   {atRiskCount} at risk
                 </Badge>
               )}
@@ -263,7 +339,7 @@ export function AmbassadorStoresTab({
           </div>
         </CardHeader>
         <CardContent>
-          {assignedStores.length === 0 ? (
+          {assignedStoresWithHealth.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
               <p>No stores currently assigned</p>
@@ -274,16 +350,22 @@ export function AmbassadorStoresTab({
                 <TableRow>
                   <TableHead>Store</TableHead>
                   <TableHead>Sourced By</TableHead>
-                  <TableHead>Assigned Date</TableHead>
                   <TableHead>Last Visit</TableHead>
                   <TableHead>Last Order</TableHead>
-                  <TableHead>Health</TableHead>
+                  <TableHead>Health & SLA</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {assignedStores.map((item) => (
-                  <TableRow key={item.store.id} className="group">
+                {assignedStoresWithHealth.map((item) => (
+                  <TableRow 
+                    key={item.store.id} 
+                    className={cn(
+                      "group",
+                      item.healthResult.status === 'dormant' && "bg-red-500/5",
+                      item.healthResult.status === 'at_risk' && "bg-amber-500/5"
+                    )}
+                  >
                     <TableCell className="font-medium">
                       <div
                         className="flex items-center gap-2 cursor-pointer hover:text-primary"
@@ -305,72 +387,74 @@ export function AmbassadorStoresTab({
                       )}
                     </TableCell>
                     <TableCell>
-                      {item.assignedAt ? format(new Date(item.assignedAt), 'MMM d, yyyy') : '—'}
+                      <div className="flex flex-col gap-1">
+                        {item.lastVisit ? (
+                          <>
+                            <span className="flex items-center gap-1 text-sm">
+                              {format(new Date(item.lastVisit), 'MMM d')}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(item.lastVisit), { addSuffix: true })}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">Never visited</span>
+                        )}
+                        {item.healthResult.visitOverdue && item.healthResult.visitOverdueDays > 0 && (
+                          <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4 w-fit">
+                            {item.healthResult.visitOverdueDays}d overdue
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      {item.lastVisit ? (
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {format(new Date(item.lastVisit), 'MMM d')}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">Never</span>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {item.lastOrder ? (
+                          <>
+                            <span>{format(new Date(item.lastOrder), 'MMM d')}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(item.lastOrder), { addSuffix: true })}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">No orders</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      {item.lastOrder ? (
-                        format(new Date(item.lastOrder), 'MMM d')
-                      ) : (
-                        <span className="text-muted-foreground">None</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={cn(healthColors[item.healthStatus] || healthColors.healthy)}
-                      >
-                        {item.healthStatus === 'at_risk' ? 'At Risk' : item.healthStatus}
-                      </Badge>
+                      <StoreHealthIndicator
+                        healthResult={item.healthResult}
+                        compact
+                      />
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onLogVisit?.(item.store.id);
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onMessage?.(item.store.id);
-                          }}
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/stores/${item.store.id}`);
-                          }}
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <AssignedStoreActions
+                        storeId={item.store.id}
+                        storeName={item.store.store_name}
+                        ambassadorId={ambassadorId}
+                        onViewStore={() => navigate(`/stores/${item.store.id}`)}
+                        onMessage={onMessage ? () => onMessage(item.store.id) : undefined}
+                        compact
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           )}
+          
+          {/* Health Rules Reference (Collapsible) */}
+          <Collapsible className="mt-4">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
+                <Info className="h-3 w-3 mr-1" />
+                View Health Rules
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2">
+              <HealthRulesReference />
+            </CollapsibleContent>
+          </Collapsible>
         </CardContent>
       </Card>
 
@@ -436,8 +520,8 @@ export function AmbassadorStoresTab({
                           </div>
                           <div>
                             <div className="font-medium">{store.store_name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {[store.neighborhood, store.city].filter(Boolean).join(', ')}
+                            <div className="text-sm text-muted-foreground">
+                              {[store.neighborhood, store.city].filter(Boolean).join(', ') || '—'}
                             </div>
                           </div>
                         </div>
@@ -445,21 +529,16 @@ export function AmbassadorStoresTab({
                       </div>
                     ))}
                     {stage.stores.length > 5 && (
-                      <div className="p-3 text-center text-sm text-muted-foreground">
-                        +{stage.stores.length - 5} more stores
+                      <div className="p-3 text-center">
+                        <Button variant="ghost" size="sm" className="text-xs">
+                          View all {stage.stores.length} stores
+                        </Button>
                       </div>
                     )}
                   </div>
                 </div>
               );
             })}
-
-            {pipeline.every((s) => s.count === 0) && (
-              <div className="text-center py-8 text-muted-foreground">
-                <AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No stores in pipeline yet</p>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>

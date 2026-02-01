@@ -322,10 +322,6 @@ export default function AmbassadorProfilePage() {
               sourcedStores={sourcedStores}
               assignedStores={assignedStores}
               pipeline={pipeline}
-              onLogVisit={(storeId) => {
-                // TODO: Open log visit modal
-                console.log('Log visit for store:', storeId);
-              }}
               onMessage={(storeId) => {
                 // TODO: Open message modal
                 console.log('Message store:', storeId);
