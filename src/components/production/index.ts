@@ -18,3 +18,6 @@ export { FirstTimeWizard } from './FirstTimeWizard';
 export { DailyChecklist } from './DailyChecklist';
 export { TrainingModeBanner, TrainingModeToggle } from './TrainingMode';
 export { ActiveBatchBanner } from './ActiveBatchBanner';
+export { WorkerPerformance } from './WorkerPerformance';
+export { CycleTimePanel, DailyCycleTimeSummary } from './CycleTimePanel';
+export { StaffingForecast } from './StaffingForecast';

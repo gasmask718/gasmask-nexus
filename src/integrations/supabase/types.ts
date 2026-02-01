@@ -30780,6 +30780,7 @@ export type Database = {
       }
       production_batches: {
         Row: {
+          actual_completion_minutes: number | null
           avg_sticker_apply_seconds: number | null
           avg_tube_fill_seconds: number | null
           batch_date: string | null
@@ -30788,9 +30789,11 @@ export type Database = {
           completed_at: string | null
           created_at: string | null
           created_by: string | null
+          cycle_time_variance_pct: number | null
           efficiency_pct: number | null
           empty_boxes_issued: Json | null
           empty_boxes_used: Json | null
+          expected_completion_minutes: number | null
           id: string
           is_locked: boolean | null
           locked_at: string | null
@@ -30817,6 +30820,7 @@ export type Database = {
           workers_present: string[] | null
         }
         Insert: {
+          actual_completion_minutes?: number | null
           avg_sticker_apply_seconds?: number | null
           avg_tube_fill_seconds?: number | null
           batch_date?: string | null
@@ -30825,9 +30829,11 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           created_by?: string | null
+          cycle_time_variance_pct?: number | null
           efficiency_pct?: number | null
           empty_boxes_issued?: Json | null
           empty_boxes_used?: Json | null
+          expected_completion_minutes?: number | null
           id?: string
           is_locked?: boolean | null
           locked_at?: string | null
@@ -30854,6 +30860,7 @@ export type Database = {
           workers_present?: string[] | null
         }
         Update: {
+          actual_completion_minutes?: number | null
           avg_sticker_apply_seconds?: number | null
           avg_tube_fill_seconds?: number | null
           batch_date?: string | null
@@ -30862,9 +30869,11 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           created_by?: string | null
+          cycle_time_variance_pct?: number | null
           efficiency_pct?: number | null
           empty_boxes_issued?: Json | null
           empty_boxes_used?: Json | null
+          expected_completion_minutes?: number | null
           id?: string
           is_locked?: boolean | null
           locked_at?: string | null
@@ -31501,6 +31510,180 @@ export type Database = {
           },
           {
             foreignKeyName: "production_worker_attendance_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "production_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_worker_performance_snapshots: {
+        Row: {
+          avg_sticker_apply_seconds: number | null
+          avg_tube_fill_seconds: number | null
+          batches_participated: number | null
+          boxes_per_hour: number | null
+          boxes_produced: number | null
+          created_at: string | null
+          defect_rate: number | null
+          defects_count: number | null
+          hours_worked: number | null
+          id: string
+          office_id: string | null
+          snapshot_date: string
+          stickers_applied: number | null
+          tubes_filled: number | null
+          worker_id: string
+        }
+        Insert: {
+          avg_sticker_apply_seconds?: number | null
+          avg_tube_fill_seconds?: number | null
+          batches_participated?: number | null
+          boxes_per_hour?: number | null
+          boxes_produced?: number | null
+          created_at?: string | null
+          defect_rate?: number | null
+          defects_count?: number | null
+          hours_worked?: number | null
+          id?: string
+          office_id?: string | null
+          snapshot_date: string
+          stickers_applied?: number | null
+          tubes_filled?: number | null
+          worker_id: string
+        }
+        Update: {
+          avg_sticker_apply_seconds?: number | null
+          avg_tube_fill_seconds?: number | null
+          batches_participated?: number | null
+          boxes_per_hour?: number | null
+          boxes_produced?: number | null
+          created_at?: string | null
+          defect_rate?: number | null
+          defects_count?: number | null
+          hours_worked?: number | null
+          id?: string
+          office_id?: string | null
+          snapshot_date?: string
+          stickers_applied?: number | null
+          tubes_filled?: number | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_worker_performance_snapshots_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_worker_performance_snapshots_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "production_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_worker_skill_profiles: {
+        Row: {
+          attendance_rate_30d: number | null
+          attendance_rate_7d: number | null
+          avg_sticker_apply_seconds: number | null
+          avg_tube_fill_seconds: number | null
+          boxes_per_hour: number | null
+          created_at: string | null
+          defect_rate_per_thousand: number | null
+          id: string
+          last_calculated_at: string | null
+          office_id: string | null
+          overall_score: number | null
+          quality_score: number | null
+          reliability_score: number | null
+          rolling_30_day_boxes: number | null
+          rolling_30_day_defects: number | null
+          rolling_30_day_hours: number | null
+          rolling_7_day_boxes: number | null
+          rolling_7_day_defects: number | null
+          rolling_7_day_hours: number | null
+          rolling_90_day_boxes: number | null
+          rolling_90_day_defects: number | null
+          rolling_90_day_hours: number | null
+          speed_score: number | null
+          trend_quality: string | null
+          trend_speed: string | null
+          updated_at: string | null
+          worker_id: string
+        }
+        Insert: {
+          attendance_rate_30d?: number | null
+          attendance_rate_7d?: number | null
+          avg_sticker_apply_seconds?: number | null
+          avg_tube_fill_seconds?: number | null
+          boxes_per_hour?: number | null
+          created_at?: string | null
+          defect_rate_per_thousand?: number | null
+          id?: string
+          last_calculated_at?: string | null
+          office_id?: string | null
+          overall_score?: number | null
+          quality_score?: number | null
+          reliability_score?: number | null
+          rolling_30_day_boxes?: number | null
+          rolling_30_day_defects?: number | null
+          rolling_30_day_hours?: number | null
+          rolling_7_day_boxes?: number | null
+          rolling_7_day_defects?: number | null
+          rolling_7_day_hours?: number | null
+          rolling_90_day_boxes?: number | null
+          rolling_90_day_defects?: number | null
+          rolling_90_day_hours?: number | null
+          speed_score?: number | null
+          trend_quality?: string | null
+          trend_speed?: string | null
+          updated_at?: string | null
+          worker_id: string
+        }
+        Update: {
+          attendance_rate_30d?: number | null
+          attendance_rate_7d?: number | null
+          avg_sticker_apply_seconds?: number | null
+          avg_tube_fill_seconds?: number | null
+          boxes_per_hour?: number | null
+          created_at?: string | null
+          defect_rate_per_thousand?: number | null
+          id?: string
+          last_calculated_at?: string | null
+          office_id?: string | null
+          overall_score?: number | null
+          quality_score?: number | null
+          reliability_score?: number | null
+          rolling_30_day_boxes?: number | null
+          rolling_30_day_defects?: number | null
+          rolling_30_day_hours?: number | null
+          rolling_7_day_boxes?: number | null
+          rolling_7_day_defects?: number | null
+          rolling_7_day_hours?: number | null
+          rolling_90_day_boxes?: number | null
+          rolling_90_day_defects?: number | null
+          rolling_90_day_hours?: number | null
+          speed_score?: number | null
+          trend_quality?: string | null
+          trend_speed?: string | null
+          updated_at?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_worker_skill_profiles_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_worker_skill_profiles_worker_id_fkey"
             columns: ["worker_id"]
             isOneToOne: false
             referencedRelation: "production_workers"

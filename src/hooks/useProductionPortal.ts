@@ -81,6 +81,10 @@ export interface ProductionBatch {
   tobacco_heatup_minutes: number | null;
   avg_tube_fill_seconds: number | null;
   avg_sticker_apply_seconds: number | null;
+  // Cycle time tracking
+  expected_completion_minutes: number | null;
+  actual_completion_minutes: number | null;
+  cycle_time_variance_pct: number | null;
   office?: { id: string; name: string } | null;
 }
 
