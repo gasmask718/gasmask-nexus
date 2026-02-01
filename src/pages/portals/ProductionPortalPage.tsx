@@ -36,6 +36,7 @@ import {
   DailyBatchEntry,
   ToolsInventory,
   ProductionHistoryPanel,
+  BatchHistoryPanel,
   VariancePanel,
   DayClosePanel,
   WorkerAttendance,
@@ -367,7 +368,10 @@ export default function ProductionPortalPage() {
             </TabsContent>
 
             <TabsContent value="history">
-              <ProductionHistoryPanel officeId={selectedOfficeId} />
+              <div className="grid lg:grid-cols-2 gap-4">
+                <BatchHistoryPanel officeId={selectedOfficeId} />
+                <ProductionHistoryPanel officeId={selectedOfficeId} />
+              </div>
             </TabsContent>
           </Tabs>
         </>
