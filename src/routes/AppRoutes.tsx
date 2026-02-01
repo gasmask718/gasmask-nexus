@@ -53,7 +53,7 @@ import Training from '@/pages/Training';
 import Ambassadors from '@/pages/Ambassadors';
 import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, AmbassadorWholesalersList, AmbassadorCommissions, AmbassadorRoutes, AmbassadorOrders, AmbassadorCommunications, AmbassadorLeads, AmbassadorDisputes, AmbassadorDisputeDetail } from '@/pages/ambassador';
 import { AmbassadorProfilePage, WholesalerProfilePage, StoreProfilePage, InfluencerProfilePage } from '@/pages/profile';
-import { AmbassadorCommandDashboard, AllAmbassadorsTable } from '@/pages/floor8';
+import { AmbassadorCommandDashboard, AllAmbassadorsTable, AmbassadorProfilePage as Floor8AmbassadorProfile, AmbassadorPayoutsPage as Floor8PayoutsPage, AmbassadorRegionsPage, InfluencersPage as Floor8InfluencersPage } from '@/pages/floor8';
 import { AdminDisputesQueue, AdminDisputeDetail } from '@/pages/admin/disputes';
 import { AdminOverridesPage, AdminOverrideDetailPage } from '@/pages/admin/overrides';
 import { AdminPayoutsPage, AdminPayoutDetailPage } from '@/pages/admin/payouts';
@@ -724,7 +724,10 @@ export default function AppRoutes() {
         <Route path="/training" element={<Training />} />
         <Route path="/ambassadors" element={<AllAmbassadorsTable />} />
         <Route path="/ambassadors/command" element={<AmbassadorCommandDashboard />} />
-        <Route path="/ambassadors/regions" element={<AmbassadorRegions />} />
+        <Route path="/ambassador-regions" element={<AmbassadorRegionsPage />} />
+        <Route path="/ambassador-payouts" element={<Floor8PayoutsPage />} />
+        <Route path="/ambassadors/regions" element={<AmbassadorRegionsPage />} />
+        <Route path="/ambassadors/payouts" element={<Floor8PayoutsPage />} />
         <Route path="/expansion" element={<Expansion />} />
         <Route path="/expansion/regions" element={<ExpansionRegions />} />
         <Route path="/expansion/heatmap" element={<ExpansionHeatmap />} />
