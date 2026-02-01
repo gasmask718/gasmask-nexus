@@ -480,8 +480,11 @@ export function useCheckOutWorker() {
 // ============================================================
 
 export function useProductionBatches(officeId: string | undefined, date?: Date) {
+  // Use consistent date string for cache key
+  const dateStr = date ? format(date, 'yyyy-MM-dd') : undefined;
+  
   return useQuery({
-    queryKey: ['production-batches', officeId, date?.toISOString()],
+    queryKey: ['production-batches', officeId, dateStr],
     queryFn: async () => {
       if (!officeId) return [];
       
@@ -489,10 +492,10 @@ export function useProductionBatches(officeId: string | undefined, date?: Date) 
         .from('production_batches')
         .select('*, office:production_offices(id, name)')
         .eq('office_id', officeId)
+        .neq('status', 'cancelled') // Exclude cancelled batches
         .order('created_at', { ascending: false });
       
-      if (date) {
-        const dateStr = format(date, 'yyyy-MM-dd');
+      if (dateStr) {
         query = query.eq('batch_date', dateStr);
       }
       
@@ -505,8 +508,27 @@ export function useProductionBatches(officeId: string | undefined, date?: Date) 
 }
 
 export function useTodayBatches(officeId: string | undefined) {
-  const today = new Date();
-  return useProductionBatches(officeId, today);
+  // Use stable date string that doesn't change throughout the day
+  const today = format(new Date(), 'yyyy-MM-dd');
+  
+  return useQuery({
+    queryKey: ['production-batches', officeId, today],
+    queryFn: async () => {
+      if (!officeId) return [];
+      
+      const { data, error } = await supabase
+        .from('production_batches')
+        .select('*, office:production_offices(id, name)')
+        .eq('office_id', officeId)
+        .eq('batch_date', today)
+        .neq('status', 'cancelled')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return (data || []) as ProductionBatch[];
+    },
+    enabled: !!officeId,
+  });
 }
 
 export function useCreateBatch() {
@@ -540,7 +562,11 @@ export function useCreateBatch() {
       return data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['production-batches', variables.office_id] });
+      // Invalidate all batch queries for this office (with and without date filter)
+      queryClient.invalidateQueries({ 
+        queryKey: ['production-batches', variables.office_id],
+        exact: false,
+      });
       queryClient.invalidateQueries({ queryKey: ['production-daily-kpis'] });
       queryClient.invalidateQueries({ queryKey: ['production-history'] });
       toast({ title: 'Batch created successfully' });
