@@ -167,7 +167,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                             <span className="flex items-center gap-1">
                               <Scale className="h-3 w-3" />
-                              {batch.tobacco_lbs} lbs
+                              {batch.tobacco_lbs ?? 0} lbs
                             </span>
                             <span>{batch.tubes_total?.toLocaleString() || 0} tubes</span>
                             <span>{batch.boxes_produced || 0} boxes</span>
@@ -405,7 +405,7 @@ function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
           {/* Batch Summary */}
           <div className="grid grid-cols-4 gap-4">
             <div className="text-center p-3 bg-muted/50 rounded-lg">
-              <p className="text-2xl font-bold">{batch.tobacco_lbs}</p>
+              <p className="text-2xl font-bold">{batch.tobacco_lbs ?? 0}</p>
               <p className="text-xs text-muted-foreground">lbs tobacco</p>
             </div>
             <div className="text-center p-3 bg-muted/50 rounded-lg">

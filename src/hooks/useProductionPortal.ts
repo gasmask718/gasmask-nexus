@@ -47,11 +47,11 @@ export type BrandInputs = Record<string, number>;
 
 export interface ProductionBatch {
   id: string;
-  office_id: string;
+  office_id: string | null;
   brand: string;
-  batch_date: string;
+  batch_date: string | null;
   shift_label: string | null;
-  tobacco_lbs: number;
+  tobacco_lbs: number | null;
   tubes_total: number | null;
   boxes_produced: number | null;
   stickers_issued: BrandInputs | null;
@@ -62,20 +62,20 @@ export interface ProductionBatch {
   workers_present: string[] | null;
   efficiency_pct: number | null;
   waste_lbs: number | null;
-  status: 'open' | 'in_progress' | 'completed' | 'cancelled';
+  status: string | null;
   notes: string | null;
   created_by: string | null;
   completed_at: string | null;
-  created_at: string;
-  // New variance fields
-  is_locked: boolean;
+  created_at: string | null;
+  // Variance fields
+  is_locked: boolean | null;
   locked_at: string | null;
   locked_by: string | null;
-  total_tubes_used: number;
-  total_stickers_used: number;
-  total_empty_boxes_used: number;
-  total_defects: number;
-  variance_tubes: number;
+  total_tubes_used: number | null;
+  total_stickers_used: number | null;
+  total_empty_boxes_used: number | null;
+  total_defects: number | null;
+  variance_tubes: number | null;
   variance_notes: string | null;
   office?: { id: string; name: string } | null;
 }
@@ -305,21 +305,21 @@ export function useWorkerAttendance(officeId: string | undefined, date?: Date) {
     queryFn: async (): Promise<(WorkerAttendance & { worker: ProductionWorker | null })[]> => {
       if (!officeId) return [];
       
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('production_worker_attendance')
-        .select('id, worker_id, batch_id, shift_label, checked_in_at, checked_out_at, hours_worked, notes, recorded_by, created_at')
+        .select('*')
         .eq('office_id', officeId)
         .eq('attendance_date', dateStr)
         .order('checked_in_at', { ascending: true });
       
       if (error) throw error;
       // Map to our expected interface
-      return (data || []).map((d) => ({
+      return (data || []).map((d: any) => ({
         id: d.id,
-        office_id: officeId,
+        office_id: d.office_id || officeId,
         worker_id: d.worker_id,
         batch_id: d.batch_id,
-        attendance_date: dateStr,
+        attendance_date: d.attendance_date || dateStr,
         shift_label: d.shift_label,
         checked_in_at: d.checked_in_at,
         checked_out_at: d.checked_out_at,
@@ -903,7 +903,7 @@ export function useDailyKPIs(officeId: string | undefined, date?: Date) {
         .eq('office_id', officeId);
 
       // Get attendance count
-      const attendanceResult = await (supabase as any)
+      const attendanceResult = await supabase
         .from('production_worker_attendance')
         .select('id', { count: 'exact', head: true })
         .eq('office_id', officeId)
