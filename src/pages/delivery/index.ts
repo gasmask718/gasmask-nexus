@@ -16,3 +16,9 @@ export { default as RouteSuggestionsPage } from './RouteSuggestionsPage';
 export { default as DriverRoutesCompleted } from './DriverRoutesCompleted';
 export { default as DriverStopsCompleted } from './DriverStopsCompleted';
 export { default as DriverIssuesReported } from './DriverIssuesReported';
+
+// Route Manager Pages
+export { default as RouteManagerPage } from './RouteManagerPage';
+export { default as AllRoutesPage } from './AllRoutesPage';
+export { default as MultiBrandDeliveryPage } from './MultiBrandDeliveryPage';
+export { default as LiveMapPage } from './LiveMapPage';

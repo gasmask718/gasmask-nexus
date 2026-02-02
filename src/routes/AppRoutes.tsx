@@ -413,7 +413,11 @@ import {
   RouteSuggestionsPage as DeliveryRouteSuggestionsPage,
   DriverRoutesCompleted,
   DriverStopsCompleted,
-  DriverIssuesReported
+  DriverIssuesReported,
+  RouteManagerPage,
+  AllRoutesPage,
+  MultiBrandDeliveryPage,
+  LiveMapPage
 } from '@/pages/delivery';
 import DeliveryStoreProfile from '@/pages/delivery/StoreProfile';
 import DeliveryRouteDetailPage from '@/pages/delivery/DeliveryRouteDetail';
@@ -1026,6 +1030,13 @@ export default function AppRoutes() {
         <Route path="/delivery" element={<DeliveryDashboard />} />
         <Route path="/delivery/dashboard" element={<DeliveryDashboard />} />
         <Route path="/delivery/deliveries" element={<DeliveriesBoard />} />
+        <Route path="/delivery/multi-brand" element={<MultiBrandDeliveryPage />} />
+        <Route path="/delivery/route-manager" element={<RouteManagerPage />} />
+        <Route path="/delivery/routes/all" element={<AllRoutesPage />} />
+        <Route path="/delivery/route-optimizer" element={<RouteOptimizer />} />
+        <Route path="/delivery/route-ops" element={<RouteOpsCenter />} />
+        <Route path="/delivery/live-map" element={<LiveMapPage />} />
+        <Route path="/delivery/capacity" element={<DeliveryCapacity />} />
         <Route path="/delivery/drivers" element={<DriversManagement />} />
         <Route path="/delivery/bikers" element={<BikersManagement />} />
         <Route path="/delivery/bikers/:bikerId" element={<BikerProfile />} />
