@@ -1,7 +1,8 @@
 /**
  * TaskExecutionCard - Enhanced Task Card for Phase 9.2
  * 
- * Shows execution state, artifacts, approval gates, and audit log
+ * Shows execution state, progress tracking, artifacts, approval gates, and audit log
+ * Now includes: Progress bar, activity feed, delete/reset capability
  */
 
 import { useState } from 'react';
@@ -24,6 +25,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 import {
   Brain,
   Clock,
@@ -38,9 +40,12 @@ import {
   RotateCcw,
   Shield,
   Loader2,
+  Trash2,
+  Activity,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import {
   getTaskArtifacts,
   getTaskExecutionLog,
@@ -51,7 +56,12 @@ import {
   TaskArtifact,
   TaskExecutionLogEntry,
 } from '@/services/floor9/executionEngine';
+import { cancelTask } from '@/services/floor9/taskProgressService';
 import { AIWorkTask } from '@/services/floor9/types';
+import { TaskProgressBar } from './TaskProgressBar';
+import { TaskActivityFeed } from './TaskActivityFeed';
+import { DeleteTaskModal } from './DeleteTaskModal';
+import { TaskCompletionReport } from './TaskCompletionReport';
 
 interface TaskExecutionCardProps {
   task: AIWorkTask & {
@@ -64,6 +74,14 @@ interface TaskExecutionCardProps {
     rollback_until?: string;
     target_entity_type?: string;
     instructions?: string;
+    // Progress tracking fields
+    total_items?: number;
+    items_processed?: number;
+    items_completed?: number;
+    items_blocked?: number;
+    items_skipped?: number;
+    items_pending_approval?: number;
+    cancelled_at?: string;
   };
 }
 
@@ -72,7 +90,17 @@ export function TaskExecutionCard({ task }: TaskExecutionCardProps) {
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+
+  // Progress tracking values
+  const totalItems = task.total_items || 0;
+  const itemsProcessed = task.items_processed || 0;
+  const itemsCompleted = task.items_completed || 0;
+  const itemsBlocked = task.items_blocked || 0;
+  const itemsSkipped = task.items_skipped || 0;
+  const itemsPendingApproval = task.items_pending_approval || 0;
+  const hasProgress = totalItems > 0;
 
   // Fetch artifacts and execution log
   const { data: artifacts = [] } = useQuery({
@@ -124,6 +152,34 @@ export function TaskExecutionCard({ task }: TaskExecutionCardProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['floor9', 'tasks'] });
       toast({ title: 'Task Rolled Back' });
+    },
+  });
+
+  // Cancel/Delete mutation
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      return cancelTask(task.id, user.id);
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['floor9', 'tasks'] });
+      setShowDeleteModal(false);
+      if (result.success) {
+        toast({ 
+          title: 'Task Cancelled',
+          description: `Cancelled ${result.cancelled_actions} actions. ${result.preserved_records} records preserved.`,
+        });
+      } else {
+        toast({ 
+          title: 'Cancellation Failed',
+          description: result.error,
+          variant: 'destructive',
+        });
+      }
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
     },
   });
 
@@ -212,6 +268,19 @@ export function TaskExecutionCard({ task }: TaskExecutionCardProps) {
           </CardHeader>
 
           <CardContent className="space-y-3">
+            {/* Progress Bar (when task has progress tracking) */}
+            {hasProgress && (
+              <TaskProgressBar
+                totalItems={totalItems}
+                itemsProcessed={itemsProcessed}
+                itemsCompleted={itemsCompleted}
+                itemsBlocked={itemsBlocked}
+                itemsSkipped={itemsSkipped}
+                itemsPendingApproval={itemsPendingApproval}
+                status={task.status}
+              />
+            )}
+
             {/* Description */}
             {task.task_details && (
               <p className="text-sm text-muted-foreground">{task.task_details}</p>
@@ -340,8 +409,33 @@ export function TaskExecutionCard({ task }: TaskExecutionCardProps) {
                 </div>
               )}
 
+              {/* Real-Time Activity Feed */}
+              <Separator className="my-4" />
+              <TaskActivityFeed taskId={task.id} maxHeight="250px" />
+
+              {/* Completion Report (for finished tasks) */}
+              {((task.status as string) === 'completed' || (task.status as string) === 'failed' || (task.status as string) === 'cancelled') && hasProgress && (
+                <>
+                  <Separator className="my-4" />
+                  <TaskCompletionReport
+                    taskTitle={task.task_title}
+                    taskType={task.task_type || 'general'}
+                    status={task.status}
+                    totalItems={totalItems}
+                    itemsCompleted={itemsCompleted}
+                    itemsBlocked={itemsBlocked}
+                    itemsSkipped={itemsSkipped}
+                    blockedItems={[]} // Would need to fetch from activity log
+                    startedAt={task.started_at}
+                    completedAt={task.completed_at}
+                    timeSavedMinutes={task.time_saved_minutes || 0}
+                    confidenceScore={task.confidence_score || null}
+                  />
+                </>
+              )}
+
               {/* Actions */}
-              <div className="flex items-center gap-2 pt-2 border-t">
+              <div className="flex items-center gap-2 pt-4 border-t">
                 {(task.status as string) === 'assigned' && (
                   <Button
                     size="sm"
@@ -361,6 +455,19 @@ export function TaskExecutionCard({ task }: TaskExecutionCardProps) {
                   >
                     <RotateCcw className="h-4 w-4 mr-1" />
                     Rollback
+                  </Button>
+                )}
+                
+                {/* Delete Button - always available except for completed tasks */}
+                {(task.status as string) !== 'completed' && (task.status as string) !== 'cancelled' && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="ml-auto"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete Task
                   </Button>
                 )}
               </div>
@@ -396,6 +503,16 @@ export function TaskExecutionCard({ task }: TaskExecutionCardProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete Task Modal */}
+      <DeleteTaskModal
+        open={showDeleteModal}
+        onOpenChange={setShowDeleteModal}
+        taskTitle={task.task_title}
+        taskStatus={task.status}
+        onConfirmDelete={() => cancelMutation.mutate()}
+        isDeleting={cancelMutation.isPending}
+      />
     </>
   );
 }
