@@ -14,9 +14,13 @@ import {
   Users,
   User,
   Target,
+  Bell,
+  Loader2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { WorkerLocation, LiveRoute } from "@/hooks/useLiveMapData";
+import { useDispatchPing } from "@/hooks/useDispatchPing";
+import { SLACountdownBadge } from "./SLACountdownBadge";
 
 interface WorkerDrawerProps {
   worker: WorkerLocation | null;
@@ -36,8 +40,18 @@ export function WorkerDrawer({
   isFollowing,
 }: WorkerDrawerProps) {
   const navigate = useNavigate();
+  const pingWorker = useDispatchPing();
 
   if (!worker) return null;
+
+  const handlePingWorker = () => {
+    pingWorker.mutate({
+      workerId: worker.worker_id,
+      workerName: worker.name,
+      routeId: route?.id,
+      reason: 'Check-in request from Live Map',
+    });
+  };
 
   const getRoleIcon = (role: string) => {
     switch (role) {
@@ -180,6 +194,21 @@ export function WorkerDrawer({
                 {isFollowing ? 'Following' : 'Follow'}
               </Button>
             </div>
+            
+            {/* Ping Worker - Critical Command Action */}
+            <Button 
+              variant="secondary"
+              className="w-full"
+              onClick={handlePingWorker}
+              disabled={pingWorker.isPending}
+            >
+              {pingWorker.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Bell className="h-4 w-4 mr-2" />
+              )}
+              Ping Worker
+            </Button>
           </div>
 
           <Separator />
