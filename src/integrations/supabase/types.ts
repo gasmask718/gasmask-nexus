@@ -5561,6 +5561,63 @@ export type Database = {
           },
         ]
       }
+      autonomy_policy: {
+        Row: {
+          allowed_roles_to_approve: string[]
+          allowed_territories: string[] | null
+          blackout_windows: Json | null
+          blocked_territories: string[] | null
+          created_at: string
+          enabled_actions:
+            | Database["public"]["Enums"]["dispatch_proposal_type"][]
+            | null
+          id: string
+          is_active: boolean
+          max_actions_per_route_per_hour: number
+          max_reassigned_stops_per_route: number
+          min_confidence_threshold: number
+          simulation_only: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allowed_roles_to_approve?: string[]
+          allowed_territories?: string[] | null
+          blackout_windows?: Json | null
+          blocked_territories?: string[] | null
+          created_at?: string
+          enabled_actions?:
+            | Database["public"]["Enums"]["dispatch_proposal_type"][]
+            | null
+          id?: string
+          is_active?: boolean
+          max_actions_per_route_per_hour?: number
+          max_reassigned_stops_per_route?: number
+          min_confidence_threshold?: number
+          simulation_only?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allowed_roles_to_approve?: string[]
+          allowed_territories?: string[] | null
+          blackout_windows?: Json | null
+          blocked_territories?: string[] | null
+          created_at?: string
+          enabled_actions?:
+            | Database["public"]["Enums"]["dispatch_proposal_type"][]
+            | null
+          id?: string
+          is_active?: boolean
+          max_actions_per_route_per_hour?: number
+          max_reassigned_stops_per_route?: number
+          min_confidence_threshold?: number
+          simulation_only?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       autonomy_violations: {
         Row: {
           assignment_id: string | null
@@ -17222,6 +17279,127 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispatch_action_executions: {
+        Row: {
+          after_state: Json
+          approved_at: string | null
+          approved_by: string | null
+          before_state: Json
+          error_message: string | null
+          executed_at: string | null
+          executed_by: string | null
+          execution_status: Database["public"]["Enums"]["dispatch_execution_status"]
+          id: string
+          proposal_id: string
+          rollback_expires_at: string | null
+          rollback_payload: Json | null
+          rolled_back_at: string | null
+          rolled_back_by: string | null
+          verification_result: Json | null
+        }
+        Insert: {
+          after_state: Json
+          approved_at?: string | null
+          approved_by?: string | null
+          before_state: Json
+          error_message?: string | null
+          executed_at?: string | null
+          executed_by?: string | null
+          execution_status: Database["public"]["Enums"]["dispatch_execution_status"]
+          id?: string
+          proposal_id: string
+          rollback_expires_at?: string | null
+          rollback_payload?: Json | null
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+          verification_result?: Json | null
+        }
+        Update: {
+          after_state?: Json
+          approved_at?: string | null
+          approved_by?: string | null
+          before_state?: Json
+          error_message?: string | null
+          executed_at?: string | null
+          executed_by?: string | null
+          execution_status?: Database["public"]["Enums"]["dispatch_execution_status"]
+          id?: string
+          proposal_id?: string
+          rollback_expires_at?: string | null
+          rollback_payload?: Json | null
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+          verification_result?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_action_executions_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "dispatch_action_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispatch_action_proposals: {
+        Row: {
+          confidence: number
+          created_at: string
+          created_by: string | null
+          date: string
+          expires_at: string | null
+          id: string
+          predicted_impact: Json | null
+          priority: Database["public"]["Enums"]["dispatch_priority"]
+          proposal_type: Database["public"]["Enums"]["dispatch_proposal_type"]
+          proposed_payload: Json
+          reason: string
+          route_id: string | null
+          status: Database["public"]["Enums"]["dispatch_proposal_status"]
+          territory: string | null
+        }
+        Insert: {
+          confidence: number
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          expires_at?: string | null
+          id?: string
+          predicted_impact?: Json | null
+          priority?: Database["public"]["Enums"]["dispatch_priority"]
+          proposal_type: Database["public"]["Enums"]["dispatch_proposal_type"]
+          proposed_payload: Json
+          reason: string
+          route_id?: string | null
+          status?: Database["public"]["Enums"]["dispatch_proposal_status"]
+          territory?: string | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          expires_at?: string | null
+          id?: string
+          predicted_impact?: Json | null
+          priority?: Database["public"]["Enums"]["dispatch_priority"]
+          proposal_type?: Database["public"]["Enums"]["dispatch_proposal_type"]
+          proposed_payload?: Json
+          reason?: string
+          route_id?: string | null
+          status?: Database["public"]["Enums"]["dispatch_proposal_status"]
+          territory?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_action_proposals_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
             referencedColumns: ["id"]
           },
         ]
@@ -47173,6 +47351,10 @@ export type Database = {
         Args: { p_device_id: string }
         Returns: number
       }
+      count_route_actions_last_hour: {
+        Args: { p_route_id: string }
+        Returns: number
+      }
       create_commission_reversal: {
         Args: { p_ledger_id: string; p_reason?: string }
         Returns: string
@@ -47256,6 +47438,33 @@ export type Database = {
       freeze_portal_access: {
         Args: { _reason: string; _target_user_id: string }
         Returns: boolean
+      }
+      get_active_autonomy_policy: {
+        Args: never
+        Returns: {
+          allowed_roles_to_approve: string[]
+          allowed_territories: string[] | null
+          blackout_windows: Json | null
+          blocked_territories: string[] | null
+          created_at: string
+          enabled_actions:
+            | Database["public"]["Enums"]["dispatch_proposal_type"][]
+            | null
+          id: string
+          is_active: boolean
+          max_actions_per_route_per_hour: number
+          max_reassigned_stops_per_route: number
+          min_confidence_threshold: number
+          simulation_only: boolean
+          updated_at: string
+          updated_by: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "autonomy_policy"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_allowed_brands_for_store: {
         Args: { p_store_id: string }
@@ -47704,6 +47913,22 @@ export type Database = {
         | "integrity"
       credit_terms_type: "COD" | "NET7" | "NET14" | "NET30"
       crm_access_role: "view" | "edit" | "admin"
+      dispatch_execution_status: "success" | "partial" | "failed"
+      dispatch_priority: "low" | "medium" | "high" | "critical"
+      dispatch_proposal_status:
+        | "open"
+        | "approved"
+        | "rejected"
+        | "executed"
+        | "expired"
+        | "rolled_back"
+      dispatch_proposal_type:
+        | "split_route"
+        | "reassign_stop"
+        | "add_support_worker"
+        | "resequence_stops"
+        | "pause_route"
+        | "ping_worker"
       draft_status:
         | "draft"
         | "pending_approval"
@@ -48138,6 +48363,24 @@ export const Constants = {
       ],
       credit_terms_type: ["COD", "NET7", "NET14", "NET30"],
       crm_access_role: ["view", "edit", "admin"],
+      dispatch_execution_status: ["success", "partial", "failed"],
+      dispatch_priority: ["low", "medium", "high", "critical"],
+      dispatch_proposal_status: [
+        "open",
+        "approved",
+        "rejected",
+        "executed",
+        "expired",
+        "rolled_back",
+      ],
+      dispatch_proposal_type: [
+        "split_route",
+        "reassign_stop",
+        "add_support_worker",
+        "resequence_stops",
+        "pause_route",
+        "ping_worker",
+      ],
       draft_status: [
         "draft",
         "pending_approval",

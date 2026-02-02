@@ -421,7 +421,8 @@ import {
   LiveMapPage,
   LiveMapCommandCenter,
   RouteOpsCenter as DeliveryRouteOpsCenter,
-  MyRouteToday
+  MyRouteToday,
+  AutonomyConsole
 } from '@/pages/delivery';
 import DeliveryStoreProfile from '@/pages/delivery/StoreProfile';
 import DeliveryRouteDetailPage from '@/pages/delivery/DeliveryRouteDetail';
@@ -1044,6 +1045,7 @@ export default function AppRoutes() {
         <Route path="/delivery/route-optimizer" element={<RouteOptimizerPage />} />
         <Route path="/delivery/route-ops" element={<DeliveryRouteOpsCenter />} />
         <Route path="/delivery/live-map" element={<LiveMapCommandCenter />} />
+        <Route path="/delivery/autonomy-console" element={<AutonomyConsole />} />
         <Route path="/delivery/capacity" element={<DeliveryCapacity />} />
         <Route path="/delivery/drivers" element={<DriversManagement />} />
         <Route path="/delivery/bikers" element={<BikersManagement />} />
