@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +28,8 @@ import {
   DollarSign,
   CheckCircle2,
   XCircle,
-  Info
+  Info,
+  History
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -38,6 +39,17 @@ import {
   CBRE_THRESHOLDS,
   type InvoiceAtStop 
 } from "@/hooks/useMultiBrandIntelligence";
+import { 
+  useIntelligenceHistory,
+  createIntelligenceSnapshot 
+} from "@/hooks/useIntelligenceHistory";
+import { 
+  AcknowledgeButton,
+  AcknowledgmentBadge,
+  ReviewedCardWrapper,
+  HistoryTimelineIndicator,
+  TodayIntelligenceSummary
+} from "@/components/delivery";
 
 const BRANDS = ["GasMask", "Hot Mama", "Hot Scalati", "Grabba R Us"];
 
@@ -342,6 +354,42 @@ export default function MultiBrandDeliveryPage() {
     pendingDeliveries: deliveryItems.map(d => ({ store_id: d.store_id, brand: d.brand })),
   });
 
+  // Use history tracking hook (Phase 3.25)
+  const aggregatedRouteId = 'multi-brand-aggregate'; // Aggregate view uses single ID
+  const { 
+    todayStats, 
+    history,
+    acknowledge, 
+    isAcknowledging,
+    recordSnapshot 
+  } = useIntelligenceHistory(aggregatedRouteId);
+
+  // Check if today's intelligence has been acknowledged
+  const todayAcknowledged = useMemo(() => {
+    if (!history || history.length === 0) return false;
+    const today = new Date().toISOString().split('T')[0];
+    const todayRecord = history.find(h => h.recorded_date === today);
+    return !!todayRecord?.acknowledged_at;
+  }, [history]);
+
+  // Record snapshot when intelligence changes (debounced)
+  useEffect(() => {
+    if (stopsForAnalysis.length > 0 && intelligence.cbre) {
+      const allConflicts = Array.from(intelligence.conflictsByStop.values()).flat();
+      const snapshot = createIntelligenceSnapshot(
+        aggregatedRouteId,
+        intelligence.cbre,
+        allConflicts,
+        intelligence.invoiceSummary
+      );
+      recordSnapshot(snapshot);
+    }
+  }, [stopsForAnalysis.length, intelligence.cbre?.cbre]);
+
+  const handleAcknowledge = (note?: string) => {
+    acknowledge({ routeId: aggregatedRouteId, note });
+  };
+
   // Filter items
   const filteredItems = useMemo(() => {
     return deliveryItems.filter((item) => {
@@ -484,21 +532,44 @@ export default function MultiBrandDeliveryPage() {
             <p className="text-muted-foreground">Brand-aware logistics with efficiency intelligence</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" disabled={selectedItems.length === 0}>
-            <Split className="h-4 w-4 mr-2" />
-            Split by Brand
-          </Button>
-          <Button variant="outline" disabled={selectedItems.length === 0}>
-            <Merge className="h-4 w-4 mr-2" />
-            Merge Deliveries
-          </Button>
-          <Button onClick={handleSendToRouter} disabled={selectedItems.length === 0}>
-            <Send className="h-4 w-4 mr-2" />
-            Send to Router
-          </Button>
+        <div className="flex items-center gap-4">
+          {/* Acknowledgment Status + Action */}
+          <div className="flex items-center gap-2">
+            <HistoryTimelineIndicator 
+              hasHistory={(history?.length || 0) > 0} 
+              recordCount={history?.length || 0}
+            />
+            <AcknowledgmentBadge 
+              acknowledged={todayAcknowledged}
+              acknowledgedAt={history?.find(h => h.recorded_date === new Date().toISOString().split('T')[0])?.acknowledged_at || undefined}
+            />
+            {!todayAcknowledged && (
+              <AcknowledgeButton
+                acknowledged={todayAcknowledged}
+                onAcknowledge={handleAcknowledge}
+                isLoading={isAcknowledging}
+              />
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" disabled={selectedItems.length === 0}>
+              <Split className="h-4 w-4 mr-2" />
+              Split by Brand
+            </Button>
+            <Button variant="outline" disabled={selectedItems.length === 0}>
+              <Merge className="h-4 w-4 mr-2" />
+              Merge Deliveries
+            </Button>
+            <Button onClick={handleSendToRouter} disabled={selectedItems.length === 0}>
+              <Send className="h-4 w-4 mr-2" />
+              Send to Router
+            </Button>
+          </div>
         </div>
       </div>
+
+      {/* Phase 3.25: Today's Intelligence Summary */}
+      <TodayIntelligenceSummary stats={todayStats} isLoading={!todayStats} />
 
       {/* Intelligence Cards Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

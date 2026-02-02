@@ -7,3 +7,12 @@ export { AlertsPanel } from './AlertsPanel';
 export { WorkerPerformanceCard } from './WorkerPerformanceCard';
 export { PlaybookActionsPanel } from './PlaybookActionsPanel';
 export { AutonomyGuardrailsPanel, WorkerAutonomyStatus } from './AutonomyGuardrailsPanel';
+
+// Phase 3.25 — Intelligence Calibration
+export { 
+  AcknowledgmentBadge, 
+  AcknowledgeButton, 
+  ReviewedCardWrapper,
+  HistoryTimelineIndicator 
+} from './IntelligenceAcknowledgment';
+export { TodayIntelligenceSummary } from './TodayIntelligenceSummary';
