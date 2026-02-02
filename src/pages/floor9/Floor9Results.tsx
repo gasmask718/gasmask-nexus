@@ -1,7 +1,9 @@
-import React from 'react';
+// Floor 9 - AI Operations Results (Authoritative Outcomes Ledger)
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   TrendingUp,
   Clock,
@@ -12,43 +14,62 @@ import {
   Users,
   ArrowUp,
   Activity,
-  Database,
+  FileText,
+  XCircle,
+  AlertTriangle,
+  Undo2,
+  BarChart3,
 } from 'lucide-react';
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
 import { Skeleton } from '@/components/ui/skeleton';
-import { usePerformanceResults, useWorkforceStats, useInstinctLogs } from '@/hooks/useFloor9';
+import { subDays } from 'date-fns';
+import { 
+  useAIResults, 
+  useResultsMetrics, 
+  useTaskTypes, 
+  useEntityTypes,
+  AIResultFilters 
+} from '@/hooks/useAIResults';
 import { 
   ShadowModeBanner,
   ImmutableLogNotice,
   PersistedDriftMonitor,
+  ResultDetailDrawer,
+  ResultsFilters,
+  ResultsTimeline,
+  ResultsAnalytics,
 } from '@/components/floor9';
 
 const Floor9Results = () => {
-  const { data: results, isLoading: resultsLoading } = usePerformanceResults({ days: 30 });
-  const { data: stats, isLoading: statsLoading } = useWorkforceStats();
-  const { data: instinctLogs } = useInstinctLogs({ limit: 100 });
+  // Filters state with sensible defaults
+  const [filters, setFilters] = useState<AIResultFilters>({
+    dateRange: { from: subDays(new Date(), 30), to: new Date() },
+    limit: 100,
+  });
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('timeline');
 
-  // Aggregate metrics
-  const totalAutoResolved = results?.reduce((sum, r) => sum + r.tasks_auto_resolved, 0) || 0;
-  const totalEscalated = results?.reduce((sum, r) => sum + r.tasks_escalated, 0) || 0;
-  const totalTimeSaved = results?.reduce((sum, r) => sum + r.time_saved_minutes, 0) || 0;
-  const totalRevenueProtected = results?.reduce((sum, r) => sum + r.revenue_protected, 0) || 0;
-  const totalRevenueGenerated = results?.reduce((sum, r) => sum + r.revenue_generated, 0) || 0;
-  const avgTrustScore = results?.length
-    ? results.reduce((sum, r) => sum + r.human_trust_score, 0) / results.length
-    : 0;
+  // Data queries
+  const { data: results, isLoading: resultsLoading, refetch: refetchResults } = useAIResults(filters);
+  const { data: metrics, isLoading: metricsLoading } = useResultsMetrics(30);
+  const { data: taskTypes } = useTaskTypes();
+  const { data: entityTypes } = useEntityTypes();
 
-  const autoResolveRate = totalAutoResolved + totalEscalated > 0
-    ? Math.round((totalAutoResolved / (totalAutoResolved + totalEscalated)) * 100)
-    : 0;
+  const handleResultClick = useCallback((taskId: string) => {
+    setSelectedTaskId(taskId);
+    setDrawerOpen(true);
+  }, []);
 
-  // Calculate feedback rates from instinct logs
-  const acceptedLogs = instinctLogs?.filter(l => l.feedback_status === 'accepted').length || 0;
-  const rejectedLogs = instinctLogs?.filter(l => l.feedback_status === 'rejected').length || 0;
-  const totalFeedback = acceptedLogs + rejectedLogs;
-  const feedbackAcceptanceRate = totalFeedback > 0 ? Math.round((acceptedLogs / totalFeedback) * 100) : 0;
+  const handleFiltersChange = useCallback((newFilters: AIResultFilters) => {
+    setFilters(newFilters);
+  }, []);
 
-  const isLoading = resultsLoading || statsLoading;
+  const isLoading = resultsLoading || metricsLoading;
+
+  // Calculate time saved display
+  const timeSavedHours = metrics ? Math.floor(metrics.totalTimeSavedMinutes / 60) : 0;
+  const timeSavedMins = metrics ? metrics.totalTimeSavedMinutes % 60 : 0;
 
   return (
     <GrabbaLayout>
@@ -60,11 +81,11 @@ const Floor9Results = () => {
             AI Performance Results
           </h1>
           <p className="text-muted-foreground mt-1">
-            Measure whether AI is worth existing — ROI & Trust Metrics
+            What has the AI actually done, what changed, and was it worth it?
           </p>
         </div>
 
-        {/* PHASE 9.1: Shadow Mode Banner */}
+        {/* Shadow Mode Banner */}
         <ShadowModeBanner />
 
         {/* Governance Notice */}
@@ -74,31 +95,83 @@ const Floor9Results = () => {
             <div>
               <p className="font-medium">If AI Cannot Prove Value, It Does Not Scale</p>
               <p className="text-sm text-muted-foreground">
-                These metrics track time saved vs human baseline, error reduction, revenue impact,
-                and human trust indicators. <strong>Confidence drift is actively monitored</strong> to detect
-                trust erosion before it causes damage.
+                This ledger shows every finalized AI outcome — completions, failures, rollbacks, and human decisions.
+                It is <strong>read-only, immutable, and audit-grade</strong>.
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* PHASE 9.1: Persisted Confidence Drift Monitoring - Uses Real Database Data */}
-        <div className="border-2 border-primary/30 rounded-lg p-1">
-          <div className="bg-primary/5 p-4 rounded-lg">
-            <div className="flex items-center gap-2 mb-4">
-              <Activity className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-bold">Confidence Drift Monitoring</h2>
-              <Badge variant="outline" className="ml-2">Phase 9.1 — Safety Critical</Badge>
-              <Badge variant="secondary" className="ml-1">
-                <Database className="h-3 w-3 mr-1" />
-                Persisted Alerts
-              </Badge>
-            </div>
-            <PersistedDriftMonitor />
-          </div>
+        {/* Results Overview Metrics */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {isLoading ? (
+            [...Array(6)].map((_, i) => <Skeleton key={i} className="h-24" />)
+          ) : (
+            <>
+              <Card className="border-primary/20">
+                <CardContent className="pt-4 pb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-muted-foreground">Total Tasks</p>
+                    <FileText className="h-4 w-4 text-primary" />
+                  </div>
+                  <p className="text-2xl font-bold">{metrics?.totalTasks || 0}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-green-500/20">
+                <CardContent className="pt-4 pb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-muted-foreground">Completed</p>
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-green-600">{metrics?.completedTasks || 0}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-red-500/20">
+                <CardContent className="pt-4 pb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-muted-foreground">Failed</p>
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-red-600">{metrics?.failedTasks || 0}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-yellow-500/20">
+                <CardContent className="pt-4 pb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-muted-foreground">Awaiting Approval</p>
+                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-yellow-600">{metrics?.awaitingApproval || 0}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-purple-500/20">
+                <CardContent className="pt-4 pb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-muted-foreground">Rolled Back</p>
+                    <Undo2 className="h-4 w-4 text-purple-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-purple-600">{metrics?.rolledBackTasks || 0}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-blue-500/20">
+                <CardContent className="pt-4 pb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-muted-foreground">Artifacts</p>
+                    <FileText className="h-4 w-4 text-blue-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-blue-600">{metrics?.artifactsGenerated || 0}</p>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
 
-        {/* Key Metrics */}
+        {/* Key Performance Indicators */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {isLoading ? (
             [...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)
@@ -111,7 +184,7 @@ const Floor9Results = () => {
                     <Clock className="h-5 w-5 text-green-500" />
                   </div>
                   <p className="text-3xl font-bold">
-                    {Math.round(totalTimeSaved / 60)}h {totalTimeSaved % 60}m
+                    {timeSavedHours}h {timeSavedMins}m
                   </p>
                   <p className="text-sm text-green-500 flex items-center mt-1">
                     <ArrowUp className="h-3 w-3 mr-1" />
@@ -126,153 +199,87 @@ const Floor9Results = () => {
                     <p className="text-sm text-muted-foreground">Human Acceptance Rate</p>
                     <CheckCircle className="h-5 w-5 text-blue-500" />
                   </div>
-                  <p className="text-3xl font-bold">{feedbackAcceptanceRate}%</p>
-                  <Progress value={feedbackAcceptanceRate} className="h-2 mt-2" />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {acceptedLogs} accepted / {rejectedLogs} rejected
-                  </p>
+                  <p className="text-3xl font-bold">{metrics?.humanAcceptanceRate || 0}%</p>
+                  <Progress value={metrics?.humanAcceptanceRate || 0} className="h-2 mt-2" />
                 </CardContent>
               </Card>
 
-              <Card className="border-yellow-500/20">
+              <Card className="border-red-500/20">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm text-muted-foreground">Revenue Protected</p>
-                    <DollarSign className="h-5 w-5 text-yellow-500" />
+                    <p className="text-sm text-muted-foreground">Human Rejection Rate</p>
+                    <XCircle className="h-5 w-5 text-red-500" />
                   </div>
-                  <p className="text-3xl font-bold">${totalRevenueProtected.toLocaleString()}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    + ${totalRevenueGenerated.toLocaleString()} generated
-                  </p>
+                  <p className="text-3xl font-bold">{metrics?.humanRejectionRate || 0}%</p>
+                  <Progress value={metrics?.humanRejectionRate || 0} className="h-2 mt-2 [&>div]:bg-red-500" />
                 </CardContent>
               </Card>
 
               <Card className="border-primary/20">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm text-muted-foreground">Human Trust Score</p>
+                    <p className="text-sm text-muted-foreground">Avg AI Confidence</p>
                     <Brain className="h-5 w-5 text-primary" />
                   </div>
-                  <p className="text-3xl font-bold">{Math.round(avgTrustScore || feedbackAcceptanceRate)}%</p>
-                  <Progress value={avgTrustScore || feedbackAcceptanceRate} className="h-2 mt-2" />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Based on feedback acceptance rate
-                  </p>
+                  <p className="text-3xl font-bold">{metrics?.avgConfidence || 0}%</p>
+                  <Progress value={metrics?.avgConfidence || 0} className="h-2 mt-2" />
                 </CardContent>
               </Card>
             </>
           )}
         </div>
 
-        {/* Workforce Summary */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Workforce Summary
-              </CardTitle>
-              <CardDescription>Current AI worker status</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {statsLoading ? (
-                <Skeleton className="h-48" />
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Total Workers</span>
-                    <span className="font-bold">{stats?.total_workers || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500" />
-                      Active
-                    </span>
-                    <span className="font-bold text-green-500">{stats?.active_workers || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                      Busy
-                    </span>
-                    <span className="font-bold text-yellow-500">{stats?.busy_workers || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-muted-foreground" />
-                      Sleeping
-                    </span>
-                    <span className="font-bold">{stats?.sleeping_workers || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-red-500" />
-                      Error
-                    </span>
-                    <span className="font-bold text-red-500">{stats?.error_workers || 0}</span>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
-                Task Summary
-              </CardTitle>
-              <CardDescription>All-time task statistics</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {statsLoading ? (
-                <Skeleton className="h-48" />
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Total Tasks</span>
-                    <span className="font-bold">{stats?.total_tasks || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500" />
-                      Completed
-                    </span>
-                    <span className="font-bold text-green-500">{stats?.completed_tasks || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                      Pending
-                    </span>
-                    <span className="font-bold text-yellow-500">{stats?.pending_tasks || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-blue-500" />
-                      Processing
-                    </span>
-                    <span className="font-bold text-blue-500">{stats?.processing_tasks || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-red-500" />
-                      Failed
-                    </span>
-                    <span className="font-bold text-red-500">{stats?.failed_tasks || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-orange-500" />
-                      Escalated
-                    </span>
-                    <span className="font-bold text-orange-500">{stats?.escalated_tasks || 0}</span>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {/* Confidence Drift Monitoring */}
+        <div className="border-2 border-primary/30 rounded-lg p-1">
+          <div className="bg-primary/5 p-4 rounded-lg">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-bold">Confidence Drift Monitoring</h2>
+              <Badge variant="outline" className="ml-2">Phase 9.1 — Safety Critical</Badge>
+            </div>
+            <PersistedDriftMonitor />
+          </div>
         </div>
+
+        {/* Filters */}
+        <ResultsFilters
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          taskTypes={taskTypes || []}
+          entityTypes={entityTypes || []}
+          isLoading={resultsLoading}
+          onRefresh={() => refetchResults()}
+        />
+
+        {/* Main Content Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="timeline" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Timeline
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="timeline" className="mt-4">
+            <ResultsTimeline
+              results={results || []}
+              isLoading={resultsLoading}
+              onResultClick={handleResultClick}
+            />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="mt-4">
+            <ResultsAnalytics
+              results={results || []}
+              metrics={metrics || null}
+              isLoading={isLoading}
+            />
+          </TabsContent>
+        </Tabs>
 
         {/* AI Value Proposition */}
         <Card>
@@ -316,6 +323,13 @@ const Floor9Results = () => {
             <ImmutableLogNotice />
           </CardContent>
         </Card>
+
+        {/* Result Detail Drawer */}
+        <ResultDetailDrawer
+          taskId={selectedTaskId}
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+        />
       </div>
     </GrabbaLayout>
   );
