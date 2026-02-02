@@ -135,12 +135,19 @@ export default function GrabbaFinance() {
 
   // =====================================================
   // COMPUTED VALUES FROM UNIFIED LEDGER
+  // HARD RULE: Global KPIs NEVER depend on UI filters
   // =====================================================
   const totalRevenue = systemTotals?.total_billed || 0;
   const paidRevenue = systemTotals?.total_paid || 0;
   const unpaidTotal = systemTotals?.total_outstanding || 0;
   const unpaidCount = systemTotals?.unpaid_count || 0;
   const overdueCount = systemTotals?.overdue_count || 0;
+  
+  // TOTAL ORDERS = system-wide count of all finalized invoices (NOT filtered by brand)
+  const totalOrders = systemTotals?.total_orders || 0;
+  
+  // Brand breakdown for secondary display (derived, not scoped)
+  const brandBreakdown = systemTotals?.by_brand || {};
 
   // Filter ledger entries based on UI filters
   const allEntries = ledger?.entries || [];
@@ -178,7 +185,8 @@ export default function GrabbaFinance() {
     else aging['90+'] += entry.balance_due;
   });
 
-  const totalOrders = orders?.length || 0;
+  // Legacy orders query - for Orders tab display only (NOT for Total Orders KPI)
+  const ordersFromTable = orders?.length || 0;
   const totalTubes = orders?.reduce((sum, o) => sum + (o.tubes_total || (o.boxes || 0) * 100), 0) || 0;
   const totalBoxes = orders?.reduce((sum, o) => sum + (o.boxes || 0), 0) || 0;
   const pendingCommissions = commissions?.filter(c => c.status === 'pending')?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
@@ -288,8 +296,18 @@ export default function GrabbaFinance() {
                   <p className="text-xs text-muted-foreground">Total Revenue</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-amber-500">{totalOrders}</p>
+                  <p className="text-2xl font-bold text-amber-500">{totalOrders.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">Total Orders</p>
+                  {/* Brand breakdown tooltip/chips */}
+                  {Object.keys(brandBreakdown).length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1 justify-center">
+                      {Object.entries(brandBreakdown).slice(0, 4).map(([brand, data]) => (
+                        <Badge key={brand} variant="outline" className="text-[10px] px-1 py-0">
+                          {brand}: {data.count}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

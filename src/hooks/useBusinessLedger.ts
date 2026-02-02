@@ -40,10 +40,13 @@ export interface LedgerEntry {
 }
 
 export interface LedgerTotals {
-  // System-wide aggregates (raw)
+  // System-wide aggregates (raw) - NEVER affected by UI filters
   total_billed: number;
   total_paid: number;
   total_outstanding: number;
+  
+  // TOTAL ORDERS = ALL finalized invoices across ALL brands/sources (system-wide)
+  total_orders: number;
   
   // Counts
   invoice_count: number;
@@ -60,7 +63,7 @@ export interface LedgerTotals {
     legacy: { billed: number; paid: number; outstanding: number; count: number };
   };
   
-  // By brand (for store invoices)
+  // By brand (for store invoices) - brand breakdown, NOT filter
   by_brand: Record<string, { billed: number; paid: number; outstanding: number; count: number }>;
 }
 
@@ -416,6 +419,8 @@ function calculateTotals(entries: LedgerEntry[]): LedgerTotals {
     total_billed: 0,
     total_paid: 0,
     total_outstanding: 0,
+    // TOTAL ORDERS = all finalized invoices (paid + completed) across ALL brands
+    total_orders: 0,
     invoice_count: entries.length,
     paid_count: 0,
     unpaid_count: 0,
@@ -435,6 +440,14 @@ function calculateTotals(entries: LedgerEntry[]): LedgerTotals {
     totals.total_billed += entry.total_amount;
     totals.total_paid += entry.amount_paid;
     totals.total_outstanding += entry.balance_due;
+
+    // TOTAL ORDERS: Count finalized invoices (paid, partial, or unpaid with value)
+    // An "order" is any invoice that represents a completed sale
+    if (entry.status === 'paid' || entry.status === 'partial' || 
+        (entry.status === 'unpaid' && entry.total_amount > 0) ||
+        (entry.status === 'overdue' && entry.total_amount > 0)) {
+      totals.total_orders++;
+    }
 
     // Status counts
     if (entry.status === 'paid') totals.paid_count++;
