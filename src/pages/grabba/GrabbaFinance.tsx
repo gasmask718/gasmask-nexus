@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { 
   DollarSign, TrendingUp, AlertTriangle, Clock, CheckCircle, Users, 
   FileText, Search, Building2, Star, Package, ExternalLink, Plus,
-  CreditCard, Receipt, BarChart3
+  CreditCard, Receipt, BarChart3, AlertCircle, ShieldCheck, Store, Briefcase
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ import { TableRowActions } from "@/components/crud/TableRowActions";
 import { DataTablePagination } from "@/components/crud/DataTablePagination";
 import { useCrudOperations } from "@/hooks/useCrudOperations";
 import { invoiceFields, orderFields } from "@/config/entityFieldConfigs";
+import { useBusinessLedger, useLedgerTotals, LedgerEntry } from "@/hooks/useBusinessLedger";
 
 const PaymentReliabilityBadge = ({ score, tier }: { score: number; tier: string }) => {
   const stars = tier === 'elite' ? 5 : tier === 'solid' ? 4 : tier === 'middle' ? 3 : tier === 'concerning' ? 2 : 1;
@@ -41,11 +42,22 @@ const PaymentReliabilityBadge = ({ score, tier }: { score: number; tier: string 
   );
 };
 
+const SourceIcon = ({ source }: { source: string }) => {
+  switch (source) {
+    case 'store': return <Store className="h-4 w-4 text-blue-500" />;
+    case 'crm': return <Users className="h-4 w-4 text-green-500" />;
+    case 'wholesale': return <Package className="h-4 w-4 text-purple-500" />;
+    case 'legacy': return <Clock className="h-4 w-4 text-gray-500" />;
+    default: return <Receipt className="h-4 w-4 text-muted-foreground" />;
+  }
+};
+
 export default function GrabbaFinance() {
   const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrand();
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'store' | 'crm' | 'wholesale' | 'legacy'>('all');
   const queryClient = useQueryClient();
 
   // Modal states
@@ -56,7 +68,7 @@ export default function GrabbaFinance() {
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [deletingItem, setDeletingItem] = useState<{ id: string; type: 'invoice' | 'order'; name: string } | null>(null);
 
-  // CRUD operations
+  // CRUD operations (keep for editing brand-specific invoices)
   const invoiceCrud = useCrudOperations({
     table: "invoices",
     queryKey: ["grabba-finance-invoices"],
@@ -77,24 +89,21 @@ export default function GrabbaFinance() {
     }
   });
 
-  // Fetch invoices
-  const { data: invoices, isLoading: loadingInvoices } = useQuery({
-    queryKey: ["grabba-finance-invoices", selectedBrand],
-    queryFn: async () => {
-      const brandsToQuery = getBrandQuery();
-      const { data } = await supabase
-        .from("invoices")
-        .select(`
-          *,
-          company:companies(id, name, default_phone, neighborhood, boro, payment_reliability_score, payment_reliability_tier)
-        `)
-        .in("brand", brandsToQuery)
-        .order("created_at", { ascending: false });
-      return data || [];
-    },
-  });
+  // =====================================================
+  // UNIFIED BUSINESS LEDGER - SINGLE SOURCE OF TRUTH
+  // =====================================================
+  // This hook aggregates ALL invoice sources system-wide
+  // NO pagination limits, NO UI filter dependency for totals
+  const { data: ledger, isLoading: loadingLedger } = useBusinessLedger();
 
-  // Fetch orders
+  // =====================================================
+  // SYSTEM-WIDE TOTALS (from raw database aggregation)
+  // These MUST be used for KPI cards - NOT paginated data
+  // =====================================================
+  const systemTotals = ledger?.totals;
+  const verification = ledger?.verification;
+
+  // Legacy orders query (kept for Orders tab)
   const { data: orders, isLoading: loadingOrders } = useQuery({
     queryKey: ["grabba-finance-orders", selectedBrand],
     queryFn: async () => {
@@ -112,7 +121,7 @@ export default function GrabbaFinance() {
     },
   });
 
-  // Fetch commissions
+  // Fetch commissions (kept for Commissions tab)
   const { data: commissions } = useQuery({
     queryKey: ["grabba-finance-commissions"],
     queryFn: async () => {
@@ -124,22 +133,49 @@ export default function GrabbaFinance() {
     },
   });
 
-  // Calculate metrics
-  const totalRevenue = invoices?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
-  const paidRevenue = invoices?.filter(i => i.payment_status === 'paid')?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
-  const unpaidTotal = invoices?.filter(i => i.payment_status !== 'paid')?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
-  const unpaidInvoices = invoices?.filter(i => i.payment_status !== 'paid') || [];
+  // =====================================================
+  // COMPUTED VALUES FROM UNIFIED LEDGER
+  // =====================================================
+  const totalRevenue = systemTotals?.total_billed || 0;
+  const paidRevenue = systemTotals?.total_paid || 0;
+  const unpaidTotal = systemTotals?.total_outstanding || 0;
+  const unpaidCount = systemTotals?.unpaid_count || 0;
+  const overdueCount = systemTotals?.overdue_count || 0;
 
+  // Filter ledger entries based on UI filters
+  const allEntries = ledger?.entries || [];
+  const filteredEntries = allEntries.filter(entry => {
+    // Source filter
+    if (sourceFilter !== 'all' && entry.source !== sourceFilter) return false;
+    
+    // Brand filter (only applies to store entries)
+    if (selectedBrand !== 'all' && entry.brand && entry.brand !== selectedBrand) return false;
+    
+    // Search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      if (
+        !entry.invoice_number.toLowerCase().includes(searchLower) &&
+        !entry.entity_name.toLowerCase().includes(searchLower)
+      ) return false;
+    }
+    
+    return true;
+  });
+
+  const paginatedEntries = filteredEntries.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  // Calculate AR aging from filtered entries
   const now = new Date();
   const aging = { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 };
   
-  unpaidInvoices.forEach(inv => {
-    if (!inv.due_date) return;
-    const daysPastDue = Math.max(0, differenceInDays(now, new Date(inv.due_date)));
-    if (daysPastDue <= 30) aging['0-30'] += inv.total_amount || 0;
-    else if (daysPastDue <= 60) aging['31-60'] += inv.total_amount || 0;
-    else if (daysPastDue <= 90) aging['61-90'] += inv.total_amount || 0;
-    else aging['90+'] += inv.total_amount || 0;
+  filteredEntries.filter(e => e.status !== 'paid' && e.status !== 'void').forEach(entry => {
+    if (!entry.due_date) return;
+    const daysPastDue = Math.max(0, differenceInDays(now, new Date(entry.due_date)));
+    if (daysPastDue <= 30) aging['0-30'] += entry.balance_due;
+    else if (daysPastDue <= 60) aging['31-60'] += entry.balance_due;
+    else if (daysPastDue <= 90) aging['61-90'] += entry.balance_due;
+    else aging['90+'] += entry.balance_due;
   });
 
   const totalOrders = orders?.length || 0;
@@ -148,20 +184,13 @@ export default function GrabbaFinance() {
   const pendingCommissions = commissions?.filter(c => c.status === 'pending')?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
   const paidCommissions = commissions?.filter(c => c.status === 'paid')?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
 
-  // Filter and paginate
-  const filteredInvoices = invoices?.filter(inv => 
-    !search || 
-    inv.company?.name?.toLowerCase().includes(search.toLowerCase()) ||
-    inv.invoice_number?.toLowerCase().includes(search.toLowerCase())
-  ) || [];
-
+  // Filter orders for display
   const filteredOrders = orders?.filter(o => 
     !search || 
     o.company?.name?.toLowerCase().includes(search.toLowerCase()) ||
     o.store?.name?.toLowerCase().includes(search.toLowerCase())
   ) || [];
 
-  const paginatedInvoices = filteredInvoices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const paginatedOrders = filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const getOverdueDays = (dueDate: string | null) => {
@@ -245,7 +274,7 @@ export default function GrabbaFinance() {
                     ${unpaidTotal.toLocaleString()}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {unpaidInvoices.length} unpaid invoices
+                    {unpaidCount} unpaid invoices
                   </p>
                 </div>
               </div>
@@ -355,16 +384,65 @@ export default function GrabbaFinance() {
                 </div>
               </div>
 
-          {/* Invoices Tab */}
+          {/* Invoices Tab - UNIFIED LEDGER */}
           <TabsContent value="invoices">
+            {/* Verification Panel */}
+            {verification && !verification.isValid && (
+              <Card className="mb-4 border-amber-500/50 bg-amber-500/10">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                  <div>
+                    <p className="font-medium text-amber-500">Ledger Discrepancy Detected</p>
+                    <p className="text-sm text-muted-foreground">
+                      Expected {verification.totalExpected} invoices, found {verification.totalInLedger}. 
+                      Difference: {verification.discrepancy}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {verification && verification.isValid && (
+              <Card className="mb-4 border-green-500/30 bg-green-500/5">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <ShieldCheck className="h-5 w-5 text-green-500" />
+                  <p className="text-sm text-green-400">
+                    ✓ Ledger verified: {verification.totalInLedger} invoices across all sources
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Source Filter */}
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-sm text-muted-foreground">Source:</span>
+              {(['all', 'store', 'crm', 'wholesale', 'legacy'] as const).map(source => (
+                <Button
+                  key={source}
+                  variant={sourceFilter === source ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => { setSourceFilter(source); setCurrentPage(1); }}
+                  className="gap-1"
+                >
+                  {source === 'all' && 'All'}
+                  {source === 'store' && <><Store className="h-3 w-3" /> Store</>}
+                  {source === 'crm' && <><Users className="h-3 w-3" /> CRM</>}
+                  {source === 'wholesale' && <><Package className="h-3 w-3" /> Wholesale</>}
+                  {source === 'legacy' && <><Clock className="h-3 w-3" /> Legacy</>}
+                </Button>
+              ))}
+            </div>
+
             <Card className="bg-card/50 backdrop-blur border-border/50">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Receipt className="h-5 w-5 text-primary" />
-                    Invoices
+                    Business Ledger
                   </CardTitle>
-                  <CardDescription>{filteredInvoices.length} total invoices</CardDescription>
+                  <CardDescription>
+                    {filteredEntries.length} of {allEntries.length} total invoices
+                  </CardDescription>
                 </div>
                 <Button onClick={() => setInvoiceModalOpen(true)} size="sm" className="gap-2">
                   <Plus className="h-4 w-4" /> New Invoice
@@ -374,50 +452,78 @@ export default function GrabbaFinance() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[50px]">Source</TableHead>
                       <TableHead>Invoice #</TableHead>
-                      <TableHead>Company</TableHead>
+                      <TableHead>Entity</TableHead>
                       <TableHead>Brand</TableHead>
-                      <TableHead>Amount</TableHead>
+                      <TableHead className="text-right">Billed</TableHead>
+                      <TableHead className="text-right">Paid</TableHead>
+                      <TableHead className="text-right">Balance</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Due Date</TableHead>
-                      <TableHead className="w-[100px]">Actions</TableHead>
+                      <TableHead className="w-[80px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedInvoices.map((inv: any) => (
-                      <TableRow key={inv.id}>
-                        <TableCell className="font-medium">{inv.invoice_number}</TableCell>
-                        <TableCell>{inv.company?.name || 'N/A'}</TableCell>
+                    {paginatedEntries.map((entry: LedgerEntry) => (
+                      <TableRow key={entry.id}>
+                        <TableCell><SourceIcon source={entry.source} /></TableCell>
+                        <TableCell className="font-medium font-mono text-xs">{entry.invoice_number}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{inv.brand}</Badge>
+                          <div className="flex items-center gap-2">
+                            {entry.entity_type === 'store' && <Store className="h-3 w-3 text-muted-foreground" />}
+                            {entry.entity_type === 'company' && <Briefcase className="h-3 w-3 text-muted-foreground" />}
+                            {entry.entity_type === 'customer' && <Users className="h-3 w-3 text-muted-foreground" />}
+                            {entry.entity_type === 'wholesaler' && <Package className="h-3 w-3 text-muted-foreground" />}
+                            <span className="truncate max-w-[150px]">{entry.entity_name}</span>
+                          </div>
                         </TableCell>
-                        <TableCell>${(inv.total_amount || 0).toLocaleString()}</TableCell>
                         <TableCell>
-                          <Badge variant={inv.payment_status === 'paid' ? 'default' : 'destructive'}>
-                            {inv.payment_status}
+                          {entry.brand ? <Badge variant="outline" className="text-xs">{entry.brand}</Badge> : '-'}
+                        </TableCell>
+                        <TableCell className="text-right">${entry.total_amount.toLocaleString()}</TableCell>
+                        <TableCell className="text-right text-green-500">${entry.amount_paid.toLocaleString()}</TableCell>
+                        <TableCell className="text-right text-red-500">
+                          {entry.balance_due > 0 ? `$${entry.balance_due.toLocaleString()}` : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            entry.status === 'paid' ? 'default' :
+                            entry.status === 'overdue' ? 'destructive' :
+                            entry.status === 'partial' ? 'secondary' : 'outline'
+                          }>
+                            {entry.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          {inv.due_date ? format(new Date(inv.due_date), "MMM d, yyyy") : '-'}
+                        <TableCell className="text-sm text-muted-foreground">
+                          {entry.due_date ? format(new Date(entry.due_date), "MMM d, yyyy") : '-'}
                         </TableCell>
                         <TableCell>
-                          <TableRowActions
-                            actions={[
-                              { type: 'edit', onClick: () => setEditingInvoice(inv) },
-                              ...(inv.payment_status !== 'paid' ? [{ type: 'activate' as const, label: 'Mark Paid', onClick: () => handleMarkPaid(inv.id) }] : []),
-                              { type: 'delete', onClick: () => setDeletingItem({ id: inv.id, type: 'invoice', name: inv.invoice_number }) }
-                            ]}
-                          />
+                          {entry.source === 'store' && (
+                            <TableRowActions
+                              actions={[
+                                { type: 'edit', onClick: () => setEditingInvoice(entry) },
+                                { type: 'delete', onClick: () => setDeletingItem({ id: entry.id, type: 'invoice', name: entry.invoice_number }) }
+                              ]}
+                            />
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
+                    {paginatedEntries.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                          {loadingLedger ? 'Loading ledger...' : 'No invoices found'}
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
                 <DataTablePagination
                   currentPage={currentPage}
-                  totalPages={Math.ceil(filteredInvoices.length / pageSize)}
+                  totalPages={Math.ceil(filteredEntries.length / pageSize)}
                   pageSize={pageSize}
-                  totalItems={filteredInvoices.length}
+                  totalItems={filteredEntries.length}
                   onPageChange={setCurrentPage}
                   onPageSizeChange={setPageSize}
                 />
