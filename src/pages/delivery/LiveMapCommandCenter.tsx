@@ -1,0 +1,253 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// LIVE MAP COMMAND CENTER — Floor 4 Situational Awareness
+// Real-time tracking, route visualization, alerts & dispatch actions
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useLiveRoutes,
+  useLiveWorkers,
+  useLiveAlerts,
+  useMapState,
+  useLiveMapSubscription,
+} from "@/hooks/useLiveMapData";
+import {
+  MapFiltersBar,
+  MapFilters,
+  RouteListPanel,
+  WorkerDrawer,
+  RouteDrawer,
+  AlertDrawer,
+  LiveMapLegend,
+  MapCanvas,
+} from "@/components/livemap";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Navigation } from "lucide-react";
+
+export default function LiveMapCommandCenter() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
+  // Data hooks
+  const { data: routes = [], isLoading: routesLoading, refetch: refetchRoutes } = useLiveRoutes();
+  const { data: workers = [], isLoading: workersLoading, refetch: refetchWorkers } = useLiveWorkers();
+  const { data: alerts = [], refetch: refetchAlerts } = useLiveAlerts();
+  
+  // Enable real-time subscriptions
+  useLiveMapSubscription();
+
+  // Map state
+  const mapState = useMapState();
+  
+  // Filters
+  const [filters, setFilters] = useState<MapFilters>({
+    search: '',
+    roles: [],
+    statuses: [],
+    showAlerts: true,
+    showCriticalOnly: false,
+    showSLABreached: false,
+  });
+  
+  // Refresh tracking
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Update last refresh time
+  useEffect(() => {
+    setLastRefresh(new Date());
+  }, [routes, workers, alerts]);
+
+  // Filter routes based on filters
+  const filteredRoutes = useMemo(() => {
+    return routes.filter(route => {
+      // Search filter
+      if (filters.search) {
+        const search = filters.search.toLowerCase();
+        const matchesSearch = 
+          route.assignee?.name?.toLowerCase().includes(search) ||
+          route.territory?.toLowerCase().includes(search) ||
+          route.stops.some(s => s.store?.name?.toLowerCase().includes(search));
+        if (!matchesSearch) return false;
+      }
+
+      // Role filter
+      if (filters.roles.length > 0) {
+        const role = route.assignee?.role || route.type;
+        if (!filters.roles.includes(role)) return false;
+      }
+
+      // Status filter
+      if (filters.statuses.length > 0) {
+        const status = route.status === 'in_progress' ? 'active' : route.status;
+        if (!filters.statuses.includes(status)) return false;
+      }
+
+      return true;
+    });
+  }, [routes, filters]);
+
+  // Filter workers based on filters
+  const filteredWorkers = useMemo(() => {
+    return workers.filter(worker => {
+      if (filters.search) {
+        const search = filters.search.toLowerCase();
+        if (!worker.name.toLowerCase().includes(search)) return false;
+      }
+
+      if (filters.roles.length > 0) {
+        if (!filters.roles.includes(worker.role)) return false;
+      }
+
+      return true;
+    });
+  }, [workers, filters]);
+
+  // Filter alerts based on filters
+  const filteredAlerts = useMemo(() => {
+    return alerts.filter(alert => {
+      if (filters.showCriticalOnly && alert.severity !== 'critical') return false;
+      if (filters.showSLABreached && !alert.sla_breached) return false;
+      return true;
+    });
+  }, [alerts, filters]);
+
+  // Enrich routes with alert counts
+  const enrichedRoutes = useMemo(() => {
+    return filteredRoutes.map(route => {
+      const routeAlerts = alerts.filter(a => a.route_id === route.id);
+      return {
+        ...route,
+        hasAlerts: routeAlerts.length > 0,
+        alertCount: routeAlerts.length,
+      };
+    });
+  }, [filteredRoutes, alerts]);
+
+  // Stats for filters bar
+  const stats = useMemo(() => ({
+    totalRoutes: routes.length,
+    totalWorkers: workers.length,
+    totalAlerts: alerts.length,
+    criticalAlerts: alerts.filter(a => a.severity === 'critical').length,
+  }), [routes, workers, alerts]);
+
+  // Refresh handler
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await Promise.all([
+      refetchRoutes(),
+      refetchWorkers(),
+      refetchAlerts(),
+    ]);
+    setIsRefreshing(false);
+    setLastRefresh(new Date());
+  }, [refetchRoutes, refetchWorkers, refetchAlerts]);
+
+  // Get selected entities for drawers
+  const selectedRoute = enrichedRoutes.find(r => r.id === mapState.selectedRoute) || null;
+  const selectedWorker = workers.find(w => w.worker_id === mapState.selectedWorker) || null;
+  const selectedAlert = alerts.find(a => a.id === mapState.selectedAlert) || null;
+  
+  // Get route for selected worker
+  const workerRoute = selectedWorker 
+    ? enrichedRoutes.find(r => r.assigned_to === selectedWorker.worker_id) || null
+    : null;
+
+  // Focus on route
+  const handleFocusRoute = useCallback((routeId: string) => {
+    mapState.selectRoute(routeId);
+  }, [mapState]);
+
+  // Focus on stop
+  const handleFocusStop = useCallback((stop: any) => {
+    mapState.selectStop(stop.id);
+  }, [mapState]);
+
+  return (
+    <div className="h-screen flex flex-col bg-background">
+      {/* Header */}
+      <div className="h-14 border-b flex items-center justify-between px-4 bg-background/95 backdrop-blur z-20">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/delivery')}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <Navigation className="h-5 w-5 text-primary" />
+            <h1 className="text-lg font-semibold">Live Map Command Center</h1>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Panel - Route List */}
+        <RouteListPanel
+          routes={enrichedRoutes}
+          workers={filteredWorkers}
+          alerts={filteredAlerts}
+          selectedRouteId={mapState.selectedRoute}
+          onSelectRoute={mapState.selectRoute}
+          onSelectWorker={mapState.selectWorker}
+          onSelectAlert={mapState.selectAlert}
+          onFocusRoute={handleFocusRoute}
+        />
+
+        {/* Map Area */}
+        <div className="flex-1 relative">
+          {/* Filters Bar */}
+          <MapFiltersBar
+            filters={filters}
+            onFiltersChange={setFilters}
+            onRefresh={handleRefresh}
+            isRefreshing={isRefreshing}
+            lastRefresh={lastRefresh}
+            stats={stats}
+          />
+
+          {/* Map Canvas */}
+          <MapCanvas
+            routes={enrichedRoutes}
+            workers={filteredWorkers}
+            alerts={filteredAlerts}
+            selectedRouteId={mapState.selectedRoute}
+            selectedWorkerId={mapState.selectedWorker}
+            followWorkerId={mapState.followWorker}
+            onSelectRoute={mapState.selectRoute}
+            onSelectWorker={mapState.selectWorker}
+            onSelectStop={mapState.selectStop}
+            onSelectAlert={mapState.selectAlert}
+          />
+
+          {/* Legend */}
+          <LiveMapLegend />
+        </div>
+      </div>
+
+      {/* Drawers */}
+      <WorkerDrawer
+        worker={selectedWorker}
+        route={workerRoute}
+        open={!!mapState.selectedWorker}
+        onClose={() => mapState.selectWorker(null)}
+        onFollowWorker={mapState.toggleFollowWorker}
+        isFollowing={mapState.followWorker === selectedWorker?.worker_id}
+      />
+
+      <RouteDrawer
+        route={selectedRoute}
+        open={!!mapState.selectedRoute}
+        onClose={() => mapState.selectRoute(null)}
+        onFocusStop={handleFocusStop}
+      />
+
+      <AlertDrawer
+        alert={selectedAlert}
+        open={!!mapState.selectedAlert}
+        onClose={() => mapState.selectAlert(null)}
+      />
+    </div>
+  );
+}
