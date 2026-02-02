@@ -3,6 +3,8 @@
  * 
  * Part of Phase 9.2 — Assisted Execution Engine
  * Humans assign tasks. AI executes within bounded authority.
+ * 
+ * Updated for Global Task Governance (Floors 1-9)
  */
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -15,6 +17,7 @@ import {
   AssignAITaskModal,
   TaskExecutionCard,
 } from "@/components/floor9";
+import { GlobalTaskDashboard } from "@/components/taskGovernance";
 import { 
   ClipboardList, 
   Clock, 
@@ -26,8 +29,10 @@ import {
   Shield,
   FileText,
   TrendingUp,
+  Building2,
 } from "lucide-react";
 import { useFloor9Tasks, useWorkforceStats } from "@/hooks/useFloor9";
+import { useGlobalTasks } from "@/hooks/useGovernedTasks";
 import { AIWorkTask } from '@/services/floor9/types';
 
 type ExtendedAIWorkTask = AIWorkTask & {
@@ -53,9 +58,11 @@ type ExtendedAIWorkTask = AIWorkTask & {
 export default function Floor9Tasks() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const [viewMode, setViewMode] = useState<'floor9' | 'global'>('floor9');
   
   const { data: allTasks, isLoading } = useFloor9Tasks({});
   const { data: stats } = useWorkforceStats();
+  const { stats: globalStats } = useGlobalTasks();
 
   // Filter tasks by status
   const filterTasks = (status?: string) => {
@@ -83,7 +90,7 @@ export default function Floor9Tasks() {
     <div className="space-y-6">
       <ShadowModeBanner />
 
-      {/* Header with Stats */}
+      {/* Header with View Toggle */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -94,14 +101,47 @@ export default function Floor9Tasks() {
             Assign, monitor, and approve AI-executed tasks with full auditability
           </p>
         </div>
-        <Button onClick={() => setShowAssignModal(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Assign AI Task
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-lg border p-1">
+            <Button 
+              variant={viewMode === 'floor9' ? 'default' : 'ghost'} 
+              size="sm"
+              onClick={() => setViewMode('floor9')}
+            >
+              <Brain className="h-4 w-4 mr-1" />
+              Floor 9
+            </Button>
+            <Button 
+              variant={viewMode === 'global' ? 'default' : 'ghost'} 
+              size="sm"
+              onClick={() => setViewMode('global')}
+            >
+              <Building2 className="h-4 w-4 mr-1" />
+              All Floors
+              {globalStats.total > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {globalStats.total}
+                </Badge>
+              )}
+            </Button>
+          </div>
+          <Button onClick={() => setShowAssignModal(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Assign AI Task
+          </Button>
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      {/* Global Dashboard View */}
+      {viewMode === 'global' && (
+        <GlobalTaskDashboard />
+      )}
+
+      {/* Floor 9 Specific View */}
+      {viewMode === 'floor9' && (
+        <>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
@@ -266,6 +306,8 @@ export default function Floor9Tasks() {
           </Tabs>
         </CardContent>
       </Card>
+        </>
+      )}
 
       {/* Assign Task Modal */}
       <AssignAITaskModal 
