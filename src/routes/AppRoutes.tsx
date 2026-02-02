@@ -1283,6 +1283,7 @@ export default function AppRoutes() {
         <Route path="/me/home" element={<WorkerHome />} />
         <Route path="/me/driver" element={<WorkerHome />} />
         <Route path="/operations/live-map" element={<LiveMap />} />
+        <Route path="/live-map" element={<LiveMap />} />
         <Route path="/wallet" element={<WalletPage />} />
         <Route path="/subscriptions" element={<Subscriptions />} />
         <Route path="/expansion/capacity" element={<DeliveryCapacity />} />
