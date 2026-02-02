@@ -26,3 +26,4 @@ export { default as RouteOpsCenter } from './RouteOpsCenter';
 export { default as RouteOpsCenterEnhanced } from './RouteOpsCenterEnhanced';
 export { default as OpsCommandCenter } from './OpsCommandCenter';
 export { default as MyRouteToday } from './MyRouteToday';
+export { default as RouteOptimizerPage } from './RouteOptimizerPage';

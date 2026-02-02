@@ -76,7 +76,7 @@ import MessagesPage from '@/pages/Messages';
 import CommunicationInsights from '@/pages/CommunicationInsights';
 import RouteOptimizer from '@/pages/RouteOptimizer';
 import RouteOpsCenter from '@/pages/RouteOpsCenter';
-import { RouteOpsCenterEnhanced, OpsCommandCenter } from '@/pages/delivery';
+import { RouteOpsCenterEnhanced, OpsCommandCenter, RouteOptimizerPage } from '@/pages/delivery';
 import MyRoute from '@/pages/MyRoute';
 import SidebarVisualTest from '@/pages/SidebarVisualTest';
 import SidebarDebug from '@/pages/debug/SidebarDebug';
@@ -1038,7 +1038,7 @@ export default function AppRoutes() {
         <Route path="/delivery/multi-brand" element={<MultiBrandDeliveryPage />} />
         <Route path="/delivery/route-manager" element={<RouteManagerPage />} />
         <Route path="/delivery/routes/all" element={<AllRoutesPage />} />
-        <Route path="/delivery/route-optimizer" element={<RouteOptimizer />} />
+        <Route path="/delivery/route-optimizer" element={<RouteOptimizerPage />} />
         <Route path="/delivery/route-ops" element={<DeliveryRouteOpsCenter />} />
         <Route path="/delivery/live-map" element={<LiveMapPage />} />
         <Route path="/delivery/capacity" element={<DeliveryCapacity />} />
