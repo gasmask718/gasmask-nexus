@@ -45,17 +45,23 @@ import { TaskCompletionReport } from '@/components/floor9/TaskCompletionReport';
 
 interface GovernedTaskCardProps {
   task: GovernedTask;
-  isExpanded: boolean;
-  onToggleExpand: () => void;
-  onRefresh: () => void;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
+  onRefresh?: () => void;
+  compact?: boolean;
 }
 
 export function GovernedTaskCard({
   task,
-  isExpanded,
+  isExpanded: controlledExpanded,
   onToggleExpand,
   onRefresh,
+  compact = false,
 }: GovernedTaskCardProps) {
+  const [internalExpanded, setInternalExpanded] = useState(false);
+  const isExpanded = controlledExpanded ?? internalExpanded;
+  const handleToggle = onToggleExpand ?? (() => setInternalExpanded(!internalExpanded));
+  const handleRefresh = onRefresh ?? (() => {});
   const queryClient = useQueryClient();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -97,7 +103,7 @@ export function GovernedTaskCard({
         toast.success('Task cancelled', {
           description: `${result.cancelled_actions} actions cancelled, ${result.preserved_records} records preserved`,
         });
-        onRefresh();
+        handleRefresh();
       } else {
         toast.error('Cancellation failed', { description: result.error });
       }
@@ -109,7 +115,7 @@ export function GovernedTaskCard({
     mutationFn: () => startTask(task.id),
     onSuccess: () => {
       toast.success('Task started');
-      onRefresh();
+      handleRefresh();
     },
   });
 

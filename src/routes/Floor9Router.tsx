@@ -5,6 +5,7 @@
  * Bad links self-heal by redirecting to the hub.
  * 
  * Part of Phase 9.1 — AI Trust Hardening & Safety
+ * Updated for Phase G-H — Governance Command Center
  */
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
@@ -20,6 +21,9 @@ import {
   Floor9Alerts,
   Floor9Tasks
 } from '@/pages/floor9';
+
+// Governance Command Center (Phase H)
+import GovernanceCommandCenter from '@/pages/admin/GovernanceCommandCenter';
 
 /**
  * Floor9Router - Centralized routing for Floor 9 AI Operations
@@ -47,6 +51,10 @@ export function Floor9Router() {
       <Route path="predictions" element={<Floor9Predictions />} />
       <Route path="alerts" element={<Floor9Alerts />} />
       <Route path="tasks" element={<Floor9Tasks />} />
+      
+      {/* Phase H: Governance Command Center */}
+      <Route path="governance" element={<GovernanceCommandCenter />} />
+      <Route path="command-center" element={<GovernanceCommandCenter />} />
       
       {/* HARD FAILSAFE - Any unknown route redirects to hub */}
       <Route path="*" element={<Navigate to="/grabba/floor9" replace />} />
