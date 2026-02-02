@@ -1,6 +1,12 @@
 /**
  * Task Governance Service - Public API
  * Unified task tracking for Floors 1-9
+ * 
+ * Phase A-D Go-Live Fix Implementation:
+ * - Phase A: Button Integrity (useGovernedAction hook)
+ * - Phase B: Task Coverage (actionRegistry)
+ * - Phase C: Risk & Approval (governanceConfig)
+ * - Phase D: Dry-Run Mode (dryRunService)
  */
 
 // Types
@@ -48,6 +54,54 @@ export {
   getTaskById,
 } from './taskGovernanceService';
 
+// Governance Configuration (Phase C)
+export {
+  RISK_POLICIES,
+  FLOOR_POLICIES,
+  TASK_TYPE_POLICIES,
+  getRiskPolicy,
+  getFloorPolicy,
+  getTaskTypePolicy,
+  checkGovernance,
+  canExecuteLive,
+  isDryRunRequired,
+} from './governanceConfig';
+export type {
+  ExecutionMode,
+  ExecutionModeConfig,
+  RiskPolicy,
+  FloorPolicy,
+  TaskTypePolicy,
+  GovernanceCheck,
+} from './governanceConfig';
+
+// Dry-Run Service (Phase D)
+export {
+  executeDryRun,
+  checkLiveExecutionAllowed,
+  createExecutionContext,
+  guardWrite,
+} from './dryRunService';
+export type {
+  DryRunResult,
+  DryRunContext,
+  DryRunItemResult,
+  LiveExecutionOptions,
+  LiveExecutionCheck,
+  ExecutionContext,
+} from './dryRunService';
+
+// Action Registry (Phase B)
+export {
+  ACTION_REGISTRY,
+  getActionMapping,
+  getActionsByFloor,
+  getActionsByRisk,
+  getHighRiskActions,
+  getActionsRequiringApproval,
+  generateActionCoverageReport,
+} from './actionRegistry';
+export type { ActionMapping, ActionCoverageReport } from './actionRegistry';
+
+// Re-export types
 export * from './types';
-export * from './taskRegistry';
-export * from './taskGovernanceService';
