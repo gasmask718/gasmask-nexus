@@ -5,28 +5,39 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Plus, Search, Download, Filter, Store, Users, Building2 } from 'lucide-react';
+import { FileText, Plus, Search, Store, Users, Building2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { ReceiptStatusIndicator } from '@/components/invoice/ReceiptStatusIndicator';
 import type { ReceiptStatus } from '@/components/invoice/ReceiptStatusIndicator';
-import { useUnifiedInvoiceFeed, UnifiedInvoice } from '@/hooks/useUnifiedInvoiceFeed';
+import { usePaginatedInvoiceFeed, useInvoiceSystemCounts } from '@/hooks/usePaginatedInvoiceFeed';
+import { UnifiedInvoice } from '@/hooks/useUnifiedInvoiceFeed';
 import { format } from 'date-fns';
 import { ExportButton } from '@/components/crud/ExportButton';
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
 
 const BillingInvoices = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState<'all' | 'store' | 'crm' | 'wholesale'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
-  // HARD-LOCKED: Uses unified invoice feed exclusively
-  const { data, isLoading } = useUnifiedInvoiceFeed({
+  // HARD-LOCKED: Uses PAGINATED unified invoice feed
+  const { data, isLoading } = usePaginatedInvoiceFeed({
     status: statusFilter,
     source: sourceFilter,
     search: searchTerm,
+    page: currentPage,
+    pageSize,
   });
+
+  // Get TRUE system-wide counts for verification
+  const { data: systemCounts } = useInvoiceSystemCounts();
 
   const invoices = data?.invoices || [];
   const stats = data?.stats;
+  const pagination = data?.pagination;
+  const verification = data?.verification;
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -47,7 +58,7 @@ const BillingInvoices = () => {
       case 'crm': return <Users className="h-4 w-4 text-green-500" />;
       case 'wholesale': return <Building2 className="h-4 w-4 text-purple-500" />;
       case 'legacy': return <FileText className="h-4 w-4 text-amber-500" />;
-      default: return <Building2 className="h-4 w-4 text-gray-500" />;
+      default: return <Building2 className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -63,17 +74,37 @@ const BillingInvoices = () => {
     created_at: inv.created_at,
   }));
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page
+  };
+
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
+      {/* Header with TRUE counts */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <FileText className="h-8 w-8 text-primary" />
             All Invoices
           </h1>
-          <p className="text-muted-foreground">
-            {stats?.invoiceCount || 0} invoices • ${stats?.totalOutstanding?.toLocaleString() || 0} outstanding
+          <div className="flex items-center gap-4 text-muted-foreground mt-1">
+            <span className="text-lg font-semibold text-foreground">
+              {systemCounts?.totalSystemWide?.toLocaleString() || pagination?.totalCount?.toLocaleString() || 0} invoices total
+            </span>
+            <span>•</span>
+            <span>{stats?.paidCount || 0} paid</span>
+            <span>•</span>
+            <span>{stats?.unpaidCount || 0} unpaid</span>
+            <span>•</span>
+            <span className="text-destructive">{stats?.overdueCount || 0} overdue</span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            ${stats?.totalOutstanding?.toLocaleString() || 0} outstanding • ${stats?.overdueAmount?.toLocaleString() || 0} overdue
           </p>
         </div>
         <div className="flex gap-2">
@@ -98,6 +129,32 @@ const BillingInvoices = () => {
         </div>
       </div>
 
+      {/* Verification Status Bar */}
+      {verification && (statusFilter === 'all' && !searchTerm) && (
+        <Card className={`p-3 border ${verification.discrepancy === 0 ? 'border-green-500/30 bg-green-500/5' : 'border-amber-500/30 bg-amber-500/5'}`}>
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-3">
+              {verification.discrepancy === 0 ? (
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+              ) : (
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+              )}
+              <span className="font-medium">
+                {verification.discrepancy === 0 ? 'Invoice count verified' : 'Invoice discrepancy detected'}
+              </span>
+            </div>
+            <div className="flex items-center gap-6 text-muted-foreground">
+              <span>Store: {verification.storeInvoiceCount.toLocaleString()}</span>
+              <span>CRM: {verification.crmInvoiceCount.toLocaleString()}</span>
+              <span>Wholesale: {verification.wholesaleOrderCount.toLocaleString()}</span>
+              <span className="text-foreground font-semibold">
+                Total: {verification.totalExpected.toLocaleString()}
+              </span>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Filters */}
       <Card className="p-4">
         <div className="flex flex-wrap gap-4">
@@ -106,11 +163,17 @@ const BillingInvoices = () => {
             <Input
               placeholder="Search by invoice number or customer name..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset page on search
+              }}
               className="pl-10"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={(v) => {
+            setStatusFilter(v);
+            setCurrentPage(1);
+          }}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -124,7 +187,10 @@ const BillingInvoices = () => {
               <SelectItem value="overdue">Overdue</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as typeof sourceFilter)}>
+          <Select value={sourceFilter} onValueChange={(v) => {
+            setSourceFilter(v as typeof sourceFilter);
+            setCurrentPage(1);
+          }}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="Source" />
             </SelectTrigger>
@@ -144,63 +210,85 @@ const BillingInvoices = () => {
           <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       ) : invoices.length > 0 ? (
-        <div className="space-y-3">
-          {invoices.map((invoice) => (
-            <Card
-              key={invoice.id}
-              className="p-6 cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate(`/billing/invoices/${invoice.id}`)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                    {getSourceIcon(invoice.source)}
+        <>
+          <div className="space-y-3">
+            {invoices.map((invoice) => (
+              <Card
+                key={invoice.id}
+                className="p-6 cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => navigate(`/billing/invoices/${invoice.id}`)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                      {getSourceIcon(invoice.source)}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-lg">{invoice.invoice_number}</h3>
+                        {invoice.brand && (
+                          <Badge variant="outline" className="text-xs">
+                            {invoice.brand}
+                          </Badge>
+                        )}
+                        {invoice.is_historical && (
+                          <Badge variant="secondary" className="text-xs">
+                            Historical
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {invoice.entity_name}
+                        <span className="mx-2">•</span>
+                        <span className="capitalize">{invoice.source}</span>
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-lg">{invoice.invoice_number}</h3>
-                      {invoice.brand && (
-                        <Badge variant="outline" className="text-xs">
-                          {invoice.brand}
-                        </Badge>
+                  <div className="flex items-center gap-6">
+                    {invoice.receipt_status && (
+                      <ReceiptStatusIndicator
+                        status={invoice.receipt_status as ReceiptStatus}
+                        sentAt={invoice.receipt_sent_at || undefined}
+                        showLabel
+                      />
+                    )}
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">Amount</p>
+                      <p className="text-xl font-bold">${invoice.total_amount.toLocaleString()}</p>
+                      {invoice.balance_due > 0 && invoice.balance_due < invoice.total_amount && (
+                        <p className="text-xs text-orange-500">
+                          Balance: ${invoice.balance_due.toLocaleString()}
+                        </p>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {invoice.entity_name}
-                      <span className="mx-2">•</span>
-                      <span className="capitalize">{invoice.source}</span>
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-6">
-                  {invoice.receipt_status && (
-                    <ReceiptStatusIndicator
-                      status={invoice.receipt_status as ReceiptStatus}
-                      sentAt={invoice.receipt_sent_at || undefined}
-                      showLabel
-                    />
-                  )}
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Amount</p>
-                    <p className="text-xl font-bold">${invoice.total_amount.toLocaleString()}</p>
-                    {invoice.balance_due > 0 && invoice.balance_due < invoice.total_amount && (
-                      <p className="text-xs text-orange-500">
-                        Balance: ${invoice.balance_due.toLocaleString()}
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">Due Date</p>
+                      <p className="font-medium">
+                        {invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : 'N/A'}
                       </p>
-                    )}
+                    </div>
+                    {getStatusBadge(invoice.status)}
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Due Date</p>
-                    <p className="font-medium">
-                      {invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : 'N/A'}
-                    </p>
-                  </div>
-                  {getStatusBadge(invoice.status)}
                 </div>
-              </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          {pagination && pagination.totalPages > 1 && (
+            <Card>
+              <DataTablePagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalCount}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                pageSizeOptions={[25, 50, 100, 200]}
+              />
             </Card>
-          ))}
-        </div>
+          )}
+        </>
       ) : (
         <Card className="p-12 text-center">
           <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
