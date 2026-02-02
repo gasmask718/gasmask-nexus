@@ -1,11 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // LIVE MAP COMMAND CENTER — Floor 4 Situational Awareness
-// Real-time tracking, route visualization, alerts & dispatch actions
+// Real-time tracking, route visualization, alerts, dispatch actions & predictions
+// Phase 3 (Execution) + Phase 3.6 (Polish) + Phase 4 (Predictive Intelligence)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import {
   useLiveRoutes,
   useLiveWorkers,
@@ -13,6 +15,11 @@ import {
   useMapState,
   useLiveMapSubscription,
 } from "@/hooks/useLiveMapData";
+import {
+  useRoutePredictions,
+  useCapacityIntelligence,
+  usePredictionsSummary,
+} from "@/hooks/useRouteIntelligence";
 import {
   MapFiltersBar,
   MapFilters,
@@ -23,12 +30,19 @@ import {
   LiveMapLegend,
   MapCanvas,
 } from "@/components/livemap";
+import { CommandControlsBar } from "@/components/livemap/CommandControlsBar";
+import { PredictionOverlay } from "@/components/livemap/PredictionOverlay";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Navigation } from "lucide-react";
 
 export default function LiveMapCommandCenter() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  
+  // Date and territory state (Phase 3.6)
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedTerritory, setSelectedTerritory] = useState<string>('all');
+  const [predictionMode, setPredictionMode] = useState<boolean>(false);
   
   // Data hooks
   const { data: routes = [], isLoading: routesLoading, refetch: refetchRoutes } = useLiveRoutes();
@@ -60,9 +74,19 @@ export default function LiveMapCommandCenter() {
     setLastRefresh(new Date());
   }, [routes, workers, alerts]);
 
-  // Filter routes based on filters
+  // Filter routes based on filters + date + territory
   const filteredRoutes = useMemo(() => {
     return routes.filter(route => {
+      // Date filter
+      const routeDate = format(new Date(route.date), 'yyyy-MM-dd');
+      const filterDate = format(selectedDate, 'yyyy-MM-dd');
+      if (routeDate !== filterDate) return false;
+      
+      // Territory filter
+      if (selectedTerritory !== 'all' && route.territory !== selectedTerritory) {
+        return false;
+      }
+      
       // Search filter
       if (filters.search) {
         const search = filters.search.toLowerCase();
@@ -87,7 +111,7 @@ export default function LiveMapCommandCenter() {
 
       return true;
     });
-  }, [routes, filters]);
+  }, [routes, filters, selectedDate, selectedTerritory]);
 
   // Filter workers based on filters
   const filteredWorkers = useMemo(() => {
@@ -125,6 +149,11 @@ export default function LiveMapCommandCenter() {
       };
     });
   }, [filteredRoutes, alerts]);
+
+  // Phase 4: Predictive Intelligence
+  const routePredictions = useRoutePredictions(enrichedRoutes, alerts.map(a => ({ route_id: a.route_id, severity: a.severity })));
+  const capacitySummary = useCapacityIntelligence(enrichedRoutes, filteredWorkers, selectedTerritory);
+  const predictionsSummary = usePredictionsSummary(routePredictions);
 
   // Stats for filters bar
   const stats = useMemo(() => ({
@@ -179,6 +208,21 @@ export default function LiveMapCommandCenter() {
             <h1 className="text-lg font-semibold">Live Map Command Center</h1>
           </div>
         </div>
+        
+        {/* Command Controls (Phase 3.6 + Phase 4) */}
+        <CommandControlsBar
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          selectedTerritory={selectedTerritory}
+          onTerritoryChange={setSelectedTerritory}
+          predictionMode={predictionMode}
+          onPredictionModeChange={setPredictionMode}
+          stats={predictionMode ? {
+            avgRiskScore: predictionsSummary.avgRiskScore,
+            routesAtRisk: predictionsSummary.routesAtRisk,
+            stopsLikelyLate: predictionsSummary.stopsLikelyLate,
+          } : undefined}
+        />
       </div>
 
       {/* Main Content */}
@@ -219,6 +263,15 @@ export default function LiveMapCommandCenter() {
             onSelectWorker={mapState.selectWorker}
             onSelectStop={mapState.selectStop}
             onSelectAlert={mapState.selectAlert}
+          />
+
+          {/* Prediction Overlay (Phase 4) */}
+          <PredictionOverlay
+            visible={predictionMode}
+            predictions={routePredictions}
+            capacitySummary={capacitySummary}
+            summary={predictionsSummary}
+            onSelectRoute={mapState.selectRoute}
           />
 
           {/* Legend */}
