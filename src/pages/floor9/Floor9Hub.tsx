@@ -18,11 +18,9 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Zap,
   TrendingUp,
   Eye,
-  Pause,
-  Play,
+  Ban,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
@@ -37,6 +35,7 @@ import {
   useActivateKillSwitch,
   useDeactivateKillSwitch,
 } from '@/hooks/useFloor9';
+import { ShadowModeBanner, ShadowModeGovernanceRules } from '@/components/floor9';
 
 const Floor9Hub = () => {
   const { data: stats, isLoading: statsLoading } = useWorkforceStats();
@@ -93,7 +92,7 @@ const Floor9Hub = () => {
                 <div>
                   <p className="text-sm font-medium">Global AI Status</p>
                   <p className={`text-xs ${isGlobalKillActive ? 'text-red-500' : 'text-green-500'}`}>
-                    {isGlobalKillActive ? 'PAUSED' : 'ACTIVE'}
+                    {isGlobalKillActive ? 'PAUSED' : 'ACTIVE (Shadow Mode)'}
                   </p>
                 </div>
                 <Switch
@@ -105,6 +104,9 @@ const Floor9Hub = () => {
             </Card>
           </div>
         </div>
+
+        {/* PHASE 9.1: Shadow Mode Banner - Always visible */}
+        <ShadowModeBanner />
 
         {/* Critical Alert Banner */}
         {isGlobalKillActive && (
@@ -120,6 +122,47 @@ const Floor9Hub = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* PHASE 9.1: Kill Switch Integrity Verification */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Kill Switch Integrity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-medium">Global Kill Switch</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {isGlobalKillActive ? 'ACTIVE — All AI paused' : 'Ready — Can pause all AI instantly'}
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-medium">Worker-Level Switches</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {activeKillSwitches.filter(k => k.scope === 'worker').length} workers paused
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-medium">Playbook-Level Switches</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {activeKillSwitches.filter(k => k.scope === 'playbook').length} playbooks paused
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Health & Status Grid */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -206,7 +249,7 @@ const Floor9Hub = () => {
         </div>
 
         {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Active AI Agents */}
           <Card className="lg:col-span-1">
             <CardHeader>
@@ -258,7 +301,7 @@ const Floor9Hub = () => {
                 <ClipboardList className="h-5 w-5" />
                 Tasks In Progress
               </CardTitle>
-              <CardDescription>Currently executing</CardDescription>
+              <CardDescription>Currently processing</CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[300px]">
@@ -326,6 +369,11 @@ const Floor9Hub = () => {
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                         {item.ai_recommendation}
                       </p>
+                      {/* PHASE 9.1: Show recommendation-only badge */}
+                      <Badge variant="outline" className="mt-2 text-yellow-500 border-yellow-500 text-xs">
+                        <Eye className="h-3 w-3 mr-1" />
+                        Recommendation Only
+                      </Badge>
                     </div>
                   )) : (
                     <div className="text-center py-8 text-muted-foreground">
@@ -342,6 +390,11 @@ const Floor9Hub = () => {
               </Link>
             </CardContent>
           </Card>
+
+          {/* Governance Rules */}
+          <div className="lg:col-span-1">
+            <ShadowModeGovernanceRules />
+          </div>
         </div>
 
         {/* Navigation Cards */}
@@ -378,7 +431,7 @@ const Floor9Hub = () => {
               <CardContent className="pt-6 flex flex-col items-center text-center">
                 <TrendingUp className="h-8 w-8 text-primary mb-2" />
                 <h3 className="font-medium">Results</h3>
-                <p className="text-xs text-muted-foreground mt-1">Performance & ROI</p>
+                <p className="text-xs text-muted-foreground mt-1">Performance & drift</p>
               </CardContent>
             </Card>
           </Link>
