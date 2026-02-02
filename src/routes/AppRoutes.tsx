@@ -707,6 +707,8 @@ export default function AppRoutes() {
         <Route path="/routes/command-center" element={<OpsCommandCenter />} />
         <Route path="/route-ops-center" element={<RouteOpsCenterEnhanced />} />
         <Route path="/ops-command-center" element={<OpsCommandCenter />} />
+        {/* Route Optimizer - Floor 4 Planning Intelligence */}
+        <Route path="/route-optimizer" element={<RouteOptimizerPage />} />
         <Route path="/routes/:id" element={<RouteDetail />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="/wholesale" element={<Wholesale />} />
