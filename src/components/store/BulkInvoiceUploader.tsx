@@ -435,6 +435,8 @@ export function BulkInvoiceUploader({ storeId, storeName, onClose }: BulkInvoice
       setUploadResult(result);
       queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
       queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
+      // CRITICAL: Invalidate unified feed to sync Floor 5
+      queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
       toast.success(`Imported ${result.inserted} invoices to ${storeName}`);
       setConfirmDialogOpen(false);
       setParsedInvoices([]);

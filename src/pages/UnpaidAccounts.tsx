@@ -111,6 +111,8 @@ export default function UnpaidAccounts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["unpaid-accounts"] });
       queryClient.invalidateQueries({ queryKey: ["payment-stats"] });
+      // CRITICAL: Invalidate unified feed to sync Floor 5
+      queryClient.invalidateQueries({ queryKey: ["unified-invoice-feed"] });
       toast.success("Payment status updated");
     },
   });

@@ -749,11 +749,19 @@ export default function AppRoutes() {
         {/* Floor 5 - Finance & Orders */}
         <Route path="/floor5" element={<Floor5Dashboard />} />
         <Route path="/floor5/dashboard" element={<Floor5Dashboard />} />
+        <Route path="/floor5/invoices" element={<BillingInvoices />} />
+        <Route path="/floor5/billing" element={<BillingCenter />} />
+        <Route path="/floor5/payroll" element={<Payroll />} />
+        <Route path="/floor5/unpaid" element={<UnpaidAccounts />} />
+        <Route path="/floor5/fulfillment" element={<WholesaleFulfillment />} />
         <Route path="/billing" element={<Billing />} />
         <Route path="/billing/center" element={<BillingCenter />} />
+        <Route path="/billing-center" element={<BillingCenter />} />
         <Route path="/billing/invoices" element={<BillingInvoices />} />
         <Route path="/billing/invoices/new" element={<BillingInvoiceNew />} />
         <Route path="/billing/invoices/:id" element={<BillingInvoiceDetail />} />
+        <Route path="/payroll" element={<Payroll />} />
+        <Route path="/unpaid-accounts" element={<UnpaidAccounts />} />
         {/* Communication Center - Redirect to modular hub */}
         <Route path="/communication-center" element={<CommunicationHubLayout />} />
 
