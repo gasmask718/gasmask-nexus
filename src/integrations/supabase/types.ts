@@ -15684,6 +15684,45 @@ export type Database = {
           },
         ]
       }
+      contacts: {
+        Row: {
+          company: string | null
+          created_at: string | null
+          created_by: string | null
+          email: string | null
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string | null
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       conversation_memories: {
         Row: {
           ai_confidence_score: number | null
@@ -15848,6 +15887,44 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: true
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_businesses: {
+        Row: {
+          assigned_ambassador: string | null
+          business_name: string
+          business_type: string | null
+          created_at: string | null
+          id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_ambassador?: string | null
+          business_name: string
+          business_type?: string | null
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_ambassador?: string | null
+          business_name?: string
+          business_type?: string | null
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_businesses_assigned_ambassador_fkey"
+            columns: ["assigned_ambassador"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -20601,6 +20678,47 @@ export type Database = {
         }
         Relationships: []
       }
+      follow_ups: {
+        Row: {
+          assigned_to: string | null
+          completed: boolean | null
+          created_at: string | null
+          due_date: string | null
+          id: string
+          note: string | null
+          related_entity_id: string | null
+          related_entity_type: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          note?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          note?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_ups_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       followup_recommendations: {
         Row: {
           created_at: string | null
@@ -23804,6 +23922,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      inventory: {
+        Row: {
+          brand_id: string | null
+          id: string
+          last_updated: string | null
+          location_id: string | null
+          product_id: string | null
+          quantity: number | null
+        }
+        Insert: {
+          brand_id?: string | null
+          id?: string
+          last_updated?: string | null
+          location_id?: string | null
+          product_id?: string | null
+          quantity?: number | null
+        }
+        Update: {
+          brand_id?: string | null
+          id?: string
+          last_updated?: string | null
+          location_id?: string | null
+          product_id?: string | null
+          quantity?: number | null
+        }
+        Relationships: []
       }
       inventory_alerts: {
         Row: {
@@ -33765,6 +33910,50 @@ export type Database = {
             columns: ["office_id"]
             isOneToOne: false
             referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_work_orders: {
+        Row: {
+          assigned_to: string | null
+          batch_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          product_id: string | null
+          quantity: number | null
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          batch_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          product_id?: string | null
+          quantity?: number | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          batch_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          product_id?: string | null
+          quantity?: number | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_work_orders_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
