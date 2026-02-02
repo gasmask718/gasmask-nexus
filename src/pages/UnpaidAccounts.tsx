@@ -31,6 +31,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DataTablePagination } from "@/components/crud/DataTablePagination";
 import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { 
   Phone, 
   MessageSquare, 
   DollarSign, 
@@ -52,9 +60,16 @@ import {
   User,
   Package,
   RefreshCw,
+  MoreHorizontal,
+  Send,
+  Pencil,
+  Flag,
+  FileDown,
+  Banknote,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useMessage } from "@/components/communication/MessageProvider";
 import { 
   useUnpaidAccounts, 
   UnpaidAccount, 
@@ -184,6 +199,7 @@ function PaymentReliabilityBadge({ score, tier }: { score?: number; tier?: strin
 export default function UnpaidAccounts() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { initiateMessage } = useMessage();
   
   // Fetch data from unified hook
   const { data, isLoading, refetch } = useUnpaidAccounts();
@@ -212,6 +228,56 @@ export default function UnpaidAccounts() {
         next.add(id);
       }
       return next;
+    });
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // COLLECTION ACTIONS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  const handleSendReminder = (account: UnpaidAccount) => {
+    if (!account.phone) {
+      toast.error("No phone number available for this account");
+      return;
+    }
+    
+    initiateMessage({
+      destinationPhone: account.phone,
+      entityType: account.entity_type as "store" | "customer" | "wholesaler",
+      entityId: account.entity_id,
+      entityName: account.entity_name,
+      channel: "sms",
+      source: "collections",
+      contextData: {
+        invoiceIds: account.invoices.map(inv => inv.id),
+        totalAmount: account.total_outstanding,
+        daysOverdue: account.max_days_overdue,
+        isVip: account.payment_reliability_tier === 'elite' || account.payment_reliability_tier === 'solid',
+      }
+    });
+  };
+
+  const handleLogPayment = (account: UnpaidAccount) => {
+    toast.info(`Log payment for ${account.entity_name}`, {
+      description: "Payment logging modal coming soon"
+    });
+  };
+
+  const handleMarkDispute = (account: UnpaidAccount) => {
+    toast.info(`Flag dispute for ${account.entity_name}`, {
+      description: "Dispute flagging coming soon"
+    });
+  };
+
+  const handleGenerateStatement = (account: UnpaidAccount) => {
+    toast.info(`Generate statement for ${account.entity_name}`, {
+      description: `${account.invoices.length} invoices totaling $${account.total_outstanding.toLocaleString()}`
+    });
+  };
+
+  const handleEscalate = (account: UnpaidAccount) => {
+    toast.warning(`Escalating ${account.entity_name} to high-risk`, {
+      description: "This will trigger enhanced collections workflow"
     });
   };
 
@@ -627,31 +693,79 @@ export default function UnpaidAccounts() {
                               <RiskBadge level={account.risk_level} />
                             </TableCell>
                             <TableCell>
-                              <div className="flex justify-center gap-1">
+                              <div className="flex justify-center items-center gap-1">
+                                {/* Quick Actions */}
                                 {account.phone && (
-                                  <Button size="icon" variant="ghost" className="h-7 w-7" title="Call">
-                                    <Phone className="h-3 w-3" />
+                                  <Button 
+                                    size="icon" 
+                                    variant="ghost" 
+                                    className="h-7 w-7" 
+                                    title="Send Reminder"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSendReminder(account);
+                                    }}
+                                  >
+                                    <Send className="h-3 w-3" />
                                   </Button>
                                 )}
-                                <Button size="icon" variant="ghost" className="h-7 w-7" title="Message">
-                                  <MessageSquare className="h-3 w-3" />
-                                </Button>
-                                <Button 
-                                  size="icon" 
-                                  variant="ghost" 
-                                  className="h-7 w-7"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (account.entity_type === 'store') {
-                                      navigate(`/store/${account.entity_id}`);
-                                    } else if (account.entity_type === 'company') {
-                                      navigate(`/companies/${account.entity_id}`);
-                                    }
-                                  }}
-                                  title="View Profile"
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                </Button>
+                                
+                                {/* More Actions Dropdown */}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                    <Button size="icon" variant="ghost" className="h-7 w-7">
+                                      <MoreHorizontal className="h-3 w-3" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-48">
+                                    <DropdownMenuLabel>Collection Actions</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    
+                                    <DropdownMenuItem onClick={() => handleSendReminder(account)} disabled={!account.phone}>
+                                      <Send className="h-4 w-4 mr-2" />
+                                      Send Reminder
+                                    </DropdownMenuItem>
+                                    
+                                    <DropdownMenuItem onClick={() => handleGenerateStatement(account)}>
+                                      <FileDown className="h-4 w-4 mr-2" />
+                                      Generate Statement
+                                    </DropdownMenuItem>
+                                    
+                                    <DropdownMenuItem onClick={() => handleLogPayment(account)}>
+                                      <Banknote className="h-4 w-4 mr-2" />
+                                      Log Payment
+                                    </DropdownMenuItem>
+                                    
+                                    <DropdownMenuSeparator />
+                                    
+                                    <DropdownMenuItem onClick={() => handleMarkDispute(account)}>
+                                      <Flag className="h-4 w-4 mr-2" />
+                                      Mark as Dispute
+                                    </DropdownMenuItem>
+                                    
+                                    {account.risk_level !== 'critical' && (
+                                      <DropdownMenuItem onClick={() => handleEscalate(account)} className="text-destructive">
+                                        <AlertTriangle className="h-4 w-4 mr-2" />
+                                        Escalate
+                                      </DropdownMenuItem>
+                                    )}
+                                    
+                                    <DropdownMenuSeparator />
+                                    
+                                    <DropdownMenuItem onClick={() => {
+                                      if (account.entity_type === 'store') {
+                                        navigate(`/store/${account.entity_id}`);
+                                      } else if (account.entity_type === 'company') {
+                                        navigate(`/companies/${account.entity_id}`);
+                                      } else if (account.entity_type === 'wholesaler') {
+                                        navigate(`/wholesalers`);
+                                      }
+                                    }}>
+                                      <ExternalLink className="h-4 w-4 mr-2" />
+                                      View Profile
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
                             </TableCell>
                           </TableRow>
