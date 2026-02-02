@@ -69,6 +69,7 @@ import LiveMap from '@/pages/LiveMap';
 import WalletPage from '@/pages/Wallet';
 import Subscriptions from '@/pages/Subscriptions';
 import DeliveryCapacity from '@/pages/DeliveryCapacity';
+import { DeliveryCapacityCommand } from '@/pages/delivery';
 import CommunicationAutomation from '@/pages/CommunicationAutomation';
 import CommunicationsAI from '@/pages/CommunicationsAI';
 import { SecurityConsole } from '@/components/security/SecurityConsole';
@@ -1046,7 +1047,8 @@ export default function AppRoutes() {
         <Route path="/delivery/route-ops" element={<DeliveryRouteOpsCenter />} />
         <Route path="/delivery/live-map" element={<LiveMapCommandCenter />} />
         <Route path="/delivery/autonomy-console" element={<AutonomyConsole />} />
-        <Route path="/delivery/capacity" element={<DeliveryCapacity />} />
+        <Route path="/delivery/capacity" element={<DeliveryCapacityCommand />} />
+        <Route path="/delivery-capacity" element={<Navigate to="/delivery/capacity" replace />} />
         <Route path="/delivery/drivers" element={<DriversManagement />} />
         <Route path="/delivery/bikers" element={<BikersManagement />} />
         <Route path="/delivery/bikers/:bikerId" element={<BikerProfile />} />
