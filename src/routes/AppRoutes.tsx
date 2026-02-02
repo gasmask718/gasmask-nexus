@@ -222,6 +222,7 @@ import BillingCenter from '@/pages/BillingCenter';
 import BillingInvoices from '@/pages/BillingInvoices';
 import BillingInvoiceNew from '@/pages/BillingInvoiceNew';
 import BillingInvoiceDetail from '@/pages/BillingInvoiceDetail';
+import { Floor5Dashboard } from '@/pages/floor5';
 
 // Portal
 import RoleRouter from '@/components/portal/RoleRouter';
@@ -745,6 +746,9 @@ export default function AppRoutes() {
         <Route path="/opportunities" element={<MasterOpportunities />} />
         <Route path="/payouts/ambassadors" element={<AmbassadorPayouts />} />
         <Route path="/payouts/bikers" element={<BikerPayouts />} />
+        {/* Floor 5 - Finance & Orders */}
+        <Route path="/floor5" element={<Floor5Dashboard />} />
+        <Route path="/floor5/dashboard" element={<Floor5Dashboard />} />
         <Route path="/billing" element={<Billing />} />
         <Route path="/billing/center" element={<BillingCenter />} />
         <Route path="/billing/invoices" element={<BillingInvoices />} />

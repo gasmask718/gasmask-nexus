@@ -228,13 +228,16 @@ export default function AppSidebar() {
             ])}
 
             {/* Floor 5 - Orders & Finance */}
-            {renderSection('floor-5', 'Floor 5: Orders & Finance', '📑', [
-              { path: '/grabba/finance', label: 'Business Ledger', emoji: '📒' },
-              { path: '/billing-center', label: 'Billing Center', emoji: '💳' },
+            {renderSection('floor-5', 'Floor 5: Finance & Orders', '💰', [
+              { path: '/floor5', label: 'Finance Dashboard', emoji: '📊' },
               { path: '/billing/invoices', label: 'Invoices', emoji: '🧾' },
+              { path: '/billing/center', label: 'Billing Center', emoji: '💳' },
               { path: '/unpaid-accounts', label: 'Unpaid Accounts', emoji: '⚠️' },
-              { path: '/grabba/personal-finance', label: 'Personal Finance', emoji: '👤' },
+              { path: '/wholesale/fulfillment', label: 'Wholesale Fulfillment', emoji: '📦' },
               { path: '/payroll', label: 'Payroll', emoji: '💵' },
+              { path: '/grabba/payroll-manager', label: 'Payroll Manager', emoji: '👔' },
+              { path: '/grabba/finance', label: 'Business Ledger', emoji: '📒' },
+              { path: '/grabba/personal-finance', label: 'Personal Finance', emoji: '👤' },
             ])}
 
             {/* Floor 6 - Production */}
