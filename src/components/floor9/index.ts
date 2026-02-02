@@ -4,3 +4,7 @@ export * from './ConfidenceDriftMonitor';
 export * from './PersistedDriftMonitor';
 export * from './AssignAITaskModal';
 export * from './TaskExecutionCard';
+export * from './ResultDetailDrawer';
+export * from './ResultsFilters';
+export * from './ResultsTimeline';
+export * from './ResultsAnalytics';
