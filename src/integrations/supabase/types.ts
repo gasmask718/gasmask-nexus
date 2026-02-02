@@ -16539,44 +16539,86 @@ export type Database = {
       deliveries: {
         Row: {
           assigned_driver_id: string | null
+          brand: string | null
           business_id: string
+          completed_at: string | null
           created_at: string
           created_by_user_id: string | null
           delivery_type: string
           dispatcher_notes: string | null
+          failed_at: string | null
+          failure_reason: string | null
           id: string
           internal_notes: string | null
+          items: Json | null
+          pod_captured_at: string | null
+          pod_notes: string | null
+          pod_photo_url: string | null
+          pod_recipient_name: string | null
+          pod_signature_url: string | null
           priority: string
+          route_id: string | null
           scheduled_date: string
+          special_instructions: string | null
           status: string
+          store_id: string | null
+          total_quantity: number | null
           updated_at: string
         }
         Insert: {
           assigned_driver_id?: string | null
+          brand?: string | null
           business_id: string
+          completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
           delivery_type?: string
           dispatcher_notes?: string | null
+          failed_at?: string | null
+          failure_reason?: string | null
           id?: string
           internal_notes?: string | null
+          items?: Json | null
+          pod_captured_at?: string | null
+          pod_notes?: string | null
+          pod_photo_url?: string | null
+          pod_recipient_name?: string | null
+          pod_signature_url?: string | null
           priority?: string
+          route_id?: string | null
           scheduled_date?: string
+          special_instructions?: string | null
           status?: string
+          store_id?: string | null
+          total_quantity?: number | null
           updated_at?: string
         }
         Update: {
           assigned_driver_id?: string | null
+          brand?: string | null
           business_id?: string
+          completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
           delivery_type?: string
           dispatcher_notes?: string | null
+          failed_at?: string | null
+          failure_reason?: string | null
           id?: string
           internal_notes?: string | null
+          items?: Json | null
+          pod_captured_at?: string | null
+          pod_notes?: string | null
+          pod_photo_url?: string | null
+          pod_recipient_name?: string | null
+          pod_signature_url?: string | null
           priority?: string
+          route_id?: string | null
           scheduled_date?: string
+          special_instructions?: string | null
           status?: string
+          store_id?: string | null
+          total_quantity?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -16599,6 +16641,20 @@ export type Database = {
             columns: ["created_by_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliveries_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliveries_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -16692,6 +16748,70 @@ export type Database = {
           utilization_rate?: number | null
         }
         Relationships: []
+      }
+      delivery_exceptions: {
+        Row: {
+          created_at: string | null
+          delivery_id: string
+          description: string
+          exception_type: string
+          id: string
+          photo_urls: string[] | null
+          reported_by: string | null
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_id: string
+          description: string
+          exception_type: string
+          id?: string
+          photo_urls?: string[] | null
+          reported_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delivery_id?: string
+          description?: string
+          exception_type?: string
+          id?: string
+          photo_urls?: string[] | null
+          reported_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_exceptions_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "deliveries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_exceptions_reported_by_fkey"
+            columns: ["reported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_exceptions_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       delivery_manifest: {
         Row: {
@@ -34477,10 +34597,14 @@ export type Database = {
           estimated_profit: number | null
           id: string
           is_optimized: boolean | null
+          locked_at: string | null
+          locked_by: string | null
           optimization_score: number | null
+          route_state: string | null
           status: string | null
           territory: string | null
           type: string
+          vehicle_type: string | null
         }
         Insert: {
           assigned_to?: string | null
@@ -34491,10 +34615,14 @@ export type Database = {
           estimated_profit?: number | null
           id?: string
           is_optimized?: boolean | null
+          locked_at?: string | null
+          locked_by?: string | null
           optimization_score?: number | null
+          route_state?: string | null
           status?: string | null
           territory?: string | null
           type: string
+          vehicle_type?: string | null
         }
         Update: {
           assigned_to?: string | null
@@ -34505,15 +34633,26 @@ export type Database = {
           estimated_profit?: number | null
           id?: string
           is_optimized?: boolean | null
+          locked_at?: string | null
+          locked_by?: string | null
           optimization_score?: number | null
+          route_state?: string | null
           status?: string | null
           territory?: string | null
           type?: string
+          vehicle_type?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "routes_assigned_to_fkey"
             columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routes_locked_by_fkey"
+            columns: ["locked_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

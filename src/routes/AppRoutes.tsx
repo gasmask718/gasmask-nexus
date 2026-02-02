@@ -417,7 +417,9 @@ import {
   RouteManagerPage,
   AllRoutesPage,
   MultiBrandDeliveryPage,
-  LiveMapPage
+  LiveMapPage,
+  RouteOpsCenter as DeliveryRouteOpsCenter,
+  MyRouteToday
 } from '@/pages/delivery';
 import DeliveryStoreProfile from '@/pages/delivery/StoreProfile';
 import DeliveryRouteDetailPage from '@/pages/delivery/DeliveryRouteDetail';
@@ -1034,7 +1036,7 @@ export default function AppRoutes() {
         <Route path="/delivery/route-manager" element={<RouteManagerPage />} />
         <Route path="/delivery/routes/all" element={<AllRoutesPage />} />
         <Route path="/delivery/route-optimizer" element={<RouteOptimizer />} />
-        <Route path="/delivery/route-ops" element={<RouteOpsCenter />} />
+        <Route path="/delivery/route-ops" element={<DeliveryRouteOpsCenter />} />
         <Route path="/delivery/live-map" element={<LiveMapPage />} />
         <Route path="/delivery/capacity" element={<DeliveryCapacity />} />
         <Route path="/delivery/drivers" element={<DriversManagement />} />
@@ -1051,6 +1053,7 @@ export default function AppRoutes() {
         <Route path="/delivery/driver/issues-reported" element={<DriverIssuesReported />} />
         <Route path="/delivery/my-route" element={<DeliveryMyRoute />} />
         <Route path="/delivery/my-route/:deliveryId" element={<DeliveryMyRoute />} />
+        <Route path="/delivery/my-route-today" element={<MyRouteToday />} />
         <Route path="/delivery/store/:storeId" element={<DeliveryStoreProfile />} />
         <Route path="/delivery/routes/:routeId" element={<DeliveryRouteDetailPage />} />
         <Route path="/delivery/heatmap" element={<DeliveryHeatmapPage />} />
