@@ -13,24 +13,52 @@ import {
   MessageSquare,
   ThumbsUp,
   ThumbsDown,
+  Shield,
+  AlertTriangle,
 } from 'lucide-react';
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useInstinctLogs, useSubmitInstinctFeedback } from '@/hooks/useFloor9';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useState } from 'react';
+import { 
+  ShadowModeBanner, 
+  ImmutableLogNotice,
+  RecommendationOnlyBadge,
+} from '@/components/floor9';
 
 const Floor9InstinctLog = () => {
   const { data: logs, isLoading } = useInstinctLogs({ limit: 50 });
   const submitFeedback = useSubmitInstinctFeedback();
   const [selectedLog, setSelectedLog] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
+  const [rejectingLogId, setRejectingLogId] = useState<string | null>(null);
+
+  // PHASE 9.1: Reject requires feedback
+  const handleRejectAttempt = (logId: string) => {
+    if (!feedback.trim()) {
+      setRejectingLogId(logId);
+      return;
+    }
+    handleFeedback(logId, 'rejected');
+  };
 
   const handleFeedback = (logId: string, status: 'accepted' | 'rejected' | 'modified') => {
-    submitFeedback.mutate({ logId, feedback, status });
+    // PHASE 9.1: Rejection requires explanation
+    if (status === 'rejected' && feedback.trim().length < 10) {
+      setRejectingLogId(logId);
+      return;
+    }
+    
+    submitFeedback.mutate({ 
+      logId, 
+      feedback: feedback || `${status.toUpperCase()} via Instinct Log at ${new Date().toISOString()}`, 
+      status 
+    });
     setSelectedLog(null);
     setFeedback('');
+    setRejectingLogId(null);
   };
 
   const getConfidenceColor = (score: number) => {
@@ -57,6 +85,9 @@ const Floor9InstinctLog = () => {
           </p>
         </div>
 
+        {/* PHASE 9.1: Shadow Mode Banner */}
+        <ShadowModeBanner />
+
         {/* Governance Notice */}
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="py-4 flex items-start gap-3">
@@ -65,7 +96,8 @@ const Floor9InstinctLog = () => {
               <p className="font-medium">AI Earns Autonomy Through Feedback</p>
               <p className="text-sm text-muted-foreground">
                 Every AI action is logged with its reasoning and confidence. Human feedback (accept/reject/modify)
-                trains the system over time. This is how AI builds trust and eventually earns more autonomy.
+                trains the system over time. <strong>Rejection requires explanation</strong> — this is training signal.
+                Logs are immutable and permanently recorded.
               </p>
             </div>
           </CardContent>
@@ -122,8 +154,14 @@ const Floor9InstinctLog = () => {
         {/* Logs */}
         <Card>
           <CardHeader>
-            <CardTitle>Decision Log</CardTitle>
-            <CardDescription>AI reasoning and human feedback history</CardDescription>
+            <CardTitle className="flex items-center justify-between">
+              <span>Decision Log</span>
+              <Badge variant="outline" className="text-yellow-500 border-yellow-500">
+                <Shield className="h-3 w-3 mr-1" />
+                Immutable Records
+              </Badge>
+            </CardTitle>
+            <CardDescription>AI reasoning and human feedback history — all entries are permanent</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -142,7 +180,9 @@ const Floor9InstinctLog = () => {
                     }`}>
                       <CardContent className="pt-4">
                         <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {/* PHASE 9.1: Always show recommendation badge for pending */}
+                            {log.feedback_status === 'pending' && <RecommendationOnlyBadge />}
                             <Badge variant="outline">{log.action_type}</Badge>
                             {log.worker && (
                               <Badge variant="secondary">{log.worker.worker_name}</Badge>
@@ -166,13 +206,16 @@ const Floor9InstinctLog = () => {
                         </div>
 
                         <div className="p-3 bg-muted rounded-lg mb-3">
-                          <p className="text-sm font-medium mb-1">Reasoning:</p>
+                          <p className="text-sm font-medium mb-1 flex items-center gap-2">
+                            <Eye className="h-4 w-4" />
+                            Reasoning (Explainability):
+                          </p>
                           <p className="text-sm text-muted-foreground">{log.reasoning}</p>
                         </div>
 
                         {log.decision_path && log.decision_path.length > 0 && (
                           <div className="p-3 bg-muted/50 rounded-lg mb-3">
-                            <p className="text-sm font-medium mb-2">Decision Path:</p>
+                            <p className="text-sm font-medium mb-2">Decision Path (Audit Trail):</p>
                             <div className="space-y-1">
                               {log.decision_path.map((step, idx) => (
                                 <div key={idx} className="flex items-center gap-2 text-xs">
@@ -189,17 +232,57 @@ const Floor9InstinctLog = () => {
 
                         {log.human_feedback && (
                           <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg mb-3">
-                            <p className="text-sm font-medium mb-1">Human Feedback:</p>
+                            <p className="text-sm font-medium mb-1">Human Feedback (Training Signal):</p>
                             <p className="text-sm">{log.human_feedback}</p>
                           </div>
                         )}
 
-                        {log.feedback_status === 'pending' && (
-                          <div className="flex gap-2 justify-end">
+                        {/* PHASE 9.1: Inline reject with required feedback */}
+                        {rejectingLogId === log.id && (
+                          <div className="p-4 border border-red-500/30 rounded-lg mb-3 bg-red-500/5">
+                            <div className="flex items-center gap-2 mb-2">
+                              <AlertTriangle className="h-4 w-4 text-red-500" />
+                              <p className="text-sm font-medium text-red-500">
+                                Rejection Feedback Required
+                              </p>
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-2">
+                              Explain why this AI decision was wrong (min 10 characters). This feedback trains the AI.
+                            </p>
+                            <Textarea
+                              placeholder="Why is this AI reasoning incorrect..."
+                              value={feedback}
+                              onChange={(e) => setFeedback(e.target.value)}
+                              rows={3}
+                              className="mb-3"
+                            />
+                            <div className="flex gap-2 justify-end">
+                              <Button variant="outline" size="sm" onClick={() => {
+                                setRejectingLogId(null);
+                                setFeedback('');
+                              }}>
+                                Cancel
+                              </Button>
+                              <Button 
+                                variant="destructive" 
+                                size="sm"
+                                disabled={feedback.trim().length < 10 || submitFeedback.isPending}
+                                onClick={() => handleFeedback(log.id, 'rejected')}
+                              >
+                                Submit Rejection
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        <ImmutableLogNotice />
+
+                        {log.feedback_status === 'pending' && rejectingLogId !== log.id && (
+                          <div className="flex gap-2 justify-end mt-3">
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleFeedback(log.id, 'rejected')}
+                              onClick={() => handleRejectAttempt(log.id)}
                               disabled={submitFeedback.isPending}
                             >
                               <XCircle className="h-4 w-4 mr-1" />
@@ -215,6 +298,9 @@ const Floor9InstinctLog = () => {
                               <DialogContent>
                                 <DialogHeader>
                                   <DialogTitle>Provide Feedback</DialogTitle>
+                                  <DialogDescription>
+                                    Your feedback is used to improve AI reasoning. Be specific about what was good or could be improved.
+                                  </DialogDescription>
                                 </DialogHeader>
                                 <Textarea
                                   placeholder="Enter your feedback on this AI decision..."

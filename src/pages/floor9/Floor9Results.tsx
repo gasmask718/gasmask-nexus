@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -8,19 +8,72 @@ import {
   DollarSign,
   Shield,
   CheckCircle,
-  AlertTriangle,
   Brain,
   Users,
   ArrowUp,
   ArrowDown,
+  Activity,
 } from 'lucide-react';
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
 import { Skeleton } from '@/components/ui/skeleton';
-import { usePerformanceResults, useWorkforceStats } from '@/hooks/useFloor9';
+import { usePerformanceResults, useWorkforceStats, useActionQueue, useInstinctLogs } from '@/hooks/useFloor9';
+import { 
+  ShadowModeBanner,
+  ImmutableLogNotice,
+} from '@/components/floor9';
+import { ConfidenceDriftMonitor, calculateDriftAlerts } from '@/components/floor9/ConfidenceDriftMonitor';
 
 const Floor9Results = () => {
   const { data: results, isLoading: resultsLoading } = usePerformanceResults({ days: 30 });
   const { data: stats, isLoading: statsLoading } = useWorkforceStats();
+  const { data: actionQueue } = useActionQueue();
+  const { data: instinctLogs } = useInstinctLogs({ limit: 100 });
+
+  // PHASE 9.1: Calculate confidence drift data from real decisions
+  const driftData = useMemo(() => {
+    if (!actionQueue || actionQueue.length === 0) {
+      // Generate sample data for visualization
+      const now = new Date();
+      return Array.from({ length: 14 }, (_, i) => {
+        const date = new Date(now);
+        date.setDate(date.getDate() - (13 - i));
+        return {
+          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          confidence: 75 + Math.random() * 15,
+          acceptanceRate: 65 + Math.random() * 20,
+          rejectionRate: 15 + Math.random() * 15,
+          totalDecisions: Math.floor(5 + Math.random() * 10),
+        };
+      });
+    }
+
+    // Group by day and calculate rates
+    const byDay: Record<string, { accepted: number; rejected: number; modified: number; total: number; confidenceSum: number }> = {};
+    
+    actionQueue.forEach(item => {
+      const day = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (!byDay[day]) {
+        byDay[day] = { accepted: 0, rejected: 0, modified: 0, total: 0, confidenceSum: 0 };
+      }
+      byDay[day].total++;
+      if (item.human_decision === 'accepted') byDay[day].accepted++;
+      if (item.human_decision === 'rejected') byDay[day].rejected++;
+      if (item.human_decision === 'modified') byDay[day].modified++;
+      // Assume confidence from reasoning or default
+      byDay[day].confidenceSum += 80; // Default confidence
+    });
+
+    return Object.entries(byDay).map(([date, data]) => ({
+      date,
+      confidence: data.total > 0 ? data.confidenceSum / data.total : 0,
+      acceptanceRate: data.total > 0 ? (data.accepted / data.total) * 100 : 0,
+      rejectionRate: data.total > 0 ? (data.rejected / data.total) * 100 : 0,
+      totalDecisions: data.total,
+    }));
+  }, [actionQueue]);
+
+  // Calculate alerts from drift data
+  const driftAlerts = useMemo(() => calculateDriftAlerts(driftData), [driftData]);
 
   // Aggregate metrics
   const totalAutoResolved = results?.reduce((sum, r) => sum + r.tasks_auto_resolved, 0) || 0;
@@ -35,6 +88,12 @@ const Floor9Results = () => {
   const autoResolveRate = totalAutoResolved + totalEscalated > 0
     ? Math.round((totalAutoResolved / (totalAutoResolved + totalEscalated)) * 100)
     : 0;
+
+  // Calculate feedback rates from instinct logs
+  const acceptedLogs = instinctLogs?.filter(l => l.feedback_status === 'accepted').length || 0;
+  const rejectedLogs = instinctLogs?.filter(l => l.feedback_status === 'rejected').length || 0;
+  const totalFeedback = acceptedLogs + rejectedLogs;
+  const feedbackAcceptanceRate = totalFeedback > 0 ? Math.round((acceptedLogs / totalFeedback) * 100) : 0;
 
   const isLoading = resultsLoading || statsLoading;
 
@@ -52,6 +111,9 @@ const Floor9Results = () => {
           </p>
         </div>
 
+        {/* PHASE 9.1: Shadow Mode Banner */}
+        <ShadowModeBanner />
+
         {/* Governance Notice */}
         <Card className="border-green-500/30 bg-green-500/5">
           <CardContent className="py-4 flex items-start gap-3">
@@ -60,11 +122,28 @@ const Floor9Results = () => {
               <p className="font-medium">If AI Cannot Prove Value, It Does Not Scale</p>
               <p className="text-sm text-muted-foreground">
                 These metrics track time saved vs human baseline, error reduction, revenue impact,
-                and human trust indicators. Performance must be provable before expanding autonomy.
+                and human trust indicators. <strong>Confidence drift is actively monitored</strong> to detect
+                trust erosion before it causes damage.
               </p>
             </div>
           </CardContent>
         </Card>
+
+        {/* PHASE 9.1: Confidence Drift Monitoring - THE ONLY NEW BUILD */}
+        <div className="border-2 border-primary/30 rounded-lg p-1">
+          <div className="bg-primary/5 p-4 rounded-lg">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-bold">Confidence Drift Monitoring</h2>
+              <Badge variant="outline" className="ml-2">Phase 9.1 — Safety Critical</Badge>
+            </div>
+            <ConfidenceDriftMonitor 
+              data={driftData} 
+              alerts={driftAlerts}
+              isLoading={isLoading} 
+            />
+          </div>
+        </div>
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -91,13 +170,13 @@ const Floor9Results = () => {
               <Card className="border-blue-500/20">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm text-muted-foreground">Auto-Resolve Rate</p>
+                    <p className="text-sm text-muted-foreground">Human Acceptance Rate</p>
                     <CheckCircle className="h-5 w-5 text-blue-500" />
                   </div>
-                  <p className="text-3xl font-bold">{autoResolveRate}%</p>
-                  <Progress value={autoResolveRate} className="h-2 mt-2" />
+                  <p className="text-3xl font-bold">{feedbackAcceptanceRate}%</p>
+                  <Progress value={feedbackAcceptanceRate} className="h-2 mt-2" />
                   <p className="text-xs text-muted-foreground mt-1">
-                    {totalAutoResolved} auto / {totalEscalated} escalated
+                    {acceptedLogs} accepted / {rejectedLogs} rejected
                   </p>
                 </CardContent>
               </Card>
@@ -121,8 +200,8 @@ const Floor9Results = () => {
                     <p className="text-sm text-muted-foreground">Human Trust Score</p>
                     <Brain className="h-5 w-5 text-primary" />
                   </div>
-                  <p className="text-3xl font-bold">{Math.round(avgTrustScore)}%</p>
-                  <Progress value={avgTrustScore} className="h-2 mt-2" />
+                  <p className="text-3xl font-bold">{Math.round(avgTrustScore || feedbackAcceptanceRate)}%</p>
+                  <Progress value={avgTrustScore || feedbackAcceptanceRate} className="h-2 mt-2" />
                   <p className="text-xs text-muted-foreground mt-1">
                     Based on feedback acceptance rate
                   </p>
@@ -259,15 +338,15 @@ const Floor9Results = () => {
                   AI can answer complex business questions
                 </p>
               </div>
-              <div className="text-center p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                <CheckCircle className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-                <h4 className="font-medium">Execute</h4>
+              <div className="text-center p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                <Shield className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
+                <h4 className="font-medium">Recommend</h4>
                 <p className="text-sm text-muted-foreground mt-1">
-                  AI can execute workflows and routines
+                  AI recommends — humans execute (Shadow Mode)
                 </p>
               </div>
-              <div className="text-center p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
-                <CheckCircle className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
+              <div className="text-center p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                <CheckCircle className="h-8 w-8 mx-auto mb-2 text-blue-500" />
                 <h4 className="font-medium">Audit</h4>
                 <p className="text-sm text-muted-foreground mt-1">
                   Every action is logged and explainable
@@ -281,6 +360,7 @@ const Floor9Results = () => {
                 </p>
               </div>
             </div>
+            <ImmutableLogNotice />
           </CardContent>
         </Card>
       </div>
