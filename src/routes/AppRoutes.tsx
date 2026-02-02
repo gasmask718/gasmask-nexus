@@ -470,6 +470,7 @@ import AIOperationsDashboard from '@/pages/grabba/ai-operations/AIOperationsDash
 import AITasks from '@/pages/grabba/ai-operations/AITasks';
 import AIPredictions from '@/pages/grabba/ai-operations/AIPredictions';
 import AIAlerts from '@/pages/grabba/ai-operations/AIAlerts';
+import { Floor9Hub, Floor9Playbooks, Floor9ActionQueue, Floor9InstinctLog, Floor9Results } from '@/pages/floor9';
 import FinancialDashboard from '@/pages/grabba/FinancialDashboard';
 import PersonalFinance from '@/pages/grabba/PersonalFinance';
 import PayrollManager from '@/pages/grabba/PayrollManager';
@@ -1777,6 +1778,42 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee']} showLocked>
             <Layout><GrabbaLayout><AIAlerts /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      {/* Floor 9 - Enterprise AI Operations */}
+      <Route path="/grabba/floor9" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']} showLocked>
+            <Layout><GrabbaLayout><Floor9Hub /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/floor9/playbooks" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']} showLocked>
+            <Layout><GrabbaLayout><Floor9Playbooks /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/floor9/action-queue" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']} showLocked>
+            <Layout><GrabbaLayout><Floor9ActionQueue /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/floor9/instinct-log" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']} showLocked>
+            <Layout><GrabbaLayout><Floor9InstinctLog /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/floor9/results" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']} showLocked>
+            <Layout><GrabbaLayout><Floor9Results /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
