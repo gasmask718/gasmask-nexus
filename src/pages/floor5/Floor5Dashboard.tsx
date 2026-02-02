@@ -1,21 +1,24 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { 
-  DollarSign, TrendingUp, AlertTriangle, FileText, Plus, 
-  ArrowRight, Clock, CheckCircle, XCircle, Users, 
-  CreditCard, Receipt, Wallet, BarChart3
+  DollarSign, AlertTriangle, FileText, Plus, 
+  ArrowRight, Clock, CheckCircle, Users, 
+  CreditCard, Receipt, BarChart3
 } from 'lucide-react';
-import { useUnifiedInvoiceFeed, useARAgingBuckets, UnifiedInvoice } from '@/hooks/useUnifiedInvoiceFeed';
+import { useUnifiedInvoiceFeed, useARAgingBuckets } from '@/hooks/useUnifiedInvoiceFeed';
+import { useInvoiceSystemCounts } from '@/hooks/usePaginatedInvoiceFeed';
 import { format, differenceInDays } from 'date-fns';
 
 export default function Floor5Dashboard() {
   const navigate = useNavigate();
   const { data, isLoading } = useUnifiedInvoiceFeed();
   const agingBuckets = useARAgingBuckets();
+  
+  // Get TRUE system-wide counts (bypasses 1000 limit)
+  const { data: systemCounts } = useInvoiceSystemCounts();
 
   const stats = data?.stats;
   const recentInvoices = data?.invoices?.slice(0, 8) || [];
@@ -24,6 +27,9 @@ export default function Floor5Dashboard() {
     if (!inv.due_date) return false;
     return new Date(inv.due_date) < new Date();
   }).slice(0, 5) || [];
+  
+  // Use TRUE count from system counts
+  const totalInvoiceCount = systemCounts?.totalSystemWide || stats?.invoiceCount || 0;
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -118,12 +124,12 @@ export default function Floor5Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Invoices</p>
-                <p className="text-2xl font-bold">{stats?.invoiceCount || 0}</p>
+                <p className="text-2xl font-bold">{totalInvoiceCount.toLocaleString()}</p>
               </div>
               <FileText className="h-8 w-8 text-primary opacity-50" />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              All time invoice count
+              {systemCounts ? `${systemCounts.storeInvoiceCount} store • ${systemCounts.crmInvoiceCount} CRM • ${systemCounts.wholesaleOrderCount} wholesale` : 'All time invoice count'}
             </p>
           </CardContent>
         </Card>
