@@ -298,19 +298,78 @@ export default function GrabbaFinance() {
                 <div className="text-center">
                   <p className="text-2xl font-bold text-amber-500">{totalOrders.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">Total Orders</p>
-                  {/* Brand breakdown tooltip/chips */}
-                  {Object.keys(brandBreakdown).length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1 justify-center">
-                      {Object.entries(brandBreakdown).slice(0, 4).map(([brand, data]) => (
-                        <Badge key={brand} variant="outline" className="text-[10px] px-1 py-0">
-                          {brand}: {data.count}
-                        </Badge>
-                      ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Company-Level Revenue Breakdown */}
+        <Card className="border-border/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              Revenue by Brand (System-Wide)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(brandBreakdown).length > 0 ? (
+                Object.entries(brandBreakdown).map(([brand, data]) => (
+                  <div key={brand} className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{brand}</p>
+                    <div className="mt-2 space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Billed:</span>
+                        <span className="font-medium">${data.billed.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Paid:</span>
+                        <span className="text-green-500">${data.paid.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Outstanding:</span>
+                        <span className="text-red-500">${data.outstanding.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm pt-1 border-t border-border/50">
+                        <span className="text-muted-foreground">Orders:</span>
+                        <Badge variant="outline" className="text-xs">{data.count}</Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-4 text-center py-4 text-muted-foreground">
+                  No brand breakdown available
+                </div>
+              )}
+            </div>
+            {/* Source breakdown */}
+            {systemTotals?.by_source && (
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <p className="text-xs text-muted-foreground mb-2">By Invoice Source</p>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center gap-2">
+                    <Store className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm">Store: ${systemTotals.by_source.store.billed.toLocaleString()} ({systemTotals.by_source.store.count})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-purple-500" />
+                    <span className="text-sm">CRM: ${systemTotals.by_source.crm.billed.toLocaleString()} ({systemTotals.by_source.crm.count})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Package className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm">Wholesale: ${systemTotals.by_source.wholesale.billed.toLocaleString()} ({systemTotals.by_source.wholesale.count})</span>
+                  </div>
+                  {systemTotals.by_source.legacy.count > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm">Legacy: ${systemTotals.by_source.legacy.billed.toLocaleString()} ({systemTotals.by_source.legacy.count})</span>
                     </div>
                   )}
                 </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
