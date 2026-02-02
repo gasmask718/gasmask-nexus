@@ -1685,6 +1685,14 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+      {/* Multi-Brand Delivery canonical route */}
+      <Route path="/grabba/multi-brand-delivery" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee', 'driver', 'biker']}>
+            <Layout><GrabbaLayout><MultiBrandDelivery /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
 
       {/* Floor 5 — Finance & Orders */}
       <Route path="/grabba/finance" element={
