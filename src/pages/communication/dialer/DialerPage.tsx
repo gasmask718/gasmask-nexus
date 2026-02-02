@@ -2,12 +2,18 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ManualCallingPanel } from "@/components/communication/ManualCallingPanel";
+import { QuickDialModal } from "@/components/communication/QuickDialModal";
 import { toast } from "sonner";
 import { useOutboundCall } from "@/hooks/useOutboundCall";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Phone } from "lucide-react";
 
 export default function DialerPage() {
   const [selectedBusinessId] = useState<string>("all");
   const [isCalling, setIsCalling] = useState(false);
+  const [quickDialValue, setQuickDialValue] = useState("");
+  const [isQuickDialModalOpen, setIsQuickDialModalOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // --- 1. Fetch Stores ---
@@ -48,7 +54,6 @@ export default function DialerPage() {
         return [];
       }
 
-      // Map to expected interface
       return (data || []).map((call) => ({
         id: call.id,
         store_id: call.store_id || "",
@@ -145,13 +150,11 @@ export default function DialerPage() {
   const { initiateCall, confirmCall } = useOutboundCall();
 
   const handleCall = async (storeId: string, phone: string, storeName?: string) => {
-    // 1. Set local state
     setCurrentCall({ storeId, phone });
     setIsCalling(true);
     toast.info("Connecting agent...");
 
     try {
-      // 2. Prepare outbound call params and initiate
       initiateCall({
         destinationPhone: phone,
         entityType: "store",
@@ -159,17 +162,36 @@ export default function DialerPage() {
         entityName: storeName,
       });
 
-      // 3. Confirm and place the call immediately
       await confirmCall();
-
       toast.success("Calling! Please pick up your phone.");
-
     } catch (error: unknown) {
       console.error("Dialing error:", error);
       const msg = error instanceof Error ? error.message : String(error);
       toast.error(`Call failed: ${msg}`);
-      // Optional: Clear current call on failure
       setCurrentCall(null);
+    } finally {
+      setIsCalling(false);
+    }
+  };
+
+  // --- Handler: Quick Dial Custom Number ---
+  const handleQuickDialCall = async (phone: string, name?: string) => {
+    setIsCalling(true);
+    toast.info("Connecting agent...");
+
+    try {
+      initiateCall({
+        destinationPhone: phone,
+        entityType: "other",
+        entityName: name || "Quick Dial",
+      });
+
+      await confirmCall();
+      toast.success("Calling! Please pick up your phone.");
+    } catch (error: unknown) {
+      console.error("Dialing error:", error);
+      const msg = error instanceof Error ? error.message : String(error);
+      toast.error(`Call failed: ${msg}`);
     } finally {
       setIsCalling(false);
     }
@@ -184,7 +206,6 @@ export default function DialerPage() {
         outcome,
         notes,
       });
-      // Clear current call after logging
       setCurrentCall(null);
     } else {
       toast.error("No active call to log");
@@ -196,27 +217,41 @@ export default function DialerPage() {
     scheduleFollowUpMutation.mutate({ storeId, date });
   };
 
+  // --- Handler: Open Quick Dial Modal ---
+  const handleOpenQuickDial = () => {
+    setIsQuickDialModalOpen(true);
+  };
+
   return (
     <div className="w-full min-h-full space-y-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Dialer</h2>
         {isCalling && (
-          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm animate-pulse font-medium">
+          <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm animate-pulse font-medium">
             Dialing Agent...
           </span>
         )}
       </div>
 
-      {/* Quick Dial (choose a store from the list to call or use quick input in the header) */}
+      {/* Quick Dial */}
       <div className="flex items-center gap-2 mb-4">
-        <input
-          className="w-64 border rounded px-3 py-2"
+        <Input
+          className="w-64 font-mono"
           placeholder="Quick dial (e.g. +18484004179)"
-          value={""}
-          onChange={() => {}}
-          disabled
+          value={quickDialValue}
+          onChange={(e) => setQuickDialValue(e.target.value.replace(/[^\d+]/g, ""))}
         />
-        <div className="text-sm text-muted-foreground">Select a store to call or use the dialer queue</div>
+        <Button
+          onClick={handleOpenQuickDial}
+          variant="default"
+          disabled={isCalling}
+        >
+          <Phone className="h-4 w-4 mr-2" />
+          Dial
+        </Button>
+        <div className="text-sm text-muted-foreground">
+          or select a store below to call
+        </div>
       </div>
 
       <ManualCallingPanel
@@ -226,6 +261,14 @@ export default function DialerPage() {
         onLogOutcome={handleLogOutcome}
         onScheduleFollowUp={handleScheduleFollowUp}
         isLoading={storesLoading}
+      />
+
+      {/* Quick Dial Modal */}
+      <QuickDialModal
+        isOpen={isQuickDialModalOpen}
+        onClose={() => setIsQuickDialModalOpen(false)}
+        onCall={handleQuickDialCall}
+        initialPhone={quickDialValue}
       />
     </div>
   );
