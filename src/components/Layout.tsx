@@ -139,6 +139,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/security/devices', label: 'Device Management', icon: Lock },
       { path: '/security/sessions', label: 'Active Sessions', icon: Key },
       { path: '/security/audit', label: 'Audit Logs', icon: FileText },
+      { path: '/admin/qa-command-center', label: 'QA Command Center', icon: ClipboardList, adminOnly: true },
     ],
   },
   grabbaSkyscraper: [
