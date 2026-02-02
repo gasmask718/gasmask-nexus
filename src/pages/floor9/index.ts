@@ -5,3 +5,4 @@ export { default as Floor9ActionQueue } from './Floor9ActionQueue';
 export { default as Floor9InstinctLog } from './Floor9InstinctLog';
 export { default as Floor9Results } from './Floor9Results';
 export { default as Floor9Predictions } from './Floor9Predictions';
+export { default as Floor9Alerts } from './Floor9Alerts';
