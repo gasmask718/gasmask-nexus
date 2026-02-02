@@ -16707,6 +16707,137 @@ export type Database = {
           },
         ]
       }
+      delivery_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          context: Json | null
+          created_at: string | null
+          delivery_id: string | null
+          description: string | null
+          escalated_at: string | null
+          escalated_to: string | null
+          escalation_level: number | null
+          exception_id: string | null
+          id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          route_id: string | null
+          severity: string
+          sla_breached: boolean | null
+          sla_breached_at: string | null
+          sla_deadline: string | null
+          status: string | null
+          stop_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          context?: Json | null
+          created_at?: string | null
+          delivery_id?: string | null
+          description?: string | null
+          escalated_at?: string | null
+          escalated_to?: string | null
+          escalation_level?: number | null
+          exception_id?: string | null
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          route_id?: string | null
+          severity?: string
+          sla_breached?: boolean | null
+          sla_breached_at?: string | null
+          sla_deadline?: string | null
+          status?: string | null
+          stop_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          context?: Json | null
+          created_at?: string | null
+          delivery_id?: string | null
+          description?: string | null
+          escalated_at?: string | null
+          escalated_to?: string | null
+          escalation_level?: number | null
+          exception_id?: string | null
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          route_id?: string | null
+          severity?: string
+          sla_breached?: boolean | null
+          sla_breached_at?: string | null
+          sla_deadline?: string | null
+          status?: string | null
+          stop_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_alerts_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_alerts_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "deliveries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_alerts_escalated_to_fkey"
+            columns: ["escalated_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_alerts_exception_id_fkey"
+            columns: ["exception_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_exceptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_alerts_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_alerts_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_alerts_stop_id_fkey"
+            columns: ["stop_id"]
+            isOneToOne: false
+            referencedRelation: "route_stops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_capacity_metrics: {
         Row: {
           biker_count: number
@@ -17011,6 +17142,116 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispatch_interventions: {
+        Row: {
+          after_state: Json | null
+          approved_at: string | null
+          approved_by: string | null
+          before_state: Json | null
+          created_at: string | null
+          delivery_id: string | null
+          escalation_level: number | null
+          id: string
+          intervention_type: string
+          justification: string | null
+          new_assignee: string | null
+          original_assignee: string | null
+          performed_by: string
+          reason: string
+          requires_approval: boolean | null
+          route_id: string | null
+          stop_id: string | null
+        }
+        Insert: {
+          after_state?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          before_state?: Json | null
+          created_at?: string | null
+          delivery_id?: string | null
+          escalation_level?: number | null
+          id?: string
+          intervention_type: string
+          justification?: string | null
+          new_assignee?: string | null
+          original_assignee?: string | null
+          performed_by: string
+          reason: string
+          requires_approval?: boolean | null
+          route_id?: string | null
+          stop_id?: string | null
+        }
+        Update: {
+          after_state?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          before_state?: Json | null
+          created_at?: string | null
+          delivery_id?: string | null
+          escalation_level?: number | null
+          id?: string
+          intervention_type?: string
+          justification?: string | null
+          new_assignee?: string | null
+          original_assignee?: string | null
+          performed_by?: string
+          reason?: string
+          requires_approval?: boolean | null
+          route_id?: string | null
+          stop_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_interventions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_interventions_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "deliveries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_interventions_new_assignee_fkey"
+            columns: ["new_assignee"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_interventions_original_assignee_fkey"
+            columns: ["original_assignee"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_interventions_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_interventions_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_interventions_stop_id_fkey"
+            columns: ["stop_id"]
+            isOneToOne: false
+            referencedRelation: "route_stops"
             referencedColumns: ["id"]
           },
         ]
@@ -34228,6 +34469,117 @@ export type Database = {
         }
         Relationships: []
       }
+      route_analytics: {
+        Row: {
+          actual_distance_km: number | null
+          actual_duration_minutes: number | null
+          avg_stop_time_minutes: number | null
+          completed_stops: number | null
+          computed_at: string | null
+          critical_exceptions: number | null
+          delivery_success_rate: number | null
+          distance_variance_km: number | null
+          duration_variance_minutes: number | null
+          early_stops: number | null
+          exception_density: number | null
+          failed_stops: number | null
+          id: string
+          late_stops: number | null
+          max_stop_time_minutes: number | null
+          min_stop_time_minutes: number | null
+          on_time_stops: number | null
+          performance_score: number | null
+          planned_distance_km: number | null
+          planned_duration_minutes: number | null
+          planned_stops: number | null
+          pod_capture_rate: number | null
+          route_completed_at: string | null
+          route_grade: string | null
+          route_id: string
+          route_started_at: string | null
+          skipped_stops: number | null
+          total_exceptions: number | null
+          worker_id: string
+        }
+        Insert: {
+          actual_distance_km?: number | null
+          actual_duration_minutes?: number | null
+          avg_stop_time_minutes?: number | null
+          completed_stops?: number | null
+          computed_at?: string | null
+          critical_exceptions?: number | null
+          delivery_success_rate?: number | null
+          distance_variance_km?: number | null
+          duration_variance_minutes?: number | null
+          early_stops?: number | null
+          exception_density?: number | null
+          failed_stops?: number | null
+          id?: string
+          late_stops?: number | null
+          max_stop_time_minutes?: number | null
+          min_stop_time_minutes?: number | null
+          on_time_stops?: number | null
+          performance_score?: number | null
+          planned_distance_km?: number | null
+          planned_duration_minutes?: number | null
+          planned_stops?: number | null
+          pod_capture_rate?: number | null
+          route_completed_at?: string | null
+          route_grade?: string | null
+          route_id: string
+          route_started_at?: string | null
+          skipped_stops?: number | null
+          total_exceptions?: number | null
+          worker_id: string
+        }
+        Update: {
+          actual_distance_km?: number | null
+          actual_duration_minutes?: number | null
+          avg_stop_time_minutes?: number | null
+          completed_stops?: number | null
+          computed_at?: string | null
+          critical_exceptions?: number | null
+          delivery_success_rate?: number | null
+          distance_variance_km?: number | null
+          duration_variance_minutes?: number | null
+          early_stops?: number | null
+          exception_density?: number | null
+          failed_stops?: number | null
+          id?: string
+          late_stops?: number | null
+          max_stop_time_minutes?: number | null
+          min_stop_time_minutes?: number | null
+          on_time_stops?: number | null
+          performance_score?: number | null
+          planned_distance_km?: number | null
+          planned_duration_minutes?: number | null
+          planned_stops?: number | null
+          pod_capture_rate?: number | null
+          route_completed_at?: string | null
+          route_grade?: string | null
+          route_id?: string
+          route_started_at?: string | null
+          skipped_stops?: number | null
+          total_exceptions?: number | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_analytics_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: true
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_analytics_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       route_checkins: {
         Row: {
           checkin_time: string
@@ -34400,34 +34752,52 @@ export type Database = {
       }
       route_stops: {
         Row: {
+          actual_arrival: string | null
+          actual_departure: string | null
+          actual_duration_minutes: number | null
           created_at: string | null
           id: string
+          notes: string | null
           notes_to_worker: string | null
           planned_arrival_time: string | null
           planned_order: number
           route_id: string | null
           status: string | null
           store_id: string | null
+          updated_at: string | null
+          was_on_time: boolean | null
         }
         Insert: {
+          actual_arrival?: string | null
+          actual_departure?: string | null
+          actual_duration_minutes?: number | null
           created_at?: string | null
           id?: string
+          notes?: string | null
           notes_to_worker?: string | null
           planned_arrival_time?: string | null
           planned_order: number
           route_id?: string | null
           status?: string | null
           store_id?: string | null
+          updated_at?: string | null
+          was_on_time?: boolean | null
         }
         Update: {
+          actual_arrival?: string | null
+          actual_departure?: string | null
+          actual_duration_minutes?: number | null
           created_at?: string | null
           id?: string
+          notes?: string | null
           notes_to_worker?: string | null
           planned_arrival_time?: string | null
           planned_order?: number
           route_id?: string | null
           status?: string | null
           store_id?: string | null
+          updated_at?: string | null
+          was_on_time?: boolean | null
         }
         Relationships: [
           {
@@ -34589,7 +34959,10 @@ export type Database = {
       }
       routes: {
         Row: {
+          actual_distance_km: number | null
+          actual_duration_minutes: number | null
           assigned_to: string | null
+          completed_at: string | null
           created_at: string | null
           date: string
           estimated_distance_km: number | null
@@ -34601,13 +34974,17 @@ export type Database = {
           locked_by: string | null
           optimization_score: number | null
           route_state: string | null
+          started_at: string | null
           status: string | null
           territory: string | null
           type: string
           vehicle_type: string | null
         }
         Insert: {
+          actual_distance_km?: number | null
+          actual_duration_minutes?: number | null
           assigned_to?: string | null
+          completed_at?: string | null
           created_at?: string | null
           date: string
           estimated_distance_km?: number | null
@@ -34619,13 +34996,17 @@ export type Database = {
           locked_by?: string | null
           optimization_score?: number | null
           route_state?: string | null
+          started_at?: string | null
           status?: string | null
           territory?: string | null
           type: string
           vehicle_type?: string | null
         }
         Update: {
+          actual_distance_km?: number | null
+          actual_duration_minutes?: number | null
           assigned_to?: string | null
+          completed_at?: string | null
           created_at?: string | null
           date?: string
           estimated_distance_km?: number | null
@@ -34637,6 +35018,7 @@ export type Database = {
           locked_by?: string | null
           optimization_score?: number | null
           route_state?: string | null
+          started_at?: string | null
           status?: string | null
           territory?: string | null
           type?: string
@@ -44845,6 +45227,98 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      worker_performance: {
+        Row: {
+          autonomy_level: string | null
+          autonomy_promoted_at: string | null
+          avg_route_duration_minutes: number | null
+          avg_stop_time_minutes: number | null
+          completion_rate: number | null
+          consistency_score: number | null
+          created_at: string | null
+          exception_rate: number | null
+          id: string
+          last_coaching_at: string | null
+          on_time_rate: number | null
+          reliability_score: number | null
+          requires_training: boolean | null
+          routes_completed_30d: number | null
+          routes_completed_7d: number | null
+          routes_completed_90d: number | null
+          stops_completed_30d: number | null
+          stops_completed_7d: number | null
+          stops_completed_90d: number | null
+          training_notes: string | null
+          trend_direction: string | null
+          trend_updated_at: string | null
+          trust_score: number | null
+          updated_at: string | null
+          worker_id: string
+        }
+        Insert: {
+          autonomy_level?: string | null
+          autonomy_promoted_at?: string | null
+          avg_route_duration_minutes?: number | null
+          avg_stop_time_minutes?: number | null
+          completion_rate?: number | null
+          consistency_score?: number | null
+          created_at?: string | null
+          exception_rate?: number | null
+          id?: string
+          last_coaching_at?: string | null
+          on_time_rate?: number | null
+          reliability_score?: number | null
+          requires_training?: boolean | null
+          routes_completed_30d?: number | null
+          routes_completed_7d?: number | null
+          routes_completed_90d?: number | null
+          stops_completed_30d?: number | null
+          stops_completed_7d?: number | null
+          stops_completed_90d?: number | null
+          training_notes?: string | null
+          trend_direction?: string | null
+          trend_updated_at?: string | null
+          trust_score?: number | null
+          updated_at?: string | null
+          worker_id: string
+        }
+        Update: {
+          autonomy_level?: string | null
+          autonomy_promoted_at?: string | null
+          avg_route_duration_minutes?: number | null
+          avg_stop_time_minutes?: number | null
+          completion_rate?: number | null
+          consistency_score?: number | null
+          created_at?: string | null
+          exception_rate?: number | null
+          id?: string
+          last_coaching_at?: string | null
+          on_time_rate?: number | null
+          reliability_score?: number | null
+          requires_training?: boolean | null
+          routes_completed_30d?: number | null
+          routes_completed_7d?: number | null
+          routes_completed_90d?: number | null
+          stops_completed_30d?: number | null
+          stops_completed_7d?: number | null
+          stops_completed_90d?: number | null
+          training_notes?: string | null
+          trend_direction?: string | null
+          trend_updated_at?: string | null
+          trust_score?: number | null
+          updated_at?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worker_performance_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
