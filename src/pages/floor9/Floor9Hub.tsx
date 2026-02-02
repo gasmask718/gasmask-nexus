@@ -35,6 +35,7 @@ import {
   useActivateKillSwitch,
   useDeactivateKillSwitch,
 } from '@/hooks/useFloor9';
+import { useKillSwitchStatus } from '@/hooks/useDriftAlerts';
 import { ShadowModeBanner, ShadowModeGovernanceRules } from '@/components/floor9';
 
 const Floor9Hub = () => {
@@ -44,11 +45,12 @@ const Floor9Hub = () => {
   const { data: workers } = useAIWorkers();
   const { data: actionQueue } = useActionQueue({ status: 'pending', limit: 5 });
   const { data: killSwitches } = useKillSwitchState();
+  const { data: killSwitchStatus } = useKillSwitchStatus();
   const activateKillSwitch = useActivateKillSwitch();
   const deactivateKillSwitch = useDeactivateKillSwitch();
 
   const activeKillSwitches = killSwitches?.filter(k => k.is_active) || [];
-  const isGlobalKillActive = activeKillSwitches.some(k => k.scope === 'global');
+  const isGlobalKillActive = killSwitchStatus?.globalActive || activeKillSwitches.some(k => k.scope === 'global');
 
   const handleGlobalKillSwitch = () => {
     if (isGlobalKillActive) {
@@ -132,7 +134,7 @@ const Floor9Hub = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="p-3 rounded-lg bg-muted/50">
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
@@ -148,7 +150,7 @@ const Floor9Hub = () => {
                   <span className="text-sm font-medium">Worker-Level Switches</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {activeKillSwitches.filter(k => k.scope === 'worker').length} workers paused
+                  {killSwitchStatus?.workerKills?.length || activeKillSwitches.filter(k => k.scope === 'worker').length} workers paused
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-muted/50">
@@ -157,7 +159,16 @@ const Floor9Hub = () => {
                   <span className="text-sm font-medium">Playbook-Level Switches</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {activeKillSwitches.filter(k => k.scope === 'playbook').length} playbooks paused
+                  {killSwitchStatus?.playbookKills?.length || activeKillSwitches.filter(k => k.scope === 'playbook').length} playbooks paused
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Shield className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-medium">Server Enforcement</span>
+                </div>
+                <p className="text-xs text-green-600">
+                  Database trigger blocks AI actions when any kill switch is active
                 </p>
               </div>
             </div>
