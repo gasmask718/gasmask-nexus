@@ -902,6 +902,75 @@ export type Database = {
           },
         ]
       }
+      ai_action_queue: {
+        Row: {
+          action_summary: string
+          action_type: string
+          ai_recommendation: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_notes: string | null
+          human_decision: string | null
+          id: string
+          reasoning: Json
+          risk_level: string
+          sla_deadline: string | null
+          status: string
+          task_id: string | null
+          worker_id: string | null
+        }
+        Insert: {
+          action_summary: string
+          action_type: string
+          ai_recommendation: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          human_decision?: string | null
+          id?: string
+          reasoning?: Json
+          risk_level?: string
+          sla_deadline?: string | null
+          status?: string
+          task_id?: string | null
+          worker_id?: string | null
+        }
+        Update: {
+          action_summary?: string
+          action_type?: string
+          ai_recommendation?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          human_decision?: string | null
+          id?: string
+          reasoning?: Json
+          risk_level?: string
+          sla_deadline?: string | null
+          status?: string
+          task_id?: string | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_action_queue_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_action_queue_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "ai_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_agent_failures: {
         Row: {
           business_id: string | null
@@ -2525,6 +2594,73 @@ export type Database = {
           },
         ]
       }
+      ai_instinct_log: {
+        Row: {
+          action_type: string
+          confidence_score: number
+          created_at: string
+          decision_path: Json | null
+          feedback_status: string | null
+          human_feedback: string | null
+          id: string
+          input_data: Json
+          playbook_id: string | null
+          reasoning: string
+          task_id: string | null
+          worker_id: string | null
+        }
+        Insert: {
+          action_type: string
+          confidence_score: number
+          created_at?: string
+          decision_path?: Json | null
+          feedback_status?: string | null
+          human_feedback?: string | null
+          id?: string
+          input_data?: Json
+          playbook_id?: string | null
+          reasoning: string
+          task_id?: string | null
+          worker_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          confidence_score?: number
+          created_at?: string
+          decision_path?: Json | null
+          feedback_status?: string | null
+          human_feedback?: string | null
+          id?: string
+          input_data?: Json
+          playbook_id?: string | null
+          reasoning?: string
+          task_id?: string | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_instinct_log_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "ai_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_instinct_log_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_instinct_log_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "ai_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_kill_switch_state: {
         Row: {
           activated_at: string | null
@@ -2539,6 +2675,8 @@ export type Database = {
           is_active: boolean
           route_id: string | null
           scope: string
+          target_playbook_id: string | null
+          target_worker_id: string | null
           updated_at: string
         }
         Insert: {
@@ -2554,6 +2692,8 @@ export type Database = {
           is_active?: boolean
           route_id?: string | null
           scope: string
+          target_playbook_id?: string | null
+          target_worker_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -2569,6 +2709,8 @@ export type Database = {
           is_active?: boolean
           route_id?: string | null
           scope?: string
+          target_playbook_id?: string | null
+          target_worker_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2577,6 +2719,20 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_kill_switch_state_target_playbook_id_fkey"
+            columns: ["target_playbook_id"]
+            isOneToOne: false
+            referencedRelation: "ai_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_kill_switch_state_target_worker_id_fkey"
+            columns: ["target_worker_id"]
+            isOneToOne: false
+            referencedRelation: "ai_workers"
             referencedColumns: ["id"]
           },
         ]
@@ -2943,33 +3099,135 @@ export type Database = {
           },
         ]
       }
-      ai_playbooks: {
+      ai_performance_results: {
         Row: {
+          confidence_trend: Json | null
           created_at: string
-          description: string | null
+          errors_prevented: number | null
+          human_trust_score: number | null
           id: string
-          steps: Json
-          title: string
-          updated_at: string
-          user_id: string | null
+          period_end: string
+          period_start: string
+          playbook_id: string | null
+          revenue_generated: number | null
+          revenue_protected: number | null
+          tasks_auto_resolved: number | null
+          tasks_escalated: number | null
+          time_saved_minutes: number | null
+          worker_id: string | null
         }
         Insert: {
+          confidence_trend?: Json | null
           created_at?: string
-          description?: string | null
+          errors_prevented?: number | null
+          human_trust_score?: number | null
           id?: string
-          steps?: Json
-          title: string
-          updated_at?: string
-          user_id?: string | null
+          period_end: string
+          period_start: string
+          playbook_id?: string | null
+          revenue_generated?: number | null
+          revenue_protected?: number | null
+          tasks_auto_resolved?: number | null
+          tasks_escalated?: number | null
+          time_saved_minutes?: number | null
+          worker_id?: string | null
         }
         Update: {
+          confidence_trend?: Json | null
           created_at?: string
-          description?: string | null
+          errors_prevented?: number | null
+          human_trust_score?: number | null
           id?: string
+          period_end?: string
+          period_start?: string
+          playbook_id?: string | null
+          revenue_generated?: number | null
+          revenue_protected?: number | null
+          tasks_auto_resolved?: number | null
+          tasks_escalated?: number | null
+          time_saved_minutes?: number | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_performance_results_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "ai_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_performance_results_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "ai_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_playbooks: {
+        Row: {
+          allowed_data_sources: string[] | null
+          approved_at: string | null
+          approved_by: string | null
+          confidence_threshold: number | null
+          created_at: string
+          decision_rules: Json | null
+          description: string | null
+          domain: string | null
+          escalation_rules: Json | null
+          id: string
+          is_active: boolean | null
+          output_types: string[] | null
+          requires_approval: boolean | null
+          steps: Json
+          title: string
+          trigger_conditions: Json | null
+          updated_at: string
+          user_id: string | null
+          version: number | null
+        }
+        Insert: {
+          allowed_data_sources?: string[] | null
+          approved_at?: string | null
+          approved_by?: string | null
+          confidence_threshold?: number | null
+          created_at?: string
+          decision_rules?: Json | null
+          description?: string | null
+          domain?: string | null
+          escalation_rules?: Json | null
+          id?: string
+          is_active?: boolean | null
+          output_types?: string[] | null
+          requires_approval?: boolean | null
           steps?: Json
-          title?: string
+          title: string
+          trigger_conditions?: Json | null
           updated_at?: string
           user_id?: string | null
+          version?: number | null
+        }
+        Update: {
+          allowed_data_sources?: string[] | null
+          approved_at?: string | null
+          approved_by?: string | null
+          confidence_threshold?: number | null
+          created_at?: string
+          decision_rules?: Json | null
+          description?: string | null
+          domain?: string | null
+          escalation_rules?: Json | null
+          id?: string
+          is_active?: boolean | null
+          output_types?: string[] | null
+          requires_approval?: boolean | null
+          steps?: Json
+          title?: string
+          trigger_conditions?: Json | null
+          updated_at?: string
+          user_id?: string | null
+          version?: number | null
         }
         Relationships: [
           {
@@ -3313,31 +3571,64 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          description: string | null
+          expected_outputs: string[] | null
+          failure_count: number | null
+          failure_handling: string | null
           frequency: string
           id: string
+          input_sources: Json | null
+          last_result: Json | null
+          last_run_at: string | null
           next_run_at: string
+          notification_rules: Json | null
           notify_user: boolean
           playbook_id: string
+          routine_name: string | null
+          run_count: number | null
+          success_count: number | null
           updated_at: string
         }
         Insert: {
           active?: boolean
           created_at?: string
+          description?: string | null
+          expected_outputs?: string[] | null
+          failure_count?: number | null
+          failure_handling?: string | null
           frequency?: string
           id?: string
+          input_sources?: Json | null
+          last_result?: Json | null
+          last_run_at?: string | null
           next_run_at?: string
+          notification_rules?: Json | null
           notify_user?: boolean
           playbook_id: string
+          routine_name?: string | null
+          run_count?: number | null
+          success_count?: number | null
           updated_at?: string
         }
         Update: {
           active?: boolean
           created_at?: string
+          description?: string | null
+          expected_outputs?: string[] | null
+          failure_count?: number | null
+          failure_handling?: string | null
           frequency?: string
           id?: string
+          input_sources?: Json | null
+          last_result?: Json | null
+          last_run_at?: string | null
           next_run_at?: string
+          notification_rules?: Json | null
           notify_user?: boolean
           playbook_id?: string
+          routine_name?: string | null
+          run_count?: number | null
+          success_count?: number | null
           updated_at?: string
         }
         Relationships: [
