@@ -312,6 +312,8 @@ export function EditStoreInvoiceModal({
       toast.success('Invoice updated successfully');
       queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
       queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
+      // CRITICAL: Invalidate unified feed to sync Floor 5
+      queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
       queryClient.invalidateQueries({ queryKey: ['invoice-line-items', invoice.id] });
       onOpenChange(false);
       onSuccess?.();

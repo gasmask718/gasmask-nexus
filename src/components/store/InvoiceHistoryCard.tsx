@@ -109,6 +109,8 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
       toast.success(`Invoice status updated to ${newStatus}`);
       queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
       queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
+      // CRITICAL: Invalidate unified feed to sync Floor 5
+      queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
       setConfirmDialogOpen(false);
       setSelectedInvoice(null);
     },
@@ -131,6 +133,8 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
       toast.success('Invoice permanently deleted');
       queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
       queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
+      // CRITICAL: Invalidate unified feed to sync Floor 5
+      queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
       setDeleteDialogOpen(false);
       setSelectedInvoice(null);
     },
@@ -154,6 +158,8 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
       toast.success('Invoice voided');
       queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
       queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
+      // CRITICAL: Invalidate unified feed to sync Floor 5
+      queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
       setVoidDialogOpen(false);
       setSelectedInvoice(null);
     },

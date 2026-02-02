@@ -16,8 +16,9 @@ const BillingInvoices = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sourceFilter, setSourceFilter] = useState<'all' | 'store' | 'crm'>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'store' | 'crm' | 'wholesale'>('all');
 
+  // HARD-LOCKED: Uses unified invoice feed exclusively
   const { data, isLoading } = useUnifiedInvoiceFeed({
     status: statusFilter,
     source: sourceFilter,
@@ -44,6 +45,8 @@ const BillingInvoices = () => {
     switch (source) {
       case 'store': return <Store className="h-4 w-4 text-blue-500" />;
       case 'crm': return <Users className="h-4 w-4 text-green-500" />;
+      case 'wholesale': return <Building2 className="h-4 w-4 text-purple-500" />;
+      case 'legacy': return <FileText className="h-4 w-4 text-amber-500" />;
       default: return <Building2 className="h-4 w-4 text-gray-500" />;
     }
   };
@@ -129,6 +132,7 @@ const BillingInvoices = () => {
               <SelectItem value="all">All Sources</SelectItem>
               <SelectItem value="store">Store Invoices</SelectItem>
               <SelectItem value="crm">CRM Invoices</SelectItem>
+              <SelectItem value="wholesale">Wholesale Orders</SelectItem>
             </SelectContent>
           </Select>
         </div>
