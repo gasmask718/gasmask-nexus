@@ -26317,6 +26317,78 @@ export type Database = {
         }
         Relationships: []
       }
+      multi_brand_intelligence_history: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          acknowledgment_note: string | null
+          actual_outcome: string | null
+          actual_stops: number | null
+          cbre_score: number | null
+          conflict_details: Json | null
+          created_at: string
+          dispatch_proceeded: boolean | null
+          efficiency_gain_percent: number | null
+          efficiency_status: string | null
+          id: string
+          outcome_notes: string | null
+          partial_delivery_count: number | null
+          recorded_date: string
+          route_id: string
+          theoretical_stops: number | null
+          total_conflicts: number | null
+          unpaid_exposure_amount: number | null
+          unpaid_invoice_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          acknowledgment_note?: string | null
+          actual_outcome?: string | null
+          actual_stops?: number | null
+          cbre_score?: number | null
+          conflict_details?: Json | null
+          created_at?: string
+          dispatch_proceeded?: boolean | null
+          efficiency_gain_percent?: number | null
+          efficiency_status?: string | null
+          id?: string
+          outcome_notes?: string | null
+          partial_delivery_count?: number | null
+          recorded_date?: string
+          route_id: string
+          theoretical_stops?: number | null
+          total_conflicts?: number | null
+          unpaid_exposure_amount?: number | null
+          unpaid_invoice_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          acknowledgment_note?: string | null
+          actual_outcome?: string | null
+          actual_stops?: number | null
+          cbre_score?: number | null
+          conflict_details?: Json | null
+          created_at?: string
+          dispatch_proceeded?: boolean | null
+          efficiency_gain_percent?: number | null
+          efficiency_status?: string | null
+          id?: string
+          outcome_notes?: string | null
+          partial_delivery_count?: number | null
+          recorded_date?: string
+          route_id?: string
+          theoretical_stops?: number | null
+          total_conflicts?: number | null
+          unpaid_exposure_amount?: number | null
+          unpaid_invoice_count?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       multi_language_content: {
         Row: {
           content_ar: string | null
