@@ -8,3 +8,6 @@ export * from './ResultDetailDrawer';
 export * from './ResultsFilters';
 export * from './ResultsTimeline';
 export * from './ResultsAnalytics';
+// Learning Feedback System
+export * from './FeedbackCaptureModal';
+export * from './FeedbackAnalyticsPanel';

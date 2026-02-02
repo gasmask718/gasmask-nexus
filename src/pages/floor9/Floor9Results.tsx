@@ -38,6 +38,7 @@ import {
   ResultsFilters,
   ResultsTimeline,
   ResultsAnalytics,
+  FeedbackAnalyticsPanel,
 } from '@/components/floor9';
 
 const Floor9Results = () => {
@@ -262,6 +263,10 @@ const Floor9Results = () => {
               <BarChart3 className="h-4 w-4" />
               Analytics
             </TabsTrigger>
+            <TabsTrigger value="learning" className="flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              Learning Feedback
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="timeline" className="mt-4">
@@ -278,6 +283,60 @@ const Floor9Results = () => {
               metrics={metrics || null}
               isLoading={isLoading}
             />
+          </TabsContent>
+
+          <TabsContent value="learning" className="mt-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <FeedbackAnalyticsPanel days={30} />
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Brain className="h-5 w-5" />
+                    How Learning Works
+                  </CardTitle>
+                  <CardDescription>
+                    The feedback loop that makes AI smarter
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold">1</div>
+                    <div>
+                      <p className="font-medium">AI Makes Recommendation</p>
+                      <p className="text-sm text-muted-foreground">With confidence score and reasoning</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold">2</div>
+                    <div>
+                      <p className="font-medium">Human Reviews & Decides</p>
+                      <p className="text-sm text-muted-foreground">Approve, reject, or modify with reasoning</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold">3</div>
+                    <div>
+                      <p className="font-medium">Feedback Captured</p>
+                      <p className="text-sm text-muted-foreground">Category, reasoning, confidence signals</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-sm font-bold text-green-600">4</div>
+                    <div>
+                      <p className="font-medium text-green-600">Patterns Aggregated</p>
+                      <p className="text-sm text-muted-foreground">System learns what works and what doesn't</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-sm font-bold text-green-600">5</div>
+                    <div>
+                      <p className="font-medium text-green-600">Confidence Recalibrated</p>
+                      <p className="text-sm text-muted-foreground">AI adjusts future confidence thresholds</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
 
