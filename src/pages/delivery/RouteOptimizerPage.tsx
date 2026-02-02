@@ -77,6 +77,7 @@ interface OptimizationResult {
   }>;
   autonomy_eligible: boolean;
   guardrail_blocks: string[];
+  risk_level: 'low' | 'medium' | 'high';
 }
 
 interface WorkPoolItem {
@@ -228,6 +229,7 @@ export default function RouteOptimizerPage() {
           stores: r.stores || [],
           autonomy_eligible: r.autonomy_eligible !== false,
           guardrail_blocks: r.guardrail_blocks || [],
+          risk_level: r.risk_level || 'low',
         }));
         setProposedRoutes(transformed);
         setSelectedRoutes(transformed.map(r => r.id));
@@ -318,6 +320,8 @@ export default function RouteOptimizerPage() {
     ? Math.round(proposedRoutes.reduce((sum, r) => sum + r.score, 0) / proposedRoutes.length)
     : 0;
   const blockedRoutes = proposedRoutes.filter(r => r.guardrail_blocks.length > 0).length;
+  const highRiskRoutes = proposedRoutes.filter(r => r.risk_level === 'high').length;
+  const autoEligibleRoutes = proposedRoutes.filter(r => r.autonomy_eligible).length;
 
   return (
     <div className="p-6 space-y-6 max-w-[1800px] mx-auto">
@@ -634,6 +638,18 @@ export default function RouteOptimizerPage() {
                                 Manual
                               </Badge>
                             )}
+                            {/* Risk Level Badge */}
+                            <Badge 
+                              variant="outline" 
+                              className={cn(
+                                "text-xs",
+                                route.risk_level === 'high' && "text-red-600 border-red-500",
+                                route.risk_level === 'medium' && "text-amber-600 border-amber-500",
+                                route.risk_level === 'low' && "text-green-600 border-green-500"
+                              )}
+                            >
+                              {route.risk_level === 'high' ? '⚠️' : route.risk_level === 'medium' ? '⚡' : '✓'} {route.risk_level}
+                            </Badge>
                           </div>
                         </div>
                         
@@ -694,7 +710,7 @@ export default function RouteOptimizerPage() {
                   Run optimization to see validation
                 </p>
               ) : (
-                <>
+              <>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Total Routes</span>
                     <Badge variant="secondary">{proposedRoutes.length}</Badge>
@@ -702,7 +718,13 @@ export default function RouteOptimizerPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Auto-Eligible</span>
                     <Badge className="bg-green-500">
-                      {proposedRoutes.filter(r => r.autonomy_eligible).length}
+                      {autoEligibleRoutes}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">High Risk</span>
+                    <Badge className={highRiskRoutes > 0 ? "bg-red-500" : "bg-slate-500"}>
+                      {highRiskRoutes}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
