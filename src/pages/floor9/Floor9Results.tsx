@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -11,69 +11,22 @@ import {
   Brain,
   Users,
   ArrowUp,
-  ArrowDown,
   Activity,
+  Database,
 } from 'lucide-react';
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
 import { Skeleton } from '@/components/ui/skeleton';
-import { usePerformanceResults, useWorkforceStats, useActionQueue, useInstinctLogs } from '@/hooks/useFloor9';
+import { usePerformanceResults, useWorkforceStats, useInstinctLogs } from '@/hooks/useFloor9';
 import { 
   ShadowModeBanner,
   ImmutableLogNotice,
+  PersistedDriftMonitor,
 } from '@/components/floor9';
-import { ConfidenceDriftMonitor, calculateDriftAlerts } from '@/components/floor9/ConfidenceDriftMonitor';
 
 const Floor9Results = () => {
   const { data: results, isLoading: resultsLoading } = usePerformanceResults({ days: 30 });
   const { data: stats, isLoading: statsLoading } = useWorkforceStats();
-  const { data: actionQueue } = useActionQueue();
   const { data: instinctLogs } = useInstinctLogs({ limit: 100 });
-
-  // PHASE 9.1: Calculate confidence drift data from real decisions
-  const driftData = useMemo(() => {
-    if (!actionQueue || actionQueue.length === 0) {
-      // Generate sample data for visualization
-      const now = new Date();
-      return Array.from({ length: 14 }, (_, i) => {
-        const date = new Date(now);
-        date.setDate(date.getDate() - (13 - i));
-        return {
-          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          confidence: 75 + Math.random() * 15,
-          acceptanceRate: 65 + Math.random() * 20,
-          rejectionRate: 15 + Math.random() * 15,
-          totalDecisions: Math.floor(5 + Math.random() * 10),
-        };
-      });
-    }
-
-    // Group by day and calculate rates
-    const byDay: Record<string, { accepted: number; rejected: number; modified: number; total: number; confidenceSum: number }> = {};
-    
-    actionQueue.forEach(item => {
-      const day = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      if (!byDay[day]) {
-        byDay[day] = { accepted: 0, rejected: 0, modified: 0, total: 0, confidenceSum: 0 };
-      }
-      byDay[day].total++;
-      if (item.human_decision === 'accepted') byDay[day].accepted++;
-      if (item.human_decision === 'rejected') byDay[day].rejected++;
-      if (item.human_decision === 'modified') byDay[day].modified++;
-      // Assume confidence from reasoning or default
-      byDay[day].confidenceSum += 80; // Default confidence
-    });
-
-    return Object.entries(byDay).map(([date, data]) => ({
-      date,
-      confidence: data.total > 0 ? data.confidenceSum / data.total : 0,
-      acceptanceRate: data.total > 0 ? (data.accepted / data.total) * 100 : 0,
-      rejectionRate: data.total > 0 ? (data.rejected / data.total) * 100 : 0,
-      totalDecisions: data.total,
-    }));
-  }, [actionQueue]);
-
-  // Calculate alerts from drift data
-  const driftAlerts = useMemo(() => calculateDriftAlerts(driftData), [driftData]);
 
   // Aggregate metrics
   const totalAutoResolved = results?.reduce((sum, r) => sum + r.tasks_auto_resolved, 0) || 0;
@@ -129,19 +82,19 @@ const Floor9Results = () => {
           </CardContent>
         </Card>
 
-        {/* PHASE 9.1: Confidence Drift Monitoring - THE ONLY NEW BUILD */}
+        {/* PHASE 9.1: Persisted Confidence Drift Monitoring - Uses Real Database Data */}
         <div className="border-2 border-primary/30 rounded-lg p-1">
           <div className="bg-primary/5 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-4">
               <Activity className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-bold">Confidence Drift Monitoring</h2>
               <Badge variant="outline" className="ml-2">Phase 9.1 — Safety Critical</Badge>
+              <Badge variant="secondary" className="ml-1">
+                <Database className="h-3 w-3 mr-1" />
+                Persisted Alerts
+              </Badge>
             </div>
-            <ConfidenceDriftMonitor 
-              data={driftData} 
-              alerts={driftAlerts}
-              isLoading={isLoading} 
-            />
+            <PersistedDriftMonitor />
           </div>
         </div>
 

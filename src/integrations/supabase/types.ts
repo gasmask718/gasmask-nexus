@@ -907,12 +907,15 @@ export type Database = {
           action_summary: string
           action_type: string
           ai_recommendation: string
+          confidence_score: number | null
           created_at: string
           decided_at: string | null
           decided_by: string | null
           decision_notes: string | null
           human_decision: string | null
           id: string
+          modification_what_changed: string | null
+          modification_why_changed: string | null
           reasoning: Json
           risk_level: string
           sla_deadline: string | null
@@ -924,12 +927,15 @@ export type Database = {
           action_summary: string
           action_type: string
           ai_recommendation: string
+          confidence_score?: number | null
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
           decision_notes?: string | null
           human_decision?: string | null
           id?: string
+          modification_what_changed?: string | null
+          modification_why_changed?: string | null
           reasoning?: Json
           risk_level?: string
           sla_deadline?: string | null
@@ -941,12 +947,15 @@ export type Database = {
           action_summary?: string
           action_type?: string
           ai_recommendation?: string
+          confidence_score?: number | null
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
           decision_notes?: string | null
           human_decision?: string | null
           id?: string
+          modification_what_changed?: string | null
+          modification_why_changed?: string | null
           reasoning?: Json
           risk_level?: string
           sla_deadline?: string | null
@@ -2298,6 +2307,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ai_drift_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          confidence_at_alert: number | null
+          created_at: string
+          human_rate_at_alert: number | null
+          id: string
+          message: string
+          metadata: Json | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          confidence_at_alert?: number | null
+          created_at?: string
+          human_rate_at_alert?: number | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          confidence_at_alert?: number | null
+          created_at?: string
+          human_rate_at_alert?: number | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+        }
+        Relationships: []
       }
       ai_follow_up_log: {
         Row: {
@@ -47345,6 +47402,16 @@ export type Database = {
           },
         ]
       }
+      v_confidence_drift_metrics: {
+        Row: {
+          acceptance_rate: number | null
+          avg_confidence: number | null
+          date: string | null
+          rejection_rate: number | null
+          total_decisions: number | null
+        }
+        Relationships: []
+      }
       v_financial_period_summary: {
         Row: {
           active_ambassadors: number | null
@@ -47560,6 +47627,10 @@ export type Database = {
       }
     }
     Functions: {
+      acknowledge_drift_alert: {
+        Args: { p_alert_id: string; p_user_id?: string }
+        Returns: undefined
+      }
       admin_activate_plan: {
         Args: { p_admin_user_id?: string; p_plan_id: string }
         Returns: {
@@ -47656,6 +47727,7 @@ export type Database = {
         Args: { p_ambassador_id?: string; p_before_date?: string }
         Returns: number
       }
+      calculate_and_persist_drift_alerts: { Args: never; Returns: number }
       can_access_brand: {
         Args: { _brand: string; _user_id: string }
         Returns: boolean
@@ -47717,6 +47789,20 @@ export type Database = {
       count_route_actions_last_hour: {
         Args: { p_route_id: string }
         Returns: number
+      }
+      create_ai_action_with_kill_switch_check: {
+        Args: {
+          p_action_summary: string
+          p_action_type: string
+          p_ai_recommendation: string
+          p_confidence_score?: number
+          p_reasoning?: Json
+          p_risk_level?: string
+          p_sla_deadline?: string
+          p_task_id?: string
+          p_worker_id?: string
+        }
+        Returns: string
       }
       create_commission_reversal: {
         Args: { p_ledger_id: string; p_reason?: string }

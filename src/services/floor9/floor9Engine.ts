@@ -221,12 +221,30 @@ export async function getActionQueue(params?: {
   return (data || []) as unknown as AIActionQueueItem[];
 }
 
+/**
+ * PHASE 9.1: Resolve action item with mandatory feedback validation
+ * 
+ * - Accept: Records human approval (NO EXECUTION - Shadow Mode)
+ * - Reject: REQUIRES minimum 10 character feedback
+ * - Modify: REQUIRES explanation of what/why changed
+ * 
+ * Updates ONLY ai_action_queue - no side effects, no automation triggers
+ */
 export async function resolveActionItem(
   itemId: string,
   decision: 'accepted' | 'rejected' | 'modified',
   notes?: string,
   userId?: string
 ): Promise<void> {
+  // PHASE 9.1: Enforce feedback requirements client-side before DB trigger catches it
+  if (decision === 'rejected' && (!notes || notes.trim().length < 10)) {
+    throw new Error('FEEDBACK_REQUIRED: Rejection requires minimum 10 characters explanation');
+  }
+  if (decision === 'modified' && (!notes || notes.trim().length < 10)) {
+    throw new Error('FEEDBACK_REQUIRED: Modification requires explanation of what and why changed');
+  }
+
+  // SHADOW MODE: Only update the action queue record - no execution, no automation
   const { error } = await supabase
     .from('ai_action_queue')
     .update({
@@ -238,7 +256,19 @@ export async function resolveActionItem(
     })
     .eq('id', itemId);
 
-  if (error) throw error;
+  if (error) {
+    // Check for our custom feedback enforcement trigger
+    if (error.message.includes('FEEDBACK_REQUIRED')) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
+  
+  // PHASE 9.1 GUARANTEE: No side effects occur here
+  // - No background jobs triggered
+  // - No workflows executed
+  // - No webhooks called
+  // - Accept only records approval, it does NOT execute anything
 }
 
 // ============= PERFORMANCE RESULTS =============
