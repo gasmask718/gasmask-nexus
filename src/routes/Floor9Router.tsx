@@ -15,7 +15,8 @@ import {
   Floor9Playbooks, 
   Floor9ActionQueue, 
   Floor9InstinctLog, 
-  Floor9Results 
+  Floor9Results,
+  Floor9Predictions
 } from '@/pages/floor9';
 
 /**
@@ -41,6 +42,7 @@ export function Floor9Router() {
       <Route path="action-queue" element={<Floor9ActionQueue />} />
       <Route path="instinct-log" element={<Floor9InstinctLog />} />
       <Route path="results" element={<Floor9Results />} />
+      <Route path="predictions" element={<Floor9Predictions />} />
       
       {/* HARD FAILSAFE - Any unknown route redirects to hub */}
       <Route path="*" element={<Navigate to="/grabba/floor9" replace />} />
