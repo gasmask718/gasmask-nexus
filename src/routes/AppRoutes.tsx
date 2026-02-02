@@ -59,6 +59,7 @@ import { AdminOverridesPage, AdminOverrideDetailPage } from '@/pages/admin/overr
 import { AdminPayoutsPage, AdminPayoutDetailPage } from '@/pages/admin/payouts';
 import { FinancialReportsPage, AmbassadorReportsPage, StoreReportsPage, TaxReportsPage, PayoutReportsPage } from '@/pages/admin/reports';
 import DeletedRecords from '@/pages/admin/DeletedRecords';
+import QACommandCenter from '@/pages/admin/qa/QACommandCenter';
 import AmbassadorApplications from '@/pages/admin/AmbassadorApplications';
 import AmbassadorApplication from '@/pages/apply/AmbassadorApplication';
 import { AmbassadorEarningsPage } from '@/pages/ambassador/reports';
@@ -2067,6 +2068,15 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'owner']}>
             <Layout><DeletedRecords /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
+      {/* QA Command Center - Production Readiness */}
+      <Route path="/admin/qa-command-center" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']}>
+            <Layout><QACommandCenter /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
