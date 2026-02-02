@@ -1788,13 +1788,31 @@ export default function AppRoutes() {
       {/* Anti-404 shield: All unknown Floor 9 routes redirect to hub                  */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       
-      {/* Legacy redirects - prevent 404s from old routes */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* LEGACY ROUTE HEALING - Redirect ALL old AI routes to Floor 9 canonical paths */}
+      {/* No AI route may 404 - all redirect to /grabba/floor9 or appropriate subpage   */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      
+      {/* Direct Floor 9 legacy paths */}
       <Route path="/grabba/ai-operations" element={<Navigate to="/grabba/floor9" replace />} />
       <Route path="/grabba/ai-operations/*" element={<Navigate to="/grabba/floor9" replace />} />
       <Route path="/floor9" element={<Navigate to="/grabba/floor9" replace />} />
       <Route path="/floor9/*" element={<Navigate to="/grabba/floor9" replace />} />
       <Route path="/ai-operations" element={<Navigate to="/grabba/floor9" replace />} />
       <Route path="/ai-operations/*" element={<Navigate to="/grabba/floor9" replace />} />
+      
+      {/* Legacy AI routes - redirect to Floor 9 canonical structure */}
+      <Route path="/grabba/ai-routines" element={<Navigate to="/grabba/floor9/playbooks" replace />} />
+      <Route path="/grabba/ai-playbooks" element={<Navigate to="/grabba/floor9/playbooks" replace />} />
+      <Route path="/grabba/ai-insights" element={<Navigate to="/grabba/floor9/results" replace />} />
+      <Route path="/grabba/routines" element={<Navigate to="/grabba/floor9/playbooks" replace />} />
+      <Route path="/grabba/instinct-log" element={<Navigate to="/grabba/floor9/instinct-log" replace />} />
+      <Route path="/grabba/action-queue" element={<Navigate to="/grabba/floor9/action-queue" replace />} />
+      
+      {/* Deep legacy paths - comprehensive healing */}
+      <Route path="/ai/*" element={<Navigate to="/grabba/floor9" replace />} />
+      <Route path="/operations/ai" element={<Navigate to="/grabba/floor9" replace />} />
+      <Route path="/operations/ai/*" element={<Navigate to="/grabba/floor9" replace />} />
       
       {/* Floor 9 - Canonical Hub Route */}
       <Route path="/grabba/floor9" element={
