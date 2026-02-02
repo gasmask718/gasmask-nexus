@@ -13098,6 +13098,146 @@ export type Database = {
         }
         Relationships: []
       }
+      communication_drafts: {
+        Row: {
+          ai_generated: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          automation_source: string | null
+          automation_step: Json | null
+          body: string
+          business_id: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          channel: string
+          collection_account_id: string | null
+          context_data: Json | null
+          created_at: string
+          created_by: string | null
+          delivery_status: string | null
+          edited_before_send: boolean | null
+          edited_by: string | null
+          entity_id: string | null
+          entity_type: string | null
+          expires_at: string | null
+          external_message_id: string | null
+          from_email: string | null
+          from_number: string | null
+          id: string
+          invoice_ids: string[] | null
+          recipient_email: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
+          rendered_preview: string | null
+          requires_approval: boolean
+          scheduled_for: string | null
+          sent_at: string | null
+          sent_by: string | null
+          sent_message_id: string | null
+          status: Database["public"]["Enums"]["draft_status"]
+          store_id: string | null
+          subject: string | null
+          template_id: string | null
+          template_key: string | null
+          updated_at: string
+          warnings: string[] | null
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          automation_source?: string | null
+          automation_step?: Json | null
+          body: string
+          business_id?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          channel: string
+          collection_account_id?: string | null
+          context_data?: Json | null
+          created_at?: string
+          created_by?: string | null
+          delivery_status?: string | null
+          edited_before_send?: boolean | null
+          edited_by?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          expires_at?: string | null
+          external_message_id?: string | null
+          from_email?: string | null
+          from_number?: string | null
+          id?: string
+          invoice_ids?: string[] | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          rendered_preview?: string | null
+          requires_approval?: boolean
+          scheduled_for?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          sent_message_id?: string | null
+          status?: Database["public"]["Enums"]["draft_status"]
+          store_id?: string | null
+          subject?: string | null
+          template_id?: string | null
+          template_key?: string | null
+          updated_at?: string
+          warnings?: string[] | null
+        }
+        Update: {
+          ai_generated?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          automation_source?: string | null
+          automation_step?: Json | null
+          body?: string
+          business_id?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          channel?: string
+          collection_account_id?: string | null
+          context_data?: Json | null
+          created_at?: string
+          created_by?: string | null
+          delivery_status?: string | null
+          edited_before_send?: boolean | null
+          edited_by?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          expires_at?: string | null
+          external_message_id?: string | null
+          from_email?: string | null
+          from_number?: string | null
+          id?: string
+          invoice_ids?: string[] | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          rendered_preview?: string | null
+          requires_approval?: boolean
+          scheduled_for?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          sent_message_id?: string | null
+          status?: Database["public"]["Enums"]["draft_status"]
+          store_id?: string | null
+          subject?: string | null
+          template_id?: string | null
+          template_key?: string | null
+          updated_at?: string
+          warnings?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_drafts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_escalations: {
         Row: {
           ai_notes: string | null
@@ -13511,6 +13651,86 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
+          },
+        ]
+      }
+      communication_sent_log: {
+        Row: {
+          approved_at: string
+          approved_by: string
+          channel: string
+          context_snapshot: Json | null
+          created_at: string
+          created_by: string
+          delivery_status: string | null
+          draft_id: string | null
+          edited_before_send: boolean
+          entity_id: string | null
+          entity_type: string | null
+          external_message_id: string | null
+          final_body: string
+          id: string
+          invoice_ids: string[] | null
+          recipient_email: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
+          sent_at: string
+          sent_by: string
+          subject: string | null
+        }
+        Insert: {
+          approved_at: string
+          approved_by: string
+          channel: string
+          context_snapshot?: Json | null
+          created_at: string
+          created_by: string
+          delivery_status?: string | null
+          draft_id?: string | null
+          edited_before_send?: boolean
+          entity_id?: string | null
+          entity_type?: string | null
+          external_message_id?: string | null
+          final_body: string
+          id?: string
+          invoice_ids?: string[] | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          sent_at?: string
+          sent_by: string
+          subject?: string | null
+        }
+        Update: {
+          approved_at?: string
+          approved_by?: string
+          channel?: string
+          context_snapshot?: Json | null
+          created_at?: string
+          created_by?: string
+          delivery_status?: string | null
+          draft_id?: string | null
+          edited_before_send?: boolean
+          entity_id?: string | null
+          entity_type?: string | null
+          external_message_id?: string | null
+          final_body?: string
+          id?: string
+          invoice_ids?: string[] | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          sent_at?: string
+          sent_by?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_sent_log_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "communication_drafts"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -46172,6 +46392,7 @@ export type Database = {
         Args: { p_brand_id: string; p_store_id: string }
         Returns: boolean
       }
+      can_send_messages: { Args: { user_id: string }; Returns: boolean }
       cancel_payout_batch: { Args: { p_batch_id: string }; Returns: undefined }
       check_opt_out_before_call: {
         Args: { p_business_id?: string; p_phone: string }
@@ -46716,6 +46937,12 @@ export type Database = {
         | "integrity"
       credit_terms_type: "COD" | "NET7" | "NET14" | "NET30"
       crm_access_role: "view" | "edit" | "admin"
+      draft_status:
+        | "draft"
+        | "pending_approval"
+        | "approved"
+        | "sent"
+        | "cancelled"
       fulfillment_type:
         | "delivery"
         | "pickup"
@@ -47144,6 +47371,13 @@ export const Constants = {
       ],
       credit_terms_type: ["COD", "NET7", "NET14", "NET30"],
       crm_access_role: ["view", "edit", "admin"],
+      draft_status: [
+        "draft",
+        "pending_approval",
+        "approved",
+        "sent",
+        "cancelled",
+      ],
       fulfillment_type: [
         "delivery",
         "pickup",

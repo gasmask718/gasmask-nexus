@@ -1,15 +1,18 @@
 import { createContext, useContext, ReactNode, useState } from "react";
-import { InternalMessageModal } from "./InternalMessageModal";
+import { DraftMessageModal } from "./DraftMessageModal";
 
 /**
- * GLOBAL MESSAGE PROVIDER
+ * GLOBAL MESSAGE PROVIDER (DRAFT-FIRST)
  * 
  * This context provider wraps the entire application and provides
- * a unified messaging interface. It manages the internal message modal
- * and exposes the initiateMessage function to all components.
+ * a unified messaging interface. All messages are created as DRAFTS first
+ * and require human approval before sending.
  * 
- * This ensures ALL SMS/text actions go through Dynasty OS instead of
- * triggering native browser sms: links.
+ * HARD RULES:
+ * - NO automatic sending
+ * - ALL messages start as drafts
+ * - Human must review and approve before send
+ * - Only Owner/Admin/Accountant can approve & send
  */
 
 export interface MessageParams {
@@ -21,6 +24,14 @@ export interface MessageParams {
   entityName?: string;
   channel?: "sms" | "whatsapp";
   source?: string;
+  // Context for collections/invoices
+  contextData?: {
+    invoiceIds?: string[];
+    totalAmount?: number;
+    daysOverdue?: number;
+    isVip?: boolean;
+    isDisputed?: boolean;
+  };
 }
 
 interface MessageContextValue {
@@ -72,8 +83,8 @@ export function MessageProvider({ children }: MessageProviderProps) {
     >
       {children}
       
-      {/* Global Message Modal */}
-      <InternalMessageModal
+      {/* Global Draft Message Modal - Draft-First Flow */}
+      <DraftMessageModal
         isOpen={isMessageModalOpen}
         onClose={handleClose}
         onMessageSent={handleMessageSent}
@@ -84,6 +95,7 @@ export function MessageProvider({ children }: MessageProviderProps) {
         storeId={pendingMessage?.storeId}
         businessId={pendingMessage?.businessId}
         channel={pendingMessage?.channel || "sms"}
+        contextData={pendingMessage?.contextData}
       />
     </MessageContext.Provider>
   );
