@@ -13,6 +13,7 @@ interface SLACountdownBadgeProps {
   className?: string;
   showIcon?: boolean;
   compact?: boolean;
+  isEstimated?: boolean; // When true, SLA is a fallback calculation, not from actual data
 }
 
 export function SLACountdownBadge({ 
@@ -20,6 +21,7 @@ export function SLACountdownBadge({
   className,
   showIcon = true,
   compact = false,
+  isEstimated = false, // Mark when SLA is a fallback estimate
 }: SLACountdownBadgeProps) {
   const { text, status, pulsing } = useMemo(() => {
     if (!slaDeadline) return { text: null, status: 'unknown', pulsing: false };
@@ -100,6 +102,7 @@ export function SLACountdownBadge({
       )}
     >
       {showIcon && <Icon className="h-3 w-3 mr-1" />}
+      {isEstimated && <span className="opacity-60 mr-0.5">~</span>}
       {text}
     </Badge>
   );

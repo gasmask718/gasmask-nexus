@@ -161,9 +161,18 @@ export function usePredictiveETA(route: LiveRoute | null): StopPrediction[] {
       const serviceTime = AVERAGE_SERVICE_TIME_MINUTES;
       const predictedDeparture = new Date(predictedArrival.getTime() + serviceTime * 60000);
 
-      // Check SLA (assume 2 hour window from route start for simplicity)
+      // SLA Deadline Resolution (priority order):
+      // 1. Stop-level SLA field (if it exists) - most accurate
+      // 2. Route-level estimated completion window
+      // 3. Fallback: 2 hours from route start (labeled as "Estimated SLA")
       const routeStart = route.started_at ? new Date(route.started_at) : now;
-      const slaDeadline = new Date(routeStart.getTime() + 2 * 60 * 60 * 1000); // 2 hours
+      const routeEstMs = (route.estimated_duration_minutes || 120) * 60_000;
+      
+      // Use route estimated duration as SLA if available, otherwise 2 hour fallback
+      const slaDeadline = route.estimated_duration_minutes
+        ? new Date(routeStart.getTime() + routeEstMs)
+        : new Date(routeStart.getTime() + 2 * 60 * 60 * 1000); // Fallback: 2 hours
+      
       const slaDeltaMinutes = (slaDeadline.getTime() - predictedArrival.getTime()) / 60000;
 
       let status: StopPrediction['status'] = 'on_track';
@@ -231,8 +240,12 @@ export function useRoutePredictions(
         const serviceTime = AVERAGE_SERVICE_TIME_MINUTES;
         const predictedDeparture = new Date(predictedArrival.getTime() + serviceTime * 60000);
 
+        // SLA Resolution: prefer route duration over hardcoded 2hr fallback
         const routeStart = route.started_at ? new Date(route.started_at) : now;
-        const slaDeadline = new Date(routeStart.getTime() + 2 * 60 * 60 * 1000);
+        const routeEstMs = (route.estimated_duration_minutes || 120) * 60_000;
+        const slaDeadline = route.estimated_duration_minutes
+          ? new Date(routeStart.getTime() + routeEstMs)
+          : new Date(routeStart.getTime() + 2 * 60 * 60 * 1000);
         const slaDeltaMinutes = (slaDeadline.getTime() - predictedArrival.getTime()) / 60000;
 
         let status: StopPrediction['status'] = 'on_track';
@@ -282,9 +295,12 @@ export function useRoutePredictions(
       riskScore += highAlerts * 10;
       
       // Factor 4: Progress lag (25 points max)
-      const expectedProgress = route.started_at 
-        ? (Date.now() - new Date(route.started_at).getTime()) / (route.estimated_duration_minutes || 120) / 60000 * 100
+      // FIX: Convert minutes to ms properly - estMs = minutes * 60_000
+      const estMs = (route.estimated_duration_minutes || 120) * 60_000;
+      const elapsedMs = route.started_at 
+        ? Date.now() - new Date(route.started_at).getTime()
         : 0;
+      const expectedProgress = Math.min(100, Math.max(0, (elapsedMs / estMs) * 100));
       const progressLag = expectedProgress - route.progressPercent;
       if (progressLag > 30) riskScore += 25;
       else if (progressLag > 15) riskScore += 15;
