@@ -4149,6 +4149,53 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_task_activity_log: {
+        Row: {
+          action_description: string
+          action_type: string
+          created_at: string
+          id: string
+          reason: string | null
+          result: string
+          target_entity_id: string | null
+          target_entity_name: string | null
+          target_entity_type: string | null
+          task_id: string
+        }
+        Insert: {
+          action_description: string
+          action_type: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          result: string
+          target_entity_id?: string | null
+          target_entity_name?: string | null
+          target_entity_type?: string | null
+          task_id: string
+        }
+        Update: {
+          action_description?: string
+          action_type?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          result?: string
+          target_entity_id?: string | null
+          target_entity_name?: string | null
+          target_entity_type?: string | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_task_activity_log_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_task_artifacts: {
         Row: {
           applied_at: string | null
@@ -4470,6 +4517,9 @@ export type Database = {
           approved_by: string | null
           assigned_to_worker_id: string | null
           auto_assigned: boolean | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           completed_at: string | null
           confidence_adjustment_applied: number | null
           confidence_score: number | null
@@ -4481,9 +4531,15 @@ export type Database = {
           execution_log: Json | null
           execution_mode: string | null
           feedback_id: string | null
+          final_report: Json | null
           id: string
           input_data: Json | null
           instructions: string | null
+          items_blocked: number | null
+          items_completed: number | null
+          items_pending_approval: number | null
+          items_processed: number | null
+          items_skipped: number | null
           learning_applied: boolean | null
           output: Json | null
           parent_task_id: string | null
@@ -4499,6 +4555,7 @@ export type Database = {
           task_title: string
           task_type: string | null
           time_saved_minutes: number | null
+          total_items: number | null
           validation_errors: Json | null
         }
         Insert: {
@@ -4508,6 +4565,9 @@ export type Database = {
           approved_by?: string | null
           assigned_to_worker_id?: string | null
           auto_assigned?: boolean | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           completed_at?: string | null
           confidence_adjustment_applied?: number | null
           confidence_score?: number | null
@@ -4519,9 +4579,15 @@ export type Database = {
           execution_log?: Json | null
           execution_mode?: string | null
           feedback_id?: string | null
+          final_report?: Json | null
           id?: string
           input_data?: Json | null
           instructions?: string | null
+          items_blocked?: number | null
+          items_completed?: number | null
+          items_pending_approval?: number | null
+          items_processed?: number | null
+          items_skipped?: number | null
           learning_applied?: boolean | null
           output?: Json | null
           parent_task_id?: string | null
@@ -4537,6 +4603,7 @@ export type Database = {
           task_title: string
           task_type?: string | null
           time_saved_minutes?: number | null
+          total_items?: number | null
           validation_errors?: Json | null
         }
         Update: {
@@ -4546,6 +4613,9 @@ export type Database = {
           approved_by?: string | null
           assigned_to_worker_id?: string | null
           auto_assigned?: boolean | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           completed_at?: string | null
           confidence_adjustment_applied?: number | null
           confidence_score?: number | null
@@ -4557,9 +4627,15 @@ export type Database = {
           execution_log?: Json | null
           execution_mode?: string | null
           feedback_id?: string | null
+          final_report?: Json | null
           id?: string
           input_data?: Json | null
           instructions?: string | null
+          items_blocked?: number | null
+          items_completed?: number | null
+          items_pending_approval?: number | null
+          items_processed?: number | null
+          items_skipped?: number | null
           learning_applied?: boolean | null
           output?: Json | null
           parent_task_id?: string | null
@@ -4575,6 +4651,7 @@ export type Database = {
           task_title?: string
           task_type?: string | null
           time_saved_minutes?: number | null
+          total_items?: number | null
           validation_errors?: Json | null
         }
         Relationships: [

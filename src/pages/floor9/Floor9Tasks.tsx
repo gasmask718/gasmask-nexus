@@ -40,6 +40,14 @@ type ExtendedAIWorkTask = AIWorkTask & {
   rollback_until?: string;
   target_entity_type?: string;
   instructions?: string;
+  // Progress tracking fields
+  total_items?: number;
+  items_processed?: number;
+  items_completed?: number;
+  items_blocked?: number;
+  items_skipped?: number;
+  items_pending_approval?: number;
+  cancelled_at?: string;
 };
 
 export default function Floor9Tasks() {
@@ -58,6 +66,9 @@ export default function Floor9Tasks() {
         (t as ExtendedAIWorkTask).approval_status === 'pending' || 
         (t.status as string) === 'awaiting_approval'
       );
+    }
+    if (status === 'cancelled') {
+      return allTasks.filter(t => (t.status as string) === 'cancelled');
     }
     return allTasks.filter(t => t.status === status);
   };
@@ -211,6 +222,9 @@ export default function Floor9Tasks() {
               </TabsTrigger>
               <TabsTrigger value="failed">
                 Failed ({getTabCount('failed')})
+              </TabsTrigger>
+              <TabsTrigger value="cancelled" className="text-muted-foreground">
+                Cancelled ({getTabCount('cancelled')})
               </TabsTrigger>
             </TabsList>
 

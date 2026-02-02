@@ -11,3 +11,8 @@ export * from './ResultsAnalytics';
 // Learning Feedback System
 export * from './FeedbackCaptureModal';
 export * from './FeedbackAnalyticsPanel';
+// Task Progress & Observability
+export * from './TaskProgressBar';
+export * from './TaskActivityFeed';
+export * from './DeleteTaskModal';
+export * from './TaskCompletionReport';
