@@ -8,6 +8,7 @@
  * - FloorTaskLauncher: Launch tasks from any floor
  * - GovernedTaskCard: Display task with progress
  * - GlobalTaskDashboard: Cross-floor task view
+ * - GovernanceCommandCenter: Phase H Human Operator View
  */
 
 export { FloorTaskLauncher } from './FloorTaskLauncher';
@@ -15,3 +16,4 @@ export { GovernedTaskCard } from './GovernedTaskCard';
 export { GlobalTaskDashboard } from './GlobalTaskDashboard';
 export { GovernedButton, SimpleGovernedButton } from './GovernedButton';
 export { DryRunPanel } from './DryRunPanel';
+export { GovernanceCommandCenter } from './GovernanceCommandCenter';

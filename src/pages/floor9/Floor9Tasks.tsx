@@ -7,6 +7,7 @@
  * Updated for Global Task Governance (Floors 1-9)
  */
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -125,6 +126,12 @@ export default function Floor9Tasks() {
               )}
             </Button>
           </div>
+          <Link to="/grabba/floor9/governance">
+            <Button variant="outline" size="sm">
+              <Shield className="h-4 w-4 mr-1" />
+              Command Center
+            </Button>
+          </Link>
           <Button onClick={() => setShowAssignModal(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Assign AI Task

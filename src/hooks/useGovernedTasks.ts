@@ -175,6 +175,10 @@ export function useGlobalTasks(options: { refetchInterval?: number } = {}) {
     running: (query.data || []).filter(t => t.status === 'running').length,
     queued: (query.data || []).filter(t => t.status === 'queued').length,
     awaitingApproval: (query.data || []).filter(t => t.status === 'paused_for_approval').length,
+    byFloor: Object.entries(tasksByFloor).reduce((acc, [floor, tasks]) => {
+      acc[floor] = tasks.length;
+      return acc;
+    }, {} as Record<string, number>),
   };
 
   return {

@@ -91,6 +91,25 @@ export type {
   ExecutionContext,
 } from './dryRunService';
 
+// Production Lock (Phase G)
+export {
+  enableProductionLock,
+  disableProductionLock,
+  isProductionLockEnabled,
+  getProductionLockConfig,
+  setLockMode,
+  checkWriteAllowed,
+  logViolation,
+  getViolations,
+  governanceGuard,
+  getGovernanceLockStatus,
+  initializeProductionLock,
+} from './productionLock';
+export type {
+  ProductionLockConfig,
+  GovernanceLockStatus,
+} from './productionLock';
+
 // Action Registry (Phase B)
 export {
   ACTION_REGISTRY,
