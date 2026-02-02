@@ -2356,6 +2356,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_executable_task_types: {
+        Row: {
+          allowed_execution_modes: string[] | null
+          allowed_roles: string[] | null
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean | null
+          max_risk_level: string | null
+          requires_approval: boolean | null
+          sandbox_permissions: Json | null
+          task_type: string
+        }
+        Insert: {
+          allowed_execution_modes?: string[] | null
+          allowed_roles?: string[] | null
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean | null
+          max_risk_level?: string | null
+          requires_approval?: boolean | null
+          sandbox_permissions?: Json | null
+          task_type: string
+        }
+        Update: {
+          allowed_execution_modes?: string[] | null
+          allowed_roles?: string[] | null
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean | null
+          max_risk_level?: string | null
+          requires_approval?: boolean | null
+          sandbox_permissions?: Json | null
+          task_type?: string
+        }
+        Relationships: []
+      }
       ai_follow_up_log: {
         Row: {
           action_category: string | null
@@ -3821,6 +3863,109 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_task_artifacts: {
+        Row: {
+          applied_at: string | null
+          approved_at: string | null
+          approved_by: string | null
+          artifact_content: Json
+          artifact_title: string
+          artifact_type: string
+          created_at: string
+          id: string
+          rolled_back_at: string | null
+          status: string
+          target_entity_id: string | null
+          target_entity_type: string | null
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          artifact_content?: Json
+          artifact_title: string
+          artifact_type: string
+          created_at?: string
+          id?: string
+          rolled_back_at?: string | null
+          status?: string
+          target_entity_id?: string | null
+          target_entity_type?: string | null
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          artifact_content?: Json
+          artifact_title?: string
+          artifact_type?: string
+          created_at?: string
+          id?: string
+          rolled_back_at?: string | null
+          status?: string
+          target_entity_id?: string | null
+          target_entity_type?: string | null
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_task_artifacts_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_task_execution_log: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          step_action: string
+          step_details: Json | null
+          step_number: number
+          step_status: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          step_action: string
+          step_details?: Json | null
+          step_number: number
+          step_status: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          step_action?: string
+          step_details?: Json | null
+          step_number?: number
+          step_status?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_task_execution_log_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_text_sequences: {
         Row: {
           business_id: string | null
@@ -4033,61 +4178,109 @@ export type Database = {
       }
       ai_work_tasks: {
         Row: {
+          approval_notes: string | null
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
           assigned_to_worker_id: string | null
           auto_assigned: boolean | null
           completed_at: string | null
+          confidence_score: number | null
           created_at: string
           created_by: string | null
+          deadline: string | null
           department: string | null
           error_message: string | null
+          execution_log: Json | null
+          execution_mode: string | null
           id: string
           input_data: Json | null
+          instructions: string | null
           output: Json | null
           parent_task_id: string | null
           priority: string
+          risk_level: string | null
+          rollback_until: string | null
           started_at: string | null
           status: string
           tags: string[] | null
+          target_entity_id: string | null
+          target_entity_type: string | null
           task_details: string | null
           task_title: string
+          task_type: string | null
+          time_saved_minutes: number | null
+          validation_errors: Json | null
         }
         Insert: {
+          approval_notes?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_to_worker_id?: string | null
           auto_assigned?: boolean | null
           completed_at?: string | null
+          confidence_score?: number | null
           created_at?: string
           created_by?: string | null
+          deadline?: string | null
           department?: string | null
           error_message?: string | null
+          execution_log?: Json | null
+          execution_mode?: string | null
           id?: string
           input_data?: Json | null
+          instructions?: string | null
           output?: Json | null
           parent_task_id?: string | null
           priority?: string
+          risk_level?: string | null
+          rollback_until?: string | null
           started_at?: string | null
           status?: string
           tags?: string[] | null
+          target_entity_id?: string | null
+          target_entity_type?: string | null
           task_details?: string | null
           task_title: string
+          task_type?: string | null
+          time_saved_minutes?: number | null
+          validation_errors?: Json | null
         }
         Update: {
+          approval_notes?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_to_worker_id?: string | null
           auto_assigned?: boolean | null
           completed_at?: string | null
+          confidence_score?: number | null
           created_at?: string
           created_by?: string | null
+          deadline?: string | null
           department?: string | null
           error_message?: string | null
+          execution_log?: Json | null
+          execution_mode?: string | null
           id?: string
           input_data?: Json | null
+          instructions?: string | null
           output?: Json | null
           parent_task_id?: string | null
           priority?: string
+          risk_level?: string | null
+          rollback_until?: string | null
           started_at?: string | null
           status?: string
           tags?: string[] | null
+          target_entity_id?: string | null
+          target_entity_type?: string | null
           task_details?: string | null
           task_title?: string
+          task_type?: string | null
+          time_saved_minutes?: number | null
+          validation_errors?: Json | null
         }
         Relationships: [
           {

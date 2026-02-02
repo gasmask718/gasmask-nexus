@@ -1,120 +1,263 @@
 /**
- * Floor9Tasks - AI Task Visibility Layer
+ * Floor9Tasks - AI Task Execution Center (Phase 9.2)
  * 
- * Part of Phase 9.1 — Shadow Mode governance
- * Tasks are observable execution records, not automation triggers.
+ * Part of Phase 9.2 — Assisted Execution Engine
+ * Humans assign tasks. AI executes within bounded authority.
  */
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ShadowModeBanner, RecommendationOnlyBadge } from "@/components/floor9";
-import { ClipboardList, Clock, Brain, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { useFloor9Tasks } from "@/hooks/useFloor9";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { 
+  ShadowModeBanner, 
+  RecommendationOnlyBadge,
+  AssignAITaskModal,
+  TaskExecutionCard,
+} from "@/components/floor9";
+import { 
+  ClipboardList, 
+  Clock, 
+  Brain, 
+  Plus,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Shield,
+  FileText,
+  TrendingUp,
+} from "lucide-react";
+import { useFloor9Tasks, useWorkforceStats } from "@/hooks/useFloor9";
+import { AIWorkTask } from '@/services/floor9/types';
+
+type ExtendedAIWorkTask = AIWorkTask & {
+  task_type?: string;
+  execution_mode?: string;
+  approval_status?: string;
+  confidence_score?: number;
+  risk_level?: string;
+  time_saved_minutes?: number;
+  rollback_until?: string;
+  target_entity_type?: string;
+  instructions?: string;
+};
 
 export default function Floor9Tasks() {
-  const { data: tasks, isLoading } = useFloor9Tasks({});
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
+  
+  const { data: allTasks, isLoading } = useFloor9Tasks({});
+  const { data: stats } = useWorkforceStats();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'processing': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'failed': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      case 'pending': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
-      default: return 'bg-muted text-muted-foreground';
+  // Filter tasks by status
+  const filterTasks = (status?: string) => {
+    if (!allTasks) return [];
+    if (!status || status === 'all') return allTasks;
+    if (status === 'awaiting_approval') {
+      return allTasks.filter(t => 
+        (t as ExtendedAIWorkTask).approval_status === 'pending' || 
+        (t.status as string) === 'awaiting_approval'
+      );
     }
+    return allTasks.filter(t => t.status === status);
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed': return <CheckCircle2 className="h-4 w-4" />;
-      case 'processing': return <Loader2 className="h-4 w-4 animate-spin" />;
-      case 'failed': return <AlertCircle className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
-    }
+  const filteredTasks = filterTasks(activeTab);
+
+  const getTabCount = (status: string) => {
+    return filterTasks(status).length;
   };
 
   return (
     <div className="space-y-6">
       <ShadowModeBanner />
 
+      {/* Header with Stats */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <ClipboardList className="h-6 w-6 text-primary" />
+            AI Task Execution Center
+          </h1>
+          <p className="text-muted-foreground">
+            Assign, monitor, and approve AI-executed tasks with full auditability
+          </p>
+        </div>
+        <Button onClick={() => setShowAssignModal(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Assign AI Task
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Total Tasks</p>
+                <p className="text-2xl font-bold">{stats?.total_tasks || 0}</p>
+              </div>
+              <Brain className="h-8 w-8 text-primary/20" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Awaiting Approval</p>
+                <p className="text-2xl font-bold text-amber-600">
+                  {getTabCount('awaiting_approval')}
+                </p>
+              </div>
+              <Shield className="h-8 w-8 text-amber-600/20" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Processing</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {stats?.processing_tasks || 0}
+                </p>
+              </div>
+              <Loader2 className="h-8 w-8 text-blue-600/20" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Completed Today</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {stats?.tasks_today || 0}
+                </p>
+              </div>
+              <CheckCircle2 className="h-8 w-8 text-green-600/20" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Avg Confidence</p>
+                <p className="text-2xl font-bold">{stats?.avg_confidence || 0}%</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-primary/20" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Phase 9.2 Governance Notice */}
+      <Card className="border-primary/50 bg-primary/5">
+        <CardContent className="pt-4">
+          <div className="flex items-start gap-3">
+            <Shield className="h-5 w-5 text-primary mt-0.5" />
+            <div>
+              <p className="font-medium text-sm">Phase 9.2: Assisted Execution</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                AI executes within bounded authority. Humans assign tasks — AI cannot self-assign.
+                All execution is sandboxed, logged, and reversible within 30 minutes.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Task List */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-primary" />
-                AI Tasks
+                <FileText className="h-5 w-5 text-primary" />
+                Task Queue
               </CardTitle>
               <CardDescription>
-                Tasks proposed, analyzed, or executed by AI agents — visibility only
+                All AI tasks with execution status and approval gates
               </CardDescription>
             </div>
             <RecommendationOnlyBadge />
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              <span className="ml-2 text-muted-foreground">Loading tasks…</span>
-            </div>
-          ) : tasks && tasks.length > 0 ? (
-            <div className="space-y-3">
-              {tasks.map(task => (
-                <Card key={task.id} className="border-l-4 border-l-primary/50">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <Brain className="h-4 w-4 text-primary" />
-                        {task.task_title}
-                      </CardTitle>
-                      <Badge className={getStatusColor(task.status)}>
-                        <span className="flex items-center gap-1">
-                          {getStatusIcon(task.status)}
-                          {task.status}
-                        </span>
-                      </Badge>
-                    </div>
-                  </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="all">
+                All ({getTabCount('all')})
+              </TabsTrigger>
+              <TabsTrigger value="awaiting_approval" className="text-amber-600">
+                Awaiting Approval ({getTabCount('awaiting_approval')})
+              </TabsTrigger>
+              <TabsTrigger value="pending">
+                Pending ({getTabCount('pending')})
+              </TabsTrigger>
+              <TabsTrigger value="processing">
+                Processing ({getTabCount('processing')})
+              </TabsTrigger>
+              <TabsTrigger value="completed">
+                Completed ({getTabCount('completed')})
+              </TabsTrigger>
+              <TabsTrigger value="failed">
+                Failed ({getTabCount('failed')})
+              </TabsTrigger>
+            </TabsList>
 
-                  <CardContent className="space-y-2">
-                    {task.task_details && (
-                      <p className="text-sm text-muted-foreground">
-                        {task.task_details}
-                      </p>
-                    )}
-
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {new Date(task.created_at).toLocaleString()}
-                      </div>
-                      {task.department && (
-                        <Badge variant="outline" className="text-xs">
-                          {task.department}
-                        </Badge>
-                      )}
-                      {task.priority && (
-                        <Badge variant="secondary" className="text-xs">
-                          Priority: {task.priority}
-                        </Badge>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-semibold text-lg">No AI Tasks Recorded</h3>
-              <p className="text-muted-foreground">
-                AI task activity will appear here when workers begin processing
-              </p>
-            </div>
-          )}
+            <TabsContent value={activeTab} className="space-y-3">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-muted-foreground">Loading tasks…</span>
+                </div>
+              ) : filteredTasks.length > 0 ? (
+                filteredTasks.map(task => (
+                  <TaskExecutionCard 
+                    key={task.id} 
+                    task={task as ExtendedAIWorkTask} 
+                  />
+                ))
+              ) : (
+                <div className="text-center py-12">
+                  <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-semibold text-lg">No Tasks in This View</h3>
+                  <p className="text-muted-foreground">
+                    {activeTab === 'all' 
+                      ? 'Click "Assign AI Task" to create a new task'
+                      : `No ${activeTab.replace('_', ' ')} tasks found`
+                    }
+                  </p>
+                  {activeTab === 'all' && (
+                    <Button 
+                      className="mt-4" 
+                      onClick={() => setShowAssignModal(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Assign First Task
+                    </Button>
+                  )}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
+
+      {/* Assign Task Modal */}
+      <AssignAITaskModal 
+        open={showAssignModal} 
+        onOpenChange={setShowAssignModal} 
+      />
     </div>
   );
 }
