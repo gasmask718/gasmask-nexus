@@ -419,6 +419,7 @@ import {
   AllRoutesPage,
   MultiBrandDeliveryPage,
   LiveMapPage,
+  LiveMapCommandCenter,
   RouteOpsCenter as DeliveryRouteOpsCenter,
   MyRouteToday
 } from '@/pages/delivery';
@@ -1042,7 +1043,7 @@ export default function AppRoutes() {
         <Route path="/delivery/routes/all" element={<AllRoutesPage />} />
         <Route path="/delivery/route-optimizer" element={<RouteOptimizerPage />} />
         <Route path="/delivery/route-ops" element={<DeliveryRouteOpsCenter />} />
-        <Route path="/delivery/live-map" element={<LiveMapPage />} />
+        <Route path="/delivery/live-map" element={<LiveMapCommandCenter />} />
         <Route path="/delivery/capacity" element={<DeliveryCapacity />} />
         <Route path="/delivery/drivers" element={<DriversManagement />} />
         <Route path="/delivery/bikers" element={<BikersManagement />} />
@@ -1282,8 +1283,8 @@ export default function AppRoutes() {
         <Route path="/driver/my-route/:deliveryId" element={<Navigate to="/delivery/my-route/:deliveryId" replace />} />
         <Route path="/me/home" element={<WorkerHome />} />
         <Route path="/me/driver" element={<WorkerHome />} />
-        <Route path="/operations/live-map" element={<LiveMap />} />
-        <Route path="/live-map" element={<LiveMap />} />
+        <Route path="/operations/live-map" element={<LiveMapCommandCenter />} />
+        <Route path="/live-map" element={<LiveMapCommandCenter />} />
         <Route path="/wallet" element={<WalletPage />} />
         <Route path="/subscriptions" element={<Subscriptions />} />
         <Route path="/expansion/capacity" element={<DeliveryCapacity />} />
