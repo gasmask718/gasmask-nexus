@@ -24,4 +24,5 @@ export { default as MultiBrandDeliveryPage } from './MultiBrandDeliveryPage';
 export { default as LiveMapPage } from './LiveMapPage';
 export { default as RouteOpsCenter } from './RouteOpsCenter';
 export { default as RouteOpsCenterEnhanced } from './RouteOpsCenterEnhanced';
+export { default as OpsCommandCenter } from './OpsCommandCenter';
 export { default as MyRouteToday } from './MyRouteToday';
