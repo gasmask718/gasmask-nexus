@@ -4767,6 +4767,47 @@ export type Database = {
           },
         ]
       }
+      analytics_computation_log: {
+        Row: {
+          computation_type: string
+          computed_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          route_id: string
+          status: string | null
+          worker_id: string | null
+        }
+        Insert: {
+          computation_type: string
+          computed_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          route_id: string
+          status?: string | null
+          worker_id?: string | null
+        }
+        Update: {
+          computation_type?: string
+          computed_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          route_id?: string
+          status?: string | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_computation_log_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_clients: {
         Row: {
           client_id: string
@@ -5378,6 +5419,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      autonomy_blocks: {
+        Row: {
+          block_reason: string
+          block_type: string
+          blocked_at: string | null
+          cleared_at: string | null
+          cleared_by: string | null
+          context: Json | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          worker_id: string
+        }
+        Insert: {
+          block_reason: string
+          block_type: string
+          blocked_at?: string | null
+          cleared_at?: string | null
+          cleared_by?: string | null
+          context?: Json | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          worker_id: string
+        }
+        Update: {
+          block_reason?: string
+          block_type?: string
+          blocked_at?: string | null
+          cleared_at?: string | null
+          cleared_by?: string | null
+          context?: Json | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          worker_id?: string
+        }
+        Relationships: []
       }
       autonomy_envelopes: {
         Row: {
@@ -29865,6 +29945,72 @@ export type Database = {
         }
         Relationships: []
       }
+      playbook_actions: {
+        Row: {
+          action_label: string
+          action_type: string
+          alert_id: string | null
+          completed_at: string | null
+          completed_by: string | null
+          context: Json | null
+          created_at: string | null
+          dismissed_reason: string | null
+          id: string
+          playbook_rule: string
+          priority: number | null
+          route_id: string | null
+          status: string | null
+          worker_id: string | null
+        }
+        Insert: {
+          action_label: string
+          action_type: string
+          alert_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          context?: Json | null
+          created_at?: string | null
+          dismissed_reason?: string | null
+          id?: string
+          playbook_rule: string
+          priority?: number | null
+          route_id?: string | null
+          status?: string | null
+          worker_id?: string | null
+        }
+        Update: {
+          action_label?: string
+          action_type?: string
+          alert_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          context?: Json | null
+          created_at?: string | null
+          dismissed_reason?: string | null
+          id?: string
+          playbook_rule?: string
+          priority?: number | null
+          route_id?: string | null
+          status?: string | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playbook_actions_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playbook_actions_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       playbook_usage_log: {
         Row: {
           business_id: string
@@ -47007,6 +47153,10 @@ export type Database = {
       }
       can_send_messages: { Args: { user_id: string }; Returns: boolean }
       cancel_payout_batch: { Args: { p_batch_id: string }; Returns: undefined }
+      check_autonomy_eligibility: {
+        Args: { p_worker_id: string }
+        Returns: Json
+      }
       check_opt_out_before_call: {
         Args: { p_business_id?: string; p_phone: string }
         Returns: Json
@@ -47046,6 +47196,10 @@ export type Database = {
       }
       current_ambassador_id: { Args: never; Returns: string }
       detect_intent_conflicts: { Args: { p_intent_id: string }; Returns: Json }
+      evaluate_playbook_rules: {
+        Args: { p_worker_id: string }
+        Returns: undefined
+      }
       expire_old_simulations: { Args: never; Returns: undefined }
       export_payout_batch_csv: {
         Args: { p_batch_id: string }
