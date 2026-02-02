@@ -471,6 +471,7 @@ import AITasks from '@/pages/grabba/ai-operations/AITasks';
 import AIPredictions from '@/pages/grabba/ai-operations/AIPredictions';
 import AIAlerts from '@/pages/grabba/ai-operations/AIAlerts';
 import { Floor9Hub, Floor9Playbooks, Floor9ActionQueue, Floor9InstinctLog, Floor9Results } from '@/pages/floor9';
+import Floor9Router from '@/routes/Floor9Router';
 import FinancialDashboard from '@/pages/grabba/FinancialDashboard';
 import PersonalFinance from '@/pages/grabba/PersonalFinance';
 import PayrollManager from '@/pages/grabba/PayrollManager';
@@ -1781,7 +1782,21 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
-      {/* Floor 9 - Enterprise AI Operations */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* FLOOR 9 - ENTERPRISE AI OPERATIONS                                          */}
+      {/* Canonical route: /grabba/floor9                                              */}
+      {/* Anti-404 shield: All unknown Floor 9 routes redirect to hub                  */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      
+      {/* Legacy redirects - prevent 404s from old routes */}
+      <Route path="/grabba/ai-operations" element={<Navigate to="/grabba/floor9" replace />} />
+      <Route path="/grabba/ai-operations/*" element={<Navigate to="/grabba/floor9" replace />} />
+      <Route path="/floor9" element={<Navigate to="/grabba/floor9" replace />} />
+      <Route path="/floor9/*" element={<Navigate to="/grabba/floor9" replace />} />
+      <Route path="/ai-operations" element={<Navigate to="/grabba/floor9" replace />} />
+      <Route path="/ai-operations/*" element={<Navigate to="/grabba/floor9" replace />} />
+      
+      {/* Floor 9 - Canonical Hub Route */}
       <Route path="/grabba/floor9" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'owner']} showLocked>
@@ -1789,31 +1804,12 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
-      <Route path="/grabba/floor9/playbooks" element={
+      
+      {/* Floor 9 - Subpages with Anti-404 Router */}
+      <Route path="/grabba/floor9/*" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'owner']} showLocked>
-            <Layout><GrabbaLayout><Floor9Playbooks /></GrabbaLayout></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
-      <Route path="/grabba/floor9/action-queue" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'owner']} showLocked>
-            <Layout><GrabbaLayout><Floor9ActionQueue /></GrabbaLayout></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
-      <Route path="/grabba/floor9/instinct-log" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'owner']} showLocked>
-            <Layout><GrabbaLayout><Floor9InstinctLog /></GrabbaLayout></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
-      <Route path="/grabba/floor9/results" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'owner']} showLocked>
-            <Layout><GrabbaLayout><Floor9Results /></GrabbaLayout></Layout>
+            <Layout><GrabbaLayout><Floor9Router /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />

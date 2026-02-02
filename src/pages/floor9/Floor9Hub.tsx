@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,11 @@ import { useKillSwitchStatus } from '@/hooks/useDriftAlerts';
 import { ShadowModeBanner, ShadowModeGovernanceRules } from '@/components/floor9';
 
 const Floor9Hub = () => {
+  // Route health check - verifies Floor 9 Hub mounts correctly
+  useEffect(() => {
+    console.info('[Floor 9] AI Operations Hub mounted successfully at /grabba/floor9');
+  }, []);
+
   const { data: stats, isLoading: statsLoading } = useWorkforceStats();
   const { data: health, isLoading: healthLoading } = useAIHealthMetrics();
   const { data: tasks } = useFloor9Tasks({ status: 'processing', limit: 5 });

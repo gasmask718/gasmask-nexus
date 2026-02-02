@@ -438,16 +438,18 @@ export const SECTION_GRABBA_OS: OSFloor = {
   items: [
     { id: 'grabba-penthouse', label: 'Command Penthouse', path: '/grabba/command-penthouse', icon: Crown, roles: ['ceo', 'admin'] },
     { id: 'grabba-cluster', label: 'Cluster Dashboard', path: '/grabba/cluster-dashboard', icon: LayoutDashboard, roles: ['ceo', 'admin', 'va'] },
-    { id: 'grabba-ai-ops', label: 'AI Operations', path: '/grabba/ai-operations', icon: Brain, roles: ['ceo', 'admin'] },
+    // Floor 9 - AI Operations (canonical route: /grabba/floor9)
+    { id: 'grabba-floor9', label: 'Floor 9 — AI Ops', path: '/grabba/floor9', icon: Brain, roles: ['ceo', 'admin'] },
+    { id: 'grabba-floor9-playbooks', label: 'AI Playbooks', path: '/grabba/floor9/playbooks', icon: ClipboardList, roles: ['ceo', 'admin'] },
+    { id: 'grabba-floor9-queue', label: 'Action Queue', path: '/grabba/floor9/action-queue', icon: Bell, roles: ['ceo', 'admin'] },
+    { id: 'grabba-floor9-instinct', label: 'Instinct Log', path: '/grabba/floor9/instinct-log', icon: Eye, roles: ['ceo', 'admin'] },
+    { id: 'grabba-floor9-results', label: 'AI Results', path: '/grabba/floor9/results', icon: BarChart3, roles: ['ceo', 'admin'] },
     { id: 'grabba-autopilot', label: 'Autopilot Console', path: '/grabba/autopilot', icon: Zap, roles: ['ceo', 'admin'] },
     { id: 'grabba-upload', label: 'Unified Upload', path: '/grabba/unified-upload', icon: Database, roles: ['ceo', 'admin', 'va'] },
     { id: 'grabba-delivery', label: 'Multi-Brand Delivery', path: '/grabba/multi-brand-delivery', icon: Truck, roles: ['ceo', 'admin', 'va'] },
     { id: 'grabba-command', label: 'Command Console', path: '/grabba/command-console', icon: Cpu, roles: ['ceo', 'admin'] },
-    { id: 'grabba-results', label: 'Results', path: '/grabba/results', icon: BarChart3, roles: ['ceo', 'admin', 'va'] },
-    { id: 'grabba-actions', label: 'Action Queue', path: '/grabba/action-queue', icon: ClipboardList, roles: ['ceo', 'admin', 'va'] },
     { id: 'grabba-drilldown', label: 'Drilldown', path: '/grabba/drilldown', icon: Target, roles: ['ceo', 'admin'] },
     { id: 'grabba-briefing', label: 'Daily Briefing', path: '/grabba/daily-briefing', icon: Calendar, roles: ['ceo', 'admin', 'va'] },
-    { id: 'grabba-instinct', label: 'Instinct Log', path: '/grabba/instinct-log', icon: Eye, roles: ['ceo', 'admin'] },
   ],
 };
 
