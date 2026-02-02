@@ -912,6 +912,8 @@ export type Database = {
           decided_at: string | null
           decided_by: string | null
           decision_notes: string | null
+          feedback_id: string | null
+          feedback_submitted_at: string | null
           human_decision: string | null
           id: string
           modification_what_changed: string | null
@@ -932,6 +934,8 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_notes?: string | null
+          feedback_id?: string | null
+          feedback_submitted_at?: string | null
           human_decision?: string | null
           id?: string
           modification_what_changed?: string | null
@@ -952,6 +956,8 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_notes?: string | null
+          feedback_id?: string | null
+          feedback_submitted_at?: string | null
           human_decision?: string | null
           id?: string
           modification_what_changed?: string | null
@@ -964,6 +970,13 @@ export type Database = {
           worker_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_action_queue_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: false
+            referencedRelation: "ai_feedback_entries"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_action_queue_task_id_fkey"
             columns: ["task_id"]
@@ -2219,6 +2232,76 @@ export type Database = {
           },
         ]
       }
+      ai_confidence_recalibrations: {
+        Row: {
+          adjustment_delta: number | null
+          approved_by: string | null
+          based_on_feedback_count: number | null
+          based_on_pattern_id: string | null
+          created_at: string
+          id: string
+          new_baseline_confidence: number | null
+          playbook_id: string | null
+          previous_baseline_confidence: number | null
+          recalibration_reason: string
+          task_type: string | null
+          triggered_by: string | null
+          worker_id: string | null
+        }
+        Insert: {
+          adjustment_delta?: number | null
+          approved_by?: string | null
+          based_on_feedback_count?: number | null
+          based_on_pattern_id?: string | null
+          created_at?: string
+          id?: string
+          new_baseline_confidence?: number | null
+          playbook_id?: string | null
+          previous_baseline_confidence?: number | null
+          recalibration_reason: string
+          task_type?: string | null
+          triggered_by?: string | null
+          worker_id?: string | null
+        }
+        Update: {
+          adjustment_delta?: number | null
+          approved_by?: string | null
+          based_on_feedback_count?: number | null
+          based_on_pattern_id?: string | null
+          created_at?: string
+          id?: string
+          new_baseline_confidence?: number | null
+          playbook_id?: string | null
+          previous_baseline_confidence?: number | null
+          recalibration_reason?: string
+          task_type?: string | null
+          triggered_by?: string | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_confidence_recalibrations_based_on_pattern_id_fkey"
+            columns: ["based_on_pattern_id"]
+            isOneToOne: false
+            referencedRelation: "ai_feedback_patterns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_confidence_recalibrations_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "ai_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_confidence_recalibrations_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "ai_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_daily_briefings: {
         Row: {
           ai_summary: string | null
@@ -2397,6 +2480,209 @@ export type Database = {
           task_type?: string
         }
         Relationships: []
+      }
+      ai_feedback_entries: {
+        Row: {
+          action_queue_id: string | null
+          confidence_at_decision: number | null
+          created_at: string
+          decision_type: string
+          escalation_was_correct: boolean | null
+          feedback_category: string
+          feedback_reasoning: string
+          feedback_subcategory: string | null
+          id: string
+          modified_to: string | null
+          original_recommendation: string | null
+          pattern_detected: string | null
+          playbook_id: string | null
+          should_retrain_on: boolean | null
+          submitted_at: string
+          submitted_by: string | null
+          suggested_rule_change: string | null
+          target_entity_type: string | null
+          task_id: string | null
+          task_type: string | null
+          was_overconfident: boolean | null
+          was_underconfident: boolean | null
+          what_changed: string | null
+          why_changed: string | null
+          worker_id: string | null
+        }
+        Insert: {
+          action_queue_id?: string | null
+          confidence_at_decision?: number | null
+          created_at?: string
+          decision_type: string
+          escalation_was_correct?: boolean | null
+          feedback_category: string
+          feedback_reasoning: string
+          feedback_subcategory?: string | null
+          id?: string
+          modified_to?: string | null
+          original_recommendation?: string | null
+          pattern_detected?: string | null
+          playbook_id?: string | null
+          should_retrain_on?: boolean | null
+          submitted_at?: string
+          submitted_by?: string | null
+          suggested_rule_change?: string | null
+          target_entity_type?: string | null
+          task_id?: string | null
+          task_type?: string | null
+          was_overconfident?: boolean | null
+          was_underconfident?: boolean | null
+          what_changed?: string | null
+          why_changed?: string | null
+          worker_id?: string | null
+        }
+        Update: {
+          action_queue_id?: string | null
+          confidence_at_decision?: number | null
+          created_at?: string
+          decision_type?: string
+          escalation_was_correct?: boolean | null
+          feedback_category?: string
+          feedback_reasoning?: string
+          feedback_subcategory?: string | null
+          id?: string
+          modified_to?: string | null
+          original_recommendation?: string | null
+          pattern_detected?: string | null
+          playbook_id?: string | null
+          should_retrain_on?: boolean | null
+          submitted_at?: string
+          submitted_by?: string | null
+          suggested_rule_change?: string | null
+          target_entity_type?: string | null
+          task_id?: string | null
+          task_type?: string | null
+          was_overconfident?: boolean | null
+          was_underconfident?: boolean | null
+          what_changed?: string | null
+          why_changed?: string | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_feedback_entries_action_queue_id_fkey"
+            columns: ["action_queue_id"]
+            isOneToOne: false
+            referencedRelation: "ai_action_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_feedback_entries_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "ai_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_feedback_entries_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_feedback_entries_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "ai_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_feedback_patterns: {
+        Row: {
+          approved_count: number
+          avg_confidence_when_approved: number | null
+          avg_confidence_when_rejected: number | null
+          confidence_recommendation: string | null
+          created_at: string
+          id: string
+          modified_count: number
+          overconfidence_rate: number | null
+          period_end: string
+          period_start: string
+          playbook_id: string | null
+          rejected_count: number
+          rolled_back_count: number
+          suggested_adjustments: Json | null
+          target_entity_type: string | null
+          task_type: string | null
+          top_modification_reasons: Json | null
+          top_rejection_categories: Json | null
+          total_feedback_count: number
+          underconfidence_rate: number | null
+          updated_at: string
+          worker_id: string | null
+        }
+        Insert: {
+          approved_count?: number
+          avg_confidence_when_approved?: number | null
+          avg_confidence_when_rejected?: number | null
+          confidence_recommendation?: string | null
+          created_at?: string
+          id?: string
+          modified_count?: number
+          overconfidence_rate?: number | null
+          period_end: string
+          period_start: string
+          playbook_id?: string | null
+          rejected_count?: number
+          rolled_back_count?: number
+          suggested_adjustments?: Json | null
+          target_entity_type?: string | null
+          task_type?: string | null
+          top_modification_reasons?: Json | null
+          top_rejection_categories?: Json | null
+          total_feedback_count?: number
+          underconfidence_rate?: number | null
+          updated_at?: string
+          worker_id?: string | null
+        }
+        Update: {
+          approved_count?: number
+          avg_confidence_when_approved?: number | null
+          avg_confidence_when_rejected?: number | null
+          confidence_recommendation?: string | null
+          created_at?: string
+          id?: string
+          modified_count?: number
+          overconfidence_rate?: number | null
+          period_end?: string
+          period_start?: string
+          playbook_id?: string | null
+          rejected_count?: number
+          rolled_back_count?: number
+          suggested_adjustments?: Json | null
+          target_entity_type?: string | null
+          task_type?: string | null
+          top_modification_reasons?: Json | null
+          top_rejection_categories?: Json | null
+          total_feedback_count?: number
+          underconfidence_rate?: number | null
+          updated_at?: string
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_feedback_patterns_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "ai_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_feedback_patterns_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "ai_workers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_follow_up_log: {
         Row: {
@@ -4185,6 +4471,7 @@ export type Database = {
           assigned_to_worker_id: string | null
           auto_assigned: boolean | null
           completed_at: string | null
+          confidence_adjustment_applied: number | null
           confidence_score: number | null
           created_at: string
           created_by: string | null
@@ -4193,9 +4480,11 @@ export type Database = {
           error_message: string | null
           execution_log: Json | null
           execution_mode: string | null
+          feedback_id: string | null
           id: string
           input_data: Json | null
           instructions: string | null
+          learning_applied: boolean | null
           output: Json | null
           parent_task_id: string | null
           priority: string
@@ -4220,6 +4509,7 @@ export type Database = {
           assigned_to_worker_id?: string | null
           auto_assigned?: boolean | null
           completed_at?: string | null
+          confidence_adjustment_applied?: number | null
           confidence_score?: number | null
           created_at?: string
           created_by?: string | null
@@ -4228,9 +4518,11 @@ export type Database = {
           error_message?: string | null
           execution_log?: Json | null
           execution_mode?: string | null
+          feedback_id?: string | null
           id?: string
           input_data?: Json | null
           instructions?: string | null
+          learning_applied?: boolean | null
           output?: Json | null
           parent_task_id?: string | null
           priority?: string
@@ -4255,6 +4547,7 @@ export type Database = {
           assigned_to_worker_id?: string | null
           auto_assigned?: boolean | null
           completed_at?: string | null
+          confidence_adjustment_applied?: number | null
           confidence_score?: number | null
           created_at?: string
           created_by?: string | null
@@ -4263,9 +4556,11 @@ export type Database = {
           error_message?: string | null
           execution_log?: Json | null
           execution_mode?: string | null
+          feedback_id?: string | null
           id?: string
           input_data?: Json | null
           instructions?: string | null
+          learning_applied?: boolean | null
           output?: Json | null
           parent_task_id?: string | null
           priority?: string
@@ -4288,6 +4583,13 @@ export type Database = {
             columns: ["assigned_to_worker_id"]
             isOneToOne: false
             referencedRelation: "ai_workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_work_tasks_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: false
+            referencedRelation: "ai_feedback_entries"
             referencedColumns: ["id"]
           },
           {
@@ -47886,6 +48188,10 @@ export type Database = {
       admin_unlock_profile: {
         Args: { p_reason?: string; p_unlocked_by: string; p_worker_id: string }
         Returns: boolean
+      }
+      aggregate_feedback_patterns: {
+        Args: { p_period_end: string; p_period_start: string }
+        Returns: number
       }
       apply_commission_overrides: {
         Args: { p_commission_id: string }

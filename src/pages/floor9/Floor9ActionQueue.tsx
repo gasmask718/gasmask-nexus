@@ -14,7 +14,7 @@ import {
   ThumbsDown,
   Edit,
   Eye,
-  Ban,
+  Brain,
 } from 'lucide-react';
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,7 +28,10 @@ import {
   RejectFeedbackRequired,
   ShadowModeGovernanceRules,
   ImmutableLogNotice,
+  FeedbackCaptureModal,
+  FeedbackAnalyticsPanel,
 } from '@/components/floor9';
+import { FeedbackDecisionType } from '@/hooks/useLearningFeedback';
 
 const Floor9ActionQueue = () => {
   const { data: actionQueue, isLoading } = useActionQueue();
@@ -37,32 +40,56 @@ const Floor9ActionQueue = () => {
   const [rejectingItemId, setRejectingItemId] = useState<string | null>(null);
   const [showRejectFeedbackFor, setShowRejectFeedbackFor] = useState<string | null>(null);
   const [modifyDialogOpen, setModifyDialogOpen] = useState<string | null>(null);
+  
+  // Learning Feedback state
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [feedbackContext, setFeedbackContext] = useState<{
+    decisionType: FeedbackDecisionType;
+    actionQueueId: string;
+    taskType?: string;
+    confidenceScore?: number;
+    originalRecommendation?: string;
+  } | null>(null);
 
   const pendingItems = actionQueue?.filter(item => item.status === 'pending') || [];
   const resolvedItems = actionQueue?.filter(item => item.status !== 'pending') || [];
 
   // PHASE 9.1: Reject requires feedback - cannot reject without explanation
-  const handleRejectAttempt = (itemId: string) => {
+  const handleRejectAttempt = (itemId: string, item?: any) => {
     if (!notes.trim()) {
       setShowRejectFeedbackFor(itemId);
       return;
     }
-    handleResolve(itemId, 'rejected');
+    handleResolve(itemId, 'rejected', item);
   };
 
   // PHASE 9.1: Modify requires justification
-  const handleModifyAttempt = (itemId: string) => {
+  const handleModifyAttempt = (itemId: string, item?: any) => {
     if (!notes.trim() || notes.length < 10) {
       return; // Dialog validation will show error
     }
-    handleResolve(itemId, 'modified');
+    handleResolve(itemId, 'modified', item);
   };
 
-  const handleResolve = (itemId: string, decision: 'accepted' | 'rejected' | 'modified') => {
+  const handleResolve = (itemId: string, decision: 'accepted' | 'rejected' | 'modified', item?: any) => {
     resolveAction.mutate({ 
       itemId, 
       decision, 
       notes: notes || `${decision.toUpperCase()} via Floor 9 Action Queue at ${new Date().toISOString()}`,
+    }, {
+      onSuccess: () => {
+        // Open feedback modal for learning loop
+        if (item) {
+          setFeedbackContext({
+            decisionType: decision as FeedbackDecisionType,
+            actionQueueId: itemId,
+            taskType: item.action_type,
+            confidenceScore: item.confidence_score,
+            originalRecommendation: item.ai_recommendation,
+          });
+          setFeedbackModalOpen(true);
+        }
+      }
     });
     setNotes('');
     setShowRejectFeedbackFor(null);
@@ -275,7 +302,7 @@ const Floor9ActionQueue = () => {
                                     variant="destructive" 
                                     size="sm"
                                     disabled={notes.trim().length < 10 || resolveAction.isPending}
-                                    onClick={() => handleResolve(item.id, 'rejected')}
+                                    onClick={() => handleResolve(item.id, 'rejected', item)}
                                   >
                                     Submit Rejection
                                   </Button>
@@ -288,7 +315,7 @@ const Floor9ActionQueue = () => {
                             <div className="flex gap-2 justify-end mt-4">
                               <Button
                                 variant="outline"
-                                onClick={() => handleRejectAttempt(item.id)}
+                                onClick={() => handleRejectAttempt(item.id, item)}
                                 disabled={resolveAction.isPending || rejectingItemId === item.id}
                               >
                                 <ThumbsDown className="h-4 w-4 mr-2" />
@@ -326,7 +353,7 @@ const Floor9ActionQueue = () => {
                                   <DialogFooter>
                                     <Button 
                                       disabled={notes.trim().length < 10 || resolveAction.isPending}
-                                      onClick={() => handleModifyAttempt(item.id)}
+                                      onClick={() => handleModifyAttempt(item.id, item)}
                                     >
                                       Submit Modified
                                     </Button>
@@ -335,7 +362,7 @@ const Floor9ActionQueue = () => {
                               </Dialog>
                               
                               <Button
-                                onClick={() => handleResolve(item.id, 'accepted')}
+                                onClick={() => handleResolve(item.id, 'accepted', item)}
                                 disabled={resolveAction.isPending}
                               >
                                 <ThumbsUp className="h-4 w-4 mr-2" />
@@ -358,11 +385,26 @@ const Floor9ActionQueue = () => {
             </Card>
           </div>
 
-          {/* Governance Sidebar */}
-          <div className="lg:col-span-1">
+          {/* Governance & Analytics Sidebar */}
+          <div className="lg:col-span-1 space-y-6">
             <ShadowModeGovernanceRules />
+            <FeedbackAnalyticsPanel days={30} />
           </div>
         </div>
+
+        {/* Learning Feedback Modal */}
+        {feedbackContext && (
+          <FeedbackCaptureModal
+            open={feedbackModalOpen}
+            onOpenChange={setFeedbackModalOpen}
+            decisionType={feedbackContext.decisionType}
+            actionQueueId={feedbackContext.actionQueueId}
+            taskType={feedbackContext.taskType}
+            confidenceScore={feedbackContext.confidenceScore}
+            originalRecommendation={feedbackContext.originalRecommendation}
+            onFeedbackSubmitted={() => setFeedbackContext(null)}
+          />
+        )}
       </div>
     </GrabbaLayout>
   );
