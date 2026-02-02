@@ -11519,6 +11519,318 @@ export type Database = {
         }
         Relationships: []
       }
+      collection_accounts: {
+        Row: {
+          assigned_ambassador_id: string | null
+          assigned_to_user_id: string | null
+          created_at: string
+          entity_id: string
+          entity_name: string | null
+          entity_type: Database["public"]["Enums"]["collection_entity_type"]
+          id: string
+          invoice_count: number | null
+          last_contact_at: string | null
+          max_days_overdue: number | null
+          next_action_at: string | null
+          notes: string | null
+          oldest_invoice_date: string | null
+          primary_brand: string | null
+          risk_tier: Database["public"]["Enums"]["collection_risk_tier"]
+          risk_tier_override: boolean | null
+          status: Database["public"]["Enums"]["collection_account_status"]
+          total_outstanding: number | null
+          total_overdue: number | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_ambassador_id?: string | null
+          assigned_to_user_id?: string | null
+          created_at?: string
+          entity_id: string
+          entity_name?: string | null
+          entity_type: Database["public"]["Enums"]["collection_entity_type"]
+          id?: string
+          invoice_count?: number | null
+          last_contact_at?: string | null
+          max_days_overdue?: number | null
+          next_action_at?: string | null
+          notes?: string | null
+          oldest_invoice_date?: string | null
+          primary_brand?: string | null
+          risk_tier?: Database["public"]["Enums"]["collection_risk_tier"]
+          risk_tier_override?: boolean | null
+          status?: Database["public"]["Enums"]["collection_account_status"]
+          total_outstanding?: number | null
+          total_overdue?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_ambassador_id?: string | null
+          assigned_to_user_id?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_name?: string | null
+          entity_type?: Database["public"]["Enums"]["collection_entity_type"]
+          id?: string
+          invoice_count?: number | null
+          last_contact_at?: string | null
+          max_days_overdue?: number | null
+          next_action_at?: string | null
+          notes?: string | null
+          oldest_invoice_date?: string | null
+          primary_brand?: string | null
+          risk_tier?: Database["public"]["Enums"]["collection_risk_tier"]
+          risk_tier_override?: boolean | null
+          status?: Database["public"]["Enums"]["collection_account_status"]
+          total_outstanding?: number | null
+          total_overdue?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      collection_actions: {
+        Row: {
+          action_type: Database["public"]["Enums"]["collection_action_type"]
+          case_id: string | null
+          channel: Database["public"]["Enums"]["collection_channel"]
+          collection_account_id: string
+          created_at: string
+          created_by: string | null
+          external_message_id: string | null
+          id: string
+          invoice_id: string | null
+          message_preview: string | null
+          payload: Json | null
+          status: string | null
+          subject: string | null
+          template_used: string | null
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["collection_action_type"]
+          case_id?: string | null
+          channel?: Database["public"]["Enums"]["collection_channel"]
+          collection_account_id: string
+          created_at?: string
+          created_by?: string | null
+          external_message_id?: string | null
+          id?: string
+          invoice_id?: string | null
+          message_preview?: string | null
+          payload?: Json | null
+          status?: string | null
+          subject?: string | null
+          template_used?: string | null
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["collection_action_type"]
+          case_id?: string | null
+          channel?: Database["public"]["Enums"]["collection_channel"]
+          collection_account_id?: string
+          created_at?: string
+          created_by?: string | null
+          external_message_id?: string | null
+          id?: string
+          invoice_id?: string | null
+          message_preview?: string | null
+          payload?: Json | null
+          status?: string | null
+          subject?: string | null
+          template_used?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_actions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "collection_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_actions_collection_account_id_fkey"
+            columns: ["collection_account_id"]
+            isOneToOne: false
+            referencedRelation: "collection_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collection_cases: {
+        Row: {
+          closed_at: string | null
+          closed_reason: string | null
+          collection_account_id: string
+          created_by: string | null
+          escalation_notes: string | null
+          id: string
+          opened_at: string
+          previous_stage: Database["public"]["Enums"]["collection_stage"] | null
+          reason: string | null
+          stage: Database["public"]["Enums"]["collection_stage"]
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_reason?: string | null
+          collection_account_id: string
+          created_by?: string | null
+          escalation_notes?: string | null
+          id?: string
+          opened_at?: string
+          previous_stage?:
+            | Database["public"]["Enums"]["collection_stage"]
+            | null
+          reason?: string | null
+          stage?: Database["public"]["Enums"]["collection_stage"]
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_reason?: string | null
+          collection_account_id?: string
+          created_by?: string | null
+          escalation_notes?: string | null
+          id?: string
+          opened_at?: string
+          previous_stage?:
+            | Database["public"]["Enums"]["collection_stage"]
+            | null
+          reason?: string | null
+          stage?: Database["public"]["Enums"]["collection_stage"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_cases_collection_account_id_fkey"
+            columns: ["collection_account_id"]
+            isOneToOne: false
+            referencedRelation: "collection_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collection_queue: {
+        Row: {
+          action_type: Database["public"]["Enums"]["collection_action_type"]
+          channel: Database["public"]["Enums"]["collection_channel"]
+          collection_account_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          processed_at: string | null
+          rule_id: string | null
+          scheduled_for: string
+          status: string
+          template_key: string | null
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["collection_action_type"]
+          channel: Database["public"]["Enums"]["collection_channel"]
+          collection_account_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          rule_id?: string | null
+          scheduled_for: string
+          status?: string
+          template_key?: string | null
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["collection_action_type"]
+          channel?: Database["public"]["Enums"]["collection_channel"]
+          collection_account_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          rule_id?: string | null
+          scheduled_for?: string
+          status?: string
+          template_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_queue_collection_account_id_fkey"
+            columns: ["collection_account_id"]
+            isOneToOne: false
+            referencedRelation: "collection_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_queue_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "collection_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collection_rules: {
+        Row: {
+          action_sequence: Json
+          brand: string | null
+          created_at: string
+          created_by: string | null
+          days_overdue_trigger: number
+          description: string | null
+          entity_type:
+            | Database["public"]["Enums"]["collection_entity_type"]
+            | null
+          id: string
+          is_auto_send: boolean | null
+          is_enabled: boolean | null
+          min_balance: number | null
+          name: string
+          priority: number | null
+          risk_tier_trigger:
+            | Database["public"]["Enums"]["collection_risk_tier"]
+            | null
+          updated_at: string
+        }
+        Insert: {
+          action_sequence?: Json
+          brand?: string | null
+          created_at?: string
+          created_by?: string | null
+          days_overdue_trigger?: number
+          description?: string | null
+          entity_type?:
+            | Database["public"]["Enums"]["collection_entity_type"]
+            | null
+          id?: string
+          is_auto_send?: boolean | null
+          is_enabled?: boolean | null
+          min_balance?: number | null
+          name: string
+          priority?: number | null
+          risk_tier_trigger?:
+            | Database["public"]["Enums"]["collection_risk_tier"]
+            | null
+          updated_at?: string
+        }
+        Update: {
+          action_sequence?: Json
+          brand?: string | null
+          created_at?: string
+          created_by?: string | null
+          days_overdue_trigger?: number
+          description?: string | null
+          entity_type?:
+            | Database["public"]["Enums"]["collection_entity_type"]
+            | null
+          id?: string
+          is_auto_send?: boolean | null
+          is_enabled?: boolean | null
+          min_balance?: number | null
+          name?: string
+          priority?: number | null
+          risk_tier_trigger?:
+            | Database["public"]["Enums"]["collection_risk_tier"]
+            | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       commission_dispute_evidence: {
         Row: {
           created_at: string
@@ -27607,6 +27919,62 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      payment_promises: {
+        Row: {
+          broken_at: string | null
+          cancelled_at: string | null
+          cancelled_reason: string | null
+          collection_account_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          kept_at: string | null
+          notes: string | null
+          promise_amount: number
+          promise_date: string
+          status: Database["public"]["Enums"]["promise_status"]
+          updated_at: string
+        }
+        Insert: {
+          broken_at?: string | null
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
+          collection_account_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kept_at?: string | null
+          notes?: string | null
+          promise_amount: number
+          promise_date: string
+          status?: Database["public"]["Enums"]["promise_status"]
+          updated_at?: string
+        }
+        Update: {
+          broken_at?: string | null
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
+          collection_account_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kept_at?: string | null
+          notes?: string | null
+          promise_amount?: number
+          promise_date?: string
+          status?: Database["public"]["Enums"]["promise_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_promises_collection_account_id_fkey"
+            columns: ["collection_account_id"]
+            isOneToOne: false
+            referencedRelation: "collection_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payout_attempts: {
         Row: {
@@ -46300,6 +46668,39 @@ export type Database = {
         | "ai_muted"
         | "escalated"
         | "ended"
+      collection_account_status:
+        | "active"
+        | "paused"
+        | "disputed"
+        | "escalated"
+        | "closed"
+      collection_action_type:
+        | "email_sent"
+        | "sms_sent"
+        | "call_logged"
+        | "statement_sent"
+        | "note_added"
+        | "promise_created"
+        | "promise_broken"
+        | "promise_kept"
+        | "escalated"
+        | "paused"
+        | "dispute_opened"
+        | "dispute_resolved"
+        | "assigned"
+        | "risk_updated"
+      collection_channel: "email" | "sms" | "phone" | "internal" | "system"
+      collection_entity_type: "store" | "customer" | "wholesaler" | "company"
+      collection_risk_tier: "low" | "medium" | "high" | "critical"
+      collection_stage:
+        | "soft_reminder"
+        | "second_notice"
+        | "final_notice"
+        | "payment_plan"
+        | "collections_internal"
+        | "pre_legal"
+        | "legal"
+        | "closed"
       commission_dispute_status:
         | "submitted"
         | "under_review"
@@ -46382,6 +46783,7 @@ export type Database = {
       payment_method: "cash" | "zelle" | "cashapp" | "venmo" | "other"
       payment_status: "unpaid" | "partial" | "paid" | "refunded" | "chargeback"
       payment_type: "pays_upfront" | "bill_to_bill"
+      promise_status: "active" | "kept" | "broken" | "cancelled"
       property_type:
         | "single_family"
         | "multi_family"
@@ -46689,6 +47091,42 @@ export const Constants = {
         "escalated",
         "ended",
       ],
+      collection_account_status: [
+        "active",
+        "paused",
+        "disputed",
+        "escalated",
+        "closed",
+      ],
+      collection_action_type: [
+        "email_sent",
+        "sms_sent",
+        "call_logged",
+        "statement_sent",
+        "note_added",
+        "promise_created",
+        "promise_broken",
+        "promise_kept",
+        "escalated",
+        "paused",
+        "dispute_opened",
+        "dispute_resolved",
+        "assigned",
+        "risk_updated",
+      ],
+      collection_channel: ["email", "sms", "phone", "internal", "system"],
+      collection_entity_type: ["store", "customer", "wholesaler", "company"],
+      collection_risk_tier: ["low", "medium", "high", "critical"],
+      collection_stage: [
+        "soft_reminder",
+        "second_notice",
+        "final_notice",
+        "payment_plan",
+        "collections_internal",
+        "pre_legal",
+        "legal",
+        "closed",
+      ],
       commission_dispute_status: [
         "submitted",
         "under_review",
@@ -46780,6 +47218,7 @@ export const Constants = {
       payment_method: ["cash", "zelle", "cashapp", "venmo", "other"],
       payment_status: ["unpaid", "partial", "paid", "refunded", "chargeback"],
       payment_type: ["pays_upfront", "bill_to_bill"],
+      promise_status: ["active", "kept", "broken", "cancelled"],
       property_type: [
         "single_family",
         "multi_family",
