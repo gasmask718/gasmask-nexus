@@ -76,6 +76,7 @@ import MessagesPage from '@/pages/Messages';
 import CommunicationInsights from '@/pages/CommunicationInsights';
 import RouteOptimizer from '@/pages/RouteOptimizer';
 import RouteOpsCenter from '@/pages/RouteOpsCenter';
+import { RouteOpsCenterEnhanced } from '@/pages/delivery';
 import MyRoute from '@/pages/MyRoute';
 import SidebarVisualTest from '@/pages/SidebarVisualTest';
 import SidebarDebug from '@/pages/debug/SidebarDebug';
@@ -702,8 +703,8 @@ export default function AppRoutes() {
         <Route path="/stores/order" element={<StoreOrder />} />
         <Route path="/routes" element={<RoutesPage />} />
         <Route path="/routes/optimizer" element={<RouteOptimizer />} />
-        <Route path="/routes/ops-center" element={<RouteOpsCenter />} />
-        <Route path="/route-ops-center" element={<RouteOpsCenter />} />
+        <Route path="/routes/ops-center" element={<RouteOpsCenterEnhanced />} />
+        <Route path="/route-ops-center" element={<RouteOpsCenterEnhanced />} />
         <Route path="/routes/:id" element={<RouteDetail />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="/wholesale" element={<Wholesale />} />
