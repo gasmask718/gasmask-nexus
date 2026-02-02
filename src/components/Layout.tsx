@@ -215,14 +215,14 @@ const DYNASTY_NAVIGATION = {
       id: 'floor-5',
       name: '💰 Floor 5 — Finance & Orders',
       items: [
-        { path: '/grabba/finance', label: 'Financial Dashboard', icon: DollarSign },
-        { path: '/grabba/financial-dashboard', label: 'Finance Overview', icon: PieChart },
-        { path: '/billing-center', label: 'Billing Center', icon: CreditCard },
+        { path: '/floor5', label: 'Finance Dashboard', icon: DollarSign },
         { path: '/billing/invoices', label: 'Invoices', icon: FileText },
-        { path: '/wholesale-fulfillment', label: 'Wholesale Fulfillment', icon: Package },
+        { path: '/billing/center', label: 'Billing Center', icon: CreditCard },
         { path: '/unpaid-accounts', label: 'Unpaid Accounts', icon: AlertTriangle },
+        { path: '/wholesale/fulfillment', label: 'Wholesale Fulfillment', icon: Package },
         { path: '/payroll', label: 'Payroll', icon: Wallet },
         { path: '/grabba/payroll-manager', label: 'Payroll Manager', icon: Calculator },
+        { path: '/grabba/finance', label: 'Business Ledger', icon: PieChart },
       ],
     },
     {
