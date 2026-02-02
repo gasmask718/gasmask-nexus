@@ -1808,6 +1808,9 @@ export default function AppRoutes() {
       <Route path="/grabba/routines" element={<Navigate to="/grabba/floor9/playbooks" replace />} />
       <Route path="/grabba/instinct-log" element={<Navigate to="/grabba/floor9/instinct-log" replace />} />
       <Route path="/grabba/action-queue" element={<Navigate to="/grabba/floor9/action-queue" replace />} />
+      <Route path="/grabba/ai-predictions" element={<Navigate to="/grabba/floor9/predictions" replace />} />
+      <Route path="/ai-predictions" element={<Navigate to="/grabba/floor9/predictions" replace />} />
+      <Route path="/predictions" element={<Navigate to="/grabba/floor9/predictions" replace />} />
       
       {/* Deep legacy paths - comprehensive healing */}
       <Route path="/ai/*" element={<Navigate to="/grabba/floor9" replace />} />
