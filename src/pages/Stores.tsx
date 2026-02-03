@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload, Package } from 'lucide-react';
+import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload, Package, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCall } from '@/components/communication/CallProvider';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
@@ -72,6 +72,7 @@ const Stores = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [tagFilter, setTagFilter] = useState<string>('all');
   const [stickerFilter, setStickerFilter] = useState<string>('all');
+  const [newStoresOnly, setNewStoresOnly] = useState(false);
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all');
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [newStoreName, setNewStoreName] = useState('');
@@ -158,6 +159,21 @@ const Stores = () => {
   
   // Fetch product counts for stores
   const { data: storeProductCounts = {} } = useStoreProductCounts();
+
+  // Fetch store IDs that have notes (to identify "new" stores without notes)
+  const { data: storeIdsWithNotes = new Set<string>() } = useQuery({
+    queryKey: ['stores-with-notes-ids', simulationMode],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('store_notes')
+        .select('store_id');
+      
+      if (error) throw error;
+      
+      return new Set((data || []).map(row => row.store_id));
+    },
+    select: (data) => data,
+  });
 
   // Fetch stores from database - RLS automatically filters by simulation mode
   const { data: stores = [], isLoading } = useQuery({
@@ -378,7 +394,10 @@ const Stores = () => {
       (paymentTypeFilter === 'not_set' && !store.payment_type) ||
       (paymentTypeFilter !== 'not_set' && store.payment_type === paymentTypeFilter);
     
-    return matchesSearch && matchesStatus && matchesTag && matchesSticker && matchesPaymentType;
+    // New stores filter (stores without notes)
+    const matchesNewStores = !newStoresOnly || !storeIdsWithNotes.has(store.id);
+    
+    return matchesSearch && matchesStatus && matchesTag && matchesSticker && matchesPaymentType && matchesNewStores;
   });
 
   const getStatusColor = (status: string) => {
@@ -411,6 +430,9 @@ const Stores = () => {
     billToBill: stores.filter(s => s.payment_type === 'bill_to_bill').length,
     notSet: stores.filter(s => !s.payment_type).length,
   };
+  
+  // Count of new stores (stores without notes)
+  const newStoresCount = stores.filter(s => !storeIdsWithNotes.has(s.id)).length;
 
 
   const formatBrandName = (brand: string) => {
@@ -601,12 +623,23 @@ const Stores = () => {
             </SelectContent>
           </Select>
 
+          {/* New Stores Filter */}
+          <Button
+            variant={newStoresOnly ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setNewStoresOnly(!newStoresOnly)}
+            className="h-9 gap-2"
+          >
+            <Sparkles className="h-4 w-4" />
+            New Stores ({newStoresCount})
+          </Button>
+
           {/* Active Filters Display */}
-          {(tagFilter !== 'all' || stickerFilter !== 'all' || paymentTypeFilter !== 'all') && (
+          {(tagFilter !== 'all' || stickerFilter !== 'all' || paymentTypeFilter !== 'all' || newStoresOnly) && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => { setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); }}
+              onClick={() => { setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); setNewStoresOnly(false); }}
               className="text-muted-foreground"
             >
               Clear filters
