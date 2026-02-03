@@ -2,7 +2,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { TUBE_BRANDS, TubeIntelRole } from './useTubeIntelligence';
+import { TubeIntelRole } from './useTubeIntelligence';
+
+// Canonical sticker brands - mapped to actual DB UUIDs
+// These MUST match the brands table in the database
+export const STICKER_BRANDS = [
+  { slug: 'gasmask', name: 'GasMask', color: '#FF0000' },
+  { slug: 'hotmama', name: 'Hot Mama', color: '#E7A1B0' },
+  { slug: 'hotscolati', name: 'HotScalati', color: '#FF7F11' },
+  { slug: 'grabba-rus', name: 'Grabba R Us', color: '#8A2BE2' },
+] as const;
+
+export type StickerBrandSlug = typeof STICKER_BRANDS[number]['slug'];
 
 // Canonical sticker names - SINGLE SOURCE OF TRUTH
 // ONLY these 4 sticker types are valid across the entire system
@@ -23,6 +34,53 @@ export const REQUESTED_STICKER_TYPES = [
 
 export type StickerTypeId = typeof STICKER_TYPES[number]['id'];
 export type RequestedStickerTypeId = typeof REQUESTED_STICKER_TYPES[number]['id'];
+
+// Brand UUID lookup cache
+let brandUuidCache: Map<string, string> | null = null;
+
+/**
+ * Fetch brand UUIDs from the database and cache them
+ */
+async function getBrandUuidMap(): Promise<Map<string, string>> {
+  if (brandUuidCache) return brandUuidCache;
+  
+  const { data, error } = await supabase
+    .from('brands')
+    .select('id, name')
+    .in('name', STICKER_BRANDS.map(b => b.name));
+  
+  if (error) {
+    console.error('Failed to fetch brand UUIDs:', error);
+    throw new Error('Cannot load brand registry');
+  }
+  
+  brandUuidCache = new Map();
+  data?.forEach(brand => {
+    brandUuidCache!.set(brand.name, brand.id);
+  });
+  
+  return brandUuidCache;
+}
+
+/**
+ * Get the UUID for a brand by name - throws if not found
+ */
+export async function getBrandUuid(brandName: string): Promise<string> {
+  const map = await getBrandUuidMap();
+  const uuid = map.get(brandName);
+  if (!uuid) {
+    throw new Error(`Brand "${brandName}" not found in registry. This is a data integrity issue.`);
+  }
+  return uuid;
+}
+
+/**
+ * Validate that a value is a valid UUID
+ */
+export function isValidUuid(value: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+}
 
 export interface BrandStickerStatus {
   id: string;
@@ -50,7 +108,6 @@ export interface BrandStickerStatus {
 export interface BrandStickerUpdatePayload {
   id?: string;
   store_id: string;
-  brand_id?: string;
   brand_name: string;
   sticker_type: StickerTypeId;
   value: boolean;
@@ -59,7 +116,6 @@ export interface BrandStickerUpdatePayload {
 export interface RequestedStickerUpdatePayload {
   id?: string;
   store_id: string;
-  brand_id?: string;
   brand_name: string;
   requested_type: RequestedStickerTypeId;
   value: boolean;
@@ -112,26 +168,40 @@ export function useBrandStickers(storeId: string | null) {
   // Initialize missing brands for a store
   const initializeBrands = useMutation({
     mutationFn: async (storeId: string) => {
+      // Validate store_id is a UUID
+      if (!isValidUuid(storeId)) {
+        throw new Error(`Invalid store_id: "${storeId}" is not a valid UUID`);
+      }
+
       const existing = query.data || [];
       const existingBrandNames = new Set(existing.map(e => e.brand_name));
       
-      const missingBrands = TUBE_BRANDS.filter(b => !existingBrandNames.has(b.name));
+      const missingBrands = STICKER_BRANDS.filter(b => !existingBrandNames.has(b.name));
       
       if (missingBrands.length === 0) return [];
 
-      const inserts = missingBrands.map(brand => ({
-        store_id: storeId,
-        brand_id: brand.id,
-        brand_name: brand.name,
-        front_door_sticker: false,
-        brand_character_sticker: false,
-        authorized_retailer_sticker: false,
-        telephone_number_sticker: false,
-        requested_front_door_sticker: false,
-        requested_brand_character_sticker: false,
-        requested_authorized_retailer_sticker: false,
-        requested_telephone_number_sticker: false,
-      }));
+      // Get brand UUIDs from the database
+      const brandUuidMap = await getBrandUuidMap();
+
+      const inserts = missingBrands.map(brand => {
+        const brandUuid = brandUuidMap.get(brand.name);
+        if (!brandUuid) {
+          console.warn(`Brand "${brand.name}" not found in brands table`);
+        }
+        return {
+          store_id: storeId,
+          brand_id: brandUuid || null, // Use null if not found
+          brand_name: brand.name,
+          front_door_sticker: false,
+          brand_character_sticker: false,
+          authorized_retailer_sticker: false,
+          telephone_number_sticker: false,
+          requested_front_door_sticker: false,
+          requested_brand_character_sticker: false,
+          requested_authorized_retailer_sticker: false,
+          requested_telephone_number_sticker: false,
+        };
+      });
 
       const { data, error } = await supabase
         .from('store_brand_stickers')
@@ -149,7 +219,12 @@ export function useBrandStickers(storeId: string | null) {
   // Update a single sticker field (installed status)
   const updateSticker = useMutation({
     mutationFn: async (payload: BrandStickerUpdatePayload) => {
-      const { id, store_id, brand_id, brand_name, sticker_type, value } = payload;
+      const { id, store_id, brand_name, sticker_type, value } = payload;
+
+      // Validate store_id is a UUID
+      if (!isValidUuid(store_id)) {
+        throw new Error(`Invalid store_id: "${store_id}" is not a valid UUID`);
+      }
 
       // Build update object - if installing, auto-clear requested flag
       const updateData: Record<string, any> = {
@@ -165,7 +240,7 @@ export function useBrandStickers(storeId: string | null) {
       }
 
       if (id) {
-        // Update existing record
+        // Update existing record by row ID - no brand_id needed
         const { error } = await supabase
           .from('store_brand_stickers')
           .update(updateData)
@@ -173,12 +248,14 @@ export function useBrandStickers(storeId: string | null) {
 
         if (error) throw error;
       } else {
-        // Create new record
+        // Create new record - resolve brand UUID from name
+        const brandUuid = await getBrandUuid(brand_name);
+        
         const { error } = await supabase
           .from('store_brand_stickers')
           .insert({
             store_id,
-            brand_id,
+            brand_id: brandUuid,
             brand_name,
             ...updateData,
           });
@@ -198,7 +275,12 @@ export function useBrandStickers(storeId: string | null) {
   // Update a requested sticker field
   const updateRequestedSticker = useMutation({
     mutationFn: async (payload: RequestedStickerUpdatePayload) => {
-      const { id, store_id, brand_id, brand_name, requested_type, value } = payload;
+      const { id, store_id, brand_name, requested_type, value } = payload;
+
+      // Validate store_id is a UUID
+      if (!isValidUuid(store_id)) {
+        throw new Error(`Invalid store_id: "${store_id}" is not a valid UUID`);
+      }
 
       const updateData: Record<string, any> = {
         [requested_type]: value,
@@ -207,6 +289,7 @@ export function useBrandStickers(storeId: string | null) {
       };
 
       if (id) {
+        // Update existing record by row ID
         const { error } = await supabase
           .from('store_brand_stickers')
           .update(updateData)
@@ -214,11 +297,14 @@ export function useBrandStickers(storeId: string | null) {
 
         if (error) throw error;
       } else {
+        // Create new record - resolve brand UUID from name
+        const brandUuid = await getBrandUuid(brand_name);
+        
         const { error } = await supabase
           .from('store_brand_stickers')
           .insert({
             store_id,
-            brand_id,
+            brand_id: brandUuid,
             brand_name,
             ...updateData,
           });
