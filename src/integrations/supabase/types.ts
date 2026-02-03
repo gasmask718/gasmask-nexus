@@ -38388,6 +38388,10 @@ export type Database = {
           last_verified_at: string | null
           last_verified_by: string | null
           notes: string | null
+          requested_authorized_retailer_sticker: boolean | null
+          requested_brand_character_sticker: boolean | null
+          requested_front_door_sticker: boolean | null
+          requested_telephone_number_sticker: boolean | null
           store_id: string
           telephone_number_sticker: boolean | null
           updated_at: string
@@ -38403,6 +38407,10 @@ export type Database = {
           last_verified_at?: string | null
           last_verified_by?: string | null
           notes?: string | null
+          requested_authorized_retailer_sticker?: boolean | null
+          requested_brand_character_sticker?: boolean | null
+          requested_front_door_sticker?: boolean | null
+          requested_telephone_number_sticker?: boolean | null
           store_id: string
           telephone_number_sticker?: boolean | null
           updated_at?: string
@@ -38418,6 +38426,10 @@ export type Database = {
           last_verified_at?: string | null
           last_verified_by?: string | null
           notes?: string | null
+          requested_authorized_retailer_sticker?: boolean | null
+          requested_brand_character_sticker?: boolean | null
+          requested_front_door_sticker?: boolean | null
+          requested_telephone_number_sticker?: boolean | null
           store_id?: string
           telephone_number_sticker?: boolean | null
           updated_at?: string

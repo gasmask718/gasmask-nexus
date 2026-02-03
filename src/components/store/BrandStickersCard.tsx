@@ -18,14 +18,17 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  Package,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { 
   useBrandStickers, 
   STICKER_TYPES,
   StickerTypeId,
+  RequestedStickerTypeId,
   BrandStickerStatus,
   canEditStickers,
+  getRequestedColumnForSticker,
 } from '@/hooks/useBrandStickers';
 import { TUBE_BRANDS, TubeIntelRole } from '@/hooks/useTubeIntelligence';
 import { cn } from '@/lib/utils';
@@ -55,8 +58,10 @@ export function BrandStickersCard({
     refetch, 
     initializeBrands, 
     updateSticker, 
+    updateRequestedSticker,
     updateNotes,
-    getCompletionStats 
+    getCompletionStats,
+    getRequestedStats,
   } = useBrandStickers(storeId);
   
   const [expandedBrand, setExpandedBrand] = useState<string | null>(null);
@@ -95,6 +100,26 @@ export function BrandStickersCard({
     });
   };
 
+  const handleRequestedToggle = (
+    record: BrandStickerStatus | undefined,
+    brandId: string,
+    brandName: string,
+    stickerType: StickerTypeId,
+    currentValue: boolean | null
+  ) => {
+    if (!canEdit) return;
+
+    const requestedType = getRequestedColumnForSticker(stickerType);
+    updateRequestedSticker.mutate({
+      id: record?.id,
+      store_id: storeId,
+      brand_id: brandId,
+      brand_name: brandName,
+      requested_type: requestedType,
+      value: !currentValue,
+    });
+  };
+
   const handleNotesEdit = (record: BrandStickerStatus) => {
     setEditingNotes(record.id);
     setNotesValue(record.notes || '');
@@ -115,11 +140,13 @@ export function BrandStickersCard({
   const overallStats = data.reduce(
     (acc, record) => {
       const stats = getCompletionStats(record);
+      const reqStats = getRequestedStats(record);
       acc.installed += stats.installed;
       acc.total += stats.total;
+      acc.requested += reqStats.requested;
       return acc;
     },
-    { installed: 0, total: 0 }
+    { installed: 0, total: 0, requested: 0 }
   );
   const overallPercentage = overallStats.total > 0 
     ? Math.round((overallStats.installed / overallStats.total) * 100) 
@@ -143,9 +170,17 @@ export function BrandStickersCard({
             <Sticker className="h-5 w-5 text-primary" />
             Brand Stickers
           </CardTitle>
-          <Badge variant="outline" className="text-xs">
-            {overallStats.installed} / {overallStats.total} Installed
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs">
+              {overallStats.installed} / {overallStats.total} Installed
+            </Badge>
+            {overallStats.requested > 0 && (
+              <Badge variant="secondary" className="text-xs gap-1">
+                <Package className="h-3 w-3" />
+                {overallStats.requested} Requested
+              </Badge>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Progress value={overallPercentage} className="w-20 h-2" />
@@ -164,6 +199,7 @@ export function BrandStickersCard({
         {TUBE_BRANDS.map((brand) => {
           const record = getBrandData(brand.id);
           const stats = record ? getCompletionStats(record) : { installed: 0, total: 4, percentage: 0 };
+          const reqStats = record ? getRequestedStats(record) : { requested: 0, total: 4 };
           const isExpanded = expandedBrand === brand.id;
           const isEditingThisNotes = editingNotes === record?.id;
 
@@ -197,6 +233,12 @@ export function BrandStickersCard({
                       <Badge variant="secondary" className="text-xs">
                         {stats.installed} / {stats.total}
                       </Badge>
+                      {reqStats.requested > 0 && (
+                        <Badge variant="outline" className="text-xs gap-1 text-orange-600 border-orange-300">
+                          <Package className="h-3 w-3" />
+                          {reqStats.requested}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <Progress value={stats.percentage} className="w-16 h-2" />
@@ -212,21 +254,33 @@ export function BrandStickersCard({
                 {/* Expanded Content */}
                 <CollapsibleContent>
                   <div className="px-3 pb-3 space-y-3 border-t border-border/50 pt-3">
-                    {/* Sticker Toggles */}
-                    <div className="grid grid-cols-2 gap-2">
+                    {/* Sticker Toggles - 2 columns: Installed | Requested */}
+                    <div className="space-y-2">
+                      {/* Header Row */}
+                      <div className="grid grid-cols-[1fr_80px_80px] gap-2 text-xs font-medium text-muted-foreground px-2">
+                        <span>Sticker Type</span>
+                        <span className="text-center">Installed</span>
+                        <span className="text-center">Requested</span>
+                      </div>
+                      
                       {STICKER_TYPES.map((stickerType) => {
                         const isInstalled = record?.[stickerType.id] ?? false;
+                        const requestedColumn = getRequestedColumnForSticker(stickerType.id);
+                        const isRequested = record?.[requestedColumn as keyof BrandStickerStatus] as boolean ?? false;
                         
                         return (
                           <div
                             key={stickerType.id}
                             className={cn(
-                              'flex items-center justify-between p-2 rounded-md border',
+                              'grid grid-cols-[1fr_80px_80px] gap-2 items-center p-2 rounded-md border',
                               isInstalled 
                                 ? 'bg-green-500/10 border-green-500/30' 
+                                : isRequested
+                                ? 'bg-orange-500/10 border-orange-500/30'
                                 : 'bg-muted/30 border-transparent'
                             )}
                           >
+                            {/* Sticker Name with Icon */}
                             <div className="flex items-center gap-2">
                               <TooltipProvider>
                                 <Tooltip>
@@ -245,23 +299,58 @@ export function BrandStickersCard({
                               </TooltipProvider>
                               <Label 
                                 htmlFor={`${brand.id}-${stickerType.id}`}
-                                className="text-xs truncate max-w-[100px]"
+                                className="text-xs truncate"
                               >
                                 {stickerType.name.replace(' Sticker', '')}
                               </Label>
                             </div>
-                            <Switch
-                              id={`${brand.id}-${stickerType.id}`}
-                              checked={isInstalled}
-                              onCheckedChange={() => handleStickerToggle(
-                                record,
-                                brand.id,
-                                brand.name,
-                                stickerType.id,
-                                isInstalled
-                              )}
-                              disabled={!canEdit || updateSticker.isPending}
-                            />
+                            
+                            {/* Installed Toggle */}
+                            <div className="flex justify-center">
+                              <Switch
+                                id={`${brand.id}-${stickerType.id}`}
+                                checked={isInstalled}
+                                onCheckedChange={() => handleStickerToggle(
+                                  record,
+                                  brand.id,
+                                  brand.name,
+                                  stickerType.id,
+                                  isInstalled
+                                )}
+                                disabled={!canEdit || updateSticker.isPending}
+                              />
+                            </div>
+                            
+                            {/* Requested Toggle */}
+                            <div className="flex justify-center">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant={isRequested ? "default" : "outline"}
+                                      size="sm"
+                                      className={cn(
+                                        "h-7 px-2 text-xs gap-1",
+                                        isRequested && "bg-orange-500 hover:bg-orange-600"
+                                      )}
+                                      onClick={() => handleRequestedToggle(
+                                        record,
+                                        brand.id,
+                                        brand.name,
+                                        stickerType.id,
+                                        isRequested
+                                      )}
+                                      disabled={!canEdit || updateRequestedSticker.isPending || isInstalled}
+                                    >
+                                      <Package className="h-3 w-3" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{isInstalled ? 'Already installed' : isRequested ? 'Store requested this sticker' : 'Mark as requested'}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
                           </div>
                         );
                       })}

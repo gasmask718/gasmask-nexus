@@ -1,3 +1,23 @@
+/**
+ * @deprecated LEGACY STICKER COMPONENT - DO NOT USE
+ * 
+ * This component uses the OLD sticker system that writes to store_master columns:
+ * - sticker_on_door
+ * - sticker_in_store
+ * - sticker_with_phone
+ * - sticker_notes
+ * 
+ * The CANONICAL sticker system uses store_brand_stickers table with:
+ * - front_door_sticker
+ * - brand_character_sticker
+ * - authorized_retailer_sticker
+ * - telephone_number_sticker
+ * 
+ * USE BrandStickersCard INSTEAD!
+ * 
+ * This file is kept for reference only and should be removed once all legacy
+ * sticker data has been migrated.
+ */
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Sticker, Save, Loader2 } from "lucide-react";
+import { Sticker, Save, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 interface StickerStatusCardProps {
@@ -73,12 +93,15 @@ export function StickerStatusCard({
   });
 
   return (
-    <Card>
+    <Card className="border-yellow-500/50">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
-          <Sticker className="h-4 w-4 text-primary" />
-          Sticker Status
+          <AlertTriangle className="h-4 w-4 text-yellow-500" />
+          <span className="text-yellow-600">Legacy Sticker Status</span>
         </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          ⚠️ This uses the old sticker system. Use Brand Stickers Card instead.
+        </p>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-3">

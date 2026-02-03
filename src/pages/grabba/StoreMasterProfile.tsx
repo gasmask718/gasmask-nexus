@@ -22,7 +22,7 @@ import {
   Bike,
   Factory,
 } from "lucide-react";
-import { StickerStatusCard } from "@/components/store/StickerStatusCard";
+import { BrandStickersCard } from "@/components/store/BrandStickersCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { GRABBA_BRAND_CONFIG } from "@/config/grabbaBrands";
@@ -339,13 +339,8 @@ export default function StoreMasterProfile() {
             </Card>
           </div>
 
-          <StickerStatusCard
-            storeId={id || ""}
-            stickerOnDoor={(storeMaster as any).sticker_on_door}
-            stickerInStore={(storeMaster as any).sticker_in_store}
-            stickerWithPhone={(storeMaster as any).sticker_with_phone}
-            stickerNotes={(storeMaster as any).sticker_notes}
-          />
+          {/* Brand Stickers - Canonical 4-sticker system per brand */}
+          <BrandStickersCard storeId={id || ""} role="admin" />
 
           <StoreContactsSection storeId={id || ""} storeName={storeMaster.store_name} />
 
