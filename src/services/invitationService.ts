@@ -282,6 +282,33 @@ export function getInviteLink(token: string): string {
 }
 
 /**
+ * Send invitation email via edge function
+ */
+export async function sendInviteEmail(email: string, role: string, inviteLink: string): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('Not authenticated');
+  }
+
+  const response = await supabase.functions.invoke('send-user-invite', {
+    body: {
+      email: email.toLowerCase().trim(),
+      role,
+      inviteToken: inviteLink.split('token=')[1] || '',
+      expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
+    }
+  });
+
+  if (response.error) {
+    throw new Error(response.error.message || 'Failed to send email');
+  }
+
+  if (!response.data?.success) {
+    throw new Error('Email delivery failed');
+  }
+}
+
+/**
  * Role display names for UI
  */
 export const INVITE_ROLES: { value: OSRole; label: string; description: string }[] = [
