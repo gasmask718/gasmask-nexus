@@ -24,13 +24,14 @@ import { formatDistanceToNow } from 'date-fns';
 import { 
   useBrandStickers, 
   STICKER_TYPES,
+  STICKER_BRANDS,
   StickerTypeId,
   RequestedStickerTypeId,
   BrandStickerStatus,
   canEditStickers,
   getRequestedColumnForSticker,
 } from '@/hooks/useBrandStickers';
-import { TUBE_BRANDS, TubeIntelRole } from '@/hooks/useTubeIntelligence';
+import { TubeIntelRole } from '@/hooks/useTubeIntelligence';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -77,13 +78,13 @@ export function BrandStickersCard({
     }
   }, [storeId, data.length, isLoading]);
 
-  const getBrandData = (brandId: string) => {
-    return data.find(d => d.brand_id === brandId);
+  // Match brand data by name, not by ID (since STICKER_BRANDS uses slugs, not UUIDs)
+  const getBrandData = (brandName: string) => {
+    return data.find(d => d.brand_name === brandName);
   };
 
   const handleStickerToggle = (
     record: BrandStickerStatus | undefined,
-    brandId: string,
     brandName: string,
     stickerType: StickerTypeId,
     currentValue: boolean | null
@@ -93,7 +94,6 @@ export function BrandStickersCard({
     updateSticker.mutate({
       id: record?.id,
       store_id: storeId,
-      brand_id: brandId,
       brand_name: brandName,
       sticker_type: stickerType,
       value: !currentValue,
@@ -102,7 +102,6 @@ export function BrandStickersCard({
 
   const handleRequestedToggle = (
     record: BrandStickerStatus | undefined,
-    brandId: string,
     brandName: string,
     stickerType: StickerTypeId,
     currentValue: boolean | null
@@ -113,7 +112,6 @@ export function BrandStickersCard({
     updateRequestedSticker.mutate({
       id: record?.id,
       store_id: storeId,
-      brand_id: brandId,
       brand_name: brandName,
       requested_type: requestedType,
       value: !currentValue,
@@ -196,18 +194,18 @@ export function BrandStickersCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {TUBE_BRANDS.map((brand) => {
-          const record = getBrandData(brand.id);
+        {STICKER_BRANDS.map((brand) => {
+          const record = getBrandData(brand.name);
           const stats = record ? getCompletionStats(record) : { installed: 0, total: 4, percentage: 0 };
           const reqStats = record ? getRequestedStats(record) : { requested: 0, total: 4 };
-          const isExpanded = expandedBrand === brand.id;
+          const isExpanded = expandedBrand === brand.slug;
           const isEditingThisNotes = editingNotes === record?.id;
 
           return (
             <Collapsible
-              key={brand.id}
+              key={brand.slug}
               open={isExpanded}
-              onOpenChange={() => setExpandedBrand(isExpanded ? null : brand.id)}
+              onOpenChange={() => setExpandedBrand(isExpanded ? null : brand.slug)}
             >
               <div
                 className={cn(
@@ -298,7 +296,7 @@ export function BrandStickersCard({
                                 </Tooltip>
                               </TooltipProvider>
                               <Label 
-                                htmlFor={`${brand.id}-${stickerType.id}`}
+                                htmlFor={`${brand.slug}-${stickerType.id}`}
                                 className="text-xs truncate"
                               >
                                 {stickerType.name.replace(' Sticker', '')}
@@ -308,11 +306,10 @@ export function BrandStickersCard({
                             {/* Installed Toggle */}
                             <div className="flex justify-center">
                               <Switch
-                                id={`${brand.id}-${stickerType.id}`}
+                                id={`${brand.slug}-${stickerType.id}`}
                                 checked={isInstalled}
                                 onCheckedChange={() => handleStickerToggle(
                                   record,
-                                  brand.id,
                                   brand.name,
                                   stickerType.id,
                                   isInstalled
@@ -320,7 +317,6 @@ export function BrandStickersCard({
                                 disabled={!canEdit || updateSticker.isPending}
                               />
                             </div>
-                            
                             {/* Requested Toggle */}
                             <div className="flex justify-center">
                               <TooltipProvider>
@@ -335,7 +331,6 @@ export function BrandStickersCard({
                                       )}
                                       onClick={() => handleRequestedToggle(
                                         record,
-                                        brand.id,
                                         brand.name,
                                         stickerType.id,
                                         isRequested
