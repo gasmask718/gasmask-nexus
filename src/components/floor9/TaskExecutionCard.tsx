@@ -56,7 +56,8 @@ import {
   TaskArtifact,
   TaskExecutionLogEntry,
 } from '@/services/floor9/executionEngine';
-import { cancelTask } from '@/services/floor9/taskProgressService';
+import { cancelTask as cancelFloor9Task } from '@/services/floor9/taskProgressService';
+import { cancelTask, deleteTask, restartTask } from '@/services/taskGovernance';
 import { AIWorkTask } from '@/services/floor9/types';
 import { TaskProgressBar } from './TaskProgressBar';
 import { TaskActivityFeed } from './TaskActivityFeed';
@@ -158,9 +159,7 @@ export function TaskExecutionCard({ task }: TaskExecutionCardProps) {
   // Cancel/Delete mutation
   const cancelMutation = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-      return cancelTask(task.id, user.id);
+      return cancelTask(task.id, 'User requested cancellation');
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['floor9', 'tasks'] });
@@ -173,6 +172,56 @@ export function TaskExecutionCard({ task }: TaskExecutionCardProps) {
       } else {
         toast({ 
           title: 'Cancellation Failed',
+          description: result.error,
+          variant: 'destructive',
+        });
+      }
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      return deleteTask(task.id, 'User requested deletion');
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['floor9', 'tasks'] });
+      setShowDeleteModal(false);
+      if (result.success) {
+        toast({ 
+          title: 'Task Deleted',
+          description: 'Task removed from active views',
+        });
+      } else {
+        toast({ 
+          title: 'Delete Failed',
+          description: result.error,
+          variant: 'destructive',
+        });
+      }
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const restartMutation = useMutation({
+    mutationFn: async () => {
+      return restartTask(task.id);
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['floor9', 'tasks'] });
+      setShowDeleteModal(false);
+      if (result.success) {
+        toast({ 
+          title: 'Task Restarted',
+          description: `New task created: ${result.newTaskId?.slice(0, 8)}...`,
+        });
+      } else {
+        toast({ 
+          title: 'Restart Failed',
           description: result.error,
           variant: 'destructive',
         });
@@ -458,18 +507,18 @@ export function TaskExecutionCard({ task }: TaskExecutionCardProps) {
                   </Button>
                 )}
                 
-                {/* Delete Button - always available except for completed tasks */}
-                {(task.status as string) !== 'completed' && (task.status as string) !== 'cancelled' && (
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => setShowDeleteModal(true)}
-                    className="ml-auto"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete Task
-                  </Button>
-                )}
+                {/* Delete/Cancel Button - always available for lifecycle control */}
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setShowDeleteModal(true)}
+                  className="ml-auto"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  {(task.status as string) === 'completed' || (task.status as string) === 'cancelled' 
+                    ? 'Delete Task' 
+                    : 'Cancel / Delete'}
+                </Button>
               </div>
             </CollapsibleContent>
           </CardContent>
@@ -510,8 +559,12 @@ export function TaskExecutionCard({ task }: TaskExecutionCardProps) {
         onOpenChange={setShowDeleteModal}
         taskTitle={task.task_title}
         taskStatus={task.status}
-        onConfirmDelete={() => cancelMutation.mutate()}
-        isDeleting={cancelMutation.isPending}
+        onConfirmCancel={() => cancelMutation.mutate()}
+        onConfirmDelete={() => deleteMutation.mutate()}
+        onConfirmRestart={() => restartMutation.mutate()}
+        isCancelling={cancelMutation.isPending}
+        isDeleting={deleteMutation.isPending}
+        isRestarting={restartMutation.isPending}
       />
     </>
   );

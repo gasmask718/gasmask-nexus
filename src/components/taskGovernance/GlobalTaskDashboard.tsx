@@ -3,11 +3,14 @@
  * Shows all active tasks across Floors 1-9
  */
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Brain,
   Activity,
@@ -24,6 +27,7 @@ import {
   ShoppingCart,
   Users,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 import { getAllActiveTasks, FLOOR_REGISTRIES, FloorId } from '@/services/taskGovernance';
 
@@ -40,9 +44,11 @@ const FLOOR_ICONS: Record<FloorId, React.ElementType> = {
 };
 
 export function GlobalTaskDashboard() {
+  const [showDeleted, setShowDeleted] = useState(false);
+  
   const { data: activeTasks = [], isLoading } = useQuery({
-    queryKey: ['global-active-tasks'],
-    queryFn: getAllActiveTasks,
+    queryKey: ['global-active-tasks', showDeleted],
+    queryFn: () => getAllActiveTasks({ includeDeleted: showDeleted }),
     refetchInterval: 5000,
   });
 
@@ -58,12 +64,19 @@ export function GlobalTaskDashboard() {
   const runningCount = activeTasks.filter(t => t.status === 'running').length;
   const queuedCount = activeTasks.filter(t => t.status === 'queued').length;
   const awaitingApproval = activeTasks.filter(t => t.status === 'paused_for_approval').length;
+  const deletedCount = activeTasks.filter(t => t.deleted_at !== null).length;
 
   const getFloorName = (floorId: FloorId) => {
     return FLOOR_REGISTRIES.find(r => r.floor_id === floorId)?.floor_name || floorId;
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, isDeleted?: boolean) => {
+    if (isDeleted) {
+      return <Badge variant="outline" className="text-muted-foreground">
+        <XCircle className="h-3 w-3 mr-1" />
+        Deleted
+      </Badge>;
+    }
     switch (status) {
       case 'running':
         return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
@@ -98,10 +111,23 @@ export function GlobalTaskDashboard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Brain className="h-5 w-5 text-primary" />
-          Global Task Command Center
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-primary" />
+            Global Task Command Center
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="show-deleted"
+              checked={showDeleted}
+              onCheckedChange={setShowDeleted}
+            />
+            <Label htmlFor="show-deleted" className="text-xs text-muted-foreground">
+              <Trash2 className="h-3 w-3 inline mr-1" />
+              Show Deleted ({deletedCount})
+            </Label>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {/* Summary Stats */}
@@ -163,16 +189,17 @@ export function GlobalTaskDashboard() {
                         const percentage = task.total_items > 0 
                           ? Math.round((task.items_processed / task.total_items) * 100) 
                           : 0;
+                        const isDeleted = task.deleted_at !== null;
                         
                         return (
                           <div 
                             key={task.id}
-                            className="p-3 rounded-lg border bg-card flex items-center justify-between"
+                            className={`p-3 rounded-lg border bg-card flex items-center justify-between ${isDeleted ? 'opacity-50' : ''}`}
                           >
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-sm">{task.task_title}</span>
-                                {getStatusBadge(task.status)}
+                                <span className={`font-medium text-sm ${isDeleted ? 'line-through' : ''}`}>{task.task_title}</span>
+                                {getStatusBadge(task.status, isDeleted)}
                               </div>
                               {task.total_items > 0 && (
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">

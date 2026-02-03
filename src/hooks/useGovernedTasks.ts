@@ -16,6 +16,8 @@ import {
   createGovernedTask,
   startTask,
   cancelTask,
+  deleteTask,
+  restartTask,
   getTaskTemplatesByFloor,
 } from '@/services/taskGovernance';
 
@@ -111,6 +113,40 @@ export function useGovernedTasks(options: UseGovernedTasksOptions = {}) {
     },
   });
 
+  // Delete a task (soft delete)
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (params: { taskId: string; reason?: string }) => {
+      return deleteTask(params.taskId, params.reason);
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['governed-tasks', floorId] });
+        toast.success('Task deleted', {
+          description: 'Task has been removed from active views',
+        });
+      } else {
+        toast.error('Delete failed', { description: result.error });
+      }
+    },
+  });
+
+  // Restart a task
+  const restartTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      return restartTask(taskId);
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['governed-tasks', floorId] });
+        toast.success('Task restarted', {
+          description: `New task created: ${result.newTaskId}`,
+        });
+      } else {
+        toast.error('Restart failed', { description: result.error });
+      }
+    },
+  });
+
   // Refresh tasks
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['governed-tasks', floorId] });
@@ -141,6 +177,12 @@ export function useGovernedTasks(options: UseGovernedTasksOptions = {}) {
     cancelTask: cancelTaskMutation.mutate,
     isCancelling: cancelTaskMutation.isPending,
 
+    deleteTask: deleteTaskMutation.mutate,
+    isDeleting: deleteTaskMutation.isPending,
+
+    restartTask: restartTaskMutation.mutate,
+    isRestarting: restartTaskMutation.isPending,
+
     startTask: startTaskMutation.mutate,
     isStarting: startTaskMutation.isPending,
 
@@ -158,7 +200,7 @@ export function useGlobalTasks(options: { refetchInterval?: number } = {}) {
 
   const query = useQuery({
     queryKey: ['global-active-tasks'],
-    queryFn: getAllActiveTasks,
+    queryFn: () => getAllActiveTasks(),
     refetchInterval,
   });
 

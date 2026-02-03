@@ -48,10 +48,18 @@ export {
   logTaskActivity,
   getTaskActivities,
   cancelTask,
+  deleteTask,
+  restartTask,
   generateCompletionReport,
   getTasksByFloor,
   getAllActiveTasks,
   getTaskById,
+} from './taskGovernanceService';
+
+export type {
+  TaskDeleteResult,
+  TaskRestartResult,
+  TaskQueryOptions,
 } from './taskGovernanceService';
 
 // Governance Configuration (Phase C)

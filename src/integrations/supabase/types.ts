@@ -4526,6 +4526,9 @@ export type Database = {
           created_at: string
           created_by: string | null
           deadline: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
           department: string | null
           error_message: string | null
           execution_log: Json | null
@@ -4574,6 +4577,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deadline?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           department?: string | null
           error_message?: string | null
           execution_log?: Json | null
@@ -4622,6 +4628,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deadline?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           department?: string | null
           error_message?: string | null
           execution_log?: Json | null

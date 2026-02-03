@@ -331,6 +331,152 @@ export async function cancelTask(
   }
 }
 
+// ============= TASK SOFT DELETE =============
+
+export interface TaskDeleteResult {
+  success: boolean;
+  deleted: boolean;
+  error?: string;
+}
+
+export async function deleteTask(
+  taskId: string,
+  reason?: string
+): Promise<TaskDeleteResult> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Get current task state
+    const { data: task, error: fetchError } = await supabase
+      .from('ai_work_tasks')
+      .select('*')
+      .eq('id', taskId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // If task is still running, cancel it first
+    if (['processing', 'validating_inputs', 'queued'].includes(task.status)) {
+      await cancelTask(taskId, reason || 'Task deleted by user');
+    }
+
+    // Soft delete by setting deleted_at timestamp
+    const { error: updateError } = await supabase
+      .from('ai_work_tasks')
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: user.id,
+        deletion_reason: reason || 'User requested deletion',
+      })
+      .eq('id', taskId);
+
+    if (updateError) throw updateError;
+
+    // Log deletion
+    await logTaskActivity(
+      taskId,
+      'task_deleted',
+      `Task soft-deleted by user. Reason: ${reason || 'No reason provided'}`,
+      'success',
+      { reason: reason || 'User requested deletion' }
+    );
+
+    return {
+      success: true,
+      deleted: true,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      deleted: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+// ============= TASK RESTART =============
+
+export interface TaskRestartResult {
+  success: boolean;
+  newTaskId?: string;
+  error?: string;
+}
+
+export async function restartTask(
+  taskId: string
+): Promise<TaskRestartResult> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Get original task
+    const { data: originalTask, error: fetchError } = await supabase
+      .from('ai_work_tasks')
+      .select('*')
+      .eq('id', taskId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const inputData = originalTask.input_data as Record<string, any> | null;
+
+    // Create new task with same parameters
+    const { data: newTask, error: insertError } = await supabase
+      .from('ai_work_tasks')
+      .insert({
+        task_title: `${originalTask.task_title} (Restart)`,
+        task_details: originalTask.task_details,
+        task_type: originalTask.task_type,
+        status: 'queued',
+        priority: originalTask.priority || 'medium',
+        department: originalTask.department,
+        total_items: originalTask.total_items || 0,
+        items_processed: 0,
+        items_completed: 0,
+        items_blocked: 0,
+        items_skipped: 0,
+        items_pending_approval: 0,
+        input_data: {
+          ...inputData,
+          restarted_from: taskId,
+          restart_count: ((inputData?.restart_count || 0) as number) + 1,
+        },
+        created_by: user.id,
+      })
+      .select('id')
+      .single();
+
+    if (insertError) throw insertError;
+
+    // Log restart activity on original task
+    await logTaskActivity(
+      taskId,
+      'task_restarted',
+      `Task restarted as new task ${newTask.id}`,
+      'success'
+    );
+
+    // Log creation on new task
+    await logTaskActivity(
+      newTask.id,
+      'task_created',
+      `Task created as restart of ${taskId}`,
+      'success'
+    );
+
+    return {
+      success: true,
+      newTaskId: newTask.id,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
 // ============= COMPLETION REPORT =============
 
 export async function generateCompletionReport(
@@ -404,10 +550,15 @@ export async function generateCompletionReport(
 
 // ============= TASK QUERIES =============
 
+export interface TaskQueryOptions {
+  includeDeleted?: boolean;
+}
+
 export async function getTasksByFloor(
   floorId: FloorId,
   status?: GovernedTaskStatus,
-  limit: number = 50
+  limit: number = 50,
+  options?: TaskQueryOptions
 ): Promise<GovernedTask[]> {
   let query = supabase
     .from('ai_work_tasks')
@@ -420,19 +571,30 @@ export async function getTasksByFloor(
     query = query.eq('status', status);
   }
 
+  // By default, exclude deleted tasks
+  if (!options?.includeDeleted) {
+    query = query.is('deleted_at', null);
+  }
+
   const { data, error } = await query;
   if (error) throw error;
 
   return (data || []).map(mapToGovernedTask);
 }
 
-export async function getAllActiveTasks(): Promise<GovernedTask[]> {
-  const { data, error } = await supabase
+export async function getAllActiveTasks(options?: TaskQueryOptions): Promise<GovernedTask[]> {
+  let query = supabase
     .from('ai_work_tasks')
     .select('*')
     .in('status', ['queued', 'processing', 'awaiting_approval'])
     .order('created_at', { ascending: false });
 
+  // By default, exclude deleted tasks
+  if (!options?.includeDeleted) {
+    query = query.is('deleted_at', null);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return (data || []).map(mapToGovernedTask);
 }
@@ -479,6 +641,9 @@ function mapToGovernedTask(data: any): GovernedTask {
     cancelled_at: data.cancelled_at,
     cancelled_by: data.cancelled_by,
     cancellation_reason: data.cancellation_reason,
+    deleted_at: data.deleted_at || null,
+    deleted_by: data.deleted_by || null,
+    deletion_reason: data.deletion_reason || null,
     final_report: data.final_report as TaskCompletionReport | null,
   };
 }
