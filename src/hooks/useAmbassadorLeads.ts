@@ -7,6 +7,55 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+/**
+ * Auto-create ambassador record if missing (safety net)
+ * This ensures ambassadors can always operate even if signup flow had issues
+ */
+async function ensureAmbassadorRecord(userId: string): Promise<{ id: string } | null> {
+  // First check if ambassador record exists
+  const { data: existing, error: checkError } = await supabase
+    .from('ambassadors')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .limit(1);
+
+  if (checkError) {
+    console.error('Error checking ambassador record:', checkError);
+    return null;
+  }
+
+  if (existing && existing.length > 0) {
+    return existing[0];
+  }
+
+  // Auto-create if missing
+  console.warn('[AUTO-HEAL] Ambassador record missing for user, creating now:', userId);
+  const trackingCode = 'AMB-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+  const referralCode = 'AMB-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  const { data: created, error: createError } = await supabase
+    .from('ambassadors')
+    .insert({
+      user_id: userId,
+      tracking_code: trackingCode,
+      referral_code: referralCode,
+      is_active: true,
+      tier: 'starter',
+      total_earnings: 0
+    })
+    .select('id')
+    .single();
+
+  if (createError) {
+    console.error('Failed to auto-create ambassador record:', createError);
+    return null;
+  }
+
+  console.log('[AUTO-HEAL] Ambassador record created successfully:', created.id);
+  return created;
+}
+
 export interface Lead {
   id: string;
   name: string;
@@ -237,18 +286,9 @@ export function useAmbassadorLeads(leadType?: string, pipelineUserId?: string | 
       if (!user?.id) throw new Error('Not authenticated');
       if (input.lead.lead_type !== 'store') throw new Error('This lead is not a store lead');
 
-      // Get ambassador profile
-      const { data: ambassadors, error: ambError } = await supabase
-        .from('ambassadors')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (ambError) throw ambError;
-      const ambassador = ambassadors?.[0];
-      if (!ambassador) throw new Error('No active ambassador profile found. Please contact your manager.');
+      // Get or auto-create ambassador profile (safety net)
+      const ambassador = await ensureAmbassadorRecord(user.id);
+      if (!ambassador) throw new Error('Could not verify ambassador profile. Please try again or contact support.');
 
       // Create store in store_master
       const { data: store, error: storeError } = await supabase
@@ -315,18 +355,9 @@ export function useAmbassadorLeads(leadType?: string, pipelineUserId?: string | 
       if (!user?.id) throw new Error('Not authenticated');
       if (input.lead.lead_type !== 'wholesaler') throw new Error('This lead is not a wholesaler lead');
 
-      // Get ambassador profile for assignment
-      const { data: ambassadors, error: ambError } = await supabase
-        .from('ambassadors')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (ambError) throw ambError;
-      const ambassador = ambassadors?.[0];
-      if (!ambassador) throw new Error('No active ambassador profile found. Please contact your manager.');
+      // Get or auto-create ambassador profile (safety net)
+      const ambassador = await ensureAmbassadorRecord(user.id);
+      if (!ambassador) throw new Error('Could not verify ambassador profile. Please try again or contact support.');
 
       // Create wholesaler record
       const { data: wholesaler, error: wsError } = await supabase
@@ -391,18 +422,9 @@ export function useAmbassadorLeads(leadType?: string, pipelineUserId?: string | 
       if (!user?.id) throw new Error('Not authenticated');
       if (input.lead.lead_type !== 'ambassador') throw new Error('This lead is not an ambassador recruit');
 
-      // Get parent ambassador profile
-      const { data: parentAmbassadors, error: parentError } = await supabase
-        .from('ambassadors')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (parentError) throw parentError;
-      const parentAmbassador = parentAmbassadors?.[0];
-      if (!parentAmbassador) throw new Error('No active ambassador profile found. Please contact your manager.');
+      // Get or auto-create parent ambassador profile (safety net)
+      const parentAmbassador = await ensureAmbassadorRecord(user.id);
+      if (!parentAmbassador) throw new Error('Could not verify ambassador profile. Please try again or contact support.');
 
       // Create ambassador recruit record with recruited_by linking
       const { data: ambassador, error: ambError } = await supabase
@@ -453,18 +475,9 @@ export function useAmbassadorLeads(leadType?: string, pipelineUserId?: string | 
       if (!user?.id) throw new Error('Not authenticated');
       if (input.lead.lead_type !== 'influencer') throw new Error('This lead is not an influencer lead');
 
-      // Get ambassador profile for assignment
-      const { data: ambassadors, error: ambError } = await supabase
-        .from('ambassadors')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (ambError) throw ambError;
-      const ambassador = ambassadors?.[0];
-      if (!ambassador) throw new Error('No active ambassador profile found. Please contact your manager.');
+      // Get or auto-create ambassador profile (safety net)
+      const ambassador = await ensureAmbassadorRecord(user.id);
+      if (!ambassador) throw new Error('Could not verify ambassador profile. Please try again or contact support.');
 
       // Create influencer record - username/platform required by schema
       // Platform constraint now allows: instagram, tiktok, youtube, twitter, facebook, street_team, other

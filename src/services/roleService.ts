@@ -212,13 +212,38 @@ export async function createRoleProfile(
         .select()
         .single();
       break;
-    case 'ambassador':
+    case 'ambassador': {
+      const referralCode = generateReferralCode();
+      const trackingCode = 'AMB-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+      
+      // Create row in ambassador_profiles (legacy/secondary)
       result = await supabase
         .from('ambassador_profiles')
-        .insert({ user_id: userId, referral_code: generateReferralCode(), ...data })
+        .insert({ user_id: userId, referral_code: referralCode, ...data })
         .select()
         .single();
+      
+      // CRITICAL: Also create row in ambassadors table (operational/primary)
+      // This is required for lead conversion, store assignments, and all ambassador operations
+      const { error: ambassadorError } = await supabase
+        .from('ambassadors')
+        .insert({ 
+          user_id: userId, 
+          tracking_code: trackingCode,
+          referral_code: referralCode,
+          is_active: true,
+          tier: 'starter',
+          total_earnings: 0,
+          name: data.name || null,
+          state: data.state || null
+        });
+      
+      if (ambassadorError) {
+        console.error('Failed to create ambassadors record:', ambassadorError);
+        // Don't throw - the profile was created, we can recover
+      }
       break;
+    }
     case 'wholesaler':
       result = await supabase
         .from('wholesaler_profiles' as any)
