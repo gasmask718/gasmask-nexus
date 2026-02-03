@@ -480,7 +480,8 @@ export function useAmbassadorLeads(leadType?: string, pipelineUserId?: string | 
       if (!ambassador) throw new Error('Could not verify ambassador profile. Please try again or contact support.');
 
       // Create influencer record - username/platform required by schema
-      // Platform constraint now allows: instagram, tiktok, youtube, twitter, facebook, street_team, other
+      // CRITICAL: Must include ambassador_id + created_by for RLS INSERT policy
+      // Platform constraint allows: instagram, tiktok, youtube, twitter, facebook, street_team, other
       const { data: influencer, error: infError } = await supabase
         .from('influencers')
         .insert({
@@ -493,6 +494,9 @@ export function useAmbassadorLeads(leadType?: string, pipelineUserId?: string | 
           status: 'active',
           followers: 0,
           engagement_rate: 0,
+          // OWNERSHIP FIELDS - Required by RLS policy
+          ambassador_id: ambassador.id,
+          created_by: user.id,
         })
         .select()
         .single();
