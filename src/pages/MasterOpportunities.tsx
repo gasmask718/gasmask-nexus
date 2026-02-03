@@ -273,6 +273,16 @@ export default function MasterOpportunities() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Governance Banner */}
+      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2 flex items-center gap-2">
+        <Badge variant="outline" className="border-amber-500 text-amber-700 bg-amber-50">
+          READ-ONLY
+        </Badge>
+        <span className="text-sm text-amber-800 font-medium">
+          Signals Board — Observational Only. No actions are auto-created.
+        </span>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
