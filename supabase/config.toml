@@ -94,3 +94,6 @@ verify_jwt = false
 
 [functions.executive-decision-engine]
 verify_jwt = false
+
+[functions.send-user-invite]
+verify_jwt = false
