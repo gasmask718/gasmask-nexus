@@ -32,6 +32,7 @@ import { StoreNotesSection } from "@/components/store/StoreNotesSection";
 import { OpportunitiesSection } from "@/components/store/OpportunitiesSection";
 import { StoreOperationsCard } from "@/components/store/StoreOperationsCard";
 import { EditableTubeInventoryCard } from "@/components/store/EditableTubeInventoryCard";
+import { TubeIntelligenceCard } from "@/components/store/TubeIntelligenceCard";
 import { StoreVisitInventoryCard } from "@/components/store/StoreVisitInventoryCard";
 import { StoreQuickActions } from "@/components/store/StoreQuickActions";
 import { RecentStoreInteractions } from "@/components/crm/RecentStoreInteractions";
@@ -552,7 +553,10 @@ const StoreDetail = () => {
             }}
           />
 
-          {/* Tube Inventory - Editable with Brand Filter */}
+          {/* Tube Intelligence - Operational Signals */}
+          <TubeIntelligenceCard storeId={id || ""} role="admin" />
+
+          {/* Tube Inventory - Editable with Brand Filter (Legacy) */}
           <EditableTubeInventoryCard storeId={id || ""} />
 
           {/* Product Inventory from Visits - Read-only */}

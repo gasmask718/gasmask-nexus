@@ -25,6 +25,7 @@ import { QuestionnaireTab } from './visit-tabs/QuestionnaireTab';
 import { NotesTab } from './visit-tabs/NotesTab';
 import { ChangeListTab } from './visit-tabs/ChangeListTab';
 import { VisitHistoryTab } from './visit-tabs/VisitHistoryTab';
+import { TubeIntelTab } from './visit-tabs/TubeIntelTab';
 import { FieldOrder } from './visit-tabs/CreateOrderSection';
 import { InvoiceMode } from '@/components/invoice/InvoiceModeSelector';
 
@@ -670,9 +671,10 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 h-auto">
+        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-9 h-auto">
           <TabsTrigger value="billing" className="text-xs">Billing</TabsTrigger>
           <TabsTrigger value="stickers" className="text-xs">Stickers</TabsTrigger>
+          <TabsTrigger value="tube-intel" className="text-xs">Tube Intel</TabsTrigger>
           <TabsTrigger value="inventory" className="text-xs">Inventory</TabsTrigger>
           <TabsTrigger value="contacts" className="text-xs">Contacts</TabsTrigger>
           <TabsTrigger value="questionnaire" className="text-xs">Questionnaire</TabsTrigger>
@@ -699,6 +701,10 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
               stickers={visitData.stickers}
               onStickersChange={(stickers) => updateVisitData({ stickers })}
             />
+          </TabsContent>
+
+          <TabsContent value="tube-intel">
+            <TubeIntelTab storeId={storeId!} portalType={portalType} />
           </TabsContent>
 
           <TabsContent value="inventory">

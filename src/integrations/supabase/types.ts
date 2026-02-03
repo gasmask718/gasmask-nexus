@@ -40278,6 +40278,50 @@ export type Database = {
           },
         ]
       }
+      store_tube_intel_audit: {
+        Row: {
+          brand_id: string
+          changed_at: string
+          changed_by: string | null
+          field_changed: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          store_id: string
+          tube_intel_id: string
+        }
+        Insert: {
+          brand_id: string
+          changed_at?: string
+          changed_by?: string | null
+          field_changed: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          store_id: string
+          tube_intel_id: string
+        }
+        Update: {
+          brand_id?: string
+          changed_at?: string
+          changed_by?: string | null
+          field_changed?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          store_id?: string
+          tube_intel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_tube_intel_audit_tube_intel_id_fkey"
+            columns: ["tube_intel_id"]
+            isOneToOne: false
+            referencedRelation: "store_tube_inventory_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_tube_inventory: {
         Row: {
           brand: string
@@ -40313,6 +40357,81 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_tube_inventory_status: {
+        Row: {
+          brand_id: string
+          brand_name: string
+          bring_samples: boolean
+          bring_starter_kit: boolean
+          created_at: string
+          current_tubes_left: number | null
+          has_ever_ordered: boolean
+          id: string
+          is_simulation: boolean
+          last_order_date: string | null
+          last_updated_at: string
+          last_updated_by: string | null
+          needs_order: boolean
+          owner_interested: boolean | null
+          product_introduced: boolean
+          starter_kit_delivered: boolean
+          store_id: string
+        }
+        Insert: {
+          brand_id: string
+          brand_name: string
+          bring_samples?: boolean
+          bring_starter_kit?: boolean
+          created_at?: string
+          current_tubes_left?: number | null
+          has_ever_ordered?: boolean
+          id?: string
+          is_simulation?: boolean
+          last_order_date?: string | null
+          last_updated_at?: string
+          last_updated_by?: string | null
+          needs_order?: boolean
+          owner_interested?: boolean | null
+          product_introduced?: boolean
+          starter_kit_delivered?: boolean
+          store_id: string
+        }
+        Update: {
+          brand_id?: string
+          brand_name?: string
+          bring_samples?: boolean
+          bring_starter_kit?: boolean
+          created_at?: string
+          current_tubes_left?: number | null
+          has_ever_ordered?: boolean
+          id?: string
+          is_simulation?: boolean
+          last_order_date?: string | null
+          last_updated_at?: string
+          last_updated_by?: string | null
+          needs_order?: boolean
+          owner_interested?: boolean | null
+          product_introduced?: boolean
+          starter_kit_delivered?: boolean
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_tube_inventory_status_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_tube_inventory_status_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
           },
         ]
       }

@@ -334,6 +334,7 @@ import ProductConversions from '@/pages/os/ProductConversions';
 import OSLayout from '@/pages/os/OSLayout';
 import StoreInventoryPage from '@/pages/os/inventory/StoreInventoryPage';
 import InventoryAuditLogPage from '@/pages/os/inventory/InventoryAuditLogPage';
+import TubeIntelligencePage from '@/pages/TubeIntelligencePage';
 import { LiveTubesDetailPage, BoxesSoldDetailPage, LowStockDetailPage } from '@/pages/os/inventory/dashboard';
 import TopTierDashboard from '@/pages/os/toptier/TopTierDashboard';
 import {
@@ -967,6 +968,7 @@ export default function AppRoutes() {
         <Route path="/os/inventory/dashboard/low-stock" element={<LowStockDetailPage />} />
         <Route path="/os/inventory/store-inventory" element={<StoreInventoryPage />} />
         <Route path="/os/inventory/audit" element={<InventoryAuditLogPage />} />
+        <Route path="/os/inventory/tube-intelligence" element={<TubeIntelligencePage />} />
 
         <Route path="/os" element={<OSLayout />}>
           <Route
