@@ -479,10 +479,14 @@ async function importStores(
           }
         }
 
-        // Handle Starter Kit signal based on store name
-        // If store name contains "Starter Kit", auto-enable bring_starter_kit for all brands
+        // Handle Starter Kit signal based on mapped field OR store name
+        // Check if starter_kit column is mapped and has a truthy value
+        const starterKitValue = row.data.starter_kit?.toString().toLowerCase().trim() || '';
+        const hasStarterKitFlag = ['yes', 'true', '1', 'y', 'x'].includes(starterKitValue);
+        
+        // Also check if store name contains "Starter Kit" as fallback
         const storeName = storeData.name || '';
-        const needsStarterKit = storeName.toLowerCase().includes('starter kit');
+        const needsStarterKit = hasStarterKitFlag || storeName.toLowerCase().includes('starter kit');
         
         if (needsStarterKit) {
           const { data: store } = await supabase
