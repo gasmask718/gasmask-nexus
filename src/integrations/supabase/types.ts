@@ -37113,6 +37113,51 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          denial_reason: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          resource_id: string | null
+          resource_type: string
+          role_at_time: string | null
+          user_agent: string | null
+          user_id: string | null
+          was_denied: boolean | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          denial_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          resource_id?: string | null
+          resource_type: string
+          role_at_time?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          was_denied?: boolean | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          denial_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          resource_id?: string | null
+          resource_type?: string
+          role_at_time?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          was_denied?: boolean | null
+        }
+        Relationships: []
+      }
       seller_profiles: {
         Row: {
           best_time_to_contact: string | null
@@ -48816,6 +48861,10 @@ export type Database = {
       get_phase5_mode: { Args: never; Returns: Json }
       get_portal_queue_health: { Args: never; Returns: Json }
       get_store_full_address: { Args: { p_store_id: string }; Returns: string }
+      get_user_assigned_stores: {
+        Args: { _user_id: string }
+        Returns: string[]
+      }
       get_user_businesses: {
         Args: { user_id: string }
         Returns: {
@@ -49095,6 +49144,14 @@ export type Database = {
         Returns: undefined
       }
       update_relationship_status: { Args: never; Returns: undefined }
+      user_has_any_role: {
+        Args: {
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      user_is_owner: { Args: { _user_id: string }; Returns: boolean }
       validate_intent_autonomy: { Args: { p_intent_id: string }; Returns: Json }
       validate_portal_request: {
         Args: {
