@@ -15755,6 +15755,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "contact_interactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_responsiveness_summary"
+            referencedColumns: ["contact_id"]
+          },
+          {
             foreignKeyName: "contact_interactions_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
@@ -38712,15 +38719,25 @@ export type Database = {
           influence_level: string | null
           is_primary: boolean | null
           is_simulation: boolean
+          last_call_answered_at: string | null
+          last_call_attempt_at: string | null
           last_responded_at: string | null
+          last_text_received_at: string | null
+          last_text_sent_at: string | null
           name: string
           notes: string | null
           phone: string | null
           responsive_by_call: boolean | null
           responsive_by_text: boolean | null
+          responsiveness_status: string | null
+          responsiveness_updated_at: string | null
           role: string | null
           shirt_size: string | null
           store_id: string
+          total_calls_answered: number | null
+          total_calls_attempted: number | null
+          total_texts_received: number | null
+          total_texts_sent: number | null
           verified_at: string | null
           verified_by: string | null
         }
@@ -38732,15 +38749,25 @@ export type Database = {
           influence_level?: string | null
           is_primary?: boolean | null
           is_simulation?: boolean
+          last_call_answered_at?: string | null
+          last_call_attempt_at?: string | null
           last_responded_at?: string | null
+          last_text_received_at?: string | null
+          last_text_sent_at?: string | null
           name: string
           notes?: string | null
           phone?: string | null
           responsive_by_call?: boolean | null
           responsive_by_text?: boolean | null
+          responsiveness_status?: string | null
+          responsiveness_updated_at?: string | null
           role?: string | null
           shirt_size?: string | null
           store_id: string
+          total_calls_answered?: number | null
+          total_calls_attempted?: number | null
+          total_texts_received?: number | null
+          total_texts_sent?: number | null
           verified_at?: string | null
           verified_by?: string | null
         }
@@ -38752,15 +38779,25 @@ export type Database = {
           influence_level?: string | null
           is_primary?: boolean | null
           is_simulation?: boolean
+          last_call_answered_at?: string | null
+          last_call_attempt_at?: string | null
           last_responded_at?: string | null
+          last_text_received_at?: string | null
+          last_text_sent_at?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
           responsive_by_call?: boolean | null
           responsive_by_text?: boolean | null
+          responsiveness_status?: string | null
+          responsiveness_updated_at?: string | null
           role?: string | null
           shirt_size?: string | null
           store_id?: string
+          total_calls_answered?: number | null
+          total_calls_attempted?: number | null
+          total_texts_received?: number | null
+          total_texts_sent?: number | null
           verified_at?: string | null
           verified_by?: string | null
         }
@@ -48510,6 +48547,41 @@ export type Database = {
         }
         Relationships: []
       }
+      v_contact_responsiveness_summary: {
+        Row: {
+          call_answer_rate: number | null
+          contact_id: string | null
+          contact_name: string | null
+          email: string | null
+          is_primary: boolean | null
+          last_call_answered_at: string | null
+          last_call_attempt_at: string | null
+          last_responded_at: string | null
+          last_text_received_at: string | null
+          last_text_sent_at: string | null
+          phone: string | null
+          responsive_by_call: boolean | null
+          responsive_by_text: boolean | null
+          responsiveness_status: string | null
+          role: string | null
+          store_id: string | null
+          store_name: string | null
+          text_reply_rate: number | null
+          total_calls_answered: number | null
+          total_calls_attempted: number | null
+          total_texts_received: number | null
+          total_texts_sent: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_financial_period_summary: {
         Row: {
           active_ambassadors: number | null
@@ -49348,6 +49420,10 @@ export type Database = {
       }
       submit_payout_batch_for_review: {
         Args: { p_batch_id: string }
+        Returns: undefined
+      }
+      update_contact_responsiveness: {
+        Args: { p_contact_id: string }
         Returns: undefined
       }
       update_relationship_status: { Args: never; Returns: undefined }
