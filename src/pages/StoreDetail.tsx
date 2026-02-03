@@ -33,6 +33,7 @@ import { OpportunitiesSection } from "@/components/store/OpportunitiesSection";
 import { StoreOperationsCard } from "@/components/store/StoreOperationsCard";
 import { EditableTubeInventoryCard } from "@/components/store/EditableTubeInventoryCard";
 import { TubeIntelligenceCard } from "@/components/store/TubeIntelligenceCard";
+import { BrandStickersCard } from "@/components/store/BrandStickersCard";
 import { StoreVisitInventoryCard } from "@/components/store/StoreVisitInventoryCard";
 import { StoreQuickActions } from "@/components/store/StoreQuickActions";
 import { RecentStoreInteractions } from "@/components/crm/RecentStoreInteractions";
@@ -555,6 +556,9 @@ const StoreDetail = () => {
 
           {/* Tube Intelligence - Operational Signals */}
           <TubeIntelligenceCard storeId={id || ""} role="admin" />
+
+          {/* Brand Stickers - Canonical 4-sticker system per brand */}
+          <BrandStickersCard storeId={id || ""} role="admin" />
 
           {/* Tube Inventory - Editable with Brand Filter (Legacy) */}
           <EditableTubeInventoryCard storeId={id || ""} />

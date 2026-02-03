@@ -43,9 +43,11 @@ import {
   Check,
   ThumbsUp,
   ThumbsDown,
+  Sticker,
 } from 'lucide-react';
 import { format, isToday, isThisWeek } from 'date-fns';
 import { useGlobalTubeIntelligence, useTubeIntelSummary, TUBE_BRANDS } from '@/hooks/useTubeIntelligence';
+import { useStickerSummary } from '@/hooks/useBrandStickers';
 import { useStoreOpportunities, useOpportunitiesSummary, useCompleteOpportunity, useReopenOpportunity } from '@/hooks/useStoreOpportunities';
 import { ExportButton } from '@/components/crud/ExportButton';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
@@ -101,6 +103,9 @@ export default function MasterOpportunities() {
 
   // Fetch signal summary counts
   const { data: signalSummary, isLoading: signalSummaryLoading } = useTubeIntelSummary();
+
+  // Fetch sticker summary
+  const { data: stickerSummary, isLoading: stickerSummaryLoading } = useStickerSummary();
 
   // Fetch opportunities summary
   const { data: oppSummary, isLoading: oppSummaryLoading } = useOpportunitiesSummary();
@@ -382,7 +387,7 @@ export default function MasterOpportunities() {
     { key: 'created_at', label: 'Created At' },
   ];
 
-  const isLoading = signalsLoading || signalSummaryLoading || opportunitiesLoading || oppSummaryLoading;
+  const isLoading = signalsLoading || signalSummaryLoading || stickerSummaryLoading || opportunitiesLoading || oppSummaryLoading;
 
   if (isLoading) {
     return (
@@ -529,6 +534,22 @@ export default function MasterOpportunities() {
                   <Eye className="h-3 w-3 mr-1" />
                   View Details
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Sticker Completion Card */}
+            <Card className="hover:bg-muted/50 transition-all">
+              <CardContent className="pt-6 pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Sticker Compliance</p>
+                    <p className="text-2xl font-bold text-emerald-600">{stickerSummary?.completionPercentage || 0}%</p>
+                  </div>
+                  <Sticker className="h-8 w-8 text-emerald-500 opacity-50" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {stickerSummary?.installedStickers || 0} / {stickerSummary?.totalStickers || 0} Installed
+                </p>
               </CardContent>
             </Card>
           </div>

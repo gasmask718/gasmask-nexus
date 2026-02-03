@@ -13,6 +13,7 @@ import {
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
 import { TubeIntelligenceCard } from '@/components/store/TubeIntelligenceCard';
+import { BrandStickersCard } from '@/components/store/BrandStickersCard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -239,6 +240,9 @@ function StoreProfileContent() {
 
       {/* Tube Intelligence - Operational Signals */}
       <TubeIntelligenceCard storeId={store.id} role="ambassador" />
+
+      {/* Brand Stickers - Canonical 4-sticker system */}
+      <BrandStickersCard storeId={store.id} role="ambassador" />
 
       {/* Tabs */}
       <Tabs defaultValue="orders" className="space-y-4">
