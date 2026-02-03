@@ -25,6 +25,9 @@ import {
 // Governance Command Center (Phase H)
 import GovernanceCommandCenter from '@/pages/admin/GovernanceCommandCenter';
 
+// Phase 4.5 Observation Mode
+import Floor9Observation from '@/pages/floor9/Floor9Observation';
+
 /**
  * Floor9Router - Centralized routing for Floor 9 AI Operations
  * 
@@ -55,6 +58,10 @@ export function Floor9Router() {
       {/* Phase H: Governance Command Center */}
       <Route path="governance" element={<GovernanceCommandCenter />} />
       <Route path="command-center" element={<GovernanceCommandCenter />} />
+      
+      {/* Phase 4.5: Observation Mode */}
+      <Route path="observation" element={<Floor9Observation />} />
+      <Route path="learning" element={<Floor9Observation />} />
       
       {/* HARD FAILSAFE - Any unknown route redirects to hub */}
       <Route path="*" element={<Navigate to="/grabba/floor9" replace />} />

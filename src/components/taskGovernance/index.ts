@@ -9,6 +9,9 @@
  * - GovernedTaskCard: Display task with progress
  * - GlobalTaskDashboard: Cross-floor task view
  * - GovernanceCommandCenter: Phase H Human Operator View
+ * 
+ * Phase 4.5 Observation Mode:
+ * - ObservationDashboard: View automation readiness and patterns
  */
 
 export { FloorTaskLauncher } from './FloorTaskLauncher';
@@ -17,3 +20,4 @@ export { GlobalTaskDashboard } from './GlobalTaskDashboard';
 export { GovernedButton, SimpleGovernedButton } from './GovernedButton';
 export { DryRunPanel } from './DryRunPanel';
 export { GovernanceCommandCenter } from './GovernanceCommandCenter';
+export { ObservationDashboard } from './ObservationDashboard';

@@ -41389,6 +41389,62 @@ export type Database = {
           },
         ]
       }
+      task_observations: {
+        Row: {
+          confidence_at_decision: number | null
+          created_at: string
+          decision: string | null
+          decision_latency_ms: number | null
+          dry_run_passed: boolean | null
+          floor_id: string
+          human_override: boolean | null
+          id: string
+          metadata: Json | null
+          observation_type: string
+          override_reason: string | null
+          task_id: string | null
+          task_type: string
+        }
+        Insert: {
+          confidence_at_decision?: number | null
+          created_at?: string
+          decision?: string | null
+          decision_latency_ms?: number | null
+          dry_run_passed?: boolean | null
+          floor_id: string
+          human_override?: boolean | null
+          id?: string
+          metadata?: Json | null
+          observation_type: string
+          override_reason?: string | null
+          task_id?: string | null
+          task_type: string
+        }
+        Update: {
+          confidence_at_decision?: number | null
+          created_at?: string
+          decision?: string | null
+          decision_latency_ms?: number | null
+          dry_run_passed?: boolean | null
+          floor_id?: string
+          human_override?: boolean | null
+          id?: string
+          metadata?: Json | null
+          observation_type?: string
+          override_reason?: string | null
+          task_id?: string | null
+          task_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_observations_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       technique_extractions: {
         Row: {
           adoption_success_rate: number | null
