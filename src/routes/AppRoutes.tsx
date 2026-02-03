@@ -544,10 +544,13 @@ export default function AppRoutes() {
         <Route path="/sidebar-debug" element={<SidebarDebug />} />
 
         {/* Security & Governance (Phase 2 - Military-Grade Hardening) */}
-        <Route path="/security/console" element={<SecurityConsole />} />
-        <Route path="/security/devices" element={<SecurityConsole />} />
-        <Route path="/security/sessions" element={<SecurityConsole />} />
-        <Route path="/security/invitations" element={<UserInvitations />} />
+        <Route path="/security/console" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
+        <Route path="/security/devices" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
+        <Route path="/security/sessions" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
+        <Route path="/security/users" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
+        <Route path="/security/invitations" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><UserInvitations /></RequireRole>} />
+        <Route path="/security/roles" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
+        <Route path="/security/audit" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
 
         {/* GasMask Brand Routes */}
         <Route path="/gasmask" element={<Dashboard />} />
