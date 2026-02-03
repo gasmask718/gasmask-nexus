@@ -38413,12 +38413,22 @@ export type Database = {
       store_brand_stickers: {
         Row: {
           authorized_retailer_sticker: boolean | null
+          authorized_retailer_sticker_last_seen_at: string | null
+          authorized_retailer_sticker_notes: string | null
+          authorized_retailer_sticker_put_on_at: string | null
           brand_character_sticker: boolean | null
+          brand_character_sticker_last_seen_at: string | null
+          brand_character_sticker_notes: string | null
+          brand_character_sticker_put_on_at: string | null
           brand_id: string | null
           brand_name: string
           created_at: string
           front_door_sticker: boolean | null
+          front_door_sticker_last_seen_at: string | null
+          front_door_sticker_notes: string | null
+          front_door_sticker_put_on_at: string | null
           id: string
+          last_updated_by_role: string | null
           last_verified_at: string | null
           last_verified_by: string | null
           notes: string | null
@@ -38428,16 +38438,29 @@ export type Database = {
           requested_telephone_number_sticker: boolean | null
           store_id: string
           telephone_number_sticker: boolean | null
+          telephone_number_sticker_last_seen_at: string | null
+          telephone_number_sticker_notes: string | null
+          telephone_number_sticker_put_on_at: string | null
           updated_at: string
         }
         Insert: {
           authorized_retailer_sticker?: boolean | null
+          authorized_retailer_sticker_last_seen_at?: string | null
+          authorized_retailer_sticker_notes?: string | null
+          authorized_retailer_sticker_put_on_at?: string | null
           brand_character_sticker?: boolean | null
+          brand_character_sticker_last_seen_at?: string | null
+          brand_character_sticker_notes?: string | null
+          brand_character_sticker_put_on_at?: string | null
           brand_id?: string | null
           brand_name: string
           created_at?: string
           front_door_sticker?: boolean | null
+          front_door_sticker_last_seen_at?: string | null
+          front_door_sticker_notes?: string | null
+          front_door_sticker_put_on_at?: string | null
           id?: string
+          last_updated_by_role?: string | null
           last_verified_at?: string | null
           last_verified_by?: string | null
           notes?: string | null
@@ -38447,16 +38470,29 @@ export type Database = {
           requested_telephone_number_sticker?: boolean | null
           store_id: string
           telephone_number_sticker?: boolean | null
+          telephone_number_sticker_last_seen_at?: string | null
+          telephone_number_sticker_notes?: string | null
+          telephone_number_sticker_put_on_at?: string | null
           updated_at?: string
         }
         Update: {
           authorized_retailer_sticker?: boolean | null
+          authorized_retailer_sticker_last_seen_at?: string | null
+          authorized_retailer_sticker_notes?: string | null
+          authorized_retailer_sticker_put_on_at?: string | null
           brand_character_sticker?: boolean | null
+          brand_character_sticker_last_seen_at?: string | null
+          brand_character_sticker_notes?: string | null
+          brand_character_sticker_put_on_at?: string | null
           brand_id?: string | null
           brand_name?: string
           created_at?: string
           front_door_sticker?: boolean | null
+          front_door_sticker_last_seen_at?: string | null
+          front_door_sticker_notes?: string | null
+          front_door_sticker_put_on_at?: string | null
           id?: string
+          last_updated_by_role?: string | null
           last_verified_at?: string | null
           last_verified_by?: string | null
           notes?: string | null
@@ -38466,6 +38502,9 @@ export type Database = {
           requested_telephone_number_sticker?: boolean | null
           store_id?: string
           telephone_number_sticker?: boolean | null
+          telephone_number_sticker_last_seen_at?: string | null
+          telephone_number_sticker_notes?: string | null
+          telephone_number_sticker_put_on_at?: string | null
           updated_at?: string
         }
         Relationships: [

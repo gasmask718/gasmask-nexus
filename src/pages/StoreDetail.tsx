@@ -30,7 +30,8 @@ import { StorePeopleSection } from "@/components/store/StorePeopleSection";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { StoreNotesSection } from "@/components/store/StoreNotesSection";
 import { OpportunitiesSection } from "@/components/store/OpportunitiesSection";
-import { StoreOperationsCard } from "@/components/store/StoreOperationsCard";
+import { SellsFlowersToggle } from "@/components/store/SellsFlowersToggle";
+// Legacy StoreOperationsCard DEPRECATED - functionality merged into BrandStickersCard + SellsFlowersToggle
 import { EditableTubeInventoryCard } from "@/components/store/EditableTubeInventoryCard";
 import { TubeIntelligenceCard } from "@/components/store/TubeIntelligenceCard";
 import { BrandStickersCard } from "@/components/store/BrandStickersCard";
@@ -567,9 +568,10 @@ const StoreDetail = () => {
           {/* Product Inventory from Visits - Read-only */}
           <StoreVisitInventoryCard storeId={id || ""} />
 
-          {/* Operations & Stickers */}
-          <StoreOperationsCard
-            store={store}
+          {/* Store Attributes (Sells Flowers) */}
+          <SellsFlowersToggle
+            storeId={id || ""}
+            initialValue={store?.sells_flowers || false}
             onUpdate={() => {
               supabase
                 .from("stores")

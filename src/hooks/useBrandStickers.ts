@@ -92,15 +92,29 @@ export interface BrandStickerStatus {
   brand_character_sticker: boolean | null;
   authorized_retailer_sticker: boolean | null;
   telephone_number_sticker: boolean | null;
-  // Requested stickers (new)
+  // Requested stickers
   requested_front_door_sticker: boolean | null;
   requested_brand_character_sticker: boolean | null;
   requested_authorized_retailer_sticker: boolean | null;
   requested_telephone_number_sticker: boolean | null;
+  // Per-sticker date tracking
+  front_door_sticker_put_on_at: string | null;
+  front_door_sticker_last_seen_at: string | null;
+  front_door_sticker_notes: string | null;
+  brand_character_sticker_put_on_at: string | null;
+  brand_character_sticker_last_seen_at: string | null;
+  brand_character_sticker_notes: string | null;
+  authorized_retailer_sticker_put_on_at: string | null;
+  authorized_retailer_sticker_last_seen_at: string | null;
+  authorized_retailer_sticker_notes: string | null;
+  telephone_number_sticker_put_on_at: string | null;
+  telephone_number_sticker_last_seen_at: string | null;
+  telephone_number_sticker_notes: string | null;
   // Metadata
-  notes: string | null;
+  notes: string | null; // General brand notes (legacy)
   last_verified_by: string | null;
   last_verified_at: string | null;
+  last_updated_by_role: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -121,6 +135,19 @@ export interface RequestedStickerUpdatePayload {
   value: boolean;
 }
 
+export interface MarkSeenPayload {
+  id: string;
+  sticker_type: StickerTypeId;
+  role: TubeIntelRole;
+}
+
+export interface StickerNotesPayload {
+  id: string;
+  sticker_type: StickerTypeId;
+  notes: string | null;
+  role: TubeIntelRole;
+}
+
 // Role-based permissions for stickers
 export const STICKER_ROLE_PERMISSIONS: Record<TubeIntelRole, boolean> = {
   admin: true,
@@ -139,6 +166,38 @@ export function canEditStickers(role: TubeIntelRole): boolean {
  */
 export function getRequestedColumnForSticker(stickerType: StickerTypeId): RequestedStickerTypeId {
   return `requested_${stickerType}` as RequestedStickerTypeId;
+}
+
+/**
+ * Get per-sticker column names for date tracking
+ */
+export function getStickerDateColumns(stickerType: StickerTypeId) {
+  return {
+    putOnAt: `${stickerType}_put_on_at` as keyof BrandStickerStatus,
+    lastSeenAt: `${stickerType}_last_seen_at` as keyof BrandStickerStatus,
+    notes: `${stickerType}_notes` as keyof BrandStickerStatus,
+  };
+}
+
+/**
+ * Check if a sticker has notes
+ */
+export function stickerHasNotes(record: BrandStickerStatus, stickerType: StickerTypeId): boolean {
+  const { notes } = getStickerDateColumns(stickerType);
+  const notesValue = record[notes];
+  return !!notesValue && (notesValue as string).trim().length > 0;
+}
+
+/**
+ * Get per-sticker date values
+ */
+export function getStickerDates(record: BrandStickerStatus, stickerType: StickerTypeId) {
+  const cols = getStickerDateColumns(stickerType);
+  return {
+    putOnAt: record[cols.putOnAt] as string | null,
+    lastSeenAt: record[cols.lastSeenAt] as string | null,
+    notes: record[cols.notes] as string | null,
+  };
 }
 
 /**
@@ -190,7 +249,7 @@ export function useBrandStickers(storeId: string | null) {
         }
         return {
           store_id: storeId,
-          brand_id: brandUuid || null, // Use null if not found
+          brand_id: brandUuid || null,
           brand_name: brand.name,
           front_door_sticker: false,
           brand_character_sticker: false,
@@ -218,19 +277,20 @@ export function useBrandStickers(storeId: string | null) {
 
   // Update a single sticker field (installed status)
   const updateSticker = useMutation({
-    mutationFn: async (payload: BrandStickerUpdatePayload) => {
-      const { id, store_id, brand_name, sticker_type, value } = payload;
+    mutationFn: async (payload: BrandStickerUpdatePayload & { role?: TubeIntelRole }) => {
+      const { id, store_id, brand_name, sticker_type, value, role } = payload;
 
       // Validate store_id is a UUID
       if (!isValidUuid(store_id)) {
         throw new Error(`Invalid store_id: "${store_id}" is not a valid UUID`);
       }
 
-      // Build update object - if installing, auto-clear requested flag
+      // Build update object - trigger handles put_on_at auto-set
       const updateData: Record<string, any> = {
         [sticker_type]: value,
         last_verified_by: user?.id || null,
         last_verified_at: new Date().toISOString(),
+        last_updated_by_role: role || 'admin',
       };
 
       // Auto-clear requested when installed
@@ -240,7 +300,7 @@ export function useBrandStickers(storeId: string | null) {
       }
 
       if (id) {
-        // Update existing record by row ID - no brand_id needed
+        // Update existing record by row ID
         const { error } = await supabase
           .from('store_brand_stickers')
           .update(updateData)
@@ -274,8 +334,8 @@ export function useBrandStickers(storeId: string | null) {
 
   // Update a requested sticker field
   const updateRequestedSticker = useMutation({
-    mutationFn: async (payload: RequestedStickerUpdatePayload) => {
-      const { id, store_id, brand_name, requested_type, value } = payload;
+    mutationFn: async (payload: RequestedStickerUpdatePayload & { role?: TubeIntelRole }) => {
+      const { id, store_id, brand_name, requested_type, value, role } = payload;
 
       // Validate store_id is a UUID
       if (!isValidUuid(store_id)) {
@@ -286,10 +346,10 @@ export function useBrandStickers(storeId: string | null) {
         [requested_type]: value,
         last_verified_by: user?.id || null,
         last_verified_at: new Date().toISOString(),
+        last_updated_by_role: role || 'admin',
       };
 
       if (id) {
-        // Update existing record by row ID
         const { error } = await supabase
           .from('store_brand_stickers')
           .update(updateData)
@@ -297,7 +357,6 @@ export function useBrandStickers(storeId: string | null) {
 
         if (error) throw error;
       } else {
-        // Create new record - resolve brand UUID from name
         const brandUuid = await getBrandUuid(brand_name);
         
         const { error } = await supabase
@@ -321,7 +380,61 @@ export function useBrandStickers(storeId: string | null) {
     },
   });
 
-  // Update notes for a brand
+  // Mark a sticker as seen (updates last_seen_at only)
+  const markStickerSeen = useMutation({
+    mutationFn: async (payload: MarkSeenPayload) => {
+      const { id, sticker_type, role } = payload;
+      const cols = getStickerDateColumns(sticker_type);
+
+      const { error } = await supabase
+        .from('store_brand_stickers')
+        .update({
+          [cols.lastSeenAt]: new Date().toISOString(),
+          last_verified_by: user?.id || null,
+          last_verified_at: new Date().toISOString(),
+          last_updated_by_role: role,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['brand-stickers', storeId] });
+      toast.success('Sticker marked as seen');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to mark seen: ${error.message}`);
+    },
+  });
+
+  // Update per-sticker notes
+  const updateStickerNotes = useMutation({
+    mutationFn: async (payload: StickerNotesPayload) => {
+      const { id, sticker_type, notes, role } = payload;
+      const cols = getStickerDateColumns(sticker_type);
+
+      const { error } = await supabase
+        .from('store_brand_stickers')
+        .update({
+          [cols.notes]: notes?.trim() || null,
+          last_verified_by: user?.id || null,
+          last_verified_at: new Date().toISOString(),
+          last_updated_by_role: role,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['brand-stickers', storeId] });
+      toast.success('Sticker notes saved');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to save notes: ${error.message}`);
+    },
+  });
+
+  // Update general brand notes (legacy)
   const updateNotes = useMutation({
     mutationFn: async ({ id, notes }: { id: string; notes: string }) => {
       const { error } = await supabase
@@ -375,6 +488,15 @@ export function useBrandStickers(storeId: string | null) {
     };
   };
 
+  // Count stickers with notes
+  const getNotesStats = (record: BrandStickerStatus) => {
+    let count = 0;
+    for (const type of STICKER_TYPES) {
+      if (stickerHasNotes(record, type.id)) count++;
+    }
+    return count;
+  };
+
   return {
     data: query.data || [],
     isLoading: query.isLoading,
@@ -382,9 +504,12 @@ export function useBrandStickers(storeId: string | null) {
     initializeBrands,
     updateSticker,
     updateRequestedSticker,
+    markStickerSeen,
+    updateStickerNotes,
     updateNotes,
     getCompletionStats,
     getRequestedStats,
+    getNotesStats,
   };
 }
 
@@ -397,13 +522,20 @@ export function useStickerSummary() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('store_brand_stickers')
-        .select('front_door_sticker, brand_character_sticker, authorized_retailer_sticker, telephone_number_sticker, requested_front_door_sticker, requested_brand_character_sticker, requested_authorized_retailer_sticker, requested_telephone_number_sticker');
+        .select(`
+          store_id,
+          front_door_sticker, brand_character_sticker, authorized_retailer_sticker, telephone_number_sticker,
+          requested_front_door_sticker, requested_brand_character_sticker, requested_authorized_retailer_sticker, requested_telephone_number_sticker,
+          front_door_sticker_notes, brand_character_sticker_notes, authorized_retailer_sticker_notes, telephone_number_sticker_notes
+        `);
 
       if (error) throw error;
 
       let totalStickers = 0;
       let installedStickers = 0;
       let requestedStickers = 0;
+      let notesCount = 0;
+      const storesWithNotes = new Set<string>();
 
       data?.forEach(item => {
         totalStickers += 4;
@@ -415,6 +547,12 @@ export function useStickerSummary() {
         if (item.requested_brand_character_sticker) requestedStickers++;
         if (item.requested_authorized_retailer_sticker) requestedStickers++;
         if (item.requested_telephone_number_sticker) requestedStickers++;
+        
+        // Count notes
+        if (item.front_door_sticker_notes) { notesCount++; storesWithNotes.add(item.store_id); }
+        if (item.brand_character_sticker_notes) { notesCount++; storesWithNotes.add(item.store_id); }
+        if (item.authorized_retailer_sticker_notes) { notesCount++; storesWithNotes.add(item.store_id); }
+        if (item.telephone_number_sticker_notes) { notesCount++; storesWithNotes.add(item.store_id); }
       });
 
       return {
@@ -425,6 +563,8 @@ export function useStickerSummary() {
         completionPercentage: totalStickers > 0 
           ? Math.round((installedStickers / totalStickers) * 100) 
           : 0,
+        notesCount,
+        storesWithNotesCount: storesWithNotes.size,
       };
     },
   });

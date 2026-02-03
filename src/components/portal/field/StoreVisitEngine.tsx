@@ -9,12 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 
-// Sticker configuration - HARD-LOCKED to 4 brands
-import { 
-  initializeStickerDataForAllBrands, 
-  sanitizeStickerData,
-  type StickerData 
-} from '@/config/stickerBrands';
+// NOTE: Stickers are now handled directly by BrandStickersCard which persists to DB
+// The legacy stickerBrands config is deprecated for visit data
 
 // Tab Components
 import { BillingTab } from './visit-tabs/BillingTab';
@@ -77,7 +73,8 @@ export interface StoreVisitData {
   billTo: 'bill' | 'pay_upfront';
   // Field orders created during visit
   fieldOrders: FieldOrder[];
-  // Stickers per brand
+  // Legacy - stickers now handled directly by BrandStickersCard (persisted to DB immediately)
+  // This field is deprecated but kept for backward compatibility
   stickers: Record<string, {
     frontDoor: boolean;
     authorizedRetailer: boolean;
@@ -127,8 +124,8 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
     storeName: '',
     storeAddress: '',
     billTo: 'bill',
-    fieldOrders: [], // Field orders created during visit
-    stickers: initializeStickerDataForAllBrands(), // HARD-LOCKED to 4 approved brands
+    fieldOrders: [],
+    stickers: {}, // Deprecated - stickers now saved directly via BrandStickersCard
     inventory: {},
     contacts: [],
     wholesalerAssociations: [], // Global wholesaler associations (network-level)
@@ -382,19 +379,9 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
           });
         });
 
-      // Sticker changes (brand IDs are strings like "gasmask")
-      const sanitizedStickers = sanitizeStickerData(visitData.stickers);
-      Object.entries(sanitizedStickers).forEach(([brandId, stickers]) => {
-        Object.entries(stickers).forEach(([key, value]) => {
-          changeItems.push({
-            change_list_id: changeList.id,
-            entity_type: 'stickers',
-            entity_id: brandId, // Now works because entity_id is TEXT
-            field_name: key,
-            new_value: { value },
-          });
-        });
-      });
+      // NOTE: Sticker changes are now saved directly to DB via BrandStickersCard
+      // They no longer go through the change list system - this is intentional
+      // Stickers are immediately persisted for operational efficiency
 
       // Questionnaire changes (only the 4 simplified fields)
       Object.entries(visitData.questionnaire).forEach(([key, value]) => {
@@ -698,8 +685,8 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
 
           <TabsContent value="stickers">
             <StickersTab 
-              stickers={visitData.stickers}
-              onStickersChange={(stickers) => updateVisitData({ stickers })}
+              storeId={storeId!}
+              role={portalType === 'driver' ? 'driver' : portalType === 'biker' ? 'biker' : 'ambassador'}
             />
           </TabsContent>
 
