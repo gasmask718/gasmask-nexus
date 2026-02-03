@@ -1,10 +1,25 @@
 /**
- * HARD-LOCKED STICKER BRANDS CONFIGURATION
+ * CANONICAL STICKER SYSTEM CONFIGURATION
  * 
- * This configuration defines the ONLY brands and sticker types allowed
- * in the Biker and Driver Store Visit Stickers section.
+ * ⚠️ IMPORTANT: This file is for the BIKER/DRIVER PORTAL sticker section ONLY.
  * 
- * NO OTHER BRANDS OR STICKER TYPES MAY BE ADDED WITHOUT EXPLICIT CODE CHANGE.
+ * The PRIMARY sticker system uses:
+ * - Table: store_brand_stickers
+ * - Hook: useBrandStickers (src/hooks/useBrandStickers.ts)
+ * - Component: BrandStickersCard (src/components/store/BrandStickersCard.tsx)
+ * 
+ * The 4 canonical sticker types (SINGLE SOURCE OF TRUTH):
+ * 1. Front Door Sticker
+ * 2. Brand Character Sticker
+ * 3. Authorized Retailer Sticker
+ * 4. Telephone Number Sticker
+ * 
+ * Each sticker has two states per brand:
+ * - Installed: sticker is physically placed
+ * - Requested: store has requested this sticker (used for routing/prep)
+ * 
+ * DEPRECATED: The store_master columns (sticker_on_door, sticker_in_store, etc.)
+ * are LEGACY and should NOT be used. Use store_brand_stickers table instead.
  */
 
 export const STICKER_BRANDS = [
@@ -29,6 +44,11 @@ export interface StickerData {
   authorizedRetailer: boolean;
   brandCharacter: boolean;
   telephoneNumber: boolean;
+  // Requested flags
+  requestedFrontDoor?: boolean;
+  requestedAuthorizedRetailer?: boolean;
+  requestedBrandCharacter?: boolean;
+  requestedTelephoneNumber?: boolean;
   notes: string;
 }
 
@@ -56,6 +76,10 @@ export function createEmptyStickerData(): StickerData {
     authorizedRetailer: false,
     brandCharacter: false,
     telephoneNumber: false,
+    requestedFrontDoor: false,
+    requestedAuthorizedRetailer: false,
+    requestedBrandCharacter: false,
+    requestedTelephoneNumber: false,
     notes: '',
   };
 }
@@ -88,6 +112,10 @@ export function sanitizeStickerData(
       authorizedRetailer: Boolean(brandData?.authorizedRetailer),
       brandCharacter: Boolean(brandData?.brandCharacter),
       telephoneNumber: Boolean(brandData?.telephoneNumber),
+      requestedFrontDoor: Boolean(brandData?.requestedFrontDoor),
+      requestedAuthorizedRetailer: Boolean(brandData?.requestedAuthorizedRetailer),
+      requestedBrandCharacter: Boolean(brandData?.requestedBrandCharacter),
+      requestedTelephoneNumber: Boolean(brandData?.requestedTelephoneNumber),
       notes: typeof brandData?.notes === 'string' ? brandData.notes : '',
     };
   }
