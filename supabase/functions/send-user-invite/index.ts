@@ -21,16 +21,16 @@ serve(async (req) => {
   }
 
   try {
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
     const frontendBaseUrl = Deno.env.get("FRONTEND_BASE_URL") || "https://gasmask-os-nexus.lovable.app";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Validate Resend API key
-    if (!resendApiKey) {
-      console.error("❌ RESEND_API_KEY is not configured");
+    // Validate SendGrid API key
+    if (!sendgridApiKey) {
+      console.error("❌ SENDGRID_API_KEY is not configured");
       return new Response(
-        JSON.stringify({ error: "Email service not configured. Please add RESEND_API_KEY." }),
+        JSON.stringify({ error: "Email service not configured. Please add SENDGRID_API_KEY." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -216,47 +216,67 @@ If you didn't expect this invitation, you can safely ignore this email.
 
 © 2025 Dynasty OS. All rights reserved.`;
 
-    // Send email via Resend API directly using fetch
-    console.log(`📧 Sending invitation email via Resend to ${email}...`);
+    // Send email via SendGrid API
+    console.log(`📧 Sending invitation email via SendGrid to ${email}...`);
+    console.log(`   From: Gasmaskapprovedllc@gmail.com`);
     console.log(`   Role: ${roleDisplay}`);
     console.log(`   Accept URL: ${acceptUrl}`);
     
-    const resendResponse = await fetch("https://api.resend.com/emails", {
+    const sendgridResponse = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${resendApiKey}`,
+        "Authorization": `Bearer ${sendgridApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Dynasty OS <onboarding@resend.dev>",
-        to: [email.toLowerCase()],
-        subject: `You're Invited to Join Dynasty OS as a ${roleDisplay}`,
-        text: plainText,
-        html: emailHtml,
+        personalizations: [
+          {
+            to: [{ email: email.toLowerCase() }],
+            subject: `You're Invited to Join Dynasty OS as a ${roleDisplay}`,
+          },
+        ],
+        from: {
+          email: "Gasmaskapprovedllc@gmail.com",
+          name: "Dynasty OS",
+        },
+        content: [
+          {
+            type: "text/plain",
+            value: plainText,
+          },
+          {
+            type: "text/html",
+            value: emailHtml,
+          },
+        ],
       }),
     });
 
-    const resendResult = await resendResponse.json();
-
-    if (!resendResponse.ok) {
-      console.error("❌ Resend error:", resendResult);
+    // SendGrid returns 202 for successful queuing
+    if (!sendgridResponse.ok && sendgridResponse.status !== 202) {
+      const errorText = await sendgridResponse.text();
+      let errorDetails;
+      try {
+        errorDetails = JSON.parse(errorText);
+      } catch {
+        errorDetails = { message: errorText };
+      }
+      console.error("❌ SendGrid error:", errorDetails);
       return new Response(
         JSON.stringify({ 
-          error: `Failed to send email: ${resendResult.message || resendResult.error || "Unknown error"}`,
-          details: resendResult 
+          error: `Failed to send email: ${errorDetails.errors?.[0]?.message || errorDetails.message || "Unknown error"}`,
+          details: errorDetails 
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     console.log(`✅ Invitation email sent successfully to ${email}`);
-    console.log(`   Email ID: ${resendResult.id}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         message: `Invitation email sent to ${email}`,
-        emailId: resendResult.id,
         acceptUrl,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
