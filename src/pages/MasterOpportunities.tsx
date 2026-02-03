@@ -101,32 +101,30 @@ export default function MasterOpportunities() {
   // Fetch opportunities summary
   const { data: oppSummary, isLoading: oppSummaryLoading } = useOpportunitiesSummary();
 
-  // Build filter based on active signal tab (derived from URL)
-  const filters = useMemo(() => {
-    const baseFilters: Record<string, boolean> = {};
-    
+  // Build filter based on active signal tab (derived from URL) - SINGLE SOURCE OF TRUTH
+  const signalFilters = useMemo(() => {
     switch (activeSignalTab) {
       case 'needs_order':
-        baseFilters.needsOrder = true;
-        break;
+        return { needsOrder: true };
       case 'bring_samples':
-        baseFilters.bringSamples = true;
-        break;
+        return { bringSamples: true };
       case 'starter_kit':
-        baseFilters.bringStarterKit = true;
-        break;
+        return { bringStarterKit: true };
       case 'not_introduced':
-        baseFilters.notIntroduced = true;
-        break;
+        return { notIntroduced: true };
       case 'not_interested':
-        baseFilters.introducedNotInterested = true;
-        break;
+        return { introducedNotInterested: true };
+      default:
+        return {};
     }
-    
-    return baseFilters;
   }, [activeSignalTab]);
 
-  const { data: rawSignalData, isLoading: signalsLoading, refetch: refetchSignals } = useGlobalTubeIntelligence(filters);
+  // Debug log for filter changes
+  useEffect(() => {
+    console.log('[Store Intelligence] Active signal filter:', activeSignalTab, 'Query filters:', signalFilters);
+  }, [activeSignalTab, signalFilters]);
+
+  const { data: rawSignalData, isLoading: signalsLoading, refetch: refetchSignals } = useGlobalTubeIntelligence(signalFilters);
   const { data: rawOpportunities, isLoading: opportunitiesLoading, refetch: refetchOpportunities } = useStoreOpportunities();
   const completeOpportunity = useCompleteOpportunity();
   const reopenOpportunity = useReopenOpportunity();
@@ -143,7 +141,7 @@ export default function MasterOpportunities() {
     return rawSignalData.map((item: any) => ({
       id: item.id,
       store_id: item.store_id,
-      store_name: item.store?.name || item.store?.store_name || 'Unknown Store',
+      store_name: item.store?.store_name || 'Unknown Store',
       brand_id: item.brand_id,
       brand_name: item.brand_name,
       product_introduced: item.product_introduced,
@@ -156,8 +154,8 @@ export default function MasterOpportunities() {
       last_updated_by: item.last_updated_by,
       last_updated_by_role: item.last_updated_by_role,
       last_updated_at: item.last_updated_at,
-      city: item.store?.address_city || item.store?.city || null,
-      borough: item.store?.borough || null,
+      city: item.store?.city || null,
+      borough: item.store?.borough_id || null,
     }));
   }, [rawSignalData]);
 
@@ -632,15 +630,49 @@ export default function MasterOpportunities() {
               </div>
             </CardHeader>
             <CardContent>
-              {filteredSignalRows.length === 0 ? (
+              {signalsLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+                  <p className="text-sm text-muted-foreground mt-4">Loading signals...</p>
+                </div>
+              ) : filteredSignalRows.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Target className="h-16 w-16 mx-auto mb-4 opacity-50" />
                   <p className="text-lg font-medium">No signals found</p>
                   <p className="text-sm mt-1">
                     {searchQuery || brandFilter !== 'all' || roleFilter !== 'all' || timeFilter !== 'all'
                       ? 'Try adjusting your filters'
-                      : 'Signals will appear when field teams report store observations'}
+                      : activeSignalTab !== 'all'
+                        ? `No stores match the "${activeSignalTab.replace(/_/g, ' ')}" signal filter. Try clearing the filter.`
+                        : 'Signals will appear when field teams report store observations'}
                   </p>
+                  {/* Debug: Filter mismatch warning */}
+                  {activeSignalTab !== 'all' && signalSummary && (
+                    (() => {
+                      const expectedCount = 
+                        activeSignalTab === 'needs_order' ? signalSummary.needsOrder :
+                        activeSignalTab === 'bring_samples' ? signalSummary.bringSamples :
+                        activeSignalTab === 'starter_kit' ? signalSummary.bringStarterKit :
+                        activeSignalTab === 'not_introduced' ? signalSummary.notIntroduced :
+                        activeSignalTab === 'not_interested' ? signalSummary.introducedNotInterested : 0;
+                      
+                      if (expectedCount > 0) {
+                        console.warn('[Store Intelligence] Filter mismatch detected:', {
+                          signal: activeSignalTab,
+                          expectedCount,
+                          actualRows: filteredSignalRows.length,
+                          rawDataLength: rawSignalData?.length ?? 0,
+                          signalFilters
+                        });
+                        return (
+                          <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-700 text-xs">
+                            ⚠️ KPI shows {expectedCount} signals but table is empty. Check console for details.
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()
+                  )}
                 </div>
               ) : (
                 <>
