@@ -25,6 +25,48 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+type ErrorStage =
+  | "cors"
+  | "auth"
+  | "role_lookup"
+  | "permission"
+  | "input"
+  | "caller_id"
+  | "log_create"
+  | "twilio"
+  | "audit"
+  | "unknown";
+
+function jsonError(
+  status: number,
+  error: string,
+  stage: ErrorStage,
+  details?: unknown,
+): Response {
+  return new Response(
+    JSON.stringify({ success: false, error, stage, details }),
+    { status, headers: { "Content-Type": "application/json", ...corsHeaders } },
+  );
+}
+
+function getTwilioAuthHeader(): string {
+  const apiKeySid = Deno.env.get("TWILIO_API_SID");
+  const apiKeySecret = Deno.env.get("TWILIO_API_KEY");
+  if (apiKeySid && apiKeySecret) {
+    return `Basic ${btoa(`${apiKeySid}:${apiKeySecret}`)}`;
+  }
+
+  const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+  if (accountSid && authToken) {
+    return `Basic ${btoa(`${accountSid}:${authToken}`)}`;
+  }
+
+  throw new Error(
+    "Missing Twilio credentials. Set (TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN) or (TWILIO_API_SID + TWILIO_API_KEY).",
+  );
+}
+
 // Roles that can place outbound calls
 const ALLOWED_ROLES = [
   "owner",
@@ -60,11 +102,31 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     // Get Twilio credentials
     const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
     const TWILIO_PHONE_NUMBER = Deno.env.get("TWILIO_PHONE_NUMBER"); // Fallback
 
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
-      throw new Error("Missing Twilio credentials");
+    // We still need the real Account SID for the Twilio REST URL.
+    if (!TWILIO_ACCOUNT_SID) {
+      return jsonError(
+        500,
+        "Twilio is not configured: TWILIO_ACCOUNT_SID is missing.",
+        "twilio",
+      );
+    }
+    if (!TWILIO_ACCOUNT_SID.startsWith("AC")) {
+      return jsonError(
+        500,
+        "Twilio is misconfigured: TWILIO_ACCOUNT_SID must start with 'AC'.",
+        "twilio",
+        { provided_prefix: TWILIO_ACCOUNT_SID.slice(0, 2) },
+      );
+    }
+
+    let twilioAuthHeader: string;
+    try {
+      twilioAuthHeader = getTwilioAuthHeader();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return jsonError(500, msg, "twilio");
     }
 
     // Initialize Supabase client
@@ -75,10 +137,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Get auth token from request
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized - no token provided" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return jsonError(401, "Unauthorized - no token provided", "auth");
     }
 
     // Verify user and get their role
@@ -87,10 +146,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (authError || !user) {
       console.error("❌ Auth error:", authError);
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized - invalid token" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return jsonError(401, "Unauthorized - invalid token", "auth", authError);
     }
 
     // Get user profile - try profiles table first
@@ -125,9 +181,11 @@ const handler = async (req: Request): Promise<Response> => {
         console.log(`✅ Found role from user_roles: ${userRole}`);
       } else {
         console.error("❌ No role found for user:", user.id, roleError);
-        return new Response(
-          JSON.stringify({ success: false, error: "User role not found. Please contact administrator." }),
-          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        return jsonError(
+          403,
+          "User role not found. Please contact administrator.",
+          "role_lookup",
+          roleError,
         );
       }
     }
@@ -167,10 +225,7 @@ const handler = async (req: Request): Promise<Response> => {
     } = body;
 
     if (!destination_phone) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Missing destination_phone" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return jsonError(400, "Missing destination_phone", "input");
     }
 
     // Format phone number
@@ -211,7 +266,11 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (!callerIdNumber) {
-      throw new Error("No caller ID available");
+      return jsonError(
+        500,
+        "No caller ID available (configure a call-capable business phone number, or set TWILIO_PHONE_NUMBER).",
+        "caller_id",
+      );
     }
 
     // 1. Create the call log FIRST (so we have the ID for tracking)
@@ -239,6 +298,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (logError) {
       console.error("❌ Failed to create call log:", logError);
+      // We still attempt the Twilio call, but we return structured visibility.
     }
 
     // 2. Build TwiML URL for connecting the call
@@ -260,7 +320,7 @@ const handler = async (req: Request): Promise<Response> => {
     const twilioResponse = await fetch(twilioUrl, {
       method: "POST",
       headers: {
-        Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
+        Authorization: twilioAuthHeader,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: callParams,
@@ -284,7 +344,12 @@ const handler = async (req: Request): Promise<Response> => {
           .eq("id", callLog.id);
       }
 
-      throw new Error(twilioData.message || "Failed to initiate call");
+      return jsonError(
+        twilioResponse.status || 502,
+        twilioData?.message || "Failed to initiate call",
+        "twilio",
+        twilioData,
+      );
     }
 
     console.log(`✅ Call initiated: SID=${twilioData.sid}, Status=${twilioData.status}`);
@@ -336,13 +401,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error: any) {
     console.error("❌ Error in place-outbound-call:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { 
-        status: 500, 
-        headers: { "Content-Type": "application/json", ...corsHeaders } 
-      }
-    );
+    return jsonError(500, error?.message || "Unknown error", "unknown", error);
   }
 };
 

@@ -126,13 +126,13 @@ export function useOutboundCall() {
         to: result.to,
       };
     },
-    onSuccess: (result) => {
+    onSuccess: (result, variables) => {
       if (result.success && result.callSid) {
         setActiveCall({
           callSid: result.callSid,
           callLogId: result.callLogId || "",
-          destinationPhone: pendingCall?.destinationPhone || "",
-          entityName: pendingCall?.entityName,
+          destinationPhone: variables.destinationPhone,
+          entityName: variables.entityName,
           status: "initiated",
           startedAt: new Date(),
         });
@@ -157,6 +157,16 @@ export function useOutboundCall() {
     setPendingCall(params);
     setIsCallModalOpen(true);
   }, [getDefaultBusiness]);
+
+  // Place a call immediately (used by the Dialer page to avoid modal/state races)
+  const placeCallNow = useCallback(async (params: PlaceCallParams) => {
+    const callParams: PlaceCallParams = { ...params };
+    if (!callParams.businessId) {
+      const defaultBusiness = getDefaultBusiness();
+      callParams.businessId = defaultBusiness?.business_id;
+    }
+    return await placeCallMutation.mutateAsync(callParams);
+  }, [getDefaultBusiness, placeCallMutation]);
 
   // Confirm and place the call
   const confirmCall = useCallback(async (overrideBusinessId?: string) => {
@@ -204,6 +214,7 @@ export function useOutboundCall() {
     
     // Actions
     initiateCall,
+    placeCallNow,
     confirmCall,
     cancelCall,
     clearActiveCall,
