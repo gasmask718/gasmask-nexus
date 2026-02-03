@@ -17,6 +17,8 @@ import PortalLogin from '@/pages/portal/PortalLogin';
 import PortalRegister from '@/pages/portal/PortalRegister';
 import DriverLogin from '@/pages/portal/DriverLogin';
 import BikerLogin from '@/pages/portal/BikerLogin';
+import InviteSignup from '@/pages/auth/InviteSignup';
+import UserInvitations from '@/pages/security/UserInvitations';
 
 // Protected page imports
 import Dashboard from '@/pages/Dashboard';
@@ -529,6 +531,8 @@ export default function AppRoutes() {
       <Route path="/portal/biker/login" element={<BikerLogin />} />
       {/* Public Ambassador Application Form */}
       <Route path="/apply/ambassador" element={<AmbassadorApplication />} />
+      {/* Public Invite Signup */}
+      <Route path="/signup" element={<InviteSignup />} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES (Authentication required)                                   */}
@@ -543,6 +547,7 @@ export default function AppRoutes() {
         <Route path="/security/console" element={<SecurityConsole />} />
         <Route path="/security/devices" element={<SecurityConsole />} />
         <Route path="/security/sessions" element={<SecurityConsole />} />
+        <Route path="/security/invitations" element={<UserInvitations />} />
 
         {/* GasMask Brand Routes */}
         <Route path="/gasmask" element={<Dashboard />} />

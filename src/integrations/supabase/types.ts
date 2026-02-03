@@ -42765,6 +42765,8 @@ export type Database = {
       user_invitations: {
         Row: {
           accepted_at: string | null
+          assigned_brand_id: string | null
+          assigned_store_id: string | null
           created_at: string
           email: string
           expires_at: string
@@ -42777,6 +42779,8 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          assigned_brand_id?: string | null
+          assigned_store_id?: string | null
           created_at?: string
           email: string
           expires_at: string
@@ -42789,6 +42793,8 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          assigned_brand_id?: string | null
+          assigned_store_id?: string | null
           created_at?: string
           email?: string
           expires_at?: string
@@ -42800,6 +42806,20 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
         }
         Relationships: [
+          {
+            foreignKeyName: "user_invitations_assigned_store_id_fkey"
+            columns: ["assigned_store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_invitations_assigned_store_id_fkey"
+            columns: ["assigned_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
           {
             foreignKeyName: "user_invitations_invited_by_fkey"
             columns: ["invited_by"]
@@ -49123,6 +49143,7 @@ export type Database = {
         | "staff"
         | "creator"
         | "va"
+        | "production"
       bet_result: "pending" | "win" | "loss" | "push" | "void"
       bet_status: "simulated" | "approved" | "rejected" | "executed"
       brand_contact_role:
@@ -49565,6 +49586,7 @@ export const Constants = {
         "staff",
         "creator",
         "va",
+        "production",
       ],
       bet_result: ["pending", "win", "loss", "push", "void"],
       bet_status: ["simulated", "approved", "rejected", "executed"],
