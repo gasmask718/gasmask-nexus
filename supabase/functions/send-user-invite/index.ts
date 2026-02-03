@@ -218,7 +218,7 @@ If you didn't expect this invitation, you can safely ignore this email.
 
     // Send email via SendGrid API
     console.log(`📧 Sending invitation email via SendGrid to ${email}...`);
-    console.log(`   From: Gasmaskapprovedllc@gmail.com`);
+    console.log(`   From: gasmaskapprovedllc@gmail.com`);
     console.log(`   Role: ${roleDisplay}`);
     console.log(`   Accept URL: ${acceptUrl}`);
     
@@ -236,7 +236,7 @@ If you didn't expect this invitation, you can safely ignore this email.
           },
         ],
         from: {
-          email: "Gasmaskapprovedllc@gmail.com",
+          email: "gasmaskapprovedllc@gmail.com",
           name: "Dynasty OS",
         },
         content: [
