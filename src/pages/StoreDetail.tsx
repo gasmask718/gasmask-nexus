@@ -34,6 +34,7 @@ import { StoreOperationsCard } from "@/components/store/StoreOperationsCard";
 import { EditableTubeInventoryCard } from "@/components/store/EditableTubeInventoryCard";
 import { TubeIntelligenceCard } from "@/components/store/TubeIntelligenceCard";
 import { BrandStickersCard } from "@/components/store/BrandStickersCard";
+import { QuickStatsStickersSummary } from "@/components/store/QuickStatsStickersSummary";
 import { StoreVisitInventoryCard } from "@/components/store/StoreVisitInventoryCard";
 import { StoreQuickActions } from "@/components/store/StoreQuickActions";
 import { RecentStoreInteractions } from "@/components/crm/RecentStoreInteractions";
@@ -1045,81 +1046,8 @@ const StoreDetail = () => {
               </div>
               <Separator />
               
-              {/* Sticker Status - 3 Stickers with Last Seen */}
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">Sticker Status</p>
-                <div className="space-y-2">
-                  {/* Door Sticker */}
-                  <div className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-                    <div className="flex items-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${store.sticker_door ? 'bg-green-500' : 'bg-muted-foreground/30'}`} />
-                      <span className="text-xs font-medium">Door</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {store.sticker_door ? (
-                        store.sticker_last_seen_at ? (
-                          <span>Seen {new Date(store.sticker_last_seen_at).toLocaleDateString()}</span>
-                        ) : (
-                          <span className="text-yellow-600">Never verified</span>
-                        )
-                      ) : (
-                        <span className="text-muted-foreground/50">—</span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* In-Store Sticker */}
-                  <div className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-                    <div className="flex items-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${store.sticker_instore ? 'bg-green-500' : 'bg-muted-foreground/30'}`} />
-                      <span className="text-xs font-medium">In-Store</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {store.sticker_instore ? (
-                        store.sticker_last_seen_at ? (
-                          <span>Seen {new Date(store.sticker_last_seen_at).toLocaleDateString()}</span>
-                        ) : (
-                          <span className="text-yellow-600">Never verified</span>
-                        )
-                      ) : (
-                        <span className="text-muted-foreground/50">—</span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Phone Sticker */}
-                  <div className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-                    <div className="flex items-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${store.sticker_phone ? 'bg-green-500' : 'bg-muted-foreground/30'}`} />
-                      <span className="text-xs font-medium">W/ Phone</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {store.sticker_phone ? (
-                        store.sticker_last_seen_at ? (
-                          <span>Seen {new Date(store.sticker_last_seen_at).toLocaleDateString()}</span>
-                        ) : (
-                          <span className="text-yellow-600">Never verified</span>
-                        )
-                      ) : (
-                        <span className="text-muted-foreground/50">—</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Taken Down Warning */}
-                {store.sticker_taken_down && (
-                  <div className="p-2 rounded-md bg-destructive/10 border border-destructive/20 text-xs text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-3 w-3" />
-                    Sticker reported taken down
-                    {store.sticker_taken_down_at && (
-                      <span className="ml-auto text-muted-foreground">
-                        {new Date(store.sticker_taken_down_at).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
+              {/* Brand Stickers - Canonical Quick Stats Display */}
+              {id && <QuickStatsStickersSummary storeId={id} />}
               <Separator />
               
               {/* Payment Type */}
