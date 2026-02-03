@@ -50,11 +50,12 @@ export interface TubeIntelUpdatePayload {
 // Role-based field editability
 export type TubeIntelRole = 'admin' | 'va' | 'ambassador' | 'biker' | 'driver';
 
+// Updated permissions - all field users can set interest + action signals
 export const ROLE_FIELD_PERMISSIONS: Record<TubeIntelRole, string[]> = {
   admin: ['product_introduced', 'owner_interested', 'needs_order', 'bring_samples', 'bring_starter_kit', 'starter_kit_delivered'],
   va: ['product_introduced', 'owner_interested', 'needs_order', 'bring_samples', 'bring_starter_kit', 'starter_kit_delivered'],
-  ambassador: ['product_introduced', 'owner_interested', 'needs_order', 'bring_samples'],
-  biker: ['product_introduced', 'owner_interested', 'bring_samples', 'bring_starter_kit'],
+  ambassador: ['owner_interested', 'needs_order', 'bring_samples', 'bring_starter_kit'],
+  biker: ['owner_interested', 'needs_order', 'bring_samples', 'bring_starter_kit'],
   driver: [], // Read-only
 };
 
@@ -175,6 +176,10 @@ export interface TubeIntelFilters {
   needsOrder?: boolean;
   bringSamples?: boolean;
   bringStarterKit?: boolean;
+  interested?: boolean;
+  notInterested?: boolean;
+  notAsked?: boolean;
+  // Legacy filters (for backward compatibility)
   notIntroduced?: boolean;
   introducedNotInterested?: boolean;
   brandId?: string;
@@ -215,6 +220,17 @@ export function useGlobalTubeIntelligence(filters: TubeIntelFilters = {}) {
       if (filters.bringStarterKit) {
         query = query.eq('bring_starter_kit', true);
       }
+      // New interest-based filters
+      if (filters.interested) {
+        query = query.eq('owner_interested', true);
+      }
+      if (filters.notInterested) {
+        query = query.eq('owner_interested', false);
+      }
+      if (filters.notAsked) {
+        query = query.is('owner_interested', null);
+      }
+      // Legacy filters (kept for backward compatibility)
       if (filters.notIntroduced) {
         query = query.eq('product_introduced', false);
       }
@@ -240,6 +256,7 @@ export function useGlobalTubeIntelligence(filters: TubeIntelFilters = {}) {
 
 /**
  * Hook to get tube intel summary counts
+ * Updated to include interested/not_interested/not_asked counts
  */
 export function useTubeIntelSummary() {
   const { simulationMode } = useSimulationMode();
@@ -258,6 +275,10 @@ export function useTubeIntelSummary() {
         needsOrder: 0,
         bringSamples: 0,
         bringStarterKit: 0,
+        interested: 0,
+        notInterested: 0,
+        notAsked: 0,
+        // Legacy fields (kept for backward compatibility)
         notIntroduced: 0,
         introducedNotInterested: 0,
         total: data?.length || 0,
@@ -267,6 +288,13 @@ export function useTubeIntelSummary() {
         if (item.needs_order) summary.needsOrder++;
         if (item.bring_samples) summary.bringSamples++;
         if (item.bring_starter_kit) summary.bringStarterKit++;
+        
+        // New interest-based counts
+        if (item.owner_interested === true) summary.interested++;
+        else if (item.owner_interested === false) summary.notInterested++;
+        else summary.notAsked++;
+        
+        // Legacy counts (for backward compatibility)
         if (!item.product_introduced) summary.notIntroduced++;
         if (item.product_introduced && item.owner_interested === false) summary.introducedNotInterested++;
       });

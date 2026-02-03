@@ -39,6 +39,10 @@ import {
   Eye,
   AlertCircle,
   X,
+  HelpCircle,
+  Check,
+  ThumbsUp,
+  ThumbsDown,
 } from 'lucide-react';
 import { format, isToday, isThisWeek } from 'date-fns';
 import { useGlobalTubeIntelligence, useTubeIntelSummary, TUBE_BRANDS } from '@/hooks/useTubeIntelligence';
@@ -47,7 +51,7 @@ import { ExportButton } from '@/components/crud/ExportButton';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { toast } from 'sonner';
 
-type SignalTab = 'all' | 'needs_order' | 'bring_samples' | 'starter_kit' | 'not_introduced' | 'not_interested';
+type SignalTab = 'all' | 'needs_order' | 'bring_samples' | 'starter_kit' | 'interested' | 'not_interested';
 type TimeFilter = 'all' | 'today' | 'this_week';
 type OpportunityFilter = 'all' | 'pending' | 'completed';
 
@@ -110,10 +114,10 @@ export default function MasterOpportunities() {
         return { bringSamples: true };
       case 'starter_kit':
         return { bringStarterKit: true };
-      case 'not_introduced':
-        return { notIntroduced: true };
+      case 'interested':
+        return { interested: true };
       case 'not_interested':
-        return { introducedNotInterested: true };
+        return { notInterested: true };
       default:
         return {};
     }
@@ -308,19 +312,28 @@ export default function MasterOpportunities() {
         </Badge>
       );
     }
-    if (!row.product_introduced) {
+    // Updated: Show interest status badges
+    if (row.owner_interested === true) {
       badges.push(
-        <Badge key="not_introduced" variant="outline" className="border-gray-400 text-gray-600 text-xs">
-          <Sparkles className="h-3 w-3 mr-1" />
-          Not Introduced
+        <Badge key="interested" variant="default" className="bg-green-500 text-white text-xs">
+          <Check className="h-3 w-3 mr-1" />
+          Interested
         </Badge>
       );
     }
-    if (row.product_introduced && row.owner_interested === false) {
+    if (row.owner_interested === false) {
       badges.push(
         <Badge key="not_interested" variant="destructive" className="text-xs">
           <UserX className="h-3 w-3 mr-1" />
           Not Interested
+        </Badge>
+      );
+    }
+    if (row.owner_interested === null) {
+      badges.push(
+        <Badge key="not_asked" variant="outline" className="border-gray-400 text-gray-600 text-xs">
+          <HelpCircle className="h-3 w-3 mr-1" />
+          Not Asked
         </Badge>
       );
     }
@@ -482,16 +495,16 @@ export default function MasterOpportunities() {
             </Card>
             
             <Card 
-              className={`cursor-pointer transition-all hover:shadow-md ${activeSignalTab === 'not_introduced' ? 'ring-2 ring-gray-500 shadow-md' : 'hover:bg-muted/50'}`}
-              onClick={() => handleSignalTabClick('not_introduced')}
+              className={`cursor-pointer transition-all hover:shadow-md ${activeSignalTab === 'interested' ? 'ring-2 ring-green-500 shadow-md' : 'hover:bg-muted/50'}`}
+              onClick={() => handleSignalTabClick('interested')}
             >
               <CardContent className="pt-6 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Not Introduced</p>
-                    <p className="text-2xl font-bold text-gray-600">{signalSummary?.notIntroduced || 0}</p>
+                    <p className="text-sm text-muted-foreground">Interested</p>
+                    <p className="text-2xl font-bold text-green-600">{signalSummary?.interested || 0}</p>
                   </div>
-                  <Sparkles className="h-8 w-8 text-gray-500 opacity-50" />
+                  <ThumbsUp className="h-8 w-8 text-green-500 opacity-50" />
                 </div>
                 <Button variant="ghost" size="sm" className="w-full mt-2 text-xs">
                   <Eye className="h-3 w-3 mr-1" />
@@ -508,9 +521,9 @@ export default function MasterOpportunities() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Not Interested</p>
-                    <p className="text-2xl font-bold text-red-600">{signalSummary?.introducedNotInterested || 0}</p>
+                    <p className="text-2xl font-bold text-red-600">{signalSummary?.notInterested || 0}</p>
                   </div>
-                  <UserX className="h-8 w-8 text-red-500 opacity-50" />
+                  <ThumbsDown className="h-8 w-8 text-red-500 opacity-50" />
                 </div>
                 <Button variant="ghost" size="sm" className="w-full mt-2 text-xs">
                   <Eye className="h-3 w-3 mr-1" />
@@ -528,8 +541,8 @@ export default function MasterOpportunities() {
                 {activeSignalTab === 'needs_order' && <><ShoppingCart className="h-3 w-3" /> Needs Order</>}
                 {activeSignalTab === 'bring_samples' && <><Package className="h-3 w-3" /> Bring Samples</>}
                 {activeSignalTab === 'starter_kit' && <><Gift className="h-3 w-3" /> Starter Kit</>}
-                {activeSignalTab === 'not_introduced' && <><Sparkles className="h-3 w-3" /> Not Introduced</>}
-                {activeSignalTab === 'not_interested' && <><UserX className="h-3 w-3" /> Not Interested</>}
+                {activeSignalTab === 'interested' && <><ThumbsUp className="h-3 w-3" /> Interested</>}
+                {activeSignalTab === 'not_interested' && <><ThumbsDown className="h-3 w-3" /> Not Interested</>}
               </Badge>
               <Button 
                 variant="ghost" 
@@ -653,8 +666,8 @@ export default function MasterOpportunities() {
                         activeSignalTab === 'needs_order' ? signalSummary.needsOrder :
                         activeSignalTab === 'bring_samples' ? signalSummary.bringSamples :
                         activeSignalTab === 'starter_kit' ? signalSummary.bringStarterKit :
-                        activeSignalTab === 'not_introduced' ? signalSummary.notIntroduced :
-                        activeSignalTab === 'not_interested' ? signalSummary.introducedNotInterested : 0;
+                        activeSignalTab === 'interested' ? signalSummary.interested :
+                        activeSignalTab === 'not_interested' ? signalSummary.notInterested : 0;
                       
                       if (expectedCount > 0) {
                         console.warn('[Store Intelligence] Filter mismatch detected:', {
