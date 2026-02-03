@@ -14,6 +14,8 @@ export interface Invitation {
   metadata?: Record<string, any>;
   assigned_brand_id?: string;
   assigned_store_id?: string;
+  assigned_route_id?: string;
+  assigned_warehouse_id?: string;
 }
 
 export interface CreateInvitationParams {
@@ -22,6 +24,8 @@ export interface CreateInvitationParams {
   role: OSRole;
   assigned_brand_id?: string;
   assigned_store_id?: string;
+  assigned_route_id?: string;
+  assigned_warehouse_id?: string;
   expires_hours?: number;
 }
 
@@ -30,6 +34,30 @@ export interface CreateInvitationParams {
  */
 function generateInviteToken(): string {
   return crypto.randomUUID();
+}
+
+/**
+ * Log invite audit events
+ */
+async function logInviteAudit(
+  action: 'invite_created' | 'invite_accepted' | 'invite_expired' | 'invite_revoked' | 'invite_resent',
+  inviteId: string,
+  metadata?: Record<string, any>
+) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    // Use a generic insert that works with any audit table structure
+    await supabase.from('security_audit_log').insert({
+      user_id: user?.id || null,
+      action: action,
+      resource_type: 'invitation',
+      resource_id: inviteId,
+      metadata: metadata || {}
+    } as any);
+  } catch (err) {
+    console.error('Failed to log invite audit:', err);
+    // Don't fail the main operation for audit log failures
+  }
 }
 
 /**
@@ -55,6 +83,8 @@ export async function createInvitation(params: CreateInvitationParams): Promise<
     metadata: {
       assigned_brand_id: params.assigned_brand_id,
       assigned_store_id: params.assigned_store_id,
+      assigned_route_id: params.assigned_route_id,
+      assigned_warehouse_id: params.assigned_warehouse_id,
     }
   };
 
@@ -68,6 +98,13 @@ export async function createInvitation(params: CreateInvitationParams): Promise<
     console.error('Invitation creation error:', error);
     return { invitation: null, error: error.message };
   }
+
+  // Audit log
+  await logInviteAudit('invite_created', data.id, { 
+    email: params.email, 
+    role: params.role,
+    invited_by: user.id 
+  });
 
   return { invitation: data as unknown as Invitation, error: null };
 }
@@ -83,7 +120,7 @@ export async function validateInviteToken(token: string): Promise<{ invitation: 
     .single();
 
   if (error || !data) {
-    return { invitation: null, error: 'Invalid invitation token' };
+    return { invitation: null, error: 'Invite not found' };
   }
 
   const invitation = data as unknown as Invitation;
@@ -104,6 +141,43 @@ export async function validateInviteToken(token: string): Promise<{ invitation: 
 /**
  * Mark invitation as accepted
  */
+export async function acceptInvitation(
+  token: string, 
+  userId: string
+): Promise<{ success: boolean; error: string | null }> {
+  // First validate
+  const { invitation, error: validateError } = await validateInviteToken(token);
+  if (validateError || !invitation) {
+    return { success: false, error: validateError || 'Invalid invitation' };
+  }
+
+  // Mark as accepted
+  const { error: updateError } = await supabase
+    .from('user_invitations')
+    .update({ accepted_at: new Date().toISOString() })
+    .eq('invite_token', token);
+
+  if (updateError) {
+    return { success: false, error: updateError.message };
+  }
+
+  // Note: Role-specific assignment tables (biker_store_assignments, driver_route_assignments, etc.)
+  // would be created here if those tables exist. For now, the metadata is stored on the invitation
+  // and can be used by the application to create assignments as needed.
+
+  // Audit log
+  await logInviteAudit('invite_accepted', invitation.id, {
+    user_id: userId,
+    role: invitation.role,
+    email: invitation.email
+  });
+
+  return { success: true, error: null };
+}
+
+/**
+ * Legacy function for backward compatibility
+ */
 export async function markInvitationAccepted(token: string): Promise<{ success: boolean; error: string | null }> {
   const { error } = await supabase
     .from('user_invitations')
@@ -115,6 +189,31 @@ export async function markInvitationAccepted(token: string): Promise<{ success: 
   }
 
   return { success: true, error: null };
+}
+
+/**
+ * Resend invitation (regenerate token + extend expiry)
+ */
+export async function resendInvitation(id: string): Promise<{ invitation: Invitation | null; error: string | null }> {
+  const newToken = generateInviteToken();
+  const newExpiry = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await supabase
+    .from('user_invitations')
+    .update({ 
+      invite_token: newToken, 
+      expires_at: newExpiry
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    return { invitation: null, error: error.message };
+  }
+
+  await logInviteAudit('invite_resent', id);
+  return { invitation: data as unknown as Invitation, error: null };
 }
 
 /**
@@ -134,7 +233,7 @@ export async function getInvitations(): Promise<{ invitations: Invitation[]; err
 }
 
 /**
- * Delete an invitation
+ * Delete an invitation permanently
  */
 export async function deleteInvitation(id: string): Promise<{ success: boolean; error: string | null }> {
   const { error } = await supabase

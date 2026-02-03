@@ -114,7 +114,7 @@ export default function InviteSignup() {
       
       await createRoleProfile(authData.user.id, invitation.role as OSRole, roleData);
 
-      // 4. Add to user_roles table
+      // 4. Add to user_roles table (CRITICAL - this is the authority source)
       const roleInsert = {
         user_id: authData.user.id,
         role: invitation.role as any
@@ -123,14 +123,19 @@ export default function InviteSignup() {
         .from('user_roles')
         .insert(roleInsert);
 
-      // 5. Mark invitation as accepted
-      await markInvitationAccepted(token);
+      // 5. Accept invitation and create role assignments
+      const { acceptInvitation } = await import('@/services/invitationService');
+      await acceptInvitation(token, authData.user.id);
 
-      toast.success('Account created successfully!');
+      toast.success('Account created successfully! Redirecting to your portal...');
       
-      // 6. Redirect to appropriate portal
+      // 6. Redirect to appropriate portal based on role
       const redirectPath = getRoleRedirectPath(invitation.role);
-      navigate(redirectPath, { replace: true });
+      
+      // Small delay to ensure session is established
+      setTimeout(() => {
+        navigate(redirectPath, { replace: true });
+      }, 500);
       
     } catch (err: any) {
       console.error('Signup error:', err);

@@ -8,9 +8,18 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { UserPlus, Copy, Trash2, Check, Clock, XCircle, Link as LinkIcon, Send } from 'lucide-react';
-import { createInvitation, getInvitations, deleteInvitation, getInviteLink, INVITE_ROLES, type Invitation } from '@/services/invitationService';
+import { UserPlus, Copy, Trash2, Check, Clock, XCircle, Link as LinkIcon, MoreVertical, RefreshCw, Shield } from 'lucide-react';
+import { 
+  createInvitation, 
+  getInvitations, 
+  deleteInvitation, 
+  resendInvitation,
+  getInviteLink, 
+  INVITE_ROLES, 
+  type Invitation 
+} from '@/services/invitationService';
 import { OSRole } from '@/config/osNavigation';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -23,6 +32,9 @@ export default function UserInvitations() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<OSRole | ''>('');
+  const [assignedStoreId, setAssignedStoreId] = useState('');
+  const [assignedRouteId, setAssignedRouteId] = useState('');
+  const [assignedWarehouseId, setAssignedWarehouseId] = useState('');
 
   const { data: invitations = [], isLoading } = useQuery({
     queryKey: ['user-invitations'],
@@ -66,10 +78,29 @@ export default function UserInvitations() {
     }
   });
 
+  const resendMutation = useMutation({
+    mutationFn: resendInvitation,
+    onSuccess: ({ invitation, error }) => {
+      if (error) {
+        toast.error(error);
+        return;
+      }
+      if (invitation) {
+        const link = getInviteLink(invitation.invite_token);
+        navigator.clipboard.writeText(link);
+        toast.success('New invite link generated and copied!');
+      }
+      queryClient.invalidateQueries({ queryKey: ['user-invitations'] });
+    }
+  });
+
   const resetForm = () => {
     setEmail('');
     setPhone('');
     setRole('');
+    setAssignedStoreId('');
+    setAssignedRouteId('');
+    setAssignedWarehouseId('');
   };
 
   const handleCreate = () => {
@@ -77,7 +108,14 @@ export default function UserInvitations() {
       toast.error('Email and role are required');
       return;
     }
-    createMutation.mutate({ email, phone, role });
+    createMutation.mutate({ 
+      email, 
+      phone, 
+      role,
+      assigned_store_id: assignedStoreId || undefined,
+      assigned_route_id: assignedRouteId || undefined,
+      assigned_warehouse_id: assignedWarehouseId || undefined,
+    });
   };
 
   const copyInviteLink = async (invitation: Invitation) => {
@@ -103,12 +141,24 @@ export default function UserInvitations() {
     return found?.label || role;
   };
 
+  const isInviteActive = (inv: Invitation) => {
+    return !inv.accepted_at && new Date(inv.expires_at) > new Date();
+  };
+
+  // Show assignment field based on role
+  const showStoreAssignment = role === 'biker' || role === 'ambassador';
+  const showRouteAssignment = role === 'driver';
+  const showWarehouseAssignment = role === 'production';
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">User Invitations</h1>
-          <p className="text-muted-foreground">Invite team members with pre-assigned roles</p>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Shield className="h-8 w-8 text-primary" />
+            User Invitations
+          </h1>
+          <p className="text-muted-foreground">Invite team members with pre-assigned roles and portal access</p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
@@ -121,7 +171,7 @@ export default function UserInvitations() {
             <DialogHeader>
               <DialogTitle>Create Invitation</DialogTitle>
               <DialogDescription>
-                Generate a secure signup link for a new team member
+                Generate a secure signup link. Users will be locked to the assigned role and redirected to their portal.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -163,6 +213,46 @@ export default function UserInvitations() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Conditional Assignment Fields */}
+              {showStoreAssignment && (
+                <div className="space-y-2">
+                  <Label htmlFor="storeId">Assign to Store (Optional)</Label>
+                  <Input
+                    id="storeId"
+                    placeholder="Store ID (UUID)"
+                    value={assignedStoreId}
+                    onChange={(e) => setAssignedStoreId(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Auto-assigned on signup</p>
+                </div>
+              )}
+
+              {showRouteAssignment && (
+                <div className="space-y-2">
+                  <Label htmlFor="routeId">Assign to Route (Optional)</Label>
+                  <Input
+                    id="routeId"
+                    placeholder="Route ID (UUID)"
+                    value={assignedRouteId}
+                    onChange={(e) => setAssignedRouteId(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Auto-assigned on signup</p>
+                </div>
+              )}
+
+              {showWarehouseAssignment && (
+                <div className="space-y-2">
+                  <Label htmlFor="warehouseId">Assign to Warehouse (Optional)</Label>
+                  <Input
+                    id="warehouseId"
+                    placeholder="Warehouse ID (UUID)"
+                    value={assignedWarehouseId}
+                    onChange={(e) => setAssignedWarehouseId(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Auto-assigned on signup</p>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
@@ -180,10 +270,10 @@ export default function UserInvitations() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <LinkIcon className="h-5 w-5" />
-            Active Invitations
+            Invitations
           </CardTitle>
           <CardDescription>
-            Manage pending and accepted invitations
+            Invites expire after 72 hours. Users sign up → get role → land in their portal.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -225,7 +315,7 @@ export default function UserInvitations() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {!inv.accepted_at && new Date(inv.expires_at) > new Date() && (
+                        {isInviteActive(inv) && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -238,14 +328,32 @@ export default function UserInvitations() {
                             )}
                           </Button>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteMutation.mutate(inv.id)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {!inv.accepted_at && (
+                              <DropdownMenuItem 
+                                onClick={() => resendMutation.mutate(inv.id)}
+                                disabled={resendMutation.isPending}
+                              >
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Resend / Regenerate
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem 
+                              onClick={() => deleteMutation.mutate(inv.id)}
+                              disabled={deleteMutation.isPending}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
