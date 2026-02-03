@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,7 @@ import {
   Circle,
   Eye,
   AlertCircle,
+  X,
 } from 'lucide-react';
 import { format, isToday, isThisWeek } from 'date-fns';
 import { useGlobalTubeIntelligence, useTubeIntelSummary, TUBE_BRANDS } from '@/hooks/useTubeIntelligence';
@@ -77,10 +78,10 @@ export default function MasterOpportunities() {
   // Main section tabs
   const [mainTab, setMainTab] = useState<'signals' | 'opportunities'>('signals');
   
+  // Derive active signal from URL (single source of truth)
+  const activeSignalTab: SignalTab = (searchParams.get('signal') as SignalTab) || 'all';
+  
   // Signals filters
-  const [activeSignalTab, setActiveSignalTab] = useState<SignalTab>(
-    (searchParams.get('signal') as SignalTab) || 'all'
-  );
   const [searchQuery, setSearchQuery] = useState('');
   const [brandFilter, setBrandFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -100,7 +101,7 @@ export default function MasterOpportunities() {
   // Fetch opportunities summary
   const { data: oppSummary, isLoading: oppSummaryLoading } = useOpportunitiesSummary();
 
-  // Build filter based on active signal tab
+  // Build filter based on active signal tab (derived from URL)
   const filters = useMemo(() => {
     const baseFilters: Record<string, boolean> = {};
     
@@ -129,6 +130,11 @@ export default function MasterOpportunities() {
   const { data: rawOpportunities, isLoading: opportunitiesLoading, refetch: refetchOpportunities } = useStoreOpportunities();
   const completeOpportunity = useCompleteOpportunity();
   const reopenOpportunity = useReopenOpportunity();
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeSignalTab]);
 
   // Transform signal data
   const signalRows: StoreIntelRow[] = useMemo(() => {
@@ -240,11 +246,23 @@ export default function MasterOpportunities() {
     navigate(`/stores/${storeId}`);
   };
 
-  const handleSignalTabClick = (tab: SignalTab) => {
-    setActiveSignalTab(tab);
-    setSearchParams({ signal: tab });
-    handleFilterChange();
-  };
+  // Signal tab click handler - updates URL which triggers refetch
+  const handleSignalTabClick = useCallback((tab: SignalTab) => {
+    if (tab === 'all') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ signal: tab });
+    }
+  }, [setSearchParams]);
+
+  // Clear filter handler
+  const handleClearFilter = useCallback(() => {
+    setSearchParams({});
+    setSearchQuery('');
+    setBrandFilter('all');
+    setRoleFilter('all');
+    setTimeFilter('all');
+  }, [setSearchParams]);
 
   const handleCompleteOpportunity = async (id: string) => {
     try {
@@ -503,6 +521,29 @@ export default function MasterOpportunities() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Active Filter Indicator */}
+          {activeSignalTab !== 'all' && (
+            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border border-border">
+              <span className="text-sm text-muted-foreground">Filtering by:</span>
+              <Badge variant="secondary" className="flex items-center gap-1">
+                {activeSignalTab === 'needs_order' && <><ShoppingCart className="h-3 w-3" /> Needs Order</>}
+                {activeSignalTab === 'bring_samples' && <><Package className="h-3 w-3" /> Bring Samples</>}
+                {activeSignalTab === 'starter_kit' && <><Gift className="h-3 w-3" /> Starter Kit</>}
+                {activeSignalTab === 'not_introduced' && <><Sparkles className="h-3 w-3" /> Not Introduced</>}
+                {activeSignalTab === 'not_interested' && <><UserX className="h-3 w-3" /> Not Interested</>}
+              </Badge>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleClearFilter}
+                className="ml-auto text-xs"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Clear Filter
+              </Button>
+            </div>
+          )}
 
           {/* Signals Filters */}
           <Card>
