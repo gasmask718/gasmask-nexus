@@ -23486,8 +23486,10 @@ export type Database = {
       }
       influencers: {
         Row: {
+          ambassador_id: string | null
           city: string | null
           created_at: string | null
+          created_by: string | null
           email: string | null
           engagement_rate: number
           facebook_handle: string | null
@@ -23510,8 +23512,10 @@ export type Database = {
           youtube_handle: string | null
         }
         Insert: {
+          ambassador_id?: string | null
           city?: string | null
           created_at?: string | null
+          created_by?: string | null
           email?: string | null
           engagement_rate?: number
           facebook_handle?: string | null
@@ -23534,8 +23538,10 @@ export type Database = {
           youtube_handle?: string | null
         }
         Update: {
+          ambassador_id?: string | null
           city?: string | null
           created_at?: string | null
+          created_by?: string | null
           email?: string | null
           engagement_rate?: number
           facebook_handle?: string | null
@@ -23558,6 +23564,34 @@ export type Database = {
           youtube_handle?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "influencers_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "influencers_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "influencers_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "influencers_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
           {
             foreignKeyName: "influencers_primary_region_id_fkey"
             columns: ["primary_region_id"]
