@@ -36,6 +36,8 @@ const ALLOWED_ROLES = [
   "ambassador",
   "driver",
   "accountant",
+  "biker",
+  "production",
 ];
 
 interface PlaceCallRequest {
@@ -91,23 +93,44 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get user profile with role from profiles table
+    // Get user profile - try profiles table first
+    let userRole = null;
+    let userName = "User";
+    
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("id, name, phone, role")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile) {
-      console.error("❌ Profile error:", profileError);
-      return new Response(
-        JSON.stringify({ success: false, error: "User profile not found" }),
-        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+    if (profile) {
+      userRole = profile.role;
+      userName = profile.name || "User";
+      console.log(`✅ Found profile for user: ${userName}, role: ${userRole}`);
+    } else {
+      console.log("⚠️ No profile found, checking user_roles table");
     }
-    
-    // Map role to the role variable for permission check
-    const userRole = profile.role;
+
+    // If no role from profiles, check user_roles table
+    if (!userRole) {
+      const { data: roleData, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+      
+      if (roleData) {
+        userRole = roleData.role;
+        console.log(`✅ Found role from user_roles: ${userRole}`);
+      } else {
+        console.error("❌ No role found for user:", user.id, roleError);
+        return new Response(
+          JSON.stringify({ success: false, error: "User role not found. Please contact administrator." }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
 
     // Check role permission
     if (!ALLOWED_ROLES.includes(userRole)) {
@@ -129,6 +152,8 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+    
+    const profile_name = userName;
 
     // Parse request body
     const body: PlaceCallRequest = await req.json();
@@ -160,7 +185,7 @@ const handler = async (req: Request): Promise<Response> => {
       formattedPhone = `+${formattedPhone}`;
     }
 
-    console.log(`📞 Initiating call from ${profile.name} to ${formattedPhone}`);
+    console.log(`📞 Initiating call from ${profile_name} to ${formattedPhone}`);
 
     // Get the status callback URL
     const projectId = supabaseUrl.replace("https://", "").split(".")[0];
