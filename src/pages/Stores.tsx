@@ -61,6 +61,7 @@ interface Store {
   tubeInventory: TubeInventory[];
   owner_name: string | null;
   connectedStoresCount: number;
+  created_at: string | null;
 }
 
 const Stores = () => {
@@ -188,7 +189,7 @@ const Stores = () => {
       while (hasMore) {
         const { data, error } = await supabase
           .from('store_master')
-          .select('id, store_name, store_type, address, city, state, zip, phone, owner_name, is_simulation')
+          .select('id, store_name, store_type, address, city, state, zip, phone, owner_name, is_simulation, created_at')
           .eq('is_simulation', simulationMode)
           .order('store_name')
           .range(page * pageSize, (page + 1) * pageSize - 1);
@@ -229,6 +230,7 @@ const Stores = () => {
         tubeInventory: [] as TubeInventory[],
         owner_name: store.owner_name || null,
         connectedStoresCount: 0,
+        created_at: store.created_at || null,
       }));
 
       // Fetch contacts for these stores
@@ -394,8 +396,11 @@ const Stores = () => {
       (paymentTypeFilter === 'not_set' && !store.payment_type) ||
       (paymentTypeFilter !== 'not_set' && store.payment_type === paymentTypeFilter);
     
-    // New stores filter (stores without notes)
-    const matchesNewStores = !newStoresOnly || !storeIdsWithNotes.has(store.id);
+    // New stores filter (stores without notes OR created today)
+    const isCreatedToday = store.created_at 
+      ? new Date(store.created_at).toDateString() === new Date().toDateString()
+      : false;
+    const matchesNewStores = !newStoresOnly || !storeIdsWithNotes.has(store.id) || isCreatedToday;
     
     return matchesSearch && matchesStatus && matchesTag && matchesSticker && matchesPaymentType && matchesNewStores;
   });
@@ -431,8 +436,14 @@ const Stores = () => {
     notSet: stores.filter(s => !s.payment_type).length,
   };
   
-  // Count of new stores (stores without notes)
-  const newStoresCount = stores.filter(s => !storeIdsWithNotes.has(s.id)).length;
+  // Count of new stores (stores without notes OR created today)
+  const isStoreNew = (store: Store) => {
+    const isCreatedToday = store.created_at 
+      ? new Date(store.created_at).toDateString() === new Date().toDateString()
+      : false;
+    return !storeIdsWithNotes.has(store.id) || isCreatedToday;
+  };
+  const newStoresCount = stores.filter(isStoreNew).length;
 
 
   const formatBrandName = (brand: string) => {
