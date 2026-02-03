@@ -2,7 +2,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { FileText, ArrowRight } from 'lucide-react';
 import { StoreVisitData } from '../StoreVisitEngine';
-import { STICKER_BRANDS } from '@/config/stickerBrands';
 
 interface ChangeListTabProps {
   visitData: StoreVisitData;
@@ -34,31 +33,9 @@ export function ChangeListTab({ visitData, brands, products }: ChangeListTabProp
     }
   });
 
-  // Sticker changes - USE HARD-LOCKED STICKER BRANDS
-  Object.entries(visitData.stickers).forEach(([brandId, stickers]) => {
-    // Find brand name from hardcoded sticker brands ONLY
-    const stickerBrand = STICKER_BRANDS.find(b => b.id === brandId);
-    if (!stickerBrand) return; // Skip any brands not in the approved list
-    
-    Object.entries(stickers).forEach(([key, value]) => {
-      if (key !== 'notes' && value === true) {
-        changes.push({
-          category: 'Stickers',
-          field: `${stickerBrand.name} - ${formatKey(key)}`,
-          oldValue: '—',
-          newValue: 'Yes',
-        });
-      }
-      if (key === 'notes' && value) {
-        changes.push({
-          category: 'Stickers',
-          field: `${stickerBrand.name} - Notes`,
-          oldValue: '—',
-          newValue: value as string,
-        });
-      }
-    });
-  });
+  // NOTE: Sticker changes are now persisted directly to DB via BrandStickersCard
+  // They no longer go through the visit data change list system
+  // The stickers field in visitData is deprecated
 
   // Connected Stores changes (replaces storeCount)
   if (visitData.connectedStores && visitData.connectedStores.length > 0) {

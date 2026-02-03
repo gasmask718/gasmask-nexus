@@ -95,11 +95,16 @@ export function QuestionnaireTab({
             </Select>
           </div>
 
-          {/* Sells Flowers */}
-          <div className="flex items-center justify-between p-4 rounded-lg border">
-            <div>
-              <Label>Do they sell flowers?</Label>
-              <p className="text-sm text-muted-foreground">Indicates if the store sells flower products</p>
+          {/* Sells Flowers - Store-level attribute */}
+          <div className="flex items-center justify-between p-4 rounded-lg border bg-pink-500/5 border-pink-500/20">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-pink-500/10 flex items-center justify-center">
+                <span className="text-pink-500 text-lg">🌸</span>
+              </div>
+              <div>
+                <Label>Do they sell flowers?</Label>
+                <p className="text-sm text-muted-foreground">Indicates if the store sells flower products</p>
+              </div>
             </div>
             <Switch
               checked={questionnaire.sellsFlowers}
