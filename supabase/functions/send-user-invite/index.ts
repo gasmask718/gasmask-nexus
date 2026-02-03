@@ -194,39 +194,73 @@ serve(async (req) => {
 
     // Send email via SendGrid
     console.log(`📧 Sending invitation email to ${email}...`);
+    console.log(`   From: gasmaskapprovedllc@gmail.com`);
+    console.log(`   Role: ${roleDisplay}`);
+    console.log(`   Accept URL: ${acceptUrl}`);
     
+    const sendgridPayload = {
+      personalizations: [
+        {
+          to: [{ email: email.toLowerCase() }],
+        }
+      ],
+      from: {
+        email: "gasmaskapprovedllc@gmail.com",
+        name: "Dynasty OS"
+      },
+      subject: `You're Invited to Join Dynasty OS as a ${roleDisplay}`,
+      content: [
+        {
+          type: "text/plain",
+          value: `You have been invited to join Dynasty OS as a ${roleDisplay}! Please access this link to accept your invitation: ${acceptUrl}\n\nThis invitation expires on ${expirationDisplay}.\n\nIf you didn't expect this invitation, you can safely ignore this email.`,
+        },
+        {
+          type: "text/html",
+          value: emailHtml,
+        }
+      ],
+    };
+
+    console.log("📤 SendGrid request payload (without content):", JSON.stringify({
+      ...sendgridPayload,
+      content: "[HTML content omitted for logs]"
+    }));
+
     const sendgridResponse = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${sendgridApiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        personalizations: [
-          {
-            to: [{ email: email.toLowerCase() }],
-            subject: `You're Invited to Join Dynasty OS as a ${roleDisplay}`,
-          }
-        ],
-        from: {
-          email: "gasmaskapprovedllc@gmail.com",
-          name: "Dynasty OS"
-        },
-        content: [
-          {
-            type: "text/html",
-            value: emailHtml,
-          }
-        ],
-      }),
+      body: JSON.stringify(sendgridPayload),
     });
+
+    console.log(`📬 SendGrid response status: ${sendgridResponse.status}`);
 
     if (!sendgridResponse.ok) {
       const errorText = await sendgridResponse.text();
       console.error(`❌ SendGrid API error [${sendgridResponse.status}]:`, errorText);
+      
+      // Parse the error for more helpful messaging
+      let userFriendlyError = `Failed to send email via SendGrid (${sendgridResponse.status})`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.errors && errorJson.errors.length > 0) {
+          const firstError = errorJson.errors[0];
+          if (firstError.message?.includes("Sender Identity")) {
+            userFriendlyError = "SendGrid sender not verified. Please verify gasmaskapprovedllc@gmail.com at https://sendgrid.com/sender-auth";
+          } else {
+            userFriendlyError = firstError.message || userFriendlyError;
+          }
+        }
+      } catch (e) {
+        // Keep default error message
+      }
+      
       return new Response(
         JSON.stringify({ 
-          error: `Failed to send email: ${sendgridResponse.status}`,
+          error: userFriendlyError,
+          sendgridStatus: sendgridResponse.status,
           details: errorText 
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
