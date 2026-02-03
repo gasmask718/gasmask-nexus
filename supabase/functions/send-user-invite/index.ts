@@ -24,7 +24,7 @@ serve(async (req) => {
     const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
     const frontendBaseUrl = Deno.env.get("FRONTEND_BASE_URL");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     // Validate SendGrid API key
     if (!sendgridApiKey) {
@@ -57,29 +57,39 @@ serve(async (req) => {
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
+    // Create service role client to verify user and check permissions
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // Verify the user's claims
+    // Verify the JWT token
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
     
-    if (claimsError || !claimsData?.claims) {
-      console.error("Auth error:", claimsError);
+    if (userError || !userData?.user) {
+      console.error("Auth error:", userError);
       return new Response(
         JSON.stringify({ error: "Unauthorized - Invalid token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const userId = claimsData.claims.sub;
+    const userId = userData.user.id;
 
-    // Check if user is admin or owner
-    const { data: isAdmin } = await supabase.rpc('is_admin', { _user_id: userId });
-    const { data: isOwner } = await supabase.rpc('is_owner', { _user_id: userId });
+    // Check if user is admin or owner using direct queries
+    const { data: adminRole } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
 
-    if (!isAdmin && !isOwner) {
+    const { data: ownerRole } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'owner')
+      .maybeSingle();
+
+    if (!adminRole && !ownerRole) {
       return new Response(
         JSON.stringify({ error: "Insufficient permissions. Only admins can send invites." }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -106,9 +116,9 @@ serve(async (req) => {
       );
     }
 
-    // Build the accept invitation URL
+    // Build the accept invitation URL - matches route in AppRoutes.tsx
     const normalizedBaseUrl = frontendBaseUrl.replace(/\/$/, "");
-    const acceptUrl = `${normalizedBaseUrl}/auth/invite-signup?token=${inviteToken}`;
+    const acceptUrl = `${normalizedBaseUrl}/signup?token=${inviteToken}`;
 
     // Format role for display
     const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1).replace(/_/g, " ");
