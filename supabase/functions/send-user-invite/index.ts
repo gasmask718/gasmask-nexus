@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 interface InviteEmailRequest {
@@ -15,35 +15,22 @@ interface InviteEmailRequest {
 }
 
 serve(async (req) => {
-  // Handle CORS
+  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
-    const frontendBaseUrl = Deno.env.get("FRONTEND_BASE_URL");
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const frontendBaseUrl = Deno.env.get("FRONTEND_BASE_URL") || "https://gasmask-os-nexus.lovable.app";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Validate SendGrid API key
-    if (!sendgridApiKey) {
-      console.error("❌ SENDGRID_API_KEY is not configured");
+    // Validate Resend API key
+    if (!resendApiKey) {
+      console.error("❌ RESEND_API_KEY is not configured");
       return new Response(
-        JSON.stringify({ 
-          error: "Server configuration error: SendGrid API key is not configured." 
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Validate frontend base URL
-    if (!frontendBaseUrl) {
-      console.error("❌ FRONTEND_BASE_URL is not configured");
-      return new Response(
-        JSON.stringify({ 
-          error: "Server configuration error: FRONTEND_BASE_URL is not configured." 
-        }),
+        JSON.stringify({ error: "Email service not configured. Please add RESEND_API_KEY." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -74,22 +61,15 @@ serve(async (req) => {
 
     const userId = userData.user.id;
 
-    // Check if user is admin or owner using direct queries
-    const { data: adminRole } = await supabaseAdmin
+    // Check if user is admin or owner
+    const { data: userRole } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
-      .eq('role', 'admin')
+      .in('role', ['admin', 'owner'])
       .maybeSingle();
 
-    const { data: ownerRole } = await supabaseAdmin
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'owner')
-      .maybeSingle();
-
-    if (!adminRole && !ownerRole) {
+    if (!userRole) {
       return new Response(
         JSON.stringify({ error: "Insufficient permissions. Only admins can send invites." }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -116,7 +96,7 @@ serve(async (req) => {
       );
     }
 
-    // Build the accept invitation URL - matches route in AppRoutes.tsx
+    // Build the accept invitation URL
     const normalizedBaseUrl = frontendBaseUrl.replace(/\/$/, "");
     const acceptUrl = `${normalizedBaseUrl}/signup?token=${inviteToken}`;
 
@@ -134,147 +114,149 @@ serve(async (req) => {
       minute: "2-digit",
     });
 
-    // Build email HTML
+    // Build email HTML with styled button
     const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      </head>
-      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>You're Invited to Dynasty OS</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0a0a0a;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+          
           <!-- Header -->
-          <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px 30px; text-align: center;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">You're Invited!</h1>
-            <p style="color: #a0aec0; margin: 10px 0 0 0; font-size: 16px;">Join Dynasty OS as a ${roleDisplay}</p>
-          </div>
+          <tr>
+            <td style="background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center;">
+              <h1 style="margin: 0; color: #000; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
+                ⚡ Dynasty OS
+              </h1>
+            </td>
+          </tr>
           
           <!-- Body -->
-          <div style="padding: 40px 30px;">
-            <p style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-              ${invitedByName ? `<strong>${invitedByName}</strong> has invited you` : "You have been invited"} to join Dynasty OS with the role of <strong>${roleDisplay}</strong>.
-            </p>
-            
-            <!-- Role Badge -->
-            <div style="background-color: #f7fafc; border-radius: 8px; padding: 20px; margin: 25px 0; border-left: 4px solid #3b82f6;">
-              <p style="color: #718096; font-size: 14px; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;">Assigned Role</p>
-              <p style="color: #1a202c; font-size: 18px; font-weight: 600; margin: 0;">${roleDisplay}</p>
-            </div>
-            
-            <!-- CTA Button -->
-            <div style="text-align: center; margin: 35px 0;">
-              <a href="${acceptUrl}" 
-                 style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);">
-                Accept Invitation
-              </a>
-            </div>
-            
-            <p style="color: #718096; font-size: 14px; line-height: 1.6; margin: 25px 0 0 0;">
-              Or copy and paste this link into your browser:
-            </p>
-            <p style="color: #3b82f6; font-size: 14px; word-break: break-all; margin: 10px 0 0 0;">
-              ${acceptUrl}
-            </p>
-          </div>
+          <tr>
+            <td style="padding: 50px 40px;">
+              <h2 style="margin: 0 0 20px 0; color: #ffffff; font-size: 24px; font-weight: 600;">
+                You're Invited!
+              </h2>
+              
+              <p style="margin: 0 0 25px 0; color: #a0aec0; font-size: 16px; line-height: 1.6;">
+                ${invitedByName ? `<strong style="color: #ffffff;">${invitedByName}</strong> has invited you` : "You have been invited"} to join <strong style="color: #f59e0b;">Dynasty OS</strong> as a <strong style="color: #ffffff;">${roleDisplay}</strong>.
+              </p>
+              
+              <p style="margin: 0 0 35px 0; color: #a0aec0; font-size: 16px; line-height: 1.6;">
+                Click the button below to accept your invitation and create your account.
+              </p>
+              
+              <!-- CTA Button -->
+              <table cellpadding="0" cellspacing="0" style="margin: 0 auto 35px auto;">
+                <tr>
+                  <td align="center" style="background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); border-radius: 8px;">
+                    <a href="${acceptUrl}" target="_blank" style="display: inline-block; padding: 16px 40px; color: #000000; text-decoration: none; font-size: 16px; font-weight: 700; letter-spacing: 0.5px;">
+                      Accept Invite
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Expiration Notice -->
+              <div style="background-color: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 15px 20px; border-radius: 0 8px 8px 0; margin-bottom: 30px;">
+                <p style="margin: 0; color: #f59e0b; font-size: 14px;">
+                  ⏰ This invitation expires on <strong>${expirationDisplay}</strong>
+                </p>
+              </div>
+              
+              <!-- Fallback Link -->
+              <p style="margin: 0; color: #64748b; font-size: 13px; line-height: 1.6;">
+                If the button above doesn't work, copy and paste this link into your browser:
+              </p>
+              <p style="margin: 10px 0 0 0; word-break: break-all;">
+                <a href="${acceptUrl}" style="color: #f59e0b; text-decoration: none; font-size: 13px;">${acceptUrl}</a>
+              </p>
+            </td>
+          </tr>
           
           <!-- Footer -->
-          <div style="background-color: #f7fafc; padding: 25px 30px; border-top: 1px solid #e2e8f0;">
-            <p style="color: #a0aec0; font-size: 13px; margin: 0; text-align: center;">
-              ⏰ This invitation expires on <strong>${expirationDisplay}</strong>
-            </p>
-            <p style="color: #a0aec0; font-size: 12px; margin: 15px 0 0 0; text-align: center;">
-              If you didn't expect this invitation, you can safely ignore this email.
-            </p>
-          </div>
-        </div>
-      </body>
-      </html>
+          <tr>
+            <td style="background-color: rgba(0,0,0,0.3); padding: 25px 40px; text-align: center;">
+              <p style="margin: 0; color: #64748b; font-size: 12px;">
+                If you didn't expect this invitation, you can safely ignore this email.
+              </p>
+              <p style="margin: 10px 0 0 0; color: #475569; font-size: 11px;">
+                © 2025 Dynasty OS. All rights reserved.
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
     `;
 
-    // Send email via SendGrid
-    console.log(`📧 Sending invitation email to ${email}...`);
-    console.log(`   From: gasmaskapprovedllc@gmail.com`);
+    // Plain text fallback
+    const plainText = `You're Invited to Join Dynasty OS!
+
+${invitedByName ? `${invitedByName} has invited you` : "You have been invited"} to join Dynasty OS as a ${roleDisplay}.
+
+Please click the link below to accept your invitation and create your account:
+
+${acceptUrl}
+
+This invitation expires on ${expirationDisplay}.
+
+If you didn't expect this invitation, you can safely ignore this email.
+
+© 2025 Dynasty OS. All rights reserved.`;
+
+    // Send email via Resend API directly using fetch
+    console.log(`📧 Sending invitation email via Resend to ${email}...`);
     console.log(`   Role: ${roleDisplay}`);
     console.log(`   Accept URL: ${acceptUrl}`);
     
-    const sendgridPayload = {
-      personalizations: [
-        {
-          to: [{ email: email.toLowerCase() }],
-        }
-      ],
-      from: {
-        email: "gasmaskapprovedllc@gmail.com",
-        name: "Dynasty OS"
-      },
-      subject: `You're Invited to Join Dynasty OS as a ${roleDisplay}`,
-      content: [
-        {
-          type: "text/plain",
-          value: `You have been invited to join Dynasty OS as a ${roleDisplay}! Please access this link to accept your invitation: ${acceptUrl}\n\nThis invitation expires on ${expirationDisplay}.\n\nIf you didn't expect this invitation, you can safely ignore this email.`,
-        },
-        {
-          type: "text/html",
-          value: emailHtml,
-        }
-      ],
-    };
-
-    console.log("📤 SendGrid request payload (without content):", JSON.stringify({
-      ...sendgridPayload,
-      content: "[HTML content omitted for logs]"
-    }));
-
-    const sendgridResponse = await fetch("https://api.sendgrid.com/v3/mail/send", {
+    const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${sendgridApiKey}`,
+        "Authorization": `Bearer ${resendApiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(sendgridPayload),
+      body: JSON.stringify({
+        from: "Dynasty OS <onboarding@resend.dev>",
+        to: [email.toLowerCase()],
+        subject: `You're Invited to Join Dynasty OS as a ${roleDisplay}`,
+        text: plainText,
+        html: emailHtml,
+      }),
     });
 
-    console.log(`📬 SendGrid response status: ${sendgridResponse.status}`);
+    const resendResult = await resendResponse.json();
 
-    if (!sendgridResponse.ok) {
-      const errorText = await sendgridResponse.text();
-      console.error(`❌ SendGrid API error [${sendgridResponse.status}]:`, errorText);
-      
-      // Parse the error for more helpful messaging
-      let userFriendlyError = `Failed to send email via SendGrid (${sendgridResponse.status})`;
-      try {
-        const errorJson = JSON.parse(errorText);
-        if (errorJson.errors && errorJson.errors.length > 0) {
-          const firstError = errorJson.errors[0];
-          if (firstError.message?.includes("Sender Identity")) {
-            userFriendlyError = "SendGrid sender not verified. Please verify gasmaskapprovedllc@gmail.com at https://sendgrid.com/sender-auth";
-          } else {
-            userFriendlyError = firstError.message || userFriendlyError;
-          }
-        }
-      } catch (e) {
-        // Keep default error message
-      }
-      
+    if (!resendResponse.ok) {
+      console.error("❌ Resend error:", resendResult);
       return new Response(
         JSON.stringify({ 
-          error: userFriendlyError,
-          sendgridStatus: sendgridResponse.status,
-          details: errorText 
+          error: `Failed to send email: ${resendResult.message || resendResult.error || "Unknown error"}`,
+          details: resendResult 
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     console.log(`✅ Invitation email sent successfully to ${email}`);
-    console.log(`   Role: ${roleDisplay}`);
-    console.log(`   Accept URL: ${acceptUrl}`);
+    console.log(`   Email ID: ${resendResult.id}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         message: `Invitation email sent to ${email}`,
+        emailId: resendResult.id,
         acceptUrl,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
