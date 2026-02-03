@@ -23,7 +23,6 @@ export default function DialerPage() {
       let query = supabase
         .from("store_master")
         .select("id, store_name, owner_name, phone, address")
-        .is("deleted_at", null)
         .order("store_name");
 
       if (selectedBusinessId !== "all") {

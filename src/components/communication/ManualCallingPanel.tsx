@@ -11,9 +11,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { 
   Phone, PhoneCall, PhoneOff, Clock, CheckCircle2, 
-  XCircle, VoicemailIcon, User, Bot, Plus, Sparkles, RefreshCw
+  XCircle, VoicemailIcon, User, Bot, Plus, Sparkles, RefreshCw, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { InventoryCheckScript, ScriptData } from "./InventoryCheckScript";
 
 interface Store {
   id: string;
@@ -63,6 +64,7 @@ export function ManualCallingPanel({
   const [followUpDate, setFollowUpDate] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showCallDialog, setShowCallDialog] = useState(false);
+  const [showScript, setShowScript] = useState(false);
 
   const filteredStores = stores.filter(s => {
     if (!searchTerm) return true;
@@ -80,6 +82,13 @@ export function ManualCallingPanel({
     if (store.phone) {
       onCall(store.id, store.phone);
     }
+  };
+
+  const handleScriptComplete = (data: ScriptData, summary: string) => {
+    setCallNotes(prev => (prev ? prev + "\n\n" + summary : summary));
+    setSelectedOutcome("reached");
+    // Don't close script immediately, user might want to review, but switching back to form is good
+    setShowScript(false);
   };
 
   const handleLogCall = () => {
@@ -207,74 +216,95 @@ export function ManualCallingPanel({
 
       {/* Call Dialog */}
       <Dialog open={showCallDialog} onOpenChange={setShowCallDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className={cn("max-w-md transition-all duration-300", showScript && "max-w-3xl")}>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <PhoneCall className="h-5 w-5 text-green-600" />
-              Calling {selectedStore?.store_name}
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <PhoneCall className="h-5 w-5 text-green-600" />
+                Calling {selectedStore?.store_name}
+              </div>
+              <Button 
+                variant={showScript ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setShowScript(!showScript)}
+                className="gap-2 h-8"
+              >
+                {showScript ? <FileText className="w-3 h-3" /> : <Sparkles className="w-3 h-3 text-purple-500" />}
+                {showScript ? "Exit Script" : "AI Script"}
+              </Button>
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="text-center py-4">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
-                <Phone className="h-8 w-8 text-green-600 animate-pulse" />
+          {showScript ? (
+            <InventoryCheckScript 
+              agentName="GasMask Agent" 
+              onComplete={handleScriptComplete}
+              onCancel={() => setShowScript(false)}
+            />
+          ) : (
+            <div className="space-y-4">
+              <div className="text-center py-4">
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                  <Phone className="h-8 w-8 text-green-600 animate-pulse" />
+                </div>
+                <p className="font-medium">{selectedStore?.phone}</p>
+                <p className="text-sm text-muted-foreground">{selectedStore?.owner_name}</p>
               </div>
-              <p className="font-medium">{selectedStore?.phone}</p>
-              <p className="text-sm text-muted-foreground">{selectedStore?.owner_name}</p>
-            </div>
 
-            <div className="space-y-2">
-              <Label>Call Outcome</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {OUTCOMES.map((outcome) => {
-                  const Icon = outcome.icon;
-                  return (
-                    <Button
-                      key={outcome.value}
-                      variant={selectedOutcome === outcome.value ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedOutcome(outcome.value)}
-                      className="flex-col h-auto py-2"
-                    >
-                      <Icon className={cn("h-4 w-4 mb-1", selectedOutcome !== outcome.value && outcome.color)} />
-                      <span className="text-xs">{outcome.label}</span>
-                    </Button>
-                  );
-                })}
+              <div className="space-y-2">
+                <Label>Call Outcome</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {OUTCOMES.map((outcome) => {
+                    const Icon = outcome.icon;
+                    return (
+                      <Button
+                        key={outcome.value}
+                        variant={selectedOutcome === outcome.value ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedOutcome(outcome.value)}
+                        className="flex-col h-auto py-2"
+                      >
+                        <Icon className={cn("h-4 w-4 mb-1", selectedOutcome !== outcome.value && outcome.color)} />
+                        <span className="text-xs">{outcome.label}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={callNotes}
+                  onChange={(e) => setCallNotes(e.target.value)}
+                  placeholder="What was discussed..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="followup">Schedule Follow-up</Label>
+                <Input
+                  id="followup"
+                  type="datetime-local"
+                  value={followUpDate}
+                  onChange={(e) => setFollowUpDate(e.target.value)}
+                />
               </div>
             </div>
+          )}
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={callNotes}
-                onChange={(e) => setCallNotes(e.target.value)}
-                placeholder="What was discussed..."
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="followup">Schedule Follow-up</Label>
-              <Input
-                id="followup"
-                type="datetime-local"
-                value={followUpDate}
-                onChange={(e) => setFollowUpDate(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button onClick={handleLogCall} disabled={!selectedOutcome}>
-              Log Call
-            </Button>
-          </DialogFooter>
+          {!showScript && (
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button onClick={handleLogCall} disabled={!selectedOutcome}>
+                Log Call
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -91,11 +91,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get user profile with role from user_profiles table
+    // Get user profile with role from profiles table
     const { data: profile, error: profileError } = await supabase
-      .from("user_profiles")
-      .select("id, full_name, phone, primary_role")
-      .eq("user_id", user.id)
+      .from("profiles")
+      .select("id, name, phone, role")
+      .eq("id", user.id)
       .single();
 
     if (profileError || !profile) {
@@ -106,8 +106,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
     
-    // Map primary_role to the role variable for permission check
-    const userRole = profile.primary_role;
+    // Map role to the role variable for permission check
+    const userRole = profile.role;
 
     // Check role permission
     if (!ALLOWED_ROLES.includes(userRole)) {
@@ -160,7 +160,7 @@ const handler = async (req: Request): Promise<Response> => {
       formattedPhone = `+${formattedPhone}`;
     }
 
-    console.log(`📞 Initiating call from ${profile.full_name} to ${formattedPhone}`);
+    console.log(`📞 Initiating call from ${profile.name} to ${formattedPhone}`);
 
     // Get the status callback URL
     const projectId = supabaseUrl.replace("https://", "").split(".")[0];
