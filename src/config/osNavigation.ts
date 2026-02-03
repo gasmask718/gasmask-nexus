@@ -695,6 +695,24 @@ export const SECTION_ROUTE_OPS: OSFloor = {
   ],
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🔐 SECURITY & GOVERNANCE
+// ═══════════════════════════════════════════════════════════════════════════════
+export const SECTION_SECURITY: OSFloor = {
+  id: 'section-security',
+  name: 'Security & Governance',
+  icon: Shield,
+  emoji: '🔐',
+  description: 'User management, invitations, access control',
+  roles: ['ceo', 'admin'],
+  items: [
+    { id: 'security-console', label: 'Security Console', path: '/security/console', icon: Shield, roles: ['ceo', 'admin'] },
+    { id: 'security-invitations', label: 'User Invitations', path: '/security/invitations', icon: UserPlus, roles: ['ceo', 'admin'] },
+    { id: 'security-devices', label: 'Devices', path: '/security/devices', icon: Cpu, roles: ['ceo', 'admin'] },
+    { id: 'security-sessions', label: 'Sessions', path: '/security/sessions', icon: Activity, roles: ['ceo', 'admin'] },
+  ],
+};
+
 export const ADDITIONAL_SECTIONS: OSFloor[] = [
   SECTION_MARKETPLACE_ADMIN,
   SECTION_ACCOUNTING,
@@ -714,6 +732,7 @@ export const ADDITIONAL_SECTIONS: OSFloor[] = [
   SECTION_LEGACY_SYSTEMS,
   SECTION_EXPANSION,
   SECTION_ROUTE_OPS,
+  SECTION_SECURITY,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
