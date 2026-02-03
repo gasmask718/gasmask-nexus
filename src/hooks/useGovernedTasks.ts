@@ -17,6 +17,7 @@ import {
   startTask,
   cancelTask,
   deleteTask,
+  permanentDeleteTask,
   restartTask,
   getTaskTemplatesByFloor,
 } from '@/services/taskGovernance';
@@ -147,6 +148,27 @@ export function useGovernedTasks(options: UseGovernedTasksOptions = {}) {
     },
   });
 
+  // Permanent delete (HARD DELETE - IRREVERSIBLE)
+  const permanentDeleteMutation = useMutation({
+    mutationFn: async (params: { taskId: string; confirmationPhrase: string }) => {
+      return permanentDeleteTask(params.taskId, params.confirmationPhrase);
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['governed-tasks', floorId] });
+        queryClient.invalidateQueries({ queryKey: ['global-active-tasks'] });
+        const deletedCount = result.deletedRelatedRecords.artifacts + 
+                            result.deletedRelatedRecords.observations + 
+                            result.deletedRelatedRecords.activityLogs;
+        toast.success('Task permanently deleted', {
+          description: `Removed task and ${deletedCount} related records`,
+        });
+      } else {
+        toast.error('Permanent delete failed', { description: result.error });
+      }
+    },
+  });
+
   // Refresh tasks
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['governed-tasks', floorId] });
@@ -182,6 +204,9 @@ export function useGovernedTasks(options: UseGovernedTasksOptions = {}) {
 
     restartTask: restartTaskMutation.mutate,
     isRestarting: restartTaskMutation.isPending,
+
+    permanentDeleteTask: permanentDeleteMutation.mutate,
+    isPermanentDeleting: permanentDeleteMutation.isPending,
 
     startTask: startTaskMutation.mutate,
     isStarting: startTaskMutation.isPending,

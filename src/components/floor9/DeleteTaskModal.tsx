@@ -1,9 +1,10 @@
 /**
- * DeleteTaskModal - Safe task deletion with confirmation
- * Supports both Cancel (stop execution) and Delete (soft delete)
+ * DeleteTaskModal - Safe task lifecycle control with confirmation
+ * Supports Cancel, Soft Delete, Restart, and Permanent Delete
  * 
  * Cancel: Stops execution, preserves audit trail
- * Delete: Removes from active views, preserves audit trail
+ * Soft Delete: Removes from active views, preserves audit trail
+ * Permanent Delete: IRREVERSIBLE - removes task and all related data
  */
 
 import { useState } from 'react';
@@ -20,9 +21,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertTriangle, Trash2, XCircle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Trash2, XCircle, RefreshCw, Skull } from 'lucide-react';
 
-export type DeleteAction = 'cancel' | 'delete' | 'restart';
+export type DeleteAction = 'cancel' | 'delete' | 'restart' | 'permanent';
 
 interface DeleteTaskModalProps {
   open: boolean;
@@ -32,15 +33,18 @@ interface DeleteTaskModalProps {
   onConfirmCancel?: () => void;
   onConfirmDelete?: () => void;
   onConfirmRestart?: () => void;
+  onConfirmPermanentDelete?: (confirmationPhrase: string) => void;
   isCancelling?: boolean;
   isDeleting?: boolean;
   isRestarting?: boolean;
+  isPermanentDeleting?: boolean;
   // Legacy support for single action
   /** @deprecated Use onConfirmCancel instead */
   onConfirmDelete_legacy?: () => void;
 }
 
-const CONFIRMATION_TEXT = 'DELETE TASK';
+const SOFT_DELETE_CONFIRMATION = 'DELETE TASK';
+const PERMANENT_DELETE_CONFIRMATION = 'PERMANENTLY DELETE TASK';
 
 export function DeleteTaskModal({
   open,
@@ -50,21 +54,26 @@ export function DeleteTaskModal({
   onConfirmCancel,
   onConfirmDelete,
   onConfirmRestart,
+  onConfirmPermanentDelete,
   isCancelling = false,
   isDeleting = false,
   isRestarting = false,
+  isPermanentDeleting = false,
   onConfirmDelete_legacy,
 }: DeleteTaskModalProps) {
   const [confirmInput, setConfirmInput] = useState('');
+  const [permanentConfirmInput, setPermanentConfirmInput] = useState('');
   const [activeTab, setActiveTab] = useState<DeleteAction>('cancel');
   
   const isRunning = taskStatus === 'processing' || taskStatus === 'validating_inputs' || taskStatus === 'running';
   const isCancelledOrCompleted = taskStatus === 'cancelled' || taskStatus === 'completed' || taskStatus === 'failed';
-  const canConfirmDelete = confirmInput === CONFIRMATION_TEXT;
-  const isProcessing = isCancelling || isDeleting || isRestarting;
+  const canConfirmSoftDelete = confirmInput === SOFT_DELETE_CONFIRMATION;
+  const canConfirmPermanentDelete = permanentConfirmInput === PERMANENT_DELETE_CONFIRMATION;
+  const isProcessing = isCancelling || isDeleting || isRestarting || isPermanentDeleting;
 
   const handleClose = () => {
     setConfirmInput('');
+    setPermanentConfirmInput('');
     setActiveTab('cancel');
     onOpenChange(false);
   };
@@ -79,7 +88,7 @@ export function DeleteTaskModal({
   };
 
   const handleConfirmDelete = () => {
-    if (onConfirmDelete && canConfirmDelete) {
+    if (onConfirmDelete && canConfirmSoftDelete) {
       onConfirmDelete();
     }
   };
@@ -87,6 +96,12 @@ export function DeleteTaskModal({
   const handleConfirmRestart = () => {
     if (onConfirmRestart) {
       onConfirmRestart();
+    }
+  };
+
+  const handleConfirmPermanentDelete = () => {
+    if (onConfirmPermanentDelete && canConfirmPermanentDelete) {
+      onConfirmPermanentDelete(permanentConfirmInput);
     }
   };
 
@@ -105,18 +120,22 @@ export function DeleteTaskModal({
               </p>
               
               <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DeleteAction)}>
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="cancel" disabled={isCancelledOrCompleted}>
                     <XCircle className="h-4 w-4 mr-1" />
                     Cancel
                   </TabsTrigger>
                   <TabsTrigger value="delete">
                     <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
+                    Hide
                   </TabsTrigger>
                   <TabsTrigger value="restart" disabled={!isCancelledOrCompleted && !isRunning}>
                     <RefreshCw className="h-4 w-4 mr-1" />
                     Restart
+                  </TabsTrigger>
+                  <TabsTrigger value="permanent">
+                    <Skull className="h-4 w-4 mr-1" />
+                    Destroy
                   </TabsTrigger>
                 </TabsList>
 
@@ -156,17 +175,17 @@ export function DeleteTaskModal({
                   </div>
                 </TabsContent>
 
-                {/* Delete Tab */}
+                {/* Soft Delete Tab */}
                 <TabsContent value="delete" className="space-y-4 mt-4">
-                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+                  <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
+                      <Trash2 className="h-5 w-5 text-amber-600 mt-0.5" />
                       <div className="text-sm">
-                        <p className="font-medium text-destructive">
-                          Danger Zone
+                        <p className="font-medium text-amber-800 dark:text-amber-200">
+                          Soft Delete (Hide)
                         </p>
-                        <p className="text-muted-foreground">
-                          This soft-deletes the task. It will no longer appear in active task lists.
+                        <p className="text-amber-700 dark:text-amber-300">
+                          Hides the task from active lists. Audit trail is preserved.
                         </p>
                       </div>
                     </div>
@@ -190,13 +209,13 @@ export function DeleteTaskModal({
                   
                   <div className="space-y-2">
                     <Label htmlFor="confirm-delete" className="text-sm font-medium">
-                      Type <code className="px-1 py-0.5 bg-muted rounded">{CONFIRMATION_TEXT}</code> to confirm:
+                      Type <code className="px-1 py-0.5 bg-muted rounded">{SOFT_DELETE_CONFIRMATION}</code> to confirm:
                     </Label>
                     <Input
                       id="confirm-delete"
                       value={confirmInput}
                       onChange={(e) => setConfirmInput(e.target.value)}
-                      placeholder={CONFIRMATION_TEXT}
+                      placeholder={SOFT_DELETE_CONFIRMATION}
                       className="font-mono"
                     />
                   </div>
@@ -234,6 +253,56 @@ export function DeleteTaskModal({
                     </ul>
                   </div>
                 </TabsContent>
+
+                {/* Permanent Delete Tab */}
+                <TabsContent value="permanent" className="space-y-4 mt-4">
+                  <div className="p-3 rounded-lg bg-destructive/20 border-2 border-destructive">
+                    <div className="flex items-start gap-2">
+                      <Skull className="h-5 w-5 text-destructive mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-bold text-destructive">
+                          ⚠️ DANGER ZONE - IRREVERSIBLE
+                        </p>
+                        <p className="text-destructive/80">
+                          This will PERMANENTLY delete the task and ALL related data.
+                          This action cannot be undone. Audit trail will be destroyed.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 rounded-lg bg-destructive/10 text-sm space-y-2">
+                    <p className="font-medium text-destructive">This action will DESTROY:</p>
+                    <ul className="list-disc list-inside space-y-1 text-destructive/80">
+                      <li>The task record itself</li>
+                      <li>All activity logs for this task</li>
+                      <li>All observation data</li>
+                      <li>All task artifacts</li>
+                    </ul>
+                    
+                    <p className="font-bold mt-3 text-destructive">
+                      THIS CANNOT BE UNDONE. USE ONLY FOR:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                      <li>Test/experimental tasks</li>
+                      <li>Corrupt or invalid tasks</li>
+                      <li>Tasks created by system errors</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-permanent-delete" className="text-sm font-medium text-destructive">
+                      Type <code className="px-1 py-0.5 bg-destructive/20 text-destructive rounded font-bold">{PERMANENT_DELETE_CONFIRMATION}</code> to confirm:
+                    </Label>
+                    <Input
+                      id="confirm-permanent-delete"
+                      value={permanentConfirmInput}
+                      onChange={(e) => setPermanentConfirmInput(e.target.value)}
+                      placeholder={PERMANENT_DELETE_CONFIRMATION}
+                      className="font-mono border-destructive focus:ring-destructive"
+                    />
+                  </div>
+                </TabsContent>
               </Tabs>
             </div>
           </AlertDialogDescription>
@@ -241,7 +310,7 @@ export function DeleteTaskModal({
         
         <AlertDialogFooter>
           <AlertDialogCancel onClick={handleClose} disabled={isProcessing}>
-            Cancel
+            Close
           </AlertDialogCancel>
           
           {activeTab === 'cancel' && !isCancelledOrCompleted && (
@@ -257,10 +326,10 @@ export function DeleteTaskModal({
           {activeTab === 'delete' && (
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              disabled={!canConfirmDelete || isProcessing}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={!canConfirmSoftDelete || isProcessing}
+              className="bg-amber-600 text-white hover:bg-amber-700"
             >
-              {isDeleting ? 'Deleting...' : 'Delete Task'}
+              {isDeleting ? 'Hiding...' : 'Hide Task'}
             </AlertDialogAction>
           )}
           
@@ -271,6 +340,16 @@ export function DeleteTaskModal({
               className="bg-blue-600 text-white hover:bg-blue-700"
             >
               {isRestarting ? 'Restarting...' : 'Restart Task'}
+            </AlertDialogAction>
+          )}
+          
+          {activeTab === 'permanent' && (
+            <AlertDialogAction
+              onClick={handleConfirmPermanentDelete}
+              disabled={!canConfirmPermanentDelete || isProcessing}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isPermanentDeleting ? 'Destroying...' : '🔥 Permanently Delete'}
             </AlertDialogAction>
           )}
         </AlertDialogFooter>
