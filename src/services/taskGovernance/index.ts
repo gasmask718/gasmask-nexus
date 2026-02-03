@@ -122,5 +122,25 @@ export {
 } from './actionRegistry';
 export type { ActionMapping, ActionCoverageReport } from './actionRegistry';
 
+// Observation Service (Phase 4.5)
+export {
+  recordObservation,
+  recordDecision,
+  calculateAutomationReadiness,
+  getFloorAutomationReadiness,
+  generateTaskPreview,
+  detectBehavioralPatterns,
+  getRecentObservations,
+  getObservationStats,
+} from './observationService';
+export type {
+  TaskObservation,
+  ObservationType,
+  TaskDecision,
+  AutomationReadinessScore,
+  TaskPreview,
+  PreviewRecord,
+} from './observationService';
+
 // Re-export types
 export * from './types';

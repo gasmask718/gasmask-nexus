@@ -1,14 +1,16 @@
 /**
  * useGovernedAction Hook
  * Phase A: Button Integrity Enforcement
+ * Phase 4.5: Observation Mode Integration
  * 
  * Wraps any action button with governance:
  * - Creates a governed task instead of direct mutation
  * - Enforces dry-run for high-risk operations
  * - Logs all activity
+ * - Records observations for automation learning
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { 
   createGovernedTask, 
@@ -17,6 +19,8 @@ import {
   failTask,
   recordItemResult,
   logTaskActivity,
+  recordObservation,
+  recordDecision,
 } from '@/services/taskGovernance';
 import { 
   checkGovernance, 
@@ -57,6 +61,7 @@ export interface UseGovernedActionReturn {
 export function useGovernedAction(): UseGovernedActionReturn {
   const [isExecuting, setIsExecuting] = useState(false);
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
+  const decisionStartRef = useRef<Date | null>(null);
 
   const execute = useCallback(async (
     config: GovernedActionConfig,
@@ -89,6 +94,14 @@ export function useGovernedAction(): UseGovernedActionReturn {
 
       setCurrentTaskId(taskId);
 
+      // Phase 4.5: Record task creation observation
+      await recordObservation(taskId, config.task_type, config.floor_id, 'task_created', {
+        metadata: { 
+          risk_level: riskLevel, 
+          entity_count: config.entity_ids?.length || 1 
+        },
+      });
+
       // Check if approval is required
       if ((config.requires_approval ?? riskPolicy.requires_approval) && riskLevel !== 'low') {
         await logTaskActivity(
@@ -97,6 +110,10 @@ export function useGovernedAction(): UseGovernedActionReturn {
           `Action requires approval before execution (${riskLevel} risk)`,
           'blocked'
         );
+
+        // Phase 4.5: Record approval request and start decision timer
+        decisionStartRef.current = new Date();
+        await recordObservation(taskId, config.task_type, config.floor_id, 'approval_requested');
 
         toast.info('Action queued for approval', {
           description: 'This action requires human approval before execution.',
@@ -120,6 +137,9 @@ export function useGovernedAction(): UseGovernedActionReturn {
 
       // Start task execution
       await startTask(taskId);
+      
+      // Phase 4.5: Record task start
+      await recordObservation(taskId, config.task_type, config.floor_id, 'task_started');
 
       // Execute the action
       const result = await action();
@@ -133,6 +153,12 @@ export function useGovernedAction(): UseGovernedActionReturn {
 
       // Complete task
       await completeTask(taskId);
+      
+      // Phase 4.5: Record task completion and decision
+      await recordObservation(taskId, config.task_type, config.floor_id, 'task_completed');
+      await recordDecision(taskId, config.task_type, config.floor_id, 'approved', {
+        decisionStartedAt: decisionStartRef.current || undefined,
+      });
 
       toast.success('Action completed', {
         description: config.task_title,
@@ -148,6 +174,11 @@ export function useGovernedAction(): UseGovernedActionReturn {
 
       if (taskId) {
         await failTask(taskId, errorMessage);
+        
+        // Phase 4.5: Record task failure
+        await recordObservation(taskId, config.task_type, config.floor_id, 'task_failed', {
+          metadata: { error: errorMessage },
+        });
       }
 
       toast.error('Action failed', {

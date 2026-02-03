@@ -7,3 +7,4 @@ export { default as Floor9Results } from './Floor9Results';
 export { default as Floor9Predictions } from './Floor9Predictions';
 export { default as Floor9Alerts } from './Floor9Alerts';
 export { default as Floor9Tasks } from './Floor9Tasks';
+export { default as Floor9Observation } from './Floor9Observation';
