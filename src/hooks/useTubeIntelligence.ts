@@ -196,11 +196,11 @@ export function useGlobalTubeIntelligence(filters: TubeIntelFilters = {}) {
           *,
           store:store_master!inner(
             id,
-            name,
-            address_city,
-            address_state,
-            borough,
-            status
+            store_name,
+            city,
+            state,
+            borough_id,
+            health_status
           )
         `)
         .eq('is_simulation', simulationMode);
