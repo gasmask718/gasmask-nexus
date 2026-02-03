@@ -152,6 +152,14 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         required: false,
         source: 'excel',
         notes: 'Comma-separated, auto-registered globally'
+      },
+      {
+        field: 'starter_kit',
+        displayName: 'Starter Kit',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Yes/No or True/False - enables Starter Kit signal in Tube Intelligence'
       }
     ]
   },
