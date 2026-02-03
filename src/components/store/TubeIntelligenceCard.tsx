@@ -58,6 +58,7 @@ export function TubeIntelligenceCard({
       brand_id: brandId,
       field,
       value: newValue,
+      role,
     });
   };
 

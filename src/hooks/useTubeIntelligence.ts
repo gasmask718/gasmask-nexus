@@ -30,6 +30,7 @@ export interface TubeIntelStatus {
   has_ever_ordered: boolean;
   starter_kit_delivered: boolean;
   last_updated_by: string | null;
+  last_updated_by_role: string | null;
   last_updated_at: string;
   is_simulation: boolean;
 }
@@ -43,6 +44,7 @@ export interface TubeIntelUpdatePayload {
     'bring_samples' | 'bring_starter_kit' | 'starter_kit_delivered'
   >;
   value: boolean | null;
+  role?: TubeIntelRole;
 }
 
 // Role-based field editability
@@ -115,16 +117,19 @@ export function useTubeIntelligence(storeId: string | null) {
     },
   });
 
-  // Update a single field
+  // Update a single field with role attribution
   const updateField = useMutation({
     mutationFn: async (payload: TubeIntelUpdatePayload) => {
-      const { id, store_id, brand_id, field, value } = payload;
+      const { id, store_id, brand_id, field, value, role } = payload;
 
       // Check if record exists
       if (id) {
         const { error } = await supabase
           .from('store_tube_inventory_status')
-          .update({ [field]: value })
+          .update({ 
+            [field]: value,
+            last_updated_by_role: role || null,
+          })
           .eq('id', id);
 
         if (error) throw error;
@@ -138,6 +143,7 @@ export function useTubeIntelligence(storeId: string | null) {
             brand_id,
             brand_name: brand?.name || brand_id,
             [field]: value,
+            last_updated_by_role: role || null,
             is_simulation: simulationMode,
           });
 

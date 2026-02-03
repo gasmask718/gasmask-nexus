@@ -40374,6 +40374,7 @@ export type Database = {
           last_order_date: string | null
           last_updated_at: string
           last_updated_by: string | null
+          last_updated_by_role: string | null
           needs_order: boolean
           owner_interested: boolean | null
           product_introduced: boolean
@@ -40393,6 +40394,7 @@ export type Database = {
           last_order_date?: string | null
           last_updated_at?: string
           last_updated_by?: string | null
+          last_updated_by_role?: string | null
           needs_order?: boolean
           owner_interested?: boolean | null
           product_introduced?: boolean
@@ -40412,6 +40414,7 @@ export type Database = {
           last_order_date?: string | null
           last_updated_at?: string
           last_updated_by?: string | null
+          last_updated_by_role?: string | null
           needs_order?: boolean
           owner_interested?: boolean | null
           product_introduced?: boolean
