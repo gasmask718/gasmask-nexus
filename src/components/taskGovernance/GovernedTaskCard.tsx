@@ -37,6 +37,7 @@ import {
   getTaskActivities,
   cancelTask,
   deleteTask,
+  permanentDeleteTask,
   restartTask,
   startTask,
 } from '@/services/taskGovernance';
@@ -147,6 +148,28 @@ export function GovernedTaskCard({
         handleRefresh();
       } else {
         toast.error('Restart failed', { description: result.error });
+      }
+    },
+  });
+
+  // Permanent delete mutation
+  const permanentDeleteMutation = useMutation({
+    mutationFn: async (confirmationPhrase: string) => {
+      return permanentDeleteTask(task.id, confirmationPhrase);
+    },
+    onSuccess: (result) => {
+      setShowDeleteModal(false);
+      if (result.success) {
+        const deletedCount = result.deletedRelatedRecords.artifacts + 
+                            result.deletedRelatedRecords.observations + 
+                            result.deletedRelatedRecords.activityLogs;
+        toast.success('Task permanently deleted', {
+          description: `Removed task and ${deletedCount} related records`,
+        });
+        queryClient.invalidateQueries({ queryKey: ['global-active-tasks'] });
+        handleRefresh();
+      } else {
+        toast.error('Permanent delete failed', { description: result.error });
       }
     },
   });
@@ -347,9 +370,11 @@ export function GovernedTaskCard({
         onConfirmCancel={() => cancelMutation.mutate()}
         onConfirmDelete={() => deleteMutation.mutate()}
         onConfirmRestart={() => restartMutation.mutate()}
+        onConfirmPermanentDelete={(phrase) => permanentDeleteMutation.mutate(phrase)}
         isCancelling={cancelMutation.isPending}
         isDeleting={deleteMutation.isPending}
         isRestarting={restartMutation.isPending}
+        isPermanentDeleting={permanentDeleteMutation.isPending}
       />
     </>
   );

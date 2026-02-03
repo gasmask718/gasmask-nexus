@@ -57,7 +57,7 @@ import {
   TaskExecutionLogEntry,
 } from '@/services/floor9/executionEngine';
 import { cancelTask as cancelFloor9Task } from '@/services/floor9/taskProgressService';
-import { cancelTask, deleteTask, restartTask } from '@/services/taskGovernance';
+import { cancelTask, deleteTask, restartTask, permanentDeleteTask } from '@/services/taskGovernance';
 import { AIWorkTask } from '@/services/floor9/types';
 import { TaskProgressBar } from './TaskProgressBar';
 import { TaskActivityFeed } from './TaskActivityFeed';
@@ -222,6 +222,35 @@ export function TaskExecutionCard({ task }: TaskExecutionCardProps) {
       } else {
         toast({ 
           title: 'Restart Failed',
+          description: result.error,
+          variant: 'destructive',
+        });
+      }
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  // Permanent delete mutation
+  const permanentDeleteMutation = useMutation({
+    mutationFn: async (confirmationPhrase: string) => {
+      return permanentDeleteTask(task.id, confirmationPhrase);
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['floor9', 'tasks'] });
+      setShowDeleteModal(false);
+      if (result.success) {
+        const deletedCount = result.deletedRelatedRecords.artifacts + 
+                            result.deletedRelatedRecords.observations + 
+                            result.deletedRelatedRecords.activityLogs;
+        toast({ 
+          title: 'Task Permanently Deleted',
+          description: `Removed task and ${deletedCount} related records`,
+        });
+      } else {
+        toast({ 
+          title: 'Permanent Delete Failed',
           description: result.error,
           variant: 'destructive',
         });
@@ -562,9 +591,11 @@ export function TaskExecutionCard({ task }: TaskExecutionCardProps) {
         onConfirmCancel={() => cancelMutation.mutate()}
         onConfirmDelete={() => deleteMutation.mutate()}
         onConfirmRestart={() => restartMutation.mutate()}
+        onConfirmPermanentDelete={(phrase) => permanentDeleteMutation.mutate(phrase)}
         isCancelling={cancelMutation.isPending}
         isDeleting={deleteMutation.isPending}
         isRestarting={restartMutation.isPending}
+        isPermanentDeleting={permanentDeleteMutation.isPending}
       />
     </>
   );

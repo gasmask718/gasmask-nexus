@@ -263,13 +263,51 @@ export async function getTaskActivities(
 
 // ============= TASK CANCELLATION =============
 
+/**
+ * Helper to extract detailed error information from Supabase errors
+ */
+function extractSupabaseError(error: unknown): string {
+  if (!error) return 'Unknown error occurred';
+  
+  if (error instanceof Error) {
+    // Check if it's a Supabase error with additional details
+    const supabaseError = error as any;
+    const parts: string[] = [];
+    
+    if (supabaseError.code) parts.push(`Code: ${supabaseError.code}`);
+    if (supabaseError.details) parts.push(`Details: ${supabaseError.details}`);
+    if (supabaseError.hint) parts.push(`Hint: ${supabaseError.hint}`);
+    if (supabaseError.message) parts.push(supabaseError.message);
+    
+    if (parts.length > 0) {
+      return parts.join(' | ');
+    }
+    
+    return error.message || 'Unknown error';
+  }
+  
+  if (typeof error === 'object') {
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return 'Error object could not be serialized';
+    }
+  }
+  
+  return String(error);
+}
+
 export async function cancelTask(
   taskId: string,
   reason?: string
 ): Promise<TaskCancellationResult> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError) {
+      console.error('[cancelTask] Auth error:', authError);
+      throw new Error(`Authentication failed: ${extractSupabaseError(authError)}`);
+    }
+    if (!user) throw new Error('Not authenticated - no user session found');
 
     // Get current task state
     const { data: task, error: fetchError } = await supabase
@@ -278,13 +316,30 @@ export async function cancelTask(
       .eq('id', taskId)
       .single();
 
-    if (fetchError) throw fetchError;
+    if (fetchError) {
+      console.error('[cancelTask] Fetch error:', fetchError);
+      throw new Error(`Failed to fetch task: ${extractSupabaseError(fetchError)}`);
+    }
+    
+    if (!task) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+
+    // Check if task is already in a terminal state
+    if (['cancelled', 'completed', 'failed'].includes(task.status)) {
+      console.warn('[cancelTask] Task already in terminal state:', task.status);
+      return {
+        success: true,
+        cancelled_actions: 0,
+        preserved_records: task.items_completed || 0,
+      };
+    }
 
     const pendingApprovals = task.items_pending_approval || 0;
     const remainingItems = (task.total_items || 0) - (task.items_processed || 0);
 
     // Update task status
-    const { error: updateError } = await supabase
+    const { error: updateError, data: updatedData } = await supabase
       .from('ai_work_tasks')
       .update({
         status: 'cancelled',
@@ -293,28 +348,49 @@ export async function cancelTask(
         cancellation_reason: reason || 'User requested cancellation',
         completed_at: new Date().toISOString(),
       })
-      .eq('id', taskId);
+      .eq('id', taskId)
+      .select('id');
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error('[cancelTask] Update error:', updateError);
+      throw new Error(`Failed to update task status: ${extractSupabaseError(updateError)}`);
+    }
+    
+    if (!updatedData || updatedData.length === 0) {
+      console.error('[cancelTask] No rows updated - possible RLS issue');
+      throw new Error('Failed to update task - no rows affected. You may not have permission to cancel this task (RLS policy violation).');
+    }
 
-    // Log cancellation
-    await logTaskActivity(
-      taskId,
-      'task_cancelled',
-      `Task cancelled. ${remainingItems} remaining items and ${pendingApprovals} pending approvals cleared.`,
-      'cancelled',
-      { reason: reason || 'User requested cancellation' }
-    );
+    // Log cancellation (non-blocking)
+    try {
+      await logTaskActivity(
+        taskId,
+        'task_cancelled',
+        `Task cancelled. ${remainingItems} remaining items and ${pendingApprovals} pending approvals cleared.`,
+        'cancelled',
+        { reason: reason || 'User requested cancellation' }
+      );
+    } catch (logError) {
+      console.warn('[cancelTask] Failed to log activity:', logError);
+    }
 
-    // Cancel pending artifact approvals
-    await supabase
-      .from('ai_task_artifacts')
-      .update({ status: 'rejected' })
-      .eq('task_id', taskId)
-      .eq('status', 'pending_approval');
+    // Cancel pending artifact approvals (non-blocking)
+    try {
+      await supabase
+        .from('ai_task_artifacts')
+        .update({ status: 'rejected' })
+        .eq('task_id', taskId)
+        .eq('status', 'pending_approval');
+    } catch (artifactError) {
+      console.warn('[cancelTask] Failed to cancel artifacts:', artifactError);
+    }
 
-    // Generate final report
-    await generateCompletionReport(taskId);
+    // Generate final report (non-blocking)
+    try {
+      await generateCompletionReport(taskId);
+    } catch (reportError) {
+      console.warn('[cancelTask] Failed to generate report:', reportError);
+    }
 
     return {
       success: true,
@@ -322,11 +398,14 @@ export async function cancelTask(
       preserved_records: task.items_completed || 0,
     };
   } catch (error) {
+    const errorMessage = extractSupabaseError(error);
+    console.error('[cancelTask] Critical error:', errorMessage, error);
+    
     return {
       success: false,
       cancelled_actions: 0,
       preserved_records: 0,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMessage,
     };
   }
 }
@@ -337,6 +416,7 @@ export interface TaskDeleteResult {
   success: boolean;
   deleted: boolean;
   error?: string;
+  errorCode?: string;
 }
 
 export async function deleteTask(
@@ -344,8 +424,12 @@ export async function deleteTask(
   reason?: string
 ): Promise<TaskDeleteResult> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError) {
+      console.error('[deleteTask] Auth error:', authError);
+      throw new Error(`Authentication failed: ${extractSupabaseError(authError)}`);
+    }
+    if (!user) throw new Error('Not authenticated - no user session found');
 
     // Get current task state
     const { data: task, error: fetchError } = await supabase
@@ -354,43 +438,208 @@ export async function deleteTask(
       .eq('id', taskId)
       .single();
 
-    if (fetchError) throw fetchError;
+    if (fetchError) {
+      console.error('[deleteTask] Fetch error:', fetchError);
+      throw new Error(`Failed to fetch task: ${extractSupabaseError(fetchError)}`);
+    }
+    
+    if (!task) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
 
     // If task is still running, cancel it first
     if (['processing', 'validating_inputs', 'queued'].includes(task.status)) {
-      await cancelTask(taskId, reason || 'Task deleted by user');
+      const cancelResult = await cancelTask(taskId, reason || 'Task deleted by user');
+      if (!cancelResult.success) {
+        console.warn('[deleteTask] Cancel failed, proceeding with delete:', cancelResult.error);
+      }
     }
 
     // Soft delete by setting deleted_at timestamp
-    const { error: updateError } = await supabase
+    const { error: updateError, data: updatedData } = await supabase
       .from('ai_work_tasks')
       .update({
         deleted_at: new Date().toISOString(),
         deleted_by: user.id,
         deletion_reason: reason || 'User requested deletion',
       })
-      .eq('id', taskId);
+      .eq('id', taskId)
+      .select('id');
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error('[deleteTask] Update error:', updateError);
+      throw new Error(`Failed to delete task: ${extractSupabaseError(updateError)}`);
+    }
+    
+    if (!updatedData || updatedData.length === 0) {
+      console.error('[deleteTask] No rows updated - possible RLS issue');
+      throw new Error('Failed to delete task - no rows affected. You may not have permission to delete this task (RLS policy violation).');
+    }
 
-    // Log deletion
-    await logTaskActivity(
-      taskId,
-      'task_deleted',
-      `Task soft-deleted by user. Reason: ${reason || 'No reason provided'}`,
-      'success',
-      { reason: reason || 'User requested deletion' }
-    );
+    // Log deletion (non-blocking)
+    try {
+      await logTaskActivity(
+        taskId,
+        'task_deleted',
+        `Task soft-deleted by user. Reason: ${reason || 'No reason provided'}`,
+        'success',
+        { reason: reason || 'User requested deletion' }
+      );
+    } catch (logError) {
+      console.warn('[deleteTask] Failed to log activity:', logError);
+    }
 
     return {
       success: true,
       deleted: true,
     };
   } catch (error) {
+    const errorMessage = extractSupabaseError(error);
+    console.error('[deleteTask] Critical error:', errorMessage, error);
+    
     return {
       success: false,
       deleted: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMessage,
+      errorCode: (error as any)?.code,
+    };
+  }
+}
+
+// ============= TASK PERMANENT DELETE (HARD DELETE) =============
+
+export interface TaskHardDeleteResult {
+  success: boolean;
+  permanentlyDeleted: boolean;
+  deletedRelatedRecords: {
+    artifacts: number;
+    observations: number;
+    activityLogs: number;
+  };
+  error?: string;
+}
+
+/**
+ * PERMANENT DELETE - IRREVERSIBLE
+ * Removes task and all related records from database
+ * Only for owner/admin roles with explicit confirmation
+ */
+export async function permanentDeleteTask(
+  taskId: string,
+  confirmationPhrase: string
+): Promise<TaskHardDeleteResult> {
+  const REQUIRED_PHRASE = 'PERMANENTLY DELETE TASK';
+  
+  try {
+    // Validate confirmation phrase
+    if (confirmationPhrase !== REQUIRED_PHRASE) {
+      throw new Error(`Invalid confirmation. Expected "${REQUIRED_PHRASE}"`);
+    }
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError) {
+      console.error('[permanentDeleteTask] Auth error:', authError);
+      throw new Error(`Authentication failed: ${extractSupabaseError(authError)}`);
+    }
+    if (!user) throw new Error('Not authenticated - no user session found');
+
+    // Get task to verify it exists
+    const { data: task, error: fetchError } = await supabase
+      .from('ai_work_tasks')
+      .select('id, task_title, status')
+      .eq('id', taskId)
+      .single();
+
+    if (fetchError) {
+      console.error('[permanentDeleteTask] Fetch error:', fetchError);
+      throw new Error(`Failed to fetch task: ${extractSupabaseError(fetchError)}`);
+    }
+    
+    if (!task) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+
+    console.log(`[permanentDeleteTask] Starting permanent deletion of task: ${task.task_title} (${taskId})`);
+
+    // Delete related records first (in order to avoid FK constraint violations)
+    
+    // 1. Delete task observations
+    const { error: obsError, data: obsData } = await supabase
+      .from('task_observations')
+      .delete()
+      .eq('task_id', taskId)
+      .select('id');
+    
+    if (obsError) {
+      console.warn('[permanentDeleteTask] Failed to delete observations:', obsError);
+    }
+    const deletedObservations = obsData?.length || 0;
+
+    // 2. Delete task activity logs
+    const { error: actError, data: actData } = await supabase
+      .from('ai_task_activity_log')
+      .delete()
+      .eq('task_id', taskId)
+      .select('id');
+    
+    if (actError) {
+      console.warn('[permanentDeleteTask] Failed to delete activity logs:', actError);
+    }
+    const deletedActivityLogs = actData?.length || 0;
+
+    // 3. Delete task artifacts
+    const { error: artError, data: artData } = await supabase
+      .from('ai_task_artifacts')
+      .delete()
+      .eq('task_id', taskId)
+      .select('id');
+    
+    if (artError) {
+      console.warn('[permanentDeleteTask] Failed to delete artifacts:', artError);
+    }
+    const deletedArtifacts = artData?.length || 0;
+
+    // 4. Finally delete the task itself
+    const { error: deleteError, data: deletedTask } = await supabase
+      .from('ai_work_tasks')
+      .delete()
+      .eq('id', taskId)
+      .select('id');
+
+    if (deleteError) {
+      console.error('[permanentDeleteTask] Delete error:', deleteError);
+      throw new Error(`Failed to permanently delete task: ${extractSupabaseError(deleteError)}`);
+    }
+    
+    if (!deletedTask || deletedTask.length === 0) {
+      console.error('[permanentDeleteTask] No task deleted - possible RLS issue');
+      throw new Error('Failed to delete task - no rows affected. You may not have admin permission to permanently delete tasks (RLS policy violation).');
+    }
+
+    console.log(`[permanentDeleteTask] Successfully deleted task ${taskId} and ${deletedObservations + deletedActivityLogs + deletedArtifacts} related records`);
+
+    return {
+      success: true,
+      permanentlyDeleted: true,
+      deletedRelatedRecords: {
+        artifacts: deletedArtifacts,
+        observations: deletedObservations,
+        activityLogs: deletedActivityLogs,
+      },
+    };
+  } catch (error) {
+    const errorMessage = extractSupabaseError(error);
+    console.error('[permanentDeleteTask] Critical error:', errorMessage, error);
+    
+    return {
+      success: false,
+      permanentlyDeleted: false,
+      deletedRelatedRecords: {
+        artifacts: 0,
+        observations: 0,
+        activityLogs: 0,
+      },
+      error: errorMessage,
     };
   }
 }

@@ -49,6 +49,7 @@ export {
   getTaskActivities,
   cancelTask,
   deleteTask,
+  permanentDeleteTask,
   restartTask,
   generateCompletionReport,
   getTasksByFloor,
@@ -58,6 +59,7 @@ export {
 
 export type {
   TaskDeleteResult,
+  TaskHardDeleteResult,
   TaskRestartResult,
   TaskQueryOptions,
 } from './taskGovernanceService';
