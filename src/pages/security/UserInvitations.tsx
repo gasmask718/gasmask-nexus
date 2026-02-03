@@ -1,122 +1,174 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
-import { UserPlus, Copy, Trash2, Check, Clock, XCircle, Link as LinkIcon, MoreVertical, RefreshCw, Shield } from 'lucide-react';
-import { 
-  createInvitation, 
-  getInvitations, 
-  deleteInvitation, 
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import {
+  UserPlus,
+  Copy,
+  Trash2,
+  Check,
+  Clock,
+  XCircle,
+  Link as LinkIcon,
+  MoreVertical,
+  RefreshCw,
+  Shield,
+  Mail,
+} from "lucide-react";
+import {
+  createInvitation,
+  getInvitations,
+  deleteInvitation,
   resendInvitation,
-  getInviteLink, 
-  INVITE_ROLES, 
-  type Invitation 
-} from '@/services/invitationService';
-import { OSRole } from '@/config/osNavigation';
-import { formatDistanceToNow } from 'date-fns';
+  getInviteLink,
+  sendInviteEmail, // <--- 1. Import the new service function
+  INVITE_ROLES,
+  type Invitation,
+} from "@/services/invitationService";
+import { OSRole } from "@/config/osNavigation";
+import { formatDistanceToNow } from "date-fns";
 
 export default function UserInvitations() {
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  
+
   // Form state
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<OSRole | ''>('');
-  const [assignedStoreId, setAssignedStoreId] = useState('');
-  const [assignedRouteId, setAssignedRouteId] = useState('');
-  const [assignedWarehouseId, setAssignedWarehouseId] = useState('');
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [role, setRole] = useState<OSRole | "">("");
+  const [assignedStoreId, setAssignedStoreId] = useState("");
+  const [assignedRouteId, setAssignedRouteId] = useState("");
+  const [assignedWarehouseId, setAssignedWarehouseId] = useState("");
+
+  // State to track if email is sending separately from creation
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const { data: invitations = [], isLoading } = useQuery({
-    queryKey: ['user-invitations'],
+    queryKey: ["user-invitations"],
     queryFn: async () => {
       const { invitations, error } = await getInvitations();
       if (error) throw new Error(error);
       return invitations;
-    }
+    },
   });
 
   const createMutation = useMutation({
     mutationFn: createInvitation,
-    onSuccess: ({ invitation, error, emailSent }) => {
+    onSuccess: async ({ invitation, error }) => {
       if (error) {
         toast.error(error);
         return;
       }
-      
-      queryClient.invalidateQueries({ queryKey: ['user-invitations'] });
-      setIsCreateOpen(false);
-      resetForm();
-      
-      // Show appropriate success message based on email status
-      if (emailSent) {
-        toast.success(`Invitation email sent to ${invitation?.email || 'recipient'}!`);
-      } else {
-        toast.success('Invitation created successfully');
-        // Auto-copy the link if email wasn't sent
-        if (invitation) {
-          const link = getInviteLink(invitation.invite_token);
-          navigator.clipboard.writeText(link);
-          toast.info('Email not sent - invite link copied to clipboard. Share it manually.');
+
+      // 2. Logic to send email immediately after creation
+      if (invitation) {
+        const link = getInviteLink(invitation.invite_token);
+
+        // Auto-copy locally
+        navigator.clipboard.writeText(link);
+
+        try {
+          setIsSendingEmail(true);
+          toast.loading("Sending email invite...");
+
+          // Call the emailer service
+          await sendInviteEmail(invitation.email, invitation.role, link);
+
+          toast.dismiss(); // Dismiss loading
+          toast.success("Invitation created & email sent successfully!");
+        } catch (emailError) {
+          toast.dismiss();
+          console.error(emailError);
+          // We invite created, but email failed. User has the link in clipboard though.
+          toast.warning("Invite created and copied, but email failed to send.");
+        } finally {
+          setIsSendingEmail(false);
         }
       }
-    }
+
+      queryClient.invalidateQueries({ queryKey: ["user-invitations"] });
+      setIsCreateOpen(false);
+      resetForm();
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteInvitation,
     onSuccess: ({ success, error }) => {
       if (!success) {
-        toast.error(error || 'Failed to delete invitation');
+        toast.error(error || "Failed to delete invitation");
         return;
       }
-      toast.success('Invitation deleted');
-      queryClient.invalidateQueries({ queryKey: ['user-invitations'] });
-    }
+      toast.success("Invitation deleted");
+      queryClient.invalidateQueries({ queryKey: ["user-invitations"] });
+    },
   });
 
   const resendMutation = useMutation({
     mutationFn: resendInvitation,
-    onSuccess: ({ invitation, error }) => {
+    onSuccess: async ({ invitation, error }) => {
       if (error) {
         toast.error(error);
         return;
       }
       if (invitation) {
         const link = getInviteLink(invitation.invite_token);
-        navigator.clipboard.writeText(link);
-        toast.success('New invite link generated and copied!');
+
+        // 3. Also implement email logic on Resend
+        try {
+          toast.loading("Resending email...");
+          await sendInviteEmail(invitation.email, invitation.role, link);
+          toast.dismiss();
+          toast.success("New link generated and email sent!");
+        } catch (e) {
+          toast.dismiss();
+          navigator.clipboard.writeText(link);
+          toast.warning("Email failed, but new link copied to clipboard.");
+        }
       }
-      queryClient.invalidateQueries({ queryKey: ['user-invitations'] });
-    }
+      queryClient.invalidateQueries({ queryKey: ["user-invitations"] });
+    },
   });
 
   const resetForm = () => {
-    setEmail('');
-    setPhone('');
-    setRole('');
-    setAssignedStoreId('');
-    setAssignedRouteId('');
-    setAssignedWarehouseId('');
+    setEmail("");
+    setPhone("");
+    setRole("");
+    setAssignedStoreId("");
+    setAssignedRouteId("");
+    setAssignedWarehouseId("");
   };
 
   const handleCreate = () => {
     if (!email || !role) {
-      toast.error('Email and role are required');
+      toast.error("Email and role are required");
       return;
     }
-    createMutation.mutate({ 
-      email, 
-      phone, 
+    createMutation.mutate({
+      email,
+      phone,
       role,
       assigned_store_id: assignedStoreId || undefined,
       assigned_route_id: assignedRouteId || undefined,
@@ -128,22 +180,34 @@ export default function UserInvitations() {
     const link = getInviteLink(invitation.invite_token);
     await navigator.clipboard.writeText(link);
     setCopiedId(invitation.id);
-    toast.success('Invite link copied!');
+    toast.success("Invite link copied!");
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const getStatusBadge = (invitation: Invitation) => {
     if (invitation.accepted_at) {
-      return <Badge variant="default" className="bg-green-500"><Check className="h-3 w-3 mr-1" /> Accepted</Badge>;
+      return (
+        <Badge variant="default" className="bg-green-500">
+          <Check className="h-3 w-3 mr-1" /> Accepted
+        </Badge>
+      );
     }
     if (new Date(invitation.expires_at) < new Date()) {
-      return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Expired</Badge>;
+      return (
+        <Badge variant="destructive">
+          <XCircle className="h-3 w-3 mr-1" /> Expired
+        </Badge>
+      );
     }
-    return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" /> Pending</Badge>;
+    return (
+      <Badge variant="secondary">
+        <Clock className="h-3 w-3 mr-1" /> Pending
+      </Badge>
+    );
   };
 
   const getRoleLabel = (role: string) => {
-    const found = INVITE_ROLES.find(r => r.value === role);
+    const found = INVITE_ROLES.find((r) => r.value === role);
     return found?.label || role;
   };
 
@@ -151,10 +215,9 @@ export default function UserInvitations() {
     return !inv.accepted_at && new Date(inv.expires_at) > new Date();
   };
 
-  // Show assignment field based on role
-  const showStoreAssignment = role === 'biker' || role === 'ambassador';
-  const showRouteAssignment = role === 'driver';
-  const showWarehouseAssignment = role === 'production';
+  const showStoreAssignment = role === "biker" || role === "ambassador";
+  const showRouteAssignment = role === "driver";
+  const showWarehouseAssignment = role === "production";
 
   return (
     <div className="space-y-6">
@@ -169,15 +232,15 @@ export default function UserInvitations() {
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Create Invite
+              <Mail className="h-4 w-4 mr-2" />
+              Create & Email Invite
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Create Invitation</DialogTitle>
               <DialogDescription>
-                Generate a secure signup link. Users will be locked to the assigned role and redirected to their portal.
+                Generates a signup link and <strong>automatically emails it</strong> to the user.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -264,8 +327,8 @@ export default function UserInvitations() {
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreate} disabled={createMutation.isPending}>
-                {createMutation.isPending ? 'Creating...' : 'Create & Copy Link'}
+              <Button onClick={handleCreate} disabled={createMutation.isPending || isSendingEmail}>
+                {createMutation.isPending || isSendingEmail ? "Processing..." : "Send Invite"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -322,11 +385,7 @@ export default function UserInvitations() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {isInviteActive(inv) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyInviteLink(inv)}
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => copyInviteLink(inv)}>
                             {copiedId === inv.id ? (
                               <Check className="h-4 w-4 text-green-500" />
                             ) : (
@@ -342,15 +401,15 @@ export default function UserInvitations() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             {!inv.accepted_at && (
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => resendMutation.mutate(inv.id)}
                                 disabled={resendMutation.isPending}
                               >
                                 <RefreshCw className="h-4 w-4 mr-2" />
-                                Resend / Regenerate
+                                Resend Email
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={() => deleteMutation.mutate(inv.id)}
                               disabled={deleteMutation.isPending}
                               className="text-destructive"
