@@ -63,7 +63,7 @@ async function logInviteAudit(
 /**
  * Create a new invitation
  */
-export async function createInvitation(params: CreateInvitationParams): Promise<{ invitation: Invitation | null; error: string | null }> {
+export async function createInvitation(params: CreateInvitationParams): Promise<{ invitation: Invitation | null; error: string | null; emailSent?: boolean }> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { invitation: null, error: 'Not authenticated' };
@@ -106,7 +106,33 @@ export async function createInvitation(params: CreateInvitationParams): Promise<
     invited_by: user.id 
   });
 
-  return { invitation: data as unknown as Invitation, error: null };
+  // Send invitation email via edge function
+  let emailSent = false;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      const response = await supabase.functions.invoke('send-user-invite', {
+        body: {
+          email: params.email.toLowerCase().trim(),
+          role: params.role,
+          inviteToken: token,
+          expiresAt: expiresAt,
+        }
+      });
+
+      if (response.error) {
+        console.error('Failed to send invitation email:', response.error);
+      } else if (response.data?.success) {
+        emailSent = true;
+        console.log('✅ Invitation email sent successfully to', params.email);
+      }
+    }
+  } catch (emailError) {
+    console.error('Error sending invitation email:', emailError);
+    // Don't fail the invitation creation if email fails
+  }
+
+  return { invitation: data as unknown as Invitation, error: null, emailSent };
 }
 
 /**

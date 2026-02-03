@@ -47,21 +47,27 @@ export default function UserInvitations() {
 
   const createMutation = useMutation({
     mutationFn: createInvitation,
-    onSuccess: ({ invitation, error }) => {
+    onSuccess: ({ invitation, error, emailSent }) => {
       if (error) {
         toast.error(error);
         return;
       }
-      toast.success('Invitation created successfully');
+      
       queryClient.invalidateQueries({ queryKey: ['user-invitations'] });
       setIsCreateOpen(false);
       resetForm();
       
-      // Auto-copy the link
-      if (invitation) {
-        const link = getInviteLink(invitation.invite_token);
-        navigator.clipboard.writeText(link);
-        toast.success('Invite link copied to clipboard!');
+      // Show appropriate success message based on email status
+      if (emailSent) {
+        toast.success(`Invitation email sent to ${invitation?.email || 'recipient'}!`);
+      } else {
+        toast.success('Invitation created successfully');
+        // Auto-copy the link if email wasn't sent
+        if (invitation) {
+          const link = getInviteLink(invitation.invite_token);
+          navigator.clipboard.writeText(link);
+          toast.info('Email not sent - invite link copied to clipboard. Share it manually.');
+        }
       }
     }
   });
