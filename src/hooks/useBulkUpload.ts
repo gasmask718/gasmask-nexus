@@ -479,6 +479,49 @@ async function importStores(
           }
         }
 
+        // Handle Starter Kit signal based on store name
+        // If store name contains "Starter Kit", auto-enable bring_starter_kit for all brands
+        const storeName = storeData.name || '';
+        const needsStarterKit = storeName.toLowerCase().includes('starter kit');
+        
+        if (needsStarterKit) {
+          const { data: store } = await supabase
+            .from('stores')
+            .select('id')
+            .eq('name', storeData.name)
+            .maybeSingle();
+
+          if (store) {
+            // Tube brands for initialization
+            const TUBE_BRANDS = [
+              { id: 'gasmask', name: 'GasMask Bags' },
+              { id: 'gasmasktubes', name: 'GasMask Tubes' },
+              { id: 'hotmama', name: 'HotMama' },
+              { id: 'grabba', name: 'Grabba R Us' },
+              { id: 'hotscolatti-light', name: 'Hot Scolatti Light' },
+              { id: 'hotscolatti-dark', name: 'Hot Scolatti Dark' },
+            ];
+
+            // Create tube intelligence records with bring_starter_kit enabled
+            for (const brand of TUBE_BRANDS) {
+              await supabase
+                .from('store_tube_inventory_status')
+                .upsert({
+                  store_id: store.id,
+                  brand_id: brand.id,
+                  brand_name: brand.name,
+                  bring_starter_kit: true,
+                  product_introduced: false,
+                  owner_interested: null,
+                  needs_order: false,
+                  bring_samples: false,
+                  has_ever_ordered: false,
+                  starter_kit_delivered: false,
+                }, { onConflict: 'store_id,brand_id' });
+            }
+          }
+        }
+
         result.success++;
       } catch (error: any) {
         result.failed++;
