@@ -532,8 +532,10 @@ export default function AppRoutes() {
       <Route path="/portal/biker/login" element={<BikerLogin />} />
       {/* Public Ambassador Application Form */}
       <Route path="/apply/ambassador" element={<AmbassadorApplication />} />
-      {/* Public Invite Signup */}
+      {/* Public Invite Signup - Primary and fallback routes */}
       <Route path="/signup" element={<InviteSignup />} />
+      <Route path="/invite/accept" element={<InviteSignup />} />
+      <Route path="/accept-invite" element={<Navigate to="/signup" replace />} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES (Authentication required)                                   */}
