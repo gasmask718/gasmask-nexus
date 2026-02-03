@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
+import { TubeIntelligenceCard } from '@/components/store/TubeIntelligenceCard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -235,6 +236,9 @@ function StoreProfileContent() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Tube Intelligence - Operational Signals */}
+      <TubeIntelligenceCard storeId={store.id} role="ambassador" />
 
       {/* Tabs */}
       <Tabs defaultValue="orders" className="space-y-4">
