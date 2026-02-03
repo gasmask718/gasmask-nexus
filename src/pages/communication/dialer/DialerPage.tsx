@@ -146,23 +146,20 @@ export default function DialerPage() {
   } | null>(null);
 
   // --- Handler: Initiate Twilio Call ---
-  const { initiateCall, confirmCall } = useOutboundCall();
+  const { placeCallNow } = useOutboundCall();
 
   const handleCall = async (storeId: string, phone: string, storeName?: string) => {
     setCurrentCall({ storeId, phone });
     setIsCalling(true);
-    toast.info("Connecting agent...");
+    toast.info("Placing call...");
 
     try {
-      initiateCall({
+      await placeCallNow({
         destinationPhone: phone,
         entityType: "store",
         entityId: storeId,
         entityName: storeName,
       });
-
-      await confirmCall();
-      toast.success("Calling! Please pick up your phone.");
     } catch (error: unknown) {
       console.error("Dialing error:", error);
       const msg = error instanceof Error ? error.message : String(error);
@@ -176,17 +173,14 @@ export default function DialerPage() {
   // --- Handler: Quick Dial Custom Number ---
   const handleQuickDialCall = async (phone: string, name?: string) => {
     setIsCalling(true);
-    toast.info("Connecting agent...");
+    toast.info("Placing call...");
 
     try {
-      initiateCall({
+      await placeCallNow({
         destinationPhone: phone,
         entityType: "other",
         entityName: name || "Quick Dial",
       });
-
-      await confirmCall();
-      toast.success("Calling! Please pick up your phone.");
     } catch (error: unknown) {
       console.error("Dialing error:", error);
       const msg = error instanceof Error ? error.message : String(error);
