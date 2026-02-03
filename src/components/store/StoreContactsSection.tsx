@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,9 @@ import { AddContactModal } from './AddContactModal';
 import { EditStoreContactModal } from './EditStoreContactModal';
 import { useCall } from '@/components/communication/CallProvider';
 import { useMessage } from '@/components/communication/MessageProvider';
+import { useStoreContactsWithResponsiveness } from '@/hooks/useContactResponsiveness';
+import { ContactResponsivenessBadge } from '@/components/contact/ContactResponsivenessBadge';
+import { ContactLastInteraction } from '@/components/contact/ContactLastInteraction';
 
 interface StoreContact {
   id: string;
@@ -27,6 +30,17 @@ interface StoreContact {
   notes: string | null;
   responsive_by_call: boolean | null;
   responsive_by_text: boolean | null;
+  // New responsiveness fields
+  total_calls_attempted?: number;
+  total_calls_answered?: number;
+  last_call_attempt_at?: string | null;
+  last_call_answered_at?: string | null;
+  total_texts_sent?: number;
+  total_texts_received?: number;
+  last_text_sent_at?: string | null;
+  last_text_received_at?: string | null;
+  responsiveness_status?: string | null;
+  last_responded_at?: string | null;
 }
 
 interface StoreContactsSectionProps {
@@ -55,20 +69,7 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const { data: contacts, isLoading } = useQuery({
-    queryKey: ['store-contacts', storeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('store_contacts')
-        .select('*')
-        .eq('store_id', storeId)
-        .order('is_primary', { ascending: false })
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      return data as StoreContact[];
-    },
-  });
+  const { data: contacts, isLoading } = useStoreContactsWithResponsiveness(storeId);
 
   const { initiateCall } = useCall();
   const { initiateMessage } = useMessage();
@@ -90,7 +91,6 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
       toast.error('No phone number available');
       return;
     }
-    // Use internal messaging system instead of native sms: link
     initiateMessage({
       destinationPhone: phone,
       entityType: 'customer',
@@ -102,7 +102,7 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
   };
 
   const handleContactAdded = () => {
-    queryClient.invalidateQueries({ queryKey: ['store-contacts', storeId] });
+    queryClient.invalidateQueries({ queryKey: ['store-contacts-responsiveness', storeId] });
     setAddModalOpen(false);
   };
 
@@ -112,7 +112,7 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
   };
 
   const handleContactUpdated = () => {
-    queryClient.invalidateQueries({ queryKey: ['store-contacts', storeId] });
+    queryClient.invalidateQueries({ queryKey: ['store-contacts-responsiveness', storeId] });
     queryClient.invalidateQueries({ queryKey: ['store-owner', storeId] });
     setEditingContact(null);
   };
@@ -135,7 +135,7 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
       throw error;
     }
 
-    queryClient.invalidateQueries({ queryKey: ['store-contacts', storeId] });
+    queryClient.invalidateQueries({ queryKey: ['store-contacts-responsiveness', storeId] });
     queryClient.invalidateQueries({ queryKey: ['store-owner', storeId] });
     toast.success(`${deletingContact.name} deleted`);
     setDeletingContact(null);
@@ -176,77 +176,102 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
               {contacts.map((contact) => (
                 <div
                   key={contact.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30 gap-3"
+                  className="flex flex-col p-3 rounded-lg bg-muted/30 border border-border/30 gap-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <User className="h-5 w-5 text-primary" />
+                  {/* Top row: Name, badges, actions */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <User className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium">{contact.name}</span>
+                          {contact.is_primary && (
+                            <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
+                              <Star className="h-3 w-3 mr-1" />
+                              Primary
+                            </Badge>
+                          )}
+                          <ContactResponsivenessBadge
+                            responsiveness_status={(contact.responsiveness_status as 'responsive' | 'unresponsive' | 'unknown') || 'unknown'}
+                            responsive_by_call={contact.responsive_by_call}
+                            responsive_by_text={contact.responsive_by_text}
+                            last_call_attempt_at={contact.last_call_attempt_at}
+                            last_call_answered_at={contact.last_call_answered_at}
+                            last_text_sent_at={contact.last_text_sent_at}
+                            last_text_received_at={contact.last_text_received_at}
+                            total_calls_attempted={contact.total_calls_attempted}
+                            total_calls_answered={contact.total_calls_answered}
+                            total_texts_sent={contact.total_texts_sent}
+                            total_texts_received={contact.total_texts_received}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                          {contact.role && (
+                            <Badge variant="secondary" className="text-xs">
+                              {ROLE_LABELS[contact.role] || contact.role}
+                            </Badge>
+                          )}
+                          {contact.phone && <span>{contact.phone}</span>}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium">{contact.name}</span>
-                        {contact.is_primary && (
-                          <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
-                            <Star className="h-3 w-3 mr-1" />
-                            Primary
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
-                        {contact.role && (
-                          <Badge variant="secondary" className="text-xs">
-                            {ROLE_LABELS[contact.role] || contact.role}
-                          </Badge>
-                        )}
-                        {contact.phone && <span>{contact.phone}</span>}
-                      </div>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleCall(contact.phone || '', contact.name)}
+                        disabled={!contact.phone}
+                        title="Call"
+                      >
+                        <Phone className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleText(contact.phone || '', contact.name, contact.id)}
+                        disabled={!contact.phone || !contact.can_receive_sms}
+                        title="Text"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleEditContact(contact)}
+                        title="Edit Contact"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => navigate(`/crm/store-contact/${contact.id}`)}
+                        title="View Profile"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDeleteContact(contact)}
+                        title="Delete Contact"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleCall(contact.phone, contact.name)}
-                      disabled={!contact.phone}
-                      title="Call"
-                    >
-                      <Phone className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleText(contact.phone, contact.name)}
-                      disabled={!contact.phone || !contact.can_receive_sms}
-                      title="Text"
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEditContact(contact)}
-                      title="Edit Contact"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => navigate(`/crm/store-contact/${contact.id}`)}
-                      title="View Profile"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDeleteContact(contact)}
-                      title="Delete Contact"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+
+                  {/* Bottom row: Last interaction dates */}
+                  <ContactLastInteraction
+                    last_call_attempt_at={contact.last_call_attempt_at}
+                    last_call_answered_at={contact.last_call_answered_at}
+                    last_text_sent_at={contact.last_text_sent_at}
+                    last_text_received_at={contact.last_text_received_at}
+                    className="ml-13 pl-13"
+                  />
                 </div>
               ))}
             </div>

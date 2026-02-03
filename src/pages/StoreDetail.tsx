@@ -36,6 +36,7 @@ import { EditableTubeInventoryCard } from "@/components/store/EditableTubeInvent
 import { TubeIntelligenceCard } from "@/components/store/TubeIntelligenceCard";
 import { BrandStickersCard } from "@/components/store/BrandStickersCard";
 import { QuickStatsStickersSummary } from "@/components/store/QuickStatsStickersSummary";
+import { QuickStatsContactResponsiveness } from "@/components/stats/QuickStatsContactResponsiveness";
 import { StoreVisitInventoryCard } from "@/components/store/StoreVisitInventoryCard";
 import { StoreQuickActions } from "@/components/store/StoreQuickActions";
 import { RecentStoreInteractions } from "@/components/crm/RecentStoreInteractions";
@@ -530,6 +531,9 @@ const StoreDetail = () => {
 
           {/* All Store Contacts (for adding new) */}
           <StoreContactsSection storeId={id || ""} storeName={store.name} />
+
+          {/* Contact Responsiveness Intelligence */}
+          <QuickStatsContactResponsiveness storeId={id || ""} />
 
           {/* Notes Section */}
           <StoreNotesSection storeId={id || ""} storeName={store.name} />
