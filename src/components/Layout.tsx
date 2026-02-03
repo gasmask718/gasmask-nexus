@@ -136,8 +136,11 @@ const DYNASTY_NAVIGATION = {
     name: '🛡️ Security & Governance',
     items: [
       { path: '/security/console', label: 'Security Console', icon: Shield },
-      { path: '/security/devices', label: 'Device Management', icon: Lock },
-      { path: '/security/sessions', label: 'Active Sessions', icon: Key },
+      { path: '/security/users', label: 'User Management', icon: Users },
+      { path: '/security/invitations', label: 'Invitations', icon: UserPlus },
+      { path: '/security/roles', label: 'Roles & Permissions', icon: Lock },
+      { path: '/security/devices', label: 'Device Management', icon: Key },
+      { path: '/security/sessions', label: 'Active Sessions', icon: Clock },
       { path: '/security/audit', label: 'Audit Logs', icon: FileText },
       { path: '/admin/qa-command-center', label: 'QA Command Center', icon: ClipboardList, adminOnly: true },
     ],
