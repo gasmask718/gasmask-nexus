@@ -36,6 +36,8 @@ import {
   GovernedTask,
   getTaskActivities,
   cancelTask,
+  deleteTask,
+  restartTask,
   startTask,
 } from '@/services/taskGovernance';
 import { TaskProgressBar } from '@/components/floor9/TaskProgressBar';
@@ -103,9 +105,48 @@ export function GovernedTaskCard({
         toast.success('Task cancelled', {
           description: `${result.cancelled_actions} actions cancelled, ${result.preserved_records} records preserved`,
         });
+        queryClient.invalidateQueries({ queryKey: ['global-active-tasks'] });
         handleRefresh();
       } else {
         toast.error('Cancellation failed', { description: result.error });
+      }
+    },
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      return deleteTask(task.id, 'User requested deletion');
+    },
+    onSuccess: (result) => {
+      setShowDeleteModal(false);
+      if (result.success) {
+        toast.success('Task deleted', {
+          description: 'Task removed from active views',
+        });
+        queryClient.invalidateQueries({ queryKey: ['global-active-tasks'] });
+        handleRefresh();
+      } else {
+        toast.error('Delete failed', { description: result.error });
+      }
+    },
+  });
+
+  // Restart mutation
+  const restartMutation = useMutation({
+    mutationFn: async () => {
+      return restartTask(task.id);
+    },
+    onSuccess: (result) => {
+      setShowDeleteModal(false);
+      if (result.success) {
+        toast.success('Task restarted', {
+          description: `New task created: ${result.newTaskId?.slice(0, 8)}...`,
+        });
+        queryClient.invalidateQueries({ queryKey: ['global-active-tasks'] });
+        handleRefresh();
+      } else {
+        toast.error('Restart failed', { description: result.error });
       }
     },
   });
@@ -115,6 +156,7 @@ export function GovernedTaskCard({
     mutationFn: () => startTask(task.id),
     onSuccess: () => {
       toast.success('Task started');
+      queryClient.invalidateQueries({ queryKey: ['global-active-tasks'] });
       handleRefresh();
     },
   });
@@ -255,14 +297,32 @@ export function GovernedTaskCard({
                   </Button>
                 )}
                 
-                {canCancel && (
+                {/* Show lifecycle control button for all non-cancelled tasks */}
+                {task.status !== 'cancelled' && (
                   <Button
                     size="sm"
                     variant="destructive"
                     onClick={() => setShowDeleteModal(true)}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    Cancel Task
+                    {isFinished ? 'Delete Task' : 'Cancel / Delete'}
+                  </Button>
+                )}
+
+                {/* Restart button for finished tasks */}
+                {isFinished && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => restartMutation.mutate()}
+                    disabled={restartMutation.isPending}
+                  >
+                    {restartMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : (
+                      <Play className="h-4 w-4 mr-1" />
+                    )}
+                    Restart
                   </Button>
                 )}
 
@@ -284,8 +344,12 @@ export function GovernedTaskCard({
         onOpenChange={setShowDeleteModal}
         taskTitle={task.task_title}
         taskStatus={task.status === 'running' ? 'processing' : task.status}
-        onConfirmDelete={() => cancelMutation.mutate()}
-        isDeleting={cancelMutation.isPending}
+        onConfirmCancel={() => cancelMutation.mutate()}
+        onConfirmDelete={() => deleteMutation.mutate()}
+        onConfirmRestart={() => restartMutation.mutate()}
+        isCancelling={cancelMutation.isPending}
+        isDeleting={deleteMutation.isPending}
+        isRestarting={restartMutation.isPending}
       />
     </>
   );

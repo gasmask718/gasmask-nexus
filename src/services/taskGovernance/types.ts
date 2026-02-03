@@ -139,6 +139,10 @@ export interface GovernedTask {
   cancelled_at: string | null;
   cancelled_by: string | null;
   cancellation_reason: string | null;
+  // Soft delete
+  deleted_at: string | null;
+  deleted_by: string | null;
+  deletion_reason: string | null;
   // Report
   final_report: TaskCompletionReport | null;
 }
