@@ -320,6 +320,25 @@ export function getActionTypeLabel(type: FieldActionType): string {
 }
 
 /**
+ * Get pending submissions count - for nav badge
+ */
+export function usePendingFieldSubmissionsCount() {
+  return useQuery({
+    queryKey: ['field-submissions', 'pending-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('field_submissions')
+        .select('*', { count: 'exact', head: true })
+        .eq('submission_status', 'pending_review');
+      
+      if (error) throw error;
+      return count || 0;
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+}
+
+/**
  * Get status color
  */
 export function getStatusColor(status: FieldSubmissionStatus): string {
