@@ -252,9 +252,23 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
     }
   }, [existingProduct, isEditMode, open]);
 
-  const profitPerUnit = useMemo(() => {
+  const retailProfit = useMemo(() => {
+    return (form.suggested_retail_price || 0) - (form.cost || 0);
+  }, [form.suggested_retail_price, form.cost]);
+
+  const wholesaleProfit = useMemo(() => {
     return (form.wholesale_price || 0) - (form.cost || 0);
   }, [form.wholesale_price, form.cost]);
+
+  const retailMargin = useMemo(() => {
+    if (!form.suggested_retail_price) return 0;
+    return (retailProfit / form.suggested_retail_price) * 100;
+  }, [retailProfit, form.suggested_retail_price]);
+
+  const wholesaleMargin = useMemo(() => {
+    if (!form.wholesale_price) return 0;
+    return (wholesaleProfit / form.wholesale_price) * 100;
+  }, [wholesaleProfit, form.wholesale_price]);
 
   const updateField = <K extends keyof ProductForm>(field: K, value: ProductForm[K]) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -500,12 +514,31 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                       </div>
                     </div>
 
-                    <div className="bg-muted/50 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Profit Per Unit</span>
-                        <span className={`font-bold ${profitPerUnit >= 0 ? 'text-green-500' : 'text-destructive'}`}>
-                          ${profitPerUnit.toFixed(2)}
-                        </span>
+                    <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Profit Margins</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Retail Profit</p>
+                          <div className="flex items-baseline gap-2">
+                            <span className={`text-lg font-bold ${retailProfit >= 0 ? 'text-green-500' : 'text-destructive'}`}>
+                              ${retailProfit.toFixed(2)}
+                            </span>
+                            <span className={`text-xs ${retailMargin >= 20 ? 'text-green-500' : 'text-amber-500'}`}>
+                              ({retailMargin.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Wholesale Profit</p>
+                          <div className="flex items-baseline gap-2">
+                            <span className={`text-lg font-bold ${wholesaleProfit >= 0 ? 'text-green-500' : 'text-destructive'}`}>
+                              ${wholesaleProfit.toFixed(2)}
+                            </span>
+                            <span className={`text-xs ${wholesaleMargin >= 20 ? 'text-green-500' : 'text-amber-500'}`}>
+                              ({wholesaleMargin.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
