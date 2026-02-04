@@ -193,6 +193,8 @@ export default function AppSidebar() {
             {renderSection('floor-2', 'Floor 2: Communication', '📞', [
               { path: '/communication', label: 'Command Center', emoji: '🎛️' },
               { path: '/communication/inbox', label: 'Inbox', emoji: '📥' },
+              { path: '/communication/follow-up', label: 'Follow-Up Manager', emoji: '⏰' },
+              ...(isAdmin ? [{ path: '/communication/field-submissions', label: 'Field Submissions', emoji: '📋' }] : []),
               { path: '/communication/dialer', label: 'Dialer', emoji: '📱' },
               { path: '/communication/live', label: 'Live Calls', emoji: '📞' },
               { path: '/communication/campaigns', label: 'Campaigns', emoji: '🚀' },
