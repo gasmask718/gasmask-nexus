@@ -49962,6 +49962,7 @@ export type Database = {
       is_elevated_user:
         | { Args: never; Returns: boolean }
         | { Args: { _user_id: string }; Returns: boolean }
+      is_field_role: { Args: { _user_id: string }; Returns: boolean }
       is_live_mode_authorized: {
         Args: { p_business_id: string; p_route_id?: string }
         Returns: boolean
@@ -50173,6 +50174,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_has_store_access: { Args: { _store_id: string }; Returns: boolean }
       user_is_owner: { Args: { _user_id: string }; Returns: boolean }
       validate_intent_autonomy: { Args: { p_intent_id: string }; Returns: Json }
       validate_portal_request: {

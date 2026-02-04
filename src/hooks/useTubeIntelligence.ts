@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { toast } from 'sonner';
-
+import { parseRLSError } from '@/lib/rls-error-handler';
 // Authoritative tube brands
 export const TUBE_BRANDS = [
   { id: 'gasmask', name: 'GasMask Bags', color: '#EF4444' },
@@ -156,7 +156,8 @@ export function useTubeIntelligence(storeId: string | null) {
       toast.success('Updated');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to update: ${error.message}`);
+      const parsed = parseRLSError(error);
+      toast.error(parsed.title, { description: parsed.description });
     },
   });
 

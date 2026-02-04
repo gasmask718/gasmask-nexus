@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { TubeIntelRole } from './useTubeIntelligence';
-
+import { parseRLSError } from '@/lib/rls-error-handler';
 // Canonical sticker brands - mapped to actual DB UUIDs
 // These MUST match the brands table in the database
 export const STICKER_BRANDS = [
@@ -328,7 +328,8 @@ export function useBrandStickers(storeId: string | null) {
       toast.success('Sticker status updated');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to update: ${error.message}`);
+      const parsed = parseRLSError(error);
+      toast.error(parsed.title, { description: parsed.description });
     },
   });
 
@@ -376,7 +377,8 @@ export function useBrandStickers(storeId: string | null) {
       toast.success('Requested sticker updated');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to update: ${error.message}`);
+      const parsed = parseRLSError(error);
+      toast.error(parsed.title, { description: parsed.description });
     },
   });
 
@@ -403,7 +405,8 @@ export function useBrandStickers(storeId: string | null) {
       toast.success('Sticker marked as seen');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to mark seen: ${error.message}`);
+      const parsed = parseRLSError(error);
+      toast.error(parsed.title, { description: parsed.description });
     },
   });
 
@@ -430,7 +433,8 @@ export function useBrandStickers(storeId: string | null) {
       toast.success('Sticker notes saved');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to save notes: ${error.message}`);
+      const parsed = parseRLSError(error);
+      toast.error(parsed.title, { description: parsed.description });
     },
   });
 
@@ -453,7 +457,8 @@ export function useBrandStickers(storeId: string | null) {
       toast.success('Notes saved');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to save notes: ${error.message}`);
+      const parsed = parseRLSError(error);
+      toast.error(parsed.title, { description: parsed.description });
     },
   });
 
