@@ -29904,6 +29904,145 @@ export type Database = {
           },
         ]
       }
+      outreach_plan_items: {
+        Row: {
+          channel: string
+          communication_log_id: string | null
+          contact_id: string
+          created_at: string
+          executed_at: string | null
+          id: string
+          outcome: string | null
+          plan_id: string
+          scheduled_at: string
+          status: string
+          stop_if_response: boolean
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          communication_log_id?: string | null
+          contact_id: string
+          created_at?: string
+          executed_at?: string | null
+          id?: string
+          outcome?: string | null
+          plan_id: string
+          scheduled_at: string
+          status?: string
+          stop_if_response?: boolean
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          communication_log_id?: string | null
+          contact_id?: string
+          created_at?: string
+          executed_at?: string | null
+          id?: string
+          outcome?: string | null
+          plan_id?: string
+          scheduled_at?: string
+          status?: string
+          stop_if_response?: boolean
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_plan_items_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "store_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_plan_items_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_responsiveness_summary"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "outreach_plan_items_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outreach_plans: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          completed_at: string | null
+          created_at: string
+          escalated_to_visit: boolean
+          id: string
+          items_responded: number
+          items_sent: number
+          started_at: string | null
+          status: string
+          store_id: string
+          total_items: number
+          updated_at: string
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          escalated_to_visit?: boolean
+          id?: string
+          items_responded?: number
+          items_sent?: number
+          started_at?: string | null
+          status?: string
+          store_id: string
+          total_items?: number
+          updated_at?: string
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          escalated_to_visit?: boolean
+          id?: string
+          items_responded?: number
+          items_sent?: number
+          started_at?: string | null
+          status?: string
+          store_id?: string
+          total_items?: number
+          updated_at?: string
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_plans_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_plans_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       parlays: {
         Row: {
           confidence_score: number | null
@@ -38538,6 +38677,69 @@ export type Database = {
           },
         ]
       }
+      store_cadence_policy: {
+        Row: {
+          allowed_hours_end: string
+          allowed_hours_start: string
+          cadence_days: number
+          created_at: string
+          enabled: boolean
+          id: string
+          max_calls_per_window: number
+          max_texts_per_window: number
+          owner_team: string | null
+          owner_user_id: string | null
+          store_id: string
+          text_first: boolean
+          updated_at: string
+        }
+        Insert: {
+          allowed_hours_end?: string
+          allowed_hours_start?: string
+          cadence_days?: number
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          max_calls_per_window?: number
+          max_texts_per_window?: number
+          owner_team?: string | null
+          owner_user_id?: string | null
+          store_id: string
+          text_first?: boolean
+          updated_at?: string
+        }
+        Update: {
+          allowed_hours_end?: string
+          allowed_hours_start?: string
+          cadence_days?: number
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          max_calls_per_window?: number
+          max_texts_per_window?: number
+          owner_team?: string | null
+          owner_user_id?: string | null
+          store_id?: string
+          text_first?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_cadence_policy_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_cadence_policy_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       store_check_fields: {
         Row: {
           business_id: string
@@ -38887,6 +39089,82 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_escalations: {
+        Row: {
+          assigned_at: string | null
+          assigned_to: string | null
+          attempts_made: number
+          contacts_attempted: number
+          created_at: string
+          id: string
+          last_attempt_at: string | null
+          outreach_plan_id: string | null
+          priority: number
+          reason: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_to?: string | null
+          attempts_made?: number
+          contacts_attempted?: number
+          created_at?: string
+          id?: string
+          last_attempt_at?: string | null
+          outreach_plan_id?: string | null
+          priority?: number
+          reason?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_to?: string | null
+          attempts_made?: number
+          contacts_attempted?: number
+          created_at?: string
+          id?: string
+          last_attempt_at?: string | null
+          outreach_plan_id?: string | null
+          priority?: number
+          reason?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_escalations_outreach_plan_id_fkey"
+            columns: ["outreach_plan_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_escalations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_escalations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -49001,6 +49279,15 @@ export type Database = {
       }
       current_ambassador_id: { Args: never; Returns: string }
       detect_intent_conflicts: { Args: { p_intent_id: string }; Returns: Json }
+      escalate_store_to_visit: {
+        Args: {
+          p_plan_id?: string
+          p_priority?: number
+          p_reason?: string
+          p_store_id: string
+        }
+        Returns: string
+      }
       evaluate_playbook_rules: {
         Args: { p_worker_id: string }
         Returns: undefined
@@ -49061,6 +49348,10 @@ export type Database = {
       freeze_portal_access: {
         Args: { _reason: string; _target_user_id: string }
         Returns: boolean
+      }
+      generate_store_outreach_plan: {
+        Args: { p_store_id: string }
+        Returns: string
       }
       get_active_autonomy_policy: {
         Args: never

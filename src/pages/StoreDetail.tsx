@@ -46,6 +46,7 @@ import { InvoiceHistoryCard } from "@/components/store/InvoiceHistoryCard";
 import { CreateStoreInvoiceModal } from "@/components/store/CreateStoreInvoiceModal";
 import { ConnectedStoresCard } from "@/components/store/ConnectedStoresCard";
 import { MemberSinceDisplay } from "@/components/store/MemberSinceDisplay";
+import { StoreCadenceSettings } from "@/components/store/StoreCadenceSettings";
 import {
   MapPin,
   Phone,
@@ -604,6 +605,9 @@ const StoreDetail = () => {
             storeId={id || ""} 
             onCreateInvoice={() => setCreateInvoiceModalOpen(true)}
           />
+
+          {/* Communication Cadence - Outreach scheduling */}
+          <StoreCadenceSettings storeId={id || ""} storeName={store?.name} />
 
           {/* Communication Stats & AI */}
           <div className="grid gap-6 md:grid-cols-2">
