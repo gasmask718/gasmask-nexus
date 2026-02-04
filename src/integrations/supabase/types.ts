@@ -20373,6 +20373,129 @@ export type Database = {
         }
         Relationships: []
       }
+      field_submission_rules: {
+        Row: {
+          action_type: Database["public"]["Enums"]["field_action_type"]
+          auto_approve: boolean | null
+          created_at: string
+          entity_type: Database["public"]["Enums"]["field_entity_type"]
+          id: string
+          is_active: boolean | null
+          require_approval: boolean | null
+          risk_score_modifier: number | null
+          rule_condition: Json
+          rule_name: string
+          updated_at: string
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["field_action_type"]
+          auto_approve?: boolean | null
+          created_at?: string
+          entity_type: Database["public"]["Enums"]["field_entity_type"]
+          id?: string
+          is_active?: boolean | null
+          require_approval?: boolean | null
+          risk_score_modifier?: number | null
+          rule_condition: Json
+          rule_name: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["field_action_type"]
+          auto_approve?: boolean | null
+          created_at?: string
+          entity_type?: Database["public"]["Enums"]["field_entity_type"]
+          id?: string
+          is_active?: boolean | null
+          require_approval?: boolean | null
+          risk_score_modifier?: number | null
+          rule_condition?: Json
+          rule_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      field_submissions: {
+        Row: {
+          action_type: Database["public"]["Enums"]["field_action_type"]
+          amendment_notes: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: Database["public"]["Enums"]["field_entity_type"]
+          id: string
+          is_applied: boolean | null
+          is_rolled_back: boolean | null
+          payload_after: Json
+          payload_before: Json | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by_user_id: string | null
+          risk_score: number | null
+          store_id: string
+          submission_status: Database["public"]["Enums"]["field_submission_status"]
+          submitted_by_role: string
+          submitted_by_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["field_action_type"]
+          amendment_notes?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: Database["public"]["Enums"]["field_entity_type"]
+          id?: string
+          is_applied?: boolean | null
+          is_rolled_back?: boolean | null
+          payload_after: Json
+          payload_before?: Json | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          risk_score?: number | null
+          store_id: string
+          submission_status?: Database["public"]["Enums"]["field_submission_status"]
+          submitted_by_role: string
+          submitted_by_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["field_action_type"]
+          amendment_notes?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: Database["public"]["Enums"]["field_entity_type"]
+          id?: string
+          is_applied?: boolean | null
+          is_rolled_back?: boolean | null
+          payload_after?: Json
+          payload_before?: Json | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          risk_score?: number | null
+          store_id?: string
+          submission_status?: Database["public"]["Enums"]["field_submission_status"]
+          submitted_by_role?: string
+          submitted_by_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_submissions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_submissions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       final_results: {
         Row: {
           actual_winner: string
@@ -50316,6 +50439,20 @@ export type Database = {
         | "approved"
         | "sent"
         | "cancelled"
+      field_action_type: "create" | "update" | "delete"
+      field_entity_type:
+        | "brand_sticker"
+        | "tube_inventory"
+        | "invoice"
+        | "invoice_line_item"
+        | "order_note"
+        | "visit_log"
+        | "store_update"
+      field_submission_status:
+        | "pending_review"
+        | "approved"
+        | "rejected"
+        | "auto_approved"
       fulfillment_type:
         | "delivery"
         | "pickup"
@@ -50769,6 +50906,22 @@ export const Constants = {
         "approved",
         "sent",
         "cancelled",
+      ],
+      field_action_type: ["create", "update", "delete"],
+      field_entity_type: [
+        "brand_sticker",
+        "tube_inventory",
+        "invoice",
+        "invoice_line_item",
+        "order_note",
+        "visit_log",
+        "store_update",
+      ],
+      field_submission_status: [
+        "pending_review",
+        "approved",
+        "rejected",
+        "auto_approved",
       ],
       fulfillment_type: [
         "delivery",
