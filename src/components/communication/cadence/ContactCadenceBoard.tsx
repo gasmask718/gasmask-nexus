@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONTACT CADENCE BOARD — Visibility-First Communication Intelligence
 // Shows contact outreach status WITHOUT auto-sending anything
+// Supports store-level filtering for drill-down from store profiles
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,7 +29,9 @@ import {
   Clock, 
   MapPin,
   User,
-  Building2
+  Building2,
+  X,
+  ExternalLink
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { 
@@ -36,6 +40,8 @@ import {
   type ContactCadenceItem,
   type CadenceFilter
 } from '@/hooks/useContactCadence';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 const CADENCE_FILTERS: { value: CadenceFilter; label: string; color?: string }[] = [
   { value: 'all', label: 'All Contacts' },
@@ -98,13 +104,22 @@ interface ContactCadenceBoardProps {
   initialFilter?: CadenceFilter;
   externalFilter?: CadenceFilter;
   onFilterChange?: (filter: CadenceFilter) => void;
+  storeId?: string; // Store filter from URL or prop
 }
 
 export function ContactCadenceBoard({ 
   initialFilter = 'all', 
   externalFilter,
-  onFilterChange 
+  onFilterChange,
+  storeId: propStoreId
 }: ContactCadenceBoardProps) {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Get store filter from URL if not passed as prop
+  const urlStoreId = searchParams.get('store');
+  const storeId = propStoreId || urlStoreId;
+  
   const [internalFilter, setInternalFilter] = useState<CadenceFilter>(initialFilter);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -115,17 +130,44 @@ export function ContactCadenceBoard({
   const { data: contacts, isLoading } = useContactCadenceIntelligence(filter);
   const recompute = useRecomputeCadenceStatus();
 
-  const filteredContacts = useMemo(() => {
+  // Fetch store name if filtering by store
+  const { data: storeName } = useQuery({
+    queryKey: ['store-name', storeId],
+    queryFn: async () => {
+      if (!storeId) return null;
+      const { data } = await supabase
+        .from('store_master')
+        .select('store_name')
+        .eq('id', storeId)
+        .maybeSingle();
+      return data?.store_name || null;
+    },
+    enabled: !!storeId,
+  });
+
+  // Filter contacts by store if storeId is present
+  const storeFilteredContacts = useMemo(() => {
     if (!contacts) return [];
-    if (!searchQuery) return contacts;
+    if (!storeId) return contacts;
+    return contacts.filter(c => c.store_id === storeId);
+  }, [contacts, storeId]);
+
+  const filteredContacts = useMemo(() => {
+    if (!storeFilteredContacts) return [];
+    if (!searchQuery) return storeFilteredContacts;
     
     const query = searchQuery.toLowerCase();
-    return contacts.filter(c => 
+    return storeFilteredContacts.filter(c => 
       c.contact_name?.toLowerCase().includes(query) ||
       c.store_name?.toLowerCase().includes(query) ||
       c.phone?.includes(query)
     );
-  }, [contacts, searchQuery]);
+  }, [storeFilteredContacts, searchQuery]);
+
+  const clearStoreFilter = () => {
+    searchParams.delete('store');
+    setSearchParams(searchParams);
+  };
 
   return (
     <div className="space-y-4">
@@ -147,6 +189,32 @@ export function ContactCadenceBoard({
           Refresh Status
         </Button>
       </div>
+
+      {/* Store Filter Banner */}
+      {storeId && (
+        <Card className="border-primary/50 bg-primary/5">
+          <CardContent className="p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary" />
+              <span className="text-sm">
+                Filtering by: <strong>{storeName || 'Loading...'}</strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link to={`/stores/${storeId}`}>
+                <Button variant="ghost" size="sm">
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  View Store
+                </Button>
+              </Link>
+              <Button variant="ghost" size="sm" onClick={clearStoreFilter}>
+                <X className="h-4 w-4 mr-1" />
+                Clear Filter
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters */}
       <Card>
@@ -218,15 +286,18 @@ export function ContactCadenceBoard({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <Link 
+                        to={`/stores/${contact.store_id}`}
+                        className="flex items-center gap-2 hover:text-primary transition-colors group"
+                      >
+                        <Building2 className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
                         <div>
-                          <div className="text-sm">{contact.store_name || 'Unknown'}</div>
+                          <div className="text-sm group-hover:underline">{contact.store_name || 'Unknown'}</div>
                           <div className="text-xs text-muted-foreground">
                             {contact.store_city}, {contact.store_state}
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     </TableCell>
                     <TableCell className="text-center">
                       {contact.last_call_attempt_at ? (
