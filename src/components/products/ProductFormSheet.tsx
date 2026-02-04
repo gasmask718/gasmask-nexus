@@ -85,6 +85,7 @@ interface ProductForm {
   // Pricing
   suggested_retail_price: number;
   wholesale_price: number;
+  street_price: number;
   cost: number;
   min_order_qty: number;
   bulk_discount_rules: any[];
@@ -128,6 +129,7 @@ const defaultForm: ProductForm = {
   status: 'active',
   suggested_retail_price: 0,
   wholesale_price: 0,
+  street_price: 0,
   cost: 0,
   min_order_qty: 1,
   bulk_discount_rules: [],
@@ -216,6 +218,7 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
         status: existingProduct.status || 'active',
         suggested_retail_price: existingProduct.suggested_retail_price || 0,
         wholesale_price: existingProduct.wholesale_price || 0,
+        street_price: (existingProduct as any).street_price || 0,
         cost: existingProduct.cost || 0,
         min_order_qty: existingProduct.min_order_qty || 1,
         bulk_discount_rules: Array.isArray(existingProduct.bulk_discount_rules) 
@@ -260,6 +263,10 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
     return (form.wholesale_price || 0) - (form.cost || 0);
   }, [form.wholesale_price, form.cost]);
 
+  const streetProfit = useMemo(() => {
+    return (form.street_price || 0) - (form.cost || 0);
+  }, [form.street_price, form.cost]);
+
   const retailMargin = useMemo(() => {
     if (!form.suggested_retail_price) return 0;
     return (retailProfit / form.suggested_retail_price) * 100;
@@ -269,6 +276,11 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
     if (!form.wholesale_price) return 0;
     return (wholesaleProfit / form.wholesale_price) * 100;
   }, [wholesaleProfit, form.wholesale_price]);
+
+  const streetMargin = useMemo(() => {
+    if (!form.street_price) return 0;
+    return (streetProfit / form.street_price) * 100;
+  }, [streetProfit, form.street_price]);
 
   const updateField = <K extends keyof ProductForm>(field: K, value: ProductForm[K]) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -481,7 +493,7 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pt-4 space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Retail Price</Label>
                         <Input
@@ -491,6 +503,7 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                           onChange={(e) => updateField('suggested_retail_price', parseFloat(e.target.value) || 0)}
                           placeholder="0.00"
                         />
+                        <p className="text-xs text-muted-foreground">Price you sell to customers</p>
                       </div>
                       <div className="space-y-2">
                         <Label>Wholesale Price</Label>
@@ -501,6 +514,21 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                           onChange={(e) => updateField('wholesale_price', parseFloat(e.target.value) || 0)}
                           placeholder="0.00"
                         />
+                        <p className="text-xs text-muted-foreground">Price for wholesalers</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Street Price</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={form.street_price}
+                          onChange={(e) => updateField('street_price', parseFloat(e.target.value) || 0)}
+                          placeholder="0.00"
+                        />
+                        <p className="text-xs text-muted-foreground">Personal/street customer price</p>
                       </div>
                       <div className="space-y-2">
                         <Label>Cost Per Unit</Label>
@@ -511,33 +539,45 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                           onChange={(e) => updateField('cost', parseFloat(e.target.value) || 0)}
                           placeholder="0.00"
                         />
+                        <p className="text-xs text-muted-foreground">Your cost to make/buy</p>
                       </div>
                     </div>
 
                     <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Profit Margins</p>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">Retail Profit</p>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Profit Margins by Channel</p>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-1 p-3 bg-background rounded-lg border">
+                          <p className="text-xs text-muted-foreground font-medium">Retail</p>
                           <div className="flex items-baseline gap-2">
                             <span className={`text-lg font-bold ${retailProfit >= 0 ? 'text-green-500' : 'text-destructive'}`}>
                               ${retailProfit.toFixed(2)}
                             </span>
-                            <span className={`text-xs ${retailMargin >= 20 ? 'text-green-500' : 'text-amber-500'}`}>
-                              ({retailMargin.toFixed(1)}%)
-                            </span>
                           </div>
+                          <span className={`text-xs ${retailMargin >= 20 ? 'text-green-500' : 'text-amber-500'}`}>
+                            {retailMargin.toFixed(1)}% margin
+                          </span>
                         </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">Wholesale Profit</p>
+                        <div className="space-y-1 p-3 bg-background rounded-lg border">
+                          <p className="text-xs text-muted-foreground font-medium">Wholesale</p>
                           <div className="flex items-baseline gap-2">
                             <span className={`text-lg font-bold ${wholesaleProfit >= 0 ? 'text-green-500' : 'text-destructive'}`}>
                               ${wholesaleProfit.toFixed(2)}
                             </span>
-                            <span className={`text-xs ${wholesaleMargin >= 20 ? 'text-green-500' : 'text-amber-500'}`}>
-                              ({wholesaleMargin.toFixed(1)}%)
+                          </div>
+                          <span className={`text-xs ${wholesaleMargin >= 20 ? 'text-green-500' : 'text-amber-500'}`}>
+                            {wholesaleMargin.toFixed(1)}% margin
+                          </span>
+                        </div>
+                        <div className="space-y-1 p-3 bg-background rounded-lg border border-amber-500/30">
+                          <p className="text-xs text-amber-500 font-medium">Street</p>
+                          <div className="flex items-baseline gap-2">
+                            <span className={`text-lg font-bold ${streetProfit >= 0 ? 'text-green-500' : 'text-destructive'}`}>
+                              ${streetProfit.toFixed(2)}
                             </span>
                           </div>
+                          <span className={`text-xs ${streetMargin >= 20 ? 'text-green-500' : 'text-amber-500'}`}>
+                            {streetMargin.toFixed(1)}% margin
+                          </span>
                         </div>
                       </div>
                     </div>
