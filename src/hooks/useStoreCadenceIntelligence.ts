@@ -2,11 +2,14 @@
 // STORE-SCOPED CONTACT CADENCE INTELLIGENCE HOOK
 // Filters existing v_contact_cadence_intelligence by store_id
 // NO NEW CADENCE LOGIC - just a lens into the global system
+// Dynasty OS Pagination & Verification Contract compliant
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { ContactCadenceItem, CadenceFilter } from './useContactCadence';
+import { usePaginationState, DEFAULT_PAGE_SIZE, createVerificationData } from './usePaginatedQuery';
+import { useMemo } from 'react';
 
 export interface StoreCadenceStats {
   withinWindow: number;
@@ -20,38 +23,79 @@ export interface StoreCadenceStats {
 }
 
 /**
- * Fetch cadence intelligence for a single store
+ * Fetch cadence intelligence for a single store - PAGINATED
  * This is a FILTER on the global view, not new logic
  */
-export function useStoreCadenceIntelligence(storeId: string | undefined, filter: CadenceFilter = 'all') {
-  return useQuery({
-    queryKey: ['store-cadence-intelligence', storeId, filter],
+export function useStoreCadenceIntelligence(
+  storeId: string | undefined, 
+  filter: CadenceFilter = 'all'
+) {
+  const pagination = usePaginationState(DEFAULT_PAGE_SIZE);
+  const { page, pageSize, range, setTotalCount } = pagination;
+
+  const query = useQuery({
+    queryKey: ['store-cadence-intelligence', storeId, filter, page, pageSize],
     queryFn: async () => {
-      if (!storeId) return [];
+      if (!storeId) return { items: [], totalCount: 0 };
       
-      let query = supabase
+      let baseQuery = supabase
         .from('v_contact_cadence_intelligence')
-        .select('*')
+        .select('*', { count: 'exact' })
         .eq('store_id', storeId)
         .order('days_since_last_touch', { ascending: false });
 
       if (filter === 'escalation') {
-        query = query.eq('escalation_flag', true);
+        baseQuery = baseQuery.eq('escalation_flag', true);
       } else if (filter !== 'all') {
-        query = query.eq('cadence_status', filter);
+        baseQuery = baseQuery.eq('cadence_status', filter);
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await baseQuery.range(range.from, range.to);
       
       if (error) throw error;
-      return (data || []) as ContactCadenceItem[];
+      
+      if (count !== null) {
+        setTotalCount(count);
+      }
+
+      return {
+        items: (data || []) as ContactCadenceItem[],
+        totalCount: count || 0,
+      };
     },
     enabled: !!storeId,
   });
+
+  const verification = useMemo(() => {
+    if (!query.data) return null;
+    return createVerificationData(
+      query.data.items,
+      query.data.totalCount,
+      page,
+      pageSize
+    );
+  }, [query.data, page, pageSize]);
+
+  return {
+    data: query.data?.items || [],
+    totalCount: query.data?.totalCount || 0,
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+    pagination: {
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      totalPages: pagination.totalPages,
+      totalCount: pagination.totalCount,
+    },
+    controls: pagination.controls,
+    verification,
+  };
 }
 
 /**
  * Get cadence stats for a single store
+ * Uses aggregate query - NO LIMIT - always reflects full dataset
  * Matches EXACTLY what global would show if filtered by this store
  */
 export function useStoreCadenceStats(storeId: string | undefined) {
@@ -71,6 +115,7 @@ export function useStoreCadenceStats(storeId: string | undefined) {
         };
       }
 
+      // No limit - aggregate stats must always reflect full dataset
       const { data, error } = await supabase
         .from('v_contact_cadence_intelligence')
         .select('cadence_status, escalation_flag, responsiveness_status')

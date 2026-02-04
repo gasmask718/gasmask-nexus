@@ -128,12 +128,12 @@ export function useStoresInTerritory(boro?: string) {
   return useQuery({
     queryKey: ['stores-in-territory', boro],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Use pagination for scalable access - no arbitrary limit
+      const { data, error, count } = await supabase
         .from('store_master')
-        .select('*')
-        .limit(100);
+        .select('*', { count: 'exact' });
       if (error) throw error;
-      return data || [];
+      return { items: data || [], totalCount: count || 0 };
     },
     enabled: !!boro
   });

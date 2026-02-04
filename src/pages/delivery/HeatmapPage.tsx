@@ -39,7 +39,10 @@ const HeatmapPage: React.FC = () => {
   const computeStats = useComputeTerritoryStats();
   const generateRoute = useGenerateRouteSuggestion();
   
-  const { data: drilldownStores = [] } = useStoresInTerritory(drilldownBoro || undefined);
+  const { data: drilldownStoresData } = useStoresInTerritory(drilldownBoro || undefined);
+  const drilldownStores = Array.isArray(drilldownStoresData) 
+    ? drilldownStoresData 
+    : (drilldownStoresData?.items || []);
   const { data: drilldownIssues = [] } = useIssuesInTerritory(drilldownBoro || undefined);
 
   const getHeatColor = (score: number) => {
