@@ -165,11 +165,10 @@ export async function getRelationshipHealthOverview(): Promise<{
   elite: number;
   total: number;
 }> {
-  // Get all store IDs
+  // No limit - aggregate stats must reflect full dataset
   const { data: stores } = await supabase
     .from("store_master")
-    .select("id")
-    .limit(500);
+    .select("id");
 
   if (!stores?.length) {
     return { fragile: 0, neutral: 0, strong: 0, elite: 0, total: 0 };

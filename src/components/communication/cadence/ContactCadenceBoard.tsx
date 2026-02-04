@@ -2,11 +2,12 @@
 // CONTACT CADENCE BOARD — Visibility-First Communication Intelligence
 // Shows contact outreach status WITHOUT auto-sending anything
 // Supports store-level filtering for drill-down from store profiles
+// Dynasty OS Pagination & Verification Contract compliant
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useState, useMemo, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useMemo } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,15 +32,18 @@ import {
   User,
   Building2,
   X,
-  ExternalLink
+  ExternalLink,
+  AlertCircle
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { 
   useContactCadenceIntelligence, 
   useRecomputeCadenceStatus,
   type ContactCadenceItem,
-  type CadenceFilter
+  type CadenceFilter,
+  PAGE_SIZE_OPTIONS,
 } from '@/hooks/useContactCadence';
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 
@@ -113,7 +117,6 @@ export function ContactCadenceBoard({
   onFilterChange,
   storeId: propStoreId
 }: ContactCadenceBoardProps) {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   
   // Get store filter from URL if not passed as prop
@@ -127,7 +130,17 @@ export function ContactCadenceBoard({
   const filter = externalFilter ?? internalFilter;
   const setFilter = onFilterChange ?? setInternalFilter;
   
-  const { data: contacts, isLoading } = useContactCadenceIntelligence(filter);
+  // Use paginated hook - now returns all data with pagination controls
+  const { 
+    data: contacts, 
+    totalCount,
+    isLoading, 
+    pagination,
+    controls,
+    verification,
+    refetch 
+  } = useContactCadenceIntelligence(filter, storeId || undefined);
+  
   const recompute = useRecomputeCadenceStatus();
 
   // Fetch store name if filtering by store
@@ -145,24 +158,18 @@ export function ContactCadenceBoard({
     enabled: !!storeId,
   });
 
-  // Filter contacts by store if storeId is present
-  const storeFilteredContacts = useMemo(() => {
-    if (!contacts) return [];
-    if (!storeId) return contacts;
-    return contacts.filter(c => c.store_id === storeId);
-  }, [contacts, storeId]);
-
+  // Client-side search filter (on current page only)
   const filteredContacts = useMemo(() => {
-    if (!storeFilteredContacts) return [];
-    if (!searchQuery) return storeFilteredContacts;
+    if (!contacts) return [];
+    if (!searchQuery) return contacts;
     
     const query = searchQuery.toLowerCase();
-    return storeFilteredContacts.filter(c => 
+    return contacts.filter(c => 
       c.contact_name?.toLowerCase().includes(query) ||
       c.store_name?.toLowerCase().includes(query) ||
       c.phone?.includes(query)
     );
-  }, [storeFilteredContacts, searchQuery]);
+  }, [contacts, searchQuery]);
 
   const clearStoreFilter = () => {
     searchParams.delete('store');
@@ -189,6 +196,20 @@ export function ContactCadenceBoard({
           Refresh Status
         </Button>
       </div>
+
+      {/* Verification Bar - Dynasty OS Compliance */}
+      {verification && (
+        <Card className={verification.isDiscrepancy ? 'border-destructive bg-destructive/5' : 'border-green-500/30 bg-green-500/5'}>
+          <CardContent className="p-2 flex items-center gap-2">
+            {verification.isDiscrepancy ? (
+              <AlertCircle className="h-4 w-4 text-destructive" />
+            ) : (
+              <CheckCircle className="h-4 w-4 text-green-600" />
+            )}
+            <span className="text-sm font-medium">{verification.message}</span>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Store Filter Banner */}
       {storeId && (
@@ -223,7 +244,7 @@ export function ContactCadenceBoard({
             <div className="flex items-center gap-2 flex-1 min-w-[200px]">
               <Search className="h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search contacts, stores, phones..."
+                placeholder="Search current page..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="border-0 bg-transparent shadow-none focus-visible:ring-0"
@@ -352,6 +373,19 @@ export function ContactCadenceBoard({
                 ))}
               </TableBody>
             </Table>
+          )}
+
+          {/* Pagination Controls - Dynasty OS Compliant */}
+          {!isLoading && totalCount > 0 && (
+            <DataTablePagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              pageSize={pagination.pageSize}
+              totalItems={totalCount}
+              onPageChange={controls.goToPage}
+              onPageSizeChange={controls.setPageSize}
+              pageSizeOptions={[...PAGE_SIZE_OPTIONS]}
+            />
           )}
         </CardContent>
       </Card>
