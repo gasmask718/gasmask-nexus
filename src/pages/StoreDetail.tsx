@@ -47,6 +47,7 @@ import { CreateStoreInvoiceModal } from "@/components/store/CreateStoreInvoiceMo
 import { ConnectedStoresCard } from "@/components/store/ConnectedStoresCard";
 import { MemberSinceDisplay } from "@/components/store/MemberSinceDisplay";
 import { StoreCadenceSettings } from "@/components/store/StoreCadenceSettings";
+import { StoreFieldActivityPanel } from "@/components/store/StoreFieldActivityPanel";
 import {
   MapPin,
   Phone,
@@ -597,6 +598,9 @@ const StoreDetail = () => {
               setUnifiedInteractionModalOpen(true);
             }}
           />
+
+          {/* Field Activity - Governance Layer */}
+          <StoreFieldActivityPanel storeId={id || ""} />
 
           {/* Invoice History - Single source of truth for all orders/invoices */}
 

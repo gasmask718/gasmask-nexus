@@ -187,6 +187,7 @@ import AutonomousDirectorPage from '@/pages/communication/ai/AutonomousDirectorP
 import VoiceLibraryPage from '@/pages/communication/voice/VoiceLibraryPage';
 import DealsSalesPage from '@/pages/communication/deals/DealsSalesPage';
 import FollowUpManagerPage from '@/pages/communication/followups/FollowUpManagerPage';
+import FieldSubmissionsPage from '@/pages/communication/FieldSubmissionsPage';
 import UnifiedInboxV3Page from '@/pages/communication/inbox/UnifiedInboxV3Page';
 import PlaybooksManagement from '@/pages/communication/PlaybooksManagement';
 import ShadowModePage from '@/pages/communication/ShadowModePage';
@@ -1278,6 +1279,7 @@ export default function AppRoutes() {
           <Route path="after-hours" element={<AfterHoursRoutingPage />} />
           <Route path="call-diagnostics" element={<CallSystemDiagnosticsPage />} />
           <Route path="follow-ups" element={<FollowUpManagerPage />} />
+          <Route path="field-submissions" element={<FieldSubmissionsPage />} />
           <Route path="unified-inbox" element={<UnifiedInboxV3Page />} />
           <Route path="voicemail-inbox" element={<VoicemailInboxPage />} />
           <Route path="missed-calls" element={<MissedCallsDashboardPage />} />
