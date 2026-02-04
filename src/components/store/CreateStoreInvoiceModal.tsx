@@ -41,6 +41,9 @@ const PAYMENT_METHODS = [
   { value: 'other', label: 'Other' },
 ];
 
+export type SaleChannel = 'retail' | 'wholesale' | 'street';
+export type SaleUnit = 'box' | 'unit';
+
 interface Brand {
   id: string;
   name: string;
@@ -53,7 +56,11 @@ interface Product {
   sku: string | null;
   store_price: number | null;
   wholesale_price: number | null;
+  suggested_retail_price: number | null;
+  street_price: number | null;
+  cost: number | null;
   units_per_box: number | null;
+  unit_type: string | null;
 }
 
 interface LineItem {
@@ -65,6 +72,11 @@ interface LineItem {
   quantity: number;
   unit_price: number;
   total: number;
+  sale_channel: SaleChannel;
+  sale_unit: SaleUnit;
+  cost_per_unit: number;
+  profit: number;
+  units_per_box: number;
 }
 
 export function CreateStoreInvoiceModal({
@@ -80,6 +92,8 @@ export function CreateStoreInvoiceModal({
   const [selectedBrandId, setSelectedBrandId] = useState<string>('');
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
+  const [saleChannel, setSaleChannel] = useState<SaleChannel>('retail');
+  const [saleUnit, setSaleUnit] = useState<SaleUnit>('box');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [invoiceDate, setInvoiceDate] = useState<Date | undefined>(new Date());
@@ -106,22 +120,47 @@ export function CreateStoreInvoiceModal({
     },
   });
 
-  // Fetch products by brand
+  // Fetch products by brand with all pricing fields from products_all (has street_price)
   const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ['invoice-products', selectedBrandId],
+    queryKey: ['invoice-products-all', selectedBrandId],
     queryFn: async () => {
       if (!selectedBrandId) return [];
       const { data, error } = await supabase
-        .from('products')
-        .select('id, name, sku, store_price, wholesale_price, units_per_box')
+        .from('products_all')
+        .select('id, product_name, store_price, wholesale_price, retail_price, street_price, unit_type')
         .eq('brand_id', selectedBrandId)
-        .eq('is_active', true)
-        .order('name');
+        .eq('status', 'active')
+        .order('product_name');
       if (error) throw error;
-      return data as Product[];
+      // Map to expected Product interface
+      return (data || []).map(p => ({
+        id: p.id,
+        name: p.product_name,
+        sku: null, // Not available in products_all
+        store_price: p.store_price,
+        wholesale_price: p.wholesale_price,
+        suggested_retail_price: p.retail_price,
+        street_price: p.street_price,
+        cost: 0, // Will be looked up separately if needed
+        units_per_box: 1, // Default
+        unit_type: p.unit_type,
+      })) as Product[];
     },
     enabled: !!selectedBrandId,
   });
+
+  // Get price based on selected channel
+  const getPriceForChannel = (product: Product, channel: SaleChannel): number => {
+    switch (channel) {
+      case 'street':
+        return product.street_price || product.suggested_retail_price || 0;
+      case 'wholesale':
+        return product.wholesale_price || 0;
+      case 'retail':
+      default:
+        return product.suggested_retail_price || product.store_price || 0;
+    }
+  };
 
   const generateInvoiceNumber = () => {
     const date = new Date();
@@ -142,19 +181,29 @@ export function CreateStoreInvoiceModal({
 
     if (!brand || !product) return;
 
-    // Use store_price if available, otherwise wholesale_price, otherwise 0
-    const unitPrice = product.store_price || product.wholesale_price || 0;
+    // Get price based on selected sale channel
+    const unitPrice = getPriceForChannel(product, saleChannel);
+    const costPerUnit = product.cost || 0;
+    const unitsPerBox = product.units_per_box || 1;
+    
+    // Calculate profit (INTERNAL ONLY - never shown on invoice)
+    const profitPerUnit = unitPrice - costPerUnit;
+    const totalProfit = profitPerUnit * quantity;
 
-    // Check if product already added
-    const existingIndex = lineItems.findIndex(item => item.product_id === selectedProductId);
+    // Check if same product with same channel already added
+    const existingIndex = lineItems.findIndex(
+      item => item.product_id === selectedProductId && item.sale_channel === saleChannel
+    );
+    
     if (existingIndex >= 0) {
-      // Update quantity and total
+      // Update quantity and recalculate totals
       const updated = [...lineItems];
       updated[existingIndex].quantity += quantity;
       updated[existingIndex].total = updated[existingIndex].quantity * updated[existingIndex].unit_price;
+      updated[existingIndex].profit = (updated[existingIndex].unit_price - updated[existingIndex].cost_per_unit) * updated[existingIndex].quantity;
       setLineItems(updated);
     } else {
-      // Add new line item
+      // Add new line item with channel and profit data
       setLineItems([
         ...lineItems,
         {
@@ -166,6 +215,11 @@ export function CreateStoreInvoiceModal({
           quantity,
           unit_price: unitPrice,
           total: quantity * unitPrice,
+          sale_channel: saleChannel,
+          sale_unit: saleUnit,
+          cost_per_unit: costPerUnit,
+          profit: totalProfit,
+          units_per_box: unitsPerBox,
         },
       ]);
     }
@@ -184,7 +238,12 @@ export function CreateStoreInvoiceModal({
     setLineItems(
       lineItems.map(item =>
         item.id === id
-          ? { ...item, quantity: newQuantity, total: newQuantity * item.unit_price }
+          ? { 
+              ...item, 
+              quantity: newQuantity, 
+              total: newQuantity * item.unit_price,
+              profit: (item.unit_price - item.cost_per_unit) * newQuantity,
+            }
           : item
       )
     );
@@ -195,7 +254,12 @@ export function CreateStoreInvoiceModal({
     setLineItems(
       lineItems.map(item =>
         item.id === id
-          ? { ...item, unit_price: newPrice, total: item.quantity * newPrice }
+          ? { 
+              ...item, 
+              unit_price: newPrice, 
+              total: item.quantity * newPrice,
+              profit: (newPrice - item.cost_per_unit) * item.quantity,
+            }
           : item
       )
     );
@@ -277,12 +341,18 @@ export function CreateStoreInvoiceModal({
         const lineItemsData = lineItems.map(item => ({
           invoice_id: invoice.id,
           brand_id: item.brand_id,
-          brand_name: item.brand_name,
+          brand: item.brand_name,
           product_id: item.product_id,
           product_name: item.product_name,
           quantity: item.quantity,
           unit_price: item.unit_price,
           total: item.total,
+          // NEW: Multi-channel pricing fields
+          sale_channel: item.sale_channel,
+          sale_unit: item.sale_unit,
+          cost_per_unit_at_sale: item.cost_per_unit,
+          profit_at_sale: item.profit,
+          units_per_box_snapshot: item.units_per_box,
         }));
 
         // Note: invoice_line_items table needs to be created via migration first
@@ -421,6 +491,8 @@ export function CreateStoreInvoiceModal({
     setSelectedBrandId('');
     setSelectedProductId('');
     setQuantity(1);
+    setSaleChannel('retail');
+    setSaleUnit('box');
     setPaymentMethod('');
     setDueDate(undefined);
     setInvoiceDate(new Date()); // Reset to today
@@ -536,6 +608,53 @@ export function CreateStoreInvoiceModal({
               </div>
             )}
 
+            {/* Sale Channel Selection */}
+            {selectedProductId && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Sale Type</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    type="button"
+                    variant={saleChannel === 'retail' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSaleChannel('retail')}
+                    className="text-xs"
+                  >
+                    Retail
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={saleChannel === 'wholesale' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSaleChannel('wholesale')}
+                    className="text-xs"
+                  >
+                    Wholesale
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={saleChannel === 'street' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSaleChannel('street')}
+                    className="text-xs"
+                  >
+                    Street
+                  </Button>
+                </div>
+                {/* Show selected channel price */}
+                {(() => {
+                  const product = products.find(p => p.id === selectedProductId);
+                  if (!product) return null;
+                  const price = getPriceForChannel(product, saleChannel);
+                  return (
+                    <p className="text-xs text-muted-foreground">
+                      {saleChannel.charAt(0).toUpperCase() + saleChannel.slice(1)} price: <span className="font-mono font-medium text-foreground">${price.toFixed(2)}</span>
+                    </p>
+                  );
+                })()}
+              </div>
+            )}
+
             {/* Quantity */}
             {selectedProductId && (
               <div className="space-y-2">
@@ -572,15 +691,25 @@ export function CreateStoreInvoiceModal({
                 {lineItems.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center gap-2 p-3 rounded-lg bg-secondary/30 border"
+                    className="flex flex-col gap-2 p-3 rounded-lg bg-secondary/30 border"
                   >
-                    <div
-                      className="h-3 w-3 rounded-full shrink-0"
-                      style={{ backgroundColor: brands.find(b => b.id === item.brand_id)?.color || '#6366F1' }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.product_name}</p>
-                      <p className="text-xs text-muted-foreground">{item.brand_name}</p>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-3 w-3 rounded-full shrink-0"
+                        style={{ backgroundColor: brands.find(b => b.id === item.brand_id)?.color || '#6366F1' }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{item.product_name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-muted-foreground">{item.brand_name}</p>
+                          <Badge 
+                            variant={item.sale_channel === 'street' ? 'default' : 'outline'} 
+                            className="text-[10px] px-1.5 py-0"
+                          >
+                            {item.sale_channel}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Input
@@ -599,7 +728,7 @@ export function CreateStoreInvoiceModal({
                         onChange={(e) => handleUpdatePrice(item.id, parseFloat(e.target.value) || 0)}
                         className="w-20 h-8 text-sm font-mono"
                       />
-                      <span className="text-sm font-mono font-medium w-20 text-right">
+                      <span className="text-sm font-mono font-medium flex-1 text-right">
                         ${item.total.toFixed(2)}
                       </span>
                       <Button

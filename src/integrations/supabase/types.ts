@@ -25079,44 +25079,59 @@ export type Database = {
         Row: {
           brand: string | null
           brand_id: string | null
+          cost_per_unit_at_sale: number | null
           created_at: string
           id: string
           invoice_id: string
           product_id: string | null
           product_name: string | null
+          profit_at_sale: number | null
           quantity: number
+          sale_channel: string | null
+          sale_unit: string | null
           total: number
           tubes_equivalent: number | null
           unit_price: number
           unit_type: string
+          units_per_box_snapshot: number | null
         }
         Insert: {
           brand?: string | null
           brand_id?: string | null
+          cost_per_unit_at_sale?: number | null
           created_at?: string
           id?: string
           invoice_id: string
           product_id?: string | null
           product_name?: string | null
+          profit_at_sale?: number | null
           quantity?: number
+          sale_channel?: string | null
+          sale_unit?: string | null
           total: number
           tubes_equivalent?: number | null
           unit_price: number
           unit_type?: string
+          units_per_box_snapshot?: number | null
         }
         Update: {
           brand?: string | null
           brand_id?: string | null
+          cost_per_unit_at_sale?: number | null
           created_at?: string
           id?: string
           invoice_id?: string
           product_id?: string | null
           product_name?: string | null
+          profit_at_sale?: number | null
           quantity?: number
+          sale_channel?: string | null
+          sale_unit?: string | null
           total?: number
           tubes_equivalent?: number | null
           unit_price?: number
           unit_type?: string
+          units_per_box_snapshot?: number | null
         }
         Relationships: [
           {
@@ -34683,6 +34698,7 @@ export type Database = {
           sku: string | null
           status: string | null
           store_price: number | null
+          street_price: number | null
           strength_level: string | null
           suggested_crosssell_product_id: string | null
           suggested_retail_price: number | null
@@ -34739,6 +34755,7 @@ export type Database = {
           sku?: string | null
           status?: string | null
           store_price?: number | null
+          street_price?: number | null
           strength_level?: string | null
           suggested_crosssell_product_id?: string | null
           suggested_retail_price?: number | null
@@ -34795,6 +34812,7 @@ export type Database = {
           sku?: string | null
           status?: string | null
           store_price?: number | null
+          street_price?: number | null
           strength_level?: string | null
           suggested_crosssell_product_id?: string | null
           suggested_retail_price?: number | null
@@ -49053,6 +49071,18 @@ export type Database = {
           total_commissions: number | null
           total_overrides: number | null
           total_paid: number | null
+        }
+        Relationships: []
+      }
+      v_invoice_profit_by_channel: {
+        Row: {
+          avg_margin_pct: number | null
+          invoice_count: number | null
+          month: string | null
+          sale_channel: string | null
+          total_profit: number | null
+          total_revenue: number | null
+          total_units_sold: number | null
         }
         Relationships: []
       }
