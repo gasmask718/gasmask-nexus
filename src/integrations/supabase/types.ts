@@ -20418,7 +20418,9 @@ export type Database = {
       field_submissions: {
         Row: {
           action_type: Database["public"]["Enums"]["field_action_type"]
+          admin_notes: string | null
           amendment_notes: string | null
+          changed_fields: string[] | null
           created_at: string
           entity_id: string | null
           entity_type: Database["public"]["Enums"]["field_entity_type"]
@@ -20430,8 +20432,11 @@ export type Database = {
           rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by_user_id: string | null
+          risk_reasons: string[] | null
           risk_score: number | null
+          rollback_of_id: string | null
           store_id: string
+          submission_source: string | null
           submission_status: Database["public"]["Enums"]["field_submission_status"]
           submitted_by_role: string
           submitted_by_user_id: string
@@ -20439,7 +20444,9 @@ export type Database = {
         }
         Insert: {
           action_type: Database["public"]["Enums"]["field_action_type"]
+          admin_notes?: string | null
           amendment_notes?: string | null
+          changed_fields?: string[] | null
           created_at?: string
           entity_id?: string | null
           entity_type: Database["public"]["Enums"]["field_entity_type"]
@@ -20451,8 +20458,11 @@ export type Database = {
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by_user_id?: string | null
+          risk_reasons?: string[] | null
           risk_score?: number | null
+          rollback_of_id?: string | null
           store_id: string
+          submission_source?: string | null
           submission_status?: Database["public"]["Enums"]["field_submission_status"]
           submitted_by_role: string
           submitted_by_user_id: string
@@ -20460,7 +20470,9 @@ export type Database = {
         }
         Update: {
           action_type?: Database["public"]["Enums"]["field_action_type"]
+          admin_notes?: string | null
           amendment_notes?: string | null
+          changed_fields?: string[] | null
           created_at?: string
           entity_id?: string | null
           entity_type?: Database["public"]["Enums"]["field_entity_type"]
@@ -20472,14 +20484,24 @@ export type Database = {
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by_user_id?: string | null
+          risk_reasons?: string[] | null
           risk_score?: number | null
+          rollback_of_id?: string | null
           store_id?: string
+          submission_source?: string | null
           submission_status?: Database["public"]["Enums"]["field_submission_status"]
           submitted_by_role?: string
           submitted_by_user_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "field_submissions_rollback_of_id_fkey"
+            columns: ["rollback_of_id"]
+            isOneToOne: false
+            referencedRelation: "field_submissions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "field_submissions_store_id_fkey"
             columns: ["store_id"]
@@ -49803,10 +49825,24 @@ export type Database = {
         Args: { p_days_old?: number }
         Returns: number
       }
+      compute_changed_fields: {
+        Args: { after: Json; before: Json }
+        Returns: string[]
+      }
       compute_contact_cadence_status: { Args: never; Returns: undefined }
       compute_device_reliability: {
         Args: { p_device_id: string }
         Returns: number
+      }
+      compute_risk_reasons: {
+        Args: {
+          p_action_type: Database["public"]["Enums"]["field_action_type"]
+          p_changed_fields: string[]
+          p_entity_type: Database["public"]["Enums"]["field_entity_type"]
+          p_store_id: string
+          p_submitted_by: string
+        }
+        Returns: string[]
       }
       count_route_actions_last_hour: {
         Args: { p_route_id: string }
