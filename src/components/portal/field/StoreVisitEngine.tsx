@@ -8,7 +8,7 @@ import { ArrowLeft, Send, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
-
+import { getRLSErrorToast } from '@/lib/rls-error-handler';
 // NOTE: Stickers are now handled directly by BrandStickersCard which persists to DB
 // The legacy stickerBrands config is deprecated for visit data
 
@@ -606,11 +606,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
       navigate(portalType === 'driver' ? '/portal/driver' : '/portal/biker');
     } catch (error) {
       console.error('Error submitting visit:', error);
-      toast({
-        title: 'Submission Failed',
-        description: error instanceof Error ? error.message : 'Could not submit your changes. Please try again.',
-        variant: 'destructive',
-      });
+      toast(getRLSErrorToast(error));
     } finally {
       setSubmitting(false);
     }
