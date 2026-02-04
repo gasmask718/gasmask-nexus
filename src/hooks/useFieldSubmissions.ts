@@ -34,11 +34,18 @@ export interface FieldSubmission {
   is_applied: boolean | null;
   is_rolled_back: boolean | null;
   risk_score: number | null;
+  // New governance fields
+  changed_fields: string[] | null;
+  risk_reasons: string[] | null;
+  submission_source: string | null;
+  admin_notes: string | null;
+  rollback_of_id: string | null;
   created_at: string;
   updated_at: string;
   // Joined fields
   submitter_name?: string;
   store_name?: string;
+  store_address?: string;
   reviewer_name?: string;
 }
 
@@ -92,15 +99,20 @@ export function useCreateFieldSubmission() {
   });
 }
 
-/**
- * Fetch all field submissions with filters
- */
-export function useFieldSubmissions(filters?: {
+export interface FieldSubmissionFilters {
   status?: FieldSubmissionStatus;
   entityType?: FieldEntityType;
   storeId?: string;
   limit?: number;
-}) {
+  search?: string;
+  timeRange?: '24h' | '7d' | '30d' | 'all';
+  quickFilter?: 'high_risk' | 'pending_old' | 'multiple_same_user' | null;
+}
+
+/**
+ * Fetch all field submissions with filters
+ */
+export function useFieldSubmissions(filters?: FieldSubmissionFilters) {
   return useQuery({
     queryKey: ['field-submissions', filters],
     queryFn: async () => {
@@ -108,7 +120,7 @@ export function useFieldSubmissions(filters?: {
         .from('field_submissions')
         .select(`
           *,
-          store:store_master(name)
+          store:store_master(store_name, address)
         `)
         .order('created_at', { ascending: false });
 
@@ -121,6 +133,37 @@ export function useFieldSubmissions(filters?: {
       if (filters?.storeId) {
         query = query.eq('store_id', filters.storeId);
       }
+      
+      // Time range filter
+      if (filters?.timeRange && filters.timeRange !== 'all') {
+        const now = new Date();
+        let cutoff: Date;
+        switch (filters.timeRange) {
+          case '24h':
+            cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            break;
+          case '7d':
+            cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case '30d':
+            cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          default:
+            cutoff = new Date(0);
+        }
+        query = query.gte('created_at', cutoff.toISOString());
+      }
+      
+      // Quick filters
+      if (filters?.quickFilter === 'high_risk') {
+        query = query.gte('risk_score', 50);
+      } else if (filters?.quickFilter === 'pending_old') {
+        const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        query = query
+          .eq('submission_status', 'pending_review')
+          .lt('created_at', cutoff);
+      }
+      
       if (filters?.limit) {
         query = query.limit(filters.limit);
       } else {
@@ -148,12 +191,26 @@ export function useFieldSubmissions(filters?: {
         }, {});
       }
 
-      return (data || []).map((item: any) => ({
+      let results = (data || []).map((item: any) => ({
         ...item,
         submitter_name: profileMap[item.submitted_by_user_id] || 'Unknown',
-        store_name: item.store?.name || 'Unknown Store',
+        store_name: item.store?.store_name || 'Unknown Store',
+        store_address: item.store?.address || null,
         reviewer_name: item.reviewed_by_user_id ? (profileMap[item.reviewed_by_user_id] || null) : null,
       })) as FieldSubmission[];
+      
+      // Client-side search filter
+      if (filters?.search) {
+        const searchLower = filters.search.toLowerCase();
+        results = results.filter(item => 
+          item.store_name?.toLowerCase().includes(searchLower) ||
+          item.submitter_name?.toLowerCase().includes(searchLower) ||
+          item.entity_type.toLowerCase().includes(searchLower) ||
+          item.store_address?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      return results;
     },
   });
 }
@@ -201,7 +258,7 @@ export function useStoreFieldSubmissions(storeId: string | undefined, limit = 10
 }
 
 /**
- * Get submission stats
+ * Get submission stats including quick filter counts
  */
 export function useFieldSubmissionStats() {
   return useQuery({
@@ -209,17 +266,39 @@ export function useFieldSubmissionStats() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('field_submissions')
-        .select('submission_status, risk_score');
+        .select('submission_status, risk_score, created_at, submitted_by_user_id, store_id');
 
       if (error) throw error;
 
       const items = data || [];
+      const now = Date.now();
+      const oneDayAgo = now - 24 * 60 * 60 * 1000;
+      
+      // Count pending items older than 24h
+      const pendingOld = items.filter(i => 
+        i.submission_status === 'pending_review' && 
+        new Date(i.created_at).getTime() < oneDayAgo
+      ).length;
+      
+      // Count users with multiple submissions to same store in 24h
+      const recentSubmissions = items.filter(i => 
+        new Date(i.created_at).getTime() > oneDayAgo
+      );
+      const userStoreMap = new Map<string, number>();
+      recentSubmissions.forEach(s => {
+        const key = `${s.submitted_by_user_id}-${s.store_id}`;
+        userStoreMap.set(key, (userStoreMap.get(key) || 0) + 1);
+      });
+      const multipleSameUser = Array.from(userStoreMap.values()).filter(count => count >= 2).length;
+      
       return {
         pending: items.filter(i => i.submission_status === 'pending_review').length,
         approved: items.filter(i => i.submission_status === 'approved').length,
         rejected: items.filter(i => i.submission_status === 'rejected').length,
         autoApproved: items.filter(i => i.submission_status === 'auto_approved').length,
         highRisk: items.filter(i => (i.risk_score || 0) >= 50).length,
+        pendingOld,
+        multipleSameUser,
         total: items.length,
       };
     },

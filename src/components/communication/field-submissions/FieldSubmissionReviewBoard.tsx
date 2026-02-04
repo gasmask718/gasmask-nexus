@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// FIELD SUBMISSION REVIEW BOARD
+// FIELD ACTIVITY REVIEW BOARD (GOVERNANCE-GRADE)
 // Admin dashboard for reviewing all field-user actions
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -7,7 +7,8 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Table, 
   TableBody, 
@@ -17,13 +18,6 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -31,7 +25,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import { 
   CheckCircle, 
   XCircle, 
@@ -39,12 +39,15 @@ import {
   AlertTriangle,
   Eye,
   RefreshCw,
-  Filter,
   User,
   Store,
-  FileText
+  MapPin,
+  Smartphone,
+  Monitor,
+  MessageSquare,
+  Undo2,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { 
   useFieldSubmissions, 
   useFieldSubmissionStats,
@@ -55,21 +58,33 @@ import {
   getStatusColor,
   type FieldSubmission,
   type FieldSubmissionStatus,
-  type FieldEntityType,
 } from '@/hooks/useFieldSubmissions';
 import { Link } from 'react-router-dom';
+import { SubmissionFilters, type SubmissionFiltersState } from './SubmissionFilters';
+import { SubmissionDiffView } from './SubmissionDiffView';
+import { RiskBadge } from './RiskBadge';
+import { cn } from '@/lib/utils';
 
 export function FieldSubmissionReviewBoard() {
-  const [statusFilter, setStatusFilter] = useState<FieldSubmissionStatus | 'all'>('all');
-  const [entityFilter, setEntityFilter] = useState<FieldEntityType | 'all'>('all');
+  const [filters, setFilters] = useState<SubmissionFiltersState>({
+    search: '',
+    status: 'all',
+    entityType: 'all',
+    timeRange: 'all',
+    quickFilter: null,
+  });
   const [selectedSubmission, setSelectedSubmission] = useState<FieldSubmission | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useFieldSubmissionStats();
   const { data: submissions, isLoading, refetch } = useFieldSubmissions({
-    status: statusFilter === 'all' ? undefined : statusFilter,
-    entityType: entityFilter === 'all' ? undefined : entityFilter,
+    status: filters.status === 'all' ? undefined : filters.status,
+    entityType: filters.entityType === 'all' ? undefined : filters.entityType,
+    search: filters.search || undefined,
+    timeRange: filters.timeRange,
+    quickFilter: filters.quickFilter,
   });
 
   const approveMutation = useApproveSubmission();
@@ -78,6 +93,7 @@ export function FieldSubmissionReviewBoard() {
   const handleApprove = async (id: string) => {
     await approveMutation.mutateAsync(id);
     setSelectedSubmission(null);
+    setDetailSheetOpen(false);
   };
 
   const handleReject = async () => {
@@ -89,6 +105,12 @@ export function FieldSubmissionReviewBoard() {
     setRejectDialogOpen(false);
     setRejectionReason('');
     setSelectedSubmission(null);
+    setDetailSheetOpen(false);
+  };
+
+  const openDetail = (sub: FieldSubmission) => {
+    setSelectedSubmission(sub);
+    setDetailSheetOpen(true);
   };
 
   const statCards = [
@@ -122,9 +144,23 @@ export function FieldSubmissionReviewBoard() {
       icon: AlertTriangle, 
       color: 'text-orange-500',
       bgColor: 'bg-orange-500/10',
-      filter: 'all' as const,
+      isQuickFilter: true,
     },
   ];
+
+  const getSourceIcon = (source: string | null) => {
+    switch (source) {
+      case 'mobile':
+      case 'driver_portal':
+      case 'biker_portal':
+        return <Smartphone className="h-3 w-3" />;
+      case 'desktop':
+      case 'admin':
+        return <Monitor className="h-3 w-3" />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -146,22 +182,39 @@ export function FieldSubmissionReviewBoard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
-          const isActive = statusFilter === stat.filter;
+          const isActive = stat.isQuickFilter 
+            ? filters.quickFilter === 'high_risk'
+            : filters.status === stat.filter;
           return (
             <Card 
               key={stat.label}
-              className={`cursor-pointer transition-all hover:shadow-md ${
-                isActive ? 'ring-2 ring-primary' : ''
-              }`}
-              onClick={() => setStatusFilter(stat.filter === 'all' ? 'all' : stat.filter)}
+              className={cn(
+                "cursor-pointer transition-all hover:shadow-md",
+                isActive && "ring-2 ring-primary"
+              )}
+              onClick={() => {
+                if (stat.isQuickFilter) {
+                  setFilters(f => ({ 
+                    ...f, 
+                    quickFilter: f.quickFilter === 'high_risk' ? null : 'high_risk',
+                    status: 'all'
+                  }));
+                } else {
+                  setFilters(f => ({ 
+                    ...f, 
+                    status: f.status === stat.filter ? 'all' : stat.filter!,
+                    quickFilter: null
+                  }));
+                }
+              }}
             >
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-full ${stat.bgColor}`}>
-                    <Icon className={`h-5 w-5 ${stat.color}`} />
+                  <div className={cn("p-2 rounded-full", stat.bgColor)}>
+                    <Icon className={cn("h-5 w-5", stat.color)} />
                   </div>
                   <div>
-                    <div className={`text-2xl font-bold ${stat.color}`}>
+                    <div className={cn("text-2xl font-bold", stat.color)}>
                       {statsLoading ? '...' : stat.value}
                     </div>
                     <div className="text-sm text-muted-foreground">{stat.label}</div>
@@ -173,66 +226,28 @@ export function FieldSubmissionReviewBoard() {
         })}
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Filters:</span>
-            </div>
-            <Select 
-              value={statusFilter} 
-              onValueChange={(v) => setStatusFilter(v as FieldSubmissionStatus | 'all')}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending_review">Pending Review</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-                <SelectItem value="auto_approved">Auto-Approved</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select 
-              value={entityFilter} 
-              onValueChange={(v) => setEntityFilter(v as FieldEntityType | 'all')}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Entity Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="brand_sticker">Brand Stickers</SelectItem>
-                <SelectItem value="tube_inventory">Tube Inventory</SelectItem>
-                <SelectItem value="invoice">Invoices</SelectItem>
-                <SelectItem value="order_note">Order Notes</SelectItem>
-                <SelectItem value="visit_log">Visit Logs</SelectItem>
-                <SelectItem value="store_update">Store Updates</SelectItem>
-              </SelectContent>
-            </Select>
-            {(statusFilter !== 'all' || entityFilter !== 'all') && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => {
-                  setStatusFilter('all');
-                  setEntityFilter('all');
-                }}
-              >
-                Clear Filters
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Advanced Filters */}
+      <SubmissionFilters 
+        filters={filters} 
+        onChange={setFilters}
+        stats={{
+          highRisk: stats?.highRisk || 0,
+          pendingOld: stats?.pendingOld || 0,
+          multipleSameUser: stats?.multipleSameUser || 0,
+        }}
+      />
 
       {/* Submissions Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Submissions ({submissions?.length || 0})</CardTitle>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle>Submissions ({submissions?.length || 0})</CardTitle>
+            {filters.quickFilter && (
+              <Badge variant="secondary">
+                Filtered: {filters.quickFilter.replace(/_/g, ' ')}
+              </Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -242,202 +257,337 @@ export function FieldSubmissionReviewBoard() {
               No submissions found
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead>Submitter</TableHead>
-                  <TableHead>Store</TableHead>
-                  <TableHead>Entity</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Risk</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {submissions.map((sub) => (
-                  <TableRow key={sub.id}>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(new Date(sub.created_at), { addSuffix: true })}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <div className="font-medium">{sub.submitter_name}</div>
-                          <div className="text-xs text-muted-foreground capitalize">
-                            {sub.submitted_by_role}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[140px]">Timestamp</TableHead>
+                    <TableHead>Submitter</TableHead>
+                    <TableHead>Store</TableHead>
+                    <TableHead>Entity</TableHead>
+                    <TableHead>Changes</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Risk</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {submissions.map((sub) => (
+                    <TableRow 
+                      key={sub.id}
+                      className={cn(
+                        "cursor-pointer hover:bg-muted/50",
+                        (sub.risk_score || 0) >= 50 && "bg-orange-500/5"
+                      )}
+                      onClick={() => openDetail(sub)}
+                    >
+                      <TableCell className="text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          {getSourceIcon(sub.submission_source)}
+                          <span>{formatDistanceToNow(new Date(sub.created_at), { addSuffix: true })}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <div className="font-medium text-sm">{sub.submitter_name}</div>
+                            <div className="text-xs text-muted-foreground capitalize">
+                              {sub.submitted_by_role}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Link 
-                        to={`/stores/${sub.store_id}`}
-                        className="flex items-center gap-2 hover:underline"
-                      >
-                        <Store className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{sub.store_name}</span>
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {getEntityTypeLabel(sub.entity_type)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm capitalize">
-                        {getActionTypeLabel(sub.action_type)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(sub.submission_status)}>
-                        {sub.submission_status.replace('_', ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {(sub.risk_score || 0) >= 50 ? (
-                        <Badge variant="destructive">{sub.risk_score}</Badge>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">
-                          {sub.risk_score || 0}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedSubmission(sub)}
+                      </TableCell>
+                      <TableCell>
+                        <Link 
+                          to={`/stores/${sub.store_id}`}
+                          className="flex items-start gap-2 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {sub.submission_status === 'pending_review' && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-green-600 hover:text-green-700"
-                              onClick={() => handleApprove(sub.id)}
-                              disabled={approveMutation.isPending}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => {
-                                setSelectedSubmission(sub);
-                                setRejectDialogOpen(true);
-                              }}
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          </>
+                          <Store className="h-4 w-4 text-muted-foreground mt-0.5" />
+                          <div>
+                            <div className="text-sm font-medium">{sub.store_name}</div>
+                            {sub.store_address && (
+                              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {sub.store_address.substring(0, 30)}...
+                              </div>
+                            )}
+                          </div>
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <Badge variant="outline" className="text-xs">
+                            {getEntityTypeLabel(sub.entity_type)}
+                          </Badge>
+                          <div className="text-xs text-muted-foreground">
+                            {getActionTypeLabel(sub.action_type)}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {sub.changed_fields && sub.changed_fields.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 max-w-[150px]">
+                            {sub.changed_fields.slice(0, 3).map(field => (
+                              <Badge 
+                                key={field} 
+                                variant="secondary" 
+                                className="text-xs px-1.5 py-0"
+                              >
+                                {field.replace(/_/g, ' ')}
+                              </Badge>
+                            ))}
+                            {sub.changed_fields.length > 3 && (
+                              <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                +{sub.changed_fields.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
                         )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(sub.submission_status)}>
+                          {sub.submission_status.replace('_', ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <RiskBadge 
+                          score={sub.risk_score} 
+                          reasons={sub.risk_reasons}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDetail(sub);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {sub.submission_status === 'pending_review' && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-500/10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleApprove(sub.id);
+                                }}
+                                disabled={approveMutation.isPending}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedSubmission(sub);
+                                  setRejectDialogOpen(true);
+                                }}
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Detail Dialog */}
-      <Dialog 
-        open={!!selectedSubmission && !rejectDialogOpen} 
-        onOpenChange={(open) => !open && setSelectedSubmission(null)}
-      >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Submission Details</DialogTitle>
-            <DialogDescription>
+      {/* Detail Sheet (Side Panel) */}
+      <Sheet open={detailSheetOpen} onOpenChange={setDetailSheetOpen}>
+        <SheetContent className="sm:max-w-xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              Submission Details
+              {selectedSubmission && (
+                <Badge className={getStatusColor(selectedSubmission.submission_status)}>
+                  {selectedSubmission.submission_status.replace('_', ' ')}
+                </Badge>
+              )}
+            </SheetTitle>
+            <SheetDescription>
               Review the changes made by the field user
-            </DialogDescription>
-          </DialogHeader>
+            </SheetDescription>
+          </SheetHeader>
+          
           {selectedSubmission && (
-            <div className="space-y-4">
+            <div className="mt-6 space-y-6">
+              {/* Context Section */}
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Submitter</label>
-                  <p className="font-medium">{selectedSubmission.submitter_name}</p>
-                  <p className="text-sm text-muted-foreground capitalize">
-                    {selectedSubmission.submitted_by_role}
-                  </p>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Submitter
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{selectedSubmission.submitter_name}</p>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {selectedSubmission.submitted_by_role}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Store</label>
-                  <p className="font-medium">{selectedSubmission.store_name}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Store
+                  </label>
+                  <div className="flex items-start gap-2">
+                    <Store className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <Link 
+                        to={`/stores/${selectedSubmission.store_id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {selectedSubmission.store_name}
+                      </Link>
+                      {selectedSubmission.store_address && (
+                        <p className="text-xs text-muted-foreground">
+                          {selectedSubmission.store_address}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Entity</label>
-                  <p className="font-medium">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Entity
+                  </label>
+                  <Badge variant="outline">
                     {getEntityTypeLabel(selectedSubmission.entity_type)}
-                  </p>
+                  </Badge>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Action</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Action
+                  </label>
                   <p className="font-medium capitalize">
                     {getActionTypeLabel(selectedSubmission.action_type)}
                   </p>
                 </div>
-              </div>
-
-              {selectedSubmission.payload_before && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Before</label>
-                  <pre className="mt-1 p-3 bg-muted rounded-md text-sm overflow-auto max-h-40">
-                    {JSON.stringify(selectedSubmission.payload_before, null, 2)}
-                  </pre>
-                </div>
-              )}
-
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">After (Changes)</label>
-                <pre className="mt-1 p-3 bg-muted rounded-md text-sm overflow-auto max-h-40">
-                  {JSON.stringify(selectedSubmission.payload_after, null, 2)}
-                </pre>
-              </div>
-
-              {selectedSubmission.rejection_reason && (
-                <div>
-                  <label className="text-sm font-medium text-destructive">Rejection Reason</label>
-                  <p className="mt-1 p-3 bg-destructive/10 rounded-md text-sm">
-                    {selectedSubmission.rejection_reason}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Submitted
+                  </label>
+                  <p className="text-sm">
+                    {format(new Date(selectedSubmission.created_at), 'PPp')}
                   </p>
                 </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Risk Score
+                  </label>
+                  <RiskBadge 
+                    score={selectedSubmission.risk_score} 
+                    reasons={selectedSubmission.risk_reasons}
+                    showLabel
+                  />
+                </div>
+              </div>
+
+              {/* Risk Reasons */}
+              {selectedSubmission.risk_reasons && selectedSubmission.risk_reasons.length > 0 && (
+                <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                  <div className="flex items-center gap-2 text-sm font-medium text-orange-600 mb-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Risk Factors
+                  </div>
+                  <ul className="text-sm space-y-1">
+                    {selectedSubmission.risk_reasons.map((reason, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-orange-500">•</span>
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
+
+              {/* Diff View */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Changes
+                </label>
+                <SubmissionDiffView 
+                  before={selectedSubmission.payload_before}
+                  after={selectedSubmission.payload_after}
+                  changedFields={selectedSubmission.changed_fields || undefined}
+                />
+              </div>
+
+              {/* Rejection Reason (if rejected) */}
+              {selectedSubmission.rejection_reason && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <div className="flex items-center gap-2 text-sm font-medium text-destructive mb-1">
+                    <XCircle className="h-4 w-4" />
+                    Rejection Reason
+                  </div>
+                  <p className="text-sm">{selectedSubmission.rejection_reason}</p>
+                </div>
+              )}
+
+              {/* Admin Notes */}
+              {selectedSubmission.admin_notes && (
+                <div className="p-3 rounded-lg bg-muted border">
+                  <div className="flex items-center gap-2 text-sm font-medium mb-1">
+                    <MessageSquare className="h-4 w-4" />
+                    Admin Notes
+                  </div>
+                  <p className="text-sm text-muted-foreground">{selectedSubmission.admin_notes}</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-4 border-t">
+                {selectedSubmission.submission_status === 'pending_review' && (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setRejectDialogOpen(true)}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Reject
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      onClick={() => handleApprove(selectedSubmission.id)}
+                      disabled={approveMutation.isPending}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Approve
+                    </Button>
+                  </>
+                )}
+                {selectedSubmission.submission_status === 'approved' && !selectedSubmission.is_rolled_back && (
+                  <Button variant="outline" className="flex-1" disabled>
+                    <Undo2 className="h-4 w-4 mr-2" />
+                    Rollback (Coming Soon)
+                  </Button>
+                )}
+              </div>
             </div>
           )}
-          <DialogFooter>
-            {selectedSubmission?.submission_status === 'pending_review' && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setRejectDialogOpen(true);
-                  }}
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Reject
-                </Button>
-                <Button
-                  onClick={() => handleApprove(selectedSubmission.id)}
-                  disabled={approveMutation.isPending}
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Approve
-                </Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* Reject Dialog */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
@@ -458,7 +608,7 @@ export function FieldSubmissionReviewBoard() {
             <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
               Cancel
             </Button>
-            <Button
+            <Button 
               variant="destructive"
               onClick={handleReject}
               disabled={!rejectionReason.trim() || rejectMutation.isPending}
