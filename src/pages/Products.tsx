@@ -3,8 +3,28 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Package, DollarSign, TrendingUp, RefreshCw, AlertCircle, Plus, Edit } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Package, DollarSign, TrendingUp, RefreshCw, AlertCircle, Plus, Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import { ProductFormSheet } from '@/components/products/ProductFormSheet';
+import { useDeleteProduct } from '@/services/inventory';
+import { toast } from 'sonner';
 
 interface Product {
   id: string;
@@ -17,6 +37,7 @@ interface Product {
   suggested_retail_price: number;
   is_active: boolean;
   status: string | null;
+  is_deleted?: boolean;
   brand: {
     name: string;
     color: string;
@@ -30,6 +51,12 @@ const Products = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editProductId, setEditProductId] = useState<string | undefined>();
   const [retryCount, setRetryCount] = useState(0);
+  
+  // Delete state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const deleteProduct = useDeleteProduct();
 
   const fetchProducts = useCallback(async (isRetry = false) => {
     if (!isRetry) setLoading(true);
@@ -49,8 +76,10 @@ const Products = () => {
           suggested_retail_price,
           is_active,
           status,
+          is_deleted,
           brand:brands(name, color)
         `)
+        .eq('is_deleted', false)
         .order('name');
 
       if (fetchError) {
@@ -94,6 +123,27 @@ const Products = () => {
 
   const handleSuccess = () => {
     fetchProducts();
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, product: Product) => {
+    e.stopPropagation();
+    setProductToDelete(product);
+    setDeleteConfirmText('');
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!productToDelete || deleteConfirmText !== 'DELETE') return;
+    
+    try {
+      await deleteProduct.mutateAsync(productToDelete.id);
+      setDeleteModalOpen(false);
+      setProductToDelete(null);
+      setDeleteConfirmText('');
+      fetchProducts();
+    } catch (err) {
+      console.error('Delete failed:', err);
+    }
   };
 
   const getStatusBadge = (product: Product) => {
@@ -176,17 +226,36 @@ const Products = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     {getStatusBadge(product)}
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenEdit(product.id);
-                      }}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-popover border-border z-50">
+                        <DropdownMenuItem 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEdit(product.id);
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Product
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                          onClick={(e) => handleDeleteClick(e, product)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Product
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </CardHeader>
@@ -245,6 +314,45 @@ const Products = () => {
         productId={editProductId}
         onSuccess={handleSuccess}
       />
+
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Delete Product?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>
+                This will remove <strong>"{productToDelete?.name}"</strong> from active product lists. 
+                Existing orders with this product remain unchanged.
+              </p>
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                <p className="text-sm font-medium text-destructive mb-2">
+                  Type DELETE to confirm:
+                </p>
+                <Input
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                  placeholder="Type DELETE"
+                  className="font-mono"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmText('')}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={deleteConfirmText !== 'DELETE' || deleteProduct.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteProduct.isPending ? 'Deleting...' : 'Delete Product'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
