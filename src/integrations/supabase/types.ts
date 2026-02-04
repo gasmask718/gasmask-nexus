@@ -15758,6 +15758,13 @@ export type Database = {
             foreignKeyName: "contact_interactions_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "v_contact_cadence_intelligence"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_interactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "v_contact_responsiveness_summary"
             referencedColumns: ["contact_id"]
           },
@@ -30054,6 +30061,13 @@ export type Database = {
             foreignKeyName: "outreach_plan_items_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "v_contact_cadence_intelligence"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "outreach_plan_items_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "v_contact_responsiveness_summary"
             referencedColumns: ["contact_id"]
           },
@@ -39049,9 +39063,12 @@ export type Database = {
       }
       store_contacts: {
         Row: {
+          cadence_status: string | null
+          cadence_updated_at: string | null
           can_receive_sms: boolean | null
           created_at: string | null
           email: string | null
+          escalation_flag: boolean | null
           id: string
           influence_level: string | null
           is_primary: boolean | null
@@ -39079,9 +39096,12 @@ export type Database = {
           verified_by: string | null
         }
         Insert: {
+          cadence_status?: string | null
+          cadence_updated_at?: string | null
           can_receive_sms?: boolean | null
           created_at?: string | null
           email?: string | null
+          escalation_flag?: boolean | null
           id?: string
           influence_level?: string | null
           is_primary?: boolean | null
@@ -39109,9 +39129,12 @@ export type Database = {
           verified_by?: string | null
         }
         Update: {
+          cadence_status?: string | null
+          cadence_updated_at?: string | null
           can_receive_sms?: boolean | null
           created_at?: string | null
           email?: string | null
+          escalation_flag?: boolean | null
           id?: string
           influence_level?: string | null
           is_primary?: boolean | null
@@ -49026,6 +49049,48 @@ export type Database = {
         }
         Relationships: []
       }
+      v_contact_cadence_intelligence: {
+        Row: {
+          cadence_status: string | null
+          cadence_updated_at: string | null
+          contact_id: string | null
+          contact_name: string | null
+          contact_role: string | null
+          created_at: string | null
+          days_since_last_touch: number | null
+          escalation_flag: boolean | null
+          is_primary: boolean | null
+          last_call_answered_at: string | null
+          last_call_attempt_at: string | null
+          last_responded_at: string | null
+          last_text_received_at: string | null
+          last_text_sent_at: string | null
+          last_touch_at: string | null
+          phone: string | null
+          responsive_by_call: boolean | null
+          responsive_by_text: boolean | null
+          responsiveness_status: string | null
+          store_address: string | null
+          store_city: string | null
+          store_id: string | null
+          store_name: string | null
+          store_state: string | null
+          suggested_action: string | null
+          total_calls_answered: number | null
+          total_calls_attempted: number | null
+          total_texts_received: number | null
+          total_texts_sent: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_contact_responsiveness_summary: {
         Row: {
           call_answer_rate: number | null
@@ -49615,6 +49680,7 @@ export type Database = {
         Args: { p_days_old?: number }
         Returns: number
       }
+      compute_contact_cadence_status: { Args: never; Returns: undefined }
       compute_device_reliability: {
         Args: { p_device_id: string }
         Returns: number

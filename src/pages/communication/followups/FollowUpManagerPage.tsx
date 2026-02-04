@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RefreshCw, Clock, AlertTriangle, CheckCircle, Zap, Search, Filter, Calendar, Phone, MessageSquare, User, Building2, Layers } from 'lucide-react';
+import { RefreshCw, Clock, AlertTriangle, CheckCircle, Zap, Search, Filter, Calendar, Phone, MessageSquare, User, Building2, Layers, Users } from 'lucide-react';
 import {
   usePendingFollowUps,
   useDueTodayFollowUps,
@@ -22,6 +22,9 @@ import { FollowUpCard } from '@/components/communication/followups/FollowUpCard'
 import { RescheduleDialog } from '@/components/communication/followups/RescheduleDialog';
 import { triggerFollowUp as triggerFollowUpAction } from '@/services/followUpTriggerService';
 import { toast } from 'sonner';
+import { ContactCadenceBoard, CadenceQuickStats } from '@/components/communication/cadence';
+import { useContactCadenceStats } from '@/hooks/useContactCadence';
+import type { CadenceFilter } from '@/hooks/useContactCadence';
 
 const REASON_OPTIONS = [
   { value: 'all', label: 'All Reasons' },
@@ -50,14 +53,16 @@ const SORT_OPTIONS = [
 ];
 
 export default function FollowUpManagerPage() {
-  const [activeTab, setActiveTab] = useState('pending');
+  const [activeTab, setActiveTab] = useState('cadence');
   const [searchQuery, setSearchQuery] = useState('');
   const [reasonFilter, setReasonFilter] = useState('all');
   const [actionFilter, setActionFilter] = useState('all');
   const [sortBy, setSortBy] = useState('due_at');
   const [rescheduleItem, setRescheduleItem] = useState<FollowUpQueueItem | null>(null);
+  const [cadenceFilter, setCadenceFilter] = useState<CadenceFilter>('all');
 
   const { data: stats } = useFollowUpQueueStats();
+  const { data: cadenceStats } = useContactCadenceStats();
   const { data: pendingFollowUps, isLoading: pendingLoading } = usePendingFollowUps();
   const { data: dueTodayFollowUps, isLoading: dueTodayLoading } = useDueTodayFollowUps();
   const { data: overdueFollowUps, isLoading: overdueLoading } = useOverdueFollowUps();
@@ -329,6 +334,15 @@ export default function FollowUpManagerPage() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+          <TabsTrigger value="cadence" className="gap-1">
+            <Users className="h-3 w-3" />
+            Contact Cadence
+            {(cadenceStats?.overdue7Days || 0) + (cadenceStats?.overdue14Days || 0) > 0 && (
+              <Badge variant="destructive" className="ml-1">
+                {(cadenceStats?.overdue7Days || 0) + (cadenceStats?.overdue14Days || 0)}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="pending" className="gap-1">
             <Clock className="h-3 w-3" />
             Pending
@@ -365,6 +379,18 @@ export default function FollowUpManagerPage() {
             By Business
           </TabsTrigger>
         </TabsList>
+
+        {/* NEW: Contact Cadence Tab */}
+        <TabsContent value="cadence" className="mt-4 space-y-6">
+          <CadenceQuickStats 
+            onFilterChange={setCadenceFilter} 
+            activeFilter={cadenceFilter} 
+          />
+          <ContactCadenceBoard 
+            externalFilter={cadenceFilter} 
+            onFilterChange={setCadenceFilter} 
+          />
+        </TabsContent>
 
         <TabsContent value="pending" className="mt-4">
           {renderFollowUpList(pendingFollowUps, pendingLoading, 'No pending follow-ups')}
