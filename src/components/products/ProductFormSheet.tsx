@@ -255,6 +255,17 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
     }
   }, [existingProduct, isEditMode, open]);
 
+  /**
+   * ⚠️ PROFIT VISIBILITY WARNING ⚠️
+   * Profit, cost, and margin fields must NEVER be rendered in:
+   * - Invoices (UI or PDF)
+   * - Store profiles or portals
+   * - Customer-facing views
+   * - Driver/Ambassador/Biker portals
+   * 
+   * These calculations are for INTERNAL PRODUCT MANAGEMENT ONLY.
+   * Finance dashboards use separate, role-gated queries.
+   */
   const retailProfit = useMemo(() => {
     return (form.suggested_retail_price || 0) - (form.cost || 0);
   }, [form.suggested_retail_price, form.cost]);
@@ -281,6 +292,18 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
     if (!form.street_price) return 0;
     return (streetProfit / form.street_price) * 100;
   }, [streetProfit, form.street_price]);
+
+  // GUARDRAIL 3: Street price intentionality warnings
+  const streetPriceWarning = useMemo(() => {
+    if (!form.street_price || form.street_price === 0) return null;
+    if (form.cost > 0 && form.street_price < form.cost) {
+      return { type: 'error', message: 'Street price is below cost — you will lose money' };
+    }
+    if (form.suggested_retail_price > 0 && form.street_price < form.suggested_retail_price) {
+      return { type: 'warning', message: 'Street price below standard retail margin' };
+    }
+    return null;
+  }, [form.street_price, form.cost, form.suggested_retail_price]);
 
   const updateField = <K extends keyof ProductForm>(field: K, value: ProductForm[K]) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -542,6 +565,17 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                         <p className="text-xs text-muted-foreground">Your cost to make/buy</p>
                       </div>
                     </div>
+
+                    {/* GUARDRAIL 3: Street Price Warning */}
+                    {streetPriceWarning && (
+                      <Alert variant={streetPriceWarning.type === 'error' ? 'destructive' : 'default'} 
+                             className={streetPriceWarning.type === 'warning' ? 'border-amber-500 bg-amber-500/10' : ''}>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription className={streetPriceWarning.type === 'warning' ? 'text-amber-700 dark:text-amber-400' : ''}>
+                          {streetPriceWarning.message}
+                        </AlertDescription>
+                      </Alert>
+                    )}
 
                     <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Profit Margins by Channel</p>

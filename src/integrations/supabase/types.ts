@@ -49074,6 +49074,95 @@ export type Database = {
         }
         Relationships: []
       }
+      v_invoice_line_items_safe: {
+        Row: {
+          brand: string | null
+          brand_id: string | null
+          cost_per_unit_at_sale: number | null
+          created_at: string | null
+          id: string | null
+          invoice_id: string | null
+          product_id: string | null
+          product_name: string | null
+          profit_at_sale: number | null
+          quantity: number | null
+          sale_channel: string | null
+          sale_unit: string | null
+          total: number | null
+          tubes_equivalent: number | null
+          unit_price: number | null
+          unit_type: string | null
+          units_per_box_snapshot: number | null
+        }
+        Insert: {
+          brand?: string | null
+          brand_id?: string | null
+          cost_per_unit_at_sale?: never
+          created_at?: string | null
+          id?: string | null
+          invoice_id?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          profit_at_sale?: never
+          quantity?: number | null
+          sale_channel?: string | null
+          sale_unit?: string | null
+          total?: number | null
+          tubes_equivalent?: number | null
+          unit_price?: number | null
+          unit_type?: string | null
+          units_per_box_snapshot?: number | null
+        }
+        Update: {
+          brand?: string | null
+          brand_id?: string | null
+          cost_per_unit_at_sale?: never
+          created_at?: string | null
+          id?: string | null
+          invoice_id?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          profit_at_sale?: never
+          quantity?: number | null
+          sale_channel?: string | null
+          sale_unit?: string | null
+          total?: number | null
+          tubes_equivalent?: number | null
+          unit_price?: number | null
+          unit_type?: string | null
+          units_per_box_snapshot?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
       v_invoice_profit_by_channel: {
         Row: {
           avg_margin_pct: number | null
@@ -49753,6 +49842,7 @@ export type Database = {
           priority: number
         }[]
       }
+      has_finance_access: { Args: { _user_id: string }; Returns: boolean }
       has_org_role: {
         Args: {
           _org_id: string
