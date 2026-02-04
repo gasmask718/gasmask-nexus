@@ -10,6 +10,7 @@ export interface ProductInput {
   status?: string;
   suggested_retail_price?: number;
   wholesale_price?: number;
+  street_price?: number;
   cost?: number;
   min_order_qty?: number;
   bulk_discount_rules?: any[];
@@ -103,6 +104,7 @@ export async function createProduct(input: ProductInput): Promise<{ id: string }
     status: input.status || 'active',
     suggested_retail_price: input.suggested_retail_price ?? 0,
     wholesale_price: input.wholesale_price ?? 0,
+    street_price: input.street_price ?? null,
     cost: input.cost ?? 0,
     min_order_qty: input.min_order_qty ?? 1,
     bulk_discount_rules: input.bulk_discount_rules ?? [],
@@ -189,6 +191,7 @@ export async function updateProduct(productId: string, input: Partial<ProductInp
   }
   if (input.suggested_retail_price !== undefined) payload.suggested_retail_price = input.suggested_retail_price;
   if (input.wholesale_price !== undefined) payload.wholesale_price = input.wholesale_price;
+  if (input.street_price !== undefined) payload.street_price = input.street_price;
   if (input.cost !== undefined) payload.cost = input.cost;
   if (input.min_order_qty !== undefined) payload.min_order_qty = input.min_order_qty;
   if (input.bulk_discount_rules !== undefined) payload.bulk_discount_rules = input.bulk_discount_rules;

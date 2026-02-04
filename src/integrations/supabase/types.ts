@@ -34879,6 +34879,7 @@ export type Database = {
           shipping_from_state: string | null
           status: string | null
           store_price: number | null
+          street_price: number | null
           unit_type: string | null
           updated_at: string | null
           weight_oz: number | null
@@ -34900,6 +34901,7 @@ export type Database = {
           shipping_from_state?: string | null
           status?: string | null
           store_price?: number | null
+          street_price?: number | null
           unit_type?: string | null
           updated_at?: string | null
           weight_oz?: number | null
@@ -34921,6 +34923,7 @@ export type Database = {
           shipping_from_state?: string | null
           status?: string | null
           store_price?: number | null
+          street_price?: number | null
           unit_type?: string | null
           updated_at?: string | null
           weight_oz?: number | null
