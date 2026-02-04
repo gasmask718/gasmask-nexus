@@ -50031,6 +50031,7 @@ export type Database = {
           source: string
         }[]
       }
+      get_current_user_role: { Args: never; Returns: string }
       get_intent_queue_health: { Args: never; Returns: Json }
       get_managed_office_ids: { Args: { _user_id: string }; Returns: string[] }
       get_payout_statement: { Args: { p_batch_id: string }; Returns: Json }
@@ -50121,7 +50122,9 @@ export type Database = {
       is_elevated_user:
         | { Args: never; Returns: boolean }
         | { Args: { _user_id: string }; Returns: boolean }
-      is_field_role: { Args: { _user_id: string }; Returns: boolean }
+      is_field_role:
+        | { Args: { _user_id: string }; Returns: boolean }
+        | { Args: { p_role: string }; Returns: boolean }
       is_live_mode_authorized: {
         Args: { p_business_id: string; p_route_id?: string }
         Returns: boolean
@@ -50166,6 +50169,16 @@ export type Database = {
           p_metadata?: Json
         }
         Returns: string
+      }
+      log_field_governance_event: {
+        Args: {
+          p_bypassed: boolean
+          p_operation: string
+          p_role: string
+          p_table_name: string
+          p_user_id: string
+        }
+        Returns: undefined
       }
       log_portal_security_event: {
         Args: {
@@ -50287,6 +50300,10 @@ export type Database = {
           source: string
           table_name: string
         }[]
+      }
+      set_governance_bypass: {
+        Args: { p_authorized: boolean }
+        Returns: undefined
       }
       set_phase5_mode: {
         Args: { p_enabled?: boolean; p_kill_switch?: boolean; p_mode: string }
