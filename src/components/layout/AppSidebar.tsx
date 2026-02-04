@@ -194,7 +194,7 @@ export default function AppSidebar() {
               { path: '/communication', label: 'Command Center', emoji: '🎛️' },
               { path: '/communication/inbox', label: 'Inbox', emoji: '📥' },
               { path: '/communication/follow-up', label: 'Follow-Up Manager', emoji: '⏰' },
-              ...(isAdmin ? [{ path: '/communication/field-submissions', label: 'Field Submissions', emoji: '📋' }] : []),
+              ...(isAdmin ? [{ path: '/communication/field-submissions', label: 'Field Activity Review', emoji: '📋' }] : []),
               { path: '/communication/dialer', label: 'Dialer', emoji: '📱' },
               { path: '/communication/live', label: 'Live Calls', emoji: '📞' },
               { path: '/communication/campaigns', label: 'Campaigns', emoji: '🚀' },
