@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 import { parseRLSError } from '@/lib/rls-error-handler';
-// Authoritative tube brands
+import { isFieldRole, getSubmissionSource, FieldRole } from '@/services/fieldGovernance/types';
 export const TUBE_BRANDS = [
   { id: 'gasmask', name: 'GasMask Bags', color: '#EF4444' },
   { id: 'gasmasktubes', name: 'GasMask Tubes', color: '#3B82F6' },
@@ -68,6 +70,8 @@ export function canEditField(role: TubeIntelRole, field: string): boolean {
  */
 export function useTubeIntelligence(storeId: string | null) {
   const { simulationMode } = useSimulationMode();
+  const { user } = useAuth();
+  const { role: userRole } = useUserRole();
   const queryClient = useQueryClient();
 
   const query = useQuery({
@@ -118,18 +122,30 @@ export function useTubeIntelligence(storeId: string | null) {
     },
   });
 
-  // Update a single field with role attribution
+  // Update a single field with role attribution and governance
   const updateField = useMutation({
     mutationFn: async (payload: TubeIntelUpdatePayload) => {
       const { id, store_id, brand_id, field, value, role } = payload;
+      const effectiveRole = role || userRole;
 
-      // Check if record exists
+      // Fetch current state for governance diff (if field user)
+      let payloadBefore: Record<string, unknown> | null = null;
+      if (id && user?.id && isFieldRole(effectiveRole)) {
+        const { data } = await supabase
+          .from('store_tube_inventory_status')
+          .select('*')
+          .eq('id', id)
+          .single();
+        payloadBefore = data as Record<string, unknown> | null;
+      }
+
+      // Execute the mutation
       if (id) {
         const { error } = await supabase
           .from('store_tube_inventory_status')
           .update({ 
             [field]: value,
-            last_updated_by_role: role || null,
+            last_updated_by_role: effectiveRole || null,
           })
           .eq('id', id);
 
@@ -144,15 +160,41 @@ export function useTubeIntelligence(storeId: string | null) {
             brand_id,
             brand_name: brand?.name || brand_id,
             [field]: value,
-            last_updated_by_role: role || null,
+            last_updated_by_role: effectiveRole || null,
             is_simulation: simulationMode,
           });
 
         if (error) throw error;
       }
+
+      // Create governance submission for field roles (after successful mutation)
+      if (user?.id && isFieldRole(effectiveRole)) {
+        const payloadAfter = { brand_id, field, value };
+        const insertData = {
+          submitted_by_user_id: user.id,
+          submitted_by_role: effectiveRole,
+          store_id,
+          entity_type: 'tube_inventory' as const,
+          entity_id: id || null,
+          action_type: id ? 'update' as const : 'create' as const,
+          payload_before: payloadBefore as unknown,
+          payload_after: payloadAfter as unknown,
+          submission_source: getSubmissionSource(effectiveRole),
+          submission_status: 'auto_approved' as const,
+          is_applied: true,
+        };
+
+        await supabase
+          .from('field_submissions')
+          // @ts-expect-error - columns match DB schema
+          .insert([insertData]);
+        
+        console.log(`✅ Field governance: tube_inventory ${id ? 'update' : 'create'} by ${effectiveRole}`);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tube-intelligence', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['field-submissions'] });
       toast.success('Updated');
     },
     onError: (error: Error) => {
