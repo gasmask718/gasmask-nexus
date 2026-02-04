@@ -133,7 +133,7 @@ export function FieldSubmissionReviewBoard() {
         <div>
           <h2 className="text-2xl font-bold">Field Activity Review</h2>
           <p className="text-muted-foreground">
-            Review and approve submissions from field teams
+            Review and approve actions submitted by drivers, bikers, and ambassadors
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
