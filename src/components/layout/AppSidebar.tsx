@@ -33,7 +33,7 @@ export default function AppSidebar() {
   ]);
 
   const userRole = profileData?.profile?.primary_role || 'admin';
-  const isAdmin = ['admin', 'ceo', 'va'].includes(userRole);
+  const isAdmin = ['owner', 'admin', 'ceo', 'va'].includes(userRole);
 
   const toggleSection = (sectionId: string) => {
     setOpenSections(prev =>
