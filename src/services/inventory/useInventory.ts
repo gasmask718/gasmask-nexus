@@ -87,7 +87,7 @@ export interface InventoryDashboardStats {
 // PRODUCTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function useProducts(params?: { businessId?: string; verticalId?: string; brandId?: string; search?: string }) {
+export function useProducts(params?: { businessId?: string; verticalId?: string; brandId?: string; search?: string; includeDeleted?: boolean }) {
   return useQuery({
     queryKey: ['products', params],
     queryFn: async () => {
@@ -95,6 +95,11 @@ export function useProducts(params?: { businessId?: string; verticalId?: string;
         .from('products')
         .select(`*, brand:brands(id, name, color)`)
         .order('name');
+
+      // Filter out deleted products by default
+      if (!params?.includeDeleted) {
+        query = query.eq('is_deleted', false);
+      }
 
       if (params?.businessId) {
         query = query.eq('business_id', params.businessId);
@@ -203,6 +208,41 @@ export function useUpdateProduct() {
     },
     onError: (error) => {
       toast.error(`Failed to update product: ${error.message}`);
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SOFT DELETE PRODUCT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export function useDeleteProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (productId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { data, error } = await supabase
+        .from('products')
+        .update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: user?.id,
+        })
+        .eq('id', productId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success('Product deleted');
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete product: ${error.message}`);
     },
   });
 }

@@ -27,6 +27,7 @@ import { DataTablePagination } from "@/components/crud/DataTablePagination";
 import { useCrudOperations } from "@/hooks/useCrudOperations";
 import { invoiceFields, orderFields } from "@/config/entityFieldConfigs";
 import { useBusinessLedger, useLedgerTotals, LedgerEntry } from "@/hooks/useBusinessLedger";
+import { ProfitAnalyticsCard } from "@/components/finance/ProfitAnalyticsCard";
 
 const PaymentReliabilityBadge = ({ score, tier }: { score: number; tier: string }) => {
   const stars = tier === 'elite' ? 5 : tier === 'solid' ? 4 : tier === 'middle' ? 3 : tier === 'concerning' ? 2 : 1;
@@ -440,9 +441,10 @@ export default function GrabbaFinance() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <div className="lg:col-span-3">
             {/* Tabs */}
-            <Tabs defaultValue="invoices" className="space-y-6">
+            <Tabs defaultValue="profit" className="space-y-6">
               <div className="flex items-center justify-between">
                 <TabsList className="bg-muted/50">
+                  <TabsTrigger value="profit">Profit Analytics</TabsTrigger>
                   <TabsTrigger value="invoices">All Invoices</TabsTrigger>
                   <TabsTrigger value="orders">Order Tables</TabsTrigger>
                   <TabsTrigger value="aging">Aging Report</TabsTrigger>
@@ -460,6 +462,13 @@ export default function GrabbaFinance() {
                   </div>
                 </div>
               </div>
+
+          {/* Profit Analytics Tab */}
+          <TabsContent value="profit">
+            <ProfitAnalyticsCard 
+              brandId={selectedBrand !== 'all' ? selectedBrand : undefined}
+            />
+          </TabsContent>
 
           {/* Invoices Tab - UNIFIED LEDGER */}
           <TabsContent value="invoices">
