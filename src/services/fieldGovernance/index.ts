@@ -32,6 +32,7 @@ export {
 export {
   submitFieldChange,
   governedFieldMutation,
+  GOVERNANCE_STRICT_MODE,
 } from './submitFieldChange';
 
 // React hooks

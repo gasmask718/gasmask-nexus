@@ -49,56 +49,6 @@ export interface FieldSubmission {
   reviewer_name?: string;
 }
 
-export interface CreateFieldSubmissionParams {
-  storeId: string;
-  entityType: FieldEntityType;
-  entityId?: string;
-  actionType: FieldActionType;
-  payloadBefore?: Record<string, unknown>;
-  payloadAfter: Record<string, unknown>;
-  userRole: 'driver' | 'biker' | 'ambassador';
-}
-
-/**
- * Create a field submission record (write-ahead log)
- * Called BEFORE or ALONGSIDE production writes
- */
-export function useCreateFieldSubmission() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: CreateFieldSubmissionParams) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const insertData: Database['public']['Tables']['field_submissions']['Insert'] = {
-        submitted_by_user_id: user.id,
-        submitted_by_role: params.userRole,
-        store_id: params.storeId,
-        entity_type: params.entityType,
-        entity_id: params.entityId || null,
-        action_type: params.actionType,
-        payload_before: params.payloadBefore as unknown as Database['public']['Tables']['field_submissions']['Insert']['payload_before'],
-        payload_after: params.payloadAfter as unknown as Database['public']['Tables']['field_submissions']['Insert']['payload_after'],
-        submission_status: 'pending_review',
-        is_applied: true,
-      };
-
-      const { data, error } = await supabase
-        .from('field_submissions')
-        .insert(insertData)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['field-submissions'] });
-    },
-  });
-}
-
 export interface FieldSubmissionFilters {
   status?: FieldSubmissionStatus;
   entityType?: FieldEntityType;

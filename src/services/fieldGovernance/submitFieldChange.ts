@@ -1,8 +1,17 @@
 /**
  * Submit Field Change - Core Governance Function
  * 
- * This is the ONLY way field mutations should occur.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * FIELD GOVERNANCE - SINGLE AUTHORITATIVE ENTRY POINT
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * This is the ONLY function that may insert into field_submissions.
  * Direct database writes from field roles are forbidden.
+ * 
+ * NON-NEGOTIABLE RULE:
+ * Any action performed by a driver, biker, or ambassador MUST first exist
+ * as a row in field_submissions. If the system allows a mutation without
+ * that row, the implementation is invalid.
  */
 
 import { supabase } from '@/integrations/supabase/client';
@@ -13,13 +22,25 @@ import {
   getSubmissionSource,
 } from './types';
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// GOVERNANCE MODE CONFIGURATION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * STRICT MODE: When true, field role submissions are PENDING ONLY.
+ * The actual mutation is NOT applied until admin approves.
+ */
+export const GOVERNANCE_STRICT_MODE = true;
+
 /**
  * Submit a field change through the governance pipeline.
  * 
  * This function:
  * 1. Creates a field_submissions record
- * 2. In current mode, auto-applies the change (can be changed to require review)
+ * 2. In STRICT mode, change is PENDING (not applied until admin approves)
  * 3. Returns the submission ID for tracking
+ * 
+ * IMPORTANT: This is the ONLY function that inserts into field_submissions.
  * 
  * @param payload - The field change payload
  * @param userId - The user ID of the submitter
@@ -102,9 +123,8 @@ export async function submitFieldChange(
 
     console.log(`✅ Field submission created: ${submission.id} (${payload.entity_type}/${payload.action_type})`);
 
-    // For now, we return pending_review status
-    // The actual mutation will be applied when admin approves
-    // OR we can auto-apply for low-risk changes (configurable)
+    // In STRICT mode, return pending_review - mutation NOT applied
+    // Admin must approve to apply the change
     return {
       success: true,
       submissionId: submission.id,
@@ -123,15 +143,17 @@ export async function submitFieldChange(
 }
 
 /**
- * Governed field mutation wrapper.
+ * Governed field mutation wrapper (STRICT MODE AWARE)
  * 
- * Wraps a mutation function to ensure it goes through governance.
- * Use this to wrap existing mutation logic.
+ * In STRICT mode:
+ * - Creates submission record with pending_review status
+ * - Does NOT execute mutationFn
+ * - Returns null result with pending status
  * 
  * @param payload - The field change payload
  * @param userId - The user ID of the submitter
  * @param role - The role of the submitter
- * @param mutationFn - The actual mutation function (only called if governance allows)
+ * @param mutationFn - The actual mutation function (only called if NOT strict mode)
  */
 export async function governedFieldMutation<T>(
   payload: FieldSubmissionPayload,
@@ -149,24 +171,19 @@ export async function governedFieldMutation<T>(
     };
   }
 
-  // In strict mode, we would stop here and wait for approval
-  // For now, we auto-execute the mutation (can be changed per policy)
-  
-  // Check if auto-apply is enabled (current default: yes)
-  const autoApply = true; // TODO: Make this configurable per entity_type/risk_score
-  
-  if (!autoApply) {
+  // In STRICT mode, do NOT execute mutation - wait for admin approval
+  if (GOVERNANCE_STRICT_MODE) {
+    console.log(`⏳ Field submission ${governanceResult.submissionId} awaiting admin approval (STRICT MODE)`);
     return {
       result: null,
       governance: governanceResult,
     };
   }
 
+  // Legacy mode only: auto-execute the mutation
   try {
-    // Execute the actual mutation
     const result = await mutationFn();
 
-    // Mark the submission as applied
     await supabase
       .from('field_submissions')
       .update({
