@@ -1,13 +1,14 @@
 import { Package, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { StoreKPISummary } from '@/hooks/useStoreTubeKPIBatch';
-import { getTubeBrandColor } from '@/constants/tubeColors';
+import { TUBE_BRAND_COLORS, getTubeBrandColor } from '@/constants/tubeColors';
 import { getColorStatusClasses } from '@/hooks/useStoreTubeKPI';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// STORE KPI BADGE (PER-BRAND BREAKDOWN)
-// Displays tube inventory per brand inline on Store Directory cards
-// ALL products visible - NO truncation
+// STORE KPI BADGE — CANONICAL RENDERER
+// ALWAYS renders ALL known brands — even if data is missing
+// NO truncation. NO hiding. Full operational visibility.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface StoreKPIBadgeProps {
@@ -15,35 +16,37 @@ interface StoreKPIBadgeProps {
   isLoading?: boolean;
 }
 
+// Canonical brand list — ALWAYS render all of these
+const ALL_TUBE_BRANDS = Object.entries(TUBE_BRAND_COLORS).map(([id, config]) => ({
+  brand_id: id,
+  brand_name: config.name,
+}));
+
 export function StoreKPIBadge({ summary, isLoading }: StoreKPIBadgeProps) {
+  // Loading state — show skeleton for all brands
   if (isLoading) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground animate-pulse">
-        <Package className="h-3 w-3" />
-        <span>Loading...</span>
+      <div className="space-y-2 pt-2">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Package className="h-3 w-3" />
+          <span className="font-medium">Tube Inventory</span>
+        </div>
+        <div className="space-y-1.5">
+          {ALL_TUBE_BRANDS.map(brand => (
+            <Skeleton key={brand.brand_id} className="h-12 w-full rounded-md" />
+          ))}
+        </div>
       </div>
     );
   }
 
-  // No data / not verified
-  if (!summary || !summary.verified) {
-    return (
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <AlertTriangle className="h-3 w-3" />
-        <span>KPI Missing</span>
-      </div>
-    );
-  }
+  // Build lookup map from existing KPI data
+  const kpiLookup = new Map(
+    (summary?.kpiRows || []).map(row => [row.brand_id, row])
+  );
 
-  // No tube inventory records
-  if (summary.brandCount === 0) {
-    return (
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Package className="h-3 w-3" />
-        <span>No tube data</span>
-      </div>
-    );
-  }
+  // Calculate total tubes across all brands
+  const totalTubes = summary?.totalTubes ?? 0;
 
   return (
     <div className="space-y-2 pt-2 border-t border-border/50">
@@ -54,21 +57,28 @@ export function StoreKPIBadge({ summary, isLoading }: StoreKPIBadgeProps) {
           Tube Inventory
         </span>
         <span className="text-muted-foreground font-mono text-[10px]">
-          {summary.totalTubes} total
+          {totalTubes} total
         </span>
       </div>
 
-      {/* ALL products - NO truncation */}
+      {/* ALL brands — ALWAYS rendered, NO truncation */}
       <div className="space-y-1.5">
-        {summary.kpiRows.map(row => {
-          const brandColor = getTubeBrandColor(row.brand_id);
-          const statusColors = getColorStatusClasses(row.color_status);
-          const isOutOfStock = row.tube_count === 0;
-          const isNeverOrdered = row.last_order_label === 'Never ordered';
+        {ALL_TUBE_BRANDS.map(brand => {
+          const kpi = kpiLookup.get(brand.brand_id);
+          const brandColor = getTubeBrandColor(brand.brand_id);
+          
+          // Derive status: if we have KPI data use it, otherwise default to muted
+          const colorStatus = kpi?.color_status || 'muted';
+          const statusColors = getColorStatusClasses(colorStatus);
+          
+          const tubeCount = kpi?.tube_count ?? 0;
+          const lastOrderDate = kpi?.last_order_date;
+          const isOutOfStock = tubeCount === 0;
+          const isNeverOrdered = !lastOrderDate;
 
           return (
             <div
-              key={row.brand_id}
+              key={brand.brand_id}
               className={cn(
                 'rounded-md px-2 py-1.5 text-xs',
                 statusColors.bg,
@@ -82,17 +92,17 @@ export function StoreKPIBadge({ summary, isLoading }: StoreKPIBadgeProps) {
                   className="font-medium text-xs"
                   style={{ color: brandColor.hex }}
                 >
-                  {row.brand_name}
+                  {brand.brand_name}
                 </span>
                 <span 
                   className="font-mono text-xs"
                   style={{ color: brandColor.hex }}
                 >
-                  {row.tube_count} tubes
+                  Tube count: {tubeCount}
                 </span>
               </div>
 
-              {/* Last order date - per product */}
+              {/* Last order date — per product */}
               <div className="flex items-center justify-between mt-0.5">
                 <span className="text-[10px] text-muted-foreground">
                   Last order:
@@ -101,13 +111,13 @@ export function StoreKPIBadge({ summary, isLoading }: StoreKPIBadgeProps) {
                   'text-[10px] font-medium',
                   isNeverOrdered ? 'text-amber-500' : 'text-muted-foreground'
                 )}>
-                  {row.last_order_date 
-                    ? new Date(row.last_order_date).toLocaleDateString('en-US', { 
+                  {lastOrderDate 
+                    ? new Date(lastOrderDate).toLocaleDateString('en-US', { 
                         month: 'short', 
                         day: 'numeric', 
                         year: 'numeric' 
                       })
-                    : row.last_order_label || 'Never ordered'
+                    : 'Never ordered'
                   }
                 </span>
               </div>
