@@ -22,7 +22,9 @@ import { useStoreProductCounts } from '@/hooks/useProductStoreAssignments';
 import { useStoreTubeKPIBatch } from '@/hooks/useStoreTubeKPIBatch';
 import { StoreKPIBadge } from '@/components/store/StoreKPIBadge';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
-// Simulation data now comes from database with is_simulation=true (RLS handles filtering)
+import { PagePurpose } from '@/components/portal/guidance/PagePurpose';
+import { CardHelper } from '@/components/portal/guidance/CardHelper';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface StoreContact {
   id: string;
@@ -72,6 +74,7 @@ const Stores = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { simulationMode } = useSimulationMode();
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [tagFilter, setTagFilter] = useState<string>('all');
@@ -551,16 +554,46 @@ const Stores = () => {
     }
   };
 
+  const pageConfig = {
+    admin: {
+      title: t('page.stores.admin') || 'Stores',
+      description: t('page.stores.purpose') || 'Browse and manage all stores in the distribution network. View inventory, sticker status, and governance records.',
+      actions: [
+        t('page.stores.action.edit') || 'Edit store details and contacts',
+        t('page.stores.action.view_inventory') || 'View tube inventory and orders',
+        t('page.stores.action.verify') || 'Verify sticker placement',
+      ],
+      warnings: [
+        t('page.stores.warning.changes_audit') || 'Store edits are tracked in audit logs',
+      ],
+    },
+    default: {
+      title: t('page.stores.default') || 'Stores',
+      description: t('page.stores.purpose') || 'Browse and select stores for visits or deliveries.',
+      actions: [
+        t('page.stores.action.search') || 'Search stores by name or location',
+        t('page.stores.action.filter') || 'Filter by status, tags, or inventory',
+        t('page.stores.action.select') || 'Click to view store details',
+      ],
+    },
+  };
+
   return (
     <div className="space-y-6">
+      <PagePurpose 
+        pageKey="page.stores" 
+        config={pageConfig}
+        variant="default"
+      />
+      
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-bold tracking-tight">Stores</h2>
+            <h2 className="text-3xl font-bold tracking-tight">{t('nav.stores') || 'Stores'}</h2>
             {simulationMode && <SimulationBadge />}
           </div>
           <p className="text-muted-foreground">
-            {simulationMode ? 'Demo stores preview' : 'Manage your distribution network'} • {filteredStores.length} stores
+            {simulationMode ? t('page.stores.demo_preview') || 'Demo stores preview' : t('page.stores.subtitle') || 'Manage your distribution network'} • {filteredStores.length} stores
           </p>
         </div>
         <div className="flex gap-2">
@@ -581,7 +614,7 @@ const Stores = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search stores by name, location, or tags..."
+              placeholder={t('page.stores.search_placeholder') || 'Search stores by name, location, or tags...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-secondary/50 border-border/50"
@@ -589,13 +622,13 @@ const Stores = () => {
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-48 bg-secondary/50 border-border/50">
-              <SelectValue placeholder="Filter by status" />
+              <SelectValue placeholder={t('page.stores.filter_status') || 'Filter by status'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Stores ({statusCounts.all})</SelectItem>
-              <SelectItem value="active">Active ({statusCounts.active})</SelectItem>
-              <SelectItem value="prospect">Prospects ({statusCounts.prospect})</SelectItem>
-              <SelectItem value="needsFollowUp">Needs Follow-up ({statusCounts.needsFollowUp})</SelectItem>
+              <SelectItem value="all">{t('page.stores.all_stores') || 'All Stores'} ({statusCounts.all})</SelectItem>
+              <SelectItem value="active">{t('page.stores.status_active') || 'Active'} ({statusCounts.active})</SelectItem>
+              <SelectItem value="prospect">{t('page.stores.status_prospect') || 'Prospects'} ({statusCounts.prospect})</SelectItem>
+              <SelectItem value="needsFollowUp">{t('page.stores.status_followup') || 'Needs Follow-up'} ({statusCounts.needsFollowUp})</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -606,10 +639,10 @@ const Stores = () => {
           <Select value={tagFilter} onValueChange={setTagFilter}>
             <SelectTrigger className="w-44 bg-secondary/50 border-border/50">
               <Tag className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Tags" />
+              <SelectValue placeholder={t('page.stores.filter_tags') || 'Tags'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Tags</SelectItem>
+              <SelectItem value="all">{t('page.stores.all_tags') || 'All Tags'}</SelectItem>
               <SelectItem value="flowers">
                 <span className="flex items-center gap-2">
                   <Flower2 className="h-4 w-4 text-pink-500" />
@@ -640,15 +673,15 @@ const Stores = () => {
           <Select value={stickerFilter} onValueChange={setStickerFilter}>
             <SelectTrigger className="w-52 bg-secondary/50 border-border/50">
               <Sticker className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Stickers" />
+              <SelectValue placeholder={t('page.stores.filter_stickers') || 'Stickers'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Sticker Status</SelectItem>
-              <SelectItem value="has_any">Has Any Sticker ({stickerCounts.hasAny})</SelectItem>
-              <SelectItem value="has_door">Door Sticker ({stickerCounts.hasDoor})</SelectItem>
-              <SelectItem value="has_instore">In-Store Sticker ({stickerCounts.hasInstore})</SelectItem>
-              <SelectItem value="has_phone">Phone Sticker ({stickerCounts.hasPhone})</SelectItem>
-              <SelectItem value="no_sticker">No Stickers ({stickerCounts.noSticker})</SelectItem>
+              <SelectItem value="all">{t('page.stores.all_sticker_status') || 'All Sticker Status'}</SelectItem>
+              <SelectItem value="has_any">{t('page.stores.has_any_sticker') || 'Has Any Sticker'} ({stickerCounts.hasAny})</SelectItem>
+              <SelectItem value="has_door">{t('page.stores.door_sticker') || 'Door Sticker'} ({stickerCounts.hasDoor})</SelectItem>
+              <SelectItem value="has_instore">{t('page.stores.instore_sticker') || 'In-Store Sticker'} ({stickerCounts.hasInstore})</SelectItem>
+              <SelectItem value="has_phone">{t('page.stores.phone_sticker') || 'Phone Sticker'} ({stickerCounts.hasPhone})</SelectItem>
+              <SelectItem value="no_sticker">{t('page.stores.no_stickers') || 'No Stickers'} ({stickerCounts.noSticker})</SelectItem>
             </SelectContent>
           </Select>
 
@@ -656,13 +689,13 @@ const Stores = () => {
           <Select value={paymentTypeFilter} onValueChange={setPaymentTypeFilter}>
             <SelectTrigger className="w-48 bg-secondary/50 border-border/50">
               <CreditCard className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Payment" />
+              <SelectValue placeholder={t('page.stores.filter_payment') || 'Payment'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Payment Types</SelectItem>
-              <SelectItem value="pays_upfront">Pays Upfront ({paymentTypeCounts.paysUpfront})</SelectItem>
-              <SelectItem value="bill_to_bill">Bill to Bill ({paymentTypeCounts.billToBill})</SelectItem>
-              <SelectItem value="not_set">Not Set ({paymentTypeCounts.notSet})</SelectItem>
+              <SelectItem value="all">{t('page.stores.all_payment_types') || 'All Payment Types'}</SelectItem>
+              <SelectItem value="pays_upfront">{t('page.stores.pays_upfront') || 'Pays Upfront'} ({paymentTypeCounts.paysUpfront})</SelectItem>
+              <SelectItem value="bill_to_bill">{t('page.stores.bill_to_bill') || 'Bill to Bill'} ({paymentTypeCounts.billToBill})</SelectItem>
+              <SelectItem value="not_set">{t('page.stores.not_set') || 'Not Set'} ({paymentTypeCounts.notSet})</SelectItem>
             </SelectContent>
           </Select>
 
@@ -674,7 +707,7 @@ const Stores = () => {
             className="h-9 gap-2"
           >
             <Sparkles className="h-4 w-4" />
-            New Stores ({newStoresCount})
+            {t('page.stores.new_stores') || 'New Stores'} ({newStoresCount})
           </Button>
 
           {/* Active Filters Display */}
@@ -685,7 +718,7 @@ const Stores = () => {
               onClick={() => { setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); setNewStoresOnly(false); }}
               className="text-muted-foreground"
             >
-              Clear filters
+              {t('page.stores.clear_filters') || 'Clear filters'}
             </Button>
           )}
         </div>
@@ -884,13 +917,19 @@ const Stores = () => {
                     </div>
                   )}
 
-                  {/* Tube KPI Badge (VERIFIED) */}
-                  <div className="pt-1 border-t border-border/50">
-                    <StoreKPIBadge
-                      summary={tubeKPIMap?.get(store.id)}
-                      isLoading={kpiLoading}
-                    />
-                  </div>
+                   {/* Tube KPI Badge with Helper */}
+                   <div className="pt-1 border-t border-border/50">
+                     <CardHelper
+                       summary={t('card.tube_inventory') || 'Tube inventory status across brands'}
+                       details={t('card.tube_inventory.detail') || 'Updated during store visits. Shows stocked, ordered, and out-of-stock brands.'}
+                       dataSource={t('card.tube_inventory.source') || 'v_store_tube_kpi'}
+                       variant="inline"
+                     />
+                     <StoreKPIBadge
+                       summary={tubeKPIMap?.get(store.id)}
+                       isLoading={kpiLoading}
+                     />
+                   </div>
                 </CardContent>
               </Card>
             );
@@ -914,7 +953,7 @@ const Stores = () => {
 
       {!isLoading && filteredStores.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">No stores found matching your filters</p>
+          <p className="text-muted-foreground">{t('page.stores.no_results') || 'No stores found matching your filters'}</p>
         </div>
       )}
 
