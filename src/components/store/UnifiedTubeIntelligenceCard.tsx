@@ -13,6 +13,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { TUBE_BRAND_COLORS } from '@/constants/tubeColors';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // UNIFIED TUBE INTELLIGENCE CARD
@@ -25,12 +26,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // AUTHORITATIVE TUBE BRANDS
 export const VALID_TUBE_BRANDS = [
-  { id: 'gasmask', name: 'GasMask Bags', color: '#EF4444' },
-  { id: 'gasmasktubes', name: 'GasMask Tubes', color: '#3B82F6' },
-  { id: 'hotmama', name: 'HotMama', color: '#EC4899' },
-  { id: 'grabba', name: 'Grabba r us', color: '#A855F7' },
-  { id: 'hotscolatti-light', name: 'Hot Scolatti Light', color: '#FBBF24' },
-  { id: 'hotscolatti-dark', name: 'Hot Scolatti Dark', color: '#92400E' },
+  { id: 'gasmask', name: 'GasMask Bags', color: TUBE_BRAND_COLORS.gasmask.hex },
+  { id: 'gasmasktubes', name: 'GasMask Tubes', color: TUBE_BRAND_COLORS.gasmasktubes.hex },
+  { id: 'hotmama', name: 'HotMama', color: TUBE_BRAND_COLORS.hotmama.hex },
+  { id: 'grabba', name: 'Grabba r us', color: TUBE_BRAND_COLORS.grabba.hex },
+  { id: 'hotscolatti-light', name: 'Hot Scolatti Light', color: TUBE_BRAND_COLORS['hotscolatti-light'].hex },
+  { id: 'hotscolatti-dark', name: 'Hot Scolatti Dark', color: TUBE_BRAND_COLORS['hotscolatti-dark'].hex },
 ] as const;
 
 interface TubeInventoryRecord {
