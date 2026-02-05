@@ -269,38 +269,38 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
         variant="default"
       />
       {/* Shift Control Card */}
-      <Card className={shiftStatus === 'active' ? 'border-green-500/50 bg-green-500/5' : shiftStatus === 'ended' ? 'border-muted' : 'border-amber-500/50 bg-amber-500/5'}>
+      <Card className={shiftStatus === 'active' ? 'border-success/50 bg-success/5' : shiftStatus === 'ended' ? 'border-muted' : 'border-warning/50 bg-warning/5'}>
         <CardContent className="py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                shiftStatus === 'active' ? 'bg-green-500/20 text-green-500' : 
-                shiftStatus === 'ended' ? 'bg-muted text-muted-foreground' : 'bg-amber-500/20 text-amber-500'
+                shiftStatus === 'active' ? 'bg-success/20 text-success' : 
+                shiftStatus === 'ended' ? 'bg-muted text-muted-foreground' : 'bg-warning/20 text-warning'
               }`}>
                 {shiftStatus === 'active' ? <Play className="h-6 w-6" /> : 
                  shiftStatus === 'ended' ? <CheckCircle2 className="h-6 w-6" /> : <Clock className="h-6 w-6" />}
               </div>
               <div>
                 <p className="font-semibold">
-                  {shiftStatus === 'active' ? 'Shift Active' : 
-                   shiftStatus === 'ended' ? 'Shift Completed' : 'Shift Not Started'}
+                   {shiftStatus === 'active' ? t('page.dashboard.shift_active') : 
+                    shiftStatus === 'ended' ? t('page.dashboard.shift_completed') : t('page.dashboard.shift_not_started')}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {shiftStatus === 'active' && shiftStartTime 
-                    ? `Started at ${shiftStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                    : shiftStatus === 'ended' ? 'Great work today!' : 'Start your shift to begin'}
+                   {shiftStatus === 'active' && shiftStartTime 
+                     ? `${t('page.dashboard.started_at')} ${shiftStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                     : shiftStatus === 'ended' ? t('page.dashboard.great_work') : t('page.dashboard.start_shift_prompt')}
                 </p>
               </div>
             </div>
             <div className="flex gap-2">
               {shiftStatus === 'not_started' && (
                 <Button onClick={handleStartShift} className="gap-2">
-                  <Play className="h-4 w-4" /> Start Shift
+                  <Play className="h-4 w-4" /> {t('action.start_shift')}
                 </Button>
               )}
               {shiftStatus === 'active' && (
                 <Button variant="destructive" onClick={handleEndShift} className="gap-2">
-                  <Square className="h-4 w-4" /> End Shift
+                  <Square className="h-4 w-4" /> {t('action.end_shift')}
                 </Button>
               )}
               <Button variant="outline" onClick={() => navigate(`${basePath}/messages`)} className="gap-2 relative">
@@ -335,31 +335,31 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className={accentBg}>
           <CardHeader className="pb-2">
-            <CardDescription>Assigned Today</CardDescription>
+            <CardDescription>{t('page.dashboard.assigned_today')}</CardDescription>
             <CardTitle className="text-3xl">{assignedStops.length}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">Stores to visit</p>
+            <p className="text-xs text-muted-foreground">{t('page.dashboard.stores_to_visit')}</p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Completed</CardDescription>
-            <CardTitle className="text-3xl text-green-600">{completedStops}</CardTitle>
+            <CardDescription>{t('page.dashboard.completed')}</CardDescription>
+            <CardTitle className="text-3xl text-success">{completedStops}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">Visits done</p>
+            <p className="text-xs text-muted-foreground">{t('page.dashboard.visits_done')}</p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Pending Changes</CardDescription>
-            <CardTitle className="text-3xl text-amber-600">{pendingChanges.length}</CardTitle>
+            <CardDescription>{t('page.dashboard.pending_changes')}</CardDescription>
+            <CardTitle className="text-3xl text-warning">{pendingChanges.length}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">Awaiting review</p>
+            <p className="text-xs text-muted-foreground">{t('page.dashboard.awaiting_review')}</p>
           </CardContent>
         </Card>
         
@@ -377,7 +377,7 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Quick Actions</CardTitle>
+          <CardTitle className="text-lg">{t('page.dashboard.quick_actions')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -387,7 +387,7 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
               onClick={() => navigate(`${basePath}/stores`)}
             >
               <Store className={`h-6 w-6 ${accentClass}`} />
-              <span>View Stores</span>
+              <span>{t('action.view_stores')}</span>
             </Button>
             
             <Button 
@@ -396,7 +396,7 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
               onClick={() => navigate(`${basePath}/visit`)}
             >
               <ClipboardCheck className={`h-6 w-6 ${accentClass}`} />
-              <span>Start Visit</span>
+              <span>{t('action.start_visit')}</span>
             </Button>
             
             {portalType === 'driver' && (
@@ -406,7 +406,7 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
                 onClick={() => navigate(`${basePath}/delivery`)}
               >
                 <Truck className={`h-6 w-6 ${accentClass}`} />
-                <span>Make Delivery</span>
+                <span>{t('action.make_delivery')}</span>
               </Button>
             )}
             
@@ -416,7 +416,7 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
               onClick={() => navigate(`${basePath}/changes`)}
             >
               <FileText className={`h-6 w-6 ${accentClass}`} />
-              <span>Change Lists</span>
+              <span>{t('portal.nav.changes')}</span>
             </Button>
           </div>
         </CardContent>
@@ -455,13 +455,13 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
           ) : assignedStops.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Store className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No stops assigned for today</p>
+              <p>{t('page.dashboard.no_stops')}</p>
               <Button 
                 variant="outline" 
                 className="mt-4"
                 onClick={() => navigate(`${basePath}/stores`)}
               >
-                Browse Stores
+                {t('action.browse_stores')}
               </Button>
             </div>
           ) : (
@@ -469,16 +469,16 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
               {assignedStops.slice(0, 5).map((stop) => (
                 <div 
                   key={stop.id} 
-                  className={`flex items-center gap-4 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors ${
-                    stop.status === 'completed' ? 'border-green-500/30 bg-green-500/5' : ''
-                  }`}
+                   className={`flex items-center gap-4 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors ${
+                     stop.status === 'completed' ? 'border-success/30 bg-success/5' : ''
+                   }`}
                   onClick={() => navigate(`${basePath}/visit/${stop.id}`)}
                 >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    stop.status === 'completed' 
-                      ? 'bg-green-500/20 text-green-500' 
-                      : accentBg + ' ' + accentClass
-                  }`}>
+                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                     stop.status === 'completed' 
+                       ? 'bg-success/20 text-success' 
+                       : accentBg + ' ' + accentClass
+                   }`}>
                     {stop.status === 'completed' ? (
                       <CheckCircle2 className="h-5 w-5" />
                     ) : (
