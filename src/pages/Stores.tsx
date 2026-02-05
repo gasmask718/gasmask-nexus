@@ -21,6 +21,7 @@ import { useGlobalTags } from '@/hooks/useGlobalTags';
 import { useStoreProductCounts } from '@/hooks/useProductStoreAssignments';
 import { useStoreTubeKPIBatch } from '@/hooks/useStoreTubeKPIBatch';
 import { StoreKPIBadge } from '@/components/store/StoreKPIBadge';
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
 // Simulation data now comes from database with is_simulation=true (RLS handles filtering)
 
 interface StoreContact {
@@ -79,6 +80,10 @@ const Stores = () => {
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all');
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [newStoreName, setNewStoreName] = useState('');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [isSavingStoreName, setIsSavingStoreName] = useState(false);
   
   // Add Store Modal State
@@ -448,11 +453,23 @@ const Stores = () => {
   const newStoresCount = stores.filter(isStoreNew).length;
 
   // ═══════════════════════════════════════════════════════════════════════════════
+  // PAGINATION
+  // ═══════════════════════════════════════════════════════════════════════════════
+  const totalPages = Math.ceil(filteredStores.length / pageSize);
+  const paginatedStores = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredStores.slice(start, start + pageSize);
+  }, [filteredStores, currentPage, pageSize]);
+
+  // Reset to page 1 when filters change
+  const handleFilterChange = () => setCurrentPage(1);
+
+  // ═══════════════════════════════════════════════════════════════════════════════
   // TUBE KPI BATCH FETCH
   // Fetches KPI data for ALL visible stores in a single query
   // ═══════════════════════════════════════════════════════════════════════════════
-  const filteredStoreIds = useMemo(() => filteredStores.map(s => s.id), [filteredStores]);
-  const { data: tubeKPIMap, isLoading: kpiLoading } = useStoreTubeKPIBatch(filteredStoreIds);
+  const paginatedStoreIds = useMemo(() => paginatedStores.map(s => s.id), [paginatedStores]);
+  const { data: tubeKPIMap, isLoading: kpiLoading } = useStoreTubeKPIBatch(paginatedStoreIds);
 
   const formatBrandName = (brand: string) => {
     const normalized = brand.toLowerCase();
@@ -673,8 +690,9 @@ const Stores = () => {
           <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
         </div>
       ) : (
+        <>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredStores.map((store, index) => {
+          {paginatedStores.map((store, index) => {
             // Group inventory by brand (case-insensitive) and sum counts
             const inventoryByBrand = (store.tubeInventory || []).reduce((acc, item) => {
               const brandKey = item.brand.toLowerCase();
@@ -871,6 +889,20 @@ const Stores = () => {
             );
           })}
         </div>
+        
+        {/* Pagination */}
+        {filteredStores.length > 0 && (
+          <DataTablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={filteredStores.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+            pageSizeOptions={[25, 50, 100, 250]}
+          />
+        )}
+        </>
       )}
 
       {!isLoading && filteredStores.length === 0 && (

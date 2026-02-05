@@ -19,6 +19,7 @@ import {
   DialogDescription,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
 
 const CRMContacts = () => {
   const navigate = useNavigate();
@@ -29,6 +30,10 @@ const CRMContacts = () => {
   const [boroughFilter, setBoroughFilter] = useState<string>('all');
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [selectedContact, setSelectedContact] = useState<any>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   // Initialize business on mount - fetchBusinesses now auto-selects first business
   useEffect(() => {
@@ -90,7 +95,14 @@ const CRMContacts = () => {
     const matchesBorough = boroughFilter === 'all' || contact.borough_id === boroughFilter;
 
     return matchesSearch && matchesType && matchesStatus && matchesBorough;
-  });
+  }) || [];
+
+  // Pagination
+  const totalPages = Math.ceil(filteredContacts.length / pageSize);
+  const paginatedContacts = filteredContacts.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
@@ -183,7 +195,7 @@ const CRMContacts = () => {
       {/* Contacts Table */}
       <Card className="p-6">
         <div className="space-y-3">
-          {filteredContacts?.map((contact) => (
+          {paginatedContacts.map((contact) => (
             <div
               key={contact.id}
               className="flex items-center justify-between p-4 rounded-lg border hover:bg-secondary/50 cursor-pointer transition-colors"
@@ -226,7 +238,7 @@ const CRMContacts = () => {
               </div>
             </div>
           ))}
-          {(!filteredContacts || filteredContacts.length === 0) && (
+          {filteredContacts.length === 0 && (
             <div className="text-center py-12">
               <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground mb-4">
@@ -239,6 +251,19 @@ const CRMContacts = () => {
             </div>
           )}
         </div>
+        
+        {/* Pagination */}
+        {filteredContacts.length > 0 && (
+          <DataTablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={filteredContacts.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+            pageSizeOptions={[25, 50, 100]}
+          />
+        )}
       </Card>
     </div>
   );
