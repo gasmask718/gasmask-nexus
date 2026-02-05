@@ -98,6 +98,25 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'page.messages.purpose': 'Communicate with dispatch and receive important updates.',
     'page.profile.purpose': 'Update your account information and preferences.',
     
+    // Store Profile Page
+    'page.store_profile.admin_title': 'Store Profile',
+    'page.store_profile.admin_desc': 'Full store management with inventory, orders, contacts, and governance oversight.',
+    'page.store_profile.ambassador_title': 'Store Profile',
+    'page.store_profile.ambassador_desc': 'View store details and update allowed fields (notes, stickers, responsiveness).',
+    'page.store_profile.default_title': 'Store Profile',
+    'page.store_profile.default_desc': 'View store information, inventory status, and recent activity.',
+    'page.store_profile.action.edit_details': 'Edit store details and contacts',
+    'page.store_profile.action.manage_inventory': 'Manage tube inventory and orders',
+    'page.store_profile.action.review_submissions': 'Review field submissions',
+    'page.store_profile.action.create_invoice': 'Create invoices and log interactions',
+    'page.store_profile.action.update_stickers': 'Update sticker placement status',
+    'page.store_profile.action.add_notes': 'Add visit notes',
+    'page.store_profile.action.view_orders': 'View order history',
+    'page.store_profile.action.view_info': 'View store contact information',
+    'page.store_profile.action.check_inventory': 'Check tube inventory status',
+    'page.store_profile.action.review_history': 'Review interaction history',
+    'page.store_profile.warning.audit': 'All changes are tracked in audit logs',
+    
     // Card Helpers
     'card.tube_inventory': 'Shows current tube counts per product at this store.',
     'card.tube_inventory.detail': 'Update counts during visits. Changes sync to inventory.',
@@ -290,6 +309,25 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'page.messages.purpose': 'Comunicarte con despacho y recibir actualizaciones importantes.',
     'page.profile.purpose': 'Actualizar tu información de cuenta y preferencias.',
     
+    // Store Profile Page
+    'page.store_profile.admin_title': 'Perfil de Tienda',
+    'page.store_profile.admin_desc': 'Gestión completa de tienda con inventario, pedidos, contactos y supervisión de gobernanza.',
+    'page.store_profile.ambassador_title': 'Perfil de Tienda',
+    'page.store_profile.ambassador_desc': 'Ver detalles de la tienda y actualizar campos permitidos (notas, calcomanías, capacidad de respuesta).',
+    'page.store_profile.default_title': 'Perfil de Tienda',
+    'page.store_profile.default_desc': 'Ver información de la tienda, estado del inventario y actividad reciente.',
+    'page.store_profile.action.edit_details': 'Editar detalles de la tienda y contactos',
+    'page.store_profile.action.manage_inventory': 'Gestionar inventario de tubos y pedidos',
+    'page.store_profile.action.review_submissions': 'Revisar envíos de campo',
+    'page.store_profile.action.create_invoice': 'Crear facturas y registrar interacciones',
+    'page.store_profile.action.update_stickers': 'Actualizar estado de colocación de calcomanías',
+    'page.store_profile.action.add_notes': 'Añadir notas de visita',
+    'page.store_profile.action.view_orders': 'Ver historial de pedidos',
+    'page.store_profile.action.view_info': 'Ver información de contacto de la tienda',
+    'page.store_profile.action.check_inventory': 'Verificar estado del inventario de tubos',
+    'page.store_profile.action.review_history': 'Revisar historial de interacciones',
+    'page.store_profile.warning.audit': 'Todos los cambios se registran en registros de auditoría',
+    
     // Card Helpers
     'card.tube_inventory': 'Muestra los conteos actuales de tubos por producto en esta tienda.',
     'card.tube_inventory.detail': 'Actualiza los conteos durante las visitas. Los cambios se sincronizan con el inventario.',
@@ -458,6 +496,25 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'page.history.purpose': 'مراجعة زياراتك وتوصيلاتك السابقة.',
     'page.messages.purpose': 'التواصل مع الإرسال وتلقي التحديثات المهمة.',
     'page.profile.purpose': 'تحديث معلومات حسابك وتفضيلاتك.',
+    
+    // Store Profile Page
+    'page.store_profile.admin_title': 'ملف المتجر',
+    'page.store_profile.admin_desc': 'إدارة كاملة للمتجر مع المخزون والطلبات والجهات والإشراف على الحوكمة.',
+    'page.store_profile.ambassador_title': 'ملف المتجر',
+    'page.store_profile.ambassador_desc': 'عرض تفاصيل المتجر وتحديث الحقول المسموح بها (الملاحظات، الملصقات، الاستجابة).',
+    'page.store_profile.default_title': 'ملف المتجر',
+    'page.store_profile.default_desc': 'عرض معلومات المتجر وحالة المخزون والنشاط الأخير.',
+    'page.store_profile.action.edit_details': 'تحرير تفاصيل المتجر والجهات',
+    'page.store_profile.action.manage_inventory': 'إدارة مخزون الأنابيب والطلبات',
+    'page.store_profile.action.review_submissions': 'مراجعة التقديمات الميدانية',
+    'page.store_profile.action.create_invoice': 'إنشاء فواتير وتسجيل التفاعلات',
+    'page.store_profile.action.update_stickers': 'تحديث حالة وضع الملصقات',
+    'page.store_profile.action.add_notes': 'إضافة ملاحظات الزيارة',
+    'page.store_profile.action.view_orders': 'عرض سجل الطلبات',
+    'page.store_profile.action.view_info': 'عرض معلومات الاتصال بالمتجر',
+    'page.store_profile.action.check_inventory': 'التحقق من حالة مخزون الأنابيب',
+    'page.store_profile.action.review_history': 'مراجعة سجل التفاعلات',
+    'page.store_profile.warning.audit': 'يتم تسجيل جميع التغييرات في سجلات التدقيق',
     
     // Card Helpers
     'card.tube_inventory': 'يعرض عدد الأنابيب الحالي لكل منتج في هذا المتجر.',

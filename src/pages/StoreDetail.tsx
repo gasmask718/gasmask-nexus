@@ -47,6 +47,10 @@ import { ConnectedStoresCard } from "@/components/store/ConnectedStoresCard";
 import { MemberSinceDisplay } from "@/components/store/MemberSinceDisplay";
 import { StoreCadenceSettings } from "@/components/store/StoreCadenceSettings";
 import { StoreFieldActivityPanel } from "@/components/store/StoreFieldActivityPanel";
+import { PagePurpose } from "@/components/portal/guidance/PagePurpose";
+import { CardHelper } from "@/components/portal/guidance/CardHelper";
+import { useTranslation } from "@/hooks/useTranslation";
+import { CanonicalStoreProfileProvider } from "@/components/store/CanonicalStoreProfile";
 import {
   MapPin,
   Phone,
@@ -154,6 +158,7 @@ const getSourceFromRole = (role?: string | null): string => {
 const StoreDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [store, setStore] = useState<Store | null>(null);
   const [inventory, setInventory] = useState<ProductInventory[]>([]);
   const [visits, setVisits] = useState<VisitLog[]>([]);
@@ -430,8 +435,49 @@ const StoreDetail = () => {
     }
   };
 
+  const storeProfileConfig = {
+    admin: {
+      title: t('page.store_profile.admin_title') || 'Store Profile',
+      description: t('page.store_profile.admin_desc') || 'Full store management with inventory, orders, contacts, and governance oversight.',
+      actions: [
+        t('page.store_profile.action.edit_details') || 'Edit store details and contacts',
+        t('page.store_profile.action.manage_inventory') || 'Manage tube inventory and orders',
+        t('page.store_profile.action.review_submissions') || 'Review field submissions',
+        t('page.store_profile.action.create_invoice') || 'Create invoices and log interactions',
+      ],
+      warnings: [
+        t('page.store_profile.warning.audit') || 'All changes are tracked in audit logs',
+      ],
+    },
+    ambassador: {
+      title: t('page.store_profile.ambassador_title') || 'Store Profile',
+      description: t('page.store_profile.ambassador_desc') || 'View store details and update allowed fields (notes, stickers, responsiveness).',
+      actions: [
+        t('page.store_profile.action.update_stickers') || 'Update sticker placement status',
+        t('page.store_profile.action.add_notes') || 'Add visit notes',
+        t('page.store_profile.action.view_orders') || 'View order history',
+      ],
+    },
+    default: {
+      title: t('page.store_profile.default_title') || 'Store Profile',
+      description: t('page.store_profile.default_desc') || 'View store information, inventory status, and recent activity.',
+      actions: [
+        t('page.store_profile.action.view_info') || 'View store contact information',
+        t('page.store_profile.action.check_inventory') || 'Check tube inventory status',
+        t('page.store_profile.action.review_history') || 'Review interaction history',
+      ],
+    },
+  };
+
   return (
+    <CanonicalStoreProfileProvider storeId={id || ''}>
     <div className="space-y-6 animate-fade-in">
+      <PagePurpose 
+        pageKey="page.store_profile" 
+        config={storeProfileConfig}
+        variant="default"
+      />
+      
       {/* Header */}
       <div className="flex items-start gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate("/stores")} className="mt-1">
@@ -1127,6 +1173,7 @@ const StoreDetail = () => {
       </div>
 
     </div>
+    </CanonicalStoreProfileProvider>
   );
 };
 
