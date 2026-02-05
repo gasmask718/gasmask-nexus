@@ -19,6 +19,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useGlobalTags } from '@/hooks/useGlobalTags';
 import { useStoreProductCounts } from '@/hooks/useProductStoreAssignments';
+import { useStoreTubeKPIBatch } from '@/hooks/useStoreTubeKPIBatch';
+import { StoreKPIBadge } from '@/components/store/StoreKPIBadge';
 // Simulation data now comes from database with is_simulation=true (RLS handles filtering)
 
 interface StoreContact {
@@ -445,6 +447,12 @@ const Stores = () => {
   };
   const newStoresCount = stores.filter(isStoreNew).length;
 
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // TUBE KPI BATCH FETCH
+  // Fetches KPI data for ALL visible stores in a single query
+  // ═══════════════════════════════════════════════════════════════════════════════
+  const filteredStoreIds = useMemo(() => filteredStores.map(s => s.id), [filteredStores]);
+  const { data: tubeKPIMap, isLoading: kpiLoading } = useStoreTubeKPIBatch(filteredStoreIds);
 
   const formatBrandName = (brand: string) => {
     const normalized = brand.toLowerCase();
@@ -850,6 +858,14 @@ const Stores = () => {
                       )}
                     </div>
                   )}
+
+                  {/* Tube KPI Badge (VERIFIED) */}
+                  <div className="pt-1 border-t border-border/50">
+                    <StoreKPIBadge
+                      summary={tubeKPIMap?.get(store.id)}
+                      isLoading={kpiLoading}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             );

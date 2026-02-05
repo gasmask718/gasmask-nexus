@@ -6,6 +6,8 @@ import { Store as StoreIcon, MapPin, Phone, ExternalLink, ClipboardList, X } fro
 import { useState } from 'react';
 import VisitLogModal from '@/components/VisitLogModal';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
+import { useStoreTubeKPI, getColorStatusClasses } from '@/hooks/useStoreTubeKPI';
+import { Package } from 'lucide-react';
 
 interface Store {
   id: string;
@@ -97,6 +99,9 @@ export const StoreCard = ({ store, onClose }: StoreCardProps) => {
             )}
           </div>
 
+          {/* Tube KPI Summary */}
+          <TubeKPISummary storeId={store.id} />
+
           <div className="grid grid-cols-2 gap-2 pt-2">
             <Button
               size="sm"
@@ -140,3 +145,64 @@ export const StoreCard = ({ store, onClose }: StoreCardProps) => {
     </>
   );
 };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TUBE KPI SUMMARY COMPONENT (for Map Card)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function TubeKPISummary({ storeId }: { storeId: string }) {
+  const { data: kpiData, isLoading } = useStoreTubeKPI(storeId);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Package className="h-3 w-3 animate-pulse" />
+        <span>Loading tube data...</span>
+      </div>
+    );
+  }
+
+  if (!kpiData || kpiData.length === 0) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Package className="h-3 w-3" />
+        <span>No tube inventory</span>
+      </div>
+    );
+  }
+
+  const totalTubes = kpiData.reduce((sum, item) => sum + (item.tube_count || 0), 0);
+
+  return (
+    <div className="space-y-1 py-2 border-t border-border/50">
+      <div className="flex items-center justify-between text-xs">
+        <span className="flex items-center gap-1 text-muted-foreground">
+          <Package className="h-3 w-3" />
+          Tube Inventory
+        </span>
+        <Badge variant="outline" className="text-xs font-mono">
+          {totalTubes} total
+        </Badge>
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {kpiData.slice(0, 4).map(item => {
+          const colors = getColorStatusClasses(item.color_status);
+          return (
+            <Badge
+              key={item.brand_id}
+              variant="outline"
+              className={`text-[10px] ${colors.bg} ${colors.border}`}
+            >
+              <span className={colors.text}>{item.brand_name}: {item.tube_count}</span>
+            </Badge>
+          );
+        })}
+        {kpiData.length > 4 && (
+          <Badge variant="outline" className="text-[10px]">
+            +{kpiData.length - 4} more
+          </Badge>
+        )}
+      </div>
+    </div>
+  );
+}
