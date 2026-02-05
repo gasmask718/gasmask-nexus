@@ -377,10 +377,17 @@ const Stores = () => {
   }, [stores, allGlobalTags]);
 
   const filteredStores = stores.filter(store => {
-    const matchesSearch = 
-      store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      store.address_city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      store.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+    // Search across name + full address fields (street, city, state, zip)
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = !searchQuery ||
+      store.name.toLowerCase().includes(searchLower) ||
+      store.address_street?.toLowerCase().includes(searchLower) ||
+      store.address_city?.toLowerCase().includes(searchLower) ||
+      store.address_state?.toLowerCase().includes(searchLower) ||
+      store.address_zip?.toLowerCase().includes(searchLower) ||
+      store.phone?.includes(searchQuery) ||
+      store.owner_name?.toLowerCase().includes(searchLower) ||
+      store.tags?.some(tag => tag.toLowerCase().includes(searchLower));
     
     const matchesStatus = statusFilter === 'all' || store.status === statusFilter;
     
