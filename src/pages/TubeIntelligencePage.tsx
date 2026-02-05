@@ -19,9 +19,12 @@ import {
 import { ExportButton } from '@/components/crud/ExportButton';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { cn } from '@/lib/utils';
+import { PagePurpose } from '@/components/portal/guidance';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function TubeIntelligencePage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<TubeIntelFilters>({});
   
@@ -64,7 +67,7 @@ export default function TubeIntelligencePage() {
   const exportData = filteredRecords.map(record => ({
     store_name: (record as any).store?.name || 'Unknown',
     brand: record.brand_name,
-    last_order_date: record.last_order_date || 'Never',
+    last_order_date: record.last_order_date || t('page.tube_intel.never'),
     introduced: record.product_introduced ? 'Yes' : 'No',
     interested: record.owner_interested === null ? 'Not Asked' : record.owner_interested ? 'Yes' : 'No',
     needs_order: record.needs_order ? 'Yes' : 'No',
@@ -75,25 +78,51 @@ export default function TubeIntelligencePage() {
   }));
 
   const exportColumns = [
-    { key: 'store_name', label: 'Store Name' },
-    { key: 'brand', label: 'Brand' },
-    { key: 'last_order_date', label: 'Last Order' },
-    { key: 'introduced', label: 'Introduced' },
-    { key: 'interested', label: 'Interested' },
-    { key: 'needs_order', label: 'Needs Order' },
-    { key: 'bring_samples', label: 'Bring Samples' },
-    { key: 'bring_starter_kit', label: 'Starter Kit' },
+    { key: 'store_name', label: t('page.tube_intel.col_store') },
+    { key: 'brand', label: t('page.tube_intel.col_brand') },
+    { key: 'last_order_date', label: t('page.tube_intel.col_last_order') },
+    { key: 'introduced', label: t('page.tube_intel.col_introduced') },
+    { key: 'interested', label: t('page.tube_intel.col_interested') },
+    { key: 'needs_order', label: t('page.tube_intel.col_needs_order') },
+    { key: 'bring_samples', label: t('page.tube_intel.col_samples') },
+    { key: 'bring_starter_kit', label: t('page.tube_intel.col_starter_kit') },
     { key: 'city', label: 'City' },
     { key: 'borough', label: 'Borough' },
   ];
 
+  // PagePurpose configuration
+  const pagePurposeConfig = {
+    admin: {
+      title: t('page.tube_intel.title'),
+      description: t('page.tube_intel.admin_purpose'),
+      actions: [
+        t('page.tube_intel.action.filter'),
+        t('page.tube_intel.action.export'),
+        t('page.tube_intel.action.click_store'),
+        t('page.tube_intel.action.toggle_cards'),
+      ],
+      warnings: [t('page.tube_intel.warning.signals')],
+    },
+    default: {
+      title: t('page.tube_intel.title'),
+      description: t('page.tube_intel.default_purpose'),
+      actions: [
+        t('page.tube_intel.action.filter'),
+        t('page.tube_intel.action.click_store'),
+      ],
+    },
+  };
+
   return (
     <div className="space-y-6 p-6 animate-fade-in">
+      {/* Page Purpose */}
+      <PagePurpose pageKey="page.tube_intel" config={pagePurposeConfig} />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Tube Intelligence</h1>
-          <p className="text-muted-foreground">Global operational signals for route planning and follow-ups</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('page.tube_intel.title')}</h1>
+          <p className="text-muted-foreground">{t('page.tube_intel.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => refetch()}>
