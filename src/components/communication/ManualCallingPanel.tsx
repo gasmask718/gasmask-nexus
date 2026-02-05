@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InventoryCheckScript, ScriptData } from "./InventoryCheckScript";
+import { CardHelper } from "@/components/portal/guidance";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface Store {
   id: string;
@@ -58,6 +60,7 @@ export function ManualCallingPanel({
   onScheduleFollowUp,
   isLoading,
 }: ManualCallingPanelProps) {
+  const { t } = useTranslation();
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [callNotes, setCallNotes] = useState("");
   const [selectedOutcome, setSelectedOutcome] = useState("");
@@ -114,12 +117,18 @@ export function ManualCallingPanel({
       <Card className="lg:col-span-2">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Phone className="h-5 w-5 text-primary" />
-              Call Queue
-            </CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2">
+                <Phone className="h-5 w-5 text-primary" />
+                {t('comm.dialer.call_queue')}
+              </CardTitle>
+              <CardHelper 
+                summary={t('card.dialer.desc')}
+                variant="tooltip"
+              />
+            </div>
             <Input
-              placeholder="Search stores..."
+              placeholder={t('comm.dialer.search_stores')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-64"
@@ -131,7 +140,7 @@ export function ManualCallingPanel({
             <div className="space-y-2">
               {filteredStores.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No stores found
+                  {t('comm.dialer.no_stores')}
                 </div>
               ) : (
                 filteredStores.map((store) => (
@@ -174,13 +183,13 @@ export function ManualCallingPanel({
       {/* Recent Calls */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Recent Calls</CardTitle>
+          <CardTitle className="text-lg">{t('comm.dialer.recent_calls')}</CardTitle>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[400px]">
             {recentCalls.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No recent calls
+                {t('comm.dialer.no_recent')}
               </div>
             ) : (
               <div className="space-y-3">

@@ -32,6 +32,8 @@ import { PredictionsTab } from "@/components/communication/PredictionsTab";
 import { AIAgentsTab } from "@/components/communication/AIAgentsTab";
 import LanguagePersonalityTab from "@/components/communication/LanguagePersonalityTab";
 import { VoiceOrchestrationTab } from "@/components/communication/VoiceOrchestrationTab";
+import { PagePurpose } from "@/components/portal/guidance";
+import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from "sonner";
 
 export default function CommunicationCenter() {
@@ -157,6 +159,33 @@ export default function CommunicationCenter() {
     toast.success("Follow-up scheduled");
   };
 
+  const { t } = useTranslation();
+  
+  // Role-aware page purpose configuration
+  const purposeConfig = {
+    admin: {
+      title: t('page.comm_center.admin_title'),
+      description: t('page.comm_center.admin_desc'),
+      actions: [
+        t('page.comm_center.action.inbox'),
+        t('page.comm_center.action.dial'),
+        t('page.comm_center.action.campaigns'),
+        t('page.comm_center.action.escalations'),
+        t('page.comm_center.action.settings'),
+      ],
+      warnings: [t('page.comm_center.warning.draft')],
+    },
+    default: {
+      title: t('page.comm_center.default_title'),
+      description: t('page.comm_center.default_desc'),
+      actions: [
+        t('page.comm_center.action.inbox'),
+        t('page.comm_center.action.dial'),
+      ],
+      warnings: [t('page.comm_center.warning.draft')],
+    },
+  };
+  
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -168,9 +197,9 @@ export default function CommunicationCenter() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-2xl font-bold">Communication Center</h1>
+                <h1 className="text-2xl font-bold">{t('page.comm_center.admin_title')}</h1>
                 <p className="text-sm text-muted-foreground">
-                  Unified messaging, calling, and AI automation
+                  {t('page.comm_center.admin_desc')}
                 </p>
               </div>
             </div>
@@ -205,25 +234,30 @@ export default function CommunicationCenter() {
         </div>
       </div>
 
+      {/* Page Purpose Guidance */}
+      <div className="container pt-4">
+        <PagePurpose pageKey="comm_center" config={purposeConfig} />
+      </div>
+
       {/* Stats Bar */}
       <div className="border-b bg-muted/30">
         <div className="container py-3">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{stats.todayMessages} Today</span>
+              <span className="text-sm font-medium">{stats.todayMessages} {t('comm.stats.today_messages')}</span>
             </div>
             <div className="flex items-center gap-2">
               <Send className="h-4 w-4 text-blue-500" />
-              <span className="text-sm">{stats.outboundCount} Sent</span>
+              <span className="text-sm">{stats.outboundCount} {t('comm.stats.outbound')}</span>
             </div>
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-green-500" />
-              <span className="text-sm">{stats.inboundCount} Received</span>
+              <span className="text-sm">{stats.inboundCount} {t('comm.stats.inbound')}</span>
             </div>
             <div className="flex items-center gap-2">
               <Bot className="h-4 w-4 text-purple-500" />
-              <span className="text-sm">{stats.aiGeneratedCount} AI Generated</span>
+              <span className="text-sm">{stats.aiGeneratedCount} {t('comm.stats.ai_generated')}</span>
             </div>
             {liveCallStats.totalActive > 0 && (
               <Badge className="bg-green-500 text-white animate-pulse">
