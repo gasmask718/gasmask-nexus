@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge';
 import { Package, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { StoreKPISummary } from '@/hooks/useStoreTubeKPIBatch';
@@ -8,15 +7,15 @@ import { getColorStatusClasses } from '@/hooks/useStoreTubeKPI';
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE KPI BADGE (PER-BRAND BREAKDOWN)
 // Displays tube inventory per brand inline on Store Directory cards
+// ALL products visible - NO truncation
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface StoreKPIBadgeProps {
   summary: StoreKPISummary | undefined;
   isLoading?: boolean;
-  maxBrands?: number; // How many brands to show before "+X more"
 }
 
-export function StoreKPIBadge({ summary, isLoading, maxBrands = 4 }: StoreKPIBadgeProps) {
+export function StoreKPIBadge({ summary, isLoading }: StoreKPIBadgeProps) {
   if (isLoading) {
     return (
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground animate-pulse">
@@ -46,11 +45,8 @@ export function StoreKPIBadge({ summary, isLoading, maxBrands = 4 }: StoreKPIBad
     );
   }
 
-  const visibleBrands = summary.kpiRows.slice(0, maxBrands);
-  const remainingCount = Math.max(0, summary.kpiRows.length - maxBrands);
-
   return (
-    <div className="space-y-1.5 pt-2 border-t border-border/50">
+    <div className="space-y-2 pt-2 border-t border-border/50">
       {/* Header with total */}
       <div className="flex items-center justify-between text-xs">
         <span className="flex items-center gap-1 text-muted-foreground font-medium">
@@ -62,54 +58,71 @@ export function StoreKPIBadge({ summary, isLoading, maxBrands = 4 }: StoreKPIBad
         </span>
       </div>
 
-       {/* Per-brand breakdown */}
-       <div className="flex flex-wrap gap-1">
-         {visibleBrands.map(row => {
-           const brandColor = getTubeBrandColor(row.brand_id);
-           const statusColors = getColorStatusClasses(row.color_status);
-           return (
-             <Badge
-               key={row.brand_id}
-               variant="outline"
-               className={cn(
-                 'text-[10px] px-1.5 py-0.5',
-                 statusColors.bg,
-                 statusColors.border
-               )}
-             >
-               <span className="font-medium" style={{ color: brandColor.hex }}>
-                 {row.brand_name}
-               </span>
-               <span className="ml-1 font-mono" style={{ color: brandColor.hex }}>
-                 {row.tube_count}
-               </span>
-             </Badge>
-           );
-         })}
-        {remainingCount > 0 && (
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-muted-foreground">
-            +{remainingCount} more
-          </Badge>
-        )}
-      </div>
+      {/* ALL products - NO truncation */}
+      <div className="space-y-1.5">
+        {summary.kpiRows.map(row => {
+          const brandColor = getTubeBrandColor(row.brand_id);
+          const statusColors = getColorStatusClasses(row.color_status);
+          const isOutOfStock = row.tube_count === 0;
+          const isNeverOrdered = row.last_order_label === 'Never ordered';
 
-      {/* Status warnings */}
-      {(summary.hasOutOfStock || summary.hasNeverOrdered) && (
-        <div className="flex flex-wrap gap-1.5 text-[10px]">
-          {summary.hasOutOfStock && (
-            <span className="text-destructive flex items-center gap-0.5">
-              <AlertTriangle className="h-2.5 w-2.5" />
-              Out of stock
-            </span>
-          )}
-          {summary.hasNeverOrdered && (
-            <span className="text-warning flex items-center gap-0.5">
-              <AlertTriangle className="h-2.5 w-2.5" />
-              Never ordered
-            </span>
-          )}
-        </div>
-      )}
+          return (
+            <div
+              key={row.brand_id}
+              className={cn(
+                'rounded-md px-2 py-1.5 text-xs',
+                statusColors.bg,
+                'border',
+                statusColors.border
+              )}
+            >
+              {/* Brand name + tube count */}
+              <div className="flex items-center justify-between">
+                <span 
+                  className="font-medium text-xs"
+                  style={{ color: brandColor.hex }}
+                >
+                  {row.brand_name}
+                </span>
+                <span 
+                  className="font-mono text-xs"
+                  style={{ color: brandColor.hex }}
+                >
+                  {row.tube_count} tubes
+                </span>
+              </div>
+
+              {/* Last order date - per product */}
+              <div className="flex items-center justify-between mt-0.5">
+                <span className="text-[10px] text-muted-foreground">
+                  Last order:
+                </span>
+                <span className={cn(
+                  'text-[10px] font-medium',
+                  isNeverOrdered ? 'text-amber-500' : 'text-muted-foreground'
+                )}>
+                  {row.last_order_date 
+                    ? new Date(row.last_order_date).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })
+                    : row.last_order_label || 'Never ordered'
+                  }
+                </span>
+              </div>
+
+              {/* Status warnings inline */}
+              {isOutOfStock && (
+                <div className="flex items-center gap-1 mt-1 text-[10px] text-destructive">
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                  <span>Out of stock</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
