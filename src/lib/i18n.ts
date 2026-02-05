@@ -35,6 +35,61 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'nav.tasks': 'Tasks',
     'nav.profile': 'Profile',
     
+    // Guidance System
+    'guidance.purpose': 'Purpose',
+    'guidance.what_to_do': 'What to do here',
+    'guidance.important': 'Important',
+    'guidance.data_from': 'Data from',
+    'guidance.affected_by': 'Affected by',
+    'guidance.requires_approval': '⚠️ Changes require admin approval',
+    'guidance.needs_approval': 'needs approval',
+    'guidance.account_update': 'How to Update Your Account',
+    'guidance.can_edit': 'You Can Edit',
+    'guidance.read_only': 'Read Only (Contact Admin)',
+    'guidance.after_submit': 'After you submit changes:',
+    'guidance.instant_changes': 'Some changes apply instantly',
+    'guidance.approval_wait': 'Others go to admin for review',
+    'guidance.notified': "You'll be notified when approved",
+    
+    // Page Purposes
+    'page.dashboard.purpose': 'Your daily command center showing assigned stops, shift status, and pending actions.',
+    'page.dashboard.action.view_stores': 'View assigned stores',
+    'page.dashboard.action.start_visit': 'Start a store visit',
+    'page.dashboard.action.check_changes': 'Check pending change lists',
+    'page.stores.purpose': 'Browse and select stores for visits or deliveries.',
+    'page.visit.purpose': 'Log your store visit with inventory counts, sticker status, and notes.',
+    'page.delivery.purpose': 'Record delivery details and get customer confirmation.',
+    'page.changes.purpose': 'Track your submitted changes and their approval status.',
+    'page.history.purpose': 'Review your past visits, deliveries, and submissions.',
+    'page.messages.purpose': 'Communicate with dispatch and receive important updates.',
+    'page.profile.purpose': 'Update your account information and preferences.',
+    
+    // Card Helpers
+    'card.tube_inventory': 'Shows current tube counts per product at this store.',
+    'card.tube_inventory.detail': 'Update counts during visits. Changes sync to inventory.',
+    'card.stickers': 'Sticker visibility status for each brand.',
+    'card.stickers.detail': 'Toggle stickers on/off based on what you observe.',
+    'card.orders': 'Recent orders placed by this store.',
+    'card.kpi': 'Key performance indicators for this store.',
+    'card.shift': 'Your current shift status and duration.',
+    'card.stops': 'Stores assigned to you for today.',
+    
+    // Tube Inventory
+    'tube_inventory.title': 'Tube Inventory',
+    'tube_inventory.count': 'Tube count',
+    'tube_inventory.last_order': 'Last order',
+    'tube_inventory.never_ordered': 'Never ordered',
+    'tube_inventory.out_of_stock': 'Out of stock',
+    'tube_inventory.low_stock': 'Low stock',
+    
+    // Status Labels
+    'status.pending': 'Pending',
+    'status.in_progress': 'In Progress',
+    'status.completed': 'Completed',
+    'status.approved': 'Approved',
+    'status.rejected': 'Rejected',
+    'status.under_review': 'Under Review',
+    
     // Driver Portal
     'driver.title': 'Driver Portal',
     'driver.todays_route': "Today's Route",
@@ -138,6 +193,61 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'nav.tasks': 'Tareas',
     'nav.profile': 'Perfil',
     
+    // Guidance System
+    'guidance.purpose': 'Propósito',
+    'guidance.what_to_do': 'Qué hacer aquí',
+    'guidance.important': 'Importante',
+    'guidance.data_from': 'Datos de',
+    'guidance.affected_by': 'Afectado por',
+    'guidance.requires_approval': '⚠️ Los cambios requieren aprobación del administrador',
+    'guidance.needs_approval': 'requiere aprobación',
+    'guidance.account_update': 'Cómo Actualizar Tu Cuenta',
+    'guidance.can_edit': 'Puedes Editar',
+    'guidance.read_only': 'Solo Lectura (Contactar Admin)',
+    'guidance.after_submit': 'Después de enviar cambios:',
+    'guidance.instant_changes': 'Algunos cambios se aplican al instante',
+    'guidance.approval_wait': 'Otros van al administrador para revisión',
+    'guidance.notified': 'Se te notificará cuando se aprueben',
+    
+    // Page Purposes
+    'page.dashboard.purpose': 'Tu centro de comando diario mostrando paradas asignadas, estado del turno y acciones pendientes.',
+    'page.dashboard.action.view_stores': 'Ver tiendas asignadas',
+    'page.dashboard.action.start_visit': 'Iniciar una visita a tienda',
+    'page.dashboard.action.check_changes': 'Revisar listas de cambios pendientes',
+    'page.stores.purpose': 'Navegar y seleccionar tiendas para visitas o entregas.',
+    'page.visit.purpose': 'Registrar tu visita con conteos de inventario, estado de calcomanías y notas.',
+    'page.delivery.purpose': 'Registrar detalles de entrega y obtener confirmación del cliente.',
+    'page.changes.purpose': 'Seguir tus cambios enviados y su estado de aprobación.',
+    'page.history.purpose': 'Revisar tus visitas, entregas y envíos pasados.',
+    'page.messages.purpose': 'Comunicarte con despacho y recibir actualizaciones importantes.',
+    'page.profile.purpose': 'Actualizar tu información de cuenta y preferencias.',
+    
+    // Card Helpers
+    'card.tube_inventory': 'Muestra los conteos actuales de tubos por producto en esta tienda.',
+    'card.tube_inventory.detail': 'Actualiza los conteos durante las visitas. Los cambios se sincronizan con el inventario.',
+    'card.stickers': 'Estado de visibilidad de calcomanías para cada marca.',
+    'card.stickers.detail': 'Activa/desactiva calcomanías según lo que observes.',
+    'card.orders': 'Pedidos recientes realizados por esta tienda.',
+    'card.kpi': 'Indicadores clave de rendimiento para esta tienda.',
+    'card.shift': 'Tu estado de turno actual y duración.',
+    'card.stops': 'Tiendas asignadas para hoy.',
+    
+    // Tube Inventory
+    'tube_inventory.title': 'Inventario de Tubos',
+    'tube_inventory.count': 'Conteo de tubos',
+    'tube_inventory.last_order': 'Último pedido',
+    'tube_inventory.never_ordered': 'Nunca ordenado',
+    'tube_inventory.out_of_stock': 'Agotado',
+    'tube_inventory.low_stock': 'Stock bajo',
+    
+    // Status Labels
+    'status.pending': 'Pendiente',
+    'status.in_progress': 'En Progreso',
+    'status.completed': 'Completado',
+    'status.approved': 'Aprobado',
+    'status.rejected': 'Rechazado',
+    'status.under_review': 'En Revisión',
+    
     // Driver Portal
     'driver.title': 'Portal del Conductor',
     'driver.todays_route': 'Ruta de Hoy',
@@ -217,6 +327,61 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'nav.earnings': 'الأرباح',
     'nav.tasks': 'المهام',
     'nav.profile': 'الملف الشخصي',
+    
+    // Guidance System
+    'guidance.purpose': 'الغرض',
+    'guidance.what_to_do': 'ماذا تفعل هنا',
+    'guidance.important': 'مهم',
+    'guidance.data_from': 'البيانات من',
+    'guidance.affected_by': 'يتأثر بـ',
+    'guidance.requires_approval': '⚠️ التغييرات تتطلب موافقة المسؤول',
+    'guidance.needs_approval': 'يتطلب موافقة',
+    'guidance.account_update': 'كيفية تحديث حسابك',
+    'guidance.can_edit': 'يمكنك التعديل',
+    'guidance.read_only': 'للقراءة فقط (اتصل بالمسؤول)',
+    'guidance.after_submit': 'بعد إرسال التغييرات:',
+    'guidance.instant_changes': 'بعض التغييرات تُطبق فوراً',
+    'guidance.approval_wait': 'البعض الآخر يذهب للمسؤول للمراجعة',
+    'guidance.notified': 'سيتم إخطارك عند الموافقة',
+    
+    // Page Purposes
+    'page.dashboard.purpose': 'مركز التحكم اليومي يعرض المحطات المخصصة وحالة النوبة والإجراءات المعلقة.',
+    'page.dashboard.action.view_stores': 'عرض المتاجر المخصصة',
+    'page.dashboard.action.start_visit': 'بدء زيارة متجر',
+    'page.dashboard.action.check_changes': 'مراجعة قوائم التغييرات المعلقة',
+    'page.stores.purpose': 'تصفح واختيار المتاجر للزيارات أو التوصيلات.',
+    'page.visit.purpose': 'تسجيل زيارتك مع عد المخزون وحالة الملصقات والملاحظات.',
+    'page.delivery.purpose': 'تسجيل تفاصيل التوصيل والحصول على تأكيد العميل.',
+    'page.changes.purpose': 'تتبع التغييرات المرسلة وحالة الموافقة.',
+    'page.history.purpose': 'مراجعة زياراتك وتوصيلاتك السابقة.',
+    'page.messages.purpose': 'التواصل مع الإرسال وتلقي التحديثات المهمة.',
+    'page.profile.purpose': 'تحديث معلومات حسابك وتفضيلاتك.',
+    
+    // Card Helpers
+    'card.tube_inventory': 'يعرض عدد الأنابيب الحالي لكل منتج في هذا المتجر.',
+    'card.tube_inventory.detail': 'حدث العد أثناء الزيارات. التغييرات تتزامن مع المخزون.',
+    'card.stickers': 'حالة ظهور الملصقات لكل علامة تجارية.',
+    'card.stickers.detail': 'شغل/أوقف الملصقات بناءً على ما تلاحظه.',
+    'card.orders': 'الطلبات الأخيرة لهذا المتجر.',
+    'card.kpi': 'مؤشرات الأداء الرئيسية لهذا المتجر.',
+    'card.shift': 'حالة نوبتك الحالية والمدة.',
+    'card.stops': 'المتاجر المخصصة لك اليوم.',
+    
+    // Tube Inventory
+    'tube_inventory.title': 'مخزون الأنابيب',
+    'tube_inventory.count': 'عدد الأنابيب',
+    'tube_inventory.last_order': 'آخر طلب',
+    'tube_inventory.never_ordered': 'لم يُطلب أبداً',
+    'tube_inventory.out_of_stock': 'نفد من المخزون',
+    'tube_inventory.low_stock': 'مخزون منخفض',
+    
+    // Status Labels
+    'status.pending': 'معلق',
+    'status.in_progress': 'قيد التنفيذ',
+    'status.completed': 'مكتمل',
+    'status.approved': 'معتمد',
+    'status.rejected': 'مرفوض',
+    'status.under_review': 'قيد المراجعة',
     
     // Driver Portal
     'driver.title': 'بوابة السائق',

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import { 
   User, 
   Truck, 
@@ -21,7 +22,9 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { PagePurpose, AccountUpdateGuide } from '@/components/portal/guidance';
 
 interface DriverProfile {
   id: string;
@@ -40,6 +43,7 @@ interface ProfilePageProps {
 
 export function ProfilePage({ portalType }: ProfilePageProps) {
   const { toast } = useToast();
+  const { t, isRTL } = useTranslation();
   const { data: profileData, refetch } = useCurrentUserProfile();
   const [driverProfile, setDriverProfile] = useState<DriverProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -145,9 +149,37 @@ export function ProfilePage({ portalType }: ProfilePageProps) {
 
   const profile = profileData?.profile;
 
+  // Page purpose configuration
+  const profilePurpose = {
+    driver: {
+      title: t('page.profile.purpose'),
+      description: t('page.profile.purpose'),
+      actions: ['Update your personal details', 'Check account status', 'Review vehicle info'],
+      warnings: ['Some changes require admin approval'],
+    },
+    biker: {
+      title: t('page.profile.purpose'),
+      description: t('page.profile.purpose'),
+      actions: ['Update your personal details', 'Check account status'],
+      warnings: ['Some changes require admin approval'],
+    },
+    default: {
+      title: t('page.profile.purpose'),
+      description: t('page.profile.purpose'),
+      actions: ['Update your personal details'],
+      warnings: [],
+    },
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className={cn('space-y-4', isRTL && 'text-right')}>
+      {/* Page Purpose */}
+      <PagePurpose pageKey="profile" config={profilePurpose} variant="compact" />
+      
+      {/* Account Update Guide */}
+      <AccountUpdateGuide />
+      
+      <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
         <div>
           <h1 className="text-xl font-bold">My Profile</h1>
           <p className="text-sm text-muted-foreground">Your account and vehicle information</p>

@@ -13,3 +13,7 @@ export { CommandCenterKPI } from './CommandCenterKPI';
 export { PortalRBACGate } from './PortalRBACGate';
 export { PortalEmptyState } from './PortalEmptyState';
 export { ActivityFeed, type ActivityItem } from './ActivityFeed';
+
+// Guidance System (Self-teaching OS layer)
+export { PagePurpose, CardHelper, InputHelper, AccountUpdateGuide } from './guidance';
+export type { PagePurposeConfig, PagePurposeContent } from './guidance';
