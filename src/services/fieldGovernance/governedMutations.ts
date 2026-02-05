@@ -1,9 +1,10 @@
 /**
- * Governed Field Mutations
+ * Governed Field Mutations (DEPRECATED - USE submitFieldChange ONLY)
  * 
- * Wrappers that route field role mutations through the governance pipeline.
- * These are used by useBrandStickers and useTubeIntelligence when the
- * current user is a field role (driver, biker, ambassador).
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * WARNING: These hooks call submitFieldChange() as the SINGLE entry point.
+ * Do NOT add any direct inserts to field_submissions in this file.
+ * ═══════════════════════════════════════════════════════════════════════════════
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -15,11 +16,11 @@ import { parseRLSError } from '@/lib/rls-error-handler';
 import {
   isFieldRole,
   FieldRole,
-  getSubmissionSource,
 } from './types';
+import { submitFieldChange, GOVERNANCE_STRICT_MODE } from './submitFieldChange';
 
 /**
- * Fetch current state before mutation for diff tracking
+ * Fetch current state before mutation for payload_before diff tracking
  */
 async function fetchCurrentState(
   table: string,
@@ -41,53 +42,6 @@ async function fetchCurrentState(
   }
 }
 
-/**
- * Create a field submission record
- */
-async function createFieldSubmission(params: {
-  userId: string;
-  role: FieldRole;
-  storeId: string;
-  entityType: 'brand_sticker' | 'tube_inventory';
-  entityId?: string;
-  actionType: 'create' | 'update';
-  payloadBefore: Record<string, unknown> | null;
-  payloadAfter: Record<string, unknown>;
-}): Promise<{ id: string } | null> {
-  try {
-    const insertData = {
-      submitted_by_user_id: params.userId,
-      submitted_by_role: params.role,
-      store_id: params.storeId,
-      entity_type: params.entityType,
-      entity_id: params.entityId || null,
-      action_type: params.actionType,
-      payload_before: params.payloadBefore as unknown,
-      payload_after: params.payloadAfter as unknown,
-      submission_source: getSubmissionSource(params.role),
-      submission_status: 'auto_approved' as const,
-      is_applied: true,
-    };
-
-    const { data, error } = await supabase
-      .from('field_submissions')
-      // @ts-expect-error - columns match DB schema but types are strict
-      .insert([insertData])
-      .select('id')
-      .single();
-    
-    if (error) {
-      console.error('Failed to create field submission:', error);
-      return null;
-    }
-    
-    return data;
-  } catch (e) {
-    console.error('Field submission error:', e);
-    return null;
-  }
-}
-
 export interface GovernedBrandStickerUpdate {
   id?: string;
   store_id: string;
@@ -100,7 +54,7 @@ export interface GovernedBrandStickerUpdate {
 
 /**
  * Hook for governed brand sticker updates
- * Creates a field_submission record before/after the mutation
+ * Routes through submitFieldChange as SINGLE entry point
  */
 export function useGovernedBrandStickerUpdate(storeId: string | null) {
   const { user } = useAuth();
@@ -121,18 +75,28 @@ export function useGovernedBrandStickerUpdate(storeId: string | null) {
         ...updateData,
       };
       
-      // If user is a field role, create submission record
+      // If user is a field role, route through governance
       if (user?.id && isFieldRole(role)) {
-        await createFieldSubmission({
-          userId: user.id,
-          role: role as FieldRole,
-          storeId: store_id,
-          entityType: 'brand_sticker',
-          entityId: id,
-          actionType: id ? 'update' : 'create',
-          payloadBefore,
-          payloadAfter,
-        });
+        const result = await submitFieldChange(
+          {
+            store_id,
+            entity_type: 'brand_sticker',
+            action_type: id ? 'update' : 'create',
+            entity_id: id,
+            payload_before: payloadBefore || undefined,
+            payload_after: payloadAfter,
+          },
+          user.id,
+          role as FieldRole
+        );
+        
+        // In STRICT mode, do NOT execute mutation - return early
+        if (GOVERNANCE_STRICT_MODE) {
+          if (!result.success) {
+            throw new Error(result.error || 'Governance submission failed');
+          }
+          return { governed: true, submissionId: result.submissionId };
+        }
       }
       
       // Execute the actual mutation
@@ -150,7 +114,12 @@ export function useGovernedBrandStickerUpdate(storeId: string | null) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brand-stickers', storeId] });
-      toast.success('Sticker status updated');
+      queryClient.invalidateQueries({ queryKey: ['field-submissions'] });
+      if (GOVERNANCE_STRICT_MODE) {
+        toast.info('Change submitted for review');
+      } else {
+        toast.success('Sticker status updated');
+      }
     },
     onError: (error: Error) => {
       const parsed = parseRLSError(error);
@@ -171,7 +140,7 @@ export interface GovernedTubeIntelUpdate {
 
 /**
  * Hook for governed tube intelligence updates
- * Creates a field_submission record before/after the mutation
+ * Routes through submitFieldChange as SINGLE entry point
  */
 export function useGovernedTubeIntelUpdate(storeId: string | null) {
   const { user } = useAuth();
@@ -192,19 +161,29 @@ export function useGovernedTubeIntelUpdate(storeId: string | null) {
         value,
       };
       
-      // If user is a field role, create submission record
+      // If user is a field role, route through governance
       const effectiveRole = payloadRole || role;
       if (user?.id && isFieldRole(effectiveRole)) {
-        await createFieldSubmission({
-          userId: user.id,
-          role: effectiveRole as FieldRole,
-          storeId: store_id,
-          entityType: 'tube_inventory',
-          entityId: id,
-          actionType: id ? 'update' : 'create',
-          payloadBefore,
-          payloadAfter,
-        });
+        const result = await submitFieldChange(
+          {
+            store_id,
+            entity_type: 'tube_inventory',
+            action_type: id ? 'update' : 'create',
+            entity_id: id,
+            payload_before: payloadBefore || undefined,
+            payload_after: payloadAfter,
+          },
+          user.id,
+          effectiveRole as FieldRole
+        );
+        
+        // In STRICT mode, do NOT execute mutation - return early
+        if (GOVERNANCE_STRICT_MODE) {
+          if (!result.success) {
+            throw new Error(result.error || 'Governance submission failed');
+          }
+          return { governed: true, submissionId: result.submissionId };
+        }
       }
       
       // Execute the actual mutation
@@ -235,7 +214,12 @@ export function useGovernedTubeIntelUpdate(storeId: string | null) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tube-intelligence', storeId] });
-      toast.success('Updated');
+      queryClient.invalidateQueries({ queryKey: ['field-submissions'] });
+      if (GOVERNANCE_STRICT_MODE) {
+        toast.info('Change submitted for review');
+      } else {
+        toast.success('Updated');
+      }
     },
     onError: (error: Error) => {
       const parsed = parseRLSError(error);

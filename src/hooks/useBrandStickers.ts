@@ -5,7 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { TubeIntelRole } from './useTubeIntelligence';
 import { parseRLSError } from '@/lib/rls-error-handler';
-import { isFieldRole, getSubmissionSource } from '@/services/fieldGovernance/types';
+import { isFieldRole, FieldRole } from '@/services/fieldGovernance/types';
+import { submitFieldChange, GOVERNANCE_STRICT_MODE } from '@/services/fieldGovernance/submitFieldChange';
 // Canonical sticker brands - mapped to actual DB UUIDs
 // These MUST match the brands table in the database
 export const STICKER_BRANDS = [
@@ -289,84 +290,77 @@ export function useBrandStickers(storeId: string | null) {
         throw new Error(`Invalid store_id: "${store_id}" is not a valid UUID`);
       }
 
-      // Fetch current state for governance diff (if field user)
-      let payloadBefore: Record<string, unknown> | null = null;
-      if (id && user?.id && isFieldRole(effectiveRole)) {
-        const { data } = await supabase
-          .from('store_brand_stickers')
-          .select('*')
-          .eq('id', id)
-          .single();
-        payloadBefore = data as Record<string, unknown> | null;
+      // For field roles, route through governance FIRST
+      if (user?.id && isFieldRole(effectiveRole)) {
+        // Fetch current state for diff
+        let payloadBefore: Record<string, unknown> | null = null;
+        if (id) {
+          const { data } = await supabase
+            .from('store_brand_stickers')
+            .select('*')
+            .eq('id', id)
+            .single();
+          payloadBefore = data as Record<string, unknown> | null;
+        }
+        
+        const payloadAfter = { sticker_type, value, brand_name };
+        
+        const result = await submitFieldChange(
+          {
+            store_id,
+            entity_type: 'brand_sticker',
+            action_type: id ? 'update' : 'create',
+            entity_id: id,
+            payload_before: payloadBefore || undefined,
+            payload_after: payloadAfter,
+          },
+          user.id,
+          effectiveRole as FieldRole
+        );
+        
+        // In STRICT mode, do NOT execute mutation - submission only
+        if (GOVERNANCE_STRICT_MODE) {
+          if (!result.success) {
+            throw new Error(result.error || 'Governance submission failed');
+          }
+          return { governed: true, submissionId: result.submissionId };
+        }
       }
 
-      // Build update object - trigger handles put_on_at auto-set
+      // Non-field roles: execute mutation directly
       const updateData: Record<string, any> = {
         [sticker_type]: value,
         last_verified_by: user?.id || null,
         last_verified_at: new Date().toISOString(),
         last_updated_by_role: effectiveRole || 'admin',
       };
-
-      // Auto-clear requested when installed
       if (value) {
         const requestedColumn = getRequestedColumnForSticker(sticker_type);
         updateData[requestedColumn] = false;
       }
 
       if (id) {
-        // Update existing record by row ID
         const { error } = await supabase
           .from('store_brand_stickers')
           .update(updateData)
           .eq('id', id);
-
         if (error) throw error;
       } else {
-        // Create new record - resolve brand UUID from name
         const brandUuid = await getBrandUuid(brand_name);
-        
         const { error } = await supabase
           .from('store_brand_stickers')
-          .insert({
-            store_id,
-            brand_id: brandUuid,
-            brand_name,
-            ...updateData,
-          });
-
+          .insert({ store_id, brand_id: brandUuid, brand_name, ...updateData });
         if (error) throw error;
       }
-
-      // Create governance submission for field roles (after successful mutation)
-      if (user?.id && isFieldRole(effectiveRole)) {
-        const payloadAfter = { sticker_type, value, brand_name, ...updateData };
-        const insertData = {
-          submitted_by_user_id: user.id,
-          submitted_by_role: effectiveRole,
-          store_id,
-          entity_type: 'brand_sticker' as const,
-          entity_id: id || null,
-          action_type: id ? 'update' as const : 'create' as const,
-          payload_before: payloadBefore as unknown,
-          payload_after: payloadAfter as unknown,
-          submission_source: getSubmissionSource(effectiveRole),
-          submission_status: 'auto_approved' as const,
-          is_applied: true,
-        };
-
-        await supabase
-          .from('field_submissions')
-          // @ts-expect-error - columns match DB schema
-          .insert([insertData]);
-        
-        console.log(`✅ Field governance: brand_sticker ${id ? 'update' : 'create'} by ${effectiveRole}`);
-      }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['brand-stickers', storeId] });
       queryClient.invalidateQueries({ queryKey: ['field-submissions'] });
-      toast.success('Sticker status updated');
+      if (result && typeof result === 'object' && 'governed' in result) {
+        toast.info('Change submitted for review');
+      } else {
+        toast.success('Sticker status updated');
+      }
     },
     onError: (error: Error) => {
       const parsed = parseRLSError(error);
@@ -385,17 +379,42 @@ export function useBrandStickers(storeId: string | null) {
         throw new Error(`Invalid store_id: "${store_id}" is not a valid UUID`);
       }
 
-      // Fetch current state for governance diff (if field user)
-      let payloadBefore: Record<string, unknown> | null = null;
-      if (id && user?.id && isFieldRole(effectiveRole)) {
-        const { data } = await supabase
-          .from('store_brand_stickers')
-          .select('*')
-          .eq('id', id)
-          .single();
-        payloadBefore = data as Record<string, unknown> | null;
+      // For field roles, route through governance FIRST
+      if (user?.id && isFieldRole(effectiveRole)) {
+        let payloadBefore: Record<string, unknown> | null = null;
+        if (id) {
+          const { data } = await supabase
+            .from('store_brand_stickers')
+            .select('*')
+            .eq('id', id)
+            .single();
+          payloadBefore = data as Record<string, unknown> | null;
+        }
+        
+        const payloadAfter = { requested_type, value, brand_name };
+        
+        const result = await submitFieldChange(
+          {
+            store_id,
+            entity_type: 'brand_sticker',
+            action_type: id ? 'update' : 'create',
+            entity_id: id,
+            payload_before: payloadBefore || undefined,
+            payload_after: payloadAfter,
+          },
+          user.id,
+          effectiveRole as FieldRole
+        );
+        
+        if (GOVERNANCE_STRICT_MODE) {
+          if (!result.success) {
+            throw new Error(result.error || 'Governance submission failed');
+          }
+          return { governed: true, submissionId: result.submissionId };
+        }
       }
 
+      // Non-field roles: execute directly
       const updateData: Record<string, any> = {
         [requested_type]: value,
         last_verified_by: user?.id || null,
@@ -408,50 +427,23 @@ export function useBrandStickers(storeId: string | null) {
           .from('store_brand_stickers')
           .update(updateData)
           .eq('id', id);
-
         if (error) throw error;
       } else {
         const brandUuid = await getBrandUuid(brand_name);
-        
         const { error } = await supabase
           .from('store_brand_stickers')
-          .insert({
-            store_id,
-            brand_id: brandUuid,
-            brand_name,
-            ...updateData,
-          });
-
+          .insert({ store_id, brand_id: brandUuid, brand_name, ...updateData });
         if (error) throw error;
       }
-
-      // Create governance submission for field roles
-      if (user?.id && isFieldRole(effectiveRole)) {
-        const payloadAfter = { requested_type, value, brand_name, ...updateData };
-        const insertData = {
-          submitted_by_user_id: user.id,
-          submitted_by_role: effectiveRole,
-          store_id,
-          entity_type: 'brand_sticker' as const,
-          entity_id: id || null,
-          action_type: id ? 'update' as const : 'create' as const,
-          payload_before: payloadBefore as unknown,
-          payload_after: payloadAfter as unknown,
-          submission_source: getSubmissionSource(effectiveRole),
-          submission_status: 'auto_approved' as const,
-          is_applied: true,
-        };
-
-        await supabase
-          .from('field_submissions')
-          // @ts-expect-error - columns match DB schema
-          .insert([insertData]);
-      }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['brand-stickers', storeId] });
       queryClient.invalidateQueries({ queryKey: ['field-submissions'] });
-      toast.success('Requested sticker updated');
+      if (result && typeof result === 'object' && 'governed' in result) {
+        toast.info('Change submitted for review');
+      } else {
+        toast.success('Requested sticker updated');
+      }
     },
     onError: (error: Error) => {
       const parsed = parseRLSError(error);

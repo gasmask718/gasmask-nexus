@@ -46,6 +46,10 @@ import {
   Monitor,
   MessageSquare,
   Undo2,
+  Download,
+  TestTube2,
+  Shield,
+  Copy,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { 
@@ -64,8 +68,14 @@ import { SubmissionFilters, type SubmissionFiltersState } from './SubmissionFilt
 import { SubmissionDiffView } from './SubmissionDiffView';
 import { RiskBadge } from './RiskBadge';
 import { cn } from '@/lib/utils';
+import { GOVERNANCE_STRICT_MODE } from '@/services/fieldGovernance';
+import { ExportButton } from '@/components/crud/ExportButton';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function FieldSubmissionReviewBoard() {
+  const { user } = useAuth();
   const [filters, setFilters] = useState<SubmissionFiltersState>({
     search: '',
     status: 'all',
@@ -77,6 +87,7 @@ export function FieldSubmissionReviewBoard() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useFieldSubmissionStats();
   const { data: submissions, isLoading, refetch } = useFieldSubmissions({
@@ -89,6 +100,83 @@ export function FieldSubmissionReviewBoard() {
 
   const approveMutation = useApproveSubmission();
   const rejectMutation = useRejectSubmission();
+
+  // Seed a test submission for verification
+  const handleSeedTest = async () => {
+    if (!user?.id) {
+      toast.error('Not authenticated');
+      return;
+    }
+    
+    setSeeding(true);
+    try {
+      // Create a test submission
+      const testPayload = {
+        submitted_by_user_id: user.id,
+        submitted_by_role: 'driver',
+        store_id: '00000000-0000-0000-0000-000000000000', // Placeholder
+        entity_type: 'brand_sticker' as const,
+        entity_id: null,
+        action_type: 'update' as const,
+        payload_before: { test_field: 'before_value', sticker_type: 'front_door_sticker', value: false },
+        payload_after: { test_field: 'after_value', sticker_type: 'front_door_sticker', value: true },
+        submission_source: 'admin_panel',
+        submission_status: 'pending_review' as const,
+        is_applied: false,
+      };
+      
+      const { data, error } = await supabase
+        .from('field_submissions')
+        .insert([testPayload])
+        .select('id')
+        .single();
+      
+      if (error) throw error;
+      
+      toast.success(`Test submission created: ${data.id.substring(0, 8)}...`);
+      refetch();
+    } catch (err) {
+      toast.error('Failed to seed test submission');
+      console.error(err);
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  // Copy submission ID to clipboard
+  const copySubmissionId = (id: string) => {
+    navigator.clipboard.writeText(id);
+    toast.success('Submission ID copied');
+  };
+
+  // Prepare export data
+  const exportData = (submissions || []).map(sub => ({
+    id: sub.id,
+    created_at: sub.created_at,
+    submitter: sub.submitter_name,
+    role: sub.submitted_by_role,
+    store: sub.store_name,
+    entity_type: sub.entity_type,
+    action_type: sub.action_type,
+    status: sub.submission_status,
+    risk_score: sub.risk_score,
+    source: sub.submission_source,
+    changed_fields: sub.changed_fields?.join(', ') || '',
+  }));
+
+  const exportColumns = [
+    { key: 'id', label: 'Submission ID' },
+    { key: 'created_at', label: 'Timestamp' },
+    { key: 'submitter', label: 'Submitter' },
+    { key: 'role', label: 'Role' },
+    { key: 'store', label: 'Store' },
+    { key: 'entity_type', label: 'Entity Type' },
+    { key: 'action_type', label: 'Action' },
+    { key: 'status', label: 'Status' },
+    { key: 'risk_score', label: 'Risk Score' },
+    { key: 'source', label: 'Source' },
+    { key: 'changed_fields', label: 'Changed Fields' },
+  ];
 
   const handleApprove = async (id: string) => {
     await approveMutation.mutateAsync(id);
@@ -164,6 +252,29 @@ export function FieldSubmissionReviewBoard() {
 
   return (
     <div className="space-y-6">
+      {/* Governance Mode Banner */}
+      <div className={cn(
+        "flex items-center justify-between px-4 py-2 rounded-lg border",
+        GOVERNANCE_STRICT_MODE 
+          ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
+          : "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-400"
+      )}>
+        <div className="flex items-center gap-2">
+          <Shield className="h-4 w-4" />
+          <span className="font-medium">
+            Governance Mode: {GOVERNANCE_STRICT_MODE ? 'STRICT' : 'AUTO-APPROVE'}
+          </span>
+          {GOVERNANCE_STRICT_MODE && (
+            <span className="text-sm opacity-80">
+              — Field changes require admin approval before applying
+            </span>
+          )}
+        </div>
+        <div className="text-sm opacity-70">
+          Last refresh: {format(new Date(), 'HH:mm:ss')}
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -172,10 +283,27 @@ export function FieldSubmissionReviewBoard() {
             Review and approve actions submitted by drivers, bikers, and ambassadors
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportButton 
+            data={exportData} 
+            filename="field-submissions" 
+            columns={exportColumns}
+            disabled={!submissions?.length}
+          />
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSeedTest}
+            disabled={seeding}
+          >
+            <TestTube2 className="h-4 w-4 mr-2" />
+            Seed Test
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Quick Stats */}
