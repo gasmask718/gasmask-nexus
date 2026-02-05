@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TubeIntelligenceCard } from '@/components/store/TubeIntelligenceCard';
-import { TubeIntelRole } from '@/hooks/useTubeIntelligence';
+import { UnifiedTubeIntelligenceCard } from '@/components/store/UnifiedTubeIntelligenceCard';
 import { Package } from 'lucide-react';
 
 interface TubeIntelTabProps {
@@ -9,8 +8,8 @@ interface TubeIntelTabProps {
 }
 
 export function TubeIntelTab({ storeId, portalType }: TubeIntelTabProps) {
-  // Map portal type to TubeIntel role
-  const roleMap: Record<string, TubeIntelRole> = {
+  // Map portal type to role
+  const roleMap: Record<string, 'admin' | 'ambassador' | 'driver' | 'biker'> = {
     driver: 'driver',
     biker: 'biker',
     ambassador: 'ambassador',
@@ -29,12 +28,12 @@ export function TubeIntelTab({ storeId, portalType }: TubeIntelTabProps) {
           <p className="text-sm text-muted-foreground">
             {role === 'driver' 
               ? 'View tube status for load preparation (read-only)'
-              : 'Update operational signals for this store'
+              : 'Update tube counts and view operational signals for this store'
             }
           </p>
         </CardHeader>
         <CardContent className="pt-0">
-          <TubeIntelligenceCard storeId={storeId} role={role} />
+          <UnifiedTubeIntelligenceCard storeId={storeId} role={role} />
         </CardContent>
       </Card>
     </div>

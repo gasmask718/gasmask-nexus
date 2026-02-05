@@ -15,7 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Package } from 'lucide-react';
-import { VALID_TUBE_BRANDS } from './EditableTubeInventoryCard';
+import { VALID_TUBE_BRANDS } from './UnifiedTubeIntelligenceCard';
 
 interface UpdateInventoryModalProps {
   open: boolean;
