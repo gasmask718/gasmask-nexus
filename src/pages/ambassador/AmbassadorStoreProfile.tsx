@@ -13,6 +13,7 @@ import {
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
 import { TubeIntelligenceCard } from '@/components/store/TubeIntelligenceCard';
+import { StoreTubeKPICard } from '@/components/store/StoreTubeKPICard';
 import { BrandStickersCard } from '@/components/store/BrandStickersCard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -238,7 +239,10 @@ function StoreProfileContent() {
         </Card>
       </div>
 
-      {/* Tube Intelligence - Operational Signals */}
+      {/* Tube KPI Card - ALL products with tube count + last order date */}
+      <StoreTubeKPICard storeId={store.id} compact />
+
+      {/* Tube Intelligence - Operational Signals (interest, actions) */}
       <TubeIntelligenceCard storeId={store.id} role="ambassador" />
 
       {/* Brand Stickers - Canonical 4-sticker system */}

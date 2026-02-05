@@ -39,7 +39,7 @@ import { useStoreMasterAutoCreate } from "@/hooks/useStoreMasterAutoCreate";
 import { getExtractedProfile } from "@/services/profileExtractionService";
 import { getStoreRelationshipScore, RelationshipScore } from "@/services/crmInsightsService";
 import { StoreTransactionsCard } from "@/components/store/StoreTransactionsCard";
-import { StoreTubeIntelCard } from "@/components/store/StoreTubeIntelCard";
+import { StoreTubeKPICard } from "@/components/store/StoreTubeKPICard";
 import { TubeCounterCard } from "@/components/store/TubeCounterCard";
 import { NeighborhoodSnapshotCard } from "@/components/store/NeighborhoodSnapshotCard";
 
@@ -482,7 +482,8 @@ export default function StoreMasterProfile() {
 
           <StoreTransactionsCard storeId={id || ""} storeName={storeMaster.store_name} />
           <TubeCounterCard storeId={id || ""} />
-          <StoreTubeIntelCard storeId={id || ""} />
+          {/* Tube KPI Card - Shows ALL products with tube count + last order date + color flow */}
+          <StoreTubeKPICard storeId={id || ""} />
 
           <NeighborhoodSnapshotCard
             storeId={id || ""}

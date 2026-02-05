@@ -49664,6 +49664,23 @@ export type Database = {
           },
         ]
       }
+      v_store_tube_kpi: {
+        Row: {
+          brand_id: string | null
+          brand_name: string | null
+          bring_samples: boolean | null
+          bring_starter_kit: boolean | null
+          color_status: string | null
+          inventory_updated_at: string | null
+          last_order_date: string | null
+          last_order_label: string | null
+          needs_order: boolean | null
+          owner_interested: boolean | null
+          store_id: string | null
+          tube_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       acknowledge_drift_alert: {
