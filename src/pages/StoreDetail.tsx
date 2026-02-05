@@ -32,9 +32,7 @@ import { StoreNotesSection } from "@/components/store/StoreNotesSection";
 import { OpportunitiesSection } from "@/components/store/OpportunitiesSection";
 import { SellsFlowersToggle } from "@/components/store/SellsFlowersToggle";
 // Legacy StoreOperationsCard DEPRECATED - functionality merged into BrandStickersCard + SellsFlowersToggle
-import { EditableTubeInventoryCard } from "@/components/store/EditableTubeInventoryCard";
-import { TubeIntelligenceCard } from "@/components/store/TubeIntelligenceCard";
-import { StoreTubeKPICard } from "@/components/store/StoreTubeKPICard";
+import { UnifiedTubeIntelligenceCard } from "@/components/store/UnifiedTubeIntelligenceCard";
 import { BrandStickersCard } from "@/components/store/BrandStickersCard";
 import { QuickStatsStickersSummary } from "@/components/store/QuickStatsStickersSummary";
 import { StoreCadencePanel } from "@/components/store/StoreCadencePanel";
@@ -563,17 +561,11 @@ const StoreDetail = () => {
             }}
           />
 
-          {/* Tube KPI Card - ALL products with tube count + last order date + color flow */}
-          <StoreTubeKPICard storeId={id || ""} />
-
-          {/* Tube Intelligence - Operational Signals (interest, needs order, samples, starter kit) */}
-          <TubeIntelligenceCard storeId={id || ""} role="admin" />
+          {/* UNIFIED Tube Intelligence - Edit + Intelligence in ONE component */}
+          <UnifiedTubeIntelligenceCard storeId={id || ""} role="admin" />
 
           {/* Brand Stickers - Canonical 4-sticker system per brand */}
           <BrandStickersCard storeId={id || ""} role="admin" />
-
-          {/* Tube Inventory - Editable with Brand Filter (Legacy) */}
-          <EditableTubeInventoryCard storeId={id || ""} />
 
           {/* Product Inventory from Visits - Read-only */}
           <StoreVisitInventoryCard storeId={id || ""} />
