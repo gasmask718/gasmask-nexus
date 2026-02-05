@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { 
   Store, 
   Truck, 
@@ -20,7 +21,9 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
+import { PagePurpose, CardHelper } from '@/components/portal/guidance';
 
 interface MyDayDashboardProps {
   portalType: 'driver' | 'biker';
@@ -47,6 +50,7 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: profileData } = useCurrentUserProfile();
+  const { t, isRTL } = useTranslation();
   const [assignedStops, setAssignedStops] = useState<AssignedStop[]>([]);
   const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
   const [loading, setLoading] = useState(true);
@@ -223,8 +227,47 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
   const completedStops = assignedStops.filter(s => s.status === 'completed').length;
   const pendingStops = assignedStops.filter(s => s.status !== 'completed').length;
 
+  // Page purpose configuration by role
+  const dashboardPurpose = {
+    driver: {
+      title: t('page.dashboard.purpose'),
+      description: t('page.dashboard.purpose'),
+      actions: [
+        t('page.dashboard.action.view_stores'),
+        t('page.dashboard.action.start_visit'),
+        t('page.dashboard.action.check_changes'),
+      ],
+      warnings: [],
+    },
+    biker: {
+      title: t('page.dashboard.purpose'),
+      description: t('page.dashboard.purpose'),
+      actions: [
+        t('page.dashboard.action.view_stores'),
+        t('page.dashboard.action.start_visit'),
+        t('page.dashboard.action.check_changes'),
+      ],
+      warnings: [],
+    },
+    default: {
+      title: t('page.dashboard.purpose'),
+      description: t('page.dashboard.purpose'),
+      actions: [
+        t('page.dashboard.action.view_stores'),
+        t('page.dashboard.action.start_visit'),
+      ],
+      warnings: [],
+    },
+  };
+
   return (
-    <div className="space-y-6">
+    <div className={cn('space-y-6', isRTL && 'text-right')}>
+      {/* Page Purpose - Role-aware guidance */}
+      <PagePurpose 
+        pageKey="dashboard" 
+        config={dashboardPurpose}
+        variant="default"
+      />
       {/* Shift Control Card */}
       <Card className={shiftStatus === 'active' ? 'border-green-500/50 bg-green-500/5' : shiftStatus === 'ended' ? 'border-muted' : 'border-amber-500/50 bg-amber-500/5'}>
         <CardContent className="py-4">
@@ -380,11 +423,20 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
       </Card>
 
       {/* Today's Stops */}
-      <Card>
+      <Card className="overflow-hidden">
+        <CardHelper 
+          summary={t('card.stops')}
+          variant="expandable"
+          details={portalType === 'driver' 
+            ? "Complete visits to record inventory and delivery information."
+            : "Visit stores to verify inventory and sticker status."
+          }
+          dataSource="Assigned routes & schedules"
+        />
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
             <div>
-              <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className={cn('text-lg flex items-center gap-2', isRTL && 'flex-row-reverse')}>
                 <Calendar className="h-5 w-5" />
                 Today's Stops
               </CardTitle>
