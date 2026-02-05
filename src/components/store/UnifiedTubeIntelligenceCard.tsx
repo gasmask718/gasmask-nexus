@@ -14,6 +14,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TUBE_BRAND_COLORS } from '@/constants/tubeColors';
+import { CardHelper } from '@/components/portal/guidance';
+import { useTranslation } from '@/hooks/useTranslation';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // UNIFIED TUBE INTELLIGENCE CARD
@@ -64,6 +66,7 @@ interface UnifiedTubeIntelligenceCardProps {
 export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: UnifiedTubeIntelligenceCardProps) {
   const queryClient = useQueryClient();
   const { simulationMode } = useSimulationMode();
+  const { t } = useTranslation();
   const [editedCounts, setEditedCounts] = useState<Record<string, number>>({});
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -252,13 +255,21 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
   return (
     <Card className="glass-card border-border/50">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Package className="h-5 w-5 text-primary" />
-          Tube Intelligence
-          <Badge variant="outline" className="ml-2 text-xs">
-            {canEdit ? 'Editable' : 'Read-only'}
-          </Badge>
-        </CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Package className="h-5 w-5 text-primary" />
+            {t('card.tube_intel.title')}
+            <Badge variant="outline" className="ml-2 text-xs">
+              {canEdit ? t('card.tube_intel.editable') : t('card.tube_intel.readonly')}
+            </Badge>
+          </CardTitle>
+          <CardHelper
+            summary={t('card.tube_intel.helper_purpose')}
+            details={t('card.tube_intel.helper_detail')}
+            dataSource={t('card.tube_intel.helper_data_source')}
+            variant="tooltip"
+          />
+        </div>
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -276,17 +287,17 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
               disabled={saveMutation.isPending}
             >
               <Save className="h-4 w-4" />
-              {saveMutation.isPending ? 'Saving...' : 'Save'}
+              {saveMutation.isPending ? t('card.tube_intel.saving') : t('card.tube_intel.save')}
             </Button>
           )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {simulationMode && (
-          <Alert variant="default" className="border-blue-500/50 bg-blue-500/10">
-            <AlertTriangle className="h-4 w-4 text-blue-500" />
-            <AlertDescription className="text-blue-600 dark:text-blue-400 text-sm">
-              Simulation Mode: Data isolated from live
+          <Alert variant="default" className="border-primary/50 bg-primary/10">
+            <AlertTriangle className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-primary text-sm">
+              {t('card.tube_intel.simulation_mode')}
             </AlertDescription>
           </Alert>
         )}
@@ -299,7 +310,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
           <>
             {/* Total summary */}
             <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <span className="font-medium">Total Tubes</span>
+              <span className="font-medium">{t('card.tube_intel.total_tubes')}</span>
               <span className="text-2xl font-bold text-primary font-mono">{totalTubes.toLocaleString()}</span>
             </div>
 
@@ -318,8 +329,8 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                     key={brand.id}
                     className={cn(
                       'p-3 rounded-lg border transition-colors',
-                      hasFlags ? 'bg-orange-500/10 border-orange-500/30' : colorClasses.bg,
-                      hasFlags ? 'border-orange-500/30' : colorClasses.border
+                      hasFlags ? 'bg-warning/10 border-warning/30' : colorClasses.bg,
+                      hasFlags ? 'border-warning/30' : colorClasses.border
                     )}
                   >
                     {/* Brand Header */}
@@ -333,7 +344,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                           {brand.name}
                         </span>
                         {hasChange && (
-                          <Badge variant="secondary" className="text-xs">Modified</Badge>
+                          <Badge variant="secondary" className="text-xs">{t('card.tube_intel.modified')}</Badge>
                         )}
                       </div>
                       
@@ -348,14 +359,14 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                               onChange={(e) => handleCountChange(brand.id, e.target.value)}
                               className="w-20 h-8 text-right bg-background text-sm"
                             />
-                            <span className="text-xs text-muted-foreground">tubes</span>
+                            <span className="text-xs text-muted-foreground">{t('card.tube_intel.tubes')}</span>
                           </>
                         ) : (
                           <Badge 
                             variant={count === 0 ? 'destructive' : count < 20 ? 'secondary' : 'default'}
                             className="font-mono"
                           >
-                            {count} tubes
+                            {count} {t('card.tube_intel.tubes')}
                           </Badge>
                         )}
                       </div>
@@ -366,11 +377,11 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3" />
                         <span>
-                          Last Order:{' '}
+                          {t('card.tube_intel.last_order')}:{' '}
                           <span className={cn(
-                            kpi?.last_order_date ? 'text-foreground' : 'text-amber-500 font-medium'
+                            kpi?.last_order_date ? 'text-foreground' : 'text-warning font-medium'
                           )}>
-                            {kpi?.last_order_label || 'Never ordered'}
+                            {kpi?.last_order_label || t('card.tube_intel.never_ordered')}
                           </span>
                         </span>
                       </div>
@@ -382,9 +393,9 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger>
-                                  <ShoppingCart className="h-4 w-4 text-red-500" />
+                                  <ShoppingCart className="h-4 w-4 text-destructive" />
                                 </TooltipTrigger>
-                                <TooltipContent>Needs Order</TooltipContent>
+                                <TooltipContent>{t('card.tube_intel.needs_order')}</TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                           )}
@@ -392,9 +403,9 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger>
-                                  <FlaskConical className="h-4 w-4 text-purple-500" />
+                                  <FlaskConical className="h-4 w-4 text-primary" />
                                 </TooltipTrigger>
-                                <TooltipContent>Bring Samples</TooltipContent>
+                                <TooltipContent>{t('card.tube_intel.bring_samples')}</TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                           )}
@@ -402,9 +413,9 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger>
-                                  <Gift className="h-4 w-4 text-amber-500" />
+                                  <Gift className="h-4 w-4 text-warning" />
                                 </TooltipTrigger>
-                                <TooltipContent>Bring Starter Kit</TooltipContent>
+                                <TooltipContent>{t('card.tube_intel.bring_starter_kit')}</TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                           )}
@@ -416,12 +427,12 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                     {kpi && kpi.owner_interested !== null && (
                       <div className="flex items-center gap-1 mt-1 text-xs">
                         {kpi.owner_interested ? (
-                          <span className="flex items-center gap-1 text-green-600">
-                            <ThumbsUp className="h-3 w-3" /> Interested
+                          <span className="flex items-center gap-1 text-success">
+                            <ThumbsUp className="h-3 w-3" /> {t('card.tube_intel.interested')}
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 text-red-500">
-                            <ThumbsDown className="h-3 w-3" /> Not Interested
+                          <span className="flex items-center gap-1 text-destructive">
+                            <ThumbsDown className="h-3 w-3" /> {t('card.tube_intel.not_interested')}
                           </span>
                         )}
                       </div>
@@ -434,16 +445,16 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
             {/* Color legend */}
             <div className="flex flex-wrap items-center gap-3 pt-2 text-xs text-muted-foreground border-t border-border/50">
               <div className="flex items-center gap-1">
-                <div className="h-2 w-2 rounded-full bg-green-500" />
-                <span>Stocked + ordered</span>
+                <div className="h-2 w-2 rounded-full bg-success" />
+                <span>{t('card.tube_intel.legend_stocked_ordered')}</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="h-2 w-2 rounded-full bg-amber-500" />
-                <span>Stocked, never ordered</span>
+                <div className="h-2 w-2 rounded-full bg-warning" />
+                <span>{t('card.tube_intel.legend_stocked_never')}</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="h-2 w-2 rounded-full bg-red-500" />
-                <span>Out of stock</span>
+                <div className="h-2 w-2 rounded-full bg-destructive" />
+                <span>{t('card.tube_intel.legend_out_of_stock')}</span>
               </div>
             </div>
 
