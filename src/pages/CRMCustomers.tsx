@@ -14,12 +14,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
 
 const CRMCustomers = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [businessType, setBusinessType] = useState<string>('all');
   const [relationshipStatus, setRelationshipStatus] = useState<string>('all');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ['crm-customers', search, businessType, relationshipStatus],
@@ -43,9 +48,16 @@ const CRMCustomers = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
+
+  // Pagination
+  const totalPages = Math.ceil((customers?.length || 0) / pageSize);
+  const paginatedCustomers = (customers || []).slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const getBusinessTypeBadge = (type: string) => {
     switch (type) {
@@ -164,6 +176,7 @@ const CRMCustomers = () => {
               </Button>
             </div>
           ) : (
+            <>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="border-b">
@@ -178,7 +191,7 @@ const CRMCustomers = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {customers.map((customer: any) => (
+                  {paginatedCustomers.map((customer: any) => (
                     <tr
                       key={customer.id}
                       className="border-b hover:bg-secondary/50 cursor-pointer transition-colors"
@@ -239,6 +252,18 @@ const CRMCustomers = () => {
                 </tbody>
               </table>
             </div>
+            
+            {/* Pagination */}
+            <DataTablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={customers.length}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+              pageSizeOptions={[25, 50, 100]}
+            />
+            </>
           )}
         </CardContent>
       </Card>

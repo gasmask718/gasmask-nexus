@@ -44,7 +44,7 @@ import { BrandFilterBar, BrandBadgesRow } from "@/components/grabba/BrandFilterB
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
 import { useGrabbaBrandActivity, useGrabbaBrandCounts } from "@/hooks/useGrabbaData";
 import { AICRMInsights } from "@/components/grabba/intelligence";
-import { EntityModal, ExportButton } from "@/components/crud";
+import { EntityModal, ExportButton, DataTablePagination } from "@/components/crud";
 import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
 import { GlobalAddButton } from "@/components/crud/GlobalAddButton";
 import { useCrudOperations } from "@/hooks/useCrudOperations";
@@ -69,6 +69,10 @@ export default function GrabbaCRM() {
   const [activeTab, setActiveTab] = useState<ViewTab>("companies");
   const [neighborhoodFilter, setNeighborhoodFilter] = useState<string>("all");
   const [cityFilter, setCityFilter] = useState<string>("all");
+  
+  // Pagination state (shared across tabs, reset on tab change)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   // CRUD Modal States
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -388,10 +392,35 @@ export default function GrabbaCRM() {
     setSearchQuery("");
     setNeighborhoodFilter("all");
     setCityFilter("all");
+    setCurrentPage(1);
   };
 
   const hasActiveFilters =
     selectedBrand !== "all" || typeFilter !== "all" || searchQuery || neighborhoodFilter !== "all" || cityFilter !== "all";
+
+  // Reset page on tab change
+  const handleTabChange = (tab: ViewTab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+  };
+
+  // Get active filtered list for pagination
+  const getActiveList = () => {
+    switch (activeTab) {
+      case "companies": return filteredCompanies || [];
+      case "stores": return filteredStores || [];
+      case "wholesalers": return filteredWholesalers || [];
+      case "ambassadors": return filteredAmbassadors || [];
+      case "drivers": return filteredDrivers || [];
+      case "bikers": return filteredBikers || [];
+      case "production": return filteredProduction || [];
+      default: return [];
+    }
+  };
+
+  const activeList = getActiveList();
+  const totalPages = Math.ceil(activeList.length / pageSize);
+  const paginatedList = activeList.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // ═══════════════════════════════════════════════════════════════════════════════
   // ENTITY CARD COMPONENTS
@@ -1351,7 +1380,7 @@ export default function GrabbaCRM() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
             {/* Tabs for Different Entity Types */}
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ViewTab)}>
+            <Tabs value={activeTab} onValueChange={(v) => handleTabChange(v as ViewTab)}>
               <TabsList className="grid grid-cols-4 sm:grid-cols-7 w-full max-w-3xl">
                 <TabsTrigger value="companies" className="flex items-center gap-1 text-xs sm:text-sm">
                   <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -1430,7 +1459,18 @@ export default function GrabbaCRM() {
                 ) : filteredCompanies?.length === 0 ? (
                   <Card className="p-8 text-center text-muted-foreground">No companies found</Card>
                 ) : (
-                  filteredCompanies?.map((company) => <CompanyCard key={company.id} company={company} />)
+                  <>
+                    {paginatedList.map((company: any) => <CompanyCard key={company.id} company={company} />)}
+                    <DataTablePagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      totalItems={activeList.length}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+                      pageSizeOptions={[25, 50, 100]}
+                    />
+                  </>
                 )}
               </TabsContent>
 

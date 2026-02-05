@@ -17,12 +17,17 @@ import {
   TubeIntelFilters 
 } from '@/hooks/useTubeIntelligence';
 import { ExportButton } from '@/components/crud/ExportButton';
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { cn } from '@/lib/utils';
 
 export default function TubeIntelligencePage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<TubeIntelFilters>({});
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const { data: summary, isLoading: summaryLoading } = useTubeIntelSummary();
   const { data: records, isLoading, refetch } = useGlobalTubeIntelligence(filters);
@@ -34,6 +39,13 @@ export default function TubeIntelligencePage() {
     const brandName = record.brand_name?.toLowerCase() || '';
     return storeName.includes(searchQuery.toLowerCase()) || brandName.includes(searchQuery.toLowerCase());
   }) || [];
+
+  // Pagination
+  const totalPages = Math.ceil(filteredRecords.length / pageSize);
+  const paginatedRecords = filteredRecords.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const toggleFilter = (key: keyof TubeIntelFilters) => {
     setFilters(prev => ({
@@ -252,6 +264,7 @@ export default function TubeIntelligencePage() {
               <p>No records match your filters</p>
             </div>
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -267,7 +280,7 @@ export default function TubeIntelligencePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRecords.map((record) => {
+                {paginatedRecords.map((record) => {
                   const store = (record as any).store;
                   const brand = TUBE_BRANDS.find(b => b.id === record.brand_id);
                   
@@ -366,6 +379,18 @@ export default function TubeIntelligencePage() {
                 })}
               </TableBody>
             </Table>
+            
+            {/* Pagination */}
+            <DataTablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={filteredRecords.length}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+              pageSizeOptions={[25, 50, 100, 250]}
+            />
+            </>
           )}
         </CardContent>
       </Card>
