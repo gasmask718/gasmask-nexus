@@ -4,11 +4,35 @@ import { useBusiness } from '@/contexts/BusinessContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Phone, MessageSquare, Mail, Users, TrendingUp, Clock } from 'lucide-react';
 import { departmentThemes } from '@/config/departmentThemes';
+import { PagePurpose } from '@/components/portal/guidance';
+import { useTranslation } from '@/hooks/useTranslation';
 import CommunicationLayout from './CommunicationLayout';
 
 const CommunicationOverview = () => {
   const { currentBusiness } = useBusiness();
+  const { t } = useTranslation();
   const theme = departmentThemes.communication;
+  
+  // Page purpose configuration
+  const purposeConfig = {
+    admin: {
+      title: t('page.comm_overview.title'),
+      description: t('page.comm_overview.desc'),
+      actions: [
+        t('page.comm_center.action.inbox'),
+        t('page.comm_center.action.dial'),
+      ],
+      warnings: [],
+    },
+    default: {
+      title: t('page.comm_overview.title'),
+      description: t('page.comm_overview.desc'),
+      actions: [
+        t('page.comm_center.action.inbox'),
+      ],
+      warnings: [],
+    },
+  };
 
   const { data: stats } = useQuery({
     queryKey: ['communication-overview', currentBusiness?.id],
@@ -84,10 +108,13 @@ const CommunicationOverview = () => {
 
   return (
     <CommunicationLayout
-      title="Communication Overview"
-      subtitle="Unified multi-channel communication command center"
+      title={t('page.comm_overview.title')}
+      subtitle={t('page.comm_overview.desc')}
     >
       <div className="space-y-6">
+        {/* Page Purpose */}
+        <PagePurpose pageKey="comm_overview" config={purposeConfig} />
+        
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Card style={{ borderColor: theme.accent }}>
