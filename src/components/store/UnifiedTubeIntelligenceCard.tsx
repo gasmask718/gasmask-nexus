@@ -413,7 +413,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                     </div>
 
                     {/* Interest indicator */}
-                    {kpi?.owner_interested !== null && (
+                    {kpi && kpi.owner_interested !== null && (
                       <div className="flex items-center gap-1 mt-1 text-xs">
                         {kpi.owner_interested ? (
                           <span className="flex items-center gap-1 text-green-600">
