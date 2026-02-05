@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Store, Search, MapPin, ClipboardCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from '@/hooks/useTranslation';
+import { PagePurpose, CardHelper } from '@/components/portal/guidance';
 
 interface StoreItem {
   id: string;
@@ -21,6 +23,7 @@ interface StoreListPageProps {
 
 export function StoreListPage({ portalType }: StoreListPageProps) {
   const navigate = useNavigate();
+  const { t, isRTL } = useTranslation();
   const [stores, setStores] = useState<StoreItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -56,12 +59,46 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
   const basePath = portalType === 'driver' ? '/portal/driver' : '/portal/biker';
   const accentClass = portalType === 'driver' ? 'text-hud-cyan' : 'text-hud-green';
 
+  const storePurpose = {
+    driver: {
+      title: t('page.visit.stores_purpose'),
+      description: t('page.visit.stores_description'),
+      actions: [
+        t('page.visit.action.select_store'),
+        t('page.visit.action.view_details'),
+        t('page.visit.action.start_visit'),
+      ],
+      warnings: [],
+    },
+    biker: {
+      title: t('page.visit.stores_purpose'),
+      description: t('page.visit.stores_description'),
+      actions: [
+        t('page.visit.action.select_store'),
+        t('page.visit.action.check_inventory'),
+      ],
+      warnings: [],
+    },
+    default: {
+      title: t('page.visit.stores_purpose'),
+      description: t('page.visit.stores_description'),
+      actions: [t('page.visit.action.select_store')],
+      warnings: [],
+    },
+  };
+
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${isRTL ? 'text-right' : ''}`}>
+      <PagePurpose 
+        pageKey="stores" 
+        config={storePurpose}
+        variant="default"
+      />
+
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold">Stores</h1>
-          <p className="text-sm text-muted-foreground">Select a store to start a visit</p>
+          <h1 className="text-xl font-bold">{t('portal.nav.stores')}</h1>
+          <p className="text-sm text-muted-foreground">{t('page.visit.select_store_prompt')}</p>
         </div>
       </div>
 
@@ -69,7 +106,7 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search stores by name, address, or city..."
+          placeholder={t('page.visit.search_placeholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-10"
@@ -78,13 +115,22 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
 
       {/* Store List */}
       <Card>
+        <CardHelper 
+          summary={t('portal.nav.stores')}
+          variant="expandable"
+          details={portalType === 'driver' 
+            ? t('page.visit.driver_stores_help')
+            : t('page.visit.biker_stores_help')
+          }
+          dataSource={t('page.visit.data_source_stores')}
+        />
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Store className="h-5 w-5" />
-            Available Stores
+            {t('page.visit.available_stores')}
           </CardTitle>
           <CardDescription>
-            {stores.length} stores found
+            {stores.length} {t('page.visit.stores_found')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -95,7 +141,7 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
           ) : stores.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Store className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No stores found</p>
+              <p>{t('page.visit.no_stores_found')}</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -115,13 +161,13 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
                       {store.address}, {store.city}, {store.state}
                     </p>
                   </div>
-                  <Badge variant="secondary">
-                    active
-                  </Badge>
-                  <Button size="sm" variant="outline">
-                    <ClipboardCheck className="h-4 w-4 mr-1" />
-                    Visit
-                  </Button>
+                   <Badge variant="secondary">
+                     {t('status.active')}
+                   </Badge>
+                   <Button size="sm" variant="outline">
+                     <ClipboardCheck className="h-4 w-4 mr-1" />
+                     {t('action.visit')}
+                   </Button>
                 </div>
               ))}
             </div>

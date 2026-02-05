@@ -97,7 +97,43 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'page.history.purpose': 'Review your past visits, deliveries, and submissions.',
     'page.messages.purpose': 'Communicate with dispatch and receive important updates.',
     'page.profile.purpose': 'Update your account information and preferences.',
-    
+
+    // Portal Navigation
+    'portal.label': 'Portal',
+    'portal.nav.my_day': 'My Day',
+    'portal.nav.stores': 'Stores',
+    'portal.nav.start_visit': 'Start Visit',
+    'portal.nav.make_delivery': 'Make Delivery',
+    'portal.nav.changes': 'Change Lists',
+    'portal.nav.history': 'History',
+    'portal.nav.messages': 'Messages',
+    'portal.nav.profile': 'Profile',
+
+    // Portal Specific
+    'driver.title': 'Driver',
+    'biker.title': 'Biker',
+    'app.version': 'Dynasty OS v2.0',
+
+    // Store Visit Pages
+    'page.visit.stores_purpose': 'Browse your assigned stores to start a visit.',
+    'page.visit.stores_description': 'Select a store to begin logging inventory, sticker status, and any updates.',
+    'page.visit.action.select_store': 'Click to select a store',
+    'page.visit.action.view_details': 'View store details',
+    'page.visit.action.start_visit': 'Begin visit and log data',
+    'page.visit.action.check_inventory': 'Check tube inventory status',
+    'page.visit.select_store_prompt': 'Select a store to start a visit',
+    'page.visit.search_placeholder': 'Search stores by name, address, or city...',
+    'page.visit.available_stores': 'Available Stores',
+    'page.visit.stores_found': 'stores found',
+    'page.visit.no_stores_found': 'No stores found',
+    'page.visit.driver_stores_help': 'Complete visits to record inventory and delivery information.',
+    'page.visit.biker_stores_help': 'Visit stores to verify inventory and sticker status.',
+    'page.visit.data_source_stores': 'Assigned routes & schedules',
+
+    // Card labels
+    'card.stops': 'Today\'s Stops',
+    'status.active': 'Active',
+    'action.visit': 'Visit',
     // Store Profile Page
     'page.store_profile.admin_title': 'Store Profile',
     'page.store_profile.admin_desc': 'Full store management with inventory, orders, contacts, and governance oversight.',
@@ -125,15 +161,30 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'card.orders': 'Recent orders placed by this store.',
     'card.kpi': 'Key performance indicators for this store.',
     'card.shift': 'Your current shift status and duration.',
-    'card.stops': 'Stores assigned to you for today.',
+    
+    // Dashboard page
+    'page.dashboard.assigned_today': 'Assigned Today',
+    'page.dashboard.stores_to_visit': 'Stores to visit',
+    'page.dashboard.completed': 'Completed',
+    'page.dashboard.visits_done': 'Visits done',
+    'page.dashboard.pending_changes': 'Pending Changes',
+    'page.dashboard.awaiting_review': 'Awaiting review',
+    'page.dashboard.quick_actions': 'Quick Actions',
+    'page.dashboard.no_stops': 'No stops assigned for today',
+    'page.dashboard.shift_active': 'Shift Active',
+    'page.dashboard.shift_completed': 'Shift Completed',
+    'page.dashboard.shift_not_started': 'Shift Not Started',
+    'page.dashboard.started_at': 'Started at',
+    'page.dashboard.great_work': 'Great work today!',
+    'page.dashboard.start_shift_prompt': 'Start your shift to begin',
+    'action.start_shift': 'Start Shift',
+    'action.end_shift': 'End Shift',
+    'action.view_stores': 'View Stores',
+    'action.start_visit': 'Start Visit',
+    'action.make_delivery': 'Make Delivery',
+    'action.browse_stores': 'Browse Stores',
     
     // Tube Inventory
-    'tube_inventory.title': 'Tube Inventory',
-    'tube_inventory.count': 'Tube count',
-    'tube_inventory.last_order': 'Last order',
-    'tube_inventory.never_ordered': 'Never ordered',
-    'tube_inventory.out_of_stock': 'Out of stock',
-    'tube_inventory.low_stock': 'Low stock',
     
     // Status Labels
     'status.pending': 'Pending',
@@ -143,16 +194,12 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'status.rejected': 'Rejected',
     'status.under_review': 'Under Review',
     
-    // Driver Portal
-    'driver.title': 'Driver Portal',
+    // Legacy Portal Labels (keep for backward compatibility)
     'driver.todays_route': "Today's Route",
     'driver.assigned_stores': 'Assigned Stores',
     'driver.deliveries': 'Deliveries',
     'driver.earnings': 'Earnings',
     'driver.documents': 'Documents',
-    
-    // Biker Portal
-    'biker.title': 'Store Checker Portal',
     'biker.pickups': 'Pickup List',
     'biker.dropoffs': 'Dropoff Confirmation',
     'biker.map': 'Map View',
@@ -451,7 +498,64 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'card.orders': 'Pedidos recientes realizados por esta tienda.',
     'card.kpi': 'Indicadores clave de rendimiento para esta tienda.',
     'card.shift': 'Tu estado de turno actual y duración.',
-    'card.stops': 'Tiendas asignadas para hoy.',
+    
+    // Portal Navigation Spanish
+    'portal.label': 'Portal',
+    'portal.nav.my_day': 'Mi Día',
+    'portal.nav.stores': 'Tiendas',
+    'portal.nav.start_visit': 'Iniciar Visita',
+    'portal.nav.make_delivery': 'Realizar Entrega',
+    'portal.nav.changes': 'Listas de Cambios',
+    'portal.nav.history': 'Historial',
+    'portal.nav.messages': 'Mensajes',
+    'portal.nav.profile': 'Perfil',
+
+    // Portal Titles Spanish
+    'driver.title': 'Conductor',
+    'biker.title': 'Verificador',
+    'app.version': 'Dynasty OS v2.0',
+
+    // Store Visit Pages Spanish
+    'page.visit.stores_purpose': 'Explora tus tiendas asignadas para iniciar una visita.',
+    'page.visit.stores_description': 'Selecciona una tienda para comenzar a registrar inventario, estado de calcomanías y actualizaciones.',
+    'page.visit.action.select_store': 'Haz clic para seleccionar una tienda',
+    'page.visit.action.view_details': 'Ver detalles de la tienda',
+    'page.visit.action.start_visit': 'Comenzar visita y registrar datos',
+    'page.visit.action.check_inventory': 'Verificar estado del inventario de tubos',
+    'page.visit.select_store_prompt': 'Selecciona una tienda para iniciar una visita',
+    'page.visit.search_placeholder': 'Buscar tiendas por nombre, dirección o ciudad...',
+    'page.visit.available_stores': 'Tiendas Disponibles',
+    'page.visit.stores_found': 'tiendas encontradas',
+    'page.visit.no_stores_found': 'No se encontraron tiendas',
+    'page.visit.driver_stores_help': 'Completa visitas para registrar inventario e información de entrega.',
+    'page.visit.biker_stores_help': 'Visita tiendas para verificar inventario y estado de calcomanías.',
+    'page.visit.data_source_stores': 'Rutas asignadas y horarios',
+
+    // Dashboard Spanish
+    'page.dashboard.assigned_today': 'Asignado Hoy',
+    'page.dashboard.stores_to_visit': 'Tiendas para visitar',
+    'page.dashboard.completed': 'Completado',
+    'page.dashboard.visits_done': 'Visitas hechas',
+    'page.dashboard.pending_changes': 'Cambios Pendientes',
+    'page.dashboard.awaiting_review': 'Esperando revisión',
+    'page.dashboard.quick_actions': 'Acciones Rápidas',
+    'page.dashboard.no_stops': 'No hay paradas asignadas para hoy',
+    'page.dashboard.shift_active': 'Turno Activo',
+    'page.dashboard.shift_completed': 'Turno Completado',
+    'page.dashboard.shift_not_started': 'Turno No Iniciado',
+    'page.dashboard.started_at': 'Iniciado a las',
+    'page.dashboard.great_work': '¡Excelente trabajo hoy!',
+    'page.dashboard.start_shift_prompt': 'Inicia tu turno para comenzar',
+    
+    // Actions Spanish
+    'action.start_shift': 'Iniciar Turno',
+    'action.end_shift': 'Terminar Turno',
+    'action.view_stores': 'Ver Tiendas',
+    'action.start_visit': 'Iniciar Visita',
+    'action.make_delivery': 'Realizar Entrega',
+    'action.browse_stores': 'Explorar Tiendas',
+    'action.visit': 'Visita',
+    'status.active': 'Activo',
     
     // Tube Inventory
     'tube_inventory.title': 'Inventario de Tubos',
@@ -532,16 +636,12 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'status.rejected': 'Rechazado',
     'status.under_review': 'En Revisión',
     
-    // Driver Portal
-    'driver.title': 'Portal del Conductor',
+    // Legacy Portal Labels Spanish (keep for backward compatibility)
     'driver.todays_route': 'Ruta de Hoy',
     'driver.assigned_stores': 'Tiendas Asignadas',
     'driver.deliveries': 'Entregas',
     'driver.earnings': 'Ganancias',
     'driver.documents': 'Documentos',
-    
-    // Biker Portal
-    'biker.title': 'Portal del Verificador',
     'biker.pickups': 'Lista de Recogidas',
     'biker.dropoffs': 'Confirmación de Entrega',
     'biker.map': 'Vista del Mapa',
@@ -754,7 +854,64 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'card.orders': 'الطلبات الأخيرة لهذا المتجر.',
     'card.kpi': 'مؤشرات الأداء الرئيسية لهذا المتجر.',
     'card.shift': 'حالة نوبتك الحالية والمدة.',
-    'card.stops': 'المتاجر المخصصة لك اليوم.',
+    
+    // Portal Navigation Arabic
+    'portal.label': 'البوابة',
+    'portal.nav.my_day': 'يومي',
+    'portal.nav.stores': 'المتاجر',
+    'portal.nav.start_visit': 'بدء زيارة',
+    'portal.nav.make_delivery': 'تسليم',
+    'portal.nav.changes': 'قوائم التغييرات',
+    'portal.nav.history': 'السجل',
+    'portal.nav.messages': 'الرسائل',
+    'portal.nav.profile': 'الملف الشخصي',
+
+    // Portal Titles Arabic
+    'driver.title': 'السائق',
+    'biker.title': 'المدقق',
+    'app.version': 'Dynasty OS v2.0',
+
+    // Store Visit Pages Arabic
+    'page.visit.stores_purpose': 'استعرض المتاجر المخصصة لك لبدء زيارة.',
+    'page.visit.stores_description': 'حدد متجراً لبدء تسجيل المخزون وحالة الملصقات والتحديثات.',
+    'page.visit.action.select_store': 'انقر لتحديد متجر',
+    'page.visit.action.view_details': 'عرض تفاصيل المتجر',
+    'page.visit.action.start_visit': 'بدء الزيارة وتسجيل البيانات',
+    'page.visit.action.check_inventory': 'التحقق من حالة مخزون الأنابيب',
+    'page.visit.select_store_prompt': 'حدد متجراً لبدء زيارة',
+    'page.visit.search_placeholder': 'ابحث عن متاجر حسب الاسم أو العنوان أو المدينة...',
+    'page.visit.available_stores': 'المتاجر المتاحة',
+    'page.visit.stores_found': 'متاجر تم العثور عليها',
+    'page.visit.no_stores_found': 'لم يتم العثور على متاجر',
+    'page.visit.driver_stores_help': 'أكمل الزيارات لتسجيل المخزون ومعلومات التسليم.',
+    'page.visit.biker_stores_help': 'زر المتاجر للتحقق من المخزون وحالة الملصقات.',
+    'page.visit.data_source_stores': 'المسارات المخصصة والجداول الزمنية',
+
+    // Dashboard Arabic
+    'page.dashboard.assigned_today': 'المخصصة اليوم',
+    'page.dashboard.stores_to_visit': 'المتاجر للزيارة',
+    'page.dashboard.completed': 'مكتمل',
+    'page.dashboard.visits_done': 'الزيارات المنتهية',
+    'page.dashboard.pending_changes': 'التغييرات المعلقة',
+    'page.dashboard.awaiting_review': 'في انتظار المراجعة',
+    'page.dashboard.quick_actions': 'إجراءات سريعة',
+    'page.dashboard.no_stops': 'لا توجد محطات مخصصة لك اليوم',
+    'page.dashboard.shift_active': 'النوبة نشطة',
+    'page.dashboard.shift_completed': 'اكتملت النوبة',
+    'page.dashboard.shift_not_started': 'لم تبدأ النوبة',
+    'page.dashboard.started_at': 'بدأ في',
+    'page.dashboard.great_work': 'عمل رائع اليوم!',
+    'page.dashboard.start_shift_prompt': 'ابدأ نوبتك للبدء',
+
+    // Actions Arabic
+    'action.start_shift': 'بدء النوبة',
+    'action.end_shift': 'إنهاء النوبة',
+    'action.view_stores': 'عرض المتاجر',
+    'action.start_visit': 'بدء الزيارة',
+    'action.make_delivery': 'تسليم',
+    'action.browse_stores': 'استعرض المتاجر',
+    'action.visit': 'زيارة',
+    'status.active': 'نشط',
     
     // Tube Inventory
     'tube_inventory.title': 'مخزون الأنابيب',
@@ -835,16 +992,12 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'status.rejected': 'مرفوض',
     'status.under_review': 'قيد المراجعة',
     
-    // Driver Portal
-    'driver.title': 'بوابة السائق',
+    // Legacy Portal Labels Arabic (keep for backward compatibility)
     'driver.todays_route': 'مسار اليوم',
     'driver.assigned_stores': 'المتاجر المعينة',
     'driver.deliveries': 'التوصيلات',
     'driver.earnings': 'الأرباح',
     'driver.documents': 'المستندات',
-    
-    // Biker Portal
-    'biker.title': 'بوابة المفتش',
     'biker.pickups': 'قائمة الاستلام',
     'biker.dropoffs': 'تأكيد التسليم',
     'biker.map': 'عرض الخريطة',

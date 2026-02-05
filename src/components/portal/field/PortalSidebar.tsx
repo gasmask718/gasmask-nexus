@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface NavItem {
   label: string;
@@ -28,20 +29,21 @@ interface PortalSidebarProps {
 export function PortalSidebar({ portalType }: PortalSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { t } = useTranslation();
 
   const basePath = portalType === 'driver' ? '/portal/driver' : '/portal/biker';
 
   const navItems: NavItem[] = [
-    { label: 'My Day', path: basePath, icon: <LayoutDashboard className="h-5 w-5" /> },
-    { label: 'Stores / Stops', path: `${basePath}/stores`, icon: <Store className="h-5 w-5" /> },
-    { label: 'Start Visit', path: `${basePath}/visit`, icon: <ClipboardCheck className="h-5 w-5" /> },
+    { label: t('portal.nav.my_day'), path: basePath, icon: <LayoutDashboard className="h-5 w-5" /> },
+    { label: t('portal.nav.stores'), path: `${basePath}/stores`, icon: <Store className="h-5 w-5" /> },
+    { label: t('portal.nav.start_visit'), path: `${basePath}/visit`, icon: <ClipboardCheck className="h-5 w-5" /> },
     ...(portalType === 'driver' ? [
-      { label: 'Make Delivery', path: `${basePath}/delivery`, icon: <Truck className="h-5 w-5" /> },
+      { label: t('portal.nav.make_delivery'), path: `${basePath}/delivery`, icon: <Truck className="h-5 w-5" /> },
     ] : []),
-    { label: 'Change Lists', path: `${basePath}/changes`, icon: <FileText className="h-5 w-5" /> },
-    { label: 'History', path: `${basePath}/history`, icon: <History className="h-5 w-5" /> },
-    { label: 'Messages', path: `${basePath}/messages`, icon: <MessageSquare className="h-5 w-5" /> },
-    { label: 'Profile', path: `${basePath}/profile`, icon: <User className="h-5 w-5" /> },
+    { label: t('portal.nav.changes'), path: `${basePath}/changes`, icon: <FileText className="h-5 w-5" /> },
+    { label: t('portal.nav.history'), path: `${basePath}/history`, icon: <History className="h-5 w-5" /> },
+    { label: t('portal.nav.messages'), path: `${basePath}/messages`, icon: <MessageSquare className="h-5 w-5" /> },
+    { label: t('portal.nav.profile'), path: `${basePath}/profile`, icon: <User className="h-5 w-5" /> },
   ];
 
   return (
@@ -61,7 +63,7 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
               </span>
             </div>
             <span className="font-semibold text-sm">
-              {portalType === 'driver' ? 'Driver' : 'Biker'} Portal
+              {t(portalType === 'driver' ? 'driver.title' : 'biker.title')} {t('portal.label')}
             </span>
           </div>
         )}
@@ -103,7 +105,7 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
       <div className="p-4 border-t">
         {!collapsed && (
           <p className="text-xs text-muted-foreground text-center">
-            Dynasty OS v2.0
+            {t('app.version')}
           </p>
         )}
       </div>
