@@ -1,104 +1,113 @@
- import { Badge } from '@/components/ui/badge';
- import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
- import { Package, AlertTriangle, ShoppingCart, Calendar } from 'lucide-react';
- import { cn } from '@/lib/utils';
- import type { StoreKPISummary } from '@/hooks/useStoreTubeKPIBatch';
- import { getStoreKPIStatusColor } from '@/hooks/useStoreTubeKPIBatch';
- 
- // ═══════════════════════════════════════════════════════════════════════════════
- // STORE KPI BADGE (COMPACT)
- // Displays tube KPI summary inline on Store Directory cards
- // ═══════════════════════════════════════════════════════════════════════════════
- 
- interface StoreKPIBadgeProps {
-   summary: StoreKPISummary | undefined;
-   isLoading?: boolean;
- }
- 
- export function StoreKPIBadge({ summary, isLoading }: StoreKPIBadgeProps) {
-   if (isLoading) {
-     return (
-       <Badge variant="outline" className="text-xs animate-pulse">
-         <Package className="h-3 w-3 mr-1" />
-         Loading...
-       </Badge>
-     );
-   }
- 
-   // No data / not verified
-   if (!summary || !summary.verified) {
-     return (
-       <Badge variant="outline" className="text-xs text-muted-foreground">
-         <AlertTriangle className="h-3 w-3 mr-1" />
-         KPI Missing
-       </Badge>
-     );
-   }
- 
-   // No tube inventory records
-   if (summary.brandCount === 0) {
-     return (
-       <Badge variant="outline" className="text-xs text-muted-foreground">
-         <Package className="h-3 w-3 mr-1" />
-         No tube data
-       </Badge>
-     );
-   }
- 
-   const statusColor = getStoreKPIStatusColor(summary);
-   const statusIcon = summary.hasOutOfStock ? (
-     <AlertTriangle className="h-3 w-3" />
-   ) : summary.hasNeverOrdered ? (
-     <Calendar className="h-3 w-3" />
-   ) : summary.needsAction ? (
-     <ShoppingCart className="h-3 w-3" />
-   ) : (
-     <Package className="h-3 w-3" />
-   );
- 
-   // Build tooltip content
-   const tooltipContent = summary.kpiRows.slice(0, 5).map(row => (
-     <div key={row.brand_id} className="flex justify-between gap-4 text-xs">
-       <span>{row.brand_name}</span>
-       <span className="font-mono">{row.tube_count} tubes</span>
-     </div>
-   ));
- 
-   return (
-     <TooltipProvider>
-       <Tooltip>
-         <TooltipTrigger asChild>
-           <Badge className={cn('text-xs cursor-help', statusColor)}>
-             {statusIcon}
-             <span className="ml-1 font-mono">{summary.totalTubes}</span>
-             <span className="ml-0.5">tubes</span>
-             {summary.hasOutOfStock && (
-               <span className="ml-1 text-[10px]">⚠</span>
-             )}
-           </Badge>
-         </TooltipTrigger>
-         <TooltipContent side="bottom" className="max-w-xs">
-           <div className="space-y-1">
-             <div className="font-medium mb-2">Tube Intelligence</div>
-             {tooltipContent}
-             {summary.kpiRows.length > 5 && (
-               <div className="text-xs text-muted-foreground">
-                 +{summary.kpiRows.length - 5} more brands
-               </div>
-             )}
-             {summary.hasNeverOrdered && (
-              <div className="text-warning text-xs mt-2">
-                 ⚠ Some products never ordered
-               </div>
-             )}
-             {summary.hasOutOfStock && (
-              <div className="text-destructive text-xs">
-                 ⚠ Some products out of stock
-               </div>
-             )}
-           </div>
-         </TooltipContent>
-       </Tooltip>
-     </TooltipProvider>
-   );
- }
+import { Badge } from '@/components/ui/badge';
+import { Package, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import type { StoreKPISummary } from '@/hooks/useStoreTubeKPIBatch';
+import { getColorStatusClasses } from '@/hooks/useStoreTubeKPI';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STORE KPI BADGE (PER-BRAND BREAKDOWN)
+// Displays tube inventory per brand inline on Store Directory cards
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface StoreKPIBadgeProps {
+  summary: StoreKPISummary | undefined;
+  isLoading?: boolean;
+  maxBrands?: number; // How many brands to show before "+X more"
+}
+
+export function StoreKPIBadge({ summary, isLoading, maxBrands = 4 }: StoreKPIBadgeProps) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground animate-pulse">
+        <Package className="h-3 w-3" />
+        <span>Loading...</span>
+      </div>
+    );
+  }
+
+  // No data / not verified
+  if (!summary || !summary.verified) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <AlertTriangle className="h-3 w-3" />
+        <span>KPI Missing</span>
+      </div>
+    );
+  }
+
+  // No tube inventory records
+  if (summary.brandCount === 0) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Package className="h-3 w-3" />
+        <span>No tube data</span>
+      </div>
+    );
+  }
+
+  const visibleBrands = summary.kpiRows.slice(0, maxBrands);
+  const remainingCount = Math.max(0, summary.kpiRows.length - maxBrands);
+
+  return (
+    <div className="space-y-1.5 pt-2 border-t border-border/50">
+      {/* Header with total */}
+      <div className="flex items-center justify-between text-xs">
+        <span className="flex items-center gap-1 text-muted-foreground font-medium">
+          <Package className="h-3 w-3" />
+          Tube Inventory
+        </span>
+        <span className="text-muted-foreground font-mono text-[10px]">
+          {summary.totalTubes} total
+        </span>
+      </div>
+
+      {/* Per-brand breakdown */}
+      <div className="flex flex-wrap gap-1">
+        {visibleBrands.map(row => {
+          const colors = getColorStatusClasses(row.color_status);
+          return (
+            <Badge
+              key={row.brand_id}
+              variant="outline"
+              className={cn(
+                'text-[10px] px-1.5 py-0.5',
+                colors.bg,
+                colors.border
+              )}
+            >
+              <span className={cn('font-medium', colors.text)}>
+                {row.brand_name}
+              </span>
+              <span className={cn('ml-1 font-mono', colors.text)}>
+                {row.tube_count}
+              </span>
+            </Badge>
+          );
+        })}
+        {remainingCount > 0 && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-muted-foreground">
+            +{remainingCount} more
+          </Badge>
+        )}
+      </div>
+
+      {/* Status warnings */}
+      {(summary.hasOutOfStock || summary.hasNeverOrdered) && (
+        <div className="flex flex-wrap gap-1.5 text-[10px]">
+          {summary.hasOutOfStock && (
+            <span className="text-destructive flex items-center gap-0.5">
+              <AlertTriangle className="h-2.5 w-2.5" />
+              Out of stock
+            </span>
+          )}
+          {summary.hasNeverOrdered && (
+            <span className="text-warning flex items-center gap-0.5">
+              <AlertTriangle className="h-2.5 w-2.5" />
+              Never ordered
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
