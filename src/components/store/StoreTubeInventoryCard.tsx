@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Package, Plus, RefreshCw, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { getTubeBrandColor } from '@/constants/tubeColors';
 
 interface TubeInventory {
   id: string;
@@ -19,13 +20,6 @@ interface StoreTubeInventoryCardProps {
   storeId: string;
   onAddCount: () => void;
 }
-
-const brandColors: Record<string, string> = {
-  grabba: 'bg-orange-500',
-  gasmask: 'bg-purple-500',
-  fronto: 'bg-green-500',
-  default: 'bg-muted-foreground',
-};
 
 export function StoreTubeInventoryCard({ storeId, onAddCount }: StoreTubeInventoryCardProps) {
   const queryClient = useQueryClient();
@@ -124,13 +118,12 @@ export function StoreTubeInventoryCard({ storeId, onAddCount }: StoreTubeInvento
                   className="flex items-center justify-between p-3 rounded-lg bg-secondary/30"
                 >
                   <div className="flex items-center gap-3">
-                    <div
-                      className={`h-3 w-3 rounded-full ${
-                        brandColors[item.brand.toLowerCase()] || brandColors.default
-                      }`}
-                    />
-                    <span className="font-medium capitalize">{item.brand}</span>
-                  </div>
+                     <div
+                       className="h-3 w-3 rounded-full"
+                       style={{ backgroundColor: getTubeBrandColor(item.brand).hex }}
+                     />
+                     <span className="font-medium capitalize">{item.brand}</span>
+                   </div>
                   <div className="flex items-center gap-3">
                     <Badge
                       variant={item.current_tubes_left < 20 ? 'destructive' : item.current_tubes_left < 50 ? 'secondary' : 'default'}

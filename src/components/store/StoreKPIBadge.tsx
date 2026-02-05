@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Package, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { StoreKPISummary } from '@/hooks/useStoreTubeKPIBatch';
+import { getTubeBrandColor } from '@/constants/tubeColors';
 import { getColorStatusClasses } from '@/hooks/useStoreTubeKPI';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -61,29 +62,30 @@ export function StoreKPIBadge({ summary, isLoading, maxBrands = 4 }: StoreKPIBad
         </span>
       </div>
 
-      {/* Per-brand breakdown */}
-      <div className="flex flex-wrap gap-1">
-        {visibleBrands.map(row => {
-          const colors = getColorStatusClasses(row.color_status);
-          return (
-            <Badge
-              key={row.brand_id}
-              variant="outline"
-              className={cn(
-                'text-[10px] px-1.5 py-0.5',
-                colors.bg,
-                colors.border
-              )}
-            >
-              <span className={cn('font-medium', colors.text)}>
-                {row.brand_name}
-              </span>
-              <span className={cn('ml-1 font-mono', colors.text)}>
-                {row.tube_count}
-              </span>
-            </Badge>
-          );
-        })}
+       {/* Per-brand breakdown */}
+       <div className="flex flex-wrap gap-1">
+         {visibleBrands.map(row => {
+           const brandColor = getTubeBrandColor(row.brand_id);
+           const statusColors = getColorStatusClasses(row.color_status);
+           return (
+             <Badge
+               key={row.brand_id}
+               variant="outline"
+               className={cn(
+                 'text-[10px] px-1.5 py-0.5',
+                 statusColors.bg,
+                 statusColors.border
+               )}
+             >
+               <span className="font-medium" style={{ color: brandColor.hex }}>
+                 {row.brand_name}
+               </span>
+               <span className="ml-1 font-mono" style={{ color: brandColor.hex }}>
+                 {row.tube_count}
+               </span>
+             </Badge>
+           );
+         })}
         {remainingCount > 0 && (
           <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-muted-foreground">
             +{remainingCount} more
