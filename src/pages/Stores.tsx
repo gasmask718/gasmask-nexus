@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload, Package, Sparkles } from 'lucide-react';
+import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload, Package, Sparkles, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCall } from '@/components/communication/CallProvider';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
@@ -81,6 +81,7 @@ const Stores = () => {
   const [stickerFilter, setStickerFilter] = useState<string>('all');
   const [newStoresOnly, setNewStoresOnly] = useState(false);
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all');
+  const [monthFilter, setMonthFilter] = useState<string>('all');
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [newStoreName, setNewStoreName] = useState('');
   
@@ -418,8 +419,20 @@ const Stores = () => {
       ? new Date(store.created_at).toDateString() === new Date().toDateString()
       : false;
     const matchesNewStores = !newStoresOnly || !storeIdsWithNotes.has(store.id) || isCreatedToday;
+
+    // Month filter
+    const matchesMonth = (() => {
+      if (monthFilter === 'all') return true;
+      if (!store.created_at) return monthFilter === 'no_date';
+      const created = new Date(store.created_at);
+      const now = new Date();
+      if (monthFilter === 'this_month') {
+        return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+      }
+      return true;
+    })();
     
-    return matchesSearch && matchesStatus && matchesTag && matchesSticker && matchesPaymentType && matchesNewStores;
+    return matchesSearch && matchesStatus && matchesTag && matchesSticker && matchesPaymentType && matchesNewStores && matchesMonth;
   });
 
   const getStatusColor = (status: string) => {
@@ -699,6 +712,25 @@ const Stores = () => {
             </SelectContent>
           </Select>
 
+          {/* Month Filter */}
+          <Select value={monthFilter} onValueChange={setMonthFilter}>
+            <SelectTrigger className="w-48 bg-secondary/50 border-border/50">
+              <CalendarDays className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Added Month" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Time</SelectItem>
+              <SelectItem value="this_month">
+                Added This Month ({stores.filter(s => {
+                  if (!s.created_at) return false;
+                  const d = new Date(s.created_at);
+                  const now = new Date();
+                  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                }).length})
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
           {/* New Stores Filter */}
           <Button
             variant={newStoresOnly ? 'default' : 'outline'}
@@ -711,11 +743,11 @@ const Stores = () => {
           </Button>
 
           {/* Active Filters Display */}
-          {(tagFilter !== 'all' || stickerFilter !== 'all' || paymentTypeFilter !== 'all' || newStoresOnly) && (
+          {(tagFilter !== 'all' || stickerFilter !== 'all' || paymentTypeFilter !== 'all' || newStoresOnly || monthFilter !== 'all') && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => { setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); setNewStoresOnly(false); }}
+              onClick={() => { setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); setNewStoresOnly(false); setMonthFilter('all'); }}
               className="text-muted-foreground"
             >
               {t('page.stores.clear_filters') || 'Clear filters'}
