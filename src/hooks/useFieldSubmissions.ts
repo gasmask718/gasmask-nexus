@@ -130,15 +130,40 @@ export function useFieldSubmissions(filters?: FieldSubmissionFilters) {
 
       let profileMap: Record<string, string> = {};
       if (allUserIds.length > 0) {
+        // Fetch from profiles table (column is 'name', not 'full_name')
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, full_name')
+          .select('id, name')
           .in('id', allUserIds);
         
         profileMap = (profiles || []).reduce((acc: Record<string, string>, p: any) => {
-          acc[p.id] = p.full_name || 'Unknown';
+          if (p.name) acc[p.id] = p.name;
           return acc;
         }, {});
+
+        // Fill gaps from bikers table (uses 'full_name' + 'user_id')
+        const missingIds = allUserIds.filter(id => !profileMap[id]);
+        if (missingIds.length > 0) {
+          const { data: bikers } = await supabase
+            .from('bikers')
+            .select('user_id, full_name')
+            .in('user_id', missingIds);
+          (bikers || []).forEach((b: any) => {
+            if (b.user_id && b.full_name) profileMap[b.user_id] = b.full_name;
+          });
+        }
+
+        // Fill gaps from drivers table
+        const stillMissing = allUserIds.filter(id => !profileMap[id]);
+        if (stillMissing.length > 0) {
+          const { data: drivers } = await supabase
+            .from('drivers')
+            .select('user_id, full_name')
+            .in('user_id', stillMissing);
+          (drivers || []).forEach((d: any) => {
+            if (d.user_id && d.full_name) profileMap[d.user_id] = d.full_name;
+          });
+        }
       }
 
       let results = (data || []).map((item: any) => ({
@@ -189,13 +214,35 @@ export function useStoreFieldSubmissions(storeId: string | undefined, limit = 10
       if (submitterIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, full_name')
+          .select('id, name')
           .in('id', submitterIds);
         
         profileMap = (profiles || []).reduce((acc: Record<string, string>, p: any) => {
-          acc[p.id] = p.full_name || 'Unknown';
+          if (p.name) acc[p.id] = p.name;
           return acc;
         }, {});
+
+        // Fallback to bikers/drivers tables
+        const missingIds = submitterIds.filter(id => !profileMap[id]);
+        if (missingIds.length > 0) {
+          const { data: bikers } = await supabase
+            .from('bikers')
+            .select('user_id, full_name')
+            .in('user_id', missingIds);
+          (bikers || []).forEach((b: any) => {
+            if (b.user_id && b.full_name) profileMap[b.user_id] = b.full_name;
+          });
+        }
+        const stillMissing = submitterIds.filter(id => !profileMap[id]);
+        if (stillMissing.length > 0) {
+          const { data: drivers } = await supabase
+            .from('drivers')
+            .select('user_id, full_name')
+            .in('user_id', stillMissing);
+          (drivers || []).forEach((d: any) => {
+            if (d.user_id && d.full_name) profileMap[d.user_id] = d.full_name;
+          });
+        }
       }
 
       return (data || []).map((item: any) => ({
@@ -266,6 +313,13 @@ export function useApproveSubmission() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Fetch submission to get submitter info
+      const { data: submission } = await supabase
+        .from('field_submissions')
+        .select('submitted_by_user_id, entity_type, store_id, store:store_master(store_name)')
+        .eq('id', submissionId)
+        .single();
+
       // Step 1: Update status to approved + record reviewer
       const { error: statusError } = await supabase
         .from('field_submissions')
@@ -292,6 +346,21 @@ export function useApproveSubmission() {
         throw new Error((result?.error as string) || 'Failed to apply submission mutation');
       }
 
+      // Step 4: Notify submitter
+      if (submission?.submitted_by_user_id) {
+        const storeName = (submission as any)?.store?.store_name || 'a store';
+        const entityLabel = getEntityTypeLabel(submission.entity_type as FieldEntityType);
+        await supabase.from('notifications').insert({
+          user_id: submission.submitted_by_user_id,
+          type: 'submission_approved',
+          title: 'Change Approved ✅',
+          message: `Your ${entityLabel} change for ${storeName} has been approved and applied.`,
+          entity_type: 'field_submission',
+          entity_id: submissionId,
+          action_url: `/portal/biker`,
+        }).throwOnError();
+      }
+
       return result;
     },
     onSuccess: () => {
@@ -315,6 +384,13 @@ export function useRejectSubmission() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Fetch submission to get submitter info
+      const { data: submission } = await supabase
+        .from('field_submissions')
+        .select('submitted_by_user_id, entity_type, store_id, store:store_master(store_name)')
+        .eq('id', submissionId)
+        .single();
+
       const { error } = await supabase
         .from('field_submissions')
         .update({
@@ -326,6 +402,21 @@ export function useRejectSubmission() {
         .eq('id', submissionId);
 
       if (error) throw error;
+
+      // Notify submitter of rejection
+      if (submission?.submitted_by_user_id) {
+        const storeName = (submission as any)?.store?.store_name || 'a store';
+        const entityLabel = getEntityTypeLabel(submission.entity_type as FieldEntityType);
+        await supabase.from('notifications').insert({
+          user_id: submission.submitted_by_user_id,
+          type: 'submission_rejected',
+          title: 'Change Rejected ❌',
+          message: `Your ${entityLabel} change for ${storeName} was rejected. Reason: ${reason}`,
+          entity_type: 'field_submission',
+          entity_id: submissionId,
+          action_url: `/portal/biker`,
+        }).throwOnError();
+      }
     },
     onSuccess: () => {
       toast.success('Submission rejected');
