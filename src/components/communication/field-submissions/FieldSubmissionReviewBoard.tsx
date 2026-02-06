@@ -464,36 +464,47 @@ export function FieldSubmissionReviewBoard() {
                       </TableCell>
                       <TableCell>
                         {(() => {
-                          // Compute actual changes from payload comparison
-                          const before = sub.payload_before as Record<string, unknown> | null;
                           const after = sub.payload_after as Record<string, unknown>;
+                          const before = sub.payload_before as Record<string, unknown> | null;
                           const ignoredKeys = ['id', 'created_at', 'updated_at', 'store_id', 'brand_id', 'last_updated_by_role', 'last_verified_by', 'last_verified_at'];
-                          
-                          // For creates with specific entity info, show summary
-                          if (sub.action_type === 'create' && after) {
-                            if (after.sticker_type) {
-                              return (
-                                <div className="text-xs">
-                                  <Badge variant="secondary" className="text-xs px-1.5 py-0 mb-1">
-                                    {String(after.sticker_type).replace(/_/g, ' ')}
-                                  </Badge>
-                                  <div className="text-muted-foreground">→ {after.value ? 'Yes' : 'No'}</div>
+
+                          // Extract a human-readable entity identifier
+                          const entityName = 
+                            after?.brand_name || after?.name || after?.contact_name || 
+                            before?.brand_name || before?.name || before?.contact_name || null;
+
+                          // For brand_sticker: show "GasMask — Front Door Sticker → Yes"
+                          if (sub.entity_type === 'brand_sticker' && after?.sticker_type) {
+                            const stickerLabel = String(after.sticker_type).replace(/_/g, ' ');
+                            const val = after.value;
+                            return (
+                              <div className="text-xs space-y-1 max-w-[200px]">
+                                {entityName && <div className="font-medium">{String(entityName)}</div>}
+                                <div className="flex items-center gap-1">
+                                  <Badge variant="secondary" className="text-xs px-1.5 py-0 capitalize">{stickerLabel}</Badge>
+                                  <span className="text-muted-foreground">→ {val ? '✅' : '❌'}</span>
                                 </div>
-                              );
-                            }
-                            if (after.field) {
-                              return (
-                                <div className="text-xs">
-                                  <Badge variant="secondary" className="text-xs px-1.5 py-0 mb-1">
-                                    {String(after.field).replace(/_/g, ' ')}
-                                  </Badge>
-                                  <div className="text-muted-foreground">→ {String(after.value)}</div>
-                                </div>
-                              );
-                            }
+                              </div>
+                            );
                           }
-                          
-                          // For updates, compute real diffs
+
+                          // For tube_inventory: show "GasMask — Needs Order → Yes"
+                          if (sub.entity_type === 'tube_inventory' && after?.field) {
+                            const fieldLabel = String(after.field).replace(/_/g, ' ');
+                            return (
+                              <div className="text-xs space-y-1 max-w-[200px]">
+                                {(after?.brand_id || entityName) && (
+                                  <div className="font-medium">{String(entityName || after.brand_id)}</div>
+                                )}
+                                <div className="flex items-center gap-1">
+                                  <Badge variant="secondary" className="text-xs px-1.5 py-0 capitalize">{fieldLabel}</Badge>
+                                  <span className="text-muted-foreground">→ {String(after.value)}</span>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // For updates: compute real diffs and show with entity name
                           if (before && after) {
                             const realChanges: { field: string; from: unknown; to: unknown }[] = [];
                             for (const key of Object.keys(after)) {
@@ -504,30 +515,34 @@ export function FieldSubmissionReviewBoard() {
                             }
                             if (realChanges.length > 0) {
                               return (
-                                <div className="flex flex-wrap gap-1 max-w-[180px]">
-                                  {realChanges.slice(0, 2).map(c => (
-                                    <div key={c.field} className="text-xs">
-                                      <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                <div className="text-xs space-y-1 max-w-[200px]">
+                                  {entityName && <div className="font-medium">{String(entityName)}</div>}
+                                  <div className="flex flex-wrap gap-1">
+                                    {realChanges.slice(0, 2).map(c => (
+                                      <Badge key={c.field} variant="secondary" className="text-xs px-1.5 py-0">
                                         {c.field.replace(/_/g, ' ')}
                                       </Badge>
-                                    </div>
-                                  ))}
-                                  {realChanges.length > 2 && (
-                                    <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                                      +{realChanges.length - 2} more
-                                    </Badge>
-                                  )}
+                                    ))}
+                                    {realChanges.length > 2 && (
+                                      <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                        +{realChanges.length - 2} more
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </div>
                               );
                             }
                           }
-                          
-                          // Fallback: show payload_after keys
+
+                          // Fallback
                           const keys = Object.keys(after).filter(k => !ignoredKeys.includes(k));
                           return (
-                            <span className="text-xs text-muted-foreground">
-                              {keys.length} field{keys.length !== 1 ? 's' : ''}
-                            </span>
+                            <div className="text-xs space-y-1 max-w-[200px]">
+                              {entityName && <div className="font-medium">{String(entityName)}</div>}
+                              <span className="text-muted-foreground">
+                                {keys.length} field{keys.length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
                           );
                         })()}
                       </TableCell>
