@@ -256,7 +256,7 @@ export function useFieldSubmissionStats() {
 }
 
 /**
- * Approve a submission
+ * Approve a submission AND apply the mutation
  */
 export function useApproveSubmission() {
   const queryClient = useQueryClient();
@@ -266,7 +266,8 @@ export function useApproveSubmission() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await supabase
+      // Step 1: Update status to approved + record reviewer
+      const { error: statusError } = await supabase
         .from('field_submissions')
         .update({
           submission_status: 'approved' as FieldSubmissionStatus,
@@ -275,10 +276,26 @@ export function useApproveSubmission() {
         })
         .eq('id', submissionId);
 
-      if (error) throw error;
+      if (statusError) throw statusError;
+
+      // Step 2: Call RPC to apply the mutation
+      const { data: applyResult, error: applyError } = await supabase
+        .rpc('apply_field_submission', {
+          p_submission_id: submissionId,
+        });
+
+      if (applyError) throw applyError;
+
+      // Step 3: Verify success
+      const result = applyResult as Record<string, unknown>;
+      if (!result?.success) {
+        throw new Error((result?.error as string) || 'Failed to apply submission mutation');
+      }
+
+      return result;
     },
     onSuccess: () => {
-      toast.success('Submission approved');
+      toast.success('Submission approved and applied');
       queryClient.invalidateQueries({ queryKey: ['field-submissions'] });
     },
     onError: (error) => {

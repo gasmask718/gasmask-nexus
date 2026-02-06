@@ -49758,6 +49758,10 @@ export type Database = {
         Args: { p_commission_id: string }
         Returns: undefined
       }
+      apply_field_submission: {
+        Args: { p_submission_id: string }
+        Returns: Json
+      }
       approve_commission: { Args: { p_ledger_id: string }; Returns: undefined }
       approve_payout_batch: {
         Args: { p_approved_by?: string; p_batch_id: string }
