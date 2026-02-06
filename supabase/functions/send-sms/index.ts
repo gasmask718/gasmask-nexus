@@ -37,11 +37,10 @@ const handler = async (req: Request): Promise<Response> => {
     const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
     const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
 
-    // CHANGE 1: Get the Messaging Service SID instead of the Phone Number
-    const TWILIO_MESSAGING_SERVICE_SID = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID");
+    const TWILIO_FROM_NUMBER = "+18484004179";
 
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_MESSAGING_SERVICE_SID) {
-      throw new Error("Missing Twilio credentials (ensure TWILIO_MESSAGING_SERVICE_SID is set)");
+    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
+      throw new Error("Missing Twilio credentials");
     }
 
     const { to, message, business_id, store_id, contact_id, contact_name }: SendSMSRequest = await req.json();
@@ -69,9 +68,7 @@ const handler = async (req: Request): Promise<Response> => {
     formData.append("To", formattedTo);
     formData.append("Body", message);
 
-    // CHANGE 2: Use MessagingServiceSid instead of 'From'
-    // Do NOT send "From" when using a Messaging Service
-    formData.append("MessagingServiceSid", TWILIO_MESSAGING_SERVICE_SID);
+    formData.append("From", TWILIO_FROM_NUMBER);
 
     const twilioResponse = await fetch(twilioUrl, {
       method: "POST",
@@ -114,8 +111,7 @@ const handler = async (req: Request): Promise<Response> => {
           twilio_status: twilioData.status,
           contact_name: contact_name || null,
           sent_at: new Date().toISOString(),
-          // CHANGE 3: Useful to log which service sent it
-          messaging_service_sid: TWILIO_MESSAGING_SERVICE_SID,
+          from_number: TWILIO_FROM_NUMBER,
         },
       })
       .select()
