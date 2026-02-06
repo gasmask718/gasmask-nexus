@@ -294,6 +294,16 @@ export default function TubeIntelligencePage() {
             </div>
           ) : (
             <>
+            {/* Pagination - Top */}
+            <DataTablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={filteredRecords.length}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+              pageSizeOptions={[25, 50, 100, 250]}
+            />
             <Table>
               <TableHeader>
                 <TableRow>
@@ -409,16 +419,6 @@ export default function TubeIntelligencePage() {
               </TableBody>
             </Table>
             
-            {/* Pagination */}
-            <DataTablePagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              pageSize={pageSize}
-              totalItems={filteredRecords.length}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
-              pageSizeOptions={[25, 50, 100, 250]}
-            />
             </>
           )}
         </CardContent>

@@ -194,6 +194,18 @@ const CRMContacts = () => {
 
       {/* Contacts Table */}
       <Card className="p-6">
+        {/* Pagination - Top */}
+        {filteredContacts.length > 0 && (
+          <DataTablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={filteredContacts.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+            pageSizeOptions={[25, 50, 100]}
+          />
+        )}
         <div className="space-y-3">
           {paginatedContacts.map((contact) => (
             <div
@@ -252,18 +264,6 @@ const CRMContacts = () => {
           )}
         </div>
         
-        {/* Pagination */}
-        {filteredContacts.length > 0 && (
-          <DataTablePagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalItems={filteredContacts.length}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
-            pageSizeOptions={[25, 50, 100]}
-          />
-        )}
       </Card>
     </div>
   );
