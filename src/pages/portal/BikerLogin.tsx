@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { EmailInput } from '@/components/ui/email-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Bike, ShieldAlert } from 'lucide-react';
@@ -186,11 +187,10 @@ export default function BikerLogin() {
             
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
+              <EmailInput
                 id="email"
-                type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={setEmail}
                 placeholder="Enter your email"
                 required
                 disabled={isLoading}

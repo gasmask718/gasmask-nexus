@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmailInput } from "@/components/ui/email-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -246,12 +247,11 @@ export default function UserInvitations() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address *</Label>
-                <Input
+                <EmailInput
                   id="email"
-                  type="email"
                   placeholder="team@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={setEmail}
                 />
               </div>
               <div className="space-y-2">
