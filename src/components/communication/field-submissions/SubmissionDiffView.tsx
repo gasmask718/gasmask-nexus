@@ -22,12 +22,45 @@ interface DiffItem {
 
 function formatValue(value: unknown): string {
   if (value === null || value === undefined) return '(empty)';
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'boolean') return value ? '✅ Yes' : '❌ No';
   if (typeof value === 'object') return JSON.stringify(value, null, 2);
   return String(value);
 }
 
+// Human-readable field name mapping for known entity fields
+const FIELD_LABELS: Record<string, string> = {
+  sticker_type: 'Sticker Type',
+  value: 'Value',
+  brand_name: 'Brand',
+  front_door_sticker: 'Front Door Sticker',
+  brand_character_sticker: 'Brand Character Sticker',
+  authorized_retailer_sticker: 'Authorized Retailer Sticker',
+  telephone_number_sticker: 'Telephone Number Sticker',
+  requested_front_door_sticker: 'Requested Front Door',
+  requested_brand_character_sticker: 'Requested Brand Character',
+  requested_authorized_retailer_sticker: 'Requested Auth. Retailer',
+  requested_telephone_number_sticker: 'Requested Telephone',
+  front_door_sticker_put_on_at: 'Front Door Put On At',
+  brand_character_sticker_put_on_at: 'Character Sticker Put On At',
+  needs_order: 'Needs Order',
+  update_method: 'Update Method',
+  field: 'Field',
+  notes: 'Notes',
+  contact_name: 'Contact Name',
+  contact_phone: 'Contact Phone',
+  contact_role: 'Contact Role',
+  shirt_size: 'Shirt Size',
+  responsive_by_call: 'Responsive by Call',
+  responsive_by_text: 'Responsive by Text',
+  owner_name: 'Owner Name',
+  phone: 'Phone',
+  email: 'Email',
+  store_name: 'Store Name',
+  address: 'Address',
+};
+
 function formatFieldName(field: string): string {
+  if (FIELD_LABELS[field]) return FIELD_LABELS[field];
   return field
     .replace(/_/g, ' ')
     .replace(/([A-Z])/g, ' $1')
