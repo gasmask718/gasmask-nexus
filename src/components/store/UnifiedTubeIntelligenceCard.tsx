@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSimulationSafeMutation } from '@/hooks/useSimulationSafeMutation';
@@ -13,15 +14,16 @@ import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { useTubeIntelligence, canEditField, TubeIntelRole } from '@/hooks/useTubeIntelligence';
 import {
   Package, Save, RefreshCw, Clock, Calendar, ShoppingCart, FlaskConical,
-  Gift, ThumbsUp, ThumbsDown, AlertTriangle, User
+  Gift, ThumbsUp, ThumbsDown, AlertTriangle, User, MapPin, Phone, MessageSquare, Monitor
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TUBE_BRAND_COLORS } from '@/constants/tubeColors';
 import { CardHelper } from '@/components/portal/guidance';
 import { useTranslation } from '@/hooks/useTranslation';
+import type { UpdateMethod } from '@/services/fieldGovernance/types';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // UNIFIED TUBE INTELLIGENCE CARD
@@ -72,12 +74,31 @@ interface UnifiedTubeIntelligenceCardProps {
   role?: 'admin' | 'ambassador' | 'driver' | 'biker';
 }
 
+// ── Update Method helpers ──
+const UPDATE_METHOD_CONFIG: Record<string, { label: string; icon: typeof MapPin; className: string }> = {
+  in_person: { label: 'In-Person', icon: MapPin, className: 'bg-green-500/15 text-green-700 border-green-500/30 dark:text-green-400' },
+  call: { label: 'Phone Call', icon: Phone, className: 'bg-blue-500/15 text-blue-700 border-blue-500/30 dark:text-blue-400' },
+  text: { label: 'Text / SMS', icon: MessageSquare, className: 'bg-purple-500/15 text-purple-700 border-purple-500/30 dark:text-purple-400' },
+  system: { label: 'System', icon: Monitor, className: 'bg-muted text-muted-foreground border-border' },
+};
+
+function detectDefaultMethod(role: string): UpdateMethod {
+  const path = typeof window !== 'undefined' ? window.location.pathname : '';
+  // Visit flows are always in-person
+  if (path.includes('/visit') || path.includes('/check-in')) return 'in_person';
+  // Admin/VA/system overrides
+  if (role === 'admin' || role === 'va' || role === 'owner' || role === 'ceo') return 'system';
+  // Default for field roles
+  return 'in_person';
+}
+
 export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: UnifiedTubeIntelligenceCardProps) {
   const queryClient = useQueryClient();
   const { simulationMode } = useSimulationMode();
   const { t } = useTranslation();
   const [editedCounts, setEditedCounts] = useState<Record<string, number>>({});
   const [hasChanges, setHasChanges] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<UpdateMethod>(() => detectDefaultMethod(role));
 
   const canEditCounts = role === 'admin' || role === 'ambassador' || role === 'biker';
   const tubeIntelRole: TubeIntelRole = role as TubeIntelRole;
@@ -244,6 +265,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
       field,
       value: !currentValue,
       role: tubeIntelRole,
+      update_method: selectedMethod,
     });
   };
 
@@ -260,6 +282,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
       field: 'owner_interested',
       value: newValue,
       role: tubeIntelRole,
+      update_method: selectedMethod,
     });
   };
 
@@ -336,6 +359,31 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
               {t('card.tube_intel.simulation_mode')}
             </AlertDescription>
           </Alert>
+        )}
+
+        {/* Update Method Selector — visible when user can edit signals */}
+        {(canEditCounts || canEditField(tubeIntelRole, 'needs_order')) && role !== 'driver' && (
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50">
+            <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Update via:</span>
+            <Select value={selectedMethod} onValueChange={(v) => setSelectedMethod(v as UpdateMethod)}>
+              <SelectTrigger className="h-7 text-xs w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(UPDATE_METHOD_CONFIG).map(([key, cfg]) => {
+                  const Icon = cfg.icon;
+                  return (
+                    <SelectItem key={key} value={key} className="text-xs">
+                      <span className="flex items-center gap-1.5">
+                        <Icon className="h-3 w-3" />
+                        {cfg.label}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
         )}
 
         {isLoading ? (
@@ -544,21 +592,58 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                         )}
                       </div>
 
-                      {/* Attribution: Last Updated + Updated By */}
+                      {/* Attribution: Date + Relative Time + Method Badge + Role */}
                       {intel && (
-                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground pt-1">
+                        <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground pt-1.5 border-t border-border/20 mt-1">
+                          {/* Date + relative time */}
                           <span className="flex items-center gap-1">
                             <Clock className="h-2.5 w-2.5" />
                             {intel.last_updated_at
-                              ? formatDistanceToNow(new Date(intel.last_updated_at), { addSuffix: true })
-                              : 'Never updated'}
+                              ? <>
+                                  {format(new Date(intel.last_updated_at), 'MM/dd/yyyy')}
+                                  <span className="opacity-70">
+                                    ({formatDistanceToNow(new Date(intel.last_updated_at), { addSuffix: false })} ago)
+                                  </span>
+                                </>
+                              : <span className="italic">Unknown · Legacy data</span>
+                            }
                           </span>
+                          {/* Method badge */}
+                          {(() => {
+                            const method = intel.last_updated_method;
+                            const cfg = method ? UPDATE_METHOD_CONFIG[method] : null;
+                            if (cfg) {
+                              const MethodIcon = cfg.icon;
+                              return (
+                                <Badge variant="outline" className={cn('text-[9px] h-4 px-1.5 gap-0.5 border', cfg.className)}>
+                                  <MethodIcon className="h-2.5 w-2.5" />
+                                  {cfg.label}
+                                </Badge>
+                              );
+                            }
+                            if (!method && intel.last_updated_at) {
+                              return (
+                                <Badge variant="outline" className="text-[9px] h-4 px-1.5 text-muted-foreground border-border">
+                                  Legacy
+                                </Badge>
+                              );
+                            }
+                            return null;
+                          })()}
+                          {/* Role badge */}
                           {intel.last_updated_by_role && (
                             <span className="flex items-center gap-1">
                               <User className="h-2.5 w-2.5" />
                               <Badge variant="outline" className="text-[9px] h-4 px-1 capitalize">
                                 {intel.last_updated_by_role}
                               </Badge>
+                            </span>
+                          )}
+                          {/* Render guard for missing attribution */}
+                          {intel.last_updated_at && !intel.last_updated_method && !intel.last_updated_by_role && (
+                            <span className="flex items-center gap-1 text-amber-500">
+                              <AlertTriangle className="h-2.5 w-2.5" />
+                              Attribution missing
                             </span>
                           )}
                         </div>

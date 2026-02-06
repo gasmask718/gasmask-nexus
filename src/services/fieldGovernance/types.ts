@@ -24,6 +24,10 @@ export type FieldEntityType =
 // Action types
 export type FieldActionType = 'create' | 'update' | 'delete';
 
+// Update method — HOW the field change was made (chain-of-custody)
+export const UPDATE_METHODS = ['in_person', 'call', 'text', 'system'] as const;
+export type UpdateMethod = typeof UPDATE_METHODS[number];
+
 // Submission source detection
 export type SubmissionSource = 
   | 'driver_portal'
@@ -48,6 +52,7 @@ export interface FieldSubmissionPayload {
   entity_id?: string;
   payload_before?: Record<string, unknown>;
   submission_source?: SubmissionSource;
+  update_method?: UpdateMethod;
 }
 
 /**
