@@ -2,15 +2,21 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FileText, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { FileText, CheckCircle2, Clock, XCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { getEntityTypeLabel } from '@/hooks/useFieldSubmissions';
+import { formatDistanceToNow } from 'date-fns';
 
-interface ChangeListItem {
+interface FieldSubmissionItem {
   id: string;
   store_name: string;
-  status: string;
+  entity_type: string;
+  action_type: string;
+  submission_status: string;
   created_at: string;
-  items_count: number;
+  payload_before: Record<string, unknown> | null;
+  payload_after: Record<string, unknown>;
+  rejection_reason: string | null;
 }
 
 interface ChangeListsPageProps {
@@ -18,51 +24,59 @@ interface ChangeListsPageProps {
 }
 
 export function ChangeListsPage({ portalType }: ChangeListsPageProps) {
-  const [changeLists, setChangeLists] = useState<ChangeListItem[]>([]);
+  const [submissions, setSubmissions] = useState<FieldSubmissionItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchChangeLists() {
+    async function fetchSubmissions() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
         const { data } = await supabase
-          .from('change_lists')
+          .from('field_submissions')
           .select(`
             id,
-            status,
+            entity_type,
+            action_type,
+            submission_status,
             created_at,
-            store_master:store_id (store_name),
-            change_list_items (id)
+            payload_before,
+            payload_after,
+            rejection_reason,
+            store:store_master(store_name)
           `)
-          .eq('submitted_by', user.id)
+          .eq('submitted_by_user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(50);
 
         if (data) {
-          setChangeLists(data.map((c: any) => ({
+          setSubmissions(data.map((c: any) => ({
             id: c.id,
-            store_name: c.store_master?.store_name || 'Unknown',
-            status: c.status,
+            store_name: c.store?.store_name || 'Unknown Store',
+            entity_type: c.entity_type,
+            action_type: c.action_type,
+            submission_status: c.submission_status,
             created_at: c.created_at,
-            items_count: c.change_list_items?.length || 0,
+            payload_before: c.payload_before,
+            payload_after: c.payload_after,
+            rejection_reason: c.rejection_reason,
           })));
         }
       } catch (error) {
-        console.error('Error fetching change lists:', error);
+        console.error('Error fetching submissions:', error);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchChangeLists();
+    fetchSubmissions();
   }, []);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'approved':
-      case 'committed':
+      case 'auto_approved':
         return <CheckCircle2 className="h-4 w-4 text-green-500" />;
       case 'rejected':
         return <XCircle className="h-4 w-4 text-destructive" />;
@@ -74,7 +88,7 @@ export function ChangeListsPage({ portalType }: ChangeListsPageProps) {
   const getStatusVariant = (status: string): "default" | "secondary" | "destructive" => {
     switch (status) {
       case 'approved':
-      case 'committed':
+      case 'auto_approved':
         return 'default';
       case 'rejected':
         return 'destructive';
@@ -83,11 +97,41 @@ export function ChangeListsPage({ portalType }: ChangeListsPageProps) {
     }
   };
 
+  const getChangeSummary = (item: FieldSubmissionItem): string => {
+    const after = item.payload_after;
+    if (!after) return 'No details';
+    
+    // For sticker changes
+    if (item.entity_type === 'brand_sticker' && after.sticker_type) {
+      const stickerName = String(after.sticker_type).replace(/_/g, ' ');
+      return `${stickerName}: ${after.value ? 'Yes' : 'No'}`;
+    }
+    
+    // For tube inventory
+    if (item.entity_type === 'tube_inventory' && after.field) {
+      return `${String(after.field).replace(/_/g, ' ')}: ${after.value}`;
+    }
+
+    // For store contacts
+    if (item.entity_type === 'store_contact' && after.name) {
+      return `Contact: ${after.name}`;
+    }
+
+    // Generic: show first meaningful field
+    const keys = Object.keys(after).filter(k => !['store_id', 'brand_id', 'id', 'created_at', 'updated_at'].includes(k));
+    if (keys.length > 0) {
+      return `${keys.length} field${keys.length > 1 ? 's' : ''} changed`;
+    }
+    return 'Changes submitted';
+  };
+
+  const statusLabel = (status: string) => status.replace(/_/g, ' ');
+
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-bold">Change Lists</h1>
-        <p className="text-sm text-muted-foreground">Your submitted changes and their status</p>
+        <h1 className="text-xl font-bold">My Submissions</h1>
+        <p className="text-sm text-muted-foreground">Your submitted changes and their approval status</p>
       </div>
 
       <Card>
@@ -97,7 +141,7 @@ export function ChangeListsPage({ portalType }: ChangeListsPageProps) {
             Submitted Changes
           </CardTitle>
           <CardDescription>
-            All changes you've submitted for review
+            All changes you've submitted for admin review
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -105,34 +149,51 @@ export function ChangeListsPage({ portalType }: ChangeListsPageProps) {
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
             </div>
-          ) : changeLists.length === 0 ? (
+          ) : submissions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No change lists submitted yet</p>
+              <p>No submissions yet</p>
+              <p className="text-xs mt-1">Changes you make during store visits will appear here</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Store</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Change</TableHead>
                   <TableHead>Submitted</TableHead>
-                  <TableHead>Changes</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {changeLists.map((cl) => (
-                  <TableRow key={cl.id}>
-                    <TableCell className="font-medium">{cl.store_name}</TableCell>
-                    <TableCell>{new Date(cl.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell>{cl.items_count} items</TableCell>
+                {submissions.map((sub) => (
+                  <TableRow key={sub.id}>
+                    <TableCell className="font-medium">{sub.store_name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {getEntityTypeLabel(sub.entity_type as any)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                      {getChangeSummary(sub)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDistanceToNow(new Date(sub.created_at), { addSuffix: true })}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {getStatusIcon(cl.status)}
-                        <Badge variant={getStatusVariant(cl.status)}>
-                          {cl.status}
+                        {getStatusIcon(sub.submission_status)}
+                        <Badge variant={getStatusVariant(sub.submission_status)} className="capitalize">
+                          {statusLabel(sub.submission_status)}
                         </Badge>
                       </div>
+                      {sub.submission_status === 'rejected' && sub.rejection_reason && (
+                        <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {sub.rejection_reason}
+                        </p>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -36,7 +36,7 @@ function formatFieldName(field: string): string {
 }
 
 export function SubmissionDiffView({ before, after, changedFields }: SubmissionDiffViewProps) {
-  // Compute diff items
+  // Compute diff items — always compare actual values, ignore changedFields hint if it's noisy
   const diffItems: DiffItem[] = [];
   
   const allFields = new Set([
@@ -44,8 +44,11 @@ export function SubmissionDiffView({ before, after, changedFields }: SubmissionD
     ...Object.keys(after),
   ]);
 
-  // Filter out metadata fields
-  const ignoredFields = ['id', 'created_at', 'updated_at', 'store_id', 'brand_id'];
+  // Filter out metadata fields that clutter the view
+  const ignoredFields = [
+    'id', 'created_at', 'updated_at', 'store_id', 'brand_id',
+    'last_updated_by_role', 'last_verified_by', 'last_verified_at',
+  ];
 
   allFields.forEach(field => {
     if (ignoredFields.includes(field)) return;
@@ -65,12 +68,8 @@ export function SubmissionDiffView({ before, after, changedFields }: SubmissionD
       type = 'changed';
     }
     
-    // Only show changed fields by default, or use changedFields hint
-    if (changedFields?.length) {
-      if (changedFields.includes(field)) {
-        diffItems.push({ field, type: type === 'unchanged' ? 'changed' : type, oldValue, newValue });
-      }
-    } else if (type !== 'unchanged') {
+    // Only show fields that actually changed (real diff comparison)
+    if (type !== 'unchanged') {
       diffItems.push({ field, type, oldValue, newValue });
     }
   });

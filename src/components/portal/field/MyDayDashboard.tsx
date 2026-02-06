@@ -110,25 +110,26 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
           })));
         }
 
-        // Fetch pending change lists
-        const { data: changeLists } = await supabase
-          .from('change_lists')
+        // Fetch pending field submissions (governance pipeline)
+        const { data: fieldSubmissions } = await supabase
+          .from('field_submissions')
           .select(`
             id,
-            status,
+            submission_status,
             created_at,
-            store_master:store_id (store_name)
+            entity_type,
+            store:store_master(store_name)
           `)
-          .eq('submitted_by', user.id)
-          .in('status', ['submitted', 'under_review'])
+          .eq('submitted_by_user_id', user.id)
+          .eq('submission_status', 'pending_review')
           .order('created_at', { ascending: false })
           .limit(5);
 
-        if (changeLists) {
-          setPendingChanges(changeLists.map((c: any) => ({
+        if (fieldSubmissions) {
+          setPendingChanges(fieldSubmissions.map((c: any) => ({
             id: c.id,
-            store_name: c.store_master?.store_name || 'Unknown Store',
-            status: c.status,
+            store_name: c.store?.store_name || 'Unknown Store',
+            status: c.submission_status === 'pending_review' ? 'Pending Review' : c.submission_status,
             created_at: c.created_at,
           })));
         }

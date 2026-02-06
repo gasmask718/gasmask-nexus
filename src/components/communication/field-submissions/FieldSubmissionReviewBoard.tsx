@@ -463,26 +463,73 @@ export function FieldSubmissionReviewBoard() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {sub.changed_fields && sub.changed_fields.length > 0 ? (
-                          <div className="flex flex-wrap gap-1 max-w-[150px]">
-                            {sub.changed_fields.slice(0, 3).map(field => (
-                              <Badge 
-                                key={field} 
-                                variant="secondary" 
-                                className="text-xs px-1.5 py-0"
-                              >
-                                {field.replace(/_/g, ' ')}
-                              </Badge>
-                            ))}
-                            {sub.changed_fields.length > 3 && (
-                              <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                                +{sub.changed_fields.length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
+                        {(() => {
+                          // Compute actual changes from payload comparison
+                          const before = sub.payload_before as Record<string, unknown> | null;
+                          const after = sub.payload_after as Record<string, unknown>;
+                          const ignoredKeys = ['id', 'created_at', 'updated_at', 'store_id', 'brand_id', 'last_updated_by_role', 'last_verified_by', 'last_verified_at'];
+                          
+                          // For creates with specific entity info, show summary
+                          if (sub.action_type === 'create' && after) {
+                            if (after.sticker_type) {
+                              return (
+                                <div className="text-xs">
+                                  <Badge variant="secondary" className="text-xs px-1.5 py-0 mb-1">
+                                    {String(after.sticker_type).replace(/_/g, ' ')}
+                                  </Badge>
+                                  <div className="text-muted-foreground">→ {after.value ? 'Yes' : 'No'}</div>
+                                </div>
+                              );
+                            }
+                            if (after.field) {
+                              return (
+                                <div className="text-xs">
+                                  <Badge variant="secondary" className="text-xs px-1.5 py-0 mb-1">
+                                    {String(after.field).replace(/_/g, ' ')}
+                                  </Badge>
+                                  <div className="text-muted-foreground">→ {String(after.value)}</div>
+                                </div>
+                              );
+                            }
+                          }
+                          
+                          // For updates, compute real diffs
+                          if (before && after) {
+                            const realChanges: { field: string; from: unknown; to: unknown }[] = [];
+                            for (const key of Object.keys(after)) {
+                              if (ignoredKeys.includes(key)) continue;
+                              if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) {
+                                realChanges.push({ field: key, from: before[key], to: after[key] });
+                              }
+                            }
+                            if (realChanges.length > 0) {
+                              return (
+                                <div className="flex flex-wrap gap-1 max-w-[180px]">
+                                  {realChanges.slice(0, 2).map(c => (
+                                    <div key={c.field} className="text-xs">
+                                      <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                        {c.field.replace(/_/g, ' ')}
+                                      </Badge>
+                                    </div>
+                                  ))}
+                                  {realChanges.length > 2 && (
+                                    <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                      +{realChanges.length - 2} more
+                                    </Badge>
+                                  )}
+                                </div>
+                              );
+                            }
+                          }
+                          
+                          // Fallback: show payload_after keys
+                          const keys = Object.keys(after).filter(k => !ignoredKeys.includes(k));
+                          return (
+                            <span className="text-xs text-muted-foreground">
+                              {keys.length} field{keys.length !== 1 ? 's' : ''}
+                            </span>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(sub.submission_status)}>
