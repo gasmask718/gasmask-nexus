@@ -49667,6 +49667,31 @@ export type Database = {
           },
         ]
       }
+      v_store_tube_intel_summary: {
+        Row: {
+          method_count: number | null
+          methods: string[] | null
+          most_recent_update: string | null
+          oldest_update: string | null
+          store_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_tube_inventory_status_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_tube_inventory_status_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       v_store_tube_kpi: {
         Row: {
           brand_id: string | null

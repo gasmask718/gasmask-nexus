@@ -7,6 +7,8 @@ import { useState } from 'react';
 import VisitLogModal from '@/components/VisitLogModal';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import { useStoreTubeKPI, getColorStatusClasses } from '@/hooks/useStoreTubeKPI';
+import { useStoreTubeIntelSummary } from '@/hooks/useStoreTubeIntelSummary';
+import { TubeIntelAttribution } from '@/components/store/TubeIntelAttribution';
 import { Package } from 'lucide-react';
 
 interface Store {
@@ -152,6 +154,7 @@ export const StoreCard = ({ store, onClose }: StoreCardProps) => {
 
 function TubeKPISummary({ storeId }: { storeId: string }) {
   const { data: kpiData, isLoading } = useStoreTubeKPI(storeId);
+  const { data: intelSummary } = useStoreTubeIntelSummary(storeId);
 
   if (isLoading) {
     return (
@@ -184,6 +187,8 @@ function TubeKPISummary({ storeId }: { storeId: string }) {
           {totalTubes} total
         </Badge>
       </div>
+      {/* Tube Intel Attribution */}
+      <TubeIntelAttribution summary={intelSummary} compact className="pb-1" />
       <div className="flex flex-wrap gap-1">
         {kpiData.slice(0, 4).map(item => {
           const colors = getColorStatusClasses(item.color_status);

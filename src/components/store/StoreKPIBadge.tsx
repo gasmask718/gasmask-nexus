@@ -1,9 +1,11 @@
 import { Package, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { StoreKPISummary } from '@/hooks/useStoreTubeKPIBatch';
+import type { TubeIntelSummary } from '@/hooks/useStoreTubeIntelSummary';
 import { TUBE_BRAND_COLORS, getTubeBrandColor } from '@/constants/tubeColors';
 import { getColorStatusClasses } from '@/hooks/useStoreTubeKPI';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TubeIntelAttribution } from '@/components/store/TubeIntelAttribution';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE KPI BADGE — CANONICAL RENDERER
@@ -14,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 interface StoreKPIBadgeProps {
   summary: StoreKPISummary | undefined;
   isLoading?: boolean;
+  intelSummary?: TubeIntelSummary | null;
 }
 
 // Canonical brand list — ALWAYS render all of these
@@ -22,7 +25,7 @@ const ALL_TUBE_BRANDS = Object.entries(TUBE_BRAND_COLORS).map(([id, config]) => 
   brand_name: config.name,
 }));
 
-export function StoreKPIBadge({ summary, isLoading }: StoreKPIBadgeProps) {
+export function StoreKPIBadge({ summary, isLoading, intelSummary }: StoreKPIBadgeProps) {
   // Loading state — show skeleton for all brands
   if (isLoading) {
     return (
@@ -60,6 +63,9 @@ export function StoreKPIBadge({ summary, isLoading }: StoreKPIBadgeProps) {
           {totalTubes} total
         </span>
       </div>
+
+      {/* Tube Intel Attribution — additive, non-destructive */}
+      <TubeIntelAttribution summary={intelSummary} compact className="pb-1" />
 
       {/* ALL brands — ALWAYS rendered, NO truncation */}
       <div className="space-y-1.5">

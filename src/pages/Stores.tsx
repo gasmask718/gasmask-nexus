@@ -20,6 +20,7 @@ import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeCon
 import { useGlobalTags } from '@/hooks/useGlobalTags';
 import { useStoreProductCounts } from '@/hooks/useProductStoreAssignments';
 import { useStoreTubeKPIBatch } from '@/hooks/useStoreTubeKPIBatch';
+import { useStoreTubeIntelSummaryBatch } from '@/hooks/useStoreTubeIntelSummary';
 import { StoreKPIBadge } from '@/components/store/StoreKPIBadge';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { PagePurpose } from '@/components/portal/guidance/PagePurpose';
@@ -512,6 +513,7 @@ const Stores = () => {
   // ═══════════════════════════════════════════════════════════════════════════════
   const paginatedStoreIds = useMemo(() => paginatedStores.map(s => s.id), [paginatedStores]);
   const { data: tubeKPIMap, isLoading: kpiLoading } = useStoreTubeKPIBatch(paginatedStoreIds);
+  const { data: tubeIntelMap } = useStoreTubeIntelSummaryBatch(paginatedStoreIds);
 
   const formatBrandName = (brand: string) => {
     const normalized = brand.toLowerCase();
@@ -1008,10 +1010,11 @@ const Stores = () => {
                        dataSource={t('card.tube_inventory.source') || 'v_store_tube_kpi'}
                        variant="inline"
                      />
-                     <StoreKPIBadge
-                       summary={tubeKPIMap?.get(store.id)}
-                       isLoading={kpiLoading}
-                     />
+                      <StoreKPIBadge
+                        summary={tubeKPIMap?.get(store.id)}
+                        isLoading={kpiLoading}
+                        intelSummary={tubeIntelMap?.get(store.id)}
+                      />
                    </div>
                 </CardContent>
               </Card>
