@@ -1,0 +1,1 @@
+ALTER TABLE public.field_submissions ADD COLUMN IF NOT EXISTS applied_at TIMESTAMP WITH TIME ZONE;
