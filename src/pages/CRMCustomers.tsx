@@ -177,6 +177,16 @@ const CRMCustomers = () => {
             </div>
           ) : (
             <>
+            {/* Pagination - Top */}
+            <DataTablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={customers.length}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+              pageSizeOptions={[25, 50, 100]}
+            />
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="border-b">
@@ -253,16 +263,6 @@ const CRMCustomers = () => {
               </table>
             </div>
             
-            {/* Pagination */}
-            <DataTablePagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              pageSize={pageSize}
-              totalItems={customers.length}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
-              pageSizeOptions={[25, 50, 100]}
-            />
             </>
           )}
         </CardContent>

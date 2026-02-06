@@ -710,6 +710,14 @@ export default function MasterOpportunities() {
                 </div>
               ) : (
                 <>
+                  <DataTablePagination
+                    currentPage={currentPage}
+                    totalPages={signalTotalPages}
+                    pageSize={pageSize}
+                    totalItems={filteredSignalRows.length}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+                  />
                   <div className="rounded-md border">
                     <Table>
                       <TableHeader>
@@ -781,14 +789,6 @@ export default function MasterOpportunities() {
                     </Table>
                   </div>
                   
-                  <DataTablePagination
-                    currentPage={currentPage}
-                    totalPages={signalTotalPages}
-                    pageSize={pageSize}
-                    totalItems={filteredSignalRows.length}
-                    onPageChange={setCurrentPage}
-                    onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
-                  />
                 </>
               )}
             </CardContent>
@@ -920,6 +920,14 @@ export default function MasterOpportunities() {
                 </div>
               ) : (
                 <>
+                  <DataTablePagination
+                    currentPage={oppCurrentPage}
+                    totalPages={oppTotalPages}
+                    pageSize={oppPageSize}
+                    totalItems={filteredOpportunities.length}
+                    onPageChange={setOppCurrentPage}
+                    onPageSizeChange={(size) => { setOppPageSize(size); setOppCurrentPage(1); }}
+                  />
                   <div className="rounded-md border">
                     <Table>
                       <TableHeader>
@@ -1015,14 +1023,6 @@ export default function MasterOpportunities() {
                     </Table>
                   </div>
                   
-                  <DataTablePagination
-                    currentPage={oppCurrentPage}
-                    totalPages={oppTotalPages}
-                    pageSize={oppPageSize}
-                    totalItems={filteredOpportunities.length}
-                    onPageChange={setOppCurrentPage}
-                    onPageSizeChange={(size) => { setOppPageSize(size); setOppCurrentPage(1); }}
-                  />
                 </>
               )}
             </CardContent>

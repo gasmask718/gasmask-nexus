@@ -1460,7 +1460,6 @@ export default function GrabbaCRM() {
                   <Card className="p-8 text-center text-muted-foreground">No companies found</Card>
                 ) : (
                   <>
-                    {paginatedList.map((company: any) => <CompanyCard key={company.id} company={company} />)}
                     <DataTablePagination
                       currentPage={currentPage}
                       totalPages={totalPages}
@@ -1470,6 +1469,7 @@ export default function GrabbaCRM() {
                       onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
                       pageSizeOptions={[25, 50, 100]}
                     />
+                    {paginatedList.map((company: any) => <CompanyCard key={company.id} company={company} />)}
                   </>
                 )}
               </TabsContent>
@@ -1481,7 +1481,18 @@ export default function GrabbaCRM() {
                 ) : filteredStores?.length === 0 ? (
                   <Card className="p-8 text-center text-muted-foreground">No stores found</Card>
                 ) : (
-                  filteredStores?.map((store: any) => <StoreCard key={store.id} store={store} />)
+                  <>
+                    <DataTablePagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      totalItems={activeList.length}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+                      pageSizeOptions={[25, 50, 100]}
+                    />
+                    {paginatedList.map((store: any) => <StoreCard key={store.id} store={store} />)}
+                  </>
                 )}
               </TabsContent>
 
@@ -1492,9 +1503,20 @@ export default function GrabbaCRM() {
                 ) : filteredWholesalers?.length === 0 ? (
                   <Card className="p-8 text-center text-muted-foreground">No wholesalers found</Card>
                 ) : (
-                  filteredWholesalers?.map((wholesaler) => (
-                    <WholesalerCard key={wholesaler.id} wholesaler={wholesaler} />
-                  ))
+                  <>
+                    <DataTablePagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      totalItems={activeList.length}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+                      pageSizeOptions={[25, 50, 100]}
+                    />
+                    {paginatedList.map((wholesaler: any) => (
+                      <WholesalerCard key={wholesaler.id} wholesaler={wholesaler} />
+                    ))}
+                  </>
                 )}
               </TabsContent>
 
@@ -1505,9 +1527,20 @@ export default function GrabbaCRM() {
                 ) : filteredAmbassadors?.length === 0 ? (
                   <Card className="p-8 text-center text-muted-foreground">No ambassadors found</Card>
                 ) : (
-                  filteredAmbassadors?.map((ambassador: any) => (
-                    <AmbassadorCard key={ambassador.id} ambassador={ambassador} />
-                  ))
+                  <>
+                    <DataTablePagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      totalItems={activeList.length}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+                      pageSizeOptions={[25, 50, 100]}
+                    />
+                    {paginatedList.map((ambassador: any) => (
+                      <AmbassadorCard key={ambassador.id} ambassador={ambassador} />
+                    ))}
+                  </>
                 )}
               </TabsContent>
 
@@ -1518,9 +1551,20 @@ export default function GrabbaCRM() {
                 ) : filteredDrivers?.length === 0 ? (
                   <Card className="p-8 text-center text-muted-foreground">No drivers found</Card>
                 ) : (
-                  filteredDrivers?.map((driver: any) => (
-                    <DriverCard key={driver.id} driver={driver} />
-                  ))
+                  <>
+                    <DataTablePagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      totalItems={activeList.length}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+                      pageSizeOptions={[25, 50, 100]}
+                    />
+                    {paginatedList.map((driver: any) => (
+                      <DriverCard key={driver.id} driver={driver} />
+                    ))}
+                  </>
                 )}
               </TabsContent>
 
@@ -1531,9 +1575,20 @@ export default function GrabbaCRM() {
                 ) : filteredBikers?.length === 0 ? (
                   <Card className="p-8 text-center text-muted-foreground">No bikers found</Card>
                 ) : (
-                  filteredBikers?.map((biker: any) => (
-                    <BikerCard key={biker.id} biker={biker} />
-                  ))
+                  <>
+                    <DataTablePagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      totalItems={activeList.length}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+                      pageSizeOptions={[25, 50, 100]}
+                    />
+                    {paginatedList.map((biker: any) => (
+                      <BikerCard key={biker.id} biker={biker} />
+                    ))}
+                  </>
                 )}
               </TabsContent>
 
@@ -1544,9 +1599,20 @@ export default function GrabbaCRM() {
                 ) : filteredProduction?.length === 0 ? (
                   <Card className="p-8 text-center text-muted-foreground">No productions found</Card>
                 ) : (
-                  filteredProduction?.map((worker: any) => (
-                    <ProductionCard key={worker.id} worker={worker} />
-                  ))
+                  <>
+                    <DataTablePagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      totalItems={activeList.length}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+                      pageSizeOptions={[25, 50, 100]}
+                    />
+                    {paginatedList.map((worker: any) => (
+                      <ProductionCard key={worker.id} worker={worker} />
+                    ))}
+                  </>
                 )}
               </TabsContent>
             </Tabs>

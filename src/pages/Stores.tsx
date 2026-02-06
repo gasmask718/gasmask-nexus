@@ -794,6 +794,19 @@ const Stores = () => {
         </div>
       </div>
 
+      {/* Pagination - Top */}
+      {!isLoading && filteredStores.length > 0 && (
+        <DataTablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={filteredStores.length}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+          pageSizeOptions={[25, 50, 100, 250]}
+        />
+      )}
+
       {/* Stores Grid */}
       {isLoading ? (
         <div className="text-center py-12">
@@ -1006,18 +1019,7 @@ const Stores = () => {
           })}
         </div>
         
-        {/* Pagination */}
-        {filteredStores.length > 0 && (
-          <DataTablePagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalItems={filteredStores.length}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
-            pageSizeOptions={[25, 50, 100, 250]}
-          />
-        )}
+        {/* Pagination removed - moved to top */}
         </>
       )}
 
