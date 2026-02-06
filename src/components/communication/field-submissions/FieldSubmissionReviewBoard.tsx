@@ -85,6 +85,7 @@ export function FieldSubmissionReviewBoard() {
   });
   const [selectedSubmission, setSelectedSubmission] = useState<FieldSubmission | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [seeding, setSeeding] = useState(false);
@@ -179,7 +180,14 @@ export function FieldSubmissionReviewBoard() {
   ];
 
   const handleApprove = async (id: string) => {
-    await approveMutation.mutateAsync(id);
+    setSelectedSubmission(submissions?.find(s => s.id === id) || null);
+    setApproveDialogOpen(true);
+  };
+
+  const handleConfirmApprove = async () => {
+    if (!selectedSubmission) return;
+    await approveMutation.mutateAsync(selectedSubmission.id);
+    setApproveDialogOpen(false);
     setSelectedSubmission(null);
     setDetailSheetOpen(false);
   };
@@ -508,7 +516,8 @@ export function FieldSubmissionReviewBoard() {
                                 className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-500/10"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleApprove(sub.id);
+                                  setSelectedSubmission(sub);
+                                  setApproveDialogOpen(true);
                                 }}
                                 disabled={approveMutation.isPending}
                               >
@@ -697,7 +706,9 @@ export function FieldSubmissionReviewBoard() {
                     </Button>
                     <Button
                       className="flex-1"
-                      onClick={() => handleApprove(selectedSubmission.id)}
+                      onClick={() => {
+                        setApproveDialogOpen(true);
+                      }}
                       disabled={approveMutation.isPending}
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
@@ -717,7 +728,50 @@ export function FieldSubmissionReviewBoard() {
         </SheetContent>
       </Sheet>
 
-      {/* Reject Dialog */}
+      {/* Approve Confirmation Dialog */}
+      <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Approval</DialogTitle>
+            <DialogDescription>
+              This will apply the changes to {selectedSubmission?.entity_type.replace(/_/g, ' ')} for {selectedSubmission?.store_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            <div className="p-3 rounded-lg bg-muted">
+              <p className="text-sm font-medium mb-2">Action being applied:</p>
+              <Badge variant="outline" className="capitalize">
+                {selectedSubmission?.action_type}
+              </Badge>
+            </div>
+            {selectedSubmission?.changed_fields && selectedSubmission.changed_fields.length > 0 && (
+              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <p className="text-sm font-medium text-blue-600 mb-2">Changed fields:</p>
+                <div className="flex flex-wrap gap-1">
+                  {selectedSubmission.changed_fields.map(field => (
+                    <Badge key={field} variant="secondary" className="text-xs">
+                      {field.replace(/_/g, ' ')}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproveDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmApprove}
+              disabled={approveMutation.isPending}
+            >
+              Approve & Apply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Confirmation Dialog */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
         <DialogContent>
           <DialogHeader>
