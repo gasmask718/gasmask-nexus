@@ -136,6 +136,7 @@ export interface GovernedTubeIntelUpdate {
   field: string;
   value: boolean | null;
   role?: string;
+  update_method?: string;
 }
 
 /**
@@ -149,16 +150,17 @@ export function useGovernedTubeIntelUpdate(storeId: string | null) {
   
   return useMutation({
     mutationFn: async (payload: GovernedTubeIntelUpdate) => {
-      const { id, store_id, brand_id, brand_name, field, value, role: payloadRole } = payload;
+      const { id, store_id, brand_id, brand_name, field, value, role: payloadRole, update_method } = payload;
       
       // Fetch current state for diff
       const payloadBefore = id ? await fetchCurrentState('store_tube_inventory_status', id) : null;
       
-      // Prepare payload_after
+      // Prepare payload_after (include update_method for RPC application)
       const payloadAfter = {
         brand_id,
         field,
         value,
+        update_method: update_method || 'system',
       };
       
       // If user is a field role, route through governance
@@ -187,12 +189,15 @@ export function useGovernedTubeIntelUpdate(storeId: string | null) {
       }
       
       // Execute the actual mutation
+      const effectiveMethod = update_method || 'system';
       if (id) {
         const { error } = await supabase
           .from('store_tube_inventory_status')
           .update({ 
             [field]: value,
             last_updated_by_role: effectiveRole || null,
+            last_updated_at: new Date().toISOString(),
+            last_updated_method: effectiveMethod,
           })
           .eq('id', id);
         
@@ -207,6 +212,7 @@ export function useGovernedTubeIntelUpdate(storeId: string | null) {
             brand_name: brand_name || brand_id,
             [field]: value,
             last_updated_by_role: effectiveRole || null,
+            last_updated_method: effectiveMethod,
           });
         
         if (error) throw error;

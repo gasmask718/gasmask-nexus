@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 import { parseRLSError } from '@/lib/rls-error-handler';
-import { isFieldRole, FieldRole } from '@/services/fieldGovernance/types';
+import { isFieldRole, FieldRole, UpdateMethod } from '@/services/fieldGovernance/types';
 import { submitFieldChange, GOVERNANCE_STRICT_MODE } from '@/services/fieldGovernance/submitFieldChange';
 export const TUBE_BRANDS = [
   { id: 'gasmask', name: 'GasMask Bags', color: '#EF4444' },
@@ -35,6 +35,7 @@ export interface TubeIntelStatus {
   last_updated_by: string | null;
   last_updated_by_role: string | null;
   last_updated_at: string;
+  last_updated_method: string | null;
   is_simulation: boolean;
 }
 
@@ -48,6 +49,7 @@ export interface TubeIntelUpdatePayload {
   >;
   value: boolean | null;
   role?: TubeIntelRole;
+  update_method?: UpdateMethod;
 }
 
 // Role-based field editability
@@ -126,8 +128,9 @@ export function useTubeIntelligence(storeId: string | null) {
   // Update a single field with role attribution and governance
   const updateField = useMutation({
     mutationFn: async (payload: TubeIntelUpdatePayload) => {
-      const { id, store_id, brand_id, field, value, role } = payload;
+      const { id, store_id, brand_id, field, value, role, update_method } = payload;
       const effectiveRole = role || userRole;
+      const effectiveMethod: string = update_method || 'system';
 
       // For field roles, route through governance FIRST
       if (user?.id && isFieldRole(effectiveRole)) {
@@ -142,7 +145,7 @@ export function useTubeIntelligence(storeId: string | null) {
           payloadBefore = data as Record<string, unknown> | null;
         }
         
-        const payloadAfter = { brand_id, field, value };
+        const payloadAfter = { brand_id, field, value, update_method: effectiveMethod };
         
         const result = await submitFieldChange(
           {
@@ -152,6 +155,7 @@ export function useTubeIntelligence(storeId: string | null) {
             entity_id: id,
             payload_before: payloadBefore || undefined,
             payload_after: payloadAfter,
+            update_method: effectiveMethod as UpdateMethod,
           },
           user.id,
           effectiveRole as FieldRole
@@ -173,6 +177,8 @@ export function useTubeIntelligence(storeId: string | null) {
           .update({ 
             [field]: value,
             last_updated_by_role: effectiveRole || null,
+            last_updated_at: new Date().toISOString(),
+            last_updated_method: effectiveMethod,
           })
           .eq('id', id);
         if (error) throw error;
@@ -186,6 +192,7 @@ export function useTubeIntelligence(storeId: string | null) {
             brand_name: brand?.name || brand_id,
             [field]: value,
             last_updated_by_role: effectiveRole || null,
+            last_updated_method: effectiveMethod,
             is_simulation: simulationMode,
           });
         if (error) throw error;

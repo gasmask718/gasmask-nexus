@@ -20,10 +20,12 @@ export type {
   FieldRole,
   SubmissionSource,
   AllRoles,
+  UpdateMethod,
 } from './types';
 
 export {
   FIELD_ROLES,
+  UPDATE_METHODS,
   isFieldRole,
   getSubmissionSource,
 } from './types';
