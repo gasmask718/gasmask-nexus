@@ -198,20 +198,28 @@ export async function createRoleProfile(
   let result;
   
   switch (role) {
-    case 'driver':
+    case 'driver': {
       result = await supabase
         .from('driver_profiles')
         .insert({ user_id: userId, ...data })
         .select()
         .single();
+      
+      // Link to operational drivers table
+      await linkOperationalRecord('drivers', userId, data);
       break;
-    case 'biker':
+    }
+    case 'biker': {
       result = await supabase
         .from('biker_profiles')
         .insert({ user_id: userId, ...data })
         .select()
         .single();
+      
+      // Link to operational bikers table
+      await linkOperationalRecord('bikers', userId, data);
       break;
+    }
     case 'ambassador': {
       const referralCode = generateReferralCode();
       const trackingCode = 'AMB-' + Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -289,4 +297,139 @@ export async function createRoleProfile(
 
 function generateReferralCode(): string {
   return 'AMB-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+/**
+ * Link auth user to an existing operational record (bikers/drivers) by email/phone match,
+ * or create a new operational record if no match found.
+ */
+async function linkOperationalRecord(
+  table: 'bikers' | 'drivers',
+  userId: string,
+  data: Record<string, any>
+) {
+  try {
+    // Get user email from profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email, name')
+      .eq('id', userId)
+      .single();
+
+    const email = profile?.email || data.email;
+    const name = profile?.name || data.name;
+
+    // Try to find existing record by email match
+    if (email) {
+      const { data: existing } = await supabase
+        .from(table)
+        .select('id, user_id')
+        .eq('email', email)
+        .is('user_id', null)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        // Link existing record to this auth user
+        await supabase
+          .from(table)
+          .update({ user_id: userId })
+          .eq('id', existing[0].id);
+        
+        // Also update the profile name to match the operational record name
+        const { data: opRecord } = await supabase
+          .from(table)
+          .select('full_name')
+          .eq('id', existing[0].id)
+          .single();
+        
+        if (opRecord?.full_name && profile?.name === 'New User') {
+          await supabase
+            .from('profiles')
+            .update({ name: opRecord.full_name })
+            .eq('id', userId);
+        }
+        
+        console.log(`Linked ${table} record ${existing[0].id} to user ${userId}`);
+        return;
+      }
+    }
+
+    // No existing record found — create new operational record
+    const defaultBusinessId = 'c3d4e5f6-a7b8-9012-cdef-123456789012';
+    
+    await supabase
+      .from(table)
+      .insert({
+        user_id: userId,
+        full_name: name || 'New User',
+        email: email || null,
+        phone: data.phone || null,
+        business_id: data.business_id || defaultBusinessId,
+        status: 'active',
+      });
+
+    console.log(`Created new ${table} record for user ${userId}`);
+  } catch (error) {
+    console.error(`Failed to link/create ${table} record:`, error);
+    // Don't throw — the profile was created, this is a safety net
+  }
+}
+
+/**
+ * Auto-heal: ensure biker/driver has linked operational record.
+ * Call this on portal login to fix any unlinked records.
+ */
+export async function ensureBikerRecord(userId: string): Promise<void> {
+  try {
+    // Check if already linked
+    const { data: existing } = await supabase
+      .from('bikers')
+      .select('id')
+      .eq('user_id', userId)
+      .limit(1);
+
+    if (existing && existing.length > 0) return; // Already linked
+
+    // Not linked — try to link or create
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email, name')
+      .eq('id', userId)
+      .single();
+
+    await linkOperationalRecord('bikers', userId, {
+      email: profile?.email,
+      name: profile?.name,
+    });
+  } catch (error) {
+    console.error('ensureBikerRecord failed:', error);
+  }
+}
+
+/**
+ * Auto-heal: ensure driver has linked operational record.
+ */
+export async function ensureDriverRecord(userId: string): Promise<void> {
+  try {
+    const { data: existing } = await supabase
+      .from('drivers')
+      .select('id')
+      .eq('user_id', userId)
+      .limit(1);
+
+    if (existing && existing.length > 0) return;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email, name')
+      .eq('id', userId)
+      .single();
+
+    await linkOperationalRecord('drivers', userId, {
+      email: profile?.email,
+      name: profile?.name,
+    });
+  } catch (error) {
+    console.error('ensureDriverRecord failed:', error);
+  }
 }

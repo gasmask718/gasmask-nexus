@@ -1,8 +1,9 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { supabase } from '@/integrations/supabase/client';
+import { ensureBikerRecord, ensureDriverRecord } from '@/services/roleService';
 import { Loader2, ShieldAlert } from 'lucide-react';
 
 interface PortalAuthGuardProps {
@@ -21,13 +22,26 @@ export function PortalAuthGuard({ children, allowedRoles, portalType }: PortalAu
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { data: profileData, isLoading: profileLoading } = useCurrentUserProfile();
+  const healedRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
-      // Redirect to role-specific login page
       navigate(`/portal/${portalType}/login`, { replace: true });
     }
   }, [user, authLoading, navigate, portalType]);
+
+  // Auto-heal: ensure operational record exists for biker/driver
+  useEffect(() => {
+    if (user && profileData?.profile && !healedRef.current) {
+      healedRef.current = true;
+      const role = ((profileData.profile as any).role || profileData.profile.primary_role) as string;
+      if (role === 'biker' || portalType === 'biker') {
+        ensureBikerRecord(user.id);
+      } else if (role === 'driver' || portalType === 'driver') {
+        ensureDriverRecord(user.id);
+      }
+    }
+  }, [user, profileData, portalType]);
 
   // Log portal access for audit
   useEffect(() => {
