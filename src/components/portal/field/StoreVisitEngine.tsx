@@ -4,11 +4,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Send, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Send, AlertTriangle, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { getRLSErrorToast } from '@/lib/rls-error-handler';
+import { submitFieldChange } from '@/services/fieldGovernance/submitFieldChange';
+import type { FieldRole } from '@/services/fieldGovernance/types';
 // NOTE: Stickers are now handled directly by BrandStickersCard which persists to DB
 // The legacy stickerBrands config is deprecated for visit data
 
@@ -411,13 +413,17 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
         if (itemsError) throw itemsError;
       }
 
-      // Save contacts directly (with shirt sizes)
+      // ═══════════════════════════════════════════════════════
+      // GOVERNED: Submit contacts through field governance
+      // ═══════════════════════════════════════════════════════
       for (const contact of visitData.contacts) {
         if (contact.id) {
-          // Update existing contact
-          await supabase
-            .from('store_contacts')
-            .update({
+          await submitFieldChange({
+            store_id: storeId,
+            entity_type: 'store_contact',
+            entity_id: contact.id,
+            action_type: 'update',
+            payload_after: {
               name: contact.name,
               role: contact.role,
               phone: contact.phone,
@@ -425,14 +431,14 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
               responsive_by_text: contact.responsiveByText,
               notes: contact.notes,
               shirt_size: contact.shirtSize || null,
-            })
-            .eq('id', contact.id);
+            },
+          }, user.id, portalType as FieldRole);
         } else if (contact.name.trim()) {
-          // Insert new contact
-          await supabase
-            .from('store_contacts')
-            .insert({
-              store_id: storeId,
+          await submitFieldChange({
+            store_id: storeId,
+            entity_type: 'store_contact',
+            action_type: 'create',
+            payload_after: {
               name: contact.name,
               role: contact.role,
               phone: contact.phone,
@@ -440,89 +446,75 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
               responsive_by_text: contact.responsiveByText,
               notes: contact.notes,
               shirt_size: contact.shirtSize || null,
-            });
+            },
+          }, user.id, portalType as FieldRole);
         }
       }
 
-      // Save global wholesalers and associations
+      // ═══════════════════════════════════════════════════════
+      // GOVERNED: Submit wholesaler associations through field governance
+      // ═══════════════════════════════════════════════════════
       for (const assoc of visitData.wholesalerAssociations) {
-        // Check if it's a new wholesaler (temp ID)
         if (assoc.wholesaler_id.startsWith('temp-')) {
-          // Create new global wholesaler
-          const { data: newWholesaler, error: wholesalerError } = await supabase
-            .from('wholesalers')
-            .insert({
-              name: assoc.wholesaler.name,
-              address: assoc.wholesaler.address,
-              city: assoc.wholesaler.city,
-              state: assoc.wholesaler.state,
-              phone: assoc.wholesaler.phone,
-              created_by: user.id,
-            })
-            .select()
-            .single();
-
-          if (wholesalerError) throw wholesalerError;
-
-          // Create association
-          await supabase
-            .from('store_wholesaler_associations')
-            .insert({
-              store_id: storeId,
-              wholesaler_id: newWholesaler.id,
-              created_by: user.id,
-            });
+          await submitFieldChange({
+            store_id: storeId,
+            entity_type: 'wholesaler_association',
+            action_type: 'create',
+            payload_after: {
+              wholesaler_name: assoc.wholesaler.name,
+              wholesaler_address: assoc.wholesaler.address,
+              wholesaler_city: assoc.wholesaler.city,
+              wholesaler_state: assoc.wholesaler.state,
+              wholesaler_phone: assoc.wholesaler.phone,
+            },
+          }, user.id, portalType as FieldRole);
         } else if (assoc.isNew) {
-          // Associate existing wholesaler - use upsert to handle duplicates
-          await supabase
-            .from('store_wholesaler_associations')
-            .upsert({
-              store_id: storeId,
+          await submitFieldChange({
+            store_id: storeId,
+            entity_type: 'wholesaler_association',
+            entity_id: assoc.wholesaler_id,
+            action_type: 'create',
+            payload_after: {
               wholesaler_id: assoc.wholesaler_id,
-              created_by: user.id,
-            }, { onConflict: 'store_id,wholesaler_id', ignoreDuplicates: true });
+              wholesaler_name: assoc.wholesaler.name,
+            },
+          }, user.id, portalType as FieldRole);
         }
       }
 
-      // Save connected stores - create new store_master records and link them
-      if (visitData.connectedStores.length > 0) {
-        // Ensure current store has a connected_group_id
-        let groupId: string;
-        const { data: currentStore } = await supabase
-          .from('store_master')
-          .select('connected_group_id')
-          .eq('id', storeId)
-          .single();
-
-        if (currentStore?.connected_group_id) {
-          groupId = currentStore.connected_group_id;
-        } else {
-          // Create new group ID and assign to current store
-          groupId = crypto.randomUUID();
-          await supabase
-            .from('store_master')
-            .update({ connected_group_id: groupId })
-            .eq('id', storeId);
-        }
-
-        // Create new connected stores
-        for (const connectedStore of visitData.connectedStores) {
-          if (connectedStore.isNew && connectedStore.store_name.trim()) {
-            // Insert new store with the same connected_group_id
-            await supabase
-              .from('store_master')
-              .insert({
-                store_name: connectedStore.store_name,
-                address: connectedStore.address,
-                city: connectedStore.city,
-                state: connectedStore.state,
-                zip: '', // Required field - empty for now
-                phone: connectedStore.phone,
-                connected_group_id: groupId,
-              });
-          }
+      // ═══════════════════════════════════════════════════════
+      // GOVERNED: Submit connected stores through field governance
+      // ═══════════════════════════════════════════════════════
+      for (const connectedStore of visitData.connectedStores) {
+        if (connectedStore.isNew && connectedStore.store_name.trim()) {
+          await submitFieldChange({
+            store_id: storeId,
+            entity_type: 'connected_store',
+            action_type: 'create',
+            payload_after: {
+              store_name: connectedStore.store_name,
+              address: connectedStore.address,
+              city: connectedStore.city,
+              state: connectedStore.state,
+              phone: connectedStore.phone,
+            },
+          }, user.id, portalType as FieldRole);
         }
       }
+
+      // ═══════════════════════════════════════════════════════
+      // GOVERNED: Submit questionnaire through field governance
+      // ═══════════════════════════════════════════════════════
+      await submitFieldChange({
+        store_id: storeId,
+        entity_type: 'store_questionnaire',
+        action_type: 'update',
+        payload_after: {
+          security_level: visitData.questionnaire.secureLevel,
+          sells_flowers: visitData.questionnaire.sellsFlowers,
+          interested_cleaning_service: visitData.questionnaire.interestedInCleaning,
+        },
+      }, user.id, portalType as FieldRole);
 
       // Create field orders as invoices with proper mode separation
       if (visitData.fieldOrders.length > 0) {
@@ -599,8 +591,8 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
       }
 
       toast({
-        title: 'Visit Submitted',
-        description: 'Your changes have been sent to the Change Control Center for review.',
+        title: 'Visit Submitted for Review',
+        description: 'Your changes have been submitted and are pending admin approval. You will see the updates once approved.',
       });
 
       navigate(portalType === 'driver' ? '/portal/driver' : '/portal/biker');
@@ -746,6 +738,14 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
         </div>
       </Tabs>
 
+      {/* Governance Notice */}
+      <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400">
+        <Shield className="h-4 w-4 shrink-0" />
+        <span className="text-sm">
+          All changes require admin approval before taking effect.
+        </span>
+      </div>
+
       {/* Submit Button */}
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="py-4">
@@ -753,7 +753,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
             <div>
               <p className="font-medium">Ready to submit?</p>
               <p className="text-sm text-muted-foreground">
-                Your changes will be sent to the Change Control Center for review.
+                Your changes will be submitted for admin review and approval.
               </p>
             </div>
             <Button 
@@ -762,7 +762,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
               className="gap-2"
             >
               <Send className="h-4 w-4" />
-              {submitting ? 'Submitting...' : 'Submit to Change Control'}
+              {submitting ? 'Submitting...' : 'Submit for Approval'}
             </Button>
           </div>
         </CardContent>

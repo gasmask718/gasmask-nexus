@@ -19,7 +19,11 @@ export type FieldEntityType =
   | 'invoice_line_item'
   | 'visit_log'
   | 'order_note'
-  | 'store_update';
+  | 'store_update'
+  | 'store_contact'
+  | 'wholesaler_association'
+  | 'connected_store'
+  | 'store_questionnaire';
 
 // Action types
 export type FieldActionType = 'create' | 'update' | 'delete';

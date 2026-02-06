@@ -349,6 +349,10 @@ export function getEntityTypeLabel(type: FieldEntityType): string {
     order_note: 'Order Note',
     visit_log: 'Visit Log',
     store_update: 'Store Update',
+    store_contact: 'Store Contact',
+    wholesaler_association: 'Wholesaler Association',
+    connected_store: 'Connected Store',
+    store_questionnaire: 'Questionnaire',
   };
   return labels[type] || type;
 }
