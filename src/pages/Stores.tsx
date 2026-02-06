@@ -82,6 +82,9 @@ const Stores = () => {
   const [newStoresOnly, setNewStoresOnly] = useState(false);
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all');
   const [monthFilter, setMonthFilter] = useState<string>('all');
+  const [customDateFrom, setCustomDateFrom] = useState<string>('');
+  const [customDateTo, setCustomDateTo] = useState<string>('');
+  const [showCustomDate, setShowCustomDate] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [newStoreName, setNewStoreName] = useState('');
   
@@ -420,14 +423,30 @@ const Stores = () => {
       : false;
     const matchesNewStores = !newStoresOnly || !storeIdsWithNotes.has(store.id) || isCreatedToday;
 
-    // Month filter
+    // Month/date filter
     const matchesMonth = (() => {
       if (monthFilter === 'all') return true;
-      if (!store.created_at) return monthFilter === 'no_date';
+      if (!store.created_at) return false;
       const created = new Date(store.created_at);
       const now = new Date();
+
       if (monthFilter === 'this_month') {
         return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+      }
+      if (monthFilter === 'this_year') {
+        return created.getFullYear() === now.getFullYear();
+      }
+      if (monthFilter.startsWith('months_ago_')) {
+        const monthsAgo = parseInt(monthFilter.replace('months_ago_', ''), 10);
+        const cutoff = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
+        return created >= cutoff;
+      }
+      if (monthFilter === 'custom') {
+        const from = customDateFrom ? new Date(customDateFrom) : null;
+        const to = customDateTo ? new Date(customDateTo + 'T23:59:59') : null;
+        if (from && created < from) return false;
+        if (to && created > to) return false;
+        return true;
       }
       return true;
     })();
@@ -712,24 +731,43 @@ const Stores = () => {
             </SelectContent>
           </Select>
 
-          {/* Month Filter */}
-          <Select value={monthFilter} onValueChange={setMonthFilter}>
-            <SelectTrigger className="w-48 bg-secondary/50 border-border/50">
+          {/* Date Added Filter */}
+          <Select value={monthFilter} onValueChange={(v) => { setMonthFilter(v); setShowCustomDate(v === 'custom'); }}>
+            <SelectTrigger className="w-52 bg-secondary/50 border-border/50">
               <CalendarDays className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Added Month" />
+              <SelectValue placeholder="Date Added" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Time</SelectItem>
-              <SelectItem value="this_month">
-                Added This Month ({stores.filter(s => {
-                  if (!s.created_at) return false;
-                  const d = new Date(s.created_at);
-                  const now = new Date();
-                  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-                }).length})
-              </SelectItem>
+              <SelectItem value="this_month">This Month</SelectItem>
+              <SelectItem value="months_ago_2">Last 2 Months</SelectItem>
+              <SelectItem value="months_ago_3">Last 3 Months</SelectItem>
+              <SelectItem value="months_ago_6">Last 6 Months</SelectItem>
+              <SelectItem value="this_year">This Year</SelectItem>
+              <SelectItem value="custom">Custom Range…</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Custom Date Range Inputs */}
+          {showCustomDate && (
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={customDateFrom}
+                onChange={(e) => setCustomDateFrom(e.target.value)}
+                className="w-36 h-9 bg-secondary/50 border-border/50 text-sm"
+                placeholder="From"
+              />
+              <span className="text-muted-foreground text-xs">to</span>
+              <Input
+                type="date"
+                value={customDateTo}
+                onChange={(e) => setCustomDateTo(e.target.value)}
+                className="w-36 h-9 bg-secondary/50 border-border/50 text-sm"
+                placeholder="To"
+              />
+            </div>
+          )}
 
           {/* New Stores Filter */}
           <Button
@@ -747,7 +785,7 @@ const Stores = () => {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => { setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); setNewStoresOnly(false); setMonthFilter('all'); }}
+              onClick={() => { setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); setNewStoresOnly(false); setMonthFilter('all'); setCustomDateFrom(''); setCustomDateTo(''); setShowCustomDate(false); }}
               className="text-muted-foreground"
             >
               {t('page.stores.clear_filters') || 'Clear filters'}
