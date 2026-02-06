@@ -20420,6 +20420,7 @@ export type Database = {
           action_type: Database["public"]["Enums"]["field_action_type"]
           admin_notes: string | null
           amendment_notes: string | null
+          applied_at: string | null
           changed_fields: string[] | null
           created_at: string
           entity_id: string | null
@@ -20446,6 +20447,7 @@ export type Database = {
           action_type: Database["public"]["Enums"]["field_action_type"]
           admin_notes?: string | null
           amendment_notes?: string | null
+          applied_at?: string | null
           changed_fields?: string[] | null
           created_at?: string
           entity_id?: string | null
@@ -20472,6 +20474,7 @@ export type Database = {
           action_type?: Database["public"]["Enums"]["field_action_type"]
           admin_notes?: string | null
           amendment_notes?: string | null
+          applied_at?: string | null
           changed_fields?: string[] | null
           created_at?: string
           entity_id?: string | null
