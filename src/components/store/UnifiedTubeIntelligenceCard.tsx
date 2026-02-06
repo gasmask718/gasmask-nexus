@@ -3,13 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSimulationSafeMutation } from '@/hooks/useSimulationSafeMutation';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
-import { Package, Save, RefreshCw, Clock, Calendar, ShoppingCart, FlaskConical, Gift, ThumbsUp, ThumbsDown, HelpCircle, AlertTriangle } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { useTubeIntelligence, canEditField, TubeIntelRole } from '@/hooks/useTubeIntelligence';
+import {
+  Package, Save, RefreshCw, Clock, Calendar, ShoppingCart, FlaskConical,
+  Gift, ThumbsUp, ThumbsDown, AlertTriangle, User
+} from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -23,7 +29,10 @@ import { useTranslation } from '@/hooks/useTranslation';
 //   - Editable tube counts (WRITE)
 //   - Last order date per brand (READ - from v_store_tube_kpi)
 //   - Color flow logic (🟢 🟡 🔴)
-//   - Operational signals (interest, needs order, samples, starter kit)
+//   - Operational signals: Needs Order / Bring Samples / Bring Starter Kit
+//   - Interest state: Interested / Not Interested (mutually exclusive)
+//   - Attribution: Last Updated timestamp + Updated By role
+//   - Role-based write access via governance pipeline
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // AUTHORITATIVE TUBE BRANDS
@@ -70,9 +79,26 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
   const [editedCounts, setEditedCounts] = useState<Record<string, number>>({});
   const [hasChanges, setHasChanges] = useState(false);
 
-  const canEdit = role === 'admin' || role === 'ambassador' || role === 'biker';
+  const canEditCounts = role === 'admin' || role === 'ambassador' || role === 'biker';
+  const tubeIntelRole: TubeIntelRole = role as TubeIntelRole;
 
-  // Fetch combined KPI data from view (includes last order intelligence)
+  // ── Fetch intelligence status from store_tube_inventory_status ──
+  const {
+    data: intelData,
+    isLoading: intelLoading,
+    refetch: refetchIntel,
+    initializeBrands,
+    updateField,
+  } = useTubeIntelligence(storeId);
+
+  // Auto-initialize brands if missing
+  useEffect(() => {
+    if (!intelLoading && intelData && intelData.length < VALID_TUBE_BRANDS.length && storeId) {
+      initializeBrands.mutate(storeId);
+    }
+  }, [intelData, intelLoading, storeId]);
+
+  // ── Fetch KPI view data (last order dates, color status) ──
   const { data: kpiData, isLoading: kpiLoading, refetch: refetchKPI } = useQuery({
     queryKey: ['store-tube-kpi', storeId],
     queryFn: async () => {
@@ -81,7 +107,6 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
         .select('*')
         .eq('store_id', storeId)
         .order('brand_name');
-      
       if (error) {
         console.error('Failed to fetch tube KPI:', error);
         return [];
@@ -91,7 +116,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
     enabled: !!storeId,
   });
 
-  // Fetch editable inventory records
+  // ── Fetch editable inventory records (tube counts) ──
   const { data: inventory, isLoading: invLoading, refetch: refetchInv } = useQuery({
     queryKey: ['store-tube-inventory', storeId],
     queryFn: async () => {
@@ -101,7 +126,6 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
         .eq('store_id', storeId)
         .neq('brand', 'hotscolatti')
         .order('brand');
-      
       if (error) throw error;
       return data as TubeInventoryRecord[];
     },
@@ -114,35 +138,31 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
       .channel(`unified-tube-intel-${storeId}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'store_tube_inventory',
-          filter: `store_id=eq.${storeId}`,
-        },
+        { event: '*', schema: 'public', table: 'store_tube_inventory', filter: `store_id=eq.${storeId}` },
         () => {
           queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
           queryClient.invalidateQueries({ queryKey: ['store-tube-kpi', storeId] });
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'store_tube_inventory_status', filter: `store_id=eq.${storeId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['tube-intelligence', storeId] });
+        }
+      )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [storeId, queryClient]);
 
   // Initialize edited counts
   useEffect(() => {
     if (inventory) {
       const counts: Record<string, number> = {};
-      inventory.forEach(item => {
-        counts[item.brand] = item.current_tubes_left;
-      });
+      inventory.forEach(item => { counts[item.brand] = item.current_tubes_left; });
       VALID_TUBE_BRANDS.forEach(brand => {
-        if (!(brand.id in counts)) {
-          counts[brand.id] = 0;
-        }
+        if (!(brand.id in counts)) counts[brand.id] = 0;
       });
       setEditedCounts(counts);
       setHasChanges(false);
@@ -152,7 +172,6 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
   const saveMutation = useSimulationSafeMutation({
     mutationFn: async (updates: { brand: string; count: number }[], isSimulation: boolean) => {
       const { data: { user } } = await supabase.auth.getUser();
-      
       for (const update of updates) {
         const { data: existing } = await supabase
           .from('store_tube_inventory')
@@ -162,27 +181,21 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
           .order('last_updated', { ascending: false })
           .limit(1)
           .maybeSingle();
-          
         if (existing) {
-          await supabase
-            .from('store_tube_inventory')
-            .update({
-              current_tubes_left: update.count,
-              last_updated: new Date().toISOString(),
-              created_by: user?.id || 'system',
-              is_simulation: isSimulation,
-            })
-            .eq('id', existing.id);
+          await supabase.from('store_tube_inventory').update({
+            current_tubes_left: update.count,
+            last_updated: new Date().toISOString(),
+            created_by: user?.id || 'system',
+            is_simulation: isSimulation,
+          }).eq('id', existing.id);
         } else if (update.count > 0) {
-          await supabase
-            .from('store_tube_inventory')
-            .insert({
-              store_id: storeId,
-              brand: update.brand,
-              current_tubes_left: update.count,
-              created_by: user?.id || 'system',
-              is_simulation: isSimulation,
-            });
+          await supabase.from('store_tube_inventory').insert({
+            store_id: storeId,
+            brand: update.brand,
+            current_tubes_left: update.count,
+            created_by: user?.id || 'system',
+            is_simulation: isSimulation,
+          });
         }
       }
       return updates;
@@ -200,46 +213,74 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
   });
 
   const handleCountChange = (brand: string, value: string) => {
-    if (!canEdit) return;
+    if (!canEditCounts) return;
     const numValue = parseInt(value) || 0;
-    setEditedCounts(prev => ({
-      ...prev,
-      [brand]: numValue,
-    }));
+    setEditedCounts(prev => ({ ...prev, [brand]: numValue }));
     setHasChanges(true);
   };
 
   const handleSave = () => {
-    const updates = Object.entries(editedCounts).map(([brand, count]) => ({
-      brand,
-      count,
-    }));
+    const updates = Object.entries(editedCounts).map(([brand, count]) => ({ brand, count }));
     saveMutation.mutate(updates);
   };
 
   const handleRefresh = () => {
     refetchKPI();
     refetchInv();
+    refetchIntel();
+  };
+
+  // ── Signal toggle handler ──
+  const handleSignalToggle = (
+    brandId: string,
+    field: 'needs_order' | 'bring_samples' | 'bring_starter_kit',
+    currentValue: boolean
+  ) => {
+    const intelRecord = intelData.find(r => r.brand_id === brandId);
+    updateField.mutate({
+      id: intelRecord?.id,
+      store_id: storeId,
+      brand_id: brandId,
+      field,
+      value: !currentValue,
+      role: tubeIntelRole,
+    });
+  };
+
+  // ── Interest toggle handler (mutually exclusive) ──
+  const handleInterestToggle = (brandId: string, interested: boolean) => {
+    const intelRecord = intelData.find(r => r.brand_id === brandId);
+    const currentValue = intelRecord?.owner_interested;
+    // Toggle off if already set to same value
+    const newValue = currentValue === interested ? null : interested;
+    updateField.mutate({
+      id: intelRecord?.id,
+      store_id: storeId,
+      brand_id: brandId,
+      field: 'owner_interested',
+      value: newValue,
+      role: tubeIntelRole,
+    });
   };
 
   const getKPIForBrand = (brandId: string): TubeKPIData | undefined => {
     return kpiData?.find(k => k.brand_id === brandId);
   };
 
+  const getIntelForBrand = (brandId: string) => {
+    return intelData.find(r => r.brand_id === brandId);
+  };
+
   const getColorClasses = (status: 'green' | 'yellow' | 'red' | 'muted' | undefined) => {
     switch (status) {
-      case 'green':
-        return { bg: 'bg-green-500/10', border: 'border-green-500/30', dot: 'bg-green-500' };
-      case 'yellow':
-        return { bg: 'bg-amber-500/10', border: 'border-amber-500/30', dot: 'bg-amber-500' };
-      case 'red':
-        return { bg: 'bg-red-500/10', border: 'border-red-500/30', dot: 'bg-red-500' };
-      default:
-        return { bg: 'bg-secondary/30', border: 'border-transparent', dot: 'bg-muted-foreground' };
+      case 'green': return { bg: 'bg-green-500/10', border: 'border-green-500/30', dot: 'bg-green-500' };
+      case 'yellow': return { bg: 'bg-amber-500/10', border: 'border-amber-500/30', dot: 'bg-amber-500' };
+      case 'red': return { bg: 'bg-red-500/10', border: 'border-red-500/30', dot: 'bg-red-500' };
+      default: return { bg: 'bg-secondary/30', border: 'border-transparent', dot: 'bg-muted-foreground' };
     }
   };
 
-  const isLoading = kpiLoading || invLoading;
+  const isLoading = kpiLoading || invLoading || intelLoading;
   const totalTubes = Object.values(editedCounts).reduce((sum, count) => sum + count, 0);
 
   const getLastUpdated = () => {
@@ -252,6 +293,11 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
 
   const lastUpdated = getLastUpdated();
 
+  // ══════════════════════════════════════════════
+  // RENDER GUARD — If no brand intelligence rows → show system warning
+  // ══════════════════════════════════════════════
+  const hasBrandIntelligence = intelData.length > 0;
+
   return (
     <Card className="glass-card border-border/50">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -260,7 +306,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
             <Package className="h-5 w-5 text-primary" />
             {t('card.tube_intel.title')}
             <Badge variant="outline" className="ml-2 text-xs">
-              {canEdit ? t('card.tube_intel.editable') : t('card.tube_intel.readonly')}
+              {canEditCounts ? t('card.tube_intel.editable') : t('card.tube_intel.readonly')}
             </Badge>
           </CardTitle>
           <CardHelper
@@ -271,21 +317,11 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
           />
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleRefresh}
-            className="h-8 w-8"
-          >
+          <Button variant="ghost" size="icon" onClick={handleRefresh} className="h-8 w-8">
             <RefreshCw className="h-4 w-4" />
           </Button>
-          {hasChanges && canEdit && (
-            <Button 
-              onClick={handleSave} 
-              size="sm" 
-              className="gap-1"
-              disabled={saveMutation.isPending}
-            >
+          {hasChanges && canEditCounts && (
+            <Button onClick={handleSave} size="sm" className="gap-1" disabled={saveMutation.isPending}>
               <Save className="h-4 w-4" />
               {saveMutation.isPending ? t('card.tube_intel.saving') : t('card.tube_intel.save')}
             </Button>
@@ -308,6 +344,16 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
           </div>
         ) : (
           <>
+            {/* RENDER GUARD: Explicit system warning if brand intelligence is missing */}
+            {!hasBrandIntelligence && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  ⚠️ Tube Intelligence missing — this is a system issue. Brand data is being initialized...
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Total summary */}
             <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
               <span className="font-medium">{t('card.tube_intel.total_tubes')}</span>
@@ -315,29 +361,39 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
             </div>
 
             {/* Brand breakdown - ALL IN ONE */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               {VALID_TUBE_BRANDS.map((brand) => {
                 const kpi = getKPIForBrand(brand.id);
+                const intel = getIntelForBrand(brand.id);
                 const count = editedCounts[brand.id] ?? 0;
                 const colorClasses = getColorClasses(kpi?.color_status);
-                const hasFlags = kpi?.needs_order || kpi?.bring_samples || kpi?.bring_starter_kit;
                 const originalItem = inventory?.find(i => i.brand === brand.id);
                 const hasChange = originalItem ? count !== originalItem.current_tubes_left : count > 0;
+
+                // Signal states from intelligence record
+                const needsOrder = intel?.needs_order ?? false;
+                const bringSamples = intel?.bring_samples ?? false;
+                const bringStarterKit = intel?.bring_starter_kit ?? false;
+                const ownerInterested = intel?.owner_interested;
+
+                // Permission checks
+                const canToggleSignals = canEditField(tubeIntelRole, 'needs_order');
+                const canToggleInterest = canEditField(tubeIntelRole, 'owner_interested');
 
                 return (
                   <div
                     key={brand.id}
                     className={cn(
                       'p-3 rounded-lg border transition-colors',
-                      hasFlags ? 'bg-warning/10 border-warning/30' : colorClasses.bg,
-                      hasFlags ? 'border-warning/30' : colorClasses.border
+                      colorClasses.bg,
+                      colorClasses.border
                     )}
                   >
-                    {/* Brand Header */}
+                    {/* ── Brand Header Row ── */}
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <div
-                          className={cn('h-3 w-3 rounded-full', colorClasses.dot)}
+                          className="h-3 w-3 rounded-full"
                           style={{ backgroundColor: brand.color }}
                         />
                         <span className="font-medium" style={{ color: brand.color }}>
@@ -347,10 +403,9 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                           <Badge variant="secondary" className="text-xs">{t('card.tube_intel.modified')}</Badge>
                         )}
                       </div>
-                      
                       {/* Tube count input */}
                       <div className="flex items-center gap-2">
-                        {canEdit ? (
+                        {canEditCounts ? (
                           <>
                             <Input
                               type="number"
@@ -362,7 +417,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                             <span className="text-xs text-muted-foreground">{t('card.tube_intel.tubes')}</span>
                           </>
                         ) : (
-                          <Badge 
+                          <Badge
                             variant={count === 0 ? 'destructive' : count < 20 ? 'secondary' : 'default'}
                             className="font-mono"
                           >
@@ -372,71 +427,143 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                       </div>
                     </div>
 
-                    {/* Last Order Info */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        <span>
-                          {t('card.tube_intel.last_order')}:{' '}
-                          <span className={cn(
-                            kpi?.last_order_date ? 'text-foreground' : 'text-warning font-medium'
-                          )}>
-                            {kpi?.last_order_label || t('card.tube_intel.never_ordered')}
-                          </span>
+                    {/* ── Last Order Info ── */}
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
+                      <Calendar className="h-3 w-3" />
+                      <span>
+                        {t('card.tube_intel.last_order')}:{' '}
+                        <span className={cn(
+                          kpi?.last_order_date ? 'text-foreground' : 'text-warning font-medium'
+                        )}>
+                          {kpi?.last_order_label || t('card.tube_intel.never_ordered')}
                         </span>
+                      </span>
+                    </div>
+
+                    {/* ═══════════════════════════════════════════════════ */}
+                    {/* PER-BRAND OPERATIONAL SIGNALS (RESTORED)          */}
+                    {/* ═══════════════════════════════════════════════════ */}
+                    <div className="space-y-2 border-t border-border/30 pt-2">
+                      {/* Signal Toggles Row */}
+                      <div className="grid grid-cols-3 gap-2">
+                        {/* Needs Order */}
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            id={`needs-order-${brand.id}`}
+                            checked={needsOrder}
+                            onCheckedChange={() => handleSignalToggle(brand.id, 'needs_order', needsOrder)}
+                            disabled={!canToggleSignals || updateField.isPending}
+                            className="scale-90"
+                          />
+                          <Label
+                            htmlFor={`needs-order-${brand.id}`}
+                            className={cn(
+                              'text-xs cursor-pointer',
+                              needsOrder ? 'text-destructive font-medium' : 'text-muted-foreground'
+                            )}
+                          >
+                            <ShoppingCart className="h-3 w-3 inline mr-1" />
+                            Needs Order
+                          </Label>
+                        </div>
+
+                        {/* Bring Starter Kit */}
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            id={`starter-kit-${brand.id}`}
+                            checked={bringStarterKit}
+                            onCheckedChange={() => handleSignalToggle(brand.id, 'bring_starter_kit', bringStarterKit)}
+                            disabled={!canToggleSignals || updateField.isPending}
+                            className="scale-90"
+                          />
+                          <Label
+                            htmlFor={`starter-kit-${brand.id}`}
+                            className={cn(
+                              'text-xs cursor-pointer',
+                              bringStarterKit ? 'text-warning font-medium' : 'text-muted-foreground'
+                            )}
+                          >
+                            <Gift className="h-3 w-3 inline mr-1" />
+                            Bring Starter Kit
+                          </Label>
+                        </div>
+
+                        {/* Bring Samples */}
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            id={`samples-${brand.id}`}
+                            checked={bringSamples}
+                            onCheckedChange={() => handleSignalToggle(brand.id, 'bring_samples', bringSamples)}
+                            disabled={!canToggleSignals || updateField.isPending}
+                            className="scale-90"
+                          />
+                          <Label
+                            htmlFor={`samples-${brand.id}`}
+                            className={cn(
+                              'text-xs cursor-pointer',
+                              bringSamples ? 'text-primary font-medium' : 'text-muted-foreground'
+                            )}
+                          >
+                            <FlaskConical className="h-3 w-3 inline mr-1" />
+                            Bring Samples
+                          </Label>
+                        </div>
                       </div>
 
-                      {/* Action flags */}
-                      {hasFlags && (
-                        <div className="flex items-center gap-1">
-                          {kpi?.needs_order && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <ShoppingCart className="h-4 w-4 text-destructive" />
-                                </TooltipTrigger>
-                                <TooltipContent>{t('card.tube_intel.needs_order')}</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                      {/* Interest State (Mutually Exclusive Buttons) */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground mr-1">Interest:</span>
+                        <Button
+                          variant={ownerInterested === true ? 'default' : 'outline'}
+                          size="sm"
+                          className={cn(
+                            'h-6 px-2 text-xs gap-1',
+                            ownerInterested === true && 'bg-success hover:bg-success/90 text-success-foreground'
                           )}
-                          {kpi?.bring_samples && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <FlaskConical className="h-4 w-4 text-primary" />
-                                </TooltipTrigger>
-                                <TooltipContent>{t('card.tube_intel.bring_samples')}</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                          onClick={() => handleInterestToggle(brand.id, true)}
+                          disabled={!canToggleInterest || updateField.isPending}
+                        >
+                          <ThumbsUp className="h-3 w-3" />
+                          Interested
+                        </Button>
+                        <Button
+                          variant={ownerInterested === false ? 'default' : 'outline'}
+                          size="sm"
+                          className={cn(
+                            'h-6 px-2 text-xs gap-1',
+                            ownerInterested === false && 'bg-destructive hover:bg-destructive/90 text-white'
                           )}
-                          {kpi?.bring_starter_kit && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <Gift className="h-4 w-4 text-warning" />
-                                </TooltipTrigger>
-                                <TooltipContent>{t('card.tube_intel.bring_starter_kit')}</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                          onClick={() => handleInterestToggle(brand.id, false)}
+                          disabled={!canToggleInterest || updateField.isPending}
+                        >
+                          <ThumbsDown className="h-3 w-3" />
+                          Not Interested
+                        </Button>
+                        {ownerInterested === null && (
+                          <span className="text-xs text-muted-foreground italic">Not asked</span>
+                        )}
+                      </div>
+
+                      {/* Attribution: Last Updated + Updated By */}
+                      {intel && (
+                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground pt-1">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5" />
+                            {intel.last_updated_at
+                              ? formatDistanceToNow(new Date(intel.last_updated_at), { addSuffix: true })
+                              : 'Never updated'}
+                          </span>
+                          {intel.last_updated_by_role && (
+                            <span className="flex items-center gap-1">
+                              <User className="h-2.5 w-2.5" />
+                              <Badge variant="outline" className="text-[9px] h-4 px-1 capitalize">
+                                {intel.last_updated_by_role}
+                              </Badge>
+                            </span>
                           )}
                         </div>
                       )}
                     </div>
-
-                    {/* Interest indicator */}
-                    {kpi && kpi.owner_interested !== null && (
-                      <div className="flex items-center gap-1 mt-1 text-xs">
-                        {kpi.owner_interested ? (
-                          <span className="flex items-center gap-1 text-success">
-                            <ThumbsUp className="h-3 w-3" /> {t('card.tube_intel.interested')}
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-destructive">
-                            <ThumbsDown className="h-3 w-3" /> {t('card.tube_intel.not_interested')}
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -458,12 +585,21 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
               </div>
             </div>
 
-            {/* Last updated */}
+            {/* Driver read-only notice */}
+            {role === 'driver' && (
+              <Alert variant="default" className="border-border/50">
+                <AlertDescription className="text-xs text-muted-foreground">
+                  👁️ Read-only view — tube signals are managed by Ambassadors and Bikers
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Last updated (inventory counts) */}
             {lastUpdated && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
                 <Clock className="h-3 w-3" />
                 <span>
-                  Updated {formatDistanceToNow(new Date(lastUpdated), { addSuffix: true })}
+                  Inventory updated {formatDistanceToNow(new Date(lastUpdated), { addSuffix: true })}
                 </span>
               </div>
             )}
