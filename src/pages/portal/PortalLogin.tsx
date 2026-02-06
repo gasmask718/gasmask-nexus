@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { EmailInput } from '@/components/ui/email-input';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -104,11 +105,10 @@ const PortalLogin = () => {
           {loginMethod === 'email' ? (
             <div className="space-y-2">
               <label className="text-sm font-medium">Email Address</label>
-              <Input
-                type="email"
+              <EmailInput
                 placeholder="your.email@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={setEmail}
                 onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
               />
             </div>

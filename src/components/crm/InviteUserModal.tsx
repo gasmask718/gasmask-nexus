@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { EmailInput } from '@/components/ui/email-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -148,12 +149,11 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
             {/* Email Input */}
             <div className="space-y-2">
               <Label htmlFor="email">Email Address *</Label>
-              <Input
+              <EmailInput
                 id="email"
-                type="email"
                 placeholder="user@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={setEmail}
               />
               <p className="text-xs text-muted-foreground">
                 An invitation link will be sent to this email

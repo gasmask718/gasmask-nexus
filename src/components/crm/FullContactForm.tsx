@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { EmailInput } from '@/components/ui/email-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -547,11 +548,10 @@ export const FullContactForm = ({ onSuccess, editingContact, brandColor = 'hsl(v
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input
+            <EmailInput
               id="email"
-              type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(val) => setFormData({ ...formData, email: val })}
               placeholder="contact@example.com"
             />
           </div>
