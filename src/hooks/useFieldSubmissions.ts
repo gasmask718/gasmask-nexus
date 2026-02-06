@@ -129,17 +129,23 @@ export function useFieldSubmissions(filters?: FieldSubmissionFilters) {
       const allUserIds = [...new Set([...submitterIds, ...reviewerIds])];
 
       let profileMap: Record<string, string> = {};
+      const PLACEHOLDER_NAMES = ['new user', 'unknown', ''];
+      
+      const isValidName = (name: string | null | undefined): boolean => {
+        if (!name) return false;
+        return !PLACEHOLDER_NAMES.includes(name.trim().toLowerCase());
+      };
+
       if (allUserIds.length > 0) {
-        // Fetch from profiles table (column is 'name', not 'full_name')
+        // Fetch from profiles table (include email for last-resort name)
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, name')
+          .select('id, name, email')
           .in('id', allUserIds);
         
-        profileMap = (profiles || []).reduce((acc: Record<string, string>, p: any) => {
-          if (p.name) acc[p.id] = p.name;
-          return acc;
-        }, {});
+        (profiles || []).forEach((p: any) => {
+          if (isValidName(p.name)) profileMap[p.id] = p.name;
+        });
 
         // Fill gaps from bikers table (uses 'full_name' + 'user_id')
         const missingIds = allUserIds.filter(id => !profileMap[id]);
@@ -149,7 +155,7 @@ export function useFieldSubmissions(filters?: FieldSubmissionFilters) {
             .select('user_id, full_name')
             .in('user_id', missingIds);
           (bikers || []).forEach((b: any) => {
-            if (b.user_id && b.full_name) profileMap[b.user_id] = b.full_name;
+            if (b.user_id && isValidName(b.full_name)) profileMap[b.user_id] = b.full_name;
           });
         }
 
@@ -161,7 +167,18 @@ export function useFieldSubmissions(filters?: FieldSubmissionFilters) {
             .select('user_id, full_name')
             .in('user_id', stillMissing);
           (drivers || []).forEach((d: any) => {
-            if (d.user_id && d.full_name) profileMap[d.user_id] = d.full_name;
+            if (d.user_id && isValidName(d.full_name)) profileMap[d.user_id] = d.full_name;
+          });
+        }
+
+        // Last resort: use email prefix for any still-missing
+        if (profiles) {
+          const finalMissing = allUserIds.filter(id => !profileMap[id]);
+          finalMissing.forEach(id => {
+            const profile = (profiles as any[]).find(p => p.id === id);
+            if (profile?.email) {
+              profileMap[id] = profile.email.split('@')[0];
+            }
           });
         }
       }
@@ -211,18 +228,22 @@ export function useStoreFieldSubmissions(storeId: string | undefined, limit = 10
       // Fetch profile names for submitters
       const submitterIds = [...new Set((data || []).map((d: any) => d.submitted_by_user_id).filter(Boolean))];
       let profileMap: Record<string, string> = {};
+      const PLACEHOLDER_NAMES = ['new user', 'unknown', ''];
+      const isValidName = (name: string | null | undefined): boolean => {
+        if (!name) return false;
+        return !PLACEHOLDER_NAMES.includes(name.trim().toLowerCase());
+      };
+
       if (submitterIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, name')
+          .select('id, name, email')
           .in('id', submitterIds);
         
-        profileMap = (profiles || []).reduce((acc: Record<string, string>, p: any) => {
-          if (p.name) acc[p.id] = p.name;
-          return acc;
-        }, {});
+        (profiles || []).forEach((p: any) => {
+          if (isValidName(p.name)) profileMap[p.id] = p.name;
+        });
 
-        // Fallback to bikers/drivers tables
         const missingIds = submitterIds.filter(id => !profileMap[id]);
         if (missingIds.length > 0) {
           const { data: bikers } = await supabase
@@ -230,7 +251,7 @@ export function useStoreFieldSubmissions(storeId: string | undefined, limit = 10
             .select('user_id, full_name')
             .in('user_id', missingIds);
           (bikers || []).forEach((b: any) => {
-            if (b.user_id && b.full_name) profileMap[b.user_id] = b.full_name;
+            if (b.user_id && isValidName(b.full_name)) profileMap[b.user_id] = b.full_name;
           });
         }
         const stillMissing = submitterIds.filter(id => !profileMap[id]);
@@ -240,7 +261,14 @@ export function useStoreFieldSubmissions(storeId: string | undefined, limit = 10
             .select('user_id, full_name')
             .in('user_id', stillMissing);
           (drivers || []).forEach((d: any) => {
-            if (d.user_id && d.full_name) profileMap[d.user_id] = d.full_name;
+            if (d.user_id && isValidName(d.full_name)) profileMap[d.user_id] = d.full_name;
+          });
+        }
+        // Last resort: email prefix
+        if (profiles) {
+          submitterIds.filter(id => !profileMap[id]).forEach(id => {
+            const p = (profiles as any[]).find(pr => pr.id === id);
+            if (p?.email) profileMap[id] = p.email.split('@')[0];
           });
         }
       }
