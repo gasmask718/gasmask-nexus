@@ -50550,6 +50550,10 @@ export type Database = {
         | "order_note"
         | "visit_log"
         | "store_update"
+        | "store_contact"
+        | "wholesaler_association"
+        | "connected_store"
+        | "store_questionnaire"
       field_submission_status:
         | "pending_review"
         | "approved"
@@ -51018,6 +51022,10 @@ export const Constants = {
         "order_note",
         "visit_log",
         "store_update",
+        "store_contact",
+        "wholesaler_association",
+        "connected_store",
+        "store_questionnaire",
       ],
       field_submission_status: [
         "pending_review",

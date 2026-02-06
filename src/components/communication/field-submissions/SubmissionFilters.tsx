@@ -142,6 +142,10 @@ export function SubmissionFilters({ filters, onChange, stats }: SubmissionFilter
               <SelectItem value="order_note">Order Notes</SelectItem>
               <SelectItem value="visit_log">Visit Logs</SelectItem>
               <SelectItem value="store_update">Store Updates</SelectItem>
+              <SelectItem value="store_contact">Store Contacts</SelectItem>
+              <SelectItem value="wholesaler_association">Wholesaler Associations</SelectItem>
+              <SelectItem value="connected_store">Connected Stores</SelectItem>
+              <SelectItem value="store_questionnaire">Questionnaires</SelectItem>
             </SelectContent>
           </Select>
 
