@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, MessageSquare, User, Building2, Users, Truck } from "lucide-react";
+import { Search, MessageSquare, User, Building2, Users, Truck, Bike } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
@@ -136,19 +136,53 @@ export function ContactsPanel({ onSelectContact, selectedContactId }: ContactsPa
       }
 
       // Fetch from grabba_drivers
-      const { data: drivers } = await supabase
+      const { data: grabbaDrivers } = await supabase
         .from("grabba_drivers")
         .select("id, name, phone")
+        .not("phone", "is", null)
+        .not("phone", "eq", "");
+      
+      if (grabbaDrivers) {
+        allContacts.push(...grabbaDrivers.map(d => ({
+          id: d.id,
+          name: d.name,
+          phone: d.phone!,
+          type: "driver",
+          source: "grabba_drivers"
+        })));
+      }
+
+      // Fetch from drivers table
+      const { data: drivers } = await supabase
+        .from("drivers")
+        .select("id, full_name, phone")
         .not("phone", "is", null)
         .not("phone", "eq", "");
       
       if (drivers) {
         allContacts.push(...drivers.map(d => ({
           id: d.id,
-          name: d.name,
+          name: d.full_name,
           phone: d.phone!,
           type: "driver",
-          source: "grabba_drivers"
+          source: "drivers"
+        })));
+      }
+
+      // Fetch from bikers table
+      const { data: bikers } = await supabase
+        .from("bikers")
+        .select("id, full_name, phone")
+        .not("phone", "is", null)
+        .not("phone", "eq", "");
+      
+      if (bikers) {
+        allContacts.push(...bikers.map(d => ({
+          id: d.id,
+          name: d.full_name,
+          phone: d.phone!,
+          type: "biker",
+          source: "bikers"
         })));
       }
 
@@ -174,6 +208,8 @@ export function ContactsPanel({ onSelectContact, selectedContactId }: ContactsPa
         return <Users className="h-4 w-4" />;
       case "driver":
         return <Truck className="h-4 w-4" />;
+      case "biker":
+        return <Bike className="h-4 w-4" />;
       default:
         return <User className="h-4 w-4" />;
     }
@@ -187,6 +223,7 @@ export function ContactsPanel({ onSelectContact, selectedContactId }: ContactsPa
       case "ambassador":
         return "bg-purple-100 text-purple-800";
       case "driver":
+      case "biker":
         return "bg-green-100 text-green-800";
       case "wholesaler":
         return "bg-orange-100 text-orange-800";
@@ -202,7 +239,8 @@ export function ContactsPanel({ onSelectContact, selectedContactId }: ContactsPa
       c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.phone.includes(searchTerm);
     
-    const matchesTab = activeTab === "all" || c.type === activeTab || c.source === activeTab;
+    const matchesTab = activeTab === "all" || c.type === activeTab || c.source === activeTab ||
+      (activeTab === "driver" && (c.type === "driver" || c.type === "biker"));
     
     return matchesSearch && matchesTab;
   });
