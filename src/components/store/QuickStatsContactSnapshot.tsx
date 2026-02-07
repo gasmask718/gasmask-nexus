@@ -4,21 +4,24 @@
  * Placement: Store Profile → Quick Stats card → below Responsiveness row
  * Purpose: "Who at this store actually responds — and how?" in under 2 seconds.
  * 
- * Phase II Enhancements:
- * - ⭐ Primary Responsive Contact badge
- * - Temporal intelligence ("replied 2d ago")
+ * Layout (top → bottom):
+ *   1. Best Contact card (auto-highlighted, single best contact)
+ *   2. Last Successful Contact badge
+ *   3. Contact list (remaining contacts)
+ *   4. Predictive Intelligence panel
  * 
  * READ-ONLY. No filters, no edit actions, no deep analytics.
- * For the full cadence view, see the Communication Cadence section.
  */
 
-import { Phone, MessageSquare, CheckCircle2, XCircle, HelpCircle, Users, Star } from 'lucide-react';
+import { Phone, MessageSquare, CheckCircle2, XCircle, HelpCircle, Users } from 'lucide-react';
 import { useStoreContactsWithResponsiveness } from '@/hooks/useContactResponsiveness';
 import { PredictiveIntelPanel } from '@/components/contact/PredictiveIntelPanel';
+import { BestContactCard } from '@/components/store/contacts/BestContactCard';
+import { LastSuccessfulContactBadge } from '@/components/store/contacts/LastSuccessfulContactBadge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
-const MAX_VISIBLE_CONTACTS = 3;
+const MAX_VISIBLE_OTHER_CONTACTS = 3;
 
 interface QuickStatsContactSnapshotProps {
   storeId: string;
@@ -52,49 +55,69 @@ export function QuickStatsContactSnapshot({ storeId }: QuickStatsContactSnapshot
     );
   }
 
-  // Derive primary responsive contact (same logic as usePrimaryResponsiveContact)
-  const primaryId = derivePrimaryContactId(contacts);
-  const visibleContacts = contacts.slice(0, MAX_VISIBLE_CONTACTS);
-  const remainingCount = contacts.length - MAX_VISIBLE_CONTACTS;
+  // Derive the single best contact using deterministic priority
+  const bestContact = deriveBestContact(contacts);
+  // Other contacts exclude the best contact
+  const otherContacts = contacts.filter(c => c.id !== bestContact?.id);
+  const visibleOthers = otherContacts.slice(0, MAX_VISIBLE_OTHER_CONTACTS);
+  const remainingCount = otherContacts.length - MAX_VISIBLE_OTHER_CONTACTS;
 
   return (
     <div className="space-y-2">
       <p className="text-sm text-muted-foreground">Contact Responsiveness</p>
-      <div className="space-y-1.5">
-        {visibleContacts.map((contact) => (
-          <ContactSnapshotRow
-            key={contact.id}
-            name={contact.name}
-            phone={contact.phone}
-            responsiveByText={contact.responsive_by_text}
-            responsiveByCall={contact.responsive_by_call}
-            status={contact.responsiveness_status as 'responsive' | 'unresponsive' | 'unknown' | null}
-            isPrimary={contact.id === primaryId}
-            lastTextReceivedAt={contact.last_text_received_at}
-            lastCallAnsweredAt={contact.last_call_answered_at}
-          />
-        ))}
-        {remainingCount > 0 && (
-          <p className="text-xs text-muted-foreground pl-1">
-            + {remainingCount} more contact{remainingCount > 1 ? 's' : ''}
-          </p>
-        )}
-      </div>
 
-      {/* Phase III — Predictive Intelligence */}
+      {/* ① Best Contact — dedicated highlight */}
+      {bestContact ? (
+        <BestContactCard contact={bestContact} />
+      ) : (
+        <div className="flex items-center gap-2 p-3 rounded-md bg-muted/20 border border-border/30">
+          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">Best contact not yet determined</span>
+        </div>
+      )}
+
+      {/* ② Last Successful Contact badge */}
+      <LastSuccessfulContactBadge
+        contacts={contacts}
+        bestContactId={bestContact?.id ?? null}
+      />
+
+      {/* ③ Other contacts list */}
+      {visibleOthers.length > 0 && (
+        <div className="space-y-1.5">
+          {visibleOthers.map((contact) => (
+            <ContactSnapshotRow
+              key={contact.id}
+              name={contact.name}
+              phone={contact.phone}
+              responsiveByText={contact.responsive_by_text}
+              responsiveByCall={contact.responsive_by_call}
+              lastTextReceivedAt={contact.last_text_received_at}
+              lastCallAnsweredAt={contact.last_call_answered_at}
+            />
+          ))}
+          {remainingCount > 0 && (
+            <p className="text-xs text-muted-foreground pl-1">
+              + {remainingCount} more contact{remainingCount > 1 ? 's' : ''}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ④ Predictive Intelligence */}
       <Separator className="my-2" />
       <PredictiveIntelPanel storeId={storeId} />
     </div>
   );
 }
 
+// ─── Contact Snapshot Row (for non-best contacts) ─────────
+
 interface ContactSnapshotRowProps {
   name: string;
   phone: string | null;
   responsiveByText: boolean | null;
   responsiveByCall: boolean | null;
-  status: 'responsive' | 'unresponsive' | 'unknown' | null;
-  isPrimary: boolean;
   lastTextReceivedAt: string | null;
   lastCallAnsweredAt: string | null;
 }
@@ -104,44 +127,27 @@ function ContactSnapshotRow({
   phone,
   responsiveByText,
   responsiveByCall,
-  status,
-  isPrimary,
   lastTextReceivedAt,
   lastCallAnsweredAt,
 }: ContactSnapshotRowProps) {
   const lastResponseText = getLastResponseRelative(lastTextReceivedAt, lastCallAnsweredAt);
 
   return (
-    <div className={cn(
-      "flex items-center gap-2 p-2 rounded-md border text-xs",
-      isPrimary
-        ? "bg-amber-500/5 border-amber-500/20"
-        : "bg-muted/20 border-border/30"
-    )}>
-      {/* Primary badge */}
-      {isPrimary && (
-        <Star className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-      )}
-
-      {/* Name + Phone + Last Response */}
+    <div className="flex items-center gap-2 p-2 rounded-md border bg-muted/20 border-border/30 text-xs">
       <div className="flex-1 min-w-0">
         <span className="font-medium truncate block">{name}</span>
         <div className="flex items-center gap-1 text-muted-foreground">
           {phone && <span className="truncate">{phone}</span>}
           {phone && lastResponseText && <span>·</span>}
-          {lastResponseText && (
-            <span className="truncate">{lastResponseText}</span>
-          )}
+          {lastResponseText && <span className="truncate">{lastResponseText}</span>}
         </div>
       </div>
 
-      {/* Text status */}
       <div className="flex items-center gap-1 shrink-0" title={`Text: ${getStatusLabel(responsiveByText)}`}>
         <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
         <StatusIcon value={responsiveByText} />
       </div>
 
-      {/* Call status */}
       <div className="flex items-center gap-1 shrink-0" title={`Call: ${getStatusLabel(responsiveByCall)}`}>
         <Phone className="h-3.5 w-3.5 text-muted-foreground" />
         <StatusIcon value={responsiveByCall} />
@@ -151,12 +157,8 @@ function ContactSnapshotRow({
 }
 
 function StatusIcon({ value }: { value: boolean | null }) {
-  if (value === true) {
-    return <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />;
-  }
-  if (value === false) {
-    return <XCircle className="h-3.5 w-3.5 text-red-500" />;
-  }
+  if (value === true) return <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />;
+  if (value === false) return <XCircle className="h-3.5 w-3.5 text-red-500" />;
   return <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />;
 }
 
@@ -166,31 +168,39 @@ function getStatusLabel(value: boolean | null): string {
   return 'No data';
 }
 
-// ─── Primary contact derivation (inline, matches hook logic) ────
+// ─── Best Contact Derivation ─────────────────────────────
+// Deterministic priority: recency → responsiveness rates → is_primary → creation order
 
-function derivePrimaryContactId(contacts: any[]): string | null {
+function deriveBestContact(contacts: any[]): any | null {
   if (contacts.length === 0) return null;
 
   const scored = contacts.map(c => {
     let score = 0;
-    if (c.responsiveness_status === 'responsive') score += 100;
+
+    // 1. Most recently responded (biggest factor)
     if (c.last_responded_at) {
       const days = daysSince(c.last_responded_at);
       score += Math.max(0, 50 - days);
     }
+
+    // 2. Responsiveness status boost
+    if (c.responsiveness_status === 'responsive') score += 100;
+
+    // 3. Channel response rates as tiebreaker
     const callRate = (c.total_calls_attempted || 0) > 0
-      ? (c.total_calls_answered || 0) / (c.total_calls_attempted || 1)
-      : 0;
+      ? (c.total_calls_answered || 0) / (c.total_calls_attempted || 1) : 0;
     const textRate = (c.total_texts_sent || 0) > 0
-      ? (c.total_texts_received || 0) / (c.total_texts_sent || 1)
-      : 0;
+      ? (c.total_texts_received || 0) / (c.total_texts_sent || 1) : 0;
     score += (callRate + textRate) * 10;
+
+    // 4. is_primary flag
     if (c.is_primary) score += 5;
-    return { id: c.id, score };
+
+    return { contact: c, score };
   });
 
   scored.sort((a, b) => b.score - a.score);
-  return scored[0].id;
+  return scored[0].contact;
 }
 
 function daysSince(dateStr: string): number {
@@ -203,14 +213,11 @@ function daysSince(dateStr: string): number {
 
 function getLastResponseRelative(textAt: string | null, callAt: string | null): string | null {
   if (!textAt && !callAt) return null;
-
   const textTime = textAt ? new Date(textAt).getTime() : 0;
   const callTime = callAt ? new Date(callAt).getTime() : 0;
-
   const mostRecent = textTime > callTime
     ? { date: textAt!, label: 'replied' }
     : { date: callAt!, label: 'answered' };
-
   const days = daysSince(mostRecent.date);
   if (days === 0) return `${mostRecent.label} today`;
   if (days === 1) return `${mostRecent.label} 1d ago`;
