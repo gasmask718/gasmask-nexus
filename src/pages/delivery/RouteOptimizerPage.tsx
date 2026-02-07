@@ -57,6 +57,7 @@ import { cn } from "@/lib/utils";
 import { GRABBA_BRAND_CONFIG, ALL_BRANDS_OPTION, type GrabbaBrandId } from "@/config/grabbaSkyscraper";
 import { usePrimaryResponsiveContactBatch } from "@/hooks/usePrimaryResponsiveContact";
 import { StoreContactIntelBadge } from "@/components/contact/StoreContactIntelBadge";
+import { PredictiveIntelCompact } from "@/components/contact/PredictiveIntelCompact";
 
 // Types
 interface OptimizationResult {
@@ -692,6 +693,7 @@ export default function RouteOptimizerPage() {
                                   compact 
                                   className="flex-1" 
                                 />
+                                <PredictiveIntelCompact storeId={store.id} />
                               </div>
                             ))}
                             {route.stores.length > 2 && (

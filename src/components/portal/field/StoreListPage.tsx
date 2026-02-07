@@ -10,6 +10,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { PagePurpose, CardHelper } from '@/components/portal/guidance';
 import { usePrimaryResponsiveContactBatch } from '@/hooks/usePrimaryResponsiveContact';
 import { StoreContactIntelBadge } from '@/components/contact/StoreContactIntelBadge';
+import { PredictiveIntelCompact } from '@/components/contact/PredictiveIntelCompact';
 
 interface StoreItem {
   id: string;
@@ -171,6 +172,7 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
                       compact 
                       className="mt-0.5" 
                     />
+                    <PredictiveIntelCompact storeId={store.id} className="mt-0.5" />
                   </div>
                    <Badge variant="secondary">
                      {t('status.active')}

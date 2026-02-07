@@ -38,6 +38,7 @@ import { QuickStatsStickersSummary } from "@/components/store/QuickStatsStickers
 import { QuickStatsContactSnapshot } from "@/components/store/QuickStatsContactSnapshot";
 import { usePrimaryResponsiveContact } from "@/hooks/usePrimaryResponsiveContact";
 import { StoreContactIntelBadge } from "@/components/contact/StoreContactIntelBadge";
+import { PredictiveIntelCompact } from "@/components/contact/PredictiveIntelCompact";
 import { StoreCadencePanel } from "@/components/store/StoreCadencePanel";
 import { StoreVisitInventoryCard } from "@/components/store/StoreVisitInventoryCard";
 import { StoreQuickActions } from "@/components/store/StoreQuickActions";
@@ -1188,9 +1189,14 @@ const StoreDetail = () => {
 
 export default StoreDetail;
 
-/** Compact primary contact badge for the store header */
+/** Compact primary contact badge + predictive intel for the store header */
 function PrimaryContactHeaderBadge({ storeId }: { storeId: string | undefined }) {
   const { primary } = usePrimaryResponsiveContact(storeId);
   if (!primary) return null;
-  return <StoreContactIntelBadge contact={primary} compact className="mt-1" />;
+  return (
+    <div className="space-y-1">
+      <StoreContactIntelBadge contact={primary} compact className="mt-1" />
+      {storeId && <PredictiveIntelCompact storeId={storeId} className="mt-0.5" />}
+    </div>
+  );
 }
