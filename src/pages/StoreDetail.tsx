@@ -35,6 +35,7 @@ import { SellsFlowersToggle } from "@/components/store/SellsFlowersToggle";
 import { UnifiedTubeIntelligenceCard } from "@/components/store/UnifiedTubeIntelligenceCard";
 import { BrandStickersCard } from "@/components/store/BrandStickersCard";
 import { QuickStatsStickersSummary } from "@/components/store/QuickStatsStickersSummary";
+import { QuickStatsContactSnapshot } from "@/components/store/QuickStatsContactSnapshot";
 import { StoreCadencePanel } from "@/components/store/StoreCadencePanel";
 import { StoreVisitInventoryCard } from "@/components/store/StoreVisitInventoryCard";
 import { StoreQuickActions } from "@/components/store/StoreQuickActions";
@@ -1100,6 +1101,10 @@ const StoreDetail = () => {
                   </div>
                 </div>
               </div>
+              <Separator />
+
+              {/* Contact Responsiveness Snapshot — Quick Stats intelligence */}
+              {id && <QuickStatsContactSnapshot storeId={id} />}
               <Separator />
               
               {/* Brand Stickers - Canonical Quick Stats Display */}
