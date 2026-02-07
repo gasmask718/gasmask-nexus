@@ -36,6 +36,8 @@ import { UnifiedTubeIntelligenceCard } from "@/components/store/UnifiedTubeIntel
 import { BrandStickersCard } from "@/components/store/BrandStickersCard";
 import { QuickStatsStickersSummary } from "@/components/store/QuickStatsStickersSummary";
 import { QuickStatsContactSnapshot } from "@/components/store/QuickStatsContactSnapshot";
+import { usePrimaryResponsiveContact } from "@/hooks/usePrimaryResponsiveContact";
+import { StoreContactIntelBadge } from "@/components/contact/StoreContactIntelBadge";
 import { StoreCadencePanel } from "@/components/store/StoreCadencePanel";
 import { StoreVisitInventoryCard } from "@/components/store/StoreVisitInventoryCard";
 import { StoreQuickActions } from "@/components/store/StoreQuickActions";
@@ -492,6 +494,8 @@ const StoreDetail = () => {
                 <Badge className={getStatusColor(store.status)}>{store.status}</Badge>
               </div>
               <p className="text-muted-foreground capitalize">{store.type.replace("_", " ")}</p>
+              {/* Primary Responsive Contact — subtle header badge */}
+              <PrimaryContactHeaderBadge storeId={id} />
             </div>
             <div className="flex gap-2">
               <Button
@@ -1183,3 +1187,10 @@ const StoreDetail = () => {
 };
 
 export default StoreDetail;
+
+/** Compact primary contact badge for the store header */
+function PrimaryContactHeaderBadge({ storeId }: { storeId: string | undefined }) {
+  const { primary } = usePrimaryResponsiveContact(storeId);
+  if (!primary) return null;
+  return <StoreContactIntelBadge contact={primary} compact className="mt-1" />;
+}
