@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,8 @@ import { Store, Search, MapPin, ClipboardCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from '@/hooks/useTranslation';
 import { PagePurpose, CardHelper } from '@/components/portal/guidance';
+import { usePrimaryResponsiveContactBatch } from '@/hooks/usePrimaryResponsiveContact';
+import { StoreContactIntelBadge } from '@/components/contact/StoreContactIntelBadge';
 
 interface StoreItem {
   id: string;
@@ -58,6 +60,10 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
 
   const basePath = portalType === 'driver' ? '/portal/driver' : '/portal/biker';
   const accentClass = portalType === 'driver' ? 'text-hud-cyan' : 'text-hud-green';
+
+  // Batch-load contact intelligence for visible stores
+  const storeIds = useMemo(() => stores.map(s => s.id), [stores]);
+  const { contactsByStore } = usePrimaryResponsiveContactBatch(storeIds);
 
   const storePurpose = {
     driver: {
@@ -160,6 +166,11 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
                       <MapPin className="h-3 w-3" />
                       {store.address}, {store.city}, {store.state}
                     </p>
+                    <StoreContactIntelBadge 
+                      contact={contactsByStore[store.id]} 
+                      compact 
+                      className="mt-0.5" 
+                    />
                   </div>
                    <Badge variant="secondary">
                      {t('status.active')}

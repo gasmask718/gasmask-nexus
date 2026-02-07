@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,8 @@ import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { PagePurpose, CardHelper } from '@/components/portal/guidance';
+import { usePrimaryResponsiveContactBatch } from '@/hooks/usePrimaryResponsiveContact';
+import { StoreContactIntelBadge } from '@/components/contact/StoreContactIntelBadge';
 
 interface MyDayDashboardProps {
   portalType: 'driver' | 'biker';
@@ -31,6 +33,7 @@ interface MyDayDashboardProps {
 
 interface AssignedStop {
   id: string;
+  store_id: string;
   store_name: string;
   address: string;
   status: 'pending' | 'in_progress' | 'completed';
@@ -103,6 +106,7 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
         if (recentVisits) {
           setAssignedStops(recentVisits.map((v: any) => ({
             id: v.id,
+            store_id: v.store_id,
             store_name: v.store_master?.store_name || 'Unknown Store',
             address: v.store_master?.address || '',
             status: v.status || 'pending',
@@ -224,6 +228,10 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
   const basePath = portalType === 'driver' ? '/portal/driver' : '/portal/biker';
   const accentClass = portalType === 'driver' ? 'text-hud-cyan' : 'text-hud-green';
   const accentBg = portalType === 'driver' ? 'bg-hud-cyan/10' : 'bg-hud-green/10';
+
+  // Batch-load contact intelligence for today's stops
+  const stopStoreIds = useMemo(() => assignedStops.map(s => s.store_id).filter(Boolean), [assignedStops]);
+  const { contactsByStore } = usePrimaryResponsiveContactBatch(stopStoreIds);
 
   const completedStops = assignedStops.filter(s => s.status === 'completed').length;
   const pendingStops = assignedStops.filter(s => s.status !== 'completed').length;
@@ -492,6 +500,11 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
                       <MapPin className="h-3 w-3" />
                       {stop.address || 'No address'}
                     </p>
+                    <StoreContactIntelBadge 
+                      contact={contactsByStore[stop.store_id]} 
+                      compact 
+                      className="mt-0.5" 
+                    />
                   </div>
                   <Badge variant={stop.status === 'completed' ? 'default' : 'secondary'}>
                     {stop.status}

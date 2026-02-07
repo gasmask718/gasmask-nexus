@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,6 +55,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GRABBA_BRAND_CONFIG, ALL_BRANDS_OPTION, type GrabbaBrandId } from "@/config/grabbaSkyscraper";
+import { usePrimaryResponsiveContactBatch } from "@/hooks/usePrimaryResponsiveContact";
+import { StoreContactIntelBadge } from "@/components/contact/StoreContactIntelBadge";
 
 // Types
 interface OptimizationResult {
@@ -118,6 +120,13 @@ export default function RouteOptimizerPage() {
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([]);
   const [isOptimizing, setIsOptimizing] = useState(false);
   
+  // Batch-load contact intelligence for all stores in proposed routes
+  const routeStoreIds = useMemo(
+    () => [...new Set(proposedRoutes.flatMap(r => r.stores.map(s => s.id)))],
+    [proposedRoutes]
+  );
+  const { contactsByStore: routeContactsByStore } = usePrimaryResponsiveContactBatch(routeStoreIds);
+
   // Fetch unassigned work pool (stores needing visits)
   const { data: workPool = [], isLoading: loadingWorkPool } = useQuery({
     queryKey: ['route-optimizer-work-pool', selectedBrands, selectedTerritory],
@@ -672,6 +681,27 @@ export default function RouteOptimizerPage() {
                           </div>
                         </div>
                         
+                        {/* Contact Intelligence per route */}
+                        {route.stores.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {route.stores.slice(0, 2).map(store => (
+                              <div key={store.id} className="flex items-center gap-2 text-xs">
+                                <span className="text-muted-foreground truncate max-w-[100px]">{store.name}</span>
+                                <StoreContactIntelBadge 
+                                  contact={routeContactsByStore[store.id]} 
+                                  compact 
+                                  className="flex-1" 
+                                />
+                              </div>
+                            ))}
+                            {route.stores.length > 2 && (
+                              <p className="text-xs text-muted-foreground pl-1">
+                                + {route.stores.length - 2} more stops
+                              </p>
+                            )}
+                          </div>
+                        )}
+
                         {route.guardrail_blocks.length > 0 && (
                           <div className="mt-3 p-2 bg-amber-500/10 rounded border border-amber-500/30">
                             <p className="text-xs font-medium text-amber-600 flex items-center gap-1">
