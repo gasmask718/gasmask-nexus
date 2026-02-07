@@ -21,7 +21,8 @@ export type AutomationTrigger =
   | 'route_over_capacity'
   | 'ai_task_completed'
   | 'sms_sent'
-  | 'call_made';
+  | 'call_made'
+  | 'ambassador_purchase_query';
 
 export type AutomationActionType =
   | 'assign_to_route'
@@ -35,7 +36,9 @@ export type AutomationActionType =
   | 'push_to_marketplace'
   | 'generate_prediction'
   | 'tag_store'
-  | 'create_production_task';
+  | 'create_production_task'
+  | 'enforce_view_read'
+  | 'log_violation';
 
 export interface AutomationRule {
   id: string;
