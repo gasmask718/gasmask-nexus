@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PagePurpose, CardHelper } from '@/components/portal/guidance';
 import { usePrimaryResponsiveContactBatch } from '@/hooks/usePrimaryResponsiveContact';
 import { StoreContactIntelBadge } from '@/components/contact/StoreContactIntelBadge';
+import { PredictiveIntelCompact } from '@/components/contact/PredictiveIntelCompact';
 
 interface MyDayDashboardProps {
   portalType: 'driver' | 'biker';
@@ -505,6 +506,7 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
                       compact 
                       className="mt-0.5" 
                     />
+                    <PredictiveIntelCompact storeId={stop.store_id} className="mt-0.5" />
                   </div>
                   <Badge variant={stop.status === 'completed' ? 'default' : 'secondary'}>
                     {stop.status}

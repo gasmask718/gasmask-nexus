@@ -14,6 +14,8 @@
 
 import { Phone, MessageSquare, CheckCircle2, XCircle, HelpCircle, Users, Star } from 'lucide-react';
 import { useStoreContactsWithResponsiveness } from '@/hooks/useContactResponsiveness';
+import { PredictiveIntelPanel } from '@/components/contact/PredictiveIntelPanel';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 const MAX_VISIBLE_CONTACTS = 3;
@@ -78,6 +80,10 @@ export function QuickStatsContactSnapshot({ storeId }: QuickStatsContactSnapshot
           </p>
         )}
       </div>
+
+      {/* Phase III — Predictive Intelligence */}
+      <Separator className="my-2" />
+      <PredictiveIntelPanel storeId={storeId} />
     </div>
   );
 }
