@@ -5499,6 +5499,160 @@ export type Database = {
         }
         Relationships: []
       }
+      ambassador_purchase_items: {
+        Row: {
+          created_at: string
+          id: string
+          line_total: number
+          product_id: string | null
+          product_name_snapshot: string
+          purchase_id: string
+          quantity: number
+          unit_price_snapshot: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          line_total?: number
+          product_id?: string | null
+          product_name_snapshot: string
+          purchase_id: string
+          quantity?: number
+          unit_price_snapshot: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          line_total?: number
+          product_id?: string | null
+          product_name_snapshot?: string
+          purchase_id?: string
+          quantity?: number
+          unit_price_snapshot?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_purchase_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchase_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchase_items_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "ambassador_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchase_items_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_purchase_history"
+            referencedColumns: ["order_id"]
+          },
+        ]
+      }
+      ambassador_purchases: {
+        Row: {
+          ambassador_id: string | null
+          ambassador_user_id: string
+          created_at: string
+          created_by_user_id: string
+          created_for_user_id: string
+          currency: string
+          discount_total: number
+          fulfilled_at: string | null
+          id: string
+          notes: string | null
+          order_number: string
+          order_source: string
+          paid_at: string | null
+          status: string
+          subtotal: number
+          tax: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          ambassador_id?: string | null
+          ambassador_user_id: string
+          created_at?: string
+          created_by_user_id: string
+          created_for_user_id: string
+          currency?: string
+          discount_total?: number
+          fulfilled_at?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: string
+          order_source?: string
+          paid_at?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          ambassador_id?: string | null
+          ambassador_user_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          created_for_user_id?: string
+          currency?: string
+          discount_total?: number
+          fulfilled_at?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: string
+          order_source?: string
+          paid_at?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+        ]
+      }
       ambassador_regions: {
         Row: {
           active: boolean | null
@@ -48937,6 +49091,104 @@ export type Database = {
           },
           {
             foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+        ]
+      }
+      v_ambassador_purchase_history: {
+        Row: {
+          ambassador_id: string | null
+          ambassador_name: string | null
+          ambassador_user_id: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          currency: string | null
+          discount_total: number | null
+          fulfilled_at: string | null
+          items_count: number | null
+          last_purchase_at: string | null
+          lifetime_spend: number | null
+          notes: string | null
+          order_id: string | null
+          order_number: string | null
+          order_source: string | null
+          paid_at: string | null
+          purchase_count: number | null
+          status: string | null
+          subtotal: number | null
+          tax: number | null
+          total: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+        ]
+      }
+      v_ambassador_purchase_summary: {
+        Row: {
+          ambassador_id: string | null
+          ambassador_name: string | null
+          ambassador_user_id: string | null
+          avg_order_value: number | null
+          days_since_last_purchase: number | null
+          last_purchase_at: string | null
+          lifetime_spend: number | null
+          purchase_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"

@@ -27,6 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format, formatDistanceToNow } from 'date-fns';
 import { PortfolioSection } from '@/components/ambassador/PortfolioSection';
 import { ReferralLinkCard } from '@/components/ambassador/ReferralLinkCard';
+import { DashboardPurchasesCard } from '@/components/ambassador/purchases/DashboardPurchasesCard';
 
 // MASTER GENIUS ARCHITECT: Lead KPI config - all lead types must be represented
 const LEAD_KPI_CONFIG = {
@@ -279,6 +280,8 @@ function DashboardContent() {
 
       {/* Main Content Grid */}
       <div className="grid md:grid-cols-2 gap-6">
+        {/* Purchases Card */}
+        <DashboardPurchasesCard />
 
         {/* Recent Commissions */}
         <Card className="border-primary/20">
@@ -343,7 +346,7 @@ function DashboardContent() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
             <Button 
               className="h-auto py-4 flex-col gap-2" 
               onClick={() => navigate('/ambassador/stores')}
@@ -358,6 +361,14 @@ function DashboardContent() {
             >
               <Package className="h-5 w-5" />
               <span>Create Order</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-auto py-4 flex-col gap-2"
+              onClick={() => navigate('/ambassador/purchases')}
+            >
+              <ShoppingCart className="h-5 w-5" />
+              <span>My Purchases</span>
             </Button>
             <Button 
               variant="outline" 
