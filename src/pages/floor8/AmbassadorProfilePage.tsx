@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import {
   ArrowLeft, User, MapPin, Phone, Mail, Store, DollarSign,
   TrendingUp, TrendingDown, Minus, MessageSquare,
-  AlertTriangle, Wallet, Star
+  AlertTriangle, Wallet, Star, ShoppingBag
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
@@ -24,6 +24,7 @@ import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import { AmbassadorStoresTab } from '@/components/floor8/AmbassadorStoresTab';
 import { useAmbassadorStoreData } from '@/hooks/useAmbassadorStoreData';
 import { cn } from '@/lib/utils';
+import { AmbassadorPurchasesSection } from '@/components/ambassador/purchases/AmbassadorPurchasesSection';
 
 export default function AmbassadorProfilePage() {
   const { ambassadorId } = useParams<{ ambassadorId: string }>();
@@ -243,6 +244,10 @@ export default function AmbassadorProfilePage() {
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="stores">Stores ({sourcedStores.length + assignedStores.length})</TabsTrigger>
+            <TabsTrigger value="purchases">
+              <ShoppingBag className="h-4 w-4 mr-1" />
+              Purchases
+            </TabsTrigger>
             <TabsTrigger value="commissions">Commissions ({commissions.length})</TabsTrigger>
             <TabsTrigger value="payouts">Payouts</TabsTrigger>
             <TabsTrigger value="communication">Communication</TabsTrigger>
@@ -332,6 +337,14 @@ export default function AmbassadorProfilePage() {
                 queryClient.invalidateQueries({ queryKey: ['ambassador-sourced-stores', ambassadorId] });
                 queryClient.invalidateQueries({ queryKey: ['floor8-ambassador-stores', ambassadorId] });
               }}
+            />
+          </TabsContent>
+
+          <TabsContent value="purchases" className="mt-4">
+            <AmbassadorPurchasesSection
+              ambassadorUserId={ambassador.user_id}
+              ambassadorId={ambassadorId}
+              ambassadorName={displayName}
             />
           </TabsContent>
 

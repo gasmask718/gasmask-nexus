@@ -10,3 +10,4 @@ export { default as AmbassadorCommunications } from './AmbassadorCommunications'
 export { default as AmbassadorLeads } from './AmbassadorLeads';
 export { default as AmbassadorDisputes } from './AmbassadorDisputes';
 export { default as AmbassadorDisputeDetail } from './AmbassadorDisputeDetail';
+export { default as AmbassadorPurchases } from './AmbassadorPurchases';
