@@ -22,6 +22,8 @@ import { PredictiveIntelPanel } from '@/components/contact/PredictiveIntelPanel'
 import { BestContactCard, deriveBestContactConfidence } from '@/components/store/contacts/BestContactCard';
 import { LastSuccessfulContactBadge } from '@/components/store/contacts/LastSuccessfulContactBadge';
 import { ResponsivenessHeatInsight } from '@/components/contact/ResponsivenessHeatInsight';
+import { useIntelligenceExposureBatch } from '@/hooks/useIntelligenceExposure';
+import type { ExposureEvent } from '@/services/intelligenceAccountability/exposureTracker';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +40,48 @@ export function QuickStatsContactSnapshot({ storeId }: QuickStatsContactSnapshot
 
   // Detect route context — user is viewing store from a route/delivery/my-day flow
   const isRouteContext = /\/(route|delivery|my-day|driver|biker)/i.test(location.pathname);
+
+  // Derive the single best contact using deterministic priority
+  const bestContact = !isLoading && contacts?.length ? deriveBestContact(contacts) : null;
+  // Compute confidence for the best contact
+  const confidence = bestContact ? deriveBestContactConfidence(bestContact) : undefined;
+
+  // ─── Phase V: Intelligence Exposure Tracking ───────────
+  const exposureEvents: ExposureEvent[] = [];
+  if (bestContact && confidence) {
+    exposureEvents.push({
+      store_id: storeId,
+      exposure_type: 'best_contact',
+      confidence_level: confidence.level,
+      suggested_contact_id: bestContact.id,
+      route_context: isRouteContext,
+    });
+  }
+  if (intelligence?.channelRecommendation) {
+    exposureEvents.push({
+      store_id: storeId,
+      exposure_type: 'suggested_channel',
+      suggested_channel: intelligence.channelRecommendation.suggested,
+      confidence_level: intelligence.channelRecommendation.confidence,
+    });
+  }
+  if (intelligence?.timeOfDayHeat && intelligence.timeOfDayHeat.data_quality !== 'none') {
+    exposureEvents.push({
+      store_id: storeId,
+      exposure_type: 'time_of_day_hint',
+      metadata: { window: intelligence.timeOfDayHeat.best_window },
+    });
+  }
+  if (isRouteContext && bestContact) {
+    exposureEvents.push({
+      store_id: storeId,
+      exposure_type: 'route_annotation',
+      suggested_contact_id: bestContact.id,
+      route_context: true,
+    });
+  }
+  useIntelligenceExposureBatch(exposureEvents, !isLoading && !!contacts?.length);
+  // ─── End Phase V ──────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -64,10 +108,6 @@ export function QuickStatsContactSnapshot({ storeId }: QuickStatsContactSnapshot
     );
   }
 
-  // Derive the single best contact using deterministic priority
-  const bestContact = deriveBestContact(contacts);
-  // Compute confidence for the best contact
-  const confidence = bestContact ? deriveBestContactConfidence(bestContact) : undefined;
   // Other contacts exclude the best contact
   const otherContacts = contacts.filter(c => c.id !== bestContact?.id);
   const visibleOthers = otherContacts.slice(0, MAX_VISIBLE_OTHER_CONTACTS);
