@@ -5,19 +5,23 @@
  * Purpose: "Who at this store actually responds — and how?" in under 2 seconds.
  * 
  * Layout (top → bottom):
- *   1. Best Contact card (auto-highlighted, single best contact)
- *   2. Last Successful Contact badge
- *   3. Contact list (remaining contacts)
- *   4. Predictive Intelligence panel
+ *   1. Best Contact card (auto-highlighted, with confidence + route annotation)
+ *   2. Time-of-Day responsiveness hint
+ *   3. Last Successful Contact badge
+ *   4. Contact list (remaining contacts)
+ *   5. Predictive Intelligence panel
  * 
  * READ-ONLY. No filters, no edit actions, no deep analytics.
  */
 
 import { Phone, MessageSquare, CheckCircle2, XCircle, HelpCircle, Users } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useStoreContactsWithResponsiveness } from '@/hooks/useContactResponsiveness';
+import { usePredictiveContactIntelligence } from '@/hooks/usePredictiveContactIntelligence';
 import { PredictiveIntelPanel } from '@/components/contact/PredictiveIntelPanel';
-import { BestContactCard } from '@/components/store/contacts/BestContactCard';
+import { BestContactCard, deriveBestContactConfidence } from '@/components/store/contacts/BestContactCard';
 import { LastSuccessfulContactBadge } from '@/components/store/contacts/LastSuccessfulContactBadge';
+import { ResponsivenessHeatInsight } from '@/components/contact/ResponsivenessHeatInsight';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +33,11 @@ interface QuickStatsContactSnapshotProps {
 
 export function QuickStatsContactSnapshot({ storeId }: QuickStatsContactSnapshotProps) {
   const { data: contacts, isLoading } = useStoreContactsWithResponsiveness(storeId);
+  const { intelligence } = usePredictiveContactIntelligence(storeId);
+  const location = useLocation();
+
+  // Detect route context — user is viewing store from a route/delivery/my-day flow
+  const isRouteContext = /\/(route|delivery|my-day|driver|biker)/i.test(location.pathname);
 
   if (isLoading) {
     return (
@@ -57,6 +66,8 @@ export function QuickStatsContactSnapshot({ storeId }: QuickStatsContactSnapshot
 
   // Derive the single best contact using deterministic priority
   const bestContact = deriveBestContact(contacts);
+  // Compute confidence for the best contact
+  const confidence = bestContact ? deriveBestContactConfidence(bestContact) : undefined;
   // Other contacts exclude the best contact
   const otherContacts = contacts.filter(c => c.id !== bestContact?.id);
   const visibleOthers = otherContacts.slice(0, MAX_VISIBLE_OTHER_CONTACTS);
@@ -66,9 +77,13 @@ export function QuickStatsContactSnapshot({ storeId }: QuickStatsContactSnapshot
     <div className="space-y-2">
       <p className="text-sm text-muted-foreground">Contact Responsiveness</p>
 
-      {/* ① Best Contact — dedicated highlight */}
+      {/* ① Best Contact — dedicated highlight with confidence + route annotation */}
       {bestContact ? (
-        <BestContactCard contact={bestContact} />
+        <BestContactCard
+          contact={bestContact}
+          confidence={confidence}
+          isRouteAware={isRouteContext}
+        />
       ) : (
         <div className="flex items-center gap-2 p-3 rounded-md bg-muted/20 border border-border/30">
           <HelpCircle className="h-4 w-4 text-muted-foreground" />
@@ -76,13 +91,16 @@ export function QuickStatsContactSnapshot({ storeId }: QuickStatsContactSnapshot
         </div>
       )}
 
-      {/* ② Last Successful Contact badge */}
+      {/* ② Time-of-Day responsiveness hint */}
+      <ResponsivenessHeatInsight heat={intelligence?.timeOfDayHeat} compact />
+
+      {/* ③ Last Successful Contact badge */}
       <LastSuccessfulContactBadge
         contacts={contacts}
         bestContactId={bestContact?.id ?? null}
       />
 
-      {/* ③ Other contacts list */}
+      {/* ④ Other contacts list */}
       {visibleOthers.length > 0 && (
         <div className="space-y-1.5">
           {visibleOthers.map((contact) => (
@@ -104,7 +122,7 @@ export function QuickStatsContactSnapshot({ storeId }: QuickStatsContactSnapshot
         </div>
       )}
 
-      {/* ④ Predictive Intelligence */}
+      {/* ⑤ Predictive Intelligence */}
       <Separator className="my-2" />
       <PredictiveIntelPanel storeId={storeId} />
     </div>
