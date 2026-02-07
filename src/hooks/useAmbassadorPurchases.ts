@@ -1,8 +1,25 @@
 /**
  * Ambassador Purchase Ledger Hooks
- * useAmbassadorPurchaseHistory - full purchase list with filters
- * useAmbassadorPurchaseSummary - KPI summary (one row per ambassador)
- * useCreateAmbassadorPurchase - mutation to create order
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * CONSTITUTIONAL RULE — VIEW-ONLY READS (DO NOT VIOLATE)
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * Any KPI, automation, or decision involving ambassador purchasing MUST source
+ * from `v_ambassador_purchase_summary` or `v_ambassador_purchase_history`.
+ * Direct table reads on `ambassador_purchases` are PROHIBITED outside of:
+ *   1. Ledger maintenance (single-record detail lookups by ID)
+ *   2. Write operations (create/update mutations)
+ * 
+ * This prevents future shortcuts from corrupting financial truth.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * Hooks:
+ *   useAmbassadorPurchaseHistory  — reads from v_ambassador_purchase_history
+ *   useAmbassadorPurchaseSummary  — reads from v_ambassador_purchase_summary
+ *   useAmbassadorPurchaseDetail   — single-record ledger maintenance (table read allowed)
+ *   useMyPurchases                — ambassador portal wrapper
+ *   useCreateAmbassadorPurchase   — mutation (table write)
+ *   useUpdatePurchaseStatus       — mutation (table write)
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,10 +71,43 @@ export interface PurchaseSummary {
   days_since_last_purchase: number | null;
 }
 
-export interface PurchaseWithItems extends AmbassadorPurchase {
+/** Row shape from v_ambassador_purchase_history view */
+export interface PurchaseHistoryRow {
+  order_id: string;
+  order_number: string;
+  ambassador_user_id: string;
+  ambassador_id: string | null;
+  ambassador_name: string;
+  status: string;
+  order_source: string;
+  currency: string;
+  subtotal: number;
+  tax: number;
+  discount_total: number;
+  total: number;
+  paid_at: string | null;
+  fulfilled_at: string | null;
+  notes: string | null;
+  created_by_user_id: string;
+  created_at: string;
+  updated_at: string;
+  items_count: number;
+  lifetime_spend: number;
+  purchase_count: number;
+  last_purchase_at: string | null;
+}
+
+export interface PurchaseWithItems extends PurchaseHistoryRow {
+  /** Mapped from order_id for component compatibility */
+  id: string;
+  items: AmbassadorPurchaseItem[];
+}
+
+/** @deprecated Use PurchaseHistoryRow — kept for backward compat */
+export type PurchaseWithItemsLegacy = AmbassadorPurchase & {
   items: AmbassadorPurchaseItem[];
   ambassador_name?: string;
-}
+};
 
 export interface PurchaseFilters {
   status?: string;
@@ -84,7 +134,9 @@ export interface CreatePurchaseInput {
   tax?: number;
 }
 
-// ─── Hook: Purchase History ──────────────────────────────────────────────────
+// ─── Hook: Purchase History (VIEW READ — CONSTITUTIONAL) ────────────────────
+// Sources from: v_ambassador_purchase_history
+// DO NOT replace with direct table read.
 
 export function useAmbassadorPurchaseHistory(
   ambassadorUserId?: string,
@@ -93,8 +145,9 @@ export function useAmbassadorPurchaseHistory(
   return useQuery({
     queryKey: ['ambassador-purchases', ambassadorUserId, filters],
     queryFn: async () => {
+      // CONSTITUTIONAL: Read from view, never raw table
       let query = supabase
-        .from('ambassador_purchases')
+        .from('v_ambassador_purchase_history' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -125,13 +178,15 @@ export function useAmbassadorPurchaseHistory(
       const { data, error } = await query;
       if (error) throw error;
 
-      // Fetch items for all purchases
-      if (data && data.length > 0) {
-        const purchaseIds = data.map(p => p.id);
+      const rows = (data || []) as unknown as PurchaseHistoryRow[];
+
+      // Fetch line items for detail drawers
+      if (rows.length > 0) {
+        const orderIds = rows.map(r => r.order_id);
         const { data: items, error: itemsError } = await supabase
           .from('ambassador_purchase_items')
           .select('*')
-          .in('purchase_id', purchaseIds);
+          .in('purchase_id', orderIds);
 
         if (itemsError) throw itemsError;
 
@@ -141,13 +196,18 @@ export function useAmbassadorPurchaseHistory(
           return acc;
         }, {} as Record<string, AmbassadorPurchaseItem[]>);
 
-        return data.map(purchase => ({
-          ...purchase,
-          items: itemsByPurchase[purchase.id] || [],
+        return rows.map(row => ({
+          ...row,
+          id: row.order_id,
+          items: itemsByPurchase[row.order_id] || [],
         })) as PurchaseWithItems[];
       }
 
-      return (data || []).map(p => ({ ...p, items: [] })) as PurchaseWithItems[];
+      return rows.map(r => ({
+        ...r,
+        id: r.order_id,
+        items: [],
+      })) as PurchaseWithItems[];
     },
   });
 }
@@ -159,12 +219,15 @@ export function useMyPurchases(filters?: PurchaseFilters) {
   return useAmbassadorPurchaseHistory(user?.id, filters);
 }
 
-// ─── Hook: Purchase Summary ─────────────────────────────────────────────────
+// ─── Hook: Purchase Summary (VIEW READ — CONSTITUTIONAL) ────────────────────
+// Sources from: v_ambassador_purchase_summary
+// DO NOT replace with direct table read or manual aggregation.
 
 export function useAmbassadorPurchaseSummary(ambassadorUserId?: string) {
   return useQuery({
     queryKey: ['ambassador-purchase-summary', ambassadorUserId],
     queryFn: async () => {
+      // CONSTITUTIONAL: Read from view, never raw table
       let query = supabase
         .from('v_ambassador_purchase_summary' as any)
         .select('*');
@@ -186,7 +249,7 @@ export function useAmbassadorPurchaseSummary(ambassadorUserId?: string) {
   });
 }
 
-// ─── Hook: Single Purchase Detail ───────────────────────────────────────────
+// ─── Hook: Single Purchase Detail (LEDGER MAINTENANCE — table read allowed) ─
 
 export function useAmbassadorPurchaseDetail(purchaseId?: string) {
   return useQuery({
@@ -194,6 +257,7 @@ export function useAmbassadorPurchaseDetail(purchaseId?: string) {
     queryFn: async () => {
       if (!purchaseId) return null;
 
+      // Ledger maintenance: single-record lookup is the one permitted table read
       const { data: purchase, error } = await supabase
         .from('ambassador_purchases')
         .select('*')
@@ -211,14 +275,15 @@ export function useAmbassadorPurchaseDetail(purchaseId?: string) {
 
       return {
         ...purchase,
+        id: purchase.id,
         items: items || [],
-      } as PurchaseWithItems;
+      } as unknown as PurchaseWithItems;
     },
     enabled: !!purchaseId,
   });
 }
 
-// ─── Mutation: Create Purchase ──────────────────────────────────────────────
+// ─── Mutation: Create Purchase (TABLE WRITE — allowed) ──────────────────────
 
 export function useCreateAmbassadorPurchase() {
   const queryClient = useQueryClient();
@@ -228,7 +293,6 @@ export function useCreateAmbassadorPurchase() {
     mutationFn: async (input: CreatePurchaseInput) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // Calculate totals
       const subtotal = input.items.reduce(
         (sum, item) => sum + item.unit_price_snapshot * item.quantity,
         0
@@ -237,7 +301,6 @@ export function useCreateAmbassadorPurchase() {
       const discount = input.discount_total || 0;
       const total = subtotal + tax - discount;
 
-      // Insert purchase
       const { data: purchase, error: purchaseError } = await supabase
         .from('ambassador_purchases')
         .insert({
@@ -259,7 +322,6 @@ export function useCreateAmbassadorPurchase() {
 
       if (purchaseError) throw purchaseError;
 
-      // Insert line items
       const lineItems = input.items.map(item => ({
         purchase_id: purchase.id,
         product_id: item.product_id || null,
@@ -292,7 +354,7 @@ export function useCreateAmbassadorPurchase() {
   });
 }
 
-// ─── Mutation: Update Purchase Status ───────────────────────────────────────
+// ─── Mutation: Update Purchase Status (TABLE WRITE — allowed) ───────────────
 
 export function useUpdatePurchaseStatus() {
   const queryClient = useQueryClient();

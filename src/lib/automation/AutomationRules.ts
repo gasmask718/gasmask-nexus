@@ -149,6 +149,22 @@ export const DEFAULT_AUTOMATION_RULES: AutomationRule[] = [
     runCount: 0,
     floorId: 'floor-2-communication',
   },
+
+  // RULE 13 — Ambassador Purchase View-Only Read Enforcement
+  // CONSTITUTIONAL: All KPIs, automations, and decisions involving ambassador
+  // purchasing MUST source from v_ambassador_purchase_summary or
+  // v_ambassador_purchase_history. Direct table reads are prohibited outside
+  // ledger maintenance.
+  {
+    id: 'ambassador-purchase-view-enforcement',
+    name: 'Ambassador Purchase View-Only Enforcement',
+    description: 'Enforce that all ambassador purchase reads use canonical views, not raw tables',
+    trigger: 'ambassador_purchase_query',
+    actions: ['enforce_view_read', 'log_violation'],
+    isEnabled: true,
+    runCount: 0,
+    floorId: 'floor-8-ambassadors',
+  },
 ];
 
 export function initializeDefaultRules(): void {
