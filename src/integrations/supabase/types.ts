@@ -23917,6 +23917,45 @@ export type Database = {
           },
         ]
       }
+      intelligence_exposures: {
+        Row: {
+          confidence_level: string | null
+          exposed_at: string
+          exposure_type: string
+          id: string
+          metadata: Json | null
+          route_context: boolean | null
+          store_id: string
+          suggested_channel: string | null
+          suggested_contact_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          confidence_level?: string | null
+          exposed_at?: string
+          exposure_type: string
+          id?: string
+          metadata?: Json | null
+          route_context?: boolean | null
+          store_id: string
+          suggested_channel?: string | null
+          suggested_contact_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          confidence_level?: string | null
+          exposed_at?: string
+          exposure_type?: string
+          id?: string
+          metadata?: Json | null
+          route_context?: boolean | null
+          store_id?: string
+          suggested_channel?: string | null
+          suggested_contact_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       intent_envelopes: {
         Row: {
           assignment_id: string | null
