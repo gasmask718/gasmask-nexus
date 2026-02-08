@@ -25497,6 +25497,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+          {
             foreignKeyName: "invoice_line_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -25578,6 +25592,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_receipt_log_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_receipt_log_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
           },
           {
             foreignKeyName: "invoice_receipt_log_store_id_fkey"
@@ -40371,6 +40399,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "store_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "store_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+          {
             foreignKeyName: "store_payments_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
@@ -41205,6 +41247,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "store_transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
           },
           {
             foreignKeyName: "store_transactions_order_id_fkey"
@@ -49670,6 +49726,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+          {
             foreignKeyName: "invoice_line_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -49909,6 +49979,106 @@ export type Database = {
           success_24h: number | null
         }
         Relationships: []
+      }
+      v_store_brand_order_events: {
+        Row: {
+          brand_name: string | null
+          order_date: string | null
+          order_id: string | null
+          order_source: string | null
+          payment_status: string | null
+          store_id: string | null
+          total_amount: number | null
+          total_tubes: number | null
+          total_units: number | null
+        }
+        Insert: {
+          brand_name?: string | null
+          order_date?: string | null
+          order_id?: string | null
+          order_source?: string | null
+          payment_status?: string | null
+          store_id?: string | null
+          total_amount?: never
+          total_tubes?: never
+          total_units?: never
+        }
+        Update: {
+          brand_name?: string | null
+          order_date?: string | null
+          order_id?: string | null
+          order_source?: string | null
+          payment_status?: string | null
+          store_id?: string | null
+          total_amount?: never
+          total_tubes?: never
+          total_units?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_store_brand_order_gaps: {
+        Row: {
+          brand_name: string | null
+          days_between_orders: number | null
+          order_date: string | null
+          order_id: string | null
+          payment_status: string | null
+          previous_order_date: string | null
+          recency_rank: number | null
+          store_id: string | null
+          total_amount: number | null
+          total_tubes: number | null
+          total_units: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_store_brand_sell_through_summary: {
+        Row: {
+          avg_days_between_orders: number | null
+          brand_name: string | null
+          days_since_last_order: number | null
+          first_order_date: string | null
+          last_order_date: string | null
+          max_days_between: number | null
+          min_days_between: number | null
+          order_frequency_class: string | null
+          orders_last_30d: number | null
+          orders_last_90d: number | null
+          projected_next_order: string | null
+          revenue_last_30d: number | null
+          revenue_last_90d: number | null
+          revenue_per_day: number | null
+          store_id: string | null
+          total_orders_lifetime: number | null
+          total_revenue_lifetime: number | null
+          total_tubes_lifetime: number | null
+          total_units_lifetime: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_store_commission_performance: {
         Row: {
