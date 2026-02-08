@@ -266,7 +266,7 @@ export function PersonalNotesEditor({
                       <p className="text-muted-foreground mb-1">
                         {format(new Date(entry.edited_at), 'MMM d, yyyy h:mm a')}
                       </p>
-                      <p className="line-clamp-2">{entry.content || '(empty)'}</p>
+                      <p className="line-clamp-2 whitespace-pre-wrap">{entry.content || '(empty)'}</p>
                     </div>
                   ))}
                 </div>
