@@ -13,8 +13,6 @@ import { StorePerformanceTab } from "@/components/store/StorePerformanceTab";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { InventoryPredictionCard } from "@/components/map/InventoryPredictionCard";
-import { CommunicationTimeline } from "@/components/CommunicationTimeline";
-import { CommunicationTimelineCRM } from "@/components/crm/CommunicationTimelineCRM";
 import { CommunicationLogModal } from "@/components/CommunicationLogModal";
 import { CommunicationStats } from "@/components/communication/CommunicationStats";
 import { FollowUpAIRecommendation } from "@/components/store/FollowUpAIRecommendation";
@@ -25,41 +23,27 @@ import { StoreCallIntelligenceTab } from "@/components/store/StoreCallIntelligen
 import { StoreRevenueIntelligenceTab } from "@/components/revenue/StoreRevenueIntelligenceTab";
 import { Activity, Headphones, Flame } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StorePeopleSection } from "@/components/store/StorePeopleSection";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
-import { BrandScopedNotesSection } from "@/components/store/BrandScopedNotesSection";
-import { OpportunitiesSection } from "@/components/store/OpportunitiesSection";
-import { SellsFlowersToggle } from "@/components/store/SellsFlowersToggle";
-// Legacy StoreOperationsCard DEPRECATED - functionality merged into BrandStickersCard + SellsFlowersToggle
-import { UnifiedTubeIntelligenceCard } from "@/components/store/UnifiedTubeIntelligenceCard";
-import { SellThroughIntelCard } from "@/components/store/SellThroughIntelCard";
-import { BrandStickersCard } from "@/components/store/BrandStickersCard";
 import { QuickStatsStickersSummary } from "@/components/store/QuickStatsStickersSummary";
 import { StoreHealthBadge } from "@/components/delivery/StoreHealthBadge";
-import { StoreHealthScoreCard } from "@/components/delivery/StoreHealthScoreCard";
-import { VisitSummaryCard } from "@/components/delivery/VisitSummaryCard";
-import { ActionsNeededCard } from "@/components/delivery/ActionsNeededCard";
 import { QuickStatsContactSnapshot } from "@/components/store/QuickStatsContactSnapshot";
 import { usePrimaryResponsiveContact } from "@/hooks/usePrimaryResponsiveContact";
 import { StoreContactIntelBadge } from "@/components/contact/StoreContactIntelBadge";
 import { PredictiveIntelCompact } from "@/components/contact/PredictiveIntelCompact";
-import { StoreCadencePanel } from "@/components/store/StoreCadencePanel";
-import { StoreVisitInventoryCard } from "@/components/store/StoreVisitInventoryCard";
 import { StoreQuickActions } from "@/components/store/StoreQuickActions";
-import { RecentStoreInteractions } from "@/components/crm/RecentStoreInteractions";
 import { UnifiedInteractionModal } from "@/components/store/UnifiedInteractionModal";
-import { InvoiceHistoryCard } from "@/components/store/InvoiceHistoryCard";
-// OrderHistoryCard removed - Invoice History is the single source of truth
 import { CreateStoreInvoiceModal } from "@/components/store/CreateStoreInvoiceModal";
-import { ConnectedStoresCard } from "@/components/store/ConnectedStoresCard";
 import { MemberSinceDisplay } from "@/components/store/MemberSinceDisplay";
-import { StoreCadenceSettings } from "@/components/store/StoreCadenceSettings";
-import { StoreFieldActivityPanel } from "@/components/store/StoreFieldActivityPanel";
 import { PagePurpose } from "@/components/portal/guidance/PagePurpose";
-import { CardHelper } from "@/components/portal/guidance/CardHelper";
 import { useTranslation } from "@/hooks/useTranslation";
 import { CanonicalStoreProfileProvider } from "@/components/store/CanonicalStoreProfile";
+// ═══════════════════════════════════════════════════════════════════════════════
+// CANONICAL SHARED SECTIONS — Drift prevention layer
+// Adding a section to these components propagates to ALL store profile pages.
+// ═══════════════════════════════════════════════════════════════════════════════
+import { SharedStoreCoreIntelligence } from "@/components/store/SharedStoreCoreIntelligence";
+import { CanonicalStoreDataProvider } from "@/components/store/CanonicalStoreDataProvider";
 import {
   MapPin,
   Phone,
@@ -479,6 +463,7 @@ const StoreDetail = () => {
   };
 
   return (
+    <CanonicalStoreDataProvider storeId={id}>
     <CanonicalStoreProfileProvider storeId={id || ''}>
     <div className="space-y-6 animate-fade-in">
       <PagePurpose 
@@ -585,39 +570,18 @@ const StoreDetail = () => {
             }}
           />
 
-          {/* PHASE IV-VI Intelligence Layer */}
-          {/* Actions Needed — Rule-based follow-ups */}
-          <ActionsNeededCard storeId={id || ""} />
-
-          {/* Store Health Score — Deterministic breakdown */}
-          <StoreHealthScoreCard storeId={id || ""} />
-
-          {/* Visit History — Deterministic summaries */}
-          <VisitSummaryCard storeId={id || ""} />
-
-          {/* Owners & Workers Sections */}
+          {/* ═══════════════════════════════════════════════════════════ */}
+          {/* CANONICAL SHARED SECTIONS — Auto-synced with all profiles */}
+          {/* ═══════════════════════════════════════════════════════════ */}
           <StorePeopleSection storeId={id || ""} />
-
-          {/* All Store Contacts (for adding new) */}
-          <StoreContactsSection storeId={id || ""} storeName={store.name} />
-
-          {/* PHASE 3 — Contact Cadence Intelligence (Replaces old responsiveness) */}
-          <StoreCadencePanel storeId={id || ""} storeName={store.name} />
-
-          {/* Notes Section — Brand-Scoped */}
-          <BrandScopedNotesSection storeId={id || ""} storeName={store.name} />
-
-          {/* Opportunities Section */}
-          <OpportunitiesSection storeId={id || ""} storeName={store.name} />
-
-          {/* Connected Stores */}
-          <ConnectedStoresCard 
+          <SharedStoreCoreIntelligence
             storeId={id || ""}
-            currentStoreName={store.name}
-            currentStoreGroupId={store.connected_group_id}
-            currentStoreOwnerName={store.primary_contact_name}
+            storeName={store.name}
+            role="admin"
+            storeGroupId={store.connected_group_id}
+            storeOwnerName={store.primary_contact_name}
+            sellsFlowers={store?.sells_flowers || false}
             onConnectionChange={() => {
-              // Refresh store data to get updated connected_group_id
               supabase
                 .from("stores")
                 .select("*")
@@ -627,58 +591,22 @@ const StoreDetail = () => {
                   if (data) setStore(data);
                 });
             }}
-          />
-
-          {/* UNIFIED Tube Intelligence - Edit + Intelligence in ONE component */}
-          <UnifiedTubeIntelligenceCard storeId={id || ""} role="admin" />
-
-          {/* Sell-Through Intelligence — Order frequency, velocity, health */}
-          <SellThroughIntelCard storeId={id || ""} />
-
-          {/* Brand Stickers - Canonical 4-sticker system per brand */}
-          <BrandStickersCard storeId={id || ""} role="admin" />
-
-          {/* Product Inventory from Visits - Read-only */}
-          <StoreVisitInventoryCard storeId={id || ""} />
-
-          {/* Store Attributes (Sells Flowers) */}
-          <SellsFlowersToggle
-            storeId={id || ""}
-            initialValue={store?.sells_flowers || false}
-            onUpdate={() => {
-              supabase
-                .from("stores")
-                .select("*")
-                .eq("id", id)
-                .single()
-                .then(({ data }) => {
-                  if (data) setStore(data);
-                });
-            }}
-          />
-
-          {/* Recent Interactions */}
-          <RecentStoreInteractions
-            storeId={id || ""}
             onLogInteraction={(resolvedId) => {
-              setResolvedStoreMasterId(resolvedId);
+              setResolvedStoreMasterId(resolvedId as string);
               setUnifiedInteractionModalOpen(true);
             }}
-          />
-
-          {/* Field Activity - Governance Layer */}
-          <StoreFieldActivityPanel storeId={id || ""} />
-
-          {/* Invoice History - Single source of truth for all orders/invoices */}
-
-          {/* Invoice History */}
-          <InvoiceHistoryCard 
-            storeId={id || ""} 
             onCreateInvoice={() => setCreateInvoiceModalOpen(true)}
+            onSellsFlowersUpdate={() => {
+              supabase
+                .from("stores")
+                .select("*")
+                .eq("id", id)
+                .single()
+                .then(({ data }) => {
+                  if (data) setStore(data);
+                });
+            }}
           />
-
-          {/* Communication Cadence - Outreach scheduling */}
-          <StoreCadenceSettings storeId={id || ""} storeName={store?.name} />
 
           {/* Communication Stats & AI */}
           <div className="grid gap-6 md:grid-cols-2">
@@ -1203,6 +1131,7 @@ const StoreDetail = () => {
 
     </div>
     </CanonicalStoreProfileProvider>
+    </CanonicalStoreDataProvider>
   );
 };
 

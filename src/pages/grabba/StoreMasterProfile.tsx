@@ -45,40 +45,17 @@ import { CanonicalStoreProfileProvider } from "@/components/store/CanonicalStore
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreRoleSection } from "@/components/store/StoreRoleSection";
 
-// Intelligence
-import { SellThroughIntelCard } from "@/components/store/SellThroughIntelCard";
-import { UnifiedTubeIntelligenceCard } from "@/components/store/UnifiedTubeIntelligenceCard";
-import { BrandStickersCard } from "@/components/store/BrandStickersCard";
-import { StoreVisitInventoryCard } from "@/components/store/StoreVisitInventoryCard";
+// ═══════════════════════════════════════════════════════════════════════════════
+// CANONICAL SHARED SECTIONS — Drift prevention layer
+// Adding a section to these components propagates to ALL store profile pages.
+// ═══════════════════════════════════════════════════════════════════════════════
+import { SharedStoreCoreIntelligence } from "@/components/store/SharedStoreCoreIntelligence";
+import { SharedStorePerformanceTabs } from "@/components/store/SharedStorePerformanceTabs";
 
-// Health & Governance
+// Components still used directly in page-specific layout
 import { StoreHealthBadge } from "@/components/delivery/StoreHealthBadge";
-import { StoreHealthScoreCard } from "@/components/delivery/StoreHealthScoreCard";
-import { VisitSummaryCard } from "@/components/delivery/VisitSummaryCard";
-import { ActionsNeededCard } from "@/components/delivery/ActionsNeededCard";
-
-// Notes & Cadence
-import { BrandScopedNotesSection } from "@/components/store/BrandScopedNotesSection";
-import { StoreCadencePanel } from "@/components/store/StoreCadencePanel";
-import { StoreCadenceSettings } from "@/components/store/StoreCadenceSettings";
-
-// Orders & Finance
-import { InvoiceHistoryCard } from "@/components/store/InvoiceHistoryCard";
+import { BrandStickersCard } from "@/components/store/BrandStickersCard";
 import { StoreTransactionsCard } from "@/components/store/StoreTransactionsCard";
-
-// Connected & Opportunities
-import { ConnectedStoresCard } from "@/components/store/ConnectedStoresCard";
-import { OpportunitiesSection } from "@/components/store/OpportunitiesSection";
-import { SellsFlowersToggle } from "@/components/store/SellsFlowersToggle";
-
-// Field Activity
-import { StoreFieldActivityPanel } from "@/components/store/StoreFieldActivityPanel";
-import { RecentStoreInteractions } from "@/components/crm/RecentStoreInteractions";
-
-// Performance & Revenue Tabs
-import { StorePerformanceTab } from "@/components/store/StorePerformanceTab";
-import { StoreCallIntelligenceTab } from "@/components/store/StoreCallIntelligenceTab";
-import { StoreRevenueIntelligenceTab } from "@/components/revenue/StoreRevenueIntelligenceTab";
 
 // CRM-specific components (unique to StoreMaster)
 import { LogInteractionModal } from "@/components/crm/LogInteractionModal";
@@ -448,63 +425,20 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
         {/* CENTER PANEL — Intelligence + Analytics */}
         {/* ═════════════════════════════════════════════════════════════════ */}
         <div className="lg:col-span-6 space-y-6">
-          {/* SECTION: Actions Needed (same as StoreDetail) */}
-          <ActionsNeededCard storeId={id} />
-
-          {/* SECTION: Store Health Score (same as StoreDetail) */}
-          <StoreHealthScoreCard storeId={id} />
-
-          {/* SECTION: Visit Summary (same as StoreDetail) */}
-          <VisitSummaryCard storeId={id} />
-
-          {/* SECTION: Communication Cadence (same as StoreDetail) */}
-          <StoreCadencePanel storeId={id} storeName={store.store_name} />
-
-          {/* SECTION: Brand-Scoped Notes (same as StoreDetail) */}
-          <BrandScopedNotesSection storeId={id} storeName={store.store_name} />
-
-          {/* SECTION: Opportunities (same as StoreDetail) */}
-          <OpportunitiesSection storeId={id} storeName={store.store_name} />
-
-          {/* SECTION: Connected Stores (same as StoreDetail) */}
-          <ConnectedStoresCard
+          {/* ═══════════════════════════════════════════════════════════ */}
+          {/* CANONICAL SHARED SECTIONS — Auto-synced with all profiles */}
+          {/* ═══════════════════════════════════════════════════════════ */}
+          <SharedStoreCoreIntelligence
             storeId={id}
-            currentStoreName={store.store_name}
-            currentStoreGroupId={store.connected_group_id}
-            currentStoreOwnerName={store.owner_name}
-          />
-
-          {/* SECTION: Tube Intelligence (already present, now CANONICAL) */}
-          <UnifiedTubeIntelligenceCard storeId={id} role="admin" />
-
-          {/* SECTION: Sell-Through Intelligence (WAS MISSING — now present) */}
-          <SellThroughIntelCard storeId={id} />
-
-          {/* SECTION: Visit Inventory (same as StoreDetail) */}
-          <StoreVisitInventoryCard storeId={id} />
-
-          {/* SECTION: Store Attributes */}
-          <SellsFlowersToggle storeId={id} initialValue={false} />
-
-          {/* SECTION: Recent Interactions */}
-          <RecentStoreInteractions
-            storeId={id}
+            storeName={store.store_name}
+            role="admin"
+            storeGroupId={store.connected_group_id}
+            storeOwnerName={store.owner_name}
             onLogInteraction={() => setUnifiedInteractionModalOpen(true)}
-          />
-
-          {/* SECTION: Field Activity (WAS MISSING — now present) */}
-          <StoreFieldActivityPanel storeId={id} />
-
-          {/* SECTION: Invoice History (WAS MISSING — now present) */}
-          <InvoiceHistoryCard
-            storeId={id}
             onCreateInvoice={() => setCreateInvoiceModalOpen(true)}
           />
 
-          {/* SECTION: Cadence Settings */}
-          <StoreCadenceSettings storeId={id} storeName={store.store_name} />
-
-          {/* CRM-SPECIFIC: AI & Memory Panels */}
+          {/* CRM-SPECIFIC: AI & Memory Panels (unique to Floor 1 CRM) */}
           <StoreAIFuturePanel storeId={id} />
           <CustomerMemoryCoreV2 store={{ id: store.id, store_name: store.store_name } as any} contacts={contacts} interactions={interactions} visits={visits} />
           <VoiceNotesCard storeId={id} />
@@ -513,36 +447,8 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
             <StorePersonalMemoryPanel storeId={id} />
           </div>
 
-          {/* PERFORMANCE TABS (same as StoreDetail) */}
-          <Tabs defaultValue="performance" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 gap-1">
-              <TabsTrigger value="performance" className="text-xs sm:text-sm">
-                <TrendingUp className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Performance</span>
-                <span className="sm:hidden">Perf</span>
-              </TabsTrigger>
-              <TabsTrigger value="calls" className="text-xs sm:text-sm">
-                <Headphones className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Calls</span>
-                <span className="sm:hidden">Calls</span>
-              </TabsTrigger>
-              <TabsTrigger value="revenue" className="text-xs sm:text-sm">
-                <Flame className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Revenue</span>
-                <span className="sm:hidden">Rev</span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="performance">
-              <StorePerformanceTab storeId={id} storeName={store.store_name} />
-            </TabsContent>
-            <TabsContent value="calls">
-              <StoreCallIntelligenceTab storeId={id} />
-            </TabsContent>
-            <TabsContent value="revenue">
-              <StoreRevenueIntelligenceTab storeId={id} />
-            </TabsContent>
-          </Tabs>
+          {/* CANONICAL PERFORMANCE TABS — Auto-synced with all profiles */}
+          <SharedStorePerformanceTabs storeId={id} storeName={store.store_name} />
         </div>
 
         {/* ═════════════════════════════════════════════════════════════════ */}
@@ -578,7 +484,7 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
             </CardContent>
           </Card>
 
-          {/* Transactions */}
+          {/* Transactions (CRM-specific) */}
           <StoreTransactionsCard storeId={id} storeName={store.store_name} />
 
           {/* Neighborhood Snapshot */}
