@@ -96,6 +96,7 @@ export const FLOOR_1_CRM: OSFloor = {
   items: [
     { id: 'crm-hub', label: 'CRM Hub', path: '/grabba/crm', icon: Building2, roles: ['ceo', 'admin', 'va'] },
     { id: 'store-master', label: 'Store Master', path: '/stores', icon: Store, roles: ['ceo', 'admin', 'va', 'driver'] },
+    { id: 'brand-crm', label: 'Brand CRM', path: '/brand-crm', icon: Target, roles: ['ceo', 'admin', 'va'] },
     { id: 'crm-contacts', label: 'Contacts', path: '/crm/contacts', icon: Users, roles: ['ceo', 'admin', 'va'] },
     { id: 'crm-customers', label: 'Customers', path: '/crm/customers', icon: UserCircle, roles: ['ceo', 'admin', 'va'] },
     { id: 'companies', label: 'Companies', path: '/companies', icon: Briefcase, roles: ['ceo', 'admin', 'va'] },

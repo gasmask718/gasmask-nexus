@@ -92,6 +92,7 @@ export const OWNER_PORTAL: PortalConfig = {
       items: [
         { id: 'crm-hub', label: 'CRM Hub', path: '/grabba/crm', icon: Building2, emoji: '📋' },
         { id: 'store-master', label: 'Store Master', path: '/stores', icon: Store, emoji: '🏪' },
+        { id: 'brand-crm', label: 'Brand CRM', path: '/brand-crm', icon: TrendingUp, emoji: '🎯' },
         { id: 'store-performance', label: 'Store Performance', path: '/store-performance', icon: TrendingUp, emoji: '📈' },
       ],
     },
@@ -185,6 +186,7 @@ export const ADMIN_PORTAL: PortalConfig = {
       items: [
         { id: 'crm-hub', label: 'CRM Hub', path: '/grabba/crm', icon: Building2, emoji: '📋' },
         { id: 'store-master', label: 'Store Master', path: '/stores', icon: Store, emoji: '🏪' },
+        { id: 'brand-crm', label: 'Brand CRM', path: '/brand-crm', icon: TrendingUp, emoji: '🎯' },
         { id: 'contacts', label: 'Contacts', path: '/crm/contacts', icon: Users, emoji: '👥' },
       ],
     },
@@ -265,6 +267,7 @@ export const VA_PORTAL: PortalConfig = {
       items: [
         { id: 'crm-hub', label: 'CRM Hub', path: '/grabba/crm', icon: Building2, emoji: '📋' },
         { id: 'store-master', label: 'Store Master', path: '/stores', icon: Store, emoji: '🏪' },
+        { id: 'brand-crm', label: 'Brand CRM', path: '/brand-crm', icon: TrendingUp, emoji: '🎯' },
         { id: 'contacts', label: 'Contacts', path: '/crm/contacts', icon: Users, emoji: '👥' },
         { id: 'follow-ups', label: 'Follow-Ups', path: '/crm/follow-ups', icon: Bell, emoji: '🔔' },
       ],
