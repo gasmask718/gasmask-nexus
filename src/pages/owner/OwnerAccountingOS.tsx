@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// DYNASTY ACCOUNTING OS — CPA-Grade Financial Command Center (Penthouse)
-// Dual-ledger architecture: Business + Personal (never mixed)
+// DYNASTY ACCOUNTING OS — Global Multi-Business Financial Intelligence (Penthouse)
+// Three-tier architecture: Global Intelligence → Business Ledger → Personal Finance
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from 'react';
@@ -10,8 +10,19 @@ import {
   Calculator, Sun, Crown, Calendar, Receipt,
   BarChart3, Shield, Users, Upload, Wallet,
   PiggyBank, Banknote, Target, FileText, TrendingUp,
+  Globe, Building2, Factory, Activity, Search,
 } from 'lucide-react';
 
+// Global Intelligence Views
+import {
+  GlobalOverview,
+  BusinessComparison,
+  IndustryView,
+  CashflowTimeline,
+  ExpenseIntelligence,
+} from '@/components/accounting/global';
+
+// Business Ledger Views
 import AccountingDailyBriefing from '@/components/accounting/AccountingDailyBriefing';
 import TopSpendersReport from '@/components/accounting/TopSpendersReport';
 import CollectionsCalendar from '@/components/accounting/CollectionsCalendar';
@@ -20,6 +31,7 @@ import AccountingReports from '@/components/accounting/AccountingReports';
 import TaxPrepVault from '@/components/accounting/TaxPrepVault';
 import StatementUploader from '@/components/accounting/StatementUploader';
 
+// Personal Finance Views
 import {
   PersonalDashboard,
   PersonalExpenses,
@@ -43,7 +55,7 @@ export default function OwnerAccountingOS() {
               Accounting OS
             </h1>
             <p className="text-sm text-muted-foreground">
-              CPA-grade financial intelligence — dual-ledger system for business & personal
+              CPA-grade financial intelligence — multi-business, multi-industry command center
             </p>
           </div>
         </div>
@@ -56,12 +68,20 @@ export default function OwnerAccountingOS() {
             <Shield className="h-3 w-3 mr-1" />
             SEPARATE LEDGERS
           </Badge>
+          <Badge variant="outline" className="border-purple-500/60 bg-purple-900/40 text-purple-200 px-3 py-1">
+            <Globe className="h-3 w-3 mr-1" />
+            MULTI-ENTITY
+          </Badge>
         </div>
       </div>
 
-      {/* Top-Level Ledger Selection */}
-      <Tabs defaultValue="business" className="space-y-4">
+      {/* Top-Level Tier Selection */}
+      <Tabs defaultValue="global" className="space-y-4">
         <TabsList className="bg-muted/60 h-auto p-1.5 gap-1">
+          <TabsTrigger value="global" className="gap-1.5 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-200 px-4 py-2">
+            <Globe className="h-4 w-4" />
+            Global Intelligence
+          </TabsTrigger>
           <TabsTrigger value="business" className="gap-1.5 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-200 px-4 py-2">
             <BarChart3 className="h-4 w-4" />
             Business Ledger
@@ -71,6 +91,40 @@ export default function OwnerAccountingOS() {
             Personal Finance
           </TabsTrigger>
         </TabsList>
+
+        {/* ═══ GLOBAL INTELLIGENCE ═══ */}
+        <TabsContent value="global">
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="bg-muted/50 flex flex-wrap h-auto gap-1 p-1">
+              <TabsTrigger value="overview" className="gap-1.5 data-[state=active]:bg-purple-500/20">
+                <Globe className="h-3.5 w-3.5" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="comparison" className="gap-1.5">
+                <Building2 className="h-3.5 w-3.5" />
+                Comparison
+              </TabsTrigger>
+              <TabsTrigger value="industry" className="gap-1.5">
+                <Factory className="h-3.5 w-3.5" />
+                Industry
+              </TabsTrigger>
+              <TabsTrigger value="cashflow" className="gap-1.5">
+                <Activity className="h-3.5 w-3.5" />
+                Cashflow
+              </TabsTrigger>
+              <TabsTrigger value="expense-intel" className="gap-1.5">
+                <Search className="h-3.5 w-3.5" />
+                Expense Intel
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview"><GlobalOverview /></TabsContent>
+            <TabsContent value="comparison"><BusinessComparison /></TabsContent>
+            <TabsContent value="industry"><IndustryView /></TabsContent>
+            <TabsContent value="cashflow"><CashflowTimeline /></TabsContent>
+            <TabsContent value="expense-intel"><ExpenseIntelligence /></TabsContent>
+          </Tabs>
+        </TabsContent>
 
         {/* ═══ BUSINESS LEDGER ═══ */}
         <TabsContent value="business">

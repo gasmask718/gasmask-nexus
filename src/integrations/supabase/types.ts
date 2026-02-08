@@ -8141,6 +8141,71 @@ export type Database = {
         }
         Relationships: []
       }
+      business_financial_profiles: {
+        Row: {
+          api_connected_at: string | null
+          api_provider: string | null
+          business_id: string
+          connection_status: Database["public"]["Enums"]["financial_connection_status"]
+          created_at: string
+          currency: string | null
+          data_confidence_pct: number | null
+          fiscal_year_start: number | null
+          id: string
+          last_data_sync_at: string | null
+          monthly_expense_estimate: number | null
+          monthly_revenue_estimate: number | null
+          notes: string | null
+          reporting_mode: Database["public"]["Enums"]["reporting_mode"]
+          revenue_source: Database["public"]["Enums"]["revenue_source_type"]
+          updated_at: string
+        }
+        Insert: {
+          api_connected_at?: string | null
+          api_provider?: string | null
+          business_id: string
+          connection_status?: Database["public"]["Enums"]["financial_connection_status"]
+          created_at?: string
+          currency?: string | null
+          data_confidence_pct?: number | null
+          fiscal_year_start?: number | null
+          id?: string
+          last_data_sync_at?: string | null
+          monthly_expense_estimate?: number | null
+          monthly_revenue_estimate?: number | null
+          notes?: string | null
+          reporting_mode?: Database["public"]["Enums"]["reporting_mode"]
+          revenue_source?: Database["public"]["Enums"]["revenue_source_type"]
+          updated_at?: string
+        }
+        Update: {
+          api_connected_at?: string | null
+          api_provider?: string | null
+          business_id?: string
+          connection_status?: Database["public"]["Enums"]["financial_connection_status"]
+          created_at?: string
+          currency?: string | null
+          data_confidence_pct?: number | null
+          fiscal_year_start?: number | null
+          id?: string
+          last_data_sync_at?: string | null
+          monthly_expense_estimate?: number | null
+          monthly_revenue_estimate?: number | null
+          notes?: string | null
+          reporting_mode?: Database["public"]["Enums"]["reporting_mode"]
+          revenue_source?: Database["public"]["Enums"]["revenue_source_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_financial_profiles_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_members: {
         Row: {
           business_id: string
@@ -52163,6 +52228,12 @@ export type Database = {
         | "approved"
         | "rejected"
         | "auto_approved"
+      financial_connection_status:
+        | "manual"
+        | "partial"
+        | "api_connected"
+        | "external_pending"
+        | "not_connected"
       fulfillment_type:
         | "delivery"
         | "pickup"
@@ -52241,7 +52312,19 @@ export type Database = {
         | "commercial"
         | "warehouse"
         | "mixed_use"
+      reporting_mode:
+        | "live"
+        | "daily_summary"
+        | "weekly_manual"
+        | "estimated"
+        | "placeholder"
       responsiveness: "call" | "text" | "both" | "none"
+      revenue_source_type:
+        | "internal_os"
+        | "external_website"
+        | "marketplace"
+        | "offline"
+        | "mixed"
       sticker_status: "none" | "doorOnly" | "inStoreOnly" | "doorAndInStore"
       store_status: "active" | "inactive" | "prospect" | "needsFollowUp"
       store_type:
@@ -52638,6 +52721,13 @@ export const Constants = {
         "rejected",
         "auto_approved",
       ],
+      financial_connection_status: [
+        "manual",
+        "partial",
+        "api_connected",
+        "external_pending",
+        "not_connected",
+      ],
       fulfillment_type: [
         "delivery",
         "pickup",
@@ -52724,7 +52814,21 @@ export const Constants = {
         "warehouse",
         "mixed_use",
       ],
+      reporting_mode: [
+        "live",
+        "daily_summary",
+        "weekly_manual",
+        "estimated",
+        "placeholder",
+      ],
       responsiveness: ["call", "text", "both", "none"],
+      revenue_source_type: [
+        "internal_os",
+        "external_website",
+        "marketplace",
+        "offline",
+        "mixed",
+      ],
       sticker_status: ["none", "doorOnly", "inStoreOnly", "doorAndInStore"],
       store_status: ["active", "inactive", "prospect", "needsFollowUp"],
       store_type: [
