@@ -11,6 +11,38 @@ interface StoreMasterRow {
 }
 
 /**
+ * Fetches ALL stores from store_master using paginated queries
+ * to avoid the Supabase 1000-row default limit.
+ */
+async function fetchAllStores(): Promise<StoreMasterRow[]> {
+  const PAGE_SIZE = 1000;
+  const allStores: StoreMasterRow[] = [];
+  let offset = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from("store_master")
+      .select("id, store_name, city, state")
+      .order("store_name")
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) throw error;
+
+    const batch = (data || []) as StoreMasterRow[];
+    allStores.push(...batch);
+
+    if (batch.length < PAGE_SIZE) {
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+  }
+
+  return allStores;
+}
+
+/**
  * Fetches stores from store_master that have zero sell-through rows.
  * Returns synthetic GlobalSellThroughRow[] with zeroed metrics.
  */
@@ -18,29 +50,7 @@ export function useInactiveStores(activeStoreIds: Set<string>, enabled: boolean)
   return useQuery({
     queryKey: ["inactive-stores", enabled, [...activeStoreIds].sort().join(",")],
     queryFn: async () => {
-      if (!enabled || activeStoreIds.size === 0) {
-        // If no active stores loaded yet, fetch all stores
-        const { data, error } = await supabase
-          .from("store_master")
-          .select("id, store_name, city, state")
-          .order("store_name");
-
-        if (error) throw error;
-
-        const allStores = (data || []) as StoreMasterRow[];
-        const inactive = allStores.filter((s) => !activeStoreIds.has(s.id));
-        return buildInactiveRows(inactive);
-      }
-
-      // Fetch all stores and filter out active ones client-side
-      const { data, error } = await supabase
-        .from("store_master")
-        .select("id, store_name, city, state")
-        .order("store_name");
-
-      if (error) throw error;
-
-      const allStores = (data || []) as StoreMasterRow[];
+      const allStores = await fetchAllStores();
       const inactive = allStores.filter((s) => !activeStoreIds.has(s.id));
       return buildInactiveRows(inactive);
     },
