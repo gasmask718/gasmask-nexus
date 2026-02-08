@@ -23,6 +23,11 @@ export { CycleTimePanel, DailyCycleTimeSummary } from './CycleTimePanel';
 export { StaffingForecast } from './StaffingForecast';
 export { DailyCommandView } from './DailyCommandView';
 
+// Phase 1: Raw Material Intake + Inventory State Machine
+export { RawMaterialIntake } from './RawMaterialIntake';
+export { InventoryPipeline } from './InventoryPipeline';
+export { BatchStateControls } from './BatchStateControls';
+
 // Soft Alert System
 export * from './alerts';
 
