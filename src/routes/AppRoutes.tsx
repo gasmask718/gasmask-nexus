@@ -97,6 +97,7 @@ import SalesProspectDetail from '@/pages/SalesProspectDetail';
 import SalesReport from '@/pages/SalesReport';
 import StorePerformance from '@/pages/StorePerformance';
 import SellThroughAnalytics from '@/pages/SellThroughAnalytics';
+import BrandCRMPage from '@/pages/floor1/BrandCRMPage';
 import StoreOrder from '@/pages/StoreOrder';
 import WholesaleFulfillment from '@/pages/WholesaleFulfillment';
 import Billing from '@/pages/Billing';
@@ -719,6 +720,7 @@ export default function AppRoutes() {
         <Route path="/stores" element={<Stores />} />
         <Route path="/stores/:id" element={<StoreDetail />} />
         <Route path="/sell-through-analytics" element={<SellThroughAnalytics />} />
+        <Route path="/brand-crm" element={<BrandCRMPage />} />
         <Route path="/stores/performance" element={<StorePerformance />} />
         <Route path="/stores/order" element={<StoreOrder />} />
         <Route path="/routes" element={<RoutesPage />} />

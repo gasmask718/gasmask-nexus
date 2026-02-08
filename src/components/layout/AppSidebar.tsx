@@ -182,6 +182,7 @@ export default function AppSidebar() {
             {renderSection('floor-1', 'Floor 1: CRM & Stores', '🏢', [
               { path: '/grabba/crm', label: 'CRM Hub', emoji: '📋' },
               { path: '/stores', label: 'Store Master', emoji: '🏪' },
+              { path: '/brand-crm', label: 'Brand CRM', emoji: '🎯' },
               { path: '/companies', label: 'Companies', emoji: '🏛️' },
               { path: '/crm/contacts', label: 'Contacts', emoji: '👥' },
               { path: '/crm/customers', label: 'Customers', emoji: '🧑‍💼' },
