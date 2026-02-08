@@ -55,6 +55,8 @@ import {
   CostBreakdownPanel,
   MarginAnalytics,
   SubmissionApprovalQueue,
+  SupplyPredictionPanel,
+  LeadTimeConfig,
 } from '@/components/production';
 import { usePendingSubmissionCount } from '@/hooks/useWorkerSubmissions';
 import { 
@@ -77,6 +79,7 @@ import {
   Package,
   DollarSign,
   ClipboardCheck,
+  Brain,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -318,7 +321,7 @@ export default function ProductionPortalPage() {
 
           {/* Tabbed Sections */}
           <Tabs defaultValue="command" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-11">
+            <TabsList className="grid w-full grid-cols-12">
               <TabsTrigger value="command" className="flex items-center gap-2">
                 <Activity className="h-4 w-4" />
                 <span className="hidden sm:inline">Command</span>
@@ -335,6 +338,10 @@ export default function ProductionPortalPage() {
               <TabsTrigger value="inventory" className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 <span className="hidden sm:inline">Inventory</span>
+              </TabsTrigger>
+              <TabsTrigger value="forecast" className="flex items-center gap-2">
+                <Brain className="h-4 w-4" />
+                <span className="hidden sm:inline">AI Forecast</span>
               </TabsTrigger>
               <TabsTrigger value="costs" className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4" />
@@ -382,6 +389,13 @@ export default function ProductionPortalPage() {
               <div className="space-y-4">
                 <InventoryPipeline officeId={selectedOfficeId} />
                 <RawMaterialIntake officeId={selectedOfficeId} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="forecast">
+              <div className="grid lg:grid-cols-2 gap-4">
+                <SupplyPredictionPanel officeId={selectedOfficeId} />
+                <LeadTimeConfig officeId={selectedOfficeId} />
               </div>
             </TabsContent>
 

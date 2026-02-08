@@ -35017,6 +35017,115 @@ export type Database = {
           },
         ]
       }
+      production_supplier_lead_times: {
+        Row: {
+          cost_per_unit: number | null
+          created_at: string
+          id: string
+          lead_time_days: number
+          material_type: string
+          min_order_quantity: number | null
+          notes: string | null
+          office_id: string | null
+          reliability_score: number | null
+          supplier_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          cost_per_unit?: number | null
+          created_at?: string
+          id?: string
+          lead_time_days?: number
+          material_type: string
+          min_order_quantity?: number | null
+          notes?: string | null
+          office_id?: string | null
+          reliability_score?: number | null
+          supplier_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cost_per_unit?: number | null
+          created_at?: string
+          id?: string
+          lead_time_days?: number
+          material_type?: string
+          min_order_quantity?: number | null
+          notes?: string | null
+          office_id?: string | null
+          reliability_score?: number | null
+          supplier_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_supplier_lead_times_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_supply_predictions: {
+        Row: {
+          ai_reasoning: string | null
+          confidence_score: number | null
+          created_at: string
+          current_stock: number
+          daily_consumption_rate: number
+          data_points_used: number | null
+          id: string
+          material_type: string
+          office_id: string
+          predicted_at: string
+          predicted_stockout_date: string | null
+          recommended_order_quantity: number | null
+          recommended_reorder_date: string | null
+          urgency: string | null
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          current_stock?: number
+          daily_consumption_rate?: number
+          data_points_used?: number | null
+          id?: string
+          material_type: string
+          office_id: string
+          predicted_at?: string
+          predicted_stockout_date?: string | null
+          recommended_order_quantity?: number | null
+          recommended_reorder_date?: string | null
+          urgency?: string | null
+        }
+        Update: {
+          ai_reasoning?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          current_stock?: number
+          daily_consumption_rate?: number
+          data_points_used?: number | null
+          id?: string
+          material_type?: string
+          office_id?: string
+          predicted_at?: string
+          predicted_stockout_date?: string | null
+          recommended_order_quantity?: number | null
+          recommended_reorder_date?: string | null
+          urgency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_supply_predictions_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_tools_issued: {
         Row: {
           id: string
