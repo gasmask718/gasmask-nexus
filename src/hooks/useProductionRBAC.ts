@@ -31,6 +31,7 @@ interface ProductionPermissions {
   canApproveSubmissions: boolean;
   canManageBatches: boolean;
   canManageWorkers: boolean;
+  canManagePayroll: boolean;
   canViewAuditLog: boolean;
   canSubmitLogs: boolean;
   canViewOwnSubmissions: boolean;
@@ -73,6 +74,7 @@ export function useProductionRBAC(): ProductionPermissions {
     canApproveSubmissions: tier === 'admin' || tier === 'manager',
     canManageBatches: tier === 'admin' || tier === 'manager',
     canManageWorkers: tier === 'admin' || tier === 'manager',
+    canManagePayroll: tier === 'admin' || tier === 'manager',
     
     // Worker+
     canSubmitLogs: tier !== 'none',
