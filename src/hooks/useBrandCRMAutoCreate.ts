@@ -305,6 +305,14 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
   const isBuilding = autoLinkMutation.isPending;
   const hasData = safeAccounts.length > 0 || safeContacts.length > 0;
 
+  // Full refetch — refreshes ALL data sources, not just accounts + contacts
+  const refetchAll = () => {
+    refetchAccounts();
+    refetchContacts();
+    queryClient.invalidateQueries({ queryKey: ['brand-crm-orders', brandKey] });
+    queryClient.invalidateQueries({ queryKey: ['brand-crm-insights', brandKey] });
+  };
+
   return {
     accounts: safeAccounts,
     contacts: safeContacts,
@@ -316,9 +324,6 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
     isBuilding,
     hasData,
     autoLink: autoLinkMutation.mutateAsync,
-    refetch: () => {
-      refetchAccounts();
-      refetchContacts();
-    }
+    refetch: refetchAll,
   };
 }
