@@ -22,7 +22,7 @@ import {
 import { useAmbassadorPortfolio } from '@/hooks/useAmbassadorPortfolio';
 import { useAmbassadorRoutes, type AmbassadorRoute, type RouteStop } from '@/hooks/useAmbassadorRoutes';
 import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
-import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
+import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { toast } from 'sonner';
 
 export default function AmbassadorRoutes() {
@@ -120,7 +120,7 @@ export default function AmbassadorRoutes() {
 
   if (isLoading) {
     return (
-      <EnhancedPortalLayout 
+      <AmbassadorLayout 
         title="Route Planner" 
         subtitle="Plan visits, optimize routes, and track outcomes"
         backPath="/ambassador/dashboard"
@@ -132,12 +132,12 @@ export default function AmbassadorRoutes() {
             <Skeleton className="h-96" />
           </div>
         </div>
-      </EnhancedPortalLayout>
+      </AmbassadorLayout>
     );
   }
 
   return (
-    <EnhancedPortalLayout 
+    <AmbassadorLayout 
       title="Route Planner" 
       subtitle="Plan visits, optimize routes, and track outcomes"
       backPath="/ambassador/dashboard"
@@ -543,6 +543,6 @@ export default function AmbassadorRoutes() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </EnhancedPortalLayout>
+    </AmbassadorLayout>
   );
 }

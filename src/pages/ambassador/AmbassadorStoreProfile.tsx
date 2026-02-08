@@ -10,7 +10,7 @@ import {
   ArrowLeft, Plus, ExternalLink, Calendar, Edit,
   CheckCircle, AlertTriangle
 } from 'lucide-react';
-import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
+import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
 import { UnifiedTubeIntelligenceCard } from '@/components/store/UnifiedTubeIntelligenceCard';
 import { BrandStickersCard } from '@/components/store/BrandStickersCard';
@@ -413,13 +413,13 @@ function StoreProfileContent() {
 export default function AmbassadorStoreProfile() {
   return (
     <PortalRBACGate allowedRoles={['ambassador']} portalName="Ambassador Portal">
-      <EnhancedPortalLayout 
+      <AmbassadorLayout 
         title="Store Profile" 
         subtitle="Store details and history"
         portalIcon={<Store className="h-4 w-4 text-primary-foreground" />}
       >
         <StoreProfileContent />
-      </EnhancedPortalLayout>
+      </AmbassadorLayout>
     </PortalRBACGate>
   );
 }

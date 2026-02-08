@@ -11,7 +11,7 @@ import {
   ArrowRight, Phone, MessageSquare, MapPin, AlertTriangle,
   Plus, Calendar, BarChart3, Clock, ShoppingCart, UserPlus
 } from 'lucide-react';
-import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
+import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
 import { CommandCenterKPI } from '@/components/portal/CommandCenterKPI';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -410,7 +410,7 @@ export default function AmbassadorDashboard() {
   
   return (
     <PortalRBACGate allowedRoles={['ambassador', 'admin']} portalName="Ambassador Portal" key={AMBASSADOR_UI_VERSION}>
-      <EnhancedPortalLayout 
+      <AmbassadorLayout 
         title="Ambassador Dashboard" 
         subtitle="Portfolio command center"
         portalIcon={<Users className="h-4 w-4 text-primary-foreground" />}
@@ -422,7 +422,7 @@ export default function AmbassadorDashboard() {
           </div>
         )}
         <DashboardContent />
-      </EnhancedPortalLayout>
+      </AmbassadorLayout>
     </PortalRBACGate>
   );
 }
