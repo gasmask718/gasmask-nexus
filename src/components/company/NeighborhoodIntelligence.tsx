@@ -65,7 +65,7 @@ export function NeighborhoodIntelligence({ neighborhood, boro }: NeighborhoodInt
     enabled: !!(neighborhood || boro),
   });
 
-  const brandColors: Record<string, string> = { gasmask: "bg-red-500", hotmama: "bg-rose-400", hotscolati: "bg-red-700", grabba_r_us: "bg-purple-500", unknown: "bg-gray-500" };
+  const brandColors: Record<string, string> = { gasmask: "bg-red-500", hotmama: "bg-pink-500", hotscolati: "bg-orange-500", grabba_r_us: "bg-purple-500", unknown: "bg-gray-500" };
 
   if (isLoading) return <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
 

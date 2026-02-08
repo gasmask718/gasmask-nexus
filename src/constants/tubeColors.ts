@@ -1,13 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// TUBE BRAND COLORS - AUTHORITATIVE SOURCE OF TRUTH
-// Single source of truth for all tube brand colorization across the system
+// TUBE BRAND COLORS — Derives from CANONICAL_BRANDS + product sub-variants
+// For brand-level identity, always import from src/config/brands.ts
+// This file adds tube-inventory-specific product variants (Bags/Tubes, Light/Dark)
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { CANONICAL_BRANDS, getBrandIdentity } from '@/config/brands';
+
 export const TUBE_BRAND_COLORS: Record<string, { hex: string; tailwind: string; name: string }> = {
+  // ── Canonical brands (derived from registry) ──
   gasmask: {
-    hex: '#EF4444',
+    hex: CANONICAL_BRANDS.gasmask.primaryColor,
     tailwind: 'text-red-500',
-    name: 'GasMask Bags',
+    name: CANONICAL_BRANDS.gasmask.displayName,
   },
   gasmasktubes: {
     hex: '#3B82F6',
@@ -15,14 +19,14 @@ export const TUBE_BRAND_COLORS: Record<string, { hex: string; tailwind: string; 
     name: 'GasMask Tubes',
   },
   hotmama: {
-    hex: '#EC4899',
+    hex: CANONICAL_BRANDS.hotmama.primaryColor,
     tailwind: 'text-pink-500',
-    name: 'HotMama',
+    name: CANONICAL_BRANDS.hotmama.displayName,
   },
   grabba: {
-    hex: '#A855F7',
+    hex: CANONICAL_BRANDS.grabba.primaryColor,
     tailwind: 'text-purple-500',
-    name: 'Grabba r us',
+    name: CANONICAL_BRANDS.grabba.displayName,
   },
   'hotscolatti-light': {
     hex: '#FBBF24',

@@ -4,11 +4,13 @@ import { Brain, TrendingUp, AlertCircle, Lightbulb, Target } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-const brandColors = {
-  GasMask: { primary: '#D30000', name: 'GasMask' },
-  HotMama: { primary: '#B76E79', name: 'HotMama' },
-  GrabbaRUs: { primary: '#FFD400', name: 'Grabba R Us' },
-  HotScalati: { primary: '#5A3A2E', name: 'Hot Scalati' }
+import { CANONICAL_BRANDS } from '@/config/brands';
+
+const brandColors: Record<string, { primary: string; name: string }> = {
+  GasMask: { primary: CANONICAL_BRANDS.gasmask.primaryColor, name: CANONICAL_BRANDS.gasmask.displayName },
+  HotMama: { primary: CANONICAL_BRANDS.hotmama.primaryColor, name: CANONICAL_BRANDS.hotmama.displayName },
+  GrabbaRUs: { primary: CANONICAL_BRANDS.grabba.primaryColor, name: CANONICAL_BRANDS.grabba.displayName },
+  HotScalati: { primary: CANONICAL_BRANDS.scalati.primaryColor, name: CANONICAL_BRANDS.scalati.displayName },
 };
 
 export default function AIInsights() {

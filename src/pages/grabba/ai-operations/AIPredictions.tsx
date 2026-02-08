@@ -29,10 +29,10 @@ const AIPredictions = () => {
   };
 
   const brandColors: Record<string, string> = {
-    grabba: 'bg-green-500',
     gasmask: 'bg-red-500',
     hotmama: 'bg-pink-500',
-    scalati: 'bg-purple-500',
+    scalati: 'bg-orange-500',
+    grabba: 'bg-purple-500',
   };
 
   return (

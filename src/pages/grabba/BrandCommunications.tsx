@@ -4,12 +4,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Mail, Phone, Send, Users } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 
-const brandColors = {
-  gasmask: { primary: '#D30000', secondary: '#000000', name: 'GasMask' },
-  hotmama: { primary: '#B76E79', secondary: '#000000', name: 'HotMama' },
-  grabbarus: { primary: '#FFD400', secondary: '#245BFF', name: 'Grabba R Us' },
-  hotscalati: { primary: '#5A3A2E', secondary: '#FF7A00', name: 'Hot Scalati' }
-};
+import { CANONICAL_BRANDS, type CanonicalBrandId } from '@/config/brands';
+
+const brandColors: Record<string, { primary: string; secondary: string; name: string }> = Object.fromEntries(
+  Object.values(CANONICAL_BRANDS).map(b => [
+    b.id,
+    { primary: b.primaryColor, secondary: b.primaryColor, name: b.displayName }
+  ])
+);
 
 export default function BrandCommunications() {
   const { brand } = useParams();

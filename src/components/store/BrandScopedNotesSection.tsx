@@ -25,16 +25,20 @@ import {
 } from '@/components/ui/dialog';
 import { BulkNotesUploader } from '@/components/admin/BulkNotesUploader';
 
-// Brand config
-export const BRAND_SCOPES = [
-  { key: null, label: 'General', color: 'bg-muted text-muted-foreground', icon: '📋' },
-  { key: 'gasmask', label: 'GasMask', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400', icon: '🟢' },
-  { key: 'hotmama', label: 'Hot Mama', color: 'bg-red-500/15 text-red-700 dark:text-red-400', icon: '🔴' },
-  { key: 'scalati', label: 'Hot Scolatti', color: 'bg-blue-500/15 text-blue-700 dark:text-blue-400', icon: '🔵' },
-  { key: 'grabba', label: 'Grabba', color: 'bg-purple-500/15 text-purple-700 dark:text-purple-400', icon: '🟣' },
-] as const;
+// Brand config — derived from canonical registry
+import { CANONICAL_BRANDS, CANONICAL_BRAND_IDS, type CanonicalBrandId } from '@/config/brands';
 
-export type BrandScopeKey = typeof BRAND_SCOPES[number]['key'];
+export const BRAND_SCOPES: ReadonlyArray<{ key: string | null; label: string; color: string; icon: string }> = [
+  { key: null, label: 'General', color: 'bg-muted text-muted-foreground', icon: '📋' },
+  ...CANONICAL_BRAND_IDS.map(id => ({
+    key: id as string | null,
+    label: CANONICAL_BRANDS[id].displayName,
+    color: `${CANONICAL_BRANDS[id].softBgClass} ${CANONICAL_BRANDS[id].textClass}`,
+    icon: CANONICAL_BRANDS[id].icon,
+  })),
+];
+
+export type BrandScopeKey = string | null;
 
 const getSourceFromRole = (role?: string | null): string => {
   if (!role) return 'System';
