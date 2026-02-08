@@ -4,24 +4,33 @@
  * Placement: Store Profile → Quick Stats card → below Responsiveness row
  * Purpose: "Who at this store actually responds — and how?" in under 2 seconds.
  * 
- * Layout (top → bottom):
- *   1. Best Contact card (auto-highlighted, with confidence + route annotation)
- *   2. Time-of-Day responsiveness hint
- *   3. Last Successful Contact badge
- *   4. Contact list (remaining contacts)
- *   5. Predictive Intelligence panel
+ * Phase VI Layout (top → bottom):
+ *   1. Section header: "Contact Insight"
+ *   2. Intelligence Group (single visual container):
+ *      a. Best Contact card (confidence + route annotation)
+ *      b. Suggested Channel + Time-of-Day hint (inline row)
+ *      c. Last Successful Contact badge
+ *   3. Contact Sequence (advisory outreach order)
+ *   4. Other contacts (remaining, below intelligence)
+ * 
+ * Phase VI changes:
+ *   - Eliminated redundant PredictiveIntelPanel (signals now inline above fold)
+ *   - Grouped all intelligence signals into one visual container
+ *   - Elevated SuggestedChannel from below-fold panel to inline with TimeOfDay
+ *   - Renamed header from "Contact Responsiveness" to "Contact Insight"
  * 
  * READ-ONLY. No filters, no edit actions, no deep analytics.
  */
 
-import { Phone, MessageSquare, CheckCircle2, XCircle, HelpCircle, Users } from 'lucide-react';
+import { Phone, MessageSquare, CheckCircle2, XCircle, HelpCircle, Users, Brain } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useStoreContactsWithResponsiveness } from '@/hooks/useContactResponsiveness';
 import { usePredictiveContactIntelligence } from '@/hooks/usePredictiveContactIntelligence';
-import { PredictiveIntelPanel } from '@/components/contact/PredictiveIntelPanel';
 import { BestContactCard, deriveBestContactConfidence } from '@/components/store/contacts/BestContactCard';
 import { LastSuccessfulContactBadge } from '@/components/store/contacts/LastSuccessfulContactBadge';
+import { SuggestedChannelBadge } from '@/components/contact/SuggestedChannelBadge';
 import { ResponsivenessHeatInsight } from '@/components/contact/ResponsivenessHeatInsight';
+import { ContactSequenceList } from '@/components/contact/ContactSequenceList';
 import { useIntelligenceExposureBatch } from '@/hooks/useIntelligenceExposure';
 import type { ExposureEvent } from '@/services/intelligenceAccountability/exposureTracker';
 import { Separator } from '@/components/ui/separator';
@@ -86,7 +95,10 @@ export function QuickStatsContactSnapshot({ storeId }: QuickStatsContactSnapshot
   if (isLoading) {
     return (
       <div className="space-y-2">
-        <p className="text-sm text-muted-foreground">Contact Responsiveness</p>
+        <div className="flex items-center gap-1.5">
+          <Brain className="h-3.5 w-3.5 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Contact Insight</p>
+        </div>
         <div className="space-y-2">
           {[1, 2].map((i) => (
             <div key={i} className="h-10 bg-muted/30 rounded-md animate-pulse" />
@@ -99,7 +111,10 @@ export function QuickStatsContactSnapshot({ storeId }: QuickStatsContactSnapshot
   if (!contacts || contacts.length === 0) {
     return (
       <div className="space-y-2">
-        <p className="text-sm text-muted-foreground">Contact Responsiveness</p>
+        <div className="flex items-center gap-1.5">
+          <Brain className="h-3.5 w-3.5 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Contact Insight</p>
+        </div>
         <div className="flex items-center gap-2 p-3 rounded-md bg-muted/20 border border-border/30">
           <Users className="h-4 w-4 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">No contacts on file</span>
@@ -113,58 +128,81 @@ export function QuickStatsContactSnapshot({ storeId }: QuickStatsContactSnapshot
   const visibleOthers = otherContacts.slice(0, MAX_VISIBLE_OTHER_CONTACTS);
   const remainingCount = otherContacts.length - MAX_VISIBLE_OTHER_CONTACTS;
 
+  const hasChannelOrHeat = intelligence?.channelRecommendation || intelligence?.timeOfDayHeat;
+
   return (
-    <div className="space-y-2">
-      <p className="text-sm text-muted-foreground">Contact Responsiveness</p>
+    <div className="space-y-3">
+      {/* Section header */}
+      <div className="flex items-center gap-1.5">
+        <Brain className="h-3.5 w-3.5 text-primary" />
+        <p className="text-sm font-medium">Contact Insight</p>
+        <span className="text-xs text-muted-foreground ml-auto">Advisory</span>
+      </div>
 
-      {/* ① Best Contact — dedicated highlight with confidence + route annotation */}
-      {bestContact ? (
-        <BestContactCard
-          contact={bestContact}
-          confidence={confidence}
-          isRouteAware={isRouteContext}
+      {/* ─── Intelligence Group (single visual container) ─── */}
+      <div className="rounded-lg border border-border/50 bg-card/50 p-2.5 space-y-2">
+        {/* ① Best Contact — dedicated highlight */}
+        {bestContact ? (
+          <BestContactCard
+            contact={bestContact}
+            confidence={confidence}
+            isRouteAware={isRouteContext}
+          />
+        ) : (
+          <div className="flex items-center gap-2 p-3 rounded-md bg-muted/20 border border-border/30">
+            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Best contact not yet determined</span>
+          </div>
+        )}
+
+        {/* ② Suggested Channel + Time-of-Day (inline, one-glance row) */}
+        {hasChannelOrHeat && (
+          <div className="flex items-center gap-2 flex-wrap px-0.5">
+            <SuggestedChannelBadge recommendation={intelligence?.channelRecommendation} />
+            <ResponsivenessHeatInsight heat={intelligence?.timeOfDayHeat} compact />
+          </div>
+        )}
+
+        {/* ③ Last Successful Contact */}
+        <LastSuccessfulContactBadge
+          contacts={contacts}
+          bestContactId={bestContact?.id ?? null}
         />
-      ) : (
-        <div className="flex items-center gap-2 p-3 rounded-md bg-muted/20 border border-border/30">
-          <HelpCircle className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">Best contact not yet determined</span>
-        </div>
+      </div>
+
+      {/* ─── Contact Sequence (advisory outreach order) ─── */}
+      {intelligence?.contactSequence && intelligence.contactSequence.length > 0 && (
+        <>
+          <Separator className="my-1" />
+          <ContactSequenceList sequence={intelligence.contactSequence} />
+        </>
       )}
 
-      {/* ② Time-of-Day responsiveness hint */}
-      <ResponsivenessHeatInsight heat={intelligence?.timeOfDayHeat} compact />
-
-      {/* ③ Last Successful Contact badge */}
-      <LastSuccessfulContactBadge
-        contacts={contacts}
-        bestContactId={bestContact?.id ?? null}
-      />
-
-      {/* ④ Other contacts list */}
+      {/* ─── Other contacts (below intelligence) ─── */}
       {visibleOthers.length > 0 && (
-        <div className="space-y-1.5">
-          {visibleOthers.map((contact) => (
-            <ContactSnapshotRow
-              key={contact.id}
-              name={contact.name}
-              phone={contact.phone}
-              responsiveByText={contact.responsive_by_text}
-              responsiveByCall={contact.responsive_by_call}
-              lastTextReceivedAt={contact.last_text_received_at}
-              lastCallAnsweredAt={contact.last_call_answered_at}
-            />
-          ))}
-          {remainingCount > 0 && (
-            <p className="text-xs text-muted-foreground pl-1">
-              + {remainingCount} more contact{remainingCount > 1 ? 's' : ''}
-            </p>
-          )}
-        </div>
+        <>
+          <Separator className="my-1" />
+          <div className="space-y-1.5">
+            <p className="text-xs text-muted-foreground font-medium">Other Contacts</p>
+            {visibleOthers.map((contact) => (
+              <ContactSnapshotRow
+                key={contact.id}
+                name={contact.name}
+                phone={contact.phone}
+                responsiveByText={contact.responsive_by_text}
+                responsiveByCall={contact.responsive_by_call}
+                lastTextReceivedAt={contact.last_text_received_at}
+                lastCallAnsweredAt={contact.last_call_answered_at}
+              />
+            ))}
+            {remainingCount > 0 && (
+              <p className="text-xs text-muted-foreground pl-1">
+                + {remainingCount} more contact{remainingCount > 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+        </>
       )}
-
-      {/* ⑤ Predictive Intelligence */}
-      <Separator className="my-2" />
-      <PredictiveIntelPanel storeId={storeId} />
     </div>
   );
 }
