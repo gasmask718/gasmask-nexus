@@ -28,7 +28,7 @@ import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StorePeopleSection } from "@/components/store/StorePeopleSection";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
-import { StoreNotesSection } from "@/components/store/StoreNotesSection";
+import { BrandScopedNotesSection } from "@/components/store/BrandScopedNotesSection";
 import { OpportunitiesSection } from "@/components/store/OpportunitiesSection";
 import { SellsFlowersToggle } from "@/components/store/SellsFlowersToggle";
 // Legacy StoreOperationsCard DEPRECATED - functionality merged into BrandStickersCard + SellsFlowersToggle
@@ -589,8 +589,8 @@ const StoreDetail = () => {
           {/* PHASE 3 — Contact Cadence Intelligence (Replaces old responsiveness) */}
           <StoreCadencePanel storeId={id || ""} storeName={store.name} />
 
-          {/* Notes Section */}
-          <StoreNotesSection storeId={id || ""} storeName={store.name} />
+          {/* Notes Section — Brand-Scoped */}
+          <BrandScopedNotesSection storeId={id || ""} storeName={store.name} />
 
           {/* Opportunities Section */}
           <OpportunitiesSection storeId={id || ""} storeName={store.name} />

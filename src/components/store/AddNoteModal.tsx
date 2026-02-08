@@ -18,7 +18,17 @@ interface StoreNote {
   id: string;
   note_text: string;
   created_at?: string;
+  brand_scope?: string | null;
 }
+
+// Brand scope options for the selector
+const BRAND_OPTIONS = [
+  { value: '', label: '📋 General (Store-Wide)' },
+  { value: 'gasmask', label: '🟢 GasMask' },
+  { value: 'hotmama', label: '🔴 Hot Mama' },
+  { value: 'scalati', label: '🔵 Hot Scolatti' },
+  { value: 'grabba', label: '🟣 Grabba' },
+] as const;
 
 interface AddNoteModalProps {
   open: boolean;
@@ -27,13 +37,15 @@ interface AddNoteModalProps {
   storeName: string;
   onSuccess: () => void;
   editingNote?: StoreNote | null;
+  defaultBrandScope?: string | null;
 }
 
-export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess, editingNote }: AddNoteModalProps) {
+export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess, editingNote, defaultBrandScope }: AddNoteModalProps) {
   const { user } = useAuth();
   const [noteText, setNoteText] = useState('');
   const [saving, setSaving] = useState(false);
   const [noteDate, setNoteDate] = useState<Date | undefined>(new Date());
+  const [brandScope, setBrandScope] = useState<string>(defaultBrandScope ?? '');
   
   // Resolve storeId to store_master.id
   const {
@@ -45,11 +57,11 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
     isCreating,
   } = useStoreMasterResolver(storeId);
 
-  // Load note text and date when editing
+  // Load note text, date, and brand scope when editing or opening
   useEffect(() => {
     if (editingNote) {
       setNoteText(editingNote.note_text);
-      // Use the note's created_at date if available, otherwise use current date
+      setBrandScope(editingNote.brand_scope ?? '');
       if (editingNote.created_at) {
         setNoteDate(new Date(editingNote.created_at));
       } else {
@@ -58,8 +70,9 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
     } else {
       setNoteText('');
       setNoteDate(new Date());
+      setBrandScope(defaultBrandScope ?? '');
     }
-  }, [editingNote, open]);
+  }, [editingNote, open, defaultBrandScope]);
 
   const handleSubmit = async () => {
     if (!noteText.trim()) {
@@ -111,6 +124,7 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
           note_text: noteText.trim(),
           created_by: user?.id,
           created_at: dateToUse.toISOString(),
+          brand_scope: brandScope || null,
         })
         .select('id')
         .single();
@@ -166,6 +180,7 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
         .update({
           note_text: noteText.trim(),
           created_at: dateToUse.toISOString(),
+          brand_scope: brandScope || null,
         })
         .eq('id', editingNote.id);
 
@@ -200,6 +215,40 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
               Store master record will be created automatically
             </div>
           )} */}
+          {/* Brand Scope Selector */}
+          <div className="space-y-2">
+            <Label className="text-base font-semibold">Brand Scope</Label>
+            <div className="grid grid-cols-1 gap-1.5">
+              {BRAND_OPTIONS.map((opt) => (
+                <label
+                  key={opt.value}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors text-sm",
+                    brandScope === opt.value
+                      ? "border-primary bg-primary/5 font-medium"
+                      : "border-border hover:bg-muted/50"
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="brand_scope"
+                    value={opt.value}
+                    checked={brandScope === opt.value}
+                    onChange={(e) => setBrandScope(e.target.value)}
+                    className="sr-only"
+                  />
+                  <span className={cn(
+                    "h-3 w-3 rounded-full border-2 flex-shrink-0",
+                    brandScope === opt.value
+                      ? "border-primary bg-primary"
+                      : "border-muted-foreground/40"
+                  )} />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label className="text-base font-semibold">Note</Label>
             <Textarea
