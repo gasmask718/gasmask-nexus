@@ -34037,6 +34037,7 @@ export type Database = {
           empty_boxes_used: Json | null
           expected_completion_minutes: number | null
           id: string
+          inventory_state: string
           is_locked: boolean | null
           locked_at: string | null
           locked_by: string | null
@@ -34077,6 +34078,7 @@ export type Database = {
           empty_boxes_used?: Json | null
           expected_completion_minutes?: number | null
           id?: string
+          inventory_state?: string
           is_locked?: boolean | null
           locked_at?: string | null
           locked_by?: string | null
@@ -34117,6 +34119,7 @@ export type Database = {
           empty_boxes_used?: Json | null
           expected_completion_minutes?: number | null
           id?: string
+          inventory_state?: string
           is_locked?: boolean | null
           locked_at?: string | null
           locked_by?: string | null
@@ -34430,6 +34433,47 @@ export type Database = {
           },
         ]
       }
+      production_inventory_transitions: {
+        Row: {
+          batch_id: string
+          created_at: string
+          from_state: string
+          id: string
+          metadata: Json | null
+          reason: string | null
+          to_state: string
+          transitioned_by: string | null
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          from_state: string
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          to_state: string
+          transitioned_by?: string | null
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          from_state?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          to_state?: string
+          transitioned_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_inventory_transitions_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_logs: {
         Row: {
           boxes_packed: number | null
@@ -34692,6 +34736,71 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      production_raw_materials: {
+        Row: {
+          batch_number: string | null
+          cost_per_unit: number | null
+          created_at: string
+          expiry_date: string | null
+          id: string
+          material_type: string
+          notes: string | null
+          office_id: string
+          quantity: number
+          received_at: string
+          received_by: string | null
+          supplier_id: string | null
+          supplier_name: string | null
+          total_cost: number | null
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          batch_number?: string | null
+          cost_per_unit?: number | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          material_type: string
+          notes?: string | null
+          office_id: string
+          quantity?: number
+          received_at?: string
+          received_by?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          total_cost?: number | null
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          batch_number?: string | null
+          cost_per_unit?: number | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          material_type?: string
+          notes?: string | null
+          office_id?: string
+          quantity?: number
+          received_at?: string
+          received_by?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          total_cost?: number | null
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_raw_materials_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       production_recalc_queue: {
         Row: {

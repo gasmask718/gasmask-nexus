@@ -1,56 +1,129 @@
-# CRM Customization Implementation - Progress
+# Floor 6 — Manufacturing OS Upgrade Plan
 
-## Completed Tasks ✅
+## Status: Phase 1 In Progress
+## Last Updated: 2026-02-08
 
-### Phase 1: Fix CRM Import Service
-- ✅ Updated `src/services/crmImportService.ts` to use `brand_crm_contacts` instead of `crm_contacts`
+---
 
-### Phase 2: Database Migrations
-- ✅ Created `crm_import_logs` table for tracking import history
-- ✅ Created `brand_kpi_overrides` table for custom KPI values
+## Architecture Overview
 
-### Phase 3: Business-Specific Customizations
-- ✅ Updated `PLAYBOXXX_BLUEPRINT` in `src/config/crmBlueprints.ts`:
-  - Added `customer` to enabled entity types
-  - Added `country` field as select dropdown with countries (US, Colombia, Brazil, etc.)
-  - Added individual social media fields: instagram_handle, instagram_followers, twitter_handle, twitter_followers, tiktok_handle, tiktok_followers, onlyfans_handle, onlyfans_subscribers
-  - Added `email` field to contact section
-  - Added `total_followers` calculated field
+Floor 6 controls the lifecycle: **Raw Materials → Tubes → Boxes → Distribution**
 
-### Phase 4: KPI Edit Functionality
-- ✅ Created `src/components/crm/KPIEditModal.tsx` component
-- ✅ Updated `src/pages/crm/BusinessCRMDashboard.tsx`:
-  - Added edit button on KPI cards (visible on hover)
-  - Integrated KPIEditModal
-  - Added state for managing modal and refresh
+### Existing Foundation
+- 14 production tables (batches, outputs, offices, workers, attendance, closeouts, costs, history, benchmarks, communication log)
+- Manufacturing OS portal (`/portals/production`) with 8 tabs
+- Worker View (`/portal/production`) — read-only with mock data
+- 1,285-line hooks file (`useProductionPortal.ts`)
+- 20+ components in `src/components/production/`
 
-### Phase 5: Store References Audit  
-- ✅ Updated `BusinessCRMDashboard.tsx`:
-  - Filter KPI tiles to exclude store-related KPIs for non-store businesses
-  - Filter Entity Types grid to exclude 'store' for non-store businesses
-  - Quick Add section follows same filtering
+### Three-Plane Alignment
+- **Execution Plane**: Worker View (read-only tasks, controlled log submission)
+- **Command Plane**: Manufacturing OS (batch management, inventory gates, approvals)
+- **Intelligence Plane**: AI predictions, margin analytics, supply forecasting
 
-## Remaining Items 📋
+---
 
-### Not Yet Implemented:
-1. **TOPTIER**: Verify booking pipeline stages in forms
-2. **FUNDING COMPANY**: Add task templates to `FUNDING_BLUEPRINT`
-3. **Import Page Enhancements**: Add duplicate detection, import history view, progress tracking
-4. **2026 Goals Auto-Creation**: For PLAYBOXXX when none exist
+## Phase 1: Raw Material Intake + Inventory State Machine ← CURRENT
 
-## Business-Specific Configuration Status
+### Objective
+Track raw material receipts with supplier/cost data. Implement a state machine on production batches that gates inventory flow from raw input to office distribution.
 
-| Business | showStores | Status |
-|----------|-----------|--------|
-| TopTier Experience | false ✅ | Partners, Customers, Influencers enabled |
-| USA Funding | false ✅ | Clients, Applications enabled |
-| Unforgettable Times | false ✅ | Vendors, Staff, Event Halls enabled |
-| The PlayBoxxx | false ✅ | Models, Influencers, Collabs enabled + social fields |
-| Grabba brands | true ✅ | Store-based CRM |
+### Database Changes
 
-## Files Modified
+#### New Table: `production_raw_materials`
+Tracks inbound material receipts with supplier, cost, and quantity.
 
-- `src/services/crmImportService.ts` - Fixed table references
-- `src/config/crmBlueprints.ts` - PLAYBOXXX social/country fields
-- `src/pages/crm/BusinessCRMDashboard.tsx` - KPI edit, store filtering
-- `src/components/crm/KPIEditModal.tsx` - New component
+#### New Column on `production_batches`: `inventory_state`
+Values: raw | in_production | boxed | approved | sent_to_office
+
+#### New Table: `production_inventory_transitions`
+Immutable audit log for every state change on a batch.
+
+### Frontend Changes
+1. New "Inventory" tab in Manufacturing OS
+2. Raw material intake form
+3. Batch state pipeline visualization
+4. State transition buttons with manager approval gates
+5. Hard gate enforcement for CRM/distribution
+
+### Files to Create/Modify
+- Migration SQL
+- `src/hooks/useRawMaterials.ts`
+- `src/hooks/useInventoryState.ts`
+- `src/components/production/RawMaterialIntake.tsx`
+- `src/components/production/InventoryPipeline.tsx`
+- `src/components/production/BatchStateControls.tsx`
+- `src/pages/portals/ProductionPortalPage.tsx` — Add Inventory tab
+
+---
+
+## Phase 2: Cost Engine + Margin Tracking
+
+### Objective
+Calculate true cost-per-box by aggregating material costs, labor hours, and configurable overhead.
+
+### Key Deliverables
+- `production_batch_costs` table (batch_id → material + labor + overhead)
+- `v_production_margin_analysis` view
+- Cost breakdown panel on batch detail
+- Margin analytics (admin/manager gated)
+- Low-margin alerts
+
+---
+
+## Phase 3: Worker Submission Flow (Pending Review)
+
+### Objective
+Replace mock data in Worker View. Workers submit lbs/tubes/boxes/defects as pending_review records requiring manager approval.
+
+### Key Deliverables
+- `production_worker_submissions` table
+- Approval trigger → auto-creates batch outputs
+- Worker View with real data + submission forms
+- Approval queue in Manufacturing OS
+
+---
+
+## Phase 4: AI Supply Prediction
+
+### Objective
+Predict reorder dates for consumables using batch velocity + sales + lead times.
+
+### Key Deliverables
+- `production_supply_predictions` table
+- `production_supplier_lead_times` table
+- AI prediction panel with explainable outputs
+- Configurable thresholds
+
+---
+
+## Phase 5: Production RBAC Hardening
+
+### Objective
+Enforce production_admin / production_manager / production_worker roles server-side.
+
+### Key Deliverables
+- RLS policies with role checks on all production tables
+- Cost/margin visibility gated at DB level
+- Audit log for access denials
+
+---
+
+## Dependencies
+```
+Phase 1 (State Machine) → Phase 2 (Costs need states)
+Phase 1 → Phase 3 (Submissions need states)
+Phase 2 + 3 → Phase 4 (AI needs cost + velocity data)
+All → Phase 5 (RBAC hardens everything)
+```
+
+---
+
+## Previous Plan (CRM Customization) — Archived
+
+### Completed
+- Fixed CRM import to use brand_crm_contacts
+- Created crm_import_logs and brand_kpi_overrides tables
+- PLAYBOXXX social/country fields
+- KPI edit modal
+- Store reference filtering for non-store businesses

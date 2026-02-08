@@ -85,6 +85,8 @@ export interface ProductionBatch {
   expected_completion_minutes: number | null;
   actual_completion_minutes: number | null;
   cycle_time_variance_pct: number | null;
+  // Inventory state machine
+  inventory_state: string;
   office?: { id: string; name: string } | null;
 }
 
