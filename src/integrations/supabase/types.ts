@@ -49652,6 +49652,41 @@ export type Database = {
         }
         Relationships: []
       }
+      v_global_sell_through_analytics: {
+        Row: {
+          avg_days_between_orders: number | null
+          brand_name: string | null
+          city: string | null
+          days_since_last_order: number | null
+          first_order_date: string | null
+          last_order_date: string | null
+          max_days_between: number | null
+          min_days_between: number | null
+          order_frequency_class: string | null
+          orders_last_30d: number | null
+          orders_last_90d: number | null
+          projected_next_order: string | null
+          revenue_last_30d: number | null
+          revenue_last_90d: number | null
+          revenue_per_day: number | null
+          state: string | null
+          store_id: string | null
+          store_name: string | null
+          total_orders_lifetime: number | null
+          total_revenue_lifetime: number | null
+          total_tubes_lifetime: number | null
+          total_units_lifetime: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_invoice_line_items_safe: {
         Row: {
           brand: string | null
