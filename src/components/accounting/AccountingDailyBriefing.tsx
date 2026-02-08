@@ -8,9 +8,9 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   DollarSign, TrendingUp, TrendingDown, AlertTriangle,
   CheckCircle, Users, Package, Calendar, ArrowRight,
-  Loader2, RefreshCw,
+  Loader2, RefreshCw, Wallet, Lightbulb, ShieldAlert,
 } from 'lucide-react';
-import { format, startOfDay, startOfWeek, startOfMonth, subDays } from 'date-fns';
+import { format, startOfDay, startOfWeek, startOfMonth, subDays, endOfMonth, subMonths, startOfYear } from 'date-fns';
 
 interface BriefingData {
   madeToday: number;
@@ -97,8 +97,73 @@ function useDailyBriefing() {
   });
 }
 
+function usePersonalBriefing() {
+  const now = new Date();
+  const todayStr = format(now, 'yyyy-MM-dd');
+  const mtdStart = format(startOfMonth(now), 'yyyy-MM-dd');
+  const mtdEnd = format(endOfMonth(now), 'yyyy-MM-dd');
+  const prevMtdStart = format(startOfMonth(subMonths(now, 1)), 'yyyy-MM-dd');
+  const prevMtdEnd = format(endOfMonth(subMonths(now, 1)), 'yyyy-MM-dd');
+
+  return useQuery({
+    queryKey: ['personal-briefing', todayStr],
+    queryFn: async () => {
+      const [{ data: todayPersonal }, { data: mtdPersonal }, { data: prevPersonal }, { data: budgets }] = await Promise.all([
+        supabase.from('personal_transactions').select('*').eq('transaction_type', 'expense').gte('transaction_date', todayStr),
+        supabase.from('personal_transactions').select('*').eq('transaction_type', 'expense').gte('transaction_date', mtdStart).lte('transaction_date', mtdEnd),
+        supabase.from('personal_transactions').select('*').eq('transaction_type', 'expense').gte('transaction_date', prevMtdStart).lte('transaction_date', prevMtdEnd),
+        supabase.from('budget_profiles').select('*').eq('profile_type', 'personal').eq('is_active', true).limit(1),
+      ]);
+
+      const todaySpend = (todayPersonal || []).reduce((s, t) => s + Number(t.amount), 0);
+      const mtdSpend = (mtdPersonal || []).reduce((s, t) => s + Number(t.amount), 0);
+      const prevMtdSpend = (prevPersonal || []).reduce((s, t) => s + Number(t.amount), 0);
+
+      // Budget variance
+      const budget = budgets?.[0];
+      const budgetTotal = budget ? Number(budget.total_budget) : 0;
+      const budgetVariance = budgetTotal > 0 ? ((mtdSpend - budgetTotal) / budgetTotal) * 100 : 0;
+
+      // Category growth detection
+      const categoryTotals = (mtdPersonal || []).reduce((acc, t) => {
+        acc[t.category] = (acc[t.category] || 0) + Number(t.amount);
+        return acc;
+      }, {} as Record<string, number>);
+      const prevCategoryTotals = (prevPersonal || []).reduce((acc, t) => {
+        acc[t.category] = (acc[t.category] || 0) + Number(t.amount);
+        return acc;
+      }, {} as Record<string, number>);
+
+      let fastestGrowingCategory = '';
+      let fastestGrowthRate = 0;
+      Object.entries(categoryTotals).forEach(([cat, amount]) => {
+        const prev = prevCategoryTotals[cat] || 0;
+        if (prev > 0) {
+          const growth = ((amount - prev) / prev) * 100;
+          if (growth > fastestGrowthRate) {
+            fastestGrowthRate = growth;
+            fastestGrowingCategory = cat;
+          }
+        }
+      });
+
+      return {
+        todaySpend,
+        mtdSpend,
+        prevMtdSpend,
+        budgetVariance,
+        budgetTotal,
+        fastestGrowingCategory,
+        fastestGrowthRate,
+        isOverBudget: budgetTotal > 0 && mtdSpend > budgetTotal,
+      };
+    },
+  });
+}
+
 export default function AccountingDailyBriefing() {
   const { data, isLoading, refetch } = useDailyBriefing();
+  const { data: personalData } = usePersonalBriefing();
 
   if (isLoading) {
     return (
@@ -126,7 +191,7 @@ export default function AccountingDailyBriefing() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">📊 Daily Accountant Briefing</h2>
+          <h2 className="text-xl font-bold">📊 Daily Owner Briefing</h2>
           <p className="text-sm text-muted-foreground">
             {format(new Date(), 'EEEE, MMMM d, yyyy')} — Auto-generated from live data
           </p>
@@ -137,20 +202,125 @@ export default function AccountingDailyBriefing() {
         </Button>
       </div>
 
-      {/* KPI Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {briefingLines.map((line, i) => (
-          <Card key={i} className="bg-card/50">
+      {/* BUSINESS KPI Grid */}
+      <div>
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">📈 Business</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {briefingLines.map((line, i) => (
+            <Card key={i} className="bg-card/50">
+              <CardContent className="pt-4 pb-3 px-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <line.icon className={`h-4 w-4 ${line.color}`} />
+                  <span className="text-xs text-muted-foreground">{line.label}</span>
+                </div>
+                <p className={`text-lg font-bold ${line.color}`}>{line.value}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* PERSONAL SECTION */}
+      {personalData && (
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">👤 Personal</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card className="bg-card/50">
+              <CardContent className="pt-4 pb-3 px-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Wallet className="h-4 w-4 text-blue-400" />
+                  <span className="text-xs text-muted-foreground">Spend Today</span>
+                </div>
+                <p className="text-lg font-bold text-blue-400">${personalData.todaySpend.toLocaleString()}</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-card/50">
+              <CardContent className="pt-4 pb-3 px-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Wallet className="h-4 w-4 text-blue-400" />
+                  <span className="text-xs text-muted-foreground">Lifestyle MTD</span>
+                </div>
+                <p className="text-lg font-bold text-blue-400">${personalData.mtdSpend.toLocaleString()}</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-card/50">
+              <CardContent className="pt-4 pb-3 px-4">
+                <div className="flex items-center gap-2 mb-1">
+                  {personalData.isOverBudget ? (
+                    <ShieldAlert className="h-4 w-4 text-red-400" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4 text-emerald-400" />
+                  )}
+                  <span className="text-xs text-muted-foreground">Budget Status</span>
+                </div>
+                <p className={`text-lg font-bold ${personalData.isOverBudget ? 'text-red-400' : 'text-emerald-400'}`}>
+                  {personalData.budgetTotal > 0
+                    ? personalData.isOverBudget ? 'OVER' : 'On Track'
+                    : 'No Budget'}
+                </p>
+              </CardContent>
+            </Card>
+            {personalData.fastestGrowingCategory && personalData.fastestGrowthRate > 15 && (
+              <Card className="bg-amber-900/20 border-amber-500/30">
+                <CardContent className="pt-4 pb-3 px-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <TrendingUp className="h-4 w-4 text-amber-400" />
+                    <span className="text-xs text-amber-300">Fastest Growing</span>
+                  </div>
+                  <p className="text-sm font-bold text-amber-200 capitalize">{personalData.fastestGrowingCategory}</p>
+                  <p className="text-xs text-amber-300/80">+{personalData.fastestGrowthRate.toFixed(0)}% vs last month</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* INSIGHT SECTION */}
+      <div>
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">💡 Insights</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Card className="bg-card/50">
             <CardContent className="pt-4 pb-3 px-4">
               <div className="flex items-center gap-2 mb-1">
-                <line.icon className={`h-4 w-4 ${line.color}`} />
-                <span className="text-xs text-muted-foreground">{line.label}</span>
+                <Users className="h-4 w-4 text-primary" />
+                <span className="text-xs text-muted-foreground">Top Account</span>
               </div>
-              <p className={`text-lg font-bold ${line.color}`}>{line.value}</p>
+              <p className="text-sm font-medium">
+                {data.unpaidAccounts[0]?.name || 'None'}
+              </p>
+              {data.unpaidAccounts[0] && (
+                <p className="text-xs text-muted-foreground">${data.unpaidAccounts[0].amount.toLocaleString()} outstanding</p>
+              )}
             </CardContent>
           </Card>
-        ))}
+          {personalData?.fastestGrowingCategory && (
+            <Card className="bg-card/50">
+              <CardContent className="pt-4 pb-3 px-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Lightbulb className="h-4 w-4 text-amber-400" />
+                  <span className="text-xs text-muted-foreground">Category Alert</span>
+                </div>
+                <p className="text-sm font-medium capitalize">{personalData.fastestGrowingCategory} spending rising</p>
+                <p className="text-xs text-muted-foreground">+{personalData.fastestGrowthRate.toFixed(0)}% month-over-month</p>
+              </CardContent>
+            </Card>
+          )}
+          <Card className="bg-card/50">
+            <CardContent className="pt-4 pb-3 px-4">
+              <div className="flex items-center gap-2 mb-1">
+                <DollarSign className="h-4 w-4 text-emerald-400" />
+                <span className="text-xs text-muted-foreground">Profit Health</span>
+              </div>
+              <Badge variant="outline" className={data.netProfit >= 0 ? 'border-emerald-500/50 text-emerald-300' : 'border-red-500/50 text-red-300'}>
+                {data.netProfit >= 0 ? '✅ Healthy' : '⚠️ Below Zero'}
+              </Badge>
+            </CardContent>
+          </Card>
+        </div>
       </div>
+
+      <Separator />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Unpaid Accounts */}

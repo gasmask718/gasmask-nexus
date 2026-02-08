@@ -228,6 +228,7 @@ export const FLOOR_7_ACCOUNTING: OSFloor = {
   description: 'Business ledger, personal finance, payroll',
   roles: ['ceo', 'admin', 'va', 'accountant'],
   items: [
+    { id: 'accounting-os', label: 'Accounting OS', path: '/os/owner/accounting', icon: Calculator, badge: 'CPA', roles: ['ceo', 'admin', 'accountant'] },
     { id: 'business-ledger', label: 'Business Ledger', path: '/grabba/finance', icon: Receipt, roles: ['ceo', 'admin', 'va', 'accountant'] },
     { id: 'personal-finance', label: 'Personal Finance', path: '/grabba/personal-finance', icon: Wallet, roles: ['ceo', 'admin'] },
     { id: 'payroll', label: 'Payroll', path: '/payroll', icon: Banknote, roles: ['ceo', 'admin', 'accountant'] },
