@@ -8146,12 +8146,14 @@ export type Database = {
           api_connected_at: string | null
           api_provider: string | null
           business_id: string
+          confidence_score: number | null
           connection_status: Database["public"]["Enums"]["financial_connection_status"]
           created_at: string
           currency: string | null
           data_confidence_pct: number | null
           fiscal_year_start: number | null
           id: string
+          industry_catalog_id: string | null
           last_data_sync_at: string | null
           monthly_expense_estimate: number | null
           monthly_revenue_estimate: number | null
@@ -8164,12 +8166,14 @@ export type Database = {
           api_connected_at?: string | null
           api_provider?: string | null
           business_id: string
+          confidence_score?: number | null
           connection_status?: Database["public"]["Enums"]["financial_connection_status"]
           created_at?: string
           currency?: string | null
           data_confidence_pct?: number | null
           fiscal_year_start?: number | null
           id?: string
+          industry_catalog_id?: string | null
           last_data_sync_at?: string | null
           monthly_expense_estimate?: number | null
           monthly_revenue_estimate?: number | null
@@ -8182,12 +8186,14 @@ export type Database = {
           api_connected_at?: string | null
           api_provider?: string | null
           business_id?: string
+          confidence_score?: number | null
           connection_status?: Database["public"]["Enums"]["financial_connection_status"]
           created_at?: string
           currency?: string | null
           data_confidence_pct?: number | null
           fiscal_year_start?: number | null
           id?: string
+          industry_catalog_id?: string | null
           last_data_sync_at?: string | null
           monthly_expense_estimate?: number | null
           monthly_revenue_estimate?: number | null
@@ -8201,6 +8207,72 @@ export type Database = {
             foreignKeyName: "business_financial_profiles_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_financial_profiles_industry_catalog_id_fkey"
+            columns: ["industry_catalog_id"]
+            isOneToOne: false
+            referencedRelation: "industry_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_financial_snapshots: {
+        Row: {
+          business_id: string
+          confidence_score: number
+          created_at: string
+          data_source: string
+          expense_breakdown: Json | null
+          id: string
+          net_profit: number | null
+          notes: string | null
+          period_type: string
+          revenue_breakdown: Json | null
+          snapshot_date: string
+          total_expenses: number
+          total_revenue: number
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          confidence_score?: number
+          created_at?: string
+          data_source?: string
+          expense_breakdown?: Json | null
+          id?: string
+          net_profit?: number | null
+          notes?: string | null
+          period_type: string
+          revenue_breakdown?: Json | null
+          snapshot_date: string
+          total_expenses?: number
+          total_revenue?: number
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          confidence_score?: number
+          created_at?: string
+          data_source?: string
+          expense_breakdown?: Json | null
+          id?: string
+          net_profit?: number | null
+          notes?: string | null
+          period_type?: string
+          revenue_breakdown?: Json | null
+          snapshot_date?: string
+          total_expenses?: number
+          total_revenue?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_financial_snapshots_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
             referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
@@ -8504,6 +8576,7 @@ export type Database = {
           email: string | null
           id: string
           industry: string | null
+          industry_catalog_id: string | null
           internal_notes: string | null
           is_active: boolean | null
           logo_url: string | null
@@ -8512,6 +8585,9 @@ export type Database = {
           neighborhood_id: string | null
           opening_date: string | null
           operating_region: string | null
+          operational_status: string
+          ownership_type: string
+          parent_entity_id: string | null
           phone: string | null
           primary_color: string | null
           require_brand_stores: boolean | null
@@ -8570,6 +8646,7 @@ export type Database = {
           email?: string | null
           id?: string
           industry?: string | null
+          industry_catalog_id?: string | null
           internal_notes?: string | null
           is_active?: boolean | null
           logo_url?: string | null
@@ -8578,6 +8655,9 @@ export type Database = {
           neighborhood_id?: string | null
           opening_date?: string | null
           operating_region?: string | null
+          operational_status?: string
+          ownership_type?: string
+          parent_entity_id?: string | null
           phone?: string | null
           primary_color?: string | null
           require_brand_stores?: boolean | null
@@ -8636,6 +8716,7 @@ export type Database = {
           email?: string | null
           id?: string
           industry?: string | null
+          industry_catalog_id?: string | null
           internal_notes?: string | null
           is_active?: boolean | null
           logo_url?: string | null
@@ -8644,6 +8725,9 @@ export type Database = {
           neighborhood_id?: string | null
           opening_date?: string | null
           operating_region?: string | null
+          operational_status?: string
+          ownership_type?: string
+          parent_entity_id?: string | null
           phone?: string | null
           primary_color?: string | null
           require_brand_stores?: boolean | null
@@ -8683,10 +8767,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "businesses_industry_catalog_id_fkey"
+            columns: ["industry_catalog_id"]
+            isOneToOne: false
+            referencedRelation: "industry_catalog"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "businesses_neighborhood_id_fkey"
             columns: ["neighborhood_id"]
             isOneToOne: false
             referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "businesses_parent_entity_id_fkey"
+            columns: ["parent_entity_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -20711,6 +20809,36 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_category_catalog: {
+        Row: {
+          applies_to_industries: string[] | null
+          category_group: string
+          category_name: string
+          created_at: string
+          id: string
+          sort_order: number | null
+          tax_deductible: boolean
+        }
+        Insert: {
+          applies_to_industries?: string[] | null
+          category_group: string
+          category_name: string
+          created_at?: string
+          id?: string
+          sort_order?: number | null
+          tax_deductible?: boolean
+        }
+        Update: {
+          applies_to_industries?: string[] | null
+          category_group?: string
+          category_name?: string
+          created_at?: string
+          id?: string
+          sort_order?: number | null
+          tax_deductible?: boolean
+        }
+        Relationships: []
+      }
       field_submission_rules: {
         Row: {
           action_type: Database["public"]["Enums"]["field_action_type"]
@@ -23297,6 +23425,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      industry_catalog: {
+        Row: {
+          created_at: string
+          id: string
+          industry_group: string
+          industry_name: string
+          margin_expectation_high: number | null
+          margin_expectation_low: number | null
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          industry_group: string
+          industry_name: string
+          margin_expectation_high?: number | null
+          margin_expectation_low?: number | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          industry_group?: string
+          industry_name?: string
+          margin_expectation_high?: number | null
+          margin_expectation_low?: number | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       influencer_assignments: {
         Row: {
@@ -37462,6 +37623,33 @@ export type Database = {
           product_name?: string
           projected_out_date?: string | null
           recommended_reorder_units?: number | null
+        }
+        Relationships: []
+      }
+      revenue_category_catalog: {
+        Row: {
+          category_name: string
+          created_at: string
+          id: string
+          notes: string | null
+          revenue_group: string
+          sort_order: number | null
+        }
+        Insert: {
+          category_name: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          revenue_group: string
+          sort_order?: number | null
+        }
+        Update: {
+          category_name?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          revenue_group?: string
+          sort_order?: number | null
         }
         Relationships: []
       }
