@@ -33,6 +33,7 @@ import { OpportunitiesSection } from "@/components/store/OpportunitiesSection";
 import { SellsFlowersToggle } from "@/components/store/SellsFlowersToggle";
 // Legacy StoreOperationsCard DEPRECATED - functionality merged into BrandStickersCard + SellsFlowersToggle
 import { UnifiedTubeIntelligenceCard } from "@/components/store/UnifiedTubeIntelligenceCard";
+import { SellThroughIntelCard } from "@/components/store/SellThroughIntelCard";
 import { BrandStickersCard } from "@/components/store/BrandStickersCard";
 import { QuickStatsStickersSummary } from "@/components/store/QuickStatsStickersSummary";
 import { QuickStatsContactSnapshot } from "@/components/store/QuickStatsContactSnapshot";
@@ -615,6 +616,9 @@ const StoreDetail = () => {
 
           {/* UNIFIED Tube Intelligence - Edit + Intelligence in ONE component */}
           <UnifiedTubeIntelligenceCard storeId={id || ""} role="admin" />
+
+          {/* Sell-Through Intelligence — Order frequency, velocity, health */}
+          <SellThroughIntelCard storeId={id || ""} />
 
           {/* Brand Stickers - Canonical 4-sticker system per brand */}
           <BrandStickersCard storeId={id || ""} role="admin" />
