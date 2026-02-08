@@ -37975,6 +37975,54 @@ export type Database = {
         }
         Relationships: []
       }
+      sell_through_analytics_events: {
+        Row: {
+          ambassador_id: string
+          attributes: Json
+          created_at: string
+          event_type: string
+          id: string
+        }
+        Insert: {
+          ambassador_id: string
+          attributes?: Json
+          created_at?: string
+          event_type: string
+          id?: string
+        }
+        Update: {
+          ambassador_id?: string
+          attributes?: Json
+          created_at?: string
+          event_type?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      sell_through_feedback: {
+        Row: {
+          ambassador_id: string
+          created_at: string
+          id: string
+          page_context: string
+          text: string
+        }
+        Insert: {
+          ambassador_id: string
+          created_at?: string
+          id?: string
+          page_context?: string
+          text: string
+        }
+        Update: {
+          ambassador_id?: string
+          created_at?: string
+          id?: string
+          page_context?: string
+          text?: string
+        }
+        Relationships: []
+      }
       seller_profiles: {
         Row: {
           best_time_to_contact: string | null
@@ -50176,6 +50224,24 @@ export type Database = {
           pending_count: number | null
           processing_count: number | null
           success_24h: number | null
+        }
+        Relationships: []
+      }
+      v_sell_through_usage_audit: {
+        Row: {
+          ambassadors_clicking_rows: number | null
+          ambassadors_using_filters: number | null
+          ambassadors_viewing_overdue: number | null
+          filter_usage_pct: number | null
+          overdue_view_pct: number | null
+          row_click_pct: number | null
+          total_feedback_entries: number | null
+          total_filter_events: number | null
+          total_overdue_views: number | null
+          total_page_loads: number | null
+          total_row_clicks: number | null
+          trend_related_feedback: number | null
+          unique_ambassador_sessions: number | null
         }
         Relationships: []
       }
