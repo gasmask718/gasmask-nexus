@@ -24,6 +24,7 @@ export interface WorkerSubmission {
   lbs_processed: number;
   tubes_produced: number;
   boxes_packed: number;
+  bags_cleaned: number;
   defects_count: number;
   defect_reason: string | null;
   waste_lbs: number;
@@ -42,7 +43,7 @@ export interface WorkerSubmission {
   created_at: string;
   updated_at: string;
   // Joined fields
-  worker?: { id: string; full_name: string; role: string } | null;
+  worker?: { id: string; full_name: string; role: string; pay_type?: string } | null;
   batch?: { id: string; brand: string; batch_date: string } | null;
 }
 
@@ -53,6 +54,7 @@ export interface SubmissionFormData {
   lbs_processed: number;
   tubes_produced: number;
   boxes_packed: number;
+  bags_cleaned: number;
   defects_count: number;
   defect_reason?: string;
   waste_lbs: number;
@@ -134,6 +136,7 @@ export function useCreateSubmission() {
           lbs_processed: data.lbs_processed,
           tubes_produced: data.tubes_produced,
           boxes_packed: data.boxes_packed,
+          bags_cleaned: data.bags_cleaned,
           defects_count: data.defects_count,
           defect_reason: data.defect_reason || null,
           waste_lbs: data.waste_lbs,
@@ -196,7 +199,7 @@ export function useReviewSubmission() {
         .eq('id', submissionId)
         .select(`
           *,
-          worker:production_workers!production_worker_submissions_worker_id_fkey(id, full_name, role),
+          worker:production_workers!production_worker_submissions_worker_id_fkey(id, full_name, role, pay_type),
           batch:production_batches!production_worker_submissions_batch_id_fkey(id, brand, batch_date)
         `)
         .single();
