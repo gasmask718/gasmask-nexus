@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Calculator, Sun, Crown, Calendar, Receipt,
-  BarChart3, Shield, Users,
+  BarChart3, Shield, Users, Upload,
 } from 'lucide-react';
 
 import AccountingDailyBriefing from '@/components/accounting/AccountingDailyBriefing';
@@ -16,6 +16,7 @@ import CollectionsCalendar from '@/components/accounting/CollectionsCalendar';
 import ExpensesHub from '@/components/accounting/ExpensesHub';
 import AccountingReports from '@/components/accounting/AccountingReports';
 import TaxPrepVault from '@/components/accounting/TaxPrepVault';
+import StatementUploader from '@/components/accounting/StatementUploader';
 
 export default function OwnerAccountingOS() {
   return (
@@ -62,6 +63,10 @@ export default function OwnerAccountingOS() {
             <Receipt className="h-3.5 w-3.5" />
             Expenses
           </TabsTrigger>
+          <TabsTrigger value="statements" className="gap-1.5">
+            <Upload className="h-3.5 w-3.5" />
+            Statements
+          </TabsTrigger>
           <TabsTrigger value="reports" className="gap-1.5">
             <BarChart3 className="h-3.5 w-3.5" />
             Reports
@@ -86,6 +91,10 @@ export default function OwnerAccountingOS() {
 
         <TabsContent value="expenses">
           <ExpensesHub />
+        </TabsContent>
+
+        <TabsContent value="statements">
+          <StatementUploader />
         </TabsContent>
 
         <TabsContent value="reports">

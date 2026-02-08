@@ -4,3 +4,4 @@ export { default as CollectionsCalendar } from './CollectionsCalendar';
 export { default as ExpensesHub } from './ExpensesHub';
 export { default as AccountingReports } from './AccountingReports';
 export { default as TaxPrepVault } from './TaxPrepVault';
+export { default as StatementUploader } from './StatementUploader';
