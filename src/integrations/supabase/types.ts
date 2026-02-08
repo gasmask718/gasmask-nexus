@@ -33919,6 +33919,87 @@ export type Database = {
           },
         ]
       }
+      production_batch_costs: {
+        Row: {
+          batch_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          labor_cost: number | null
+          labor_hours: number | null
+          labor_rate_per_hour: number | null
+          material_bags_cost: number | null
+          material_boxes_cost: number | null
+          material_other_cost: number | null
+          material_stickers_cost: number | null
+          material_tobacco_cost: number | null
+          material_tubes_cost: number | null
+          notes: string | null
+          overhead_pct: number | null
+          retail_price_per_box: number | null
+          total_material_cost: number | null
+          updated_at: string
+          wholesale_price_per_box: number | null
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          labor_cost?: number | null
+          labor_hours?: number | null
+          labor_rate_per_hour?: number | null
+          material_bags_cost?: number | null
+          material_boxes_cost?: number | null
+          material_other_cost?: number | null
+          material_stickers_cost?: number | null
+          material_tobacco_cost?: number | null
+          material_tubes_cost?: number | null
+          notes?: string | null
+          overhead_pct?: number | null
+          retail_price_per_box?: number | null
+          total_material_cost?: number | null
+          updated_at?: string
+          wholesale_price_per_box?: number | null
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          labor_cost?: number | null
+          labor_hours?: number | null
+          labor_rate_per_hour?: number | null
+          material_bags_cost?: number | null
+          material_boxes_cost?: number | null
+          material_other_cost?: number | null
+          material_stickers_cost?: number | null
+          material_tobacco_cost?: number | null
+          material_tubes_cost?: number | null
+          notes?: string | null
+          overhead_pct?: number | null
+          retail_price_per_box?: number | null
+          total_material_cost?: number | null
+          updated_at?: string
+          wholesale_price_per_box?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_batch_costs_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: true
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_batch_costs_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: true
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
+          },
+        ]
+      }
       production_batch_outputs: {
         Row: {
           batch_id: string
@@ -33996,6 +34077,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "production_batches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_batch_outputs_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
           },
           {
             foreignKeyName: "production_batch_outputs_fill_worker_id_fkey"
@@ -34215,6 +34303,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "production_communication_log_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
+          },
+          {
             foreignKeyName: "production_communication_log_office_id_fkey"
             columns: ["office_id"]
             isOneToOne: false
@@ -34425,6 +34520,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "production_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
+          },
+          {
             foreignKeyName: "production_history_office_id_fkey"
             columns: ["office_id"]
             isOneToOne: false
@@ -34471,6 +34573,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "production_batches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_inventory_transitions_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
           },
         ]
       }
@@ -34703,6 +34812,62 @@ export type Database = {
           zip_code?: string | null
         }
         Relationships: []
+      }
+      production_overhead_config: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          default_labor_rate: number
+          default_overhead_pct: number
+          effective_from: string
+          id: string
+          insurance_monthly: number | null
+          notes: string | null
+          office_id: string | null
+          other_monthly: number | null
+          rent_monthly: number | null
+          updated_at: string
+          utilities_monthly: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          default_labor_rate?: number
+          default_overhead_pct?: number
+          effective_from?: string
+          id?: string
+          insurance_monthly?: number | null
+          notes?: string | null
+          office_id?: string | null
+          other_monthly?: number | null
+          rent_monthly?: number | null
+          updated_at?: string
+          utilities_monthly?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          default_labor_rate?: number
+          default_overhead_pct?: number
+          effective_from?: string
+          id?: string
+          insurance_monthly?: number | null
+          notes?: string | null
+          office_id?: string | null
+          other_monthly?: number | null
+          rent_monthly?: number | null
+          updated_at?: string
+          utilities_monthly?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_overhead_config_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       production_profiles: {
         Row: {
@@ -34993,6 +35158,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "production_batches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_worker_attendance_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
           },
           {
             foreignKeyName: "production_worker_attendance_office_id_fkey"
@@ -50317,6 +50489,37 @@ export type Database = {
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_production_margin_analysis: {
+        Row: {
+          batch_date: string | null
+          batch_id: string | null
+          boxes_produced: number | null
+          brand: string | null
+          cost_per_box: number | null
+          cost_recorded_at: string | null
+          gross_margin_wholesale: number | null
+          inventory_state: string | null
+          labor_cost: number | null
+          margin_pct_retail: number | null
+          margin_pct_wholesale: number | null
+          office_id: string | null
+          office_name: string | null
+          overhead_cost: number | null
+          retail_price_per_box: number | null
+          total_cost: number | null
+          total_material_cost: number | null
+          wholesale_price_per_box: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_batches_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
             referencedColumns: ["id"]
           },
         ]

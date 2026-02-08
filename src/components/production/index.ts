@@ -28,6 +28,10 @@ export { RawMaterialIntake } from './RawMaterialIntake';
 export { InventoryPipeline } from './InventoryPipeline';
 export { BatchStateControls } from './BatchStateControls';
 
+// Phase 2: Cost Engine + Margin Tracking
+export { CostBreakdownPanel } from './CostBreakdownPanel';
+export { MarginAnalytics } from './MarginAnalytics';
+
 // Soft Alert System
 export * from './alerts';
 
