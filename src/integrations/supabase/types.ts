@@ -30863,6 +30863,148 @@ export type Database = {
           },
         ]
       }
+      owner_mission_activity: {
+        Row: {
+          action: string
+          created_at: string
+          details: string | null
+          id: string
+          mission_id: string
+          performed_by: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          mission_id: string
+          performed_by?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          mission_id?: string
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_mission_activity_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "owner_missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      owner_missions: {
+        Row: {
+          ai_confidence_score: number | null
+          ai_reasoning: string | null
+          ai_source_session_id: string | null
+          business_id: string | null
+          category: Database["public"]["Enums"]["mission_category"]
+          completed_at: string | null
+          completion_notes: string | null
+          created_at: string
+          delegated_at: string | null
+          delegated_to: string | null
+          description: string | null
+          due_date: string | null
+          floor_origin: string | null
+          id: string
+          is_recurring: boolean | null
+          next_recurrence_at: string | null
+          owner_id: string
+          priority: Database["public"]["Enums"]["mission_priority"]
+          recurrence_config: Json | null
+          recurrence_pattern: string | null
+          source: Database["public"]["Enums"]["mission_source"]
+          source_entity_id: string | null
+          source_entity_type: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["mission_status"]
+          streak_count: number | null
+          tags: string[] | null
+          times_deferred: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ai_confidence_score?: number | null
+          ai_reasoning?: string | null
+          ai_source_session_id?: string | null
+          business_id?: string | null
+          category?: Database["public"]["Enums"]["mission_category"]
+          completed_at?: string | null
+          completion_notes?: string | null
+          created_at?: string
+          delegated_at?: string | null
+          delegated_to?: string | null
+          description?: string | null
+          due_date?: string | null
+          floor_origin?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          next_recurrence_at?: string | null
+          owner_id: string
+          priority?: Database["public"]["Enums"]["mission_priority"]
+          recurrence_config?: Json | null
+          recurrence_pattern?: string | null
+          source?: Database["public"]["Enums"]["mission_source"]
+          source_entity_id?: string | null
+          source_entity_type?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["mission_status"]
+          streak_count?: number | null
+          tags?: string[] | null
+          times_deferred?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ai_confidence_score?: number | null
+          ai_reasoning?: string | null
+          ai_source_session_id?: string | null
+          business_id?: string | null
+          category?: Database["public"]["Enums"]["mission_category"]
+          completed_at?: string | null
+          completion_notes?: string | null
+          created_at?: string
+          delegated_at?: string | null
+          delegated_to?: string | null
+          description?: string | null
+          due_date?: string | null
+          floor_origin?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          next_recurrence_at?: string | null
+          owner_id?: string
+          priority?: Database["public"]["Enums"]["mission_priority"]
+          recurrence_config?: Json | null
+          recurrence_pattern?: string | null
+          source?: Database["public"]["Enums"]["mission_source"]
+          source_entity_id?: string | null
+          source_entity_type?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["mission_status"]
+          streak_count?: number | null
+          tags?: string[] | null
+          times_deferred?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_missions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parlays: {
         Row: {
           confidence_score: number | null
@@ -52452,6 +52594,28 @@ export type Database = {
         | "moneyline"
         | "player_prop"
         | "fantasy_prop"
+      mission_category:
+        | "strategic"
+        | "operational"
+        | "financial"
+        | "personal"
+        | "compliance"
+        | "growth"
+      mission_priority: "low" | "medium" | "high" | "critical"
+      mission_source:
+        | "owner_manual"
+        | "floor_generated"
+        | "ai_suggested"
+        | "delegated"
+        | "recurring_auto"
+        | "external"
+      mission_status:
+        | "pending"
+        | "in_progress"
+        | "completed"
+        | "blocked"
+        | "deferred"
+        | "cancelled"
       order_channel:
         | "web"
         | "mobile"
@@ -52948,6 +53112,31 @@ export const Constants = {
         "moneyline",
         "player_prop",
         "fantasy_prop",
+      ],
+      mission_category: [
+        "strategic",
+        "operational",
+        "financial",
+        "personal",
+        "compliance",
+        "growth",
+      ],
+      mission_priority: ["low", "medium", "high", "critical"],
+      mission_source: [
+        "owner_manual",
+        "floor_generated",
+        "ai_suggested",
+        "delegated",
+        "recurring_auto",
+        "external",
+      ],
+      mission_status: [
+        "pending",
+        "in_progress",
+        "completed",
+        "blocked",
+        "deferred",
+        "cancelled",
       ],
       order_channel: [
         "web",

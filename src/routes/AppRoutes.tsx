@@ -143,6 +143,7 @@ import UnpaidAccounts from '@/pages/UnpaidAccounts';
 import DriverDebtCollection from '@/pages/DriverDebtCollection';
 import BrandDashboard from '@/pages/BrandDashboard';
 import { OwnerDashboard, OwnerAIAdvisorPage, OwnerClusterDashboard, OwnerAutopilotConsole, OwnerAICommandConsole, OwnerRiskRadar, OwnerDailyBriefing, OwnerHoldingsOverview, OwnerClusterDetailPage, OwnerAutomationDetailPage, OwnerRiskDetailPage, OwnerBusinessDetailPage, OwnerPropertyDetailPage, OwnerFinancialHoldingDetailPage, OwnerAlertDetailPage, OwnerAutoTradingDetailPage, OwnerCryptoDetailPage, OwnerSportsDetailPage, OwnerVoiceAI, OwnerReports, OwnerVARouting, OwnerAlertCenter, OwnerExecutiveReports, OwnerBroadcastCenter, OwnerAccountingOS } from '@/pages/owner';
+import OwnerMissionControl from '@/pages/owner/OwnerMissionControl';
 
 // Call Center
 import CallCenterDashboard from '@/pages/callcenter/CallCenterDashboard';
@@ -1246,6 +1247,13 @@ export default function AppRoutes() {
         <Route path="/penthouse/accounting" element={
           <RequireRole allowedRoles={['admin']} showLocked>
             <OwnerAccountingOS />
+          </RequireRole>
+        } />
+
+        {/* ═══ PENTHOUSE — Mission Control (Task OS) ═══ */}
+        <Route path="/penthouse/missions" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OwnerMissionControl />
           </RequireRole>
         } />
 
