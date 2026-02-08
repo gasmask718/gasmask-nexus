@@ -1,6 +1,6 @@
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,50 +10,124 @@ import {
   MapPin,
   DollarSign,
   Package,
-  ChevronRight,
   MessageSquare,
   ArrowLeft,
   Store,
   Truck,
-  AlertCircle,
   Loader2,
   Users,
   Car,
   Bike,
   Factory,
+  TrendingUp,
+  Headphones,
+  Flame,
+  Clock,
+  FileText,
 } from "lucide-react";
-import { BrandStickersCard } from "@/components/store/BrandStickersCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { GRABBA_BRAND_CONFIG } from "@/config/grabbaBrands";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CANONICAL STORE DATA ENGINE
+// ═══════════════════════════════════════════════════════════════════════════════
+import { CanonicalStoreDataProvider } from "@/components/store/CanonicalStoreDataProvider";
+import { useCanonicalStoreData } from "@/hooks/useCanonicalStoreData";
+import { CanonicalStoreProfileProvider } from "@/components/store/CanonicalStoreProfile";
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHARED COMPONENTS (Same ones StoreDetail uses — CANONICAL)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Contacts & People
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreRoleSection } from "@/components/store/StoreRoleSection";
+
+// Intelligence
+import { SellThroughIntelCard } from "@/components/store/SellThroughIntelCard";
+import { UnifiedTubeIntelligenceCard } from "@/components/store/UnifiedTubeIntelligenceCard";
+import { BrandStickersCard } from "@/components/store/BrandStickersCard";
+import { StoreVisitInventoryCard } from "@/components/store/StoreVisitInventoryCard";
+
+// Health & Governance
+import { StoreHealthBadge } from "@/components/delivery/StoreHealthBadge";
+import { StoreHealthScoreCard } from "@/components/delivery/StoreHealthScoreCard";
+import { VisitSummaryCard } from "@/components/delivery/VisitSummaryCard";
+import { ActionsNeededCard } from "@/components/delivery/ActionsNeededCard";
+
+// Notes & Cadence
+import { BrandScopedNotesSection } from "@/components/store/BrandScopedNotesSection";
+import { StoreCadencePanel } from "@/components/store/StoreCadencePanel";
+import { StoreCadenceSettings } from "@/components/store/StoreCadenceSettings";
+
+// Orders & Finance
+import { InvoiceHistoryCard } from "@/components/store/InvoiceHistoryCard";
+import { StoreTransactionsCard } from "@/components/store/StoreTransactionsCard";
+
+// Connected & Opportunities
+import { ConnectedStoresCard } from "@/components/store/ConnectedStoresCard";
+import { OpportunitiesSection } from "@/components/store/OpportunitiesSection";
+import { SellsFlowersToggle } from "@/components/store/SellsFlowersToggle";
+
+// Field Activity
+import { StoreFieldActivityPanel } from "@/components/store/StoreFieldActivityPanel";
+import { RecentStoreInteractions } from "@/components/crm/RecentStoreInteractions";
+
+// Performance & Revenue Tabs
+import { StorePerformanceTab } from "@/components/store/StorePerformanceTab";
+import { StoreCallIntelligenceTab } from "@/components/store/StoreCallIntelligenceTab";
+import { StoreRevenueIntelligenceTab } from "@/components/revenue/StoreRevenueIntelligenceTab";
+
+// CRM-specific components (unique to StoreMaster)
 import { LogInteractionModal } from "@/components/crm/LogInteractionModal";
 import { CustomerMemoryCoreV2 } from "@/components/grabba/CustomerMemoryCoreV2";
 import { StoreAIFuturePanel } from "@/components/grabba/StoreAIFuturePanel";
 import { StorePersonalMemoryPanel } from "@/components/grabba/StorePersonalMemoryPanel";
 import { PersonalIntelligencePanel } from "@/components/grabba/PersonalIntelligencePanel";
 import { VoiceNotesCard } from "@/components/grabba/VoiceNotesCard";
-import { useStoreMasterAutoCreate } from "@/hooks/useStoreMasterAutoCreate";
+import { NeighborhoodSnapshotCard } from "@/components/store/NeighborhoodSnapshotCard";
+import { MemberSinceDisplay } from "@/components/store/MemberSinceDisplay";
+
 import { getExtractedProfile } from "@/services/profileExtractionService";
 import { getStoreRelationshipScore, RelationshipScore } from "@/services/crmInsightsService";
-import { StoreTransactionsCard } from "@/components/store/StoreTransactionsCard";
-import { UnifiedTubeIntelligenceCard } from "@/components/store/UnifiedTubeIntelligenceCard";
-import { NeighborhoodSnapshotCard } from "@/components/store/NeighborhoodSnapshotCard";
+import { UnifiedInteractionModal } from "@/components/store/UnifiedInteractionModal";
+import { CreateStoreInvoiceModal } from "@/components/store/CreateStoreInvoiceModal";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
+// Now powered by Canonical Store Data Engine
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function StoreMasterProfile() {
   const params = useParams();
   const id = params.id || params.storeId;
+
+  return (
+    <CanonicalStoreDataProvider storeId={id}>
+      <CanonicalStoreProfileProvider storeId={id || ''}>
+        <StoreMasterProfileInner storeId={id} />
+      </CanonicalStoreProfileProvider>
+    </CanonicalStoreDataProvider>
+  );
+}
+
+function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
   const navigate = useNavigate();
   const { selectedBrand } = useGrabbaBrand();
-  const [showLogModal, setShowLogModal] = useState(false);
+  const { store, isLoading, isCreating, error } = useCanonicalStoreData();
 
-  // Fetch store contacts for the modal
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [unifiedInteractionModalOpen, setUnifiedInteractionModalOpen] = useState(false);
+  const [createInvoiceModalOpen, setCreateInvoiceModalOpen] = useState(false);
+
+  const id = storeId || '';
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SUPPLEMENTARY QUERIES (CRM-specific data not in engine)
+  // ═══════════════════════════════════════════════════════════════════════════
+
   const { data: storeContacts } = useQuery({
     queryKey: ["store-contacts-for-modal", id],
     queryFn: async () => {
@@ -63,23 +137,16 @@ export default function StoreMasterProfile() {
     enabled: !!id,
   });
 
-  // Self-healing: auto-create store_master if missing
-  const { storeMaster, isLoading, isCreating, legacyStore, debug } = useStoreMasterAutoCreate(id);
-
-  // Log debug info for troubleshooting
-  console.log("[StoreMasterProfile] Debug:", { id, ...debug });
-
   const { data: brandAccounts } = useQuery({
     queryKey: ["brand-accounts", id],
     queryFn: async () => {
       const { data, error } = await supabase.from("store_brand_accounts").select("*").eq("store_master_id", id);
-
       if (error) throw error;
       return data;
     },
+    enabled: !!id,
   });
 
-  // Fetch payments for this store
   const { data: payments } = useQuery({
     queryKey: ["store-payments", id],
     queryFn: async () => {
@@ -91,9 +158,9 @@ export default function StoreMasterProfile() {
         .limit(10);
       return data || [];
     },
+    enabled: !!id,
   });
 
-  // Contacts for this store (multiple family members / managers / workers)
   const { data: contacts = [] } = useQuery({
     queryKey: ["store-contacts", id],
     queryFn: async () => {
@@ -103,17 +170,12 @@ export default function StoreMasterProfile() {
         .select("*")
         .eq("store_id", id)
         .order("created_at", { ascending: true });
-
-      if (error) {
-        console.error("Error loading store contacts", error);
-        return [];
-      }
+      if (error) return [];
       return data || [];
     },
     enabled: !!id,
   });
 
-  // Interactions for this store (visits, new store talks, wholesale talks, etc.)
   const { data: interactions = [] } = useQuery({
     queryKey: ["store-interactions", id],
     queryFn: async () => {
@@ -124,17 +186,12 @@ export default function StoreMasterProfile() {
         .eq("store_id", id)
         .order("created_at", { ascending: false })
         .limit(200);
-
-      if (error) {
-        console.error("Error loading store interactions", error);
-        return [];
-      }
+      if (error) return [];
       return data || [];
     },
     enabled: !!id,
   });
 
-  // Visit logs for this store (filtered from interactions where type = visit)
   const { data: visits = [] } = useQuery({
     queryKey: ["store-visits", id],
     queryFn: async () => {
@@ -145,34 +202,27 @@ export default function StoreMasterProfile() {
         .eq("store_id", id)
         .order("created_at", { ascending: false })
         .limit(100);
-
-      if (error) {
-        console.error("Error loading store visits", error);
-        return [];
-      }
-      // Filter visits client-side to avoid deep type instantiation
+      if (error) return [];
       return (data || []).filter((d: any) => d.interaction_type === "visit" || d.type === "visit").slice(0, 50);
     },
     enabled: !!id,
   });
 
-  // AI Extracted Profile for Personal Intelligence Panel
   const { data: aiProfile } = useQuery({
     queryKey: ["extracted-profile", id],
-    queryFn: () => getExtractedProfile(id || ""),
+    queryFn: () => getExtractedProfile(id),
     enabled: !!id,
   });
 
-  // V9: Relationship Score
   const { data: relationshipScore } = useQuery({
     queryKey: ["relationship-score", id],
-    queryFn: () => getStoreRelationshipScore(id || ""),
+    queryFn: () => getStoreRelationshipScore(id),
     enabled: !!id,
   });
 
-  // ═══════════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
   // LOADING STATE
-  // ═══════════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
   if (isLoading || isCreating) {
     return (
       <div className="flex flex-col items-center justify-center h-96 gap-4 p-4">
@@ -181,36 +231,22 @@ export default function StoreMasterProfile() {
           <p className="text-lg font-medium text-foreground">
             {isCreating ? "Creating Store Master record..." : "Loading store profile..."}
           </p>
-          <p className="text-sm text-muted-foreground mt-2 max-w-xs mx-auto">
-            {isCreating
-              ? "Setting up your store profile with default values..."
-              : "Retrieving store data from the system..."}
-          </p>
         </div>
       </div>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // REBUILDING STATE
-  // ═══════════════════════════════════════════════════════════════════════════════
-  if (!storeMaster) {
+  if (!store) {
     return (
       <div className="flex flex-col items-center justify-center h-96 gap-4 p-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <div className="text-center">
           <p className="text-lg font-medium text-foreground">Rebuilding profile...</p>
-          <p className="text-sm text-muted-foreground mt-2">This store profile is being created. Please wait...</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 mt-4 w-full sm:w-auto">
-          <Button variant="outline" onClick={() => navigate("/grabba/crm")} className="w-full sm:w-auto">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to CRM
-          </Button>
-          <Button onClick={() => window.location.reload()} className="w-full sm:w-auto">
-            Retry
-          </Button>
-        </div>
+        <Button variant="outline" onClick={() => navigate("/grabba/crm")}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to CRM
+        </Button>
       </div>
     );
   }
@@ -224,31 +260,25 @@ export default function StoreMasterProfile() {
 
   return (
     <div className="space-y-4 md:space-y-6 p-2 md:p-0 pb-20">
-      {/* DEBUG BANNER */}
-      <div className="p-2 mb-2 rounded bg-red-600 text-white text-xs md:text-sm font-bold truncate">
-        🔴 PROFILE ACTIVE — {id}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* TOP HEADER */}
-      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
         <div className="flex items-center gap-2 w-full md:w-auto">
           <Button variant="ghost" size="icon" onClick={() => navigate("/grabba/crm")} className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-
-          {/* Mobile Title Layout */}
           <div className="md:hidden flex-1 flex items-center gap-2 overflow-hidden">
             <Store className="h-6 w-6 text-primary shrink-0" />
-            <h1 className="text-xl font-bold tracking-tight truncate">{storeMaster.store_name}</h1>
+            <h1 className="text-xl font-bold tracking-tight truncate">{store.store_name}</h1>
           </div>
         </div>
 
         <div className="flex-1 w-full pl-2 md:pl-0">
           <div className="flex items-center gap-3 flex-wrap">
             <Store className="hidden md:block h-8 w-8 text-primary" />
-            <h1 className="hidden md:block text-2xl md:text-3xl font-bold tracking-tight">{storeMaster.store_name}</h1>
+            <h1 className="hidden md:block text-2xl md:text-3xl font-bold tracking-tight">{store.store_name}</h1>
+            {id && <StoreHealthBadge storeId={id} />}
 
             {activeBrands.length > 0 && (
               <div className="flex gap-1 flex-wrap">
@@ -272,20 +302,32 @@ export default function StoreMasterProfile() {
           </div>
           <p className="text-xs md:text-sm text-muted-foreground mt-1 break-words">
             Floor 1 CRM
-            {(storeMaster as any).owner_name && (
-              <span className="ml-2">• Owner: {(storeMaster as any).owner_name}</span>
-            )}
+            {store.owner_name && <span className="ml-2">• Owner: {store.owner_name}</span>}
           </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 flex-shrink-0">
+          <Button variant="outline" size="sm" onClick={() => setShowLogModal(true)}>
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Log Interaction
+          </Button>
+          <Button size="sm" onClick={() => setUnifiedInteractionModalOpen(true)}>
+            <Package className="w-4 h-4 mr-2" />
+            New Interaction
+          </Button>
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════════════ */}
-      {/* MAIN RESPONSIVE GRID LAYOUT */}
-      {/* Mobile: 1 col, Desktop: 12 cols (3-6-3) */}
-      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* MAIN 3-COLUMN LAYOUT */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
-        {/* LEFT PANEL - Store Identity & KPIs */}
+        {/* ═════════════════════════════════════════════════════════════════ */}
+        {/* LEFT PANEL — Identity, KPIs, Contacts */}
+        {/* ═════════════════════════════════════════════════════════════════ */}
         <div className="lg:col-span-3 space-y-4">
+          {/* Store Info Card */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -297,24 +339,24 @@ export default function StoreMasterProfile() {
               <div>
                 <div className="text-muted-foreground text-xs mb-1">Address</div>
                 <div className="font-medium leading-snug">
-                  {storeMaster.address}
+                  {store.address}
                   <br />
-                  {storeMaster.city}, {storeMaster.state} {storeMaster.zip}
+                  {store.city}, {store.state} {store.zip}
                 </div>
               </div>
               <div className="flex items-center gap-2 overflow-hidden">
                 <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span className="truncate">{storeMaster.phone || "N/A"}</span>
+                <span className="truncate">{store.phone || "N/A"}</span>
               </div>
               <div className="flex items-center gap-2 overflow-hidden">
                 <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span className="truncate">{storeMaster.email || "N/A"}</span>
+                <span className="truncate">{store.email || "N/A"}</span>
               </div>
+              <MemberSinceDisplay storeId={id} />
             </CardContent>
           </Card>
 
-          {/* KPI STATS WRAPPER */}
-          {/* On mobile: Grid 3 cols to save vertical space. On Desktop: 1 col stack */}
+          {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4">
             <Card className="border-l-4 border-l-green-500">
               <CardContent className="pt-4">
@@ -338,12 +380,13 @@ export default function StoreMasterProfile() {
             </Card>
           </div>
 
-          {/* Brand Stickers - Canonical 4-sticker system per brand */}
-          <BrandStickersCard storeId={id || ""} role="admin" />
+          {/* Brand Stickers — CANONICAL */}
+          <BrandStickersCard storeId={id} role="admin" />
 
-          <StoreContactsSection storeId={id || ""} storeName={storeMaster.store_name} />
+          {/* Store Contacts — CANONICAL */}
+          <StoreContactsSection storeId={id} storeName={store.store_name} />
 
-          {/* ROLE TABS */}
+          {/* Role Tabs — Ambassadors / Drivers / Bikers / Production */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -354,98 +397,24 @@ export default function StoreMasterProfile() {
             <CardContent className="pt-0">
               <Tabs defaultValue="ambassadors" className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="ambassadors" className="text-[10px] md:text-xs px-1">
-                    <Users className="h-3 w-3 mr-1 md:mr-1 hidden sm:block" />
-                    Ambassadors
-                  </TabsTrigger>
-                  <TabsTrigger value="drivers" className="text-[10px] md:text-xs px-1">
-                    <Car className="h-3 w-3 mr-1 md:mr-1 hidden sm:block" />
-                    Drivers
-                  </TabsTrigger>
-                  <TabsTrigger value="bikers" className="text-[10px] md:text-xs px-1">
-                    <Bike className="h-3 w-3 mr-1 md:mr-1 hidden sm:block" />
-                    Bikers
-                  </TabsTrigger>
-                  <TabsTrigger value="production" className="text-[10px] md:text-xs px-1">
-                    <Factory className="h-3 w-3 mr-1 md:mr-1 hidden sm:block" />
-                    Production
-                  </TabsTrigger>
+                  <TabsTrigger value="ambassadors" className="text-[10px] md:text-xs px-1">Ambassadors</TabsTrigger>
+                  <TabsTrigger value="drivers" className="text-[10px] md:text-xs px-1">Drivers</TabsTrigger>
+                  <TabsTrigger value="bikers" className="text-[10px] md:text-xs px-1">Bikers</TabsTrigger>
+                  <TabsTrigger value="production" className="text-[10px] md:text-xs px-1">Production</TabsTrigger>
                 </TabsList>
-
                 <TabsContent value="ambassadors" className="mt-3">
-                  <StoreRoleSection storeId={id || ""} storeName={storeMaster.store_name} role="ambassador" embedded />
+                  <StoreRoleSection storeId={id} storeName={store.store_name} role="ambassador" embedded />
                 </TabsContent>
-
                 <TabsContent value="drivers" className="mt-3">
-                  <StoreRoleSection storeId={id || ""} storeName={storeMaster.store_name} role="driver" embedded />
+                  <StoreRoleSection storeId={id} storeName={store.store_name} role="driver" embedded />
                 </TabsContent>
-
                 <TabsContent value="bikers" className="mt-3">
-                  <StoreRoleSection storeId={id || ""} storeName={storeMaster.store_name} role="biker" embedded />
+                  <StoreRoleSection storeId={id} storeName={store.store_name} role="biker" embedded />
                 </TabsContent>
-
                 <TabsContent value="production" className="mt-3">
-                  <StoreRoleSection storeId={id || ""} storeName={storeMaster.store_name} role="production" embedded />
+                  <StoreRoleSection storeId={id} storeName={store.store_name} role="production" embedded />
                 </TabsContent>
               </Tabs>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* CENTER PANEL - AI Future + Memory */}
-        <div className="lg:col-span-6 space-y-6">
-          <StoreAIFuturePanel storeId={id || ""} />
-
-          <CustomerMemoryCoreV2 store={storeMaster} contacts={contacts} interactions={interactions} visits={visits} />
-
-          <VoiceNotesCard storeId={id || ""} />
-
-          <PersonalIntelligencePanel profile={aiProfile} storeId={id || ""} />
-
-          <div id="store-memory-panel">
-            <StorePersonalMemoryPanel storeId={id || ""} />
-          </div>
-        </div>
-
-        {/* RIGHT PANEL - Actions & Transactions */}
-        <div className="lg:col-span-3 space-y-4">
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button className="w-full justify-start" size="sm" onClick={() => setShowLogModal(true)}>
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Log Interaction
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                size="sm"
-                onClick={() => navigate(`/grabba/communication?store=${id}`)}
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Send Message
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                size="sm"
-                onClick={() => navigate(`/grabba/deliveries?store=${id}`)}
-              >
-                <Truck className="w-4 h-4 mr-2" />
-                Schedule Delivery
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                size="sm"
-                onClick={() => navigate(`/grabba/inventory?store=${id}`)}
-              >
-                <Package className="w-4 h-4 mr-2" />
-                View Inventory
-              </Button>
             </CardContent>
           </Card>
 
@@ -460,15 +429,10 @@ export default function StoreMasterProfile() {
                   const brandKey = account.brand?.toLowerCase().replace(" ", "_") as keyof typeof GRABBA_BRAND_CONFIG;
                   const config = GRABBA_BRAND_CONFIG[brandKey];
                   return (
-                    <div
-                      key={account.id}
-                      className="flex flex-wrap items-center justify-between p-2 bg-muted/50 rounded gap-2"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge className={`${config?.pill || ""} whitespace-nowrap`} variant="outline">
-                          {config?.icon} {account.brand}
-                        </Badge>
-                      </div>
+                    <div key={account.id} className="flex flex-wrap items-center justify-between p-2 bg-muted/50 rounded gap-2">
+                      <Badge className={`${config?.pill || ""} whitespace-nowrap`} variant="outline">
+                        {config?.icon} {account.brand}
+                      </Badge>
                       <span className="text-sm font-medium">${Number(account.total_spent || 0).toLocaleString()}</span>
                     </div>
                   );
@@ -478,26 +442,180 @@ export default function StoreMasterProfile() {
               )}
             </CardContent>
           </Card>
+        </div>
 
-          <StoreTransactionsCard storeId={id || ""} storeName={storeMaster.store_name} />
-          
-          {/* UNIFIED Tube Intelligence - Edit + Intelligence in ONE component */}
-          <UnifiedTubeIntelligenceCard storeId={id || ""} role="admin" />
+        {/* ═════════════════════════════════════════════════════════════════ */}
+        {/* CENTER PANEL — Intelligence + Analytics */}
+        {/* ═════════════════════════════════════════════════════════════════ */}
+        <div className="lg:col-span-6 space-y-6">
+          {/* SECTION: Actions Needed (same as StoreDetail) */}
+          <ActionsNeededCard storeId={id} />
 
+          {/* SECTION: Store Health Score (same as StoreDetail) */}
+          <StoreHealthScoreCard storeId={id} />
+
+          {/* SECTION: Visit Summary (same as StoreDetail) */}
+          <VisitSummaryCard storeId={id} />
+
+          {/* SECTION: Communication Cadence (same as StoreDetail) */}
+          <StoreCadencePanel storeId={id} storeName={store.store_name} />
+
+          {/* SECTION: Brand-Scoped Notes (same as StoreDetail) */}
+          <BrandScopedNotesSection storeId={id} storeName={store.store_name} />
+
+          {/* SECTION: Opportunities (same as StoreDetail) */}
+          <OpportunitiesSection storeId={id} storeName={store.store_name} />
+
+          {/* SECTION: Connected Stores (same as StoreDetail) */}
+          <ConnectedStoresCard
+            storeId={id}
+            currentStoreName={store.store_name}
+            currentStoreGroupId={store.connected_group_id}
+            currentStoreOwnerName={store.owner_name}
+          />
+
+          {/* SECTION: Tube Intelligence (already present, now CANONICAL) */}
+          <UnifiedTubeIntelligenceCard storeId={id} role="admin" />
+
+          {/* SECTION: Sell-Through Intelligence (WAS MISSING — now present) */}
+          <SellThroughIntelCard storeId={id} />
+
+          {/* SECTION: Visit Inventory (same as StoreDetail) */}
+          <StoreVisitInventoryCard storeId={id} />
+
+          {/* SECTION: Store Attributes */}
+          <SellsFlowersToggle storeId={id} initialValue={false} />
+
+          {/* SECTION: Recent Interactions */}
+          <RecentStoreInteractions
+            storeId={id}
+            onLogInteraction={() => setUnifiedInteractionModalOpen(true)}
+          />
+
+          {/* SECTION: Field Activity (WAS MISSING — now present) */}
+          <StoreFieldActivityPanel storeId={id} />
+
+          {/* SECTION: Invoice History (WAS MISSING — now present) */}
+          <InvoiceHistoryCard
+            storeId={id}
+            onCreateInvoice={() => setCreateInvoiceModalOpen(true)}
+          />
+
+          {/* SECTION: Cadence Settings */}
+          <StoreCadenceSettings storeId={id} storeName={store.store_name} />
+
+          {/* CRM-SPECIFIC: AI & Memory Panels */}
+          <StoreAIFuturePanel storeId={id} />
+          <CustomerMemoryCoreV2 store={{ id: store.id, store_name: store.store_name } as any} contacts={contacts} interactions={interactions} visits={visits} />
+          <VoiceNotesCard storeId={id} />
+          <PersonalIntelligencePanel profile={aiProfile} storeId={id} />
+          <div id="store-memory-panel">
+            <StorePersonalMemoryPanel storeId={id} />
+          </div>
+
+          {/* PERFORMANCE TABS (same as StoreDetail) */}
+          <Tabs defaultValue="performance" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 gap-1">
+              <TabsTrigger value="performance" className="text-xs sm:text-sm">
+                <TrendingUp className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Performance</span>
+                <span className="sm:hidden">Perf</span>
+              </TabsTrigger>
+              <TabsTrigger value="calls" className="text-xs sm:text-sm">
+                <Headphones className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Calls</span>
+                <span className="sm:hidden">Calls</span>
+              </TabsTrigger>
+              <TabsTrigger value="revenue" className="text-xs sm:text-sm">
+                <Flame className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Revenue</span>
+                <span className="sm:hidden">Rev</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="performance">
+              <StorePerformanceTab storeId={id} storeName={store.store_name} />
+            </TabsContent>
+            <TabsContent value="calls">
+              <StoreCallIntelligenceTab storeId={id} />
+            </TabsContent>
+            <TabsContent value="revenue">
+              <StoreRevenueIntelligenceTab storeId={id} />
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* ═════════════════════════════════════════════════════════════════ */}
+        {/* RIGHT PANEL — Actions & Context */}
+        {/* ═════════════════════════════════════════════════════════════════ */}
+        <div className="lg:col-span-3 space-y-4">
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Button className="w-full justify-start" size="sm" onClick={() => setShowLogModal(true)}>
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Log Interaction
+              </Button>
+              <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => navigate(`/grabba/communication?store=${id}`)}>
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Send Message
+              </Button>
+              <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => navigate(`/grabba/deliveries?store=${id}`)}>
+                <Truck className="w-4 h-4 mr-2" />
+                Schedule Delivery
+              </Button>
+              <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => navigate(`/grabba/inventory?store=${id}`)}>
+                <Package className="w-4 h-4 mr-2" />
+                View Inventory
+              </Button>
+              <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => setCreateInvoiceModalOpen(true)}>
+                <FileText className="w-4 h-4 mr-2" />
+                Create Invoice
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Transactions */}
+          <StoreTransactionsCard storeId={id} storeName={store.store_name} />
+
+          {/* Neighborhood Snapshot */}
           <NeighborhoodSnapshotCard
-            storeId={id || ""}
-            neighborhood={storeMaster.city}
-            borough={(storeMaster as any).borough}
+            storeId={id}
+            neighborhood={store.city}
+            borough={undefined}
           />
         </div>
       </div>
 
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* MODALS */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       <LogInteractionModal
         isOpen={showLogModal}
         onClose={() => setShowLogModal(false)}
         storeMasterId={id}
-        storeName={storeMaster.store_name}
+        storeName={store.store_name}
         storeContacts={storeContacts || []}
+      />
+
+      <UnifiedInteractionModal
+        open={unifiedInteractionModalOpen}
+        onOpenChange={setUnifiedInteractionModalOpen}
+        storeId={id}
+        storeName={store.store_name}
+        storeContacts={storeContacts || []}
+        onSuccess={() => {}}
+      />
+
+      <CreateStoreInvoiceModal
+        open={createInvoiceModalOpen}
+        onOpenChange={setCreateInvoiceModalOpen}
+        storeId={id}
+        storeName={store.store_name}
+        onSuccess={() => {}}
       />
     </div>
   );
