@@ -96,6 +96,7 @@ import SalesProspectNew from '@/pages/SalesProspectNew';
 import SalesProspectDetail from '@/pages/SalesProspectDetail';
 import SalesReport from '@/pages/SalesReport';
 import StorePerformance from '@/pages/StorePerformance';
+import SellThroughAnalytics from '@/pages/SellThroughAnalytics';
 import StoreOrder from '@/pages/StoreOrder';
 import WholesaleFulfillment from '@/pages/WholesaleFulfillment';
 import Billing from '@/pages/Billing';
@@ -717,6 +718,7 @@ export default function AppRoutes() {
         {/* Legacy Routes */}
         <Route path="/stores" element={<Stores />} />
         <Route path="/stores/:id" element={<StoreDetail />} />
+        <Route path="/sell-through-analytics" element={<SellThroughAnalytics />} />
         <Route path="/stores/performance" element={<StorePerformance />} />
         <Route path="/stores/order" element={<StoreOrder />} />
         <Route path="/routes" element={<RoutesPage />} />

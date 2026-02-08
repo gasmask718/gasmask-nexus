@@ -397,6 +397,7 @@ export const FLOOR_ROUTE_MAP: Record<string, string[]> = {
     '/grabba/store-master/',
     '/companies',
     '/stores',
+    '/sell-through-analytics',
   ],
   'floor-2-communication': [
     '/grabba/communication',
