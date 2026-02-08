@@ -5,7 +5,7 @@
  * - Today's / this week's earnings
  * - Unpaid balance
  * - Payment history
- * - Batch-level earnings breakdown
+ * - Batch-level earnings breakdown with unit × rate = amount
  */
 
 import { useMemo } from 'react';
@@ -14,9 +14,10 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DollarSign, Clock, CheckCircle, Wallet, TrendingUp, Eye } from 'lucide-react';
-import { format, isToday, isThisWeek, startOfWeek } from 'date-fns';
+import { format, isToday, isThisWeek } from 'date-fns';
 import { useMyEarnings, useMyPayments } from '@/hooks/useWorkerPay';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { formatCurrency } from '@/lib/format';
 
 interface WorkerPayDashboardProps {
   workerId: string | undefined;
@@ -82,7 +83,7 @@ export function WorkerPayDashboard({ workerId }: WorkerPayDashboardProps) {
               <DollarSign className="h-3 w-3" /> Today
             </CardDescription>
             <CardTitle className="text-2xl font-bold text-primary">
-              ${stats.todayEarnings.toFixed(2)}
+              {formatCurrency(stats.todayEarnings)}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -93,7 +94,7 @@ export function WorkerPayDashboard({ workerId }: WorkerPayDashboardProps) {
               <TrendingUp className="h-3 w-3" /> This Week
             </CardDescription>
             <CardTitle className="text-2xl font-bold">
-              ${stats.weekEarnings.toFixed(2)}
+              {formatCurrency(stats.weekEarnings)}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -104,7 +105,7 @@ export function WorkerPayDashboard({ workerId }: WorkerPayDashboardProps) {
               <Clock className="h-3 w-3" /> Unpaid Balance
             </CardDescription>
             <CardTitle className="text-2xl font-bold text-amber-600">
-              ${stats.unpaidBalance.toFixed(2)}
+              {formatCurrency(stats.unpaidBalance)}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -115,7 +116,7 @@ export function WorkerPayDashboard({ workerId }: WorkerPayDashboardProps) {
               <CheckCircle className="h-3 w-3" /> Total Paid
             </CardDescription>
             <CardTitle className="text-2xl font-bold text-emerald-600">
-              ${stats.totalPaid.toFixed(2)}
+              {formatCurrency(stats.totalPaid)}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -136,7 +137,7 @@ export function WorkerPayDashboard({ workerId }: WorkerPayDashboardProps) {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Earnings History</CardTitle>
-              <CardDescription>All batch completion earnings</CardDescription>
+              <CardDescription>All production earnings by unit</CardDescription>
             </CardHeader>
             <CardContent>
               {earningsLoading ? (
@@ -149,7 +150,7 @@ export function WorkerPayDashboard({ workerId }: WorkerPayDashboardProps) {
                     <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Batch</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead>Breakdown</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
@@ -157,6 +158,13 @@ export function WorkerPayDashboard({ workerId }: WorkerPayDashboardProps) {
                   <TableBody>
                     {earnings.map(earning => {
                       const badge = STATUS_BADGE[earning.status] || STATUS_BADGE.pending;
+                      const qty = Number(earning.quantity_completed);
+                      const rate = Number(earning.pay_rate_at_time);
+                      const unitLabel = earning.unit_type === 'day' ? 'day' :
+                        earning.unit_type === 'batch' ? 'batch' :
+                        `${earning.unit_type}${qty !== 1 ? 'es' : ''}`;
+                      const isFlat = earning.pay_type_at_time === 'per_day' || earning.pay_type_at_time === 'per_batch';
+                      
                       return (
                         <TableRow key={earning.id}>
                           <TableCell className="text-sm">
@@ -165,11 +173,14 @@ export function WorkerPayDashboard({ workerId }: WorkerPayDashboardProps) {
                           <TableCell className="font-mono text-sm">
                             {earning.batch?.brand || '—'}
                           </TableCell>
-                          <TableCell className="text-right text-sm">
-                            {earning.quantity_completed} {earning.unit_type}
+                          <TableCell className="text-sm text-muted-foreground">
+                            {isFlat 
+                              ? `1 ${unitLabel} × ${formatCurrency(rate)}`
+                              : `${qty} ${unitLabel} × ${formatCurrency(rate)}`
+                            }
                           </TableCell>
                           <TableCell className="text-right font-bold">
-                            ${Number(earning.earnings_amount).toFixed(2)}
+                            {formatCurrency(Number(earning.earnings_amount))}
                           </TableCell>
                           <TableCell>
                             <Badge variant={badge.variant}>{badge.label}</Badge>
@@ -212,7 +223,7 @@ export function WorkerPayDashboard({ workerId }: WorkerPayDashboardProps) {
                           {format(new Date(payment.paid_at), 'MMM d, yyyy h:mm a')}
                         </TableCell>
                         <TableCell className="text-right font-bold text-emerald-600">
-                          ${Number(payment.total_amount).toFixed(2)}
+                          {formatCurrency(Number(payment.total_amount))}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="capitalize">

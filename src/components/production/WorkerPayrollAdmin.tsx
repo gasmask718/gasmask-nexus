@@ -80,6 +80,8 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
   const payrollExportColumns = [
     { key: 'worker_name', label: 'Worker' },
     { key: 'worker_role', label: 'Role' },
+    { key: 'pay_type', label: 'Pay Type' },
+    { key: 'pay_rate', label: 'Rate' },
     { key: 'total_earned', label: 'Total Earned' },
     { key: 'total_paid', label: 'Total Paid' },
     { key: 'unpaid_balance', label: 'Unpaid Balance' },
@@ -162,6 +164,7 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
                     <TableRow>
                       <TableHead>Worker</TableHead>
                       <TableHead>Role</TableHead>
+                      <TableHead>Pay Type</TableHead>
                       <TableHead className="text-right">Earned</TableHead>
                       <TableHead className="text-right">Paid</TableHead>
                       <TableHead className="text-right">Unpaid</TableHead>
@@ -170,54 +173,63 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {summaries.map(summary => (
-                      <TableRow key={summary.worker_id}>
-                        <TableCell className="font-medium">{summary.worker_name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">{summary.worker_role}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">${summary.total_earned.toFixed(2)}</TableCell>
-                        <TableCell className="text-right text-emerald-600">${summary.total_paid.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-bold text-amber-600">
-                          ${summary.unpaid_balance.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {summary.pending_count > 0 ? (
-                            <Badge variant="destructive" className="text-xs">{summary.pending_count}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground">0</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {summary.pending_count > 0 && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleApprovePending(summary.worker_id)}
-                                disabled={approveEarnings.isPending}
-                              >
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Approve
-                              </Button>
+                    {summaries.map(summary => {
+                      const payLabel = summary.pay_type.replace('per_', '/').replace('_', ' ');
+                      return (
+                        <TableRow key={summary.worker_id}>
+                          <TableCell className="font-medium">{summary.worker_name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="capitalize">{summary.worker_role}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium capitalize">{payLabel}</span>
+                              <span className="text-xs text-muted-foreground">${summary.pay_rate.toFixed(2)}{payLabel}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">${summary.total_earned.toFixed(2)}</TableCell>
+                          <TableCell className="text-right text-emerald-600">${summary.total_paid.toFixed(2)}</TableCell>
+                          <TableCell className="text-right font-bold text-amber-600">
+                            ${summary.unpaid_balance.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {summary.pending_count > 0 ? (
+                              <Badge variant="destructive" className="text-xs">{summary.pending_count}</Badge>
+                            ) : (
+                              <span className="text-muted-foreground">0</span>
                             )}
-                            {summary.unpaid_balance > 0 && summary.approved_count > 0 && (
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  setPayDialog(summary);
-                                  setPayMethod('cash');
-                                  setPayNotes('');
-                                }}
-                              >
-                                <DollarSign className="h-3 w-3 mr-1" />
-                                Pay
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              {summary.pending_count > 0 && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleApprovePending(summary.worker_id)}
+                                  disabled={approveEarnings.isPending}
+                                >
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Approve
+                                </Button>
+                              )}
+                              {summary.unpaid_balance > 0 && summary.approved_count > 0 && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    setPayDialog(summary);
+                                    setPayMethod('cash');
+                                    setPayNotes('');
+                                  }}
+                                >
+                                  <DollarSign className="h-3 w-3 mr-1" />
+                                  Pay
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}

@@ -62,6 +62,8 @@ export interface WorkerPaySummary {
   worker_id: string;
   worker_name: string;
   worker_role: string;
+  pay_type: string;
+  pay_rate: number;
   total_earned: number;
   total_paid: number;
   unpaid_balance: number;
@@ -185,6 +187,8 @@ export function useWorkerPaySummaries(officeId: string) {
           worker_id: worker.id,
           worker_name: worker.full_name,
           worker_role: worker.role,
+          pay_type: worker.pay_type || 'per_batch',
+          pay_rate: Number(worker.pay_rate) || 0,
           total_earned: totalEarned,
           total_paid: totalPaid,
           unpaid_balance: totalEarned - totalPaid,
@@ -252,6 +256,13 @@ export function useCreateEarning() {
         .eq('id', data.worker_id)
         .single();
 
+      const payType = worker?.pay_type || 'per_batch';
+      const payRate = Number(worker?.pay_rate) || 0;
+      const unitType = payType === 'per_day' ? 'day' :
+        payType === 'per_box' ? 'box' :
+        payType === 'per_bag' ? 'bag' :
+        payType === 'per_unit' ? 'unit' : 'batch';
+
       const { data: result, error } = await supabase
         .from('production_worker_earnings')
         .insert({
@@ -259,9 +270,10 @@ export function useCreateEarning() {
           batch_id: data.batch_id || null,
           office_id: data.office_id,
           earnings_amount: data.earnings_amount,
-          pay_rate_at_time: worker?.pay_rate || 0,
-          pay_type_at_time: worker?.pay_type || 'per_batch',
+          pay_rate_at_time: payRate,
+          pay_type_at_time: payType,
           quantity_completed: data.quantity_completed || 1,
+          unit_type: unitType,
           status: 'approved',
           approved_at: new Date().toISOString(),
           approved_by: user.user.id,

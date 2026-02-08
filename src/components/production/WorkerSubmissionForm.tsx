@@ -31,6 +31,7 @@ export function WorkerSubmissionForm({ officeId, workerId }: WorkerSubmissionFor
   const [lbsProcessed, setLbsProcessed] = useState('');
   const [tubesProduced, setTubesProduced] = useState('');
   const [boxesPacked, setBoxesPacked] = useState('');
+  const [bagsCleaned, setBagsCleaned] = useState('0');
   const [defectsCount, setDefectsCount] = useState('0');
   const [defectReason, setDefectReason] = useState('');
   const [wasteLbs, setWasteLbs] = useState('0');
@@ -44,6 +45,7 @@ export function WorkerSubmissionForm({ officeId, workerId }: WorkerSubmissionFor
     setLbsProcessed('');
     setTubesProduced('');
     setBoxesPacked('');
+    setBagsCleaned('0');
     setDefectsCount('0');
     setDefectReason('');
     setWasteLbs('0');
@@ -63,6 +65,7 @@ export function WorkerSubmissionForm({ officeId, workerId }: WorkerSubmissionFor
       lbs_processed: parseFloat(lbsProcessed) || 0,
       tubes_produced: parseInt(tubesProduced) || 0,
       boxes_packed: parseInt(boxesPacked) || 0,
+      bags_cleaned: parseInt(bagsCleaned) || 0,
       defects_count: parseInt(defectsCount) || 0,
       defect_reason: defectReason || undefined,
       waste_lbs: parseFloat(wasteLbs) || 0,
@@ -119,7 +122,7 @@ export function WorkerSubmissionForm({ officeId, workerId }: WorkerSubmissionFor
         </div>
 
         {/* Production Numbers */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="space-y-2">
             <Label>Lbs Processed</Label>
             <Input
@@ -145,6 +148,15 @@ export function WorkerSubmissionForm({ officeId, workerId }: WorkerSubmissionFor
               type="number"
               value={boxesPacked}
               onChange={(e) => setBoxesPacked(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Bags Cleaned</Label>
+            <Input
+              type="number"
+              value={bagsCleaned}
+              onChange={(e) => setBagsCleaned(e.target.value)}
               placeholder="0"
             />
           </div>

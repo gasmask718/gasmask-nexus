@@ -35684,6 +35684,7 @@ export type Database = {
       production_worker_submissions: {
         Row: {
           auto_rule_applied: string | null
+          bags_cleaned: number
           batch_id: string | null
           boxes_packed: number | null
           created_at: string
@@ -35711,6 +35712,7 @@ export type Database = {
         }
         Insert: {
           auto_rule_applied?: string | null
+          bags_cleaned?: number
           batch_id?: string | null
           boxes_packed?: number | null
           created_at?: string
@@ -35738,6 +35740,7 @@ export type Database = {
         }
         Update: {
           auto_rule_applied?: string | null
+          bags_cleaned?: number
           batch_id?: string | null
           boxes_packed?: number | null
           created_at?: string
@@ -51389,10 +51392,10 @@ export type Database = {
       }
       create_earning_from_submission: {
         Args: {
-          p_approved_by: string
+          p_approved_by?: string
           p_batch_id: string
           p_office_id: string
-          p_quantity: number
+          p_quantity?: number
           p_submission_id: string
           p_worker_id: string
         }
