@@ -21,7 +21,7 @@ import { ReceiptStatusIcon } from '@/components/invoice/ReceiptStatusIndicator';
 import type { ReceiptStatus } from '@/components/invoice/ReceiptStatusIndicator';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
+import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { useAmbassadorOrders } from '@/hooks/useAmbassadorOrders';
 import { CreateOrderStoreSelector } from '@/components/ambassador/CreateOrderStoreSelector';
 import { CreateStoreInvoiceModal } from '@/components/store/CreateStoreInvoiceModal';
@@ -141,7 +141,7 @@ export default function AmbassadorOrders() {
   // Show loading state
   if (isLoading) {
     return (
-      <EnhancedPortalLayout 
+      <AmbassadorLayout 
         title="Orders" 
         subtitle="View all orders from your portfolio"
         backPath="/ambassador/dashboard"
@@ -154,14 +154,14 @@ export default function AmbassadorOrders() {
           </div>
           <Skeleton className="h-[500px]" />
         </div>
-      </EnhancedPortalLayout>
+      </AmbassadorLayout>
     );
   }
 
   // Show error state
   if (isError) {
     return (
-      <EnhancedPortalLayout 
+      <AmbassadorLayout 
         title="Orders" 
         subtitle="View all orders from your portfolio"
         backPath="/ambassador/dashboard"
@@ -176,12 +176,12 @@ export default function AmbassadorOrders() {
             </CardContent>
           </Card>
         </div>
-      </EnhancedPortalLayout>
+      </AmbassadorLayout>
     );
   }
 
   return (
-    <EnhancedPortalLayout 
+    <AmbassadorLayout 
       title="Orders" 
       subtitle="View all orders from your portfolio"
       backPath="/ambassador/dashboard"
@@ -366,6 +366,6 @@ export default function AmbassadorOrders() {
           onSuccess={handleInvoiceSuccess}
         />
       )}
-    </EnhancedPortalLayout>
+    </AmbassadorLayout>
   );
 }

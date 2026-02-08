@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useAmbassadorThreads, useCallHistory, useLogCall } from '@/hooks/useAmbassadorComms';
 import { format } from 'date-fns';
-import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
+import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { toast } from 'sonner';
 import { useCall } from '@/components/communication/CallProvider';
 
@@ -140,7 +140,7 @@ export default function AmbassadorCommunications() {
   const unreadCount = threads.reduce((sum, t) => sum + t.unread_count, 0);
 
   return (
-    <EnhancedPortalLayout 
+    <AmbassadorLayout 
       title="Communications" 
       subtitle="Messages, calls, and templates"
       backPath="/ambassador/dashboard"
@@ -396,6 +396,6 @@ export default function AmbassadorCommunications() {
           </TabsContent>
         </Tabs>
       </div>
-    </EnhancedPortalLayout>
+    </AmbassadorLayout>
   );
 }

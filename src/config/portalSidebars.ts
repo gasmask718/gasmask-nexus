@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Brain, Shield, Phone, Target, Award,
   Wallet, Calendar, CheckSquare, Clipboard, Store,
   Bike, Car, TrendingUp, Bell, Receipt, ClipboardList,
-  UserCircle, Eye, type LucideIcon
+  UserCircle, Eye, ShoppingBag, MapPin, type LucideIcon
 } from 'lucide-react';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -385,29 +385,31 @@ export const DRIVER_PORTAL: PortalConfig = {
 // ═══════════════════════════════════════════════════════════════════════════════
 export const AMBASSADOR_PORTAL: PortalConfig = {
   role: 'ambassador',
-  landingPage: '/portal/ambassador',
-  portalRoot: '/portal/ambassador',
+  landingPage: '/ambassador/dashboard',
+  portalRoot: '/ambassador',
   name: 'Ambassador Portal',
-  description: 'Store sourcing and relationships',
+  description: 'Store sourcing, purchases, and commissions',
   sections: [
     {
-      id: 'stores',
-      title: 'My Stores',
+      id: 'operations',
+      title: 'Operations',
       emoji: '🏪',
       items: [
-        { id: 'dashboard', label: 'My Dashboard', path: '/portal/ambassador', icon: LayoutDashboard, emoji: '📊' },
-        { id: 'assigned', label: 'Assigned Stores', path: '/portal/ambassador/stores', icon: Store, emoji: '🏪' },
-        { id: 'sourced', label: 'Sourced Stores', path: '/portal/ambassador/sourced', icon: Target, emoji: '🎯' },
-        { id: 'follow-ups', label: 'Follow-Ups', path: '/portal/ambassador/follow-ups', icon: Bell, emoji: '🔔' },
+        { id: 'dashboard', label: 'Dashboard', path: '/ambassador/dashboard', icon: LayoutDashboard, emoji: '📊' },
+        { id: 'stores', label: 'My Stores', path: '/ambassador/stores', icon: Store, emoji: '🏪' },
+        { id: 'leads', label: 'Leads Pipeline', path: '/ambassador/leads', icon: Target, emoji: '🎯' },
+        { id: 'purchases', label: 'My Purchases', path: '/ambassador/purchases', icon: ShoppingBag, emoji: '🛍️' },
+        { id: 'routes', label: 'My Routes', path: '/ambassador/routes', icon: MapPin, emoji: '📍' },
       ],
     },
     {
       id: 'performance',
-      title: 'Performance',
+      title: 'Performance & Finance',
       emoji: '📈',
       items: [
-        { id: 'commissions', label: 'My Commissions', path: '/portal/ambassador/commissions', icon: DollarSign, emoji: '💰' },
-        { id: 'leaderboard', label: 'Leaderboard', path: '/portal/ambassador/leaderboard', icon: Award, emoji: '🏆' },
+        { id: 'commissions', label: 'My Commissions', path: '/ambassador/commissions', icon: DollarSign, emoji: '💰' },
+        { id: 'orders', label: 'Store Orders', path: '/ambassador/orders', icon: Package, emoji: '📦' },
+        { id: 'communications', label: 'Communications', path: '/ambassador/communications', icon: MessageSquare, emoji: '💬' },
       ],
     },
   ],

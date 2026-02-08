@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, ArrowRight, RefreshCw } from 'lucide-react';
-import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
+import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
 import { Button } from '@/components/ui/button';
 import { useMyPurchases, useAmbassadorPurchaseSummary } from '@/hooks/useAmbassadorPurchases';
@@ -59,14 +59,14 @@ function PurchasesContent() {
 export default function AmbassadorPurchases() {
   return (
     <PortalRBACGate allowedRoles={['ambassador', 'admin']} portalName="Ambassador Portal">
-      <EnhancedPortalLayout
+      <AmbassadorLayout
         title="My Purchases"
         subtitle="Your purchase history"
         backPath="/ambassador/dashboard"
         portalIcon={<ShoppingBag className="h-4 w-4 text-primary-foreground" />}
       >
         <PurchasesContent />
-      </EnhancedPortalLayout>
+      </AmbassadorLayout>
     </PortalRBACGate>
   );
 }

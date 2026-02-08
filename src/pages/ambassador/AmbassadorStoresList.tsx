@@ -8,7 +8,7 @@ import {
   Store, Search, Filter, MapPin, Phone, Calendar,
   ArrowRight, Users, Trash2
 } from 'lucide-react';
-import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
+import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -238,13 +238,13 @@ function StoresListContent() {
 export default function AmbassadorStoresList() {
   return (
     <PortalRBACGate allowedRoles={['ambassador']} portalName="Ambassador Portal">
-      <EnhancedPortalLayout 
+      <AmbassadorLayout 
         title="My Stores" 
         subtitle="All stores in your portfolio"
         portalIcon={<Users className="h-4 w-4 text-primary-foreground" />}
       >
         <StoresListContent />
-      </EnhancedPortalLayout>
+      </AmbassadorLayout>
     </PortalRBACGate>
   );
 }

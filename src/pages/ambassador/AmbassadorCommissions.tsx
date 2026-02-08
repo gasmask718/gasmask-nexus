@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useCommissionPage, type CommissionLedgerEntry, type SourceChannel } from '@/hooks/useCommissionLedger';
 import { format } from 'date-fns';
-import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
+import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 
 export default function AmbassadorCommissions() {
   const { ledger, totals, channels, payouts, isLoading } = useCommissionPage();
@@ -71,7 +71,7 @@ export default function AmbassadorCommissions() {
 
   if (isLoading) {
     return (
-      <EnhancedPortalLayout 
+      <AmbassadorLayout 
         title="Commission Center" 
         subtitle="Track earnings, view ledger, and manage payouts"
         backPath="/ambassador/dashboard"
@@ -82,12 +82,12 @@ export default function AmbassadorCommissions() {
           </div>
           <Skeleton className="h-64" />
         </div>
-      </EnhancedPortalLayout>
+      </AmbassadorLayout>
     );
   }
 
   return (
-    <EnhancedPortalLayout 
+    <AmbassadorLayout 
       title="Commission Center" 
       subtitle="Track earnings, view ledger, and manage payouts"
       backPath="/ambassador/dashboard"
@@ -385,6 +385,6 @@ export default function AmbassadorCommissions() {
           </TabsContent>
         </Tabs>
       </div>
-    </EnhancedPortalLayout>
+    </AmbassadorLayout>
   );
 }

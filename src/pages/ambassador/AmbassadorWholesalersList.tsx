@@ -8,7 +8,7 @@ import {
   Building2, Search, MapPin, Phone, Mail, Calendar,
   Trash2, ExternalLink
 } from 'lucide-react';
-import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
+import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -254,13 +254,13 @@ function WholesalersListContent() {
 export default function AmbassadorWholesalersList() {
   return (
     <PortalRBACGate allowedRoles={['ambassador', 'admin']} portalName="Ambassador Portal">
-      <EnhancedPortalLayout 
+      <AmbassadorLayout 
         title="My Wholesalers" 
         subtitle="All wholesalers in your portfolio"
         portalIcon={<Building2 className="h-4 w-4 text-primary-foreground" />}
       >
         <WholesalersListContent />
-      </EnhancedPortalLayout>
+      </AmbassadorLayout>
     </PortalRBACGate>
   );
 }

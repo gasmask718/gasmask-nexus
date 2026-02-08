@@ -21,7 +21,7 @@ import {
   Phone, Mail, MapPin, Calendar, ArrowRight, Loader2, Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
+import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { useAmbassadorLeads, type Lead } from '@/hooks/useAmbassadorLeads';
 import { useAuth } from '@/contexts/AuthContext';
 import { useViewAs } from '@/contexts/ViewAsContext';
@@ -410,7 +410,7 @@ export default function AmbassadorLeads() {
 
   if (isLoading) {
     return (
-      <EnhancedPortalLayout 
+      <AmbassadorLayout 
         title="Leads Pipeline" 
         subtitle="Manage prospects across all channels"
         backPath="/ambassador/dashboard"
@@ -421,13 +421,13 @@ export default function AmbassadorLeads() {
           </div>
           <Skeleton className="h-64" />
         </div>
-      </EnhancedPortalLayout>
+      </AmbassadorLayout>
     );
   }
 
   if (routeAmbassadorId && isTargetAmbassadorLoading) {
     return (
-      <EnhancedPortalLayout 
+      <AmbassadorLayout 
         title="Leads Pipeline" 
         subtitle="Loading pipeline context…"
         backPath={routeAmbassadorId ? `/profile/ambassador/${routeAmbassadorId}` : "/ambassador/dashboard"}
@@ -438,12 +438,12 @@ export default function AmbassadorLeads() {
           </div>
           <Skeleton className="h-64" />
         </div>
-      </EnhancedPortalLayout>
+      </AmbassadorLayout>
     );
   }
 
   return (
-    <EnhancedPortalLayout 
+    <AmbassadorLayout 
       title={isReadOnly && targetAmbassador ? `Pipeline for ${targetAmbassador.name || 'Ambassador'}` : "Leads Pipeline"}
       subtitle={isReadOnly ? "Read-only view — Leads created by this ambassador" : "Manage prospects across all channels"}
       backPath={routeAmbassadorId ? `/profile/ambassador/${routeAmbassadorId}` : "/ambassador/dashboard"}
@@ -1013,6 +1013,6 @@ export default function AmbassadorLeads() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </EnhancedPortalLayout>
+    </AmbassadorLayout>
   );
 }
