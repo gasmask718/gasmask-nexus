@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,14 +10,19 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { DataTablePagination } from "@/components/crud/DataTablePagination";
+import { ExportButton } from "@/components/crud/ExportButton";
 import {
   BarChart3, Search, ArrowUpDown, ArrowUp, ArrowDown, ExternalLink,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useGlobalSellThroughAnalytics, type GlobalSellThroughRow } from "@/hooks/useGlobalSellThroughAnalytics";
+import { useInactiveStores } from "@/hooks/useInactiveStores";
 import { classifySellThroughHealth, getHealthColors } from "@/lib/sellThroughHealth";
 import { GRABBA_BRAND_IDS, GRABBA_BRAND_CONFIG, type GrabbaBrand } from "@/config/grabbaSkyscraper";
+import { OverdueAlertBanner } from "@/components/sell-through/OverdueAlertBanner";
+import { BrandHeatmapSummary } from "@/components/sell-through/BrandHeatmapSummary";
 
 type SortField = "store_name" | "brand_name" | "total_orders_lifetime" | "avg_days_between_orders" | "days_since_last_order" | "total_revenue_lifetime";
 type SortDir = "asc" | "desc";
@@ -31,12 +36,24 @@ const frequencyColors: Record<string, string> = {
 
 export default function SellThroughAnalytics() {
   const navigate = useNavigate();
-  const { data: rows = [], isLoading } = useGlobalSellThroughAnalytics();
+  const { data: activeRows = [], isLoading } = useGlobalSellThroughAnalytics();
+
+  // Inactive stores toggle
+  const [showInactive, setShowInactive] = useState(false);
+  const activeStoreIds = useMemo(() => new Set(activeRows.map((r) => r.store_id)), [activeRows]);
+  const { data: inactiveRows = [] } = useInactiveStores(activeStoreIds, showInactive);
+
+  // Merge active + optional inactive rows
+  const allRows = useMemo(() => {
+    if (!showInactive) return activeRows;
+    return [...activeRows, ...inactiveRows];
+  }, [activeRows, inactiveRows, showInactive]);
 
   // Filters
   const [search, setSearch] = useState("");
   const [brandFilter, setBrandFilter] = useState<string>("all");
   const [frequencyFilter, setFrequencyFilter] = useState<string>("all");
+  const [overdueOnly, setOverdueOnly] = useState(false);
 
   // Sorting
   const [sortField, setSortField] = useState<SortField>("days_since_last_order");
@@ -58,9 +75,14 @@ export default function SellThroughAnalytics() {
     setPage(1);
   }, []);
 
+  const toggleOverdueFilter = useCallback(() => {
+    setOverdueOnly((prev) => !prev);
+    setPage(1);
+  }, []);
+
   // Filtered + sorted data
   const processed = useMemo(() => {
-    let result = [...rows];
+    let result = [...allRows];
 
     // Search
     if (search) {
@@ -83,12 +105,20 @@ export default function SellThroughAnalytics() {
       result = result.filter((r) => r.order_frequency_class === frequencyFilter);
     }
 
+    // Overdue-only filter
+    if (overdueOnly) {
+      result = result.filter((r) => {
+        if (r.total_orders_lifetime < 2) return false;
+        if (r.avg_days_between_orders == null || r.days_since_last_order == null) return false;
+        return r.days_since_last_order > r.avg_days_between_orders * 1.5;
+      });
+    }
+
     // Sort
     result.sort((a, b) => {
       let aVal: any = a[sortField];
       let bVal: any = b[sortField];
 
-      // Nulls last
       if (aVal == null && bVal == null) return 0;
       if (aVal == null) return 1;
       if (bVal == null) return -1;
@@ -104,28 +134,47 @@ export default function SellThroughAnalytics() {
     });
 
     return result;
-  }, [rows, search, brandFilter, frequencyFilter, sortField, sortDir]);
+  }, [allRows, search, brandFilter, frequencyFilter, overdueOnly, sortField, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(processed.length / pageSize));
   const paginated = processed.slice((page - 1) * pageSize, page * pageSize);
 
-  // KPI summaries
+  // KPI summaries (from full active dataset for accuracy)
   const kpis = useMemo(() => {
-    const total = processed.length;
-    const withData = processed.filter((r) => r.total_orders_lifetime > 1);
+    const base = showInactive ? allRows : activeRows;
+    const total = base.length;
+    const withData = base.filter((r) => r.total_orders_lifetime > 1);
     const overdue = withData.filter((r) => {
       if (r.avg_days_between_orders == null || r.days_since_last_order == null) return false;
       return r.days_since_last_order > r.avg_days_between_orders * 1.5;
     }).length;
-    const fast = processed.filter((r) => r.order_frequency_class === "Fast").length;
+    const fast = base.filter((r) => r.order_frequency_class === "Fast").length;
     const avgGap = withData.length > 0
       ? Math.round(
           withData.reduce((s, r) => s + (r.avg_days_between_orders || 0), 0) / withData.length
         )
       : null;
+    const inactive = showInactive ? inactiveRows.length / Math.max(GRABBA_BRAND_IDS.length, 1) : 0;
 
-    return { total, overdue, fast, avgGap };
-  }, [processed]);
+    return { total, overdue, fast, avgGap, inactive: Math.round(inactive) };
+  }, [activeRows, allRows, inactiveRows, showInactive]);
+
+  // Export columns
+  const exportColumns = [
+    { key: "store_name", label: "Store Name" },
+    { key: "brand_name", label: "Brand" },
+    { key: "total_orders_lifetime", label: "Total Orders" },
+    { key: "total_revenue_lifetime", label: "Lifetime Revenue" },
+    { key: "avg_days_between_orders", label: "Avg Days Between Orders" },
+    { key: "days_since_last_order", label: "Days Since Last Order" },
+    { key: "order_frequency_class", label: "Frequency Class" },
+    { key: "city", label: "City" },
+    { key: "state", label: "State" },
+    { key: "first_order_date", label: "First Order Date" },
+    { key: "last_order_date", label: "Last Order Date" },
+    { key: "orders_last_30d", label: "Orders Last 30d" },
+    { key: "orders_last_90d", label: "Orders Last 90d" },
+  ];
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
@@ -137,14 +186,22 @@ export default function SellThroughAnalytics() {
   return (
     <div className="space-y-4 p-4 md:p-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <BarChart3 className="h-6 w-6" />
-          Sell-Through Analytics
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Portfolio-level sell-through velocity across all stores and brands
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <BarChart3 className="h-6 w-6" />
+            Sell-Through Analytics
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Portfolio-level sell-through velocity across all stores and brands
+          </p>
+        </div>
+        <ExportButton
+          data={processed as unknown as Record<string, unknown>[]}
+          filename="sell-through-analytics"
+          columns={exportColumns}
+          disabled={processed.length === 0}
+        />
       </div>
 
       {/* KPI Strip */}
@@ -153,17 +210,27 @@ export default function SellThroughAnalytics() {
         <KpiCard
           label="Overdue"
           value={kpis.overdue.toString()}
-          className={kpis.overdue > 0 ? "border-red-500/30" : ""}
-          valueClassName={kpis.overdue > 0 ? "text-red-500" : ""}
+          className={kpis.overdue > 0 ? "border-destructive/30" : ""}
+          valueClassName={kpis.overdue > 0 ? "text-destructive" : ""}
         />
         <KpiCard label="Fast Movers" value={kpis.fast.toString()} />
         <KpiCard label="Avg Gap (days)" value={kpis.avgGap != null ? `${kpis.avgGap}d` : "—"} />
       </div>
 
+      {/* Overdue Alert Banner */}
+      <OverdueAlertBanner
+        rows={activeRows}
+        onFilterOverdue={toggleOverdueFilter}
+        isFilteringOverdue={overdueOnly}
+      />
+
+      {/* Brand Heatmap */}
+      <BrandHeatmapSummary rows={allRows} />
+
       {/* Filters */}
       <Card>
         <CardContent className="pt-4 pb-3">
-          <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -198,6 +265,16 @@ export default function SellThroughAnalytics() {
                 <SelectItem value="New">🔵 New</SelectItem>
               </SelectContent>
             </Select>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={showInactive}
+                onCheckedChange={(checked) => { setShowInactive(checked); setPage(1); }}
+                id="show-inactive"
+              />
+              <label htmlFor="show-inactive" className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
+                Show Inactive
+              </label>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -269,7 +346,14 @@ export default function SellThroughAnalytics() {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginated.map((row) => <SellThroughRow key={`${row.store_id}-${row.brand_name}`} row={row} onNavigate={navigate} />)
+                paginated.map((row) => (
+                  <SellThroughRow
+                    key={`${row.store_id}-${row.brand_name}`}
+                    row={row}
+                    onNavigate={navigate}
+                    isInactive={row.total_orders_lifetime === 0 && showInactive}
+                  />
+                ))
               )}
             </TableBody>
           </Table>
@@ -279,7 +363,15 @@ export default function SellThroughAnalytics() {
   );
 }
 
-function SellThroughRow({ row, onNavigate }: { row: GlobalSellThroughRow; onNavigate: (path: string) => void }) {
+function SellThroughRow({
+  row,
+  onNavigate,
+  isInactive,
+}: {
+  row: GlobalSellThroughRow;
+  onNavigate: (path: string) => void;
+  isInactive?: boolean;
+}) {
   const health = classifySellThroughHealth(
     row.days_since_last_order,
     row.avg_days_between_orders,
@@ -289,7 +381,10 @@ function SellThroughRow({ row, onNavigate }: { row: GlobalSellThroughRow; onNavi
   const brandConfig = GRABBA_BRAND_CONFIG[row.brand_name as GrabbaBrand];
 
   return (
-    <TableRow className="cursor-pointer hover:bg-accent/50" onClick={() => onNavigate(`/stores/${row.store_id}`)}>
+    <TableRow
+      className={`cursor-pointer hover:bg-accent/50 ${isInactive ? "opacity-50" : ""}`}
+      onClick={() => onNavigate(`/stores/${row.store_id}`)}
+    >
       <TableCell className="font-medium max-w-[200px] truncate">
         {row.store_name || "Unknown Store"}
       </TableCell>
@@ -324,19 +419,31 @@ function SellThroughRow({ row, onNavigate }: { row: GlobalSellThroughRow; onNavi
         )}
       </TableCell>
       <TableCell className="text-center hidden md:table-cell">
-        <Badge variant="outline" className={`text-[10px] ${frequencyColors[row.order_frequency_class] || ""}`}>
-          {row.order_frequency_class}
-        </Badge>
+        {isInactive ? (
+          <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">
+            Inactive
+          </Badge>
+        ) : (
+          <Badge variant="outline" className={`text-[10px] ${frequencyColors[row.order_frequency_class] || ""}`}>
+            {row.order_frequency_class}
+          </Badge>
+        )}
       </TableCell>
       <TableCell className="text-center">
-        <div className="flex flex-col items-center gap-0.5">
-          <Badge variant="outline" className={`text-[10px] ${healthColors.bgColor} ${healthColors.color}`}>
-            {health.label}
+        {isInactive ? (
+          <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">
+            Inactive
           </Badge>
-          {health.varianceLabel && (
-            <span className={`text-[9px] ${healthColors.color}`}>{health.varianceLabel}</span>
-          )}
-        </div>
+        ) : (
+          <div className="flex flex-col items-center gap-0.5">
+            <Badge variant="outline" className={`text-[10px] ${healthColors.bgColor} ${healthColors.color}`}>
+              {health.label}
+            </Badge>
+            {health.varianceLabel && (
+              <span className={`text-[9px] ${healthColors.color}`}>{health.varianceLabel}</span>
+            )}
+          </div>
+        )}
       </TableCell>
       <TableCell className="text-right hidden lg:table-cell text-xs text-muted-foreground">
         {row.last_order_date ? format(new Date(row.last_order_date), "MMM d, yy") : "—"}
@@ -352,7 +459,7 @@ function SellThroughRow({ row, onNavigate }: { row: GlobalSellThroughRow; onNavi
 
 function KpiCard({ label, value, className = "", valueClassName = "" }: { label: string; value: string; className?: string; valueClassName?: string }) {
   return (
-    <Card className={`${className}`}>
+    <Card className={className}>
       <CardContent className="pt-4 pb-3">
         <div className={`text-2xl font-bold ${valueClassName}`}>{value}</div>
         <div className="text-xs text-muted-foreground">{label}</div>
