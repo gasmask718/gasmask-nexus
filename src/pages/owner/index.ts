@@ -30,3 +30,4 @@ export { default as OwnerAlertCenter } from "./OwnerAlertCenter";
 // New Pages
 export { default as OwnerExecutiveReports } from "./OwnerExecutiveReports";
 export { default as OwnerBroadcastCenter } from "./OwnerBroadcastCenter";
+export { default as OwnerAccountingOS } from "./OwnerAccountingOS";
