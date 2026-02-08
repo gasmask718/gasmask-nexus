@@ -35377,6 +35377,112 @@ export type Database = {
           },
         ]
       }
+      production_worker_submissions: {
+        Row: {
+          auto_rule_applied: string | null
+          batch_id: string | null
+          boxes_packed: number | null
+          created_at: string
+          defect_reason: string | null
+          defects_count: number | null
+          downtime_minutes: number | null
+          downtime_reason: string | null
+          id: string
+          lbs_processed: number | null
+          notes: string | null
+          office_id: string
+          quality_check_passed: boolean | null
+          resulting_output_id: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          shift_label: string | null
+          status: string
+          submission_date: string
+          submitted_by: string | null
+          tubes_produced: number | null
+          updated_at: string
+          waste_lbs: number | null
+          worker_id: string | null
+        }
+        Insert: {
+          auto_rule_applied?: string | null
+          batch_id?: string | null
+          boxes_packed?: number | null
+          created_at?: string
+          defect_reason?: string | null
+          defects_count?: number | null
+          downtime_minutes?: number | null
+          downtime_reason?: string | null
+          id?: string
+          lbs_processed?: number | null
+          notes?: string | null
+          office_id: string
+          quality_check_passed?: boolean | null
+          resulting_output_id?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          shift_label?: string | null
+          status?: string
+          submission_date?: string
+          submitted_by?: string | null
+          tubes_produced?: number | null
+          updated_at?: string
+          waste_lbs?: number | null
+          worker_id?: string | null
+        }
+        Update: {
+          auto_rule_applied?: string | null
+          batch_id?: string | null
+          boxes_packed?: number | null
+          created_at?: string
+          defect_reason?: string | null
+          defects_count?: number | null
+          downtime_minutes?: number | null
+          downtime_reason?: string | null
+          id?: string
+          lbs_processed?: number | null
+          notes?: string | null
+          office_id?: string
+          quality_check_passed?: boolean | null
+          resulting_output_id?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          shift_label?: string | null
+          status?: string
+          submission_date?: string
+          submitted_by?: string | null
+          tubes_produced?: number | null
+          updated_at?: string
+          waste_lbs?: number | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_worker_submissions_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_worker_submissions_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_submissions_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "production_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_workers: {
         Row: {
           created_at: string | null
