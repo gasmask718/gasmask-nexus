@@ -40041,6 +40041,7 @@ export type Database = {
       }
       store_notes: {
         Row: {
+          brand_scope: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -40049,6 +40050,7 @@ export type Database = {
           store_id: string | null
         }
         Insert: {
+          brand_scope?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -40057,6 +40059,7 @@ export type Database = {
           store_id?: string | null
         }
         Update: {
+          brand_scope?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
