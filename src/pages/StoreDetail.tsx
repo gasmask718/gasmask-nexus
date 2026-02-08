@@ -36,6 +36,10 @@ import { UnifiedTubeIntelligenceCard } from "@/components/store/UnifiedTubeIntel
 import { SellThroughIntelCard } from "@/components/store/SellThroughIntelCard";
 import { BrandStickersCard } from "@/components/store/BrandStickersCard";
 import { QuickStatsStickersSummary } from "@/components/store/QuickStatsStickersSummary";
+import { StoreHealthBadge } from "@/components/delivery/StoreHealthBadge";
+import { StoreHealthScoreCard } from "@/components/delivery/StoreHealthScoreCard";
+import { VisitSummaryCard } from "@/components/delivery/VisitSummaryCard";
+import { ActionsNeededCard } from "@/components/delivery/ActionsNeededCard";
 import { QuickStatsContactSnapshot } from "@/components/store/QuickStatsContactSnapshot";
 import { usePrimaryResponsiveContact } from "@/hooks/usePrimaryResponsiveContact";
 import { StoreContactIntelBadge } from "@/components/contact/StoreContactIntelBadge";
@@ -494,6 +498,7 @@ const StoreDetail = () => {
               <div className="flex items-center gap-3">
                 <h2 className="text-3xl font-bold tracking-tight">{store.name}</h2>
                 <Badge className={getStatusColor(store.status)}>{store.status}</Badge>
+                {id && <StoreHealthBadge storeId={id} />}
               </div>
               <p className="text-muted-foreground capitalize">{store.type.replace("_", " ")}</p>
               {/* Primary Responsive Contact — subtle header badge */}
@@ -579,6 +584,16 @@ const StoreDetail = () => {
                 });
             }}
           />
+
+          {/* PHASE IV-VI Intelligence Layer */}
+          {/* Actions Needed — Rule-based follow-ups */}
+          <ActionsNeededCard storeId={id || ""} />
+
+          {/* Store Health Score — Deterministic breakdown */}
+          <StoreHealthScoreCard storeId={id || ""} />
+
+          {/* Visit History — Deterministic summaries */}
+          <VisitSummaryCard storeId={id || ""} />
 
           {/* Owners & Workers Sections */}
           <StorePeopleSection storeId={id || ""} />
