@@ -4,11 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Crown, Loader2, AlertCircle, CheckCircle, UserPlus } from 'lucide-react';
-import { validateInviteToken, markInvitationAccepted, type Invitation } from '@/services/invitationService';
+import { Crown, Loader2, AlertCircle, UserPlus } from 'lucide-react';
+import {
+  validateInviteToken,
+  acceptInvitation,
+  type Invitation,
+} from '@/services/invitationService';
 import { supabase } from '@/integrations/supabase/client';
 import { getRoleRedirectPath, getRoleDisplayName } from '@/services/roleService';
 import { createUserProfile, createRoleProfile } from '@/services/roleService';
@@ -88,22 +91,28 @@ export default function InviteSignup() {
         }
       });
 
-      if (authError) {
-        throw new Error(authError.message);
+      if (authError) throw new Error(authError.message);
+      if (!authData.user) throw new Error('Failed to create user account');
+
+      const userId = authData.user.id;
+
+      // 2. Accept invitation FIRST — source of truth mutation
+      //    Records accepted_user_id, status='accepted', audit trail
+      const { success: accepted, error: acceptError } = await acceptInvitation(token, userId);
+      if (!accepted) {
+        console.error('Accept invitation failed:', acceptError);
+        // Non-fatal: continue with profile/role creation
+        // Admin can see the user was created even if this step fails
       }
 
-      if (!authData.user) {
-        throw new Error('Failed to create user account');
-      }
-
-      // 2. Create user profile with assigned role
-      await createUserProfile(authData.user.id, {
+      // 3. Create user profile
+      await createUserProfile(userId, {
         full_name: fullName,
         primary_role: invitation.role as OSRole,
         preferred_language: 'en'
       });
 
-      // 3. Create role-specific profile if needed
+      // 4. Create role-specific profile if needed
       const roleData: Record<string, any> = {};
       if (invitation.metadata?.assigned_store_id) {
         roleData.assigned_store_id = invitation.metadata.assigned_store_id;
@@ -112,36 +121,17 @@ export default function InviteSignup() {
         roleData.assigned_brand_id = invitation.metadata.assigned_brand_id;
       }
       
-      await createRoleProfile(authData.user.id, invitation.role as OSRole, roleData);
+      await createRoleProfile(userId, invitation.role as OSRole, roleData);
 
-      // 4. Add to user_roles table (CRITICAL - this is the authority source)
-      const roleInsert = {
-        user_id: authData.user.id,
-        role: invitation.role as any
-      };
+      // 5. Add to user_roles table (CRITICAL — authority source for RLS)
       await supabase
         .from('user_roles')
-        .insert(roleInsert);
-
-      // 5. Accept invitation — records accepted_user_id + status + audit
-      const { acceptInvitation } = await import('@/services/invitationService');
-      await acceptInvitation(token, authData.user.id);
-
-      // 6. Update invitation with accepted_user_id explicitly (belt & suspenders)
-      await supabase
-        .from('user_invitations')
-        .update({ 
-          accepted_user_id: authData.user.id,
-          invite_status: 'accepted' as any,
-        })
-        .eq('invite_token', token);
+        .insert({ user_id: userId, role: invitation.role as any });
 
       toast.success('Account created successfully! Redirecting to your portal...');
       
       // 6. Redirect to appropriate portal based on role
       const redirectPath = getRoleRedirectPath(invitation.role);
-      
-      // Small delay to ensure session is established
       setTimeout(() => {
         navigate(redirectPath, { replace: true });
       }, 500);
