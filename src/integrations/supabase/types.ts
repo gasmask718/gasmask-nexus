@@ -18191,6 +18191,66 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_checklists: {
+        Row: {
+          completed_at: string | null
+          contact_updates: Json | null
+          created_at: string | null
+          growth_captures: Json | null
+          id: string
+          inventory_updates: Json | null
+          notes: string | null
+          order_confirmations: Json | null
+          photo_urls: string[] | null
+          started_at: string | null
+          status: string
+          sticker_status: Json | null
+          store_id: string
+          tasks_completed: Json | null
+          updated_at: string | null
+          user_id: string
+          visit_date: string
+        }
+        Insert: {
+          completed_at?: string | null
+          contact_updates?: Json | null
+          created_at?: string | null
+          growth_captures?: Json | null
+          id?: string
+          inventory_updates?: Json | null
+          notes?: string | null
+          order_confirmations?: Json | null
+          photo_urls?: string[] | null
+          started_at?: string | null
+          status?: string
+          sticker_status?: Json | null
+          store_id: string
+          tasks_completed?: Json | null
+          updated_at?: string | null
+          user_id: string
+          visit_date?: string
+        }
+        Update: {
+          completed_at?: string | null
+          contact_updates?: Json | null
+          created_at?: string | null
+          growth_captures?: Json | null
+          id?: string
+          inventory_updates?: Json | null
+          notes?: string | null
+          order_confirmations?: Json | null
+          photo_urls?: string[] | null
+          started_at?: string | null
+          status?: string
+          sticker_status?: Json | null
+          store_id?: string
+          tasks_completed?: Json | null
+          updated_at?: string | null
+          user_id?: string
+          visit_date?: string
+        }
+        Relationships: []
+      }
       delivery_exceptions: {
         Row: {
           created_at: string | null

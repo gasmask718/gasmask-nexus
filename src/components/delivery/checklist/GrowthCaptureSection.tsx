@@ -1,0 +1,152 @@
+import { useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Store, Plus, Trash2 } from 'lucide-react';
+import { ChecklistSection } from './ChecklistSection';
+import { getTasksByCategory } from '@/hooks/useDeliveryChecklist';
+
+interface NewStoreCapture {
+  name: string;
+  address: string;
+  contact: string;
+}
+
+interface GrowthCaptureSectionProps {
+  storeId: string;
+  isTaskCompleted: (taskKey: string) => boolean;
+  onToggleTask: (taskKey: string, completed: boolean) => void;
+  progress: { done: number; total: number };
+  growthData: Record<string, any>;
+  onGrowthUpdate: (data: Record<string, any>) => void;
+}
+
+export function GrowthCaptureSection({
+  storeId,
+  isTaskCompleted,
+  onToggleTask,
+  progress,
+  growthData,
+  onGrowthUpdate,
+}: GrowthCaptureSectionProps) {
+  const tasks = getTasksByCategory('growth');
+  const [newStores, setNewStores] = useState<NewStoreCapture[]>(
+    growthData.newStores || []
+  );
+  const [sellsFlowers, setSellsFlowers] = useState<string>(
+    growthData.sellsFlowers || 'unknown'
+  );
+
+  const addNewStore = () => {
+    const updated = [...newStores, { name: '', address: '', contact: '' }];
+    setNewStores(updated);
+    onGrowthUpdate({ ...growthData, newStores: updated });
+  };
+
+  const updateNewStore = (index: number, field: keyof NewStoreCapture, value: string) => {
+    const updated = [...newStores];
+    updated[index] = { ...updated[index], [field]: value };
+    setNewStores(updated);
+    onGrowthUpdate({ ...growthData, newStores: updated });
+  };
+
+  const removeNewStore = (index: number) => {
+    const updated = newStores.filter((_, i) => i !== index);
+    setNewStores(updated);
+    onGrowthUpdate({ ...growthData, newStores: updated });
+  };
+
+  const handleFlowersChange = (value: string) => {
+    setSellsFlowers(value);
+    onGrowthUpdate({ ...growthData, sellsFlowers: value });
+  };
+
+  return (
+    <ChecklistSection
+      title="Growth & Opportunities"
+      icon={<Store className="h-5 w-5" />}
+      category="growth"
+      tasks={tasks}
+      progress={progress}
+      isTaskCompleted={isTaskCompleted}
+      onToggleTask={onToggleTask}
+      accentColor="text-emerald-500"
+    >
+      <div className="space-y-4">
+        {/* Sells Flowers */}
+        <div>
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
+            Do they sell flowers?
+          </Label>
+          <RadioGroup value={sellsFlowers} onValueChange={handleFlowersChange} className="flex gap-4">
+            <div className="flex items-center gap-1.5">
+              <RadioGroupItem value="yes" id="flowers-yes" />
+              <Label htmlFor="flowers-yes" className="text-sm cursor-pointer">Yes</Label>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <RadioGroupItem value="no" id="flowers-no" />
+              <Label htmlFor="flowers-no" className="text-sm cursor-pointer">No</Label>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <RadioGroupItem value="unknown" id="flowers-unknown" />
+              <Label htmlFor="flowers-unknown" className="text-sm cursor-pointer">Unsure</Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        {/* New Store Leads */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              New Store Leads
+            </Label>
+            <Button variant="outline" size="sm" onClick={addNewStore} className="h-7 gap-1">
+              <Plus className="h-3 w-3" /> Add
+            </Button>
+          </div>
+          
+          {newStores.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic">No new stores captured yet</p>
+          ) : (
+            <div className="space-y-3">
+              {newStores.map((store, index) => (
+                <div key={index} className="p-3 rounded-lg border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium">Store #{index + 1}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => removeNewStore(index)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <Input
+                    placeholder="Store name"
+                    value={store.name}
+                    onChange={(e) => updateNewStore(index, 'name', e.target.value)}
+                    className="h-7 text-sm"
+                  />
+                  <Input
+                    placeholder="Address"
+                    value={store.address}
+                    onChange={(e) => updateNewStore(index, 'address', e.target.value)}
+                    className="h-7 text-sm"
+                  />
+                  <Input
+                    placeholder="Contact (optional)"
+                    value={store.contact}
+                    onChange={(e) => updateNewStore(index, 'contact', e.target.value)}
+                    className="h-7 text-sm"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </ChecklistSection>
+  );
+}
