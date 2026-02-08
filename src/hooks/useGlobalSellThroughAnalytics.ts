@@ -26,17 +26,39 @@ export interface GlobalSellThroughRow {
   projected_next_order: string | null;
 }
 
+/**
+ * Fetches all rows from the sell-through view using paginated queries
+ * to avoid the Supabase 1000-row default limit.
+ */
 export function useGlobalSellThroughAnalytics() {
   return useQuery({
     queryKey: ["global-sell-through-analytics"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("v_global_sell_through_analytics" as any)
-        .select("*")
-        .order("days_since_last_order", { ascending: true });
+      const PAGE_SIZE = 1000;
+      const allRows: GlobalSellThroughRow[] = [];
+      let offset = 0;
+      let hasMore = true;
 
-      if (error) throw error;
-      return (data || []) as unknown as GlobalSellThroughRow[];
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("v_global_sell_through_analytics" as any)
+          .select("*")
+          .order("days_since_last_order", { ascending: true })
+          .range(offset, offset + PAGE_SIZE - 1);
+
+        if (error) throw error;
+
+        const batch = (data || []) as unknown as GlobalSellThroughRow[];
+        allRows.push(...batch);
+
+        if (batch.length < PAGE_SIZE) {
+          hasMore = false;
+        } else {
+          offset += PAGE_SIZE;
+        }
+      }
+
+      return allRows;
     },
     staleTime: 5 * 60 * 1000,
   });
