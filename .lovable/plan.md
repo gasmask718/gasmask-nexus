@@ -1,6 +1,6 @@
 # Floor 6 — Manufacturing OS Upgrade Plan
 
-## Status: Phase 4 Complete — Phase 5 Next
+## Status: Phase 5 Complete — All Phases Done
 ## Last Updated: 2026-02-08
 
 ---
@@ -97,15 +97,20 @@ Predict reorder dates for consumables using batch velocity + sales + lead times.
 
 ---
 
-## Phase 5: Production RBAC Hardening
+## Phase 5: Production RBAC Hardening ✅ COMPLETE
 
 ### Objective
 Enforce production_admin / production_manager / production_worker roles server-side.
 
 ### Key Deliverables
-- RLS policies with role checks on all production tables
-- Cost/margin visibility gated at DB level
-- Audit log for access denials
+- ✅ DB functions: `has_production_manager_role`, `is_production_worker`
+- ✅ `production_access_denials` audit table with RLS
+- ✅ Hardened RLS on: batch_costs, overhead_config, supplier_lead_times, supply_predictions, worker_submissions, raw_materials
+- ✅ Finance-gated cost/margin visibility (has_finance_access + elevated roles only)
+- ✅ Frontend RBAC hook (`useProductionRBAC`) with tier system (admin/manager/worker/none)
+- ✅ `ProductionRBACGate` component wrapping sensitive tabs
+- ✅ Conditional tab visibility (Costs, Forecasts, Submissions hidden for lower tiers)
+- ✅ Access denial audit logging on unauthorized view attempts
 
 ---
 

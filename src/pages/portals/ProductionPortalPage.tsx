@@ -57,8 +57,10 @@ import {
   SubmissionApprovalQueue,
   SupplyPredictionPanel,
   LeadTimeConfig,
+  ProductionRBACGate,
 } from '@/components/production';
 import { usePendingSubmissionCount } from '@/hooks/useWorkerSubmissions';
+import { useProductionRBAC } from '@/hooks/useProductionRBAC';
 import { 
   Factory, 
   Building2, 
@@ -107,7 +109,7 @@ export default function ProductionPortalPage() {
   const { data: batches = [] } = useTodayBatches(selectedOfficeId);
   const closeDay = useCloseDay();
   const { data: pendingSubmissionCount = 0 } = usePendingSubmissionCount(selectedOfficeId);
-
+  const rbac = useProductionRBAC();
   // Check if wizard was completed for this office
   useEffect(() => {
     if (selectedOfficeId) {
@@ -321,32 +323,38 @@ export default function ProductionPortalPage() {
 
           {/* Tabbed Sections */}
           <Tabs defaultValue="command" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-12">
+            <TabsList className="flex flex-wrap gap-1">
               <TabsTrigger value="command" className="flex items-center gap-2">
                 <Activity className="h-4 w-4" />
                 <span className="hidden sm:inline">Command</span>
               </TabsTrigger>
-              <TabsTrigger value="submissions" className="flex items-center gap-2 relative">
-                <ClipboardCheck className="h-4 w-4" />
-                <span className="hidden sm:inline">Submissions</span>
-                {pendingSubmissionCount > 0 && (
-                  <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
-                    {pendingSubmissionCount}
-                  </Badge>
-                )}
-              </TabsTrigger>
+              {rbac.canApproveSubmissions && (
+                <TabsTrigger value="submissions" className="flex items-center gap-2 relative">
+                  <ClipboardCheck className="h-4 w-4" />
+                  <span className="hidden sm:inline">Submissions</span>
+                  {pendingSubmissionCount > 0 && (
+                    <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                      {pendingSubmissionCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              )}
               <TabsTrigger value="inventory" className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 <span className="hidden sm:inline">Inventory</span>
               </TabsTrigger>
-              <TabsTrigger value="forecast" className="flex items-center gap-2">
-                <Brain className="h-4 w-4" />
-                <span className="hidden sm:inline">AI Forecast</span>
-              </TabsTrigger>
-              <TabsTrigger value="costs" className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                <span className="hidden sm:inline">Costs</span>
-              </TabsTrigger>
+              {rbac.canViewForecasts && (
+                <TabsTrigger value="forecast" className="flex items-center gap-2">
+                  <Brain className="h-4 w-4" />
+                  <span className="hidden sm:inline">AI Forecast</span>
+                </TabsTrigger>
+              )}
+              {rbac.canViewCosts && (
+                <TabsTrigger value="costs" className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  <span className="hidden sm:inline">Costs</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger value="batches" className="flex items-center gap-2">
                 <Boxes className="h-4 w-4" />
                 <span className="hidden sm:inline">Batches</span>
@@ -382,7 +390,9 @@ export default function ProductionPortalPage() {
             </TabsContent>
 
             <TabsContent value="submissions">
-              <SubmissionApprovalQueue officeId={selectedOfficeId} />
+              <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="Submission Approvals">
+                <SubmissionApprovalQueue officeId={selectedOfficeId} />
+              </ProductionRBACGate>
             </TabsContent>
 
             <TabsContent value="inventory">
@@ -393,21 +403,25 @@ export default function ProductionPortalPage() {
             </TabsContent>
 
             <TabsContent value="forecast">
-              <div className="grid lg:grid-cols-2 gap-4">
-                <SupplyPredictionPanel officeId={selectedOfficeId} />
-                <LeadTimeConfig officeId={selectedOfficeId} />
-              </div>
+              <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="AI Supply Forecast">
+                <div className="grid lg:grid-cols-2 gap-4">
+                  <SupplyPredictionPanel officeId={selectedOfficeId} />
+                  <LeadTimeConfig officeId={selectedOfficeId} />
+                </div>
+              </ProductionRBACGate>
             </TabsContent>
 
             <TabsContent value="costs">
-              <div className="grid lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-1">
-                  <CostBreakdownPanel officeId={selectedOfficeId} />
+              <ProductionRBACGate currentTier={rbac.tier} requiredTier="admin" resourceName="Cost & Margin Analytics">
+                <div className="grid lg:grid-cols-3 gap-4">
+                  <div className="lg:col-span-1">
+                    <CostBreakdownPanel officeId={selectedOfficeId} />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <MarginAnalytics officeId={selectedOfficeId} />
+                  </div>
                 </div>
-                <div className="lg:col-span-2">
-                  <MarginAnalytics officeId={selectedOfficeId} />
-                </div>
-              </div>
+              </ProductionRBACGate>
             </TabsContent>
 
             <TabsContent value="batches">

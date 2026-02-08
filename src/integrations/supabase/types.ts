@@ -33919,6 +33919,39 @@ export type Database = {
           },
         ]
       }
+      production_access_denials: {
+        Row: {
+          attempted_action: string
+          attempted_resource: string
+          denied_at: string
+          id: string
+          ip_context: string | null
+          required_role: string | null
+          user_id: string
+          user_role: string | null
+        }
+        Insert: {
+          attempted_action: string
+          attempted_resource: string
+          denied_at?: string
+          id?: string
+          ip_context?: string | null
+          required_role?: string | null
+          user_id: string
+          user_role?: string | null
+        }
+        Update: {
+          attempted_action?: string
+          attempted_resource?: string
+          denied_at?: string
+          id?: string
+          ip_context?: string | null
+          required_role?: string | null
+          user_id?: string
+          user_role?: string | null
+        }
+        Relationships: []
+      }
       production_batch_costs: {
         Row: {
           batch_id: string
@@ -51405,6 +51438,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      has_production_manager_role: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       has_production_office_access: {
         Args: { _office_id: string; _user_id: string }
         Returns: boolean
@@ -51463,6 +51500,7 @@ export type Database = {
         Returns: boolean
       }
       is_production_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_production_worker: { Args: { _user_id: string }; Returns: boolean }
       is_simulation_mode: { Args: never; Returns: boolean }
       is_va: { Args: { _user_id: string }; Returns: boolean }
       log_ai_audit_event: {
