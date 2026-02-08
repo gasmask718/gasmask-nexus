@@ -326,9 +326,14 @@ export default function ProductionPortalPage() {
           {/* Tabbed Sections */}
           <Tabs defaultValue="command" className="space-y-4">
             <TabsList className="flex flex-wrap gap-1">
+              {/* ── OPERATE (DO) ── */}
               <TabsTrigger value="command" className="flex items-center gap-2">
                 <Activity className="h-4 w-4" />
                 <span className="hidden sm:inline">Command</span>
+              </TabsTrigger>
+              <TabsTrigger value="batches" className="flex items-center gap-2">
+                <Boxes className="h-4 w-4" />
+                <span className="hidden sm:inline">Batches</span>
               </TabsTrigger>
               {rbac.canApproveSubmissions && (
                 <TabsTrigger value="submissions" className="flex items-center gap-2 relative">
@@ -341,14 +346,16 @@ export default function ProductionPortalPage() {
                   )}
                 </TabsTrigger>
               )}
-              <TabsTrigger value="inventory" className="flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                <span className="hidden sm:inline">Inventory</span>
+              <TabsTrigger value="attendance" className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline">Attendance</span>
               </TabsTrigger>
-              {rbac.canViewForecasts && (
-                <TabsTrigger value="forecast" className="flex items-center gap-2">
-                  <Brain className="h-4 w-4" />
-                  <span className="hidden sm:inline">AI Forecast</span>
+
+              {/* ── REVIEW (CHECK) ── */}
+              {rbac.canManagePayroll && (
+                <TabsTrigger value="payroll" className="flex items-center gap-2">
+                  <Wallet className="h-4 w-4" />
+                  <span className="hidden sm:inline">Payroll</span>
                 </TabsTrigger>
               )}
               {rbac.canViewCosts && (
@@ -357,27 +364,25 @@ export default function ProductionPortalPage() {
                   <span className="hidden sm:inline">Costs</span>
                 </TabsTrigger>
               )}
-              {rbac.canManageWorkers && (
-                <TabsTrigger value="payroll" className="flex items-center gap-2">
-                  <Wallet className="h-4 w-4" />
-                  <span className="hidden sm:inline">Payroll</span>
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="batches" className="flex items-center gap-2">
-                <Boxes className="h-4 w-4" />
-                <span className="hidden sm:inline">Batches</span>
-              </TabsTrigger>
-              <TabsTrigger value="attendance" className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span className="hidden sm:inline">Attendance</span>
-              </TabsTrigger>
-              <TabsTrigger value="workers" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Workers</span>
+              <TabsTrigger value="inventory" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                <span className="hidden sm:inline">Inventory</span>
               </TabsTrigger>
               <TabsTrigger value="performance" className="flex items-center gap-2">
                 <Target className="h-4 w-4" />
                 <span className="hidden sm:inline">Performance</span>
+              </TabsTrigger>
+              {rbac.canViewForecasts && (
+                <TabsTrigger value="forecast" className="flex items-center gap-2">
+                  <Brain className="h-4 w-4" />
+                  <span className="hidden sm:inline">AI Forecast</span>
+                </TabsTrigger>
+              )}
+
+              {/* ── ADMIN (MANAGE) ── */}
+              <TabsTrigger value="workers" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Workers</span>
               </TabsTrigger>
               <TabsTrigger value="tools" className="flex items-center gap-2">
                 <Wrench className="h-4 w-4" />
@@ -393,8 +398,30 @@ export default function ProductionPortalPage() {
               </TabsTrigger>
             </TabsList>
 
+            {/* ── OPERATE CONTENT ── */}
             <TabsContent value="command">
               <DailyCommandView officeId={selectedOfficeId} targetBoxes={100} />
+            </TabsContent>
+
+            <TabsContent value="batches">
+              <div className="grid lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
+                  <DailyBatchEntry officeId={selectedOfficeId} />
+                </div>
+                <div className="space-y-4">
+                  <DailyChecklist
+                    hasBatch={hasBatch}
+                    hasOutput={hasOutput}
+                    hasVarianceReview={varianceAcknowledged || varianceAmount === 0}
+                    varianceAmount={varianceAmount}
+                    boxCount={kpis?.totalBoxes || 0}
+                    onCloseDay={handleCloseDay}
+                    isClosing={closeDay.isPending}
+                    isDayClosed={isDayClosed}
+                  />
+                  <VariancePanel officeId={selectedOfficeId} />
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="submissions">
@@ -403,19 +430,14 @@ export default function ProductionPortalPage() {
               </ProductionRBACGate>
             </TabsContent>
 
-            <TabsContent value="inventory">
-              <div className="space-y-4">
-                <InventoryPipeline officeId={selectedOfficeId} />
-                <RawMaterialIntake officeId={selectedOfficeId} />
-              </div>
+            <TabsContent value="attendance">
+              <WorkerAttendance officeId={selectedOfficeId} isDayLocked={isDayClosed} />
             </TabsContent>
 
-            <TabsContent value="forecast">
-              <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="AI Supply Forecast">
-                <div className="grid lg:grid-cols-2 gap-4">
-                  <SupplyPredictionPanel officeId={selectedOfficeId} />
-                  <LeadTimeConfig officeId={selectedOfficeId} />
-                </div>
+            {/* ── REVIEW CONTENT ── */}
+            <TabsContent value="payroll">
+              <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="Worker Payroll">
+                <WorkerPayrollAdmin officeId={selectedOfficeId} />
               </ProductionRBACGate>
             </TabsContent>
 
@@ -432,40 +454,11 @@ export default function ProductionPortalPage() {
               </ProductionRBACGate>
             </TabsContent>
 
-            <TabsContent value="payroll">
-              <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="Worker Payroll">
-                <WorkerPayrollAdmin officeId={selectedOfficeId} />
-              </ProductionRBACGate>
-            </TabsContent>
-
-            <TabsContent value="batches">
-              <div className="grid lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-2">
-                  <DailyBatchEntry officeId={selectedOfficeId} />
-                </div>
-                <div className="space-y-4">
-                  {/* Daily Checklist replaces simple close panel */}
-                  <DailyChecklist
-                    hasBatch={hasBatch}
-                    hasOutput={hasOutput}
-                    hasVarianceReview={varianceAcknowledged || varianceAmount === 0}
-                    varianceAmount={varianceAmount}
-                    boxCount={kpis?.totalBoxes || 0}
-                    onCloseDay={handleCloseDay}
-                    isClosing={closeDay.isPending}
-                    isDayClosed={isDayClosed}
-                  />
-                  <VariancePanel officeId={selectedOfficeId} />
-                </div>
+            <TabsContent value="inventory">
+              <div className="space-y-4">
+                <InventoryPipeline officeId={selectedOfficeId} />
+                <RawMaterialIntake officeId={selectedOfficeId} />
               </div>
-            </TabsContent>
-
-            <TabsContent value="attendance">
-              <WorkerAttendance officeId={selectedOfficeId} isDayLocked={isDayClosed} />
-            </TabsContent>
-
-            <TabsContent value="workers">
-              <WorkerManagement officeId={selectedOfficeId} />
             </TabsContent>
 
             <TabsContent value="performance">
@@ -478,6 +471,20 @@ export default function ProductionPortalPage() {
                   <StaffingForecast officeId={selectedOfficeId} />
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="forecast">
+              <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="AI Supply Forecast">
+                <div className="grid lg:grid-cols-2 gap-4">
+                  <SupplyPredictionPanel officeId={selectedOfficeId} />
+                  <LeadTimeConfig officeId={selectedOfficeId} />
+                </div>
+              </ProductionRBACGate>
+            </TabsContent>
+
+            {/* ── ADMIN CONTENT ── */}
+            <TabsContent value="workers">
+              <WorkerManagement officeId={selectedOfficeId} />
             </TabsContent>
 
             <TabsContent value="tools">
