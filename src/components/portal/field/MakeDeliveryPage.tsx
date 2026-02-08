@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { 
   Truck, 
   Package, 
@@ -23,6 +24,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCall } from '@/components/communication/CallProvider';
+import { DeliveryTaskCard } from '@/components/delivery/DeliveryTaskCard';
 
 interface DeliveryItem {
   id: string;
@@ -373,6 +375,18 @@ export function MakeDeliveryPage({ portalType }: MakeDeliveryPageProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Delivery Task Checklist — shown after arrival */}
+      {stop.status !== 'pending' && (
+        <>
+          <Separator />
+          <DeliveryTaskCard 
+            storeId={stop.store_id} 
+            storeName={stop.store_name}
+          />
+          <Separator />
+        </>
+      )}
 
       {/* Items to Deliver */}
       {stop.status !== 'pending' && (

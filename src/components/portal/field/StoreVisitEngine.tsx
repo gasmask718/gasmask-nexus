@@ -24,6 +24,7 @@ import { NotesTab } from './visit-tabs/NotesTab';
 import { ChangeListTab } from './visit-tabs/ChangeListTab';
 import { VisitHistoryTab } from './visit-tabs/VisitHistoryTab';
 import { TubeIntelTab } from './visit-tabs/TubeIntelTab';
+import { DeliveryTasksTab } from './visit-tabs/DeliveryTasksTab';
 import { FieldOrder } from './visit-tabs/CreateOrderSection';
 import { InvoiceMode } from '@/components/invoice/InvoiceModeSelector';
 
@@ -113,7 +114,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
   const { storeId } = useParams<{ storeId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('billing');
+  const [activeTab, setActiveTab] = useState('tasks');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [store, setStore] = useState<{ id: string; store_name: string; address: string } | null>(null);
@@ -646,7 +647,8 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-9 h-auto">
+        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10 h-auto">
+          <TabsTrigger value="tasks" className="text-xs">✅ Tasks</TabsTrigger>
           <TabsTrigger value="billing" className="text-xs">Billing</TabsTrigger>
           <TabsTrigger value="stickers" className="text-xs">Stickers</TabsTrigger>
           <TabsTrigger value="tube-intel" className="text-xs">Tube Intel</TabsTrigger>
@@ -659,6 +661,9 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
         </TabsList>
 
         <div className="mt-4">
+          <TabsContent value="tasks">
+            <DeliveryTasksTab storeId={storeId!} storeName={store?.store_name} />
+          </TabsContent>
           <TabsContent value="billing">
             <BillingTab 
               storeId={storeId!} 
