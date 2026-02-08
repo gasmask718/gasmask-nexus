@@ -97,3 +97,6 @@ verify_jwt = false
 
 [functions.send-user-invite]
 verify_jwt = false
+
+[functions.production-supply-predict]
+verify_jwt = false

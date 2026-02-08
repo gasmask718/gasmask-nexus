@@ -36,6 +36,10 @@ export { MarginAnalytics } from './MarginAnalytics';
 export { WorkerSubmissionForm } from './WorkerSubmissionForm';
 export { SubmissionApprovalQueue } from './SubmissionApprovalQueue';
 
+// Phase 4: AI Supply Prediction
+export { SupplyPredictionPanel } from './SupplyPredictionPanel';
+export { LeadTimeConfig } from './LeadTimeConfig';
+
 // Soft Alert System
 export * from './alerts';
 
