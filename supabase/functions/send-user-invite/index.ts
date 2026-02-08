@@ -61,15 +61,22 @@ serve(async (req) => {
 
     const userId = userData.user.id;
 
-    // Check if user is admin or owner
-    const { data: userRole } = await supabaseAdmin
+    // Check if user is admin, owner, or ceo (server-side role verification)
+    const { data: userRoles, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
-      .in('role', ['admin', 'owner'])
-      .maybeSingle();
+      .in('role', ['admin', 'owner', 'va']);
 
-    if (!userRole) {
+    if (roleError) {
+      console.error("Role lookup error:", roleError);
+      return new Response(
+        JSON.stringify({ error: "Failed to verify permissions" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!userRoles || userRoles.length === 0) {
       return new Response(
         JSON.stringify({ error: "Insufficient permissions. Only admins can send invites." }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
