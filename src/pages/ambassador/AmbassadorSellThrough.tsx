@@ -7,7 +7,7 @@
  * 
  * Reuses existing views + health classification — zero logic duplication.
  */
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,8 @@ import { classifySellThroughHealth, getHealthColors } from "@/lib/sellThroughHea
 import { GRABBA_BRAND_IDS, GRABBA_BRAND_CONFIG, type GrabbaBrand } from "@/config/grabbaSkyscraper";
 import { OverdueAlertBanner } from "@/components/sell-through/OverdueAlertBanner";
 import { BrandHeatmapSummary } from "@/components/sell-through/BrandHeatmapSummary";
+import { SellThroughFeedback } from "@/components/sell-through/SellThroughFeedback";
+import { useSellThroughAnalyticsEvents } from "@/hooks/useSellThroughAnalyticsEvents";
 import type { GlobalSellThroughRow } from "@/hooks/useGlobalSellThroughAnalytics";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -45,8 +47,9 @@ const frequencyColors: Record<string, string> = {
 
 function AmbassadorSellThroughContent() {
   const navigate = useNavigate();
-  const { data: rows, isLoading, storeCount } = useAmbassadorSellThrough();
-
+  const { data: rows, isLoading, storeCount, ambassadorId } = useAmbassadorSellThrough();
+  const { trackViewLoaded, trackFilterUsed, trackRowClicked, trackOverdueViewed } = useSellThroughAnalyticsEvents(ambassadorId);
+  const hasTrackedLoad = useRef(false);
   // Filters
   const [search, setSearch] = useState("");
   const [brandFilter, setBrandFilter] = useState<string>("all");
@@ -61,6 +64,14 @@ function AmbassadorSellThroughContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
+  // Phase VI-A: Track page load once data resolves
+  useEffect(() => {
+    if (!isLoading && rows.length > 0 && ambassadorId && !hasTrackedLoad.current) {
+      hasTrackedLoad.current = true;
+      trackViewLoaded(storeCount, rows.length);
+    }
+  }, [isLoading, rows.length, ambassadorId, storeCount, trackViewLoaded]);
+
   const toggleSort = useCallback((field: SortField) => {
     setSortField((prev) => {
       if (prev === field) {
@@ -74,9 +85,13 @@ function AmbassadorSellThroughContent() {
   }, []);
 
   const toggleOverdueFilter = useCallback(() => {
-    setOverdueOnly((prev) => !prev);
+    setOverdueOnly((prev) => {
+      const next = !prev;
+      if (next) trackOverdueViewed();
+      return next;
+    });
     setPage(1);
-  }, []);
+  }, [trackOverdueViewed]);
 
   // KPI summaries
   const kpis = useMemo(() => {
@@ -193,11 +208,11 @@ function AmbassadorSellThroughContent() {
               <Input
                 placeholder="Search stores…"
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); trackFilterUsed('search', e.target.value); }}
                 className="pl-9"
               />
             </div>
-            <Select value={brandFilter} onValueChange={(v) => { setBrandFilter(v); setPage(1); }}>
+            <Select value={brandFilter} onValueChange={(v) => { setBrandFilter(v); setPage(1); trackFilterUsed('brand', v); }}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="All Brands" />
               </SelectTrigger>
@@ -210,7 +225,7 @@ function AmbassadorSellThroughContent() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={frequencyFilter} onValueChange={(v) => { setFrequencyFilter(v); setPage(1); }}>
+            <Select value={frequencyFilter} onValueChange={(v) => { setFrequencyFilter(v); setPage(1); trackFilterUsed('velocity', v); }}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="All Velocities" />
               </SelectTrigger>
@@ -284,18 +299,24 @@ function AmbassadorSellThroughContent() {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginated.map((row) => (
-                  <SellThroughRow
-                    key={`${row.store_id}-${row.brand_name}`}
-                    row={row}
-                    onNavigate={(path) => navigate(path)}
-                  />
-                ))
+                 paginated.map((row) => (
+                   <SellThroughRow
+                     key={`${row.store_id}-${row.brand_name}`}
+                     row={row}
+                     onNavigate={(path) => {
+                       trackRowClicked(row.store_id, row.brand_name);
+                       navigate(path);
+                     }}
+                   />
+                 ))
               )}
             </TableBody>
           </Table>
         </div>
       </Card>
+
+      {/* Phase VI-B: Qualitative Feedback Capture */}
+      <SellThroughFeedback ambassadorId={ambassadorId} />
     </div>
   );
 }
