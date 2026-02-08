@@ -44,7 +44,7 @@ export default function Floor5Dashboard() {
           <Button size="sm" onClick={() => navigate('/billing/invoices/new')}>
             <Plus className="h-4 w-4 mr-1" /> New Invoice
           </Button>
-          <Button size="sm" variant="outline" onClick={() => navigate('/os/owner/accounting')}>
+          <Button size="sm" variant="outline" onClick={() => navigate('/penthouse/accounting')}>
             Accounting OS <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
         </div>

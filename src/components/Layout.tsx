@@ -122,6 +122,7 @@ const DYNASTY_NAVIGATION = {
     name: '👑 Dynasty Owner Penthouse',
     items: [
       { path: '/os/owner', label: 'Dynasty Owner Dashboard', icon: Crown },
+      { path: '/penthouse/accounting', label: 'Accounting OS', icon: Calculator },
       { path: '/os/owner/ai-advisor', label: 'AI Advisor', icon: Brain },
       { path: '/os/owner/cluster', label: 'Cluster Dashboard', icon: LayoutDashboard },
       { path: '/os/owner/autopilot', label: 'Autopilot Console', icon: Zap },
@@ -313,8 +314,6 @@ const DYNASTY_NAVIGATION = {
       { path: '/real-estate/pipeline', label: 'RE Pipeline', icon: Activity },
       { path: '/real-estate/investors', label: 'RE Investors', icon: Users },
       { path: '/real-estate/closings', label: 'RE Closings', icon: Check },
-      { path: '/economic-analytics', label: '📊 Accounting OS', icon: Calculator },
-      { path: '/grabba/personal-finance', label: 'Personal Finance', icon: Wallet },
     ],
   },
   communicationSystems: {
