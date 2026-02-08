@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   TrendingUp,
@@ -26,6 +25,7 @@ import {
 } from "@/hooks/useStoreSellThroughIntel";
 import { SellThroughBrandTimelineDrawer } from "./SellThroughBrandTimelineDrawer";
 import { classifySellThroughHealth, getHealthColors } from "@/lib/sellThroughHealth";
+import { GRABBA_BRAND_IDS, GRABBA_BRAND_CONFIG, type GrabbaBrand } from "@/config/grabbaSkyscraper";
 
 interface Props {
   storeId: string;
@@ -38,10 +38,56 @@ const frequencyColors: Record<string, string> = {
   New: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
 };
 
+/** Build an empty-state placeholder for a brand with no orders */
+function emptyBrandRow(storeId: string, brandId: string): BrandSellThroughSummary {
+  return {
+    store_id: storeId,
+    brand_name: brandId,
+    total_orders_lifetime: 0,
+    total_units_lifetime: 0,
+    total_tubes_lifetime: 0,
+    total_revenue_lifetime: 0,
+    first_order_date: null,
+    last_order_date: null,
+    days_since_last_order: null,
+    avg_days_between_orders: null,
+    min_days_between: null,
+    max_days_between: null,
+    orders_last_30d: 0,
+    orders_last_90d: 0,
+    revenue_last_30d: null,
+    revenue_last_90d: null,
+    revenue_per_day: null,
+    order_frequency_class: "New",
+    projected_next_order: null,
+  };
+}
+
+function getBrandDisplayName(brandId: string): string {
+  const config = GRABBA_BRAND_CONFIG[brandId as GrabbaBrand];
+  return config?.name || brandId;
+}
+
 export function SellThroughIntelCard({ storeId }: Props) {
   const { data: summaries = [], isLoading, dataUpdatedAt } = useStoreSellThroughSummary(storeId);
   const totals = useStoreSellThroughTotals(summaries);
   const [selectedBrand, setSelectedBrand] = useState<BrandSellThroughSummary | null>(null);
+
+  // Enumerate all 4 canonical brands, merging DB data where it exists
+  const allBrandRows = useMemo(() => {
+    const dataByBrand = new Map(summaries.map((s) => [s.brand_name, s]));
+
+    return GRABBA_BRAND_IDS.map((brandId) => {
+      const existing = dataByBrand.get(brandId);
+      return {
+        data: existing || emptyBrandRow(storeId, brandId),
+        hasData: !!existing,
+        displayName: getBrandDisplayName(brandId),
+      };
+    });
+  }, [summaries, storeId]);
+
+  const hasAnyData = allBrandRows.some((b) => b.hasData);
 
   if (isLoading) {
     return (
@@ -58,16 +104,6 @@ export function SellThroughIntelCard({ storeId }: Props) {
           </div>
         </CardContent>
       </Card>
-    );
-  }
-
-  if (summaries.length === 0) {
-    return (
-      <EmptyState
-        icon={BarChart3}
-        title="No orders recorded yet"
-        description="Order frequency and sell-through data will appear here once this store has placed orders."
-      />
     );
   }
 
@@ -88,35 +124,37 @@ export function SellThroughIntelCard({ storeId }: Props) {
           </div>
         </CardHeader>
         <CardContent className="space-y-5">
-          {/* KPI Strip */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <KpiTile
-              icon={<Package className="h-5 w-5 text-blue-500" />}
-              label="Total Orders"
-              value={totals.totalOrders.toString()}
-            />
-            <KpiTile
-              icon={<DollarSign className="h-5 w-5 text-emerald-500" />}
-              label="Lifetime Revenue"
-              value={`$${totals.totalRevenue.toLocaleString()}`}
-            />
-            <KpiTile
-              icon={<Calendar className="h-5 w-5 text-purple-500" />}
-              label="Last Order"
-              value={
-                totals.lastOrderDate
-                  ? format(new Date(totals.lastOrderDate), "MMM d, yyyy")
-                  : "—"
-              }
-            />
-            <KpiTile
-              icon={<TrendingUp className="h-5 w-5 text-amber-500" />}
-              label="Avg Days Between"
-              value={totals.avgDaysBetween != null ? `${totals.avgDaysBetween}d` : "—"}
-            />
-          </div>
+          {/* KPI Strip — only when data exists */}
+          {hasAnyData && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <KpiTile
+                icon={<Package className="h-5 w-5 text-primary" />}
+                label="Total Orders"
+                value={totals.totalOrders.toString()}
+              />
+              <KpiTile
+                icon={<DollarSign className="h-5 w-5 text-primary" />}
+                label="Lifetime Revenue"
+                value={`$${totals.totalRevenue.toLocaleString()}`}
+              />
+              <KpiTile
+                icon={<Calendar className="h-5 w-5 text-primary" />}
+                label="Last Order"
+                value={
+                  totals.lastOrderDate
+                    ? format(new Date(totals.lastOrderDate), "MMM d, yyyy")
+                    : "—"
+                }
+              />
+              <KpiTile
+                icon={<TrendingUp className="h-5 w-5 text-primary" />}
+                label="Avg Days Between"
+                value={totals.avgDaysBetween != null ? `${totals.avgDaysBetween}d` : "—"}
+              />
+            </div>
+          )}
 
-          {/* Per-Brand Table */}
+          {/* Per-Brand Table — ALL 4 brands always shown */}
           <div className="rounded-lg border overflow-hidden">
             <Table>
               <TableHeader>
@@ -132,25 +170,40 @@ export function SellThroughIntelCard({ storeId }: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {summaries
-                  .sort((a, b) => (b.total_orders_lifetime || 0) - (a.total_orders_lifetime || 0))
-                  .map((brand) => {
-                    const health = classifySellThroughHealth(
-                      brand.days_since_last_order,
-                      brand.avg_days_between_orders,
-                      brand.total_orders_lifetime
-                    );
-                    const healthColors = getHealthColors(health.status);
-                    return (
+                {allBrandRows.map(({ data: brand, hasData, displayName }) => {
+                  const health = classifySellThroughHealth(
+                    brand.days_since_last_order,
+                    brand.avg_days_between_orders,
+                    brand.total_orders_lifetime
+                  );
+                  const healthColors = getHealthColors(health.status);
+                  const brandConfig = GRABBA_BRAND_CONFIG[brand.brand_name as GrabbaBrand];
+
+                  return (
                     <TableRow
                       key={brand.brand_name}
-                      className="cursor-pointer hover:bg-accent/50 transition-colors"
-                      onClick={() => setSelectedBrand(brand)}
+                      className={`transition-colors ${
+                        hasData
+                          ? "cursor-pointer hover:bg-accent/50"
+                          : "opacity-50"
+                      }`}
+                      onClick={() => hasData && setSelectedBrand(brand)}
                     >
-                      <TableCell className="font-medium">{brand.brand_name}</TableCell>
-                      <TableCell className="text-right">{brand.total_orders_lifetime}</TableCell>
+                      <TableCell className="font-medium">
+                        <span className="flex items-center gap-1.5">
+                          {brandConfig && (
+                            <span className="text-sm">{brandConfig.icon}</span>
+                          )}
+                          {displayName}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {hasData ? brand.total_orders_lifetime : "—"}
+                      </TableCell>
                       <TableCell className="text-right hidden md:table-cell">
-                        ${(brand.total_revenue_lifetime || 0).toLocaleString()}
+                        {hasData
+                          ? `$${(brand.total_revenue_lifetime || 0).toLocaleString()}`
+                          : "—"}
                       </TableCell>
                       <TableCell className="text-right hidden md:table-cell">
                         {brand.last_order_date
@@ -180,31 +233,39 @@ export function SellThroughIntelCard({ storeId }: Props) {
                           : "—"}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge
-                          variant="outline"
-                          className={`text-[10px] ${frequencyColors[brand.order_frequency_class] || ""}`}
-                        >
-                          {brand.order_frequency_class}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex flex-col items-center gap-0.5">
+                        {hasData ? (
                           <Badge
                             variant="outline"
-                            className={`text-[10px] ${healthColors.bgColor} ${healthColors.color}`}
+                            className={`text-[10px] ${frequencyColors[brand.order_frequency_class] || ""}`}
                           >
-                            {health.label}
+                            {brand.order_frequency_class}
                           </Badge>
-                          {health.varianceLabel && (
-                            <span className={`text-[9px] ${healthColors.color}`}>
-                              {health.varianceLabel}
-                            </span>
-                          )}
-                        </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No data</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {hasData ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] ${healthColors.bgColor} ${healthColors.color}`}
+                            >
+                              {health.label}
+                            </Badge>
+                            {health.varianceLabel && (
+                              <span className={`text-[9px] ${healthColors.color}`}>
+                                {health.varianceLabel}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                     </TableRow>
-                    );
-                  })}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

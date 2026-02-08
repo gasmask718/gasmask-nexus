@@ -49993,7 +49993,7 @@ export type Database = {
           total_units: number | null
         }
         Insert: {
-          brand_name?: string | null
+          brand_name?: never
           order_date?: string | null
           order_id?: string | null
           order_source?: string | null
@@ -50004,7 +50004,7 @@ export type Database = {
           total_units?: never
         }
         Update: {
-          brand_name?: string | null
+          brand_name?: never
           order_date?: string | null
           order_id?: string | null
           order_source?: string | null
@@ -50741,6 +50741,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      normalize_brand_name: { Args: { raw_brand: string }; Returns: string }
       not_developer: { Args: { _user_id: string }; Returns: boolean }
       override_intent_resolution: {
         Args: {
