@@ -52,6 +52,8 @@ import {
   DailyCommandView,
   RawMaterialIntake,
   InventoryPipeline,
+  CostBreakdownPanel,
+  MarginAnalytics,
 } from '@/components/production';
 import { 
   Factory, 
@@ -71,6 +73,7 @@ import {
   Target,
   Activity,
   Package,
+  DollarSign,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -311,7 +314,7 @@ export default function ProductionPortalPage() {
 
           {/* Tabbed Sections */}
           <Tabs defaultValue="command" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-9">
+            <TabsList className="grid w-full grid-cols-10">
               <TabsTrigger value="command" className="flex items-center gap-2">
                 <Activity className="h-4 w-4" />
                 <span className="hidden sm:inline">Command</span>
@@ -319,6 +322,10 @@ export default function ProductionPortalPage() {
               <TabsTrigger value="inventory" className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 <span className="hidden sm:inline">Inventory</span>
+              </TabsTrigger>
+              <TabsTrigger value="costs" className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                <span className="hidden sm:inline">Costs</span>
               </TabsTrigger>
               <TabsTrigger value="batches" className="flex items-center gap-2">
                 <Boxes className="h-4 w-4" />
@@ -358,6 +365,17 @@ export default function ProductionPortalPage() {
               <div className="space-y-4">
                 <InventoryPipeline officeId={selectedOfficeId} />
                 <RawMaterialIntake officeId={selectedOfficeId} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="costs">
+              <div className="grid lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-1">
+                  <CostBreakdownPanel officeId={selectedOfficeId} />
+                </div>
+                <div className="lg:col-span-2">
+                  <MarginAnalytics officeId={selectedOfficeId} />
+                </div>
               </div>
             </TabsContent>
 
