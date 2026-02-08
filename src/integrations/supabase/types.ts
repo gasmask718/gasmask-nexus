@@ -39839,6 +39839,113 @@ export type Database = {
         }
         Relationships: []
       }
+      statement_imports: {
+        Row: {
+          account_label: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          file_name: string
+          file_type: string | null
+          file_url: string | null
+          id: string
+          notes: string | null
+          statement_month: string | null
+          status: string | null
+          total_credits: number | null
+          total_debits: number | null
+          total_transactions: number | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          account_label?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          file_name: string
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          statement_month?: string | null
+          status?: string | null
+          total_credits?: number | null
+          total_debits?: number | null
+          total_transactions?: number | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          account_label?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          file_name?: string
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          statement_month?: string | null
+          status?: string | null
+          total_credits?: number | null
+          total_debits?: number | null
+          total_transactions?: number | null
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      statement_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          direction: string
+          final_category: string | null
+          id: string
+          import_id: string
+          is_approved: boolean | null
+          original_category: string | null
+          suggested_category: string | null
+          transaction_date: string
+          vendor_match: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          direction: string
+          final_category?: string | null
+          id?: string
+          import_id: string
+          is_approved?: boolean | null
+          original_category?: string | null
+          suggested_category?: string | null
+          transaction_date: string
+          vendor_match?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          direction?: string
+          final_category?: string | null
+          id?: string
+          import_id?: string
+          is_approved?: boolean | null
+          original_category?: string | null
+          suggested_category?: string | null
+          transaction_date?: string
+          vendor_match?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "statement_transactions_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "statement_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_ai_insights: {
         Row: {
           brand: Database["public"]["Enums"]["brand_type"] | null

@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { exportData } from '@/utils/exportUtils';
 import {
   FileText, Download, Shield, Loader2, DollarSign,
   Calendar, BarChart3, Lock,
 } from 'lucide-react';
-import { format, startOfYear, endOfYear, subYears, startOfQuarter, endOfQuarter, subQuarters } from 'date-fns';
+import { format } from 'date-fns';
 
 interface TaxSummary {
   year: number;
@@ -98,92 +99,64 @@ function useTaxSummary(year: number) {
 }
 
 function exportCPAPackage(summary: TaxSummary) {
-  const lines = [
-    `═══════════════════════════════════════`,
-    `CPA EXPORT — TAX YEAR ${summary.year}`,
-    `Generated: ${format(new Date(), 'yyyy-MM-dd HH:mm')}`,
-    `═══════════════════════════════════════`,
-    ``,
-    `INCOME SUMMARY`,
-    `Total Gross Revenue: $${summary.totalRevenue.toFixed(2)}`,
-    ``,
-    `Revenue by Category:`,
-    ...Object.entries(summary.revenueByCategory).sort((a, b) => b[1] - a[1]).map(([cat, amt]) =>
-      `  ${cat}: $${amt.toFixed(2)}`
-    ),
-    ``,
-    `EXPENSE SUMMARY`,
-    `Total Expenses: $${summary.totalExpenses.toFixed(2)}`,
-    ``,
-    `Expenses by Category:`,
-    ...Object.entries(summary.expensesByCategory).sort((a, b) => b[1] - a[1]).map(([cat, amt]) =>
-      `  ${cat}: $${amt.toFixed(2)}`
-    ),
-    ``,
-    `NET INCOME: $${summary.netIncome.toFixed(2)}`,
-    ``,
-    `QUARTERLY BREAKDOWN`,
-    ...summary.quarterlyBreakdown.map(q =>
-      `  ${q.quarter}: Revenue $${q.revenue.toFixed(2)} | Expenses $${q.expenses.toFixed(2)} | Net $${q.net.toFixed(2)}`
-    ),
-    ``,
-    `═══════════════════════════════════════`,
-    `This report is generated from Dynasty OS Accounting.`,
-    `Please verify all figures with bank statements.`,
-    `═══════════════════════════════════════`,
-  ];
+  const rows: Record<string, unknown>[] = [];
 
-  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `CPA-Export-${summary.year}.txt`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  Object.entries(summary.revenueByCategory).sort((a, b) => b[1] - a[1]).forEach(([cat, amt]) => {
+    rows.push({ Section: 'Revenue', Category: cat, Amount: amt, Year: summary.year });
+  });
+  rows.push({ Section: 'Revenue', Category: 'TOTAL REVENUE', Amount: summary.totalRevenue, Year: summary.year });
+
+  Object.entries(summary.expensesByCategory).sort((a, b) => b[1] - a[1]).forEach(([cat, amt]) => {
+    rows.push({ Section: 'Expenses', Category: cat, Amount: amt, Year: summary.year });
+  });
+  rows.push({ Section: 'Expenses', Category: 'TOTAL EXPENSES', Amount: summary.totalExpenses, Year: summary.year });
+
+  rows.push({ Section: 'Summary', Category: 'NET INCOME', Amount: summary.netIncome, Year: summary.year });
+
+  summary.quarterlyBreakdown.forEach(q => {
+    rows.push({ Section: 'Quarterly', Category: `${q.quarter} Revenue`, Amount: q.revenue, Year: summary.year });
+    rows.push({ Section: 'Quarterly', Category: `${q.quarter} Expenses`, Amount: q.expenses, Year: summary.year });
+    rows.push({ Section: 'Quarterly', Category: `${q.quarter} Net`, Amount: q.net, Year: summary.year });
+  });
+
+  exportData({
+    filename: `CPA-Export-${summary.year}`,
+    format: 'excel',
+    data: rows,
+    columns: [
+      { key: 'Section', label: 'Section' },
+      { key: 'Category', label: 'Category' },
+      { key: 'Amount', label: 'Amount ($)' },
+      { key: 'Year', label: 'Tax Year' },
+    ],
+  });
 }
 
 function exportProofOfIncome(summary: TaxSummary) {
-  const lines = [
-    `PROOF OF INCOME PACKAGE`,
-    `═══════════════════════════════════════`,
-    `Tax Year: ${summary.year}`,
-    `Generated: ${format(new Date(), 'yyyy-MM-dd HH:mm')}`,
-    ``,
-    `12-MONTH INCOME SUMMARY`,
-    `Total Gross Revenue: $${summary.totalRevenue.toFixed(2)}`,
-    `Monthly Average: $${(summary.totalRevenue / 12).toFixed(2)}`,
-    ``,
-    `QUARTERLY INCOME`,
-    ...summary.quarterlyBreakdown.map(q =>
-      `  ${q.quarter}: $${q.revenue.toFixed(2)}`
-    ),
-    ``,
-    `NET INCOME`,
-    `Total Net Income: $${summary.netIncome.toFixed(2)}`,
-    `Monthly Average Net: $${(summary.netIncome / 12).toFixed(2)}`,
-    ``,
-    `PROFIT & LOSS SUMMARY`,
-    `Revenue: $${summary.totalRevenue.toFixed(2)}`,
-    `Expenses: $${summary.totalExpenses.toFixed(2)}`,
-    `Net: $${summary.netIncome.toFixed(2)}`,
-    `Margin: ${summary.totalRevenue > 0 ? ((summary.netIncome / summary.totalRevenue) * 100).toFixed(1) : '0'}%`,
-    ``,
-    `═══════════════════════════════════════`,
-    `This document serves as a proof of income summary.`,
-    `Attach bank statements for complete verification.`,
+  const rows: Record<string, unknown>[] = [
+    { Metric: 'Total Gross Revenue', Value: `$${summary.totalRevenue.toFixed(2)}`, Period: `Tax Year ${summary.year}` },
+    { Metric: 'Monthly Average Revenue', Value: `$${(summary.totalRevenue / 12).toFixed(2)}`, Period: 'Monthly' },
+    { Metric: 'Total Expenses', Value: `$${summary.totalExpenses.toFixed(2)}`, Period: `Tax Year ${summary.year}` },
+    { Metric: 'Total Net Income', Value: `$${summary.netIncome.toFixed(2)}`, Period: `Tax Year ${summary.year}` },
+    { Metric: 'Monthly Average Net', Value: `$${(summary.netIncome / 12).toFixed(2)}`, Period: 'Monthly' },
+    { Metric: 'Profit Margin', Value: `${summary.totalRevenue > 0 ? ((summary.netIncome / summary.totalRevenue) * 100).toFixed(1) : '0'}%`, Period: `Tax Year ${summary.year}` },
   ];
 
-  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `Proof-Of-Income-${summary.year}.txt`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  summary.quarterlyBreakdown.forEach(q => {
+    rows.push({ Metric: `${q.quarter} Revenue`, Value: `$${q.revenue.toFixed(2)}`, Period: q.quarter });
+    rows.push({ Metric: `${q.quarter} Net Income`, Value: `$${q.net.toFixed(2)}`, Period: q.quarter });
+  });
+
+  exportData({
+    filename: `Proof-Of-Income-${summary.year}`,
+    format: 'excel',
+    data: rows,
+    columns: [
+      { key: 'Metric', label: 'Metric' },
+      { key: 'Value', label: 'Value' },
+      { key: 'Period', label: 'Period' },
+    ],
+  });
 }
 
 export default function TaxPrepVault() {
