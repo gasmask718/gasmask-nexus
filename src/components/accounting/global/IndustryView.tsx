@@ -1,16 +1,20 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Factory, Loader2, AlertTriangle } from 'lucide-react';
+import { Factory, Loader2, AlertTriangle, AlertCircle } from 'lucide-react';
+import {
+  useBusinessEntities,
+  useIndustryCatalog,
+  useFinancialSnapshots,
+  type IndustryCatalogEntry,
+} from '@/hooks/useGlobalFinancialData';
 
 interface IndustryGroup {
   industry: string;
   industryGroup: string;
   marginExpLow: number;
   marginExpHigh: number;
-  businesses: string[];
+  businesses: { name: string; confidence: number }[];
   totalRevenue: number;
   totalExpenses: number;
   profit: number;
@@ -20,78 +24,92 @@ interface IndustryGroup {
   totalCount: number;
 }
 
-function useIndustryView() {
-  return useQuery({
-    queryKey: ['industry-financial-view'],
-    queryFn: async (): Promise<IndustryGroup[]> => {
-      const [{ data: businesses }, { data: profiles }, { data: catalog }] = await Promise.all([
-        supabase.from('businesses').select('id, name, industry, industry_catalog_id').eq('is_active', true),
-        supabase.from('business_financial_profiles').select('*'),
-        supabase.from('industry_catalog').select('*'),
-      ]);
-
-      const profileMap = new Map((profiles || []).map(p => [p.business_id, p]));
-      const catalogMap = new Map((catalog || []).map(c => [c.id, c]));
-
-      const industryMap = new Map<string, {
-        industryGroup: string;
-        marginExpLow: number;
-        marginExpHigh: number;
-        businesses: string[];
-        revenue: number;
-        expenses: number;
-        confidences: number[];
-        connected: number;
-        total: number;
-      }>();
-
-      (businesses || []).forEach(b => {
-        const catalogEntry = b.industry_catalog_id ? catalogMap.get(b.industry_catalog_id) : null;
-        const key = catalogEntry?.industry_name || b.industry || 'Unclassified';
-        const fp = profileMap.get(b.id);
-        const existing = industryMap.get(key) || {
-          industryGroup: catalogEntry?.industry_group || 'other',
-          marginExpLow: Number(catalogEntry?.margin_expectation_low || 0),
-          marginExpHigh: Number(catalogEntry?.margin_expectation_high || 0),
-          businesses: [], revenue: 0, expenses: 0, confidences: [], connected: 0, total: 0,
-        };
-
-        existing.businesses.push(b.name);
-        existing.revenue += Number(fp?.monthly_revenue_estimate || 0);
-        existing.expenses += Number(fp?.monthly_expense_estimate || 0);
-        existing.confidences.push(fp?.data_confidence_pct || 0);
-        if (fp?.connection_status && fp.connection_status !== 'not_connected') existing.connected++;
-        existing.total++;
-
-        industryMap.set(key, existing);
-      });
-
-      return Array.from(industryMap.entries())
-        .map(([industry, data]) => {
-          const profit = data.revenue - data.expenses;
-          return {
-            industry,
-            industryGroup: data.industryGroup,
-            marginExpLow: data.marginExpLow,
-            marginExpHigh: data.marginExpHigh,
-            businesses: data.businesses,
-            totalRevenue: data.revenue,
-            totalExpenses: data.expenses,
-            profit,
-            margin: data.revenue > 0 ? (profit / data.revenue) * 100 : 0,
-            avgConfidence: data.confidences.length > 0 ? Math.round(data.confidences.reduce((a, b) => a + b, 0) / data.confidences.length) : 0,
-            connectedCount: data.connected,
-            totalCount: data.total,
-          };
-        })
-        .sort((a, b) => b.totalRevenue - a.totalRevenue);
-    },
-  });
-}
-
-
 export default function IndustryView() {
-  const { data: industries, isLoading } = useIndustryView();
+  const { data: businesses, isLoading: bizLoading } = useBusinessEntities();
+  const { data: catalog, isLoading: catLoading } = useIndustryCatalog();
+  const { data: snapshots, isLoading: snapLoading } = useFinancialSnapshots(1);
+
+  const isLoading = bizLoading || catLoading || snapLoading;
+
+  // Build catalog lookup
+  const catalogMap = useMemo(() => {
+    const map = new Map<string, IndustryCatalogEntry>();
+    (catalog || []).forEach(c => map.set(c.id, c));
+    return map;
+  }, [catalog]);
+
+  // Build snapshot aggregation per business
+  const snapshotByBiz = useMemo(() => {
+    const map = new Map<string, { revenue: number; expenses: number }>();
+    (snapshots || []).forEach(s => {
+      const existing = map.get(s.business_id) || { revenue: 0, expenses: 0 };
+      existing.revenue += s.total_revenue;
+      existing.expenses += s.total_expenses;
+      map.set(s.business_id, existing);
+    });
+    return map;
+  }, [snapshots]);
+
+  const industries: IndustryGroup[] = useMemo(() => {
+    const industryMap = new Map<string, {
+      catalogEntry: IndustryCatalogEntry | null;
+      businesses: { name: string; confidence: number }[];
+      revenue: number;
+      expenses: number;
+      confidences: number[];
+      connected: number;
+      total: number;
+    }>();
+
+    (businesses || []).filter(b => b.is_active).forEach(b => {
+      const catEntry = b.industry_catalog_id ? catalogMap.get(b.industry_catalog_id) : null;
+      const key = catEntry?.industry_name || b.industry?.replace(/_/g, ' ') || 'Unclassified';
+
+      const snap = snapshotByBiz.get(b.id);
+      const hasSnapshot = snap && (snap.revenue > 0 || snap.expenses > 0);
+
+      const existing = industryMap.get(key) || {
+        catalogEntry: catEntry || null,
+        businesses: [],
+        revenue: 0,
+        expenses: 0,
+        confidences: [],
+        connected: 0,
+        total: 0,
+      };
+
+      existing.businesses.push({ name: b.name, confidence: b.data_confidence_pct });
+      existing.revenue += hasSnapshot ? snap!.revenue : b.monthly_revenue_estimate;
+      existing.expenses += hasSnapshot ? snap!.expenses : b.monthly_expense_estimate;
+      existing.confidences.push(b.data_confidence_pct);
+      if (b.connection_status !== 'not_connected') existing.connected++;
+      existing.total++;
+
+      industryMap.set(key, existing);
+    });
+
+    return Array.from(industryMap.entries())
+      .map(([industry, data]) => {
+        const profit = data.revenue - data.expenses;
+        return {
+          industry,
+          industryGroup: data.catalogEntry?.industry_group || 'other',
+          marginExpLow: data.catalogEntry?.margin_expectation_low || 0,
+          marginExpHigh: data.catalogEntry?.margin_expectation_high || 0,
+          businesses: data.businesses,
+          totalRevenue: data.revenue,
+          totalExpenses: data.expenses,
+          profit,
+          margin: data.revenue > 0 ? (profit / data.revenue) * 100 : 0,
+          avgConfidence: data.confidences.length > 0
+            ? Math.round(data.confidences.reduce((a, b) => a + b, 0) / data.confidences.length)
+            : 0,
+          connectedCount: data.connected,
+          totalCount: data.total,
+        };
+      })
+      .sort((a, b) => b.totalRevenue - a.totalRevenue);
+  }, [businesses, catalogMap, snapshotByBiz]);
 
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -104,14 +122,31 @@ export default function IndustryView() {
           <Factory className="h-5 w-5 text-primary" />
           Industry View
         </h2>
-        <p className="text-sm text-muted-foreground">Financial performance grouped by industry sector</p>
+        <p className="text-sm text-muted-foreground">
+          Financial performance grouped by industry sector — {industries.length} industries tracked
+        </p>
       </div>
 
+      {industries.length === 0 && (
+        <Card className="border-amber-500/20 bg-amber-950/10">
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-400" />
+              <span className="text-sm text-amber-300">
+                No industry data available yet. Industries will appear as businesses are classified in the registry.
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {(industries || []).map(ind => {
-          const isHealthy = ind.margin >= ind.marginExpLow;
+        {industries.map(ind => {
+          const isHealthy = ind.margin >= ind.marginExpLow && ind.marginExpLow > 0;
           const isRisk = ind.margin < 0;
-          const isBelowExpectation = ind.margin > 0 && ind.margin < ind.marginExpLow;
+          const isBelowExpectation = ind.margin > 0 && ind.marginExpLow > 0 && ind.margin < ind.marginExpLow;
+          const noData = ind.totalRevenue === 0 && ind.totalExpenses === 0;
+
           return (
             <Card key={ind.industry} className={`${isRisk ? 'border-destructive/20' : isBelowExpectation ? 'border-yellow-500/20' : ''}`}>
               <CardHeader className="pb-3">
@@ -134,26 +169,35 @@ export default function IndustryView() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-3 gap-3 mb-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Revenue</p>
-                    <p className="text-lg font-bold text-emerald-400">
-                      {ind.totalRevenue > 0 ? `$${ind.totalRevenue.toLocaleString()}` : '—'}
-                    </p>
+                {noData ? (
+                  <div className="py-3 text-center">
+                    <p className="text-sm text-muted-foreground">Awaiting financial data</p>
+                    <p className="text-xs text-muted-foreground mt-1">Businesses registered but no snapshots submitted</p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Expenses</p>
-                    <p className="text-lg font-bold text-red-400">
-                      {ind.totalExpenses > 0 ? `$${ind.totalExpenses.toLocaleString()}` : '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Margin</p>
-                    <p className={`text-lg font-bold ${isHealthy ? 'text-emerald-400' : isRisk ? 'text-red-400' : 'text-muted-foreground'}`}>
-                      {ind.totalRevenue > 0 ? `${ind.margin.toFixed(1)}%` : 'N/A'}
-                    </p>
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-3 gap-3 mb-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Revenue</p>
+                        <p className="text-lg font-bold text-emerald-400">
+                          ${ind.totalRevenue.toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Expenses</p>
+                        <p className="text-lg font-bold text-red-400">
+                          ${ind.totalExpenses.toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Margin</p>
+                        <p className={`text-lg font-bold ${isHealthy ? 'text-emerald-400' : isRisk ? 'text-red-400' : 'text-amber-400'}`}>
+                          {ind.margin.toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* Confidence */}
                 <div className="flex items-center gap-2 mb-2">
@@ -169,8 +213,10 @@ export default function IndustryView() {
 
                 {/* Business List */}
                 <div className="flex flex-wrap gap-1">
-                  {ind.businesses.map(name => (
-                    <Badge key={name} variant="outline" className="text-[10px] py-0">{name}</Badge>
+                  {ind.businesses.map(biz => (
+                    <Badge key={biz.name} variant="outline" className={`text-[10px] py-0 ${biz.confidence === 0 ? 'opacity-50' : ''}`}>
+                      {biz.name}
+                    </Badge>
                   ))}
                 </div>
               </CardContent>

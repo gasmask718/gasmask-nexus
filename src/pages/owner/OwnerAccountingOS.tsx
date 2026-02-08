@@ -10,7 +10,7 @@ import {
   Calculator, Sun, Crown, Calendar, Receipt,
   BarChart3, Shield, Users, Upload, Wallet,
   PiggyBank, Banknote, Target, FileText, TrendingUp,
-  Globe, Building2, Factory, Activity, Search,
+  Globe, Building2, Factory, Activity, Search, Signal,
 } from 'lucide-react';
 
 // Global Intelligence Views
@@ -20,6 +20,7 @@ import {
   IndustryView,
   CashflowTimeline,
   ExpenseIntelligence,
+  CashflowReadiness,
 } from '@/components/accounting/global';
 
 // Business Ledger Views
@@ -116,6 +117,10 @@ export default function OwnerAccountingOS() {
                 <Search className="h-3.5 w-3.5" />
                 Expense Intel
               </TabsTrigger>
+              <TabsTrigger value="readiness" className="gap-1.5">
+                <Signal className="h-3.5 w-3.5" />
+                Readiness
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview"><GlobalOverview /></TabsContent>
@@ -123,6 +128,7 @@ export default function OwnerAccountingOS() {
             <TabsContent value="industry"><IndustryView /></TabsContent>
             <TabsContent value="cashflow"><CashflowTimeline /></TabsContent>
             <TabsContent value="expense-intel"><ExpenseIntelligence /></TabsContent>
+            <TabsContent value="readiness"><CashflowReadiness /></TabsContent>
           </Tabs>
         </TabsContent>
 

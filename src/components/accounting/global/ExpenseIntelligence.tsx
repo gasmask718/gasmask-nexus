@@ -1,127 +1,117 @@
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import React, { useState, useMemo } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Receipt, Loader2, AlertTriangle, TrendingUp, Search, Download } from 'lucide-react';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { Loader2, Search, AlertCircle } from 'lucide-react';
 import { ExportButton } from '@/components/crud/ExportButton';
+import {
+  useFinancialSnapshots,
+  useBusinessEntities,
+  useExpenseCategoryCatalog,
+} from '@/hooks/useGlobalFinancialData';
 
 interface CategoryExpense {
   category: string;
-  currentMonth: number;
-  previousMonth: number;
-  growth: number;
-  count: number;
-}
-
-interface VendorExpense {
-  vendor: string;
+  categoryGroup: string;
+  taxDeductible: boolean;
   total: number;
-  count: number;
-  categories: string[];
+  businessCount: number;
 }
 
-function useExpenseIntelligence() {
-  return useQuery({
-    queryKey: ['expense-intelligence'],
-    queryFn: async () => {
-      const now = new Date();
-      const currentStart = format(startOfMonth(now), 'yyyy-MM-dd');
-      const currentEnd = format(endOfMonth(now), 'yyyy-MM-dd');
-      const prevStart = format(startOfMonth(subMonths(now, 1)), 'yyyy-MM-dd');
-      const prevEnd = format(endOfMonth(subMonths(now, 1)), 'yyyy-MM-dd');
-
-      const [{ data: currentExpenses }, { data: prevExpenses }, { data: ledgerOut }] = await Promise.all([
-        supabase.from('business_expenses').select('*').gte('expense_date', currentStart).lte('expense_date', currentEnd),
-        supabase.from('business_expenses').select('*').gte('expense_date', prevStart).lte('expense_date', prevEnd),
-        supabase.from('accounting_ledger').select('*').eq('direction', 'out').gte('created_at', format(subMonths(now, 3), 'yyyy-MM-dd')),
-      ]);
-
-      // Category analysis
-      const currentByCategory = (currentExpenses || []).reduce<Record<string, { total: number; count: number }>>((acc, e) => {
-        const cat = e.category || 'Uncategorized';
-        acc[cat] = acc[cat] || { total: 0, count: 0 };
-        acc[cat].total += Number(e.amount);
-        acc[cat].count++;
-        return acc;
-      }, {});
-
-      const prevByCategory = (prevExpenses || []).reduce<Record<string, number>>((acc, e) => {
-        const cat = e.category || 'Uncategorized';
-        acc[cat] = (acc[cat] || 0) + Number(e.amount);
-        return acc;
-      }, {});
-
-      const categories: CategoryExpense[] = Object.entries(currentByCategory)
-        .map(([category, { total, count }]) => {
-          const prev = prevByCategory[category] || 0;
-          return {
-            category,
-            currentMonth: total,
-            previousMonth: prev,
-            growth: prev > 0 ? ((total - prev) / prev) * 100 : total > 0 ? 100 : 0,
-            count,
-          };
-        })
-        .sort((a, b) => b.currentMonth - a.currentMonth);
-
-      // Vendor analysis
-      const vendorMap = new Map<string, { total: number; count: number; categories: Set<string> }>();
-      (currentExpenses || []).forEach(e => {
-        const vendor = e.vendor || 'Unknown';
-        const existing = vendorMap.get(vendor) || { total: 0, count: 0, categories: new Set<string>() };
-        existing.total += Number(e.amount);
-        existing.count++;
-        existing.categories.add(e.category || 'Uncategorized');
-        vendorMap.set(vendor, existing);
-      });
-
-      const vendors: VendorExpense[] = Array.from(vendorMap.entries())
-        .map(([vendor, data]) => ({
-          vendor,
-          total: data.total,
-          count: data.count,
-          categories: Array.from(data.categories),
-        }))
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 15);
-
-      // Detect duplicates / overlaps (vendors appearing in multiple categories)
-      const overlaps = vendors.filter(v => v.categories.length > 1);
-
-      const totalCurrent = (currentExpenses || []).reduce((s, e) => s + Number(e.amount), 0);
-      const totalPrev = (prevExpenses || []).reduce((s, e) => s + Number(e.amount), 0);
-
-      return {
-        categories,
-        vendors,
-        overlaps,
-        totalCurrent,
-        totalPrev,
-        momGrowth: totalPrev > 0 ? ((totalCurrent - totalPrev) / totalPrev) * 100 : 0,
-      };
-    },
-  });
+interface BusinessExpenseRow {
+  businessName: string;
+  totalExpenses: number;
+  confidence: number;
+  topCategories: string[];
 }
 
 export default function ExpenseIntelligence() {
-  const { data, isLoading } = useExpenseIntelligence();
-  const [tab, setTab] = useState<'categories' | 'vendors'>('categories');
+  const { data: snapshots, isLoading: snapLoading } = useFinancialSnapshots(2);
+  const { data: businesses, isLoading: bizLoading } = useBusinessEntities();
+  const { data: expenseCategories } = useExpenseCategoryCatalog();
+  const [tab, setTab] = useState<'categories' | 'businesses'>('categories');
+
+  const isLoading = snapLoading || bizLoading;
+
+  // Build business name map
+  const bizNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (businesses || []).forEach(b => map.set(b.id, b.name));
+    return map;
+  }, [businesses]);
+
+  // Build category lookup
+  const categoryLookup = useMemo(() => {
+    const map = new Map<string, { group: string; taxDeductible: boolean }>();
+    (expenseCategories || []).forEach(c => map.set(c.category_name.toLowerCase(), { group: c.category_group, taxDeductible: c.tax_deductible }));
+    return map;
+  }, [expenseCategories]);
+
+  // Aggregate expense breakdowns from snapshots
+  const { categories, businessRows, totalExpenses } = useMemo(() => {
+    const categoryMap = new Map<string, { total: number; businesses: Set<string> }>();
+    const bizMap = new Map<string, { total: number; categories: Set<string>; confidence: number }>();
+
+    (snapshots || []).forEach(s => {
+      const breakdown = s.expense_breakdown as Record<string, number> | null;
+      if (breakdown) {
+        Object.entries(breakdown).forEach(([cat, amount]) => {
+          const existing = categoryMap.get(cat) || { total: 0, businesses: new Set<string>() };
+          existing.total += Number(amount);
+          existing.businesses.add(s.business_id);
+          categoryMap.set(cat, existing);
+
+          const biz = bizMap.get(s.business_id) || { total: 0, categories: new Set<string>(), confidence: s.confidence_score };
+          biz.categories.add(cat);
+          bizMap.set(s.business_id, biz);
+        });
+      }
+
+      // Also aggregate total expenses per business
+      const existing = bizMap.get(s.business_id) || { total: 0, categories: new Set<string>(), confidence: s.confidence_score };
+      existing.total += s.total_expenses;
+      bizMap.set(s.business_id, existing);
+    });
+
+    const cats: CategoryExpense[] = Array.from(categoryMap.entries())
+      .map(([category, data]) => {
+        const lookup = categoryLookup.get(category.toLowerCase());
+        return {
+          category,
+          categoryGroup: lookup?.group || 'uncategorized',
+          taxDeductible: lookup?.taxDeductible || false,
+          total: data.total,
+          businessCount: data.businesses.size,
+        };
+      })
+      .sort((a, b) => b.total - a.total);
+
+    const bizRows: BusinessExpenseRow[] = Array.from(bizMap.entries())
+      .map(([bizId, data]) => ({
+        businessName: bizNameMap.get(bizId) || 'Unknown',
+        totalExpenses: data.total,
+        confidence: data.confidence,
+        topCategories: Array.from(data.categories).slice(0, 3),
+      }))
+      .sort((a, b) => b.totalExpenses - a.totalExpenses);
+
+    const total = bizRows.reduce((s, b) => s + b.totalExpenses, 0);
+
+    return { categories: cats, businessRows: bizRows, totalExpenses: total };
+  }, [snapshots, bizNameMap, categoryLookup]);
 
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
 
-  if (!data) return null;
+  const hasData = categories.length > 0 || businessRows.length > 0;
 
-  const exportRows = data.categories.map(c => ({
+  const exportRows = categories.map(c => ({
     Category: c.category,
-    'Current Month': c.currentMonth,
-    'Previous Month': c.previousMonth,
-    'Growth %': c.growth.toFixed(1),
-    Transactions: c.count,
+    Group: c.categoryGroup,
+    'Tax Deductible': c.taxDeductible ? 'Yes' : 'No',
+    Total: c.total,
+    'Business Count': c.businessCount,
   }));
 
   return (
@@ -132,129 +122,129 @@ export default function ExpenseIntelligence() {
             <Search className="h-5 w-5 text-primary" />
             Expense Intelligence
           </h2>
-          <p className="text-sm text-muted-foreground">Cross-business expense patterns, vendor analysis, and anomaly detection</p>
+          <p className="text-sm text-muted-foreground">
+            Cross-business expense analysis from financial snapshots
+          </p>
         </div>
-        <ExportButton
-          data={exportRows}
-          filename="expense-intelligence"
-          columns={[
-            { key: 'Category', label: 'Category' },
-            { key: 'Current Month', label: 'Current Month' },
-            { key: 'Previous Month', label: 'Previous Month' },
-            { key: 'Growth %', label: 'Growth %' },
-            { key: 'Transactions', label: 'Transactions' },
-          ]}
-        />
+        {hasData && (
+          <ExportButton
+            data={exportRows}
+            filename="expense-intelligence"
+            columns={[
+              { key: 'Category', label: 'Category' },
+              { key: 'Group', label: 'Group' },
+              { key: 'Tax Deductible', label: 'Tax Deductible' },
+              { key: 'Total', label: 'Total' },
+              { key: 'Business Count', label: 'Businesses' },
+            ]}
+          />
+        )}
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <Card className="bg-card/50">
           <CardContent className="pt-4 pb-3">
-            <p className="text-xs text-muted-foreground">This Month</p>
-            <p className="text-xl font-bold text-red-400">${data.totalCurrent.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">Total Expenses</p>
+            <p className="text-xl font-bold text-red-400">${totalExpenses.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card className="bg-card/50">
           <CardContent className="pt-4 pb-3">
-            <p className="text-xs text-muted-foreground">Last Month</p>
-            <p className="text-xl font-bold text-muted-foreground">${data.totalPrev.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">Categories Tracked</p>
+            <p className="text-xl font-bold">{categories.length}</p>
           </CardContent>
         </Card>
         <Card className="bg-card/50">
           <CardContent className="pt-4 pb-3">
-            <p className="text-xs text-muted-foreground">MoM Change</p>
-            <p className={`text-xl font-bold ${data.momGrowth > 10 ? 'text-red-400' : data.momGrowth < -5 ? 'text-emerald-400' : 'text-muted-foreground'}`}>
-              {data.momGrowth > 0 ? '+' : ''}{data.momGrowth.toFixed(1)}%
-            </p>
-          </CardContent>
-        </Card>
-        <Card className={`bg-card/50 ${data.overlaps.length > 0 ? 'border-amber-500/20' : ''}`}>
-          <CardContent className="pt-4 pb-3">
-            <p className="text-xs text-muted-foreground">Vendor Overlaps</p>
-            <p className={`text-xl font-bold ${data.overlaps.length > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
-              {data.overlaps.length}
-            </p>
+            <p className="text-xs text-muted-foreground">Businesses Reporting</p>
+            <p className="text-xl font-bold">{businessRows.length}</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tab Selector */}
-      <div className="flex gap-2">
-        <Button variant={tab === 'categories' ? 'default' : 'outline'} size="sm" onClick={() => setTab('categories')}>
-          By Category
-        </Button>
-        <Button variant={tab === 'vendors' ? 'default' : 'outline'} size="sm" onClick={() => setTab('vendors')}>
-          By Vendor
-        </Button>
-      </div>
-
-      {/* Category View */}
-      {tab === 'categories' && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Category Breakdown — This Month</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {data.categories.map(cat => {
-                const isSpike = cat.growth > 25;
-                return (
-                  <div key={cat.category} className={`flex items-center gap-3 p-3 rounded-lg ${isSpike ? 'bg-red-950/10 border border-red-500/20' : 'bg-muted/30'}`}>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{cat.category}</p>
-                        {isSpike && <Badge className="bg-red-500/20 text-red-300 border-red-500/40 text-[10px]">Spike</Badge>}
-                      </div>
-                      <p className="text-xs text-muted-foreground">{cat.count} transactions</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-red-400">${cat.currentMonth.toLocaleString()}</p>
-                      <p className={`text-xs ${cat.growth > 0 ? 'text-red-300' : 'text-emerald-300'}`}>
-                        {cat.growth > 0 ? '+' : ''}{cat.growth.toFixed(0)}% vs last month
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-              {data.categories.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-6">No expense data this month</p>
-              )}
+      {!hasData && (
+        <Card className="border-amber-500/20 bg-amber-950/10">
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-400" />
+              <span className="text-sm text-amber-300">
+                No expense breakdown data in snapshots yet. Expense intelligence will activate when businesses submit snapshots with expense_breakdown fields.
+              </span>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Vendor View */}
-      {tab === 'vendors' && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Top Vendors — This Month</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {data.vendors.map(v => (
-                <div key={v.vendor} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{v.vendor}</p>
-                    <div className="flex gap-1 mt-1">
-                      {v.categories.map(c => (
-                        <Badge key={c} variant="outline" className="text-[10px] py-0">{c}</Badge>
-                      ))}
+      {hasData && (
+        <>
+          {/* Tab Selector */}
+          <div className="flex gap-2">
+            <Button variant={tab === 'categories' ? 'default' : 'outline'} size="sm" onClick={() => setTab('categories')}>
+              By Category
+            </Button>
+            <Button variant={tab === 'businesses' ? 'default' : 'outline'} size="sm" onClick={() => setTab('businesses')}>
+              By Business
+            </Button>
+          </div>
+
+          {tab === 'categories' && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Expense Categories</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {categories.map(cat => (
+                    <div key={cat.category} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium capitalize">{cat.category}</p>
+                          <Badge variant="outline" className="text-[10px] py-0 capitalize">{cat.categoryGroup}</Badge>
+                          {cat.taxDeductible && (
+                            <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px]">Deductible</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{cat.businessCount} business{cat.businessCount !== 1 ? 'es' : ''}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-red-400">${cat.total.toLocaleString()}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold">${v.total.toLocaleString()}</p>
-                    <p className="text-xs text-muted-foreground">{v.count} purchases</p>
-                  </div>
+                  ))}
                 </div>
-              ))}
-              {data.vendors.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-6">No vendor data this month</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          )}
+
+          {tab === 'businesses' && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Expenses by Business</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {businessRows.map(biz => (
+                    <div key={biz.businessName} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{biz.businessName}</p>
+                        <div className="flex gap-1 mt-1">
+                          {biz.topCategories.map(c => (
+                            <Badge key={c} variant="outline" className="text-[10px] py-0 capitalize">{c}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-red-400">${biz.totalExpenses.toLocaleString()}</p>
+                        <p className="text-[10px] text-muted-foreground">Conf: {biz.confidence}%</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
     </div>
   );
