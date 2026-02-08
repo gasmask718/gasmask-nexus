@@ -1,6 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { OSRole } from '@/config/osNavigation';
 
+export type InviteStatus = 'sent' | 'accepted' | 'expired' | 'revoked';
+
 export interface Invitation {
   id: string;
   email: string;
@@ -8,8 +10,13 @@ export interface Invitation {
   role: OSRole;
   invite_token: string;
   invited_by: string;
+  invite_status: InviteStatus;
   expires_at: string;
   accepted_at: string | null;
+  accepted_user_id: string | null;
+  revoked_at: string | null;
+  revoked_by: string | null;
+  revoke_reason: string | null;
   created_at: string;
   metadata?: Record<string, any>;
   assigned_brand_id?: string;
@@ -40,13 +47,12 @@ function generateInviteToken(): string {
  * Log invite audit events
  */
 async function logInviteAudit(
-  action: 'invite_created' | 'invite_accepted' | 'invite_expired' | 'invite_revoked' | 'invite_resent',
+  action: 'invite_created' | 'invite_accepted' | 'invite_expired' | 'invite_revoked' | 'invite_resent' | 'access_granted' | 'access_revoked',
   inviteId: string,
   metadata?: Record<string, any>
 ) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    // Use a generic insert that works with any audit table structure
     await supabase.from('security_audit_log').insert({
       user_id: user?.id || null,
       action: action,
@@ -56,8 +62,18 @@ async function logInviteAudit(
     } as any);
   } catch (err) {
     console.error('Failed to log invite audit:', err);
-    // Don't fail the main operation for audit log failures
   }
+}
+
+/**
+ * Compute the effective status of an invitation
+ * (handles expired status which is time-based, not stored)
+ */
+export function getEffectiveStatus(invitation: Invitation): InviteStatus {
+  if (invitation.invite_status === 'revoked') return 'revoked';
+  if (invitation.invite_status === 'accepted') return 'accepted';
+  if (new Date(invitation.expires_at) < new Date()) return 'expired';
+  return 'sent';
 }
 
 /**
@@ -79,6 +95,7 @@ export async function createInvitation(params: CreateInvitationParams): Promise<
     role: params.role as any,
     invite_token: token,
     invited_by: user.id,
+    invite_status: 'sent' as any,
     expires_at: expiresAt,
     metadata: {
       assigned_brand_id: params.assigned_brand_id,
@@ -99,7 +116,6 @@ export async function createInvitation(params: CreateInvitationParams): Promise<
     return { invitation: null, error: error.message };
   }
 
-  // Audit log
   await logInviteAudit('invite_created', data.id, { 
     email: params.email, 
     role: params.role,
@@ -129,7 +145,6 @@ export async function createInvitation(params: CreateInvitationParams): Promise<
     }
   } catch (emailError) {
     console.error('Error sending invitation email:', emailError);
-    // Don't fail the invitation creation if email fails
   }
 
   return { invitation: data as unknown as Invitation, error: null, emailSent };
@@ -151,13 +166,18 @@ export async function validateInviteToken(token: string): Promise<{ invitation: 
 
   const invitation = data as unknown as Invitation;
 
+  // Check if revoked
+  if (invitation.invite_status === 'revoked') {
+    return { invitation: null, error: 'This invitation has been revoked' };
+  }
+
   // Check if expired
   if (new Date(invitation.expires_at) < new Date()) {
     return { invitation: null, error: 'This invitation has expired' };
   }
 
   // Check if already used
-  if (invitation.accepted_at) {
+  if (invitation.accepted_at || invitation.invite_status === 'accepted') {
     return { invitation: null, error: 'This invitation has already been used' };
   }
 
@@ -165,36 +185,44 @@ export async function validateInviteToken(token: string): Promise<{ invitation: 
 }
 
 /**
- * Mark invitation as accepted
+ * Accept invitation — records acceptance with full audit trail
+ * CRITICAL: This is the canonical acceptance function.
  */
 export async function acceptInvitation(
   token: string, 
   userId: string
 ): Promise<{ success: boolean; error: string | null }> {
-  // First validate
   const { invitation, error: validateError } = await validateInviteToken(token);
   if (validateError || !invitation) {
     return { success: false, error: validateError || 'Invalid invitation' };
   }
 
-  // Mark as accepted
+  // Mark as accepted with user ID
   const { error: updateError } = await supabase
     .from('user_invitations')
-    .update({ accepted_at: new Date().toISOString() })
+    .update({ 
+      accepted_at: new Date().toISOString(),
+      accepted_user_id: userId,
+      invite_status: 'accepted' as any,
+    })
     .eq('invite_token', token);
 
   if (updateError) {
     return { success: false, error: updateError.message };
   }
 
-  // Note: Role-specific assignment tables (biker_store_assignments, driver_route_assignments, etc.)
-  // would be created here if those tables exist. For now, the metadata is stored on the invitation
-  // and can be used by the application to create assignments as needed.
-
-  // Audit log
+  // Log acceptance
   await logInviteAudit('invite_accepted', invitation.id, {
     user_id: userId,
     role: invitation.role,
+    email: invitation.email
+  });
+
+  // Log access granted
+  await logInviteAudit('access_granted', invitation.id, {
+    user_id: userId,
+    role: invitation.role,
+    portal: invitation.role,
     email: invitation.email
   });
 
@@ -207,10 +235,52 @@ export async function acceptInvitation(
 export async function markInvitationAccepted(token: string): Promise<{ success: boolean; error: string | null }> {
   const { error } = await supabase
     .from('user_invitations')
-    .update({ accepted_at: new Date().toISOString() })
+    .update({ 
+      accepted_at: new Date().toISOString(),
+      invite_status: 'accepted' as any,
+    })
     .eq('invite_token', token);
 
   if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, error: null };
+}
+
+/**
+ * Revoke user access via RPC (non-destructive)
+ * Removes role, marks invite as revoked, logs audit
+ */
+export async function revokeUserAccess(
+  inviteId: string, 
+  reason?: string
+): Promise<{ success: boolean; error: string | null; result?: any }> {
+  const { data, error } = await supabase.rpc('revoke_user_access', {
+    _invite_id: inviteId,
+    _reason: reason || null,
+  });
+
+  if (error) {
+    console.error('Revoke access error:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, error: null, result: data };
+}
+
+/**
+ * Reinstate revoked access via RPC
+ */
+export async function reinstateUserAccess(
+  inviteId: string
+): Promise<{ success: boolean; error: string | null }> {
+  const { data, error } = await supabase.rpc('reinstate_user_access', {
+    _invite_id: inviteId,
+  });
+
+  if (error) {
+    console.error('Reinstate access error:', error);
     return { success: false, error: error.message };
   }
 
@@ -228,7 +298,8 @@ export async function resendInvitation(id: string): Promise<{ invitation: Invita
     .from('user_invitations')
     .update({ 
       invite_token: newToken, 
-      expires_at: newExpiry
+      expires_at: newExpiry,
+      invite_status: 'sent' as any,
     })
     .eq('id', id)
     .select()
@@ -243,7 +314,7 @@ export async function resendInvitation(id: string): Promise<{ invitation: Invita
 }
 
 /**
- * Get all invitations (admin only)
+ * Get all invitations with inviter profile info (admin only)
  */
 export async function getInvitations(): Promise<{ invitations: Invitation[]; error: string | null }> {
   const { data, error } = await supabase
@@ -259,9 +330,21 @@ export async function getInvitations(): Promise<{ invitations: Invitation[]; err
 }
 
 /**
- * Delete an invitation permanently
+ * Delete an invitation permanently (only for unsent/pending invites)
+ * GOVERNANCE: Accepted/revoked invites should NEVER be deleted for audit trail
  */
 export async function deleteInvitation(id: string): Promise<{ success: boolean; error: string | null }> {
+  // Only allow deletion of 'sent' invites (not accepted/revoked)
+  const { data: invite } = await supabase
+    .from('user_invitations')
+    .select('invite_status')
+    .eq('id', id)
+    .single();
+
+  if (invite && (invite as any).invite_status !== 'sent') {
+    return { success: false, error: 'Cannot delete accepted or revoked invitations. Use revoke instead.' };
+  }
+
   const { error } = await supabase
     .from('user_invitations')
     .delete()

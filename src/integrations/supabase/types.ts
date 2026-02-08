@@ -43893,44 +43893,59 @@ export type Database = {
       user_invitations: {
         Row: {
           accepted_at: string | null
+          accepted_user_id: string | null
           assigned_brand_id: string | null
           assigned_store_id: string | null
           created_at: string
           email: string
           expires_at: string
           id: string
+          invite_status: Database["public"]["Enums"]["invite_status"]
           invite_token: string
           invited_by: string
           metadata: Json | null
           phone: string | null
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
           role: Database["public"]["Enums"]["app_role"]
         }
         Insert: {
           accepted_at?: string | null
+          accepted_user_id?: string | null
           assigned_brand_id?: string | null
           assigned_store_id?: string | null
           created_at?: string
           email: string
           expires_at: string
           id?: string
+          invite_status?: Database["public"]["Enums"]["invite_status"]
           invite_token: string
           invited_by: string
           metadata?: Json | null
           phone?: string | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
           role: Database["public"]["Enums"]["app_role"]
         }
         Update: {
           accepted_at?: string | null
+          accepted_user_id?: string | null
           assigned_brand_id?: string | null
           assigned_store_id?: string | null
           created_at?: string
           email?: string
           expires_at?: string
           id?: string
+          invite_status?: Database["public"]["Enums"]["invite_status"]
           invite_token?: string
           invited_by?: string
           metadata?: Json | null
           phone?: string | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
           role?: Database["public"]["Enums"]["app_role"]
         }
         Relationships: [
@@ -50590,6 +50605,7 @@ export type Database = {
         Args: { p_for_date?: string; p_office_id: string }
         Returns: undefined
       }
+      reinstate_user_access: { Args: { _invite_id: string }; Returns: boolean }
       request_ai_approval: {
         Args: {
           p_action_description: string
@@ -50620,6 +50636,10 @@ export type Database = {
       revoke_portal_device: {
         Args: { _device_id: string; _reason?: string }
         Returns: boolean
+      }
+      revoke_user_access: {
+        Args: { _invite_id: string; _reason?: string }
+        Returns: Json
       }
       search_audit_logs: {
         Args: {
@@ -50862,6 +50882,7 @@ export type Database = {
         | "digital"
       inbound_route_type: "user" | "role" | "voicemail"
       inventory_level: "empty" | "quarter" | "half" | "threeQuarters" | "full"
+      invite_status: "sent" | "accepted" | "expired" | "revoked"
       lead_source:
         | "probate"
         | "pre_foreclosure"
@@ -51337,6 +51358,7 @@ export const Constants = {
       ],
       inbound_route_type: ["user", "role", "voicemail"],
       inventory_level: ["empty", "quarter", "half", "threeQuarters", "full"],
+      invite_status: ["sent", "accepted", "expired", "revoked"],
       lead_source: [
         "probate",
         "pre_foreclosure",
