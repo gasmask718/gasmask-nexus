@@ -35324,6 +35324,168 @@ export type Database = {
           },
         ]
       }
+      production_worker_earnings: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          batch_id: string | null
+          created_at: string
+          earned_at: string
+          earnings_amount: number
+          id: string
+          notes: string | null
+          office_id: string
+          paid_at: string | null
+          pay_rate_at_time: number
+          pay_type_at_time: string
+          payment_id: string | null
+          quantity_completed: number
+          status: string
+          submission_id: string | null
+          unit_type: string
+          updated_at: string
+          worker_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          batch_id?: string | null
+          created_at?: string
+          earned_at?: string
+          earnings_amount?: number
+          id?: string
+          notes?: string | null
+          office_id: string
+          paid_at?: string | null
+          pay_rate_at_time?: number
+          pay_type_at_time?: string
+          payment_id?: string | null
+          quantity_completed?: number
+          status?: string
+          submission_id?: string | null
+          unit_type?: string
+          updated_at?: string
+          worker_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          batch_id?: string | null
+          created_at?: string
+          earned_at?: string
+          earnings_amount?: number
+          id?: string
+          notes?: string | null
+          office_id?: string
+          paid_at?: string | null
+          pay_rate_at_time?: number
+          pay_type_at_time?: string
+          payment_id?: string | null
+          quantity_completed?: number
+          status?: string
+          submission_id?: string | null
+          unit_type?: string
+          updated_at?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_worker_earnings_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_worker_earnings_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_earnings_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_worker_earnings_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "production_worker_submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_worker_earnings_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "production_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_worker_payments: {
+        Row: {
+          admin_notes: string | null
+          covered_earnings: string[]
+          created_at: string
+          id: string
+          office_id: string
+          paid_at: string
+          paid_by: string
+          payment_method: string
+          period_end: string | null
+          period_start: string | null
+          total_amount: number
+          worker_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          covered_earnings?: string[]
+          created_at?: string
+          id?: string
+          office_id: string
+          paid_at?: string
+          paid_by: string
+          payment_method?: string
+          period_end?: string | null
+          period_start?: string | null
+          total_amount?: number
+          worker_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          covered_earnings?: string[]
+          created_at?: string
+          id?: string
+          office_id?: string
+          paid_at?: string
+          paid_by?: string
+          payment_method?: string
+          period_end?: string | null
+          period_start?: string | null
+          total_amount?: number
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_worker_payments_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_worker_payments_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "production_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_worker_performance_snapshots: {
         Row: {
           avg_sticker_apply_seconds: number | null
@@ -35634,6 +35796,8 @@ export type Database = {
           id: string
           notes: string | null
           office_id: string
+          pay_rate: number
+          pay_type: string
           person_id: string | null
           phone: string | null
           role: string
@@ -35649,6 +35813,8 @@ export type Database = {
           id?: string
           notes?: string | null
           office_id: string
+          pay_rate?: number
+          pay_type?: string
           person_id?: string | null
           phone?: string | null
           role: string
@@ -35664,6 +35830,8 @@ export type Database = {
           id?: string
           notes?: string | null
           office_id?: string
+          pay_rate?: number
+          pay_type?: string
           person_id?: string | null
           phone?: string | null
           role?: string
@@ -51217,6 +51385,17 @@ export type Database = {
       }
       create_commission_reversal: {
         Args: { p_ledger_id: string; p_reason?: string }
+        Returns: string
+      }
+      create_earning_from_submission: {
+        Args: {
+          p_approved_by: string
+          p_batch_id: string
+          p_office_id: string
+          p_quantity: number
+          p_submission_id: string
+          p_worker_id: string
+        }
         Returns: string
       }
       create_payout_batch: {

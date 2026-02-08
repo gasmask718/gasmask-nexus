@@ -203,7 +203,7 @@ export function useReviewSubmission() {
 
       if (error) throw error;
 
-      // If approved, create batch output record
+      // If approved, create batch output record + earning
       if (decision === 'approved' && submission) {
         const sub = submission as unknown as WorkerSubmission;
         if (sub.batch_id) {
@@ -236,6 +236,22 @@ export function useReviewSubmission() {
               .from('production_worker_submissions')
               .update({ resulting_output_id: output.id })
               .eq('id', submissionId);
+          }
+
+          // Auto-create earning record if worker is assigned
+          if (sub.worker_id) {
+            try {
+              await supabase.rpc('create_earning_from_submission', {
+                p_submission_id: sub.id,
+                p_worker_id: sub.worker_id,
+                p_batch_id: sub.batch_id,
+                p_office_id: sub.office_id,
+                p_quantity: sub.boxes_packed || 1,
+                p_approved_by: user.user!.id,
+              });
+            } catch (e) {
+              console.error('Failed to create earning from submission:', e);
+            }
           }
         }
       }
