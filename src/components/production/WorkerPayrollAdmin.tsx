@@ -1,15 +1,15 @@
 /**
- * WORKER PAYROLL ADMIN
+ * WORKER PAYROLL ADMIN — Command Console
  * 
- * Admin/Manager view for:
- * - Worker balance summaries
- * - "Pay Worker" action
- * - Earnings approval
+ * Operational payroll tab for admins/managers:
+ * - Sticky action bar with Approve All, Pay Worker, Export
+ * - Worker balance table with inline actions
+ * - Pay Worker modal with worker selector
  * - Payment audit log
- * - CSV export
+ * - Empty state guidance
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { ExportButton } from '@/components/crud/ExportButton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import {
   DollarSign,
   Users,
@@ -26,6 +27,9 @@ import {
   Wallet,
   History,
   AlertTriangle,
+  CreditCard,
+  FileText,
+  CheckCheck,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -49,12 +53,29 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
   const issuePayment = useIssuePayment();
   const approveEarnings = useApproveEarnings();
 
+  // Pay Worker dialog — can be opened from action bar or inline
   const [payDialog, setPayDialog] = useState<WorkerPaySummary | null>(null);
   const [payMethod, setPayMethod] = useState('cash');
   const [payNotes, setPayNotes] = useState('');
 
+  // Standalone "Pay Worker" flow (select worker from action bar)
+  const [showWorkerSelector, setShowWorkerSelector] = useState(false);
+  const [selectedPayWorkerId, setSelectedPayWorkerId] = useState('');
+
+  // Aggregates
   const totalUnpaid = summaries.reduce((sum, s) => sum + s.unpaid_balance, 0);
   const totalPendingApproval = summaries.reduce((sum, s) => sum + s.pending_count, 0);
+  const totalApprovedReady = summaries.reduce((sum, s) => sum + s.approved_count, 0);
+  const payableWorkers = useMemo(
+    () => summaries.filter(s => s.unpaid_balance > 0 && s.approved_count > 0),
+    [summaries]
+  );
+  const pendingWorkers = useMemo(
+    () => summaries.filter(s => s.pending_count > 0),
+    [summaries]
+  );
+
+  // ---------- Handlers ----------
 
   const handlePay = async () => {
     if (!payDialog) return;
@@ -74,6 +95,35 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
       .map(e => e.id);
     if (!pendingIds.length) return;
     await approveEarnings.mutateAsync({ earningIds: pendingIds, officeId });
+  };
+
+  const handleApproveAll = async () => {
+    const allPendingIds = earnings
+      .filter(e => e.status === 'pending')
+      .map(e => e.id);
+    if (!allPendingIds.length) return;
+    await approveEarnings.mutateAsync({ earningIds: allPendingIds, officeId });
+  };
+
+  const openPayWorkerSelector = () => {
+    setSelectedPayWorkerId('');
+    setShowWorkerSelector(true);
+  };
+
+  const confirmWorkerSelection = () => {
+    const worker = summaries.find(s => s.worker_id === selectedPayWorkerId);
+    if (worker) {
+      setPayDialog(worker);
+      setPayMethod('cash');
+      setPayNotes('');
+    }
+    setShowWorkerSelector(false);
+  };
+
+  const openPayForWorker = (summary: WorkerPaySummary) => {
+    setPayDialog(summary);
+    setPayMethod('cash');
+    setPayNotes('');
   };
 
   // Export columns
@@ -97,7 +147,65 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
+      {/* ─── STICKY ACTION BAR ─── */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-primary/10 p-2">
+                <Wallet className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm">Payroll Console</h3>
+                <p className="text-xs text-muted-foreground">
+                  {totalPendingApproval > 0 && (
+                    <span className="text-amber-600 font-medium">{totalPendingApproval} pending approval</span>
+                  )}
+                  {totalPendingApproval > 0 && totalApprovedReady > 0 && ' · '}
+                  {totalApprovedReady > 0 && (
+                    <span className="text-primary font-medium">{payableWorkers.length} ready to pay</span>
+                  )}
+                  {totalPendingApproval === 0 && totalApprovedReady === 0 && 'All caught up'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Approve All Pending */}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleApproveAll}
+                disabled={totalPendingApproval === 0 || approveEarnings.isPending}
+                title={totalPendingApproval === 0 ? 'No pending earnings to approve' : undefined}
+              >
+                <CheckCheck className="h-4 w-4 mr-1" />
+                Approve All ({totalPendingApproval})
+              </Button>
+
+              {/* Pay Worker (opens selector) */}
+              <Button
+                size="sm"
+                onClick={openPayWorkerSelector}
+                disabled={payableWorkers.length === 0}
+                title={payableWorkers.length === 0 ? 'No workers with approved unpaid earnings' : undefined}
+              >
+                <CreditCard className="h-4 w-4 mr-1" />
+                Pay Worker
+              </Button>
+
+              {/* Export */}
+              <ExportButton
+                data={summaries as any}
+                filename="worker-payroll"
+                columns={payrollExportColumns}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ─── SUMMARY CARDS ─── */}
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
@@ -107,12 +215,14 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
             <CardTitle className="text-2xl">{summaries.length}</CardTitle>
           </CardHeader>
         </Card>
-        <Card className="border-amber-300/50">
+        <Card className={totalUnpaid > 0 ? 'border-amber-300/50' : ''}>
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1">
               <AlertTriangle className="h-3 w-3" /> Total Unpaid
             </CardDescription>
-            <CardTitle className="text-2xl text-amber-600">${totalUnpaid.toFixed(2)}</CardTitle>
+            <CardTitle className={`text-2xl ${totalUnpaid > 0 ? 'text-amber-600' : ''}`}>
+              ${totalUnpaid.toFixed(2)}
+            </CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -125,7 +235,7 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
         </Card>
       </div>
 
-      {/* Tabs */}
+      {/* ─── TABS: BALANCES + AUDIT ─── */}
       <Tabs defaultValue="balances">
         <TabsList>
           <TabsTrigger value="balances" className="flex items-center gap-1">
@@ -136,6 +246,7 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
           </TabsTrigger>
         </TabsList>
 
+        {/* ─── BALANCES TAB ─── */}
         <TabsContent value="balances">
           <Card>
             <CardHeader>
@@ -146,18 +257,17 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
                   </CardTitle>
                   <CardDescription>Approve pending earnings and issue payments</CardDescription>
                 </div>
-                <ExportButton
-                  data={summaries as any}
-                  filename="worker-payroll"
-                  columns={payrollExportColumns}
-                />
               </div>
             </CardHeader>
             <CardContent>
               {summariesLoading ? (
                 <p className="text-center text-muted-foreground py-6">Loading...</p>
               ) : summaries.length === 0 ? (
-                <p className="text-center text-muted-foreground py-6">No active workers in this office.</p>
+                <EmptyState
+                  icon={Users}
+                  title="No Active Workers"
+                  description="Add workers to this office to start tracking earnings and managing payroll. Payroll actions will appear once workers have completed batches."
+                />
               ) : (
                 <Table>
                   <TableHeader>
@@ -215,15 +325,14 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
                               {summary.unpaid_balance > 0 && summary.approved_count > 0 && (
                                 <Button
                                   size="sm"
-                                  onClick={() => {
-                                    setPayDialog(summary);
-                                    setPayMethod('cash');
-                                    setPayNotes('');
-                                  }}
+                                  onClick={() => openPayForWorker(summary)}
                                 >
                                   <DollarSign className="h-3 w-3 mr-1" />
                                   Pay
                                 </Button>
+                              )}
+                              {summary.pending_count === 0 && (summary.approved_count === 0 || summary.unpaid_balance <= 0) && (
+                                <span className="text-xs text-muted-foreground italic">No action needed</span>
                               )}
                             </div>
                           </TableCell>
@@ -237,6 +346,7 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
           </Card>
         </TabsContent>
 
+        {/* ─── PAYMENT AUDIT LOG TAB ─── */}
         <TabsContent value="audit">
           <Card>
             <CardHeader>
@@ -262,7 +372,11 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
             </CardHeader>
             <CardContent>
               {payments.length === 0 ? (
-                <p className="text-center text-muted-foreground py-6">No payments issued yet.</p>
+                <EmptyState
+                  icon={FileText}
+                  title="No Payments Yet"
+                  description="Payment records will appear here after you issue your first worker payout. Use the 'Pay Worker' button above to get started."
+                />
               ) : (
                 <Table>
                   <TableHeader>
@@ -304,7 +418,58 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
         </TabsContent>
       </Tabs>
 
-      {/* Pay Worker Dialog */}
+      {/* ─── WORKER SELECTOR DIALOG (from action bar) ─── */}
+      <Dialog open={showWorkerSelector} onOpenChange={setShowWorkerSelector}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Select Worker to Pay
+            </DialogTitle>
+            <DialogDescription>
+              Choose a worker with approved earnings to issue a payment.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {payableWorkers.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No workers with approved unpaid earnings.
+              </p>
+            ) : (
+              <Select value={selectedPayWorkerId} onValueChange={setSelectedPayWorkerId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a worker..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {payableWorkers.map(w => (
+                    <SelectItem key={w.worker_id} value={w.worker_id}>
+                      <div className="flex items-center justify-between w-full gap-4">
+                        <span>{w.worker_name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ${w.unpaid_balance.toFixed(2)} unpaid
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowWorkerSelector(false)}>Cancel</Button>
+            <Button
+              onClick={confirmWorkerSelection}
+              disabled={!selectedPayWorkerId}
+            >
+              Continue to Payment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── PAY WORKER CONFIRMATION DIALOG ─── */}
       <Dialog open={!!payDialog} onOpenChange={(open) => !open && setPayDialog(null)}>
         <DialogContent>
           <DialogHeader>
