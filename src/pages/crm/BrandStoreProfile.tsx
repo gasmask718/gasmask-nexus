@@ -20,6 +20,7 @@ import { useStoreNotes, useAddStoreNote, useDeleteStoreNote } from "@/hooks/useS
 import { useStoreStatusHistory, useAddStoreStatusEvent } from "@/hooks/useStoreStatusHistory";
 import { format } from "date-fns";
 import { StoreFollowUpSection } from "@/components/communication/followups/StoreFollowUpSection";
+import { SellThroughIntelCard } from "@/components/store/SellThroughIntelCard";
 
 export default function BrandStoreProfile() {
   const { brandId, storeId } = useParams<{ brandId: string; storeId: string }>();
@@ -201,6 +202,9 @@ export default function BrandStoreProfile() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Sell-Through Intelligence */}
+          {storeId && <SellThroughIntelCard storeId={storeId} />}
 
           {/* Sticker Compliance */}
           <Card>
