@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Boxes, RefreshCw, Calendar } from 'lucide-react';
 import { useStoreVisitInventory } from '@/hooks/useVisitProducts';
 import { formatDistanceToNow } from 'date-fns';
+import { normalizeBrandId, getBrandPrimaryColor } from '@/config/brands';
 
 interface StoreVisitInventoryCardProps {
   storeId: string;
@@ -13,14 +14,8 @@ export function StoreVisitInventoryCard({ storeId }: StoreVisitInventoryCardProp
   const { data: inventory, isLoading, refetch } = useStoreVisitInventory(storeId);
 
   const getBrandColor = (brandName: string) => {
-    const colors: Record<string, string> = {
-      'GasMask': '#FF0000',
-      'HotMama': '#FF4F9D',
-      'Hot Scalati': '#FF7A00',
-      'Hot Scolatti': '#FF7A00',
-      'Grabba R Us': '#A020F0',
-    };
-    return colors[brandName] || '#6366F1';
+    const brandId = normalizeBrandId(brandName);
+    return brandId ? getBrandPrimaryColor(brandId) : '#6366F1';
   };
 
   const totalProducts = inventory?.reduce((sum, item) => sum + item.total_quantity, 0) || 0;

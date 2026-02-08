@@ -6,11 +6,13 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+import { CANONICAL_BRANDS } from '@/config/brands';
+
 const brandColors = {
-  GasMask: { primary: '#D30000', secondary: '#000000', name: 'GasMask' },
-  HotMama: { primary: '#B76E79', secondary: '#000000', name: 'HotMama' },
-  GrabbaRUs: { primary: '#FFD400', secondary: '#245BFF', name: 'Grabba R Us' },
-  HotScalati: { primary: '#5A3A2E', secondary: '#FF7A00', name: 'Hot Scalati' }
+  GasMask: { primary: CANONICAL_BRANDS.gasmask.primaryColor, secondary: '#000000', name: CANONICAL_BRANDS.gasmask.displayName },
+  HotMama: { primary: CANONICAL_BRANDS.hotmama.primaryColor, secondary: '#000000', name: CANONICAL_BRANDS.hotmama.displayName },
+  GrabbaRUs: { primary: CANONICAL_BRANDS.grabba.primaryColor, secondary: '#7B68EE', name: CANONICAL_BRANDS.grabba.displayName },
+  HotScalati: { primary: CANONICAL_BRANDS.scalati.primaryColor, secondary: '#5A3A2E', name: CANONICAL_BRANDS.scalati.displayName },
 };
 
 export default function GrabbaClusterDashboard() {

@@ -5,11 +5,12 @@ import {
   LayoutDashboard, Box, Shield, Send, Phone, Mail, Brain
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { CANONICAL_BRANDS, CANONICAL_BRAND_IDS as _CANONICAL_IDS, type CanonicalBrandId } from '@/config/brands';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GRABBA EMPIRE SKYSCRAPER NAVIGATION
 // Penthouse + 8 Floors Architecture
-// Brand filtering happens INSIDE pages, not in navigation
+// Brand identity derived from CANONICAL_BRANDS (src/config/brands.ts)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface GrabbaFloor {
@@ -21,18 +22,20 @@ export interface GrabbaFloor {
   emoji: string;
 }
 
-// Brand type definitions
-export const GRABBA_BRAND_IDS = ['gasmask', 'hotmama', 'scalati', 'grabba'] as const;
-export type GrabbaBrand = typeof GRABBA_BRAND_IDS[number];
+// Brand type definitions — re-export canonical types
+export const GRABBA_BRAND_IDS = _CANONICAL_IDS;
+export type GrabbaBrand = CanonicalBrandId;
 export type GrabbaBrandId = GrabbaBrand | 'all';
 
 // Legacy array format for backward compatibility
 export const GRABBA_BRANDS = [
   { id: 'all', name: 'All Brands', color: '#6366F1', emoji: '🏢' },
-  { id: 'gasmask', name: 'GasMask', color: '#FF0000', emoji: '🔴' },
-  { id: 'hotmama', name: 'HotMama', color: '#B76E79', emoji: '🟣' },
-  { id: 'scalati', name: 'Hot Scalati', color: '#FF7A00', emoji: '🟠' },
-  { id: 'grabba', name: 'Grabba R Us', color: '#A020F0', emoji: '🟪' },
+  ...GRABBA_BRAND_IDS.map(id => ({
+    id,
+    name: CANONICAL_BRANDS[id].displayName,
+    color: CANONICAL_BRANDS[id].primaryColor,
+    emoji: CANONICAL_BRANDS[id].icon,
+  })),
 ] as const;
 
 // All Brands option for filters
@@ -51,7 +54,26 @@ export const ALL_BRANDS_OPTION = {
   icon: '🏢',
 };
 
-// Full brand configuration
+// Full brand configuration — derived from canonical registry
+const buildBrandConfig = (id: CanonicalBrandId, overrides: { secondary: string; bgLight: string; roseGoldGradient?: string[] }) => {
+  const brand = CANONICAL_BRANDS[id];
+  return {
+    id,
+    name: brand.displayName,
+    label: brand.displayName,
+    color: brand.primaryColor,
+    primary: brand.primaryColor,
+    secondary: overrides.secondary,
+    gradient: brand.gradient,
+    roseGoldGradient: overrides.roseGoldGradient,
+    bgLight: overrides.bgLight,
+    textColor: brand.textClass.split(' ')[0], // take first class for light mode
+    borderColor: brand.borderClass.split('/')[0], // border-color-500
+    pill: brand.pillClass,
+    icon: brand.icon,
+  };
+};
+
 export const GRABBA_BRAND_CONFIG: Record<GrabbaBrand, {
   id: string;
   name: string;
@@ -67,63 +89,12 @@ export const GRABBA_BRAND_CONFIG: Record<GrabbaBrand, {
   pill: string;
   icon: string;
 }> = {
-  gasmask: {
-    id: 'gasmask',
-    name: 'GasMask',
-    label: 'GasMask',
-    color: '#FF0000',
-    primary: '#FF0000',
-    secondary: '#000000',
-    gradient: 'from-red-600 to-red-900',
-    bgLight: 'bg-red-50',
-    textColor: 'text-red-500',
-    borderColor: 'border-red-500',
-    pill: 'bg-red-500/20 text-red-300 border-red-500/40',
-    icon: '🔴',
-  },
+  gasmask: buildBrandConfig('gasmask', { secondary: '#000000', bgLight: 'bg-red-50' }),
   hotmama: {
-    id: 'hotmama',
-    name: 'HotMama',
-    label: 'HotMama',
-    color: '#FF4F9D',
-    primary: '#FF4F9D',
-    secondary: '#FFC2D6',
-    gradient: 'from-pink-500 via-pink-400 to-pink-300',
-    roseGoldGradient: ['#FF4F9D', '#FFC2D6', '#FFE5EF'],
-    bgLight: 'bg-pink-50',
-    textColor: 'text-pink-500',
-    borderColor: 'border-pink-500',
-    pill: 'bg-pink-500/20 text-pink-300 border-pink-500/40',
-    icon: '💖',
+    ...buildBrandConfig('hotmama', { secondary: '#FFC2D6', bgLight: 'bg-pink-50', roseGoldGradient: ['#FF4F9D', '#FFC2D6', '#FFE5EF'] }),
   },
-  scalati: {
-    id: 'scalati',
-    name: 'Hot Scalati',
-    label: 'Hot Scalati',
-    color: '#FF7A00',
-    primary: '#FF7A00',
-    secondary: '#5A3A2E',
-    gradient: 'from-orange-500 to-amber-600',
-    bgLight: 'bg-orange-50',
-    textColor: 'text-orange-500',
-    borderColor: 'border-orange-500',
-    pill: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
-    icon: '🟠',
-  },
-  grabba: {
-    id: 'grabba',
-    name: 'Grabba R Us',
-    label: 'Grabba R Us',
-    color: '#A020F0',
-    primary: '#A020F0',
-    secondary: '#7B68EE',
-    gradient: 'from-purple-600 to-violet-700',
-    bgLight: 'bg-purple-50',
-    textColor: 'text-purple-500',
-    borderColor: 'border-purple-500',
-    pill: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
-    icon: '🟪',
-  },
+  scalati: buildBrandConfig('scalati', { secondary: '#5A3A2E', bgLight: 'bg-orange-50' }),
+  grabba: buildBrandConfig('grabba', { secondary: '#7B68EE', bgLight: 'bg-purple-50' }),
 };
 
 // Map frontend brand keys to database enum values (store_brand_accounts)
@@ -314,7 +285,7 @@ export const PENTHOUSE_ACTIONS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// BRAND THEME CONFIG (for applying colors inside pages)
+// BRAND THEME CONFIG — derived from canonical brands registry
 // ═══════════════════════════════════════════════════════════════════════════════
 export const GRABBA_BRAND_THEMES = {
   all: {
@@ -326,42 +297,20 @@ export const GRABBA_BRAND_THEMES = {
     borderColor: 'border-indigo-500',
     icon: '🏢'
   },
-  gasmask: {
-    primary: '#FF0000',
-    secondary: '#000000',
-    gradient: 'from-red-600 to-red-900',
-    bgLight: 'bg-red-50',
-    textColor: 'text-red-500',
-    borderColor: 'border-red-500',
-    icon: '🔴'
-  },
-  hotmama: {
-    primary: '#FF4F9D',
-    secondary: '#FFC2D6',
-    gradient: 'from-pink-500 via-pink-400 to-pink-300',
-    bgLight: 'bg-pink-50',
-    textColor: 'text-pink-500',
-    borderColor: 'border-pink-500',
-    icon: '💖'
-  },
-  scalati: {
-    primary: '#FF7A00',
-    secondary: '#5A3A2E',
-    gradient: 'from-orange-500 to-amber-600',
-    bgLight: 'bg-orange-50',
-    textColor: 'text-orange-500',
-    borderColor: 'border-orange-500',
-    icon: '🟠'
-  },
-  grabba: {
-    primary: '#A020F0',
-    secondary: '#7B68EE',
-    gradient: 'from-purple-600 to-violet-700',
-    bgLight: 'bg-purple-50',
-    textColor: 'text-purple-500',
-    borderColor: 'border-purple-500',
-    icon: '🟪'
-  }
+  ...Object.fromEntries(
+    GRABBA_BRAND_IDS.map(id => {
+      const cfg = GRABBA_BRAND_CONFIG[id];
+      return [id, {
+        primary: cfg.primary,
+        secondary: cfg.secondary,
+        gradient: cfg.gradient,
+        bgLight: cfg.bgLight,
+        textColor: cfg.textColor,
+        borderColor: cfg.borderColor,
+        icon: cfg.icon,
+      }];
+    })
+  ),
 } as const;
 
 // Helper to get theme for a brand

@@ -37,12 +37,12 @@ import type { UpdateMethod } from '@/services/fieldGovernance/types';
 //   - Role-based write access via governance pipeline
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// AUTHORITATIVE TUBE BRANDS
+// AUTHORITATIVE TUBE BRANDS — names derived from canonical registry + tube variants
 export const VALID_TUBE_BRANDS = [
   { id: 'gasmask', name: 'GasMask Bags', color: TUBE_BRAND_COLORS.gasmask.hex },
   { id: 'gasmasktubes', name: 'GasMask Tubes', color: TUBE_BRAND_COLORS.gasmasktubes.hex },
-  { id: 'hotmama', name: 'HotMama', color: TUBE_BRAND_COLORS.hotmama.hex },
-  { id: 'grabba', name: 'Grabba r us', color: TUBE_BRAND_COLORS.grabba.hex },
+  { id: 'hotmama', name: TUBE_BRAND_COLORS.hotmama.name, color: TUBE_BRAND_COLORS.hotmama.hex },
+  { id: 'grabba', name: TUBE_BRAND_COLORS.grabba.name, color: TUBE_BRAND_COLORS.grabba.hex },
   { id: 'hotscolatti-light', name: 'Hot Scolatti Light', color: TUBE_BRAND_COLORS['hotscolatti-light'].hex },
   { id: 'hotscolatti-dark', name: 'Hot Scolatti Dark', color: TUBE_BRAND_COLORS['hotscolatti-dark'].hex },
 ] as const;
