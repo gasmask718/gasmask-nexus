@@ -32,6 +32,10 @@ export { BatchStateControls } from './BatchStateControls';
 export { CostBreakdownPanel } from './CostBreakdownPanel';
 export { MarginAnalytics } from './MarginAnalytics';
 
+// Phase 3: Worker Submission Flow
+export { WorkerSubmissionForm } from './WorkerSubmissionForm';
+export { SubmissionApprovalQueue } from './SubmissionApprovalQueue';
+
 // Soft Alert System
 export * from './alerts';
 

@@ -54,7 +54,9 @@ import {
   InventoryPipeline,
   CostBreakdownPanel,
   MarginAnalytics,
+  SubmissionApprovalQueue,
 } from '@/components/production';
+import { usePendingSubmissionCount } from '@/hooks/useWorkerSubmissions';
 import { 
   Factory, 
   Building2, 
@@ -74,6 +76,7 @@ import {
   Activity,
   Package,
   DollarSign,
+  ClipboardCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -100,6 +103,7 @@ export default function ProductionPortalPage() {
   const { data: closeout } = useDailyCloseout(selectedOfficeId);
   const { data: batches = [] } = useTodayBatches(selectedOfficeId);
   const closeDay = useCloseDay();
+  const { data: pendingSubmissionCount = 0 } = usePendingSubmissionCount(selectedOfficeId);
 
   // Check if wizard was completed for this office
   useEffect(() => {
@@ -314,10 +318,19 @@ export default function ProductionPortalPage() {
 
           {/* Tabbed Sections */}
           <Tabs defaultValue="command" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-10">
+            <TabsList className="grid w-full grid-cols-11">
               <TabsTrigger value="command" className="flex items-center gap-2">
                 <Activity className="h-4 w-4" />
                 <span className="hidden sm:inline">Command</span>
+              </TabsTrigger>
+              <TabsTrigger value="submissions" className="flex items-center gap-2 relative">
+                <ClipboardCheck className="h-4 w-4" />
+                <span className="hidden sm:inline">Submissions</span>
+                {pendingSubmissionCount > 0 && (
+                  <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                    {pendingSubmissionCount}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="inventory" className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
@@ -359,6 +372,10 @@ export default function ProductionPortalPage() {
 
             <TabsContent value="command">
               <DailyCommandView officeId={selectedOfficeId} targetBoxes={100} />
+            </TabsContent>
+
+            <TabsContent value="submissions">
+              <SubmissionApprovalQueue officeId={selectedOfficeId} />
             </TabsContent>
 
             <TabsContent value="inventory">
