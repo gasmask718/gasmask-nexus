@@ -40,6 +40,9 @@ export { SubmissionApprovalQueue } from './SubmissionApprovalQueue';
 export { SupplyPredictionPanel } from './SupplyPredictionPanel';
 export { LeadTimeConfig } from './LeadTimeConfig';
 
+// Phase 5: Production RBAC
+export { ProductionRBACGate } from './ProductionRBACGate';
+
 // Soft Alert System
 export * from './alerts';
 
