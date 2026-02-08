@@ -11,7 +11,7 @@
 import { useLocation, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Store, Target, ShoppingBag,
-  MapPin, DollarSign, Package, MessageSquare,
+  MapPin, DollarSign, Package, MessageSquare, BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -19,6 +19,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 const AMBASSADOR_NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', path: '/ambassador/dashboard', icon: LayoutDashboard },
   { id: 'stores', label: 'My Stores', path: '/ambassador/stores', icon: Store },
+  { id: 'sell-through', label: 'Sell-Through', path: '/ambassador/sell-through', icon: BarChart3 },
   { id: 'leads', label: 'Leads', path: '/ambassador/leads', icon: Target },
   { id: 'purchases', label: 'My Purchases', path: '/ambassador/purchases', icon: ShoppingBag },
   { id: 'commissions', label: 'Commissions', path: '/ambassador/commissions', icon: DollarSign },
