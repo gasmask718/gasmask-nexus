@@ -18315,6 +18315,65 @@ export type Database = {
           },
         ]
       }
+      delivery_followup_actions: {
+        Row: {
+          action_label: string
+          action_type: string
+          assigned_role: string | null
+          checklist_id: string
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          priority: string
+          resolved_at: string | null
+          resolved_by: string | null
+          rule_trigger: string
+          status: string
+          store_id: string
+        }
+        Insert: {
+          action_label: string
+          action_type: string
+          assigned_role?: string | null
+          checklist_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          rule_trigger: string
+          status?: string
+          store_id: string
+        }
+        Update: {
+          action_label?: string
+          action_type?: string
+          assigned_role?: string | null
+          checklist_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          rule_trigger?: string
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_followup_actions_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_manifest: {
         Row: {
           created_at: string
@@ -39796,6 +39855,48 @@ export type Database = {
           red_flags?: Json | null
           source_notes_count?: number | null
           store_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      store_health_scores: {
+        Row: {
+          calculated_at: string
+          created_at: string
+          dimension_explanations: Json
+          dimension_scores: Json
+          health_status: string
+          id: string
+          last_visit_date: string | null
+          overall_score: number
+          store_id: string
+          total_visits_30d: number | null
+          updated_at: string
+        }
+        Insert: {
+          calculated_at?: string
+          created_at?: string
+          dimension_explanations?: Json
+          dimension_scores?: Json
+          health_status?: string
+          id?: string
+          last_visit_date?: string | null
+          overall_score?: number
+          store_id: string
+          total_visits_30d?: number | null
+          updated_at?: string
+        }
+        Update: {
+          calculated_at?: string
+          created_at?: string
+          dimension_explanations?: Json
+          dimension_scores?: Json
+          health_status?: string
+          id?: string
+          last_visit_date?: string | null
+          overall_score?: number
+          store_id?: string
+          total_visits_30d?: number | null
           updated_at?: string
         }
         Relationships: []

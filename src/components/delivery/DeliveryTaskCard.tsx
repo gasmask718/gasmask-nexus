@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2, ClipboardList, AlertTriangle } from 'lucide-react';
 import { useDeliveryChecklist } from '@/hooks/useDeliveryChecklist';
+import { useGeneratePostVisitIntelligence } from '@/hooks/useVisitSummary';
 import { InventoryCheckSection } from './checklist/InventoryCheckSection';
 import { OrderDeliverySection } from './checklist/OrderDeliverySection';
 import { LastOrderContextSection } from './checklist/LastOrderContextSection';
@@ -34,6 +35,8 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
     progressPercent,
   } = useDeliveryChecklist(storeId);
 
+  const generateIntelligence = useGeneratePostVisitIntelligence();
+
   // Auto-init checklist on mount
   useEffect(() => {
     if (!isLoading && !checklist) {
@@ -48,7 +51,13 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
   const handleComplete = () => {
     if (!allRequiredDone) return;
     completeChecklist.mutate(undefined, {
-      onSuccess: () => onComplete?.(),
+      onSuccess: () => {
+        // Trigger post-visit intelligence generation
+        if (checklist) {
+          generateIntelligence.mutate(checklist);
+        }
+        onComplete?.();
+      },
     });
   };
 
