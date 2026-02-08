@@ -1239,11 +1239,20 @@ export default function AppRoutes() {
             <OwnerBroadcastCenter />
           </RequireRole>
         } />
-        <Route path="/os/owner/accounting" element={
+        {/* Legacy route → redirect to canonical Penthouse location */}
+        <Route path="/os/owner/accounting" element={<Navigate to="/penthouse/accounting" replace />} />
+
+        {/* ═══ PENTHOUSE — Accounting OS (CANONICAL LOCATION) ═══ */}
+        <Route path="/penthouse/accounting" element={
           <RequireRole allowedRoles={['admin']} showLocked>
             <OwnerAccountingOS />
           </RequireRole>
         } />
+
+        {/* Legacy accounting routes → redirect to Penthouse */}
+        <Route path="/grabba/personal-finance" element={<Navigate to="/penthouse/accounting" replace />} />
+        <Route path="/grabba/financial-dashboard" element={<Navigate to="/penthouse/accounting" replace />} />
+        <Route path="/accounting-os" element={<Navigate to="/penthouse/accounting" replace />} />
 
         {/* AI Workforce */}
         <Route path="/ai/workforce" element={<AIWorkforce />} />

@@ -63,7 +63,7 @@ export interface OSFloor {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 👑 PENTHOUSE — COMMAND CENTER
+// 👑 PENTHOUSE — COMMAND CENTER (Intelligence + Ownership)
 // ═══════════════════════════════════════════════════════════════════════════════
 export const PENTHOUSE: OSFloor = {
   id: 'penthouse',
@@ -75,7 +75,7 @@ export const PENTHOUSE: OSFloor = {
   items: [
     { id: 'master-dashboard', label: 'Master Dashboard', path: '/', icon: LayoutDashboard, roles: ['ceo', 'admin', 'va'] },
     { id: 'command-penthouse', label: 'Command Penthouse', path: '/grabba/command-penthouse', icon: Crown, roles: ['ceo', 'admin'] },
-    { id: 'accounting-os', label: 'Accounting OS', path: '/os/owner/accounting', icon: Calculator, badge: 'NEW', roles: ['ceo', 'admin', 'accountant'] },
+    { id: 'accounting-os', label: 'Accounting OS', path: '/penthouse/accounting', icon: Calculator, badge: 'CPA', description: 'CPA-grade financial intelligence — business & personal', roles: ['ceo', 'admin', 'accountant'] },
     { id: 'global-intelligence', label: 'Global Intelligence', path: '/grabba/ai-insights', icon: Brain, roles: ['ceo', 'admin'] },
     { id: 'financial-command', label: 'Financial Command', path: '/grabba/advisor-penthouse', icon: DollarSign, roles: ['ceo', 'admin'] },
     { id: 'executive-reports', label: 'Executive Reports', path: '/executive-reports', icon: PieChart, roles: ['ceo', 'admin'] },
@@ -175,24 +175,23 @@ export const FLOOR_4_DELIVERY: OSFloor = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🏬 FLOOR 5 — MARKETPLACE
+// 💰 FLOOR 5 — FINANCE & ORDERS (Operational Execution Only)
 // ═══════════════════════════════════════════════════════════════════════════════
-export const FLOOR_5_MARKETPLACE: OSFloor = {
-  id: 'floor-5-marketplace',
-  name: 'Floor 5: Marketplace',
-  icon: ShoppingCart,
-  emoji: '🏬',
-  description: 'Marketplace admin, product catalog, orders, shipping',
-  roles: ['ceo', 'admin', 'va', 'wholesaler'],
+export const FLOOR_5_FINANCE: OSFloor = {
+  id: 'floor-5-finance',
+  name: 'Floor 5: Finance & Orders',
+  icon: DollarSign,
+  emoji: '💰',
+  description: 'Operational finance — invoices, billing, payroll, unpaid accounts',
+  roles: ['ceo', 'admin', 'va', 'accountant'],
   items: [
-    { id: 'marketplace-admin', label: 'Marketplace Admin', path: '/portal/marketplace-admin', icon: Cog, roles: ['ceo', 'admin'] },
-    { id: 'product-catalog', label: 'Product Catalog', path: '/marketplace/products', icon: Boxes, roles: ['ceo', 'admin', 'va'] },
-    { id: 'marketplace-orders', label: 'Orders', path: '/marketplace/orders', icon: ClipboardList, roles: ['ceo', 'admin', 'va'] },
-    { id: 'shipping-center', label: 'Shipping Center', path: '/marketplace/shipping', icon: Package, roles: ['ceo', 'admin', 'va'] },
-    { id: 'wholesale-platform', label: 'Wholesale Platform', path: '/grabba/wholesale-platform', icon: Boxes, roles: ['ceo', 'admin', 'va'] },
-    { id: 'shop-front', label: 'Shop Front', path: '/shop', icon: ShoppingCart, roles: ['ceo', 'admin', 'va'] },
-    { id: 'fulfillment', label: 'Fulfillment', path: '/wholesale/fulfillment', icon: Package, roles: ['ceo', 'admin', 'va'] },
-    { id: 'national-wholesale', label: 'National Wholesale', path: '/portal/national-wholesale', icon: Globe, roles: ['ceo', 'admin'] },
+    { id: 'floor5-dashboard', label: 'Finance Dashboard', path: '/floor5', icon: DollarSign, roles: ['ceo', 'admin', 'va', 'accountant'] },
+    { id: 'invoices', label: 'Invoices', path: '/billing/invoices', icon: FileText, roles: ['ceo', 'admin', 'va', 'accountant'] },
+    { id: 'billing-center', label: 'Billing Center', path: '/billing-center', icon: CreditCard, roles: ['ceo', 'admin', 'va', 'accountant'] },
+    { id: 'unpaid-accounts', label: 'Unpaid Accounts', path: '/unpaid-accounts', icon: Bell, badge: 'Alert', roles: ['ceo', 'admin', 'va'] },
+    { id: 'payroll', label: 'Payroll', path: '/payroll', icon: Banknote, roles: ['ceo', 'admin', 'accountant'] },
+    { id: 'payroll-manager', label: 'Payroll Manager', path: '/grabba/payroll-manager', icon: Calculator, roles: ['ceo', 'admin', 'accountant'] },
+    { id: 'business-ledger', label: 'Business Ledger', path: '/grabba/finance', icon: Receipt, roles: ['ceo', 'admin', 'va', 'accountant'] },
   ],
 };
 
@@ -218,25 +217,22 @@ export const FLOOR_6_AMBASSADORS: OSFloor = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 💰 FLOOR 7 — ACCOUNTING
+// 🛒 FLOOR 7 — WHOLESALE PLATFORM (Wholesale Only — PERIOD)
 // ═══════════════════════════════════════════════════════════════════════════════
-export const FLOOR_7_ACCOUNTING: OSFloor = {
-  id: 'floor-7-accounting',
-  name: 'Floor 7: Accounting',
-  icon: DollarSign,
-  emoji: '💰',
-  description: 'Business ledger, personal finance, payroll',
-  roles: ['ceo', 'admin', 'va', 'accountant'],
+export const FLOOR_7_WHOLESALE: OSFloor = {
+  id: 'floor-7-wholesale',
+  name: 'Floor 7: Wholesale Platform',
+  icon: ShoppingCart,
+  emoji: '🛒',
+  description: 'Wholesale marketplace, directory, and fulfillment',
+  roles: ['ceo', 'admin', 'va', 'wholesaler'],
   items: [
-    { id: 'accounting-os', label: 'Accounting OS', path: '/os/owner/accounting', icon: Calculator, badge: 'CPA', roles: ['ceo', 'admin', 'accountant'] },
-    { id: 'business-ledger', label: 'Business Ledger', path: '/grabba/finance', icon: Receipt, roles: ['ceo', 'admin', 'va', 'accountant'] },
-    { id: 'personal-finance', label: 'Personal Finance', path: '/grabba/personal-finance', icon: Wallet, roles: ['ceo', 'admin'] },
-    { id: 'payroll', label: 'Payroll', path: '/payroll', icon: Banknote, roles: ['ceo', 'admin', 'accountant'] },
-    { id: 'billing-center', label: 'Billing Center', path: '/billing-center', icon: CreditCard, roles: ['ceo', 'admin', 'va', 'accountant'] },
-    { id: 'invoices', label: 'Invoices', path: '/billing/invoices', icon: FileText, roles: ['ceo', 'admin', 'va', 'accountant'] },
-    { id: 'unpaid-accounts', label: 'Unpaid Accounts', path: '/unpaid-accounts', icon: Bell, badge: 'Alert', roles: ['ceo', 'admin', 'va'] },
-    { id: 'economic-analytics', label: 'Economic Analytics', path: '/economic-analytics', icon: LineChart, roles: ['ceo', 'admin'] },
-    { id: 'financial-advisor', label: 'Financial Advisor', path: '/grabba/advisor-penthouse', icon: Brain, roles: ['ceo', 'admin'] },
+    { id: 'wholesale-platform', label: 'Wholesale Platform', path: '/grabba/wholesale-platform', icon: Boxes, roles: ['ceo', 'admin', 'va'] },
+    { id: 'wholesale-directory', label: 'Wholesale Directory', path: '/wholesale', icon: Store, roles: ['ceo', 'admin', 'va'] },
+    { id: 'wholesale-marketplace', label: 'Wholesale Marketplace', path: '/wholesale-marketplace', icon: Globe, roles: ['ceo', 'admin', 'va'] },
+    { id: 'national-wholesale', label: 'National Wholesale', path: '/portal/national-wholesale', icon: Globe, roles: ['ceo', 'admin'] },
+    { id: 'marketplace-admin', label: 'Marketplace Admin', path: '/portal/marketplace-admin', icon: Cog, roles: ['ceo', 'admin'] },
+    { id: 'wholesale-fulfillment', label: 'Fulfillment', path: '/wholesale/fulfillment', icon: Package, roles: ['ceo', 'admin', 'va'] },
   ],
 };
 
@@ -294,9 +290,9 @@ export const OS_FLOORS: OSFloor[] = [
   FLOOR_2_OPERATIONS,
   FLOOR_3_INVENTORY,
   FLOOR_4_DELIVERY,
-  FLOOR_5_MARKETPLACE,
+  FLOOR_5_FINANCE,
   FLOOR_6_AMBASSADORS,
-  FLOOR_7_ACCOUNTING,
+  FLOOR_7_WHOLESALE,
   FLOOR_8_INTELLIGENCE,
   FLOOR_HR,
 ];
@@ -319,21 +315,8 @@ export const SECTION_MARKETPLACE_ADMIN: OSFloor = {
   ],
 };
 
-export const SECTION_ACCOUNTING: OSFloor = {
-  id: 'section-accounting',
-  name: 'Accounting OS',
-  icon: Calculator,
-  emoji: '💳',
-  description: 'Financial dashboards and accounting tools',
-  roles: ['ceo', 'admin', 'accountant'],
-  items: [
-    { id: 'acc-financial-dashboard', label: 'Financial Dashboard', path: '/grabba/financial-dashboard', icon: DollarSign, roles: ['ceo', 'admin', 'accountant'] },
-    { id: 'acc-personal-finance', label: 'Personal Finance', path: '/grabba/personal-finance', icon: Wallet, roles: ['ceo', 'admin'] },
-    { id: 'acc-payroll-manager', label: 'Payroll Manager', path: '/grabba/payroll-manager', icon: Calculator, roles: ['ceo', 'admin', 'accountant'] },
-    { id: 'acc-financial-advisor', label: 'Financial Advisor', path: '/grabba/advisor-penthouse', icon: Brain, roles: ['ceo', 'admin'] },
-    { id: 'acc-expense-tracker', label: 'Expense Tracker', path: '/accounting/expenses', icon: Receipt, roles: ['ceo', 'admin', 'accountant'] },
-  ],
-};
+// SECTION_ACCOUNTING removed — Accounting OS lives ONLY in Penthouse (/penthouse/accounting)
+// This section was a duplicate and violated the Master Architect directive.
 
 export const SECTION_GLOBAL: OSFloor = {
   id: 'section-global',
@@ -718,7 +701,7 @@ export const SECTION_SECURITY: OSFloor = {
 
 export const ADDITIONAL_SECTIONS: OSFloor[] = [
   SECTION_MARKETPLACE_ADMIN,
-  SECTION_ACCOUNTING,
+  // SECTION_ACCOUNTING removed — lives exclusively in Penthouse
   SECTION_GLOBAL,
   SECTION_REAL_ESTATE,
   SECTION_REAL_ESTATE_EXTENDED,
