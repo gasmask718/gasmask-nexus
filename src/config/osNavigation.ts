@@ -75,6 +75,7 @@ export const PENTHOUSE: OSFloor = {
   items: [
     { id: 'master-dashboard', label: 'Master Dashboard', path: '/', icon: LayoutDashboard, roles: ['ceo', 'admin', 'va'] },
     { id: 'command-penthouse', label: 'Command Penthouse', path: '/grabba/command-penthouse', icon: Crown, roles: ['ceo', 'admin'] },
+    { id: 'mission-control', label: 'Mission Control', path: '/penthouse/missions', icon: Target, badge: 'NEW', description: 'Founder Execution OS — Cross-business task intelligence', roles: ['ceo', 'admin'] },
     { id: 'accounting-os', label: 'Accounting OS', path: '/penthouse/accounting', icon: Calculator, badge: 'CPA', description: 'CPA-grade financial intelligence — business & personal', roles: ['ceo', 'admin', 'accountant'] },
     { id: 'global-intelligence', label: 'Global Intelligence', path: '/grabba/ai-insights', icon: Brain, roles: ['ceo', 'admin'] },
     { id: 'financial-command', label: 'Financial Command', path: '/grabba/advisor-penthouse', icon: DollarSign, roles: ['ceo', 'admin'] },

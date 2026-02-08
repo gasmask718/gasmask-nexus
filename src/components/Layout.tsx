@@ -122,6 +122,7 @@ const DYNASTY_NAVIGATION = {
     name: '👑 Dynasty Owner Penthouse',
     items: [
       { path: '/os/owner', label: 'Dynasty Owner Dashboard', icon: Crown },
+      { path: '/penthouse/missions', label: 'Mission Control', icon: Target },
       { path: '/penthouse/accounting', label: 'Accounting OS', icon: Calculator },
       { path: '/os/owner/ai-advisor', label: 'AI Advisor', icon: Brain },
       { path: '/os/owner/cluster', label: 'Cluster Dashboard', icon: LayoutDashboard },
