@@ -114,12 +114,32 @@ Enforce production_admin / production_manager / production_worker roles server-s
 
 ---
 
+## Phase 6: Worker Pay System ✅ COMPLETE
+
+### Objective
+Production-grade payroll ledger: batch-based earnings, grouped payouts, worker pay transparency.
+
+### Key Deliverables
+- ✅ `production_worker_earnings` ledger table (pending → approved → paid lifecycle)
+- ✅ `production_worker_payments` payout table (grouped, reconciled)
+- ✅ `pay_type` + `pay_rate` columns on `production_workers`
+- ✅ `create_earning_from_submission()` DB function (SECURITY DEFINER)
+- ✅ Auto-earning on submission approval (integrated into useReviewSubmission)
+- ✅ Worker Pay Dashboard (read-only: today/week/unpaid/paid, earnings + payment history)
+- ✅ Admin Payroll panel (balances, approve, pay, audit log, CSV export)
+- ✅ RBAC-gated Payroll tab in Manufacturing OS (manager+)
+- ✅ "My Pay" tab in Worker Portal
+- ✅ RLS: managers read all office data, workers read only own via people.owner_id
+
+---
+
 ## Dependencies
 ```
 Phase 1 (State Machine) → Phase 2 (Costs need states)
 Phase 1 → Phase 3 (Submissions need states)
 Phase 2 + 3 → Phase 4 (AI needs cost + velocity data)
 All → Phase 5 (RBAC hardens everything)
+Phase 3 + 5 → Phase 6 (Pay needs submissions + RBAC)
 ```
 
 ---

@@ -43,6 +43,10 @@ export { LeadTimeConfig } from './LeadTimeConfig';
 // Phase 5: Production RBAC
 export { ProductionRBACGate } from './ProductionRBACGate';
 
+// Phase 6: Worker Pay System
+export { WorkerPayDashboard } from './WorkerPayDashboard';
+export { WorkerPayrollAdmin } from './WorkerPayrollAdmin';
+
 // Soft Alert System
 export * from './alerts';
 

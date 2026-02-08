@@ -58,6 +58,7 @@ import {
   SupplyPredictionPanel,
   LeadTimeConfig,
   ProductionRBACGate,
+  WorkerPayrollAdmin,
 } from '@/components/production';
 import { usePendingSubmissionCount } from '@/hooks/useWorkerSubmissions';
 import { useProductionRBAC } from '@/hooks/useProductionRBAC';
@@ -82,6 +83,7 @@ import {
   DollarSign,
   ClipboardCheck,
   Brain,
+  Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -355,6 +357,12 @@ export default function ProductionPortalPage() {
                   <span className="hidden sm:inline">Costs</span>
                 </TabsTrigger>
               )}
+              {rbac.canManageWorkers && (
+                <TabsTrigger value="payroll" className="flex items-center gap-2">
+                  <Wallet className="h-4 w-4" />
+                  <span className="hidden sm:inline">Payroll</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger value="batches" className="flex items-center gap-2">
                 <Boxes className="h-4 w-4" />
                 <span className="hidden sm:inline">Batches</span>
@@ -421,6 +429,12 @@ export default function ProductionPortalPage() {
                     <MarginAnalytics officeId={selectedOfficeId} />
                   </div>
                 </div>
+              </ProductionRBACGate>
+            </TabsContent>
+
+            <TabsContent value="payroll">
+              <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="Worker Payroll">
+                <WorkerPayrollAdmin officeId={selectedOfficeId} />
               </ProductionRBACGate>
             </TabsContent>
 
