@@ -564,7 +564,10 @@ export default function BrandCRM() {
                         <div className="flex gap-1">
                           <Button size="sm" variant="ghost"><Phone className="w-4 h-4" /></Button>
                           <Button size="sm" variant="ghost"><MessageSquare className="w-4 h-4" /></Button>
-                          <Button size="sm" variant="ghost"><Edit className="w-4 h-4" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => {
+                            setEditingContact(contact);
+                            setShowAdvancedModal(true);
+                          }}><Edit className="w-4 h-4" /></Button>
                         </div>
                       </div>
                     </CardContent>
