@@ -185,9 +185,9 @@ export default function AppSidebar() {
               { path: '/companies', label: 'Companies', emoji: '🏛️' },
               { path: '/crm/contacts', label: 'Contacts', emoji: '👥' },
               { path: '/crm/customers', label: 'Customers', emoji: '🧑‍💼' },
+              { path: '/sell-through-analytics', label: 'Sell-Through Analytics', emoji: '📊' },
               { path: '/sales/prospects', label: 'Sales Prospects', emoji: '🎯' },
               { path: '/store-performance', label: 'Store Performance', emoji: '📈' },
-              { path: '/sell-through-analytics', label: 'Sell-Through Analytics', emoji: '⚡' },
             ])}
 
             {/* Floor 2 - Communication Center V3 */}
