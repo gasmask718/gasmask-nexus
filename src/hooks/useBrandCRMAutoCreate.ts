@@ -48,6 +48,18 @@ const DEFAULT_INSIGHTS: BrandInsights = {
  * Guarantees brand accounts exist and CRM never renders blank.
  */
 export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
+  // ── Total store_master count (universe) ────────────────────────────
+  const { data: totalStoresMaster } = useQuery({
+    queryKey: ['brand-crm-total-stores'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('store_master')
+        .select('*', { count: 'exact', head: true });
+      if (error) { console.error('[BrandCRM] total stores count error:', error); return 0; }
+      return count ?? 0;
+    },
+    staleTime: 5 * 60 * 1000, // cache 5 min — universe rarely changes
+  });
   const queryClient = useQueryClient();
   const brandConfig = brandKey ? GRABBA_BRAND_CONFIG[brandKey] : null;
   const brandLabel = brandConfig?.label;
@@ -140,13 +152,41 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
     enabled: !!brandLabel
   });
 
-  // Fetch brand orders (two-step query - no FK relationship)
+  // ── Aggregate order stats (revenue + count — no LIMIT) ────────────
+  const { data: orderAggregates } = useQuery({
+    queryKey: ['brand-crm-order-aggregates', brandKey],
+    queryFn: async () => {
+      if (!brandKey) return { count: 0, revenue: 0, activeStoreIds: new Set<string>() };
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      // Get ALL orders for this brand (no limit) — only id, total, store_id, created_at
+      const { data, error } = await supabase
+        .from('wholesale_orders')
+        .select('id, total, store_id, created_at')
+        .eq('brand', getOrderBrandValue(brandKey));
+
+      if (error) { console.error('[BrandCRM] order aggregates error:', error); return { count: 0, revenue: 0, activeStoreIds: new Set<string>() }; }
+
+      const rows = data || [];
+      const revenue = rows.reduce((sum, o) => sum + Number(o.total || 0), 0);
+      const activeStoreIds = new Set<string>();
+      rows.forEach(o => {
+        if (o.store_id && new Date(o.created_at) >= thirtyDaysAgo) {
+          activeStoreIds.add(o.store_id);
+        }
+      });
+      return { count: rows.length, revenue, activeStoreIds };
+    },
+    enabled: !!brandKey,
+  });
+
+  // Fetch brand orders for display (latest 100 for the list)
   const { data: orders, isLoading: ordersLoading } = useQuery({
     queryKey: ['brand-crm-orders', brandKey],
     queryFn: async () => {
       if (!brandKey) return [];
       
-      // Step 1: Fetch orders
       const { data: ordersData, error } = await supabase
         .from('wholesale_orders')
         .select('id, store_id, status, total, boxes, tubes_total, created_at, brand, notes, delivery_method')
@@ -161,7 +201,6 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
 
       if (!ordersData || ordersData.length === 0) return [];
 
-      // Step 2: Get unique store IDs and fetch store data
       const storeIds = [...new Set(ordersData.map(o => o.store_id).filter(Boolean))] as string[];
       
       if (storeIds.length === 0) {
@@ -173,7 +212,6 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
         .select('id, store_name, address, city')
         .in('id', storeIds);
 
-      // Step 3: Merge store data into orders
       const storeMap = new Map((storesData || []).map(s => [s.id, s]));
       
       return ordersData.map(order => ({
@@ -227,6 +265,7 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
       console.log(`[BrandCRM] Starting auto-link for ${brandLabel}...`);
       console.log('[BrandCRM] Brand CRM Auto-Healed - starting process');
 
+      // Fetch existing accounts for this brand
       const { data: existingAccounts } = await supabase
         .from('store_brand_accounts')
         .select('store_master_id')
@@ -234,14 +273,23 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
 
       const existingStoreIds = new Set(existingAccounts?.map(a => a.store_master_id) || []);
 
-      const { data: storeMasters, error: smError } = await supabase
-        .from('store_master')
-        .select('id, store_name')
-        .limit(200);
+      // Fetch ALL stores — paginated to avoid Supabase 1000-row default
+      const allStores: { id: string; store_name: string }[] = [];
+      let offset = 0;
+      const PAGE = 1000;
+      let hasMore = true;
+      while (hasMore) {
+        const { data: page, error: smError } = await supabase
+          .from('store_master')
+          .select('id, store_name')
+          .range(offset, offset + PAGE - 1);
+        if (smError) throw smError;
+        allStores.push(...(page || []));
+        hasMore = (page?.length || 0) >= PAGE;
+        offset += PAGE;
+      }
 
-      if (smError) throw smError;
-
-      const newAccounts = (storeMasters || [])
+      const newAccounts = allStores
         .filter(sm => !existingStoreIds.has(sm.id))
         .map(sm => ({
           store_master_id: sm.id,
@@ -253,16 +301,22 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
         }));
 
       if (newAccounts.length > 0) {
-        const { error: insertError } = await supabase
-          .from('store_brand_accounts')
-          .insert(newAccounts as any);
-
-        if (insertError) {
-          console.error('[BrandCRM] Error creating brand accounts:', insertError);
-          throw insertError;
+        // Batch insert in chunks of 500 to avoid payload limits
+        const BATCH = 500;
+        let created = 0;
+        for (let i = 0; i < newAccounts.length; i += BATCH) {
+          const chunk = newAccounts.slice(i, i + BATCH);
+          const { error: insertError } = await supabase
+            .from('store_brand_accounts')
+            .insert(chunk as any);
+          if (insertError) {
+            console.error(`[BrandCRM] Batch insert error at offset ${i}:`, insertError);
+            throw insertError;
+          }
+          created += chunk.length;
         }
 
-        console.log(`[BrandCRM] Brand Master Created - ${newAccounts.length} accounts for ${brandLabel}`);
+        console.log(`[BrandCRM] Brand Master Created - ${created} accounts for ${brandLabel}`);
       }
 
       return { created: newAccounts.length };
@@ -294,11 +348,20 @@ export function useBrandCRMAutoCreate(brandKey: GrabbaBrand | undefined) {
   const safeOrders = orders || [];
   const safeInsights = insights || DEFAULT_INSIGHTS;
 
+  const agg = orderAggregates ?? { count: 0, revenue: 0, activeStoreIds: new Set<string>() };
+
   const stats = {
-    totalStores: safeAccounts.length,
+    /** All stores in the system (store_master universe) */
+    totalStoresMaster: totalStoresMaster ?? 0,
+    /** Stores linked to this brand via store_brand_accounts */
+    connectedStores: safeAccounts.length,
+    /** Stores with ≥1 order for this brand in the last 30 days */
+    activeStores: agg.activeStoreIds.size,
     totalContacts: safeContacts.length,
-    totalRevenue: safeAccounts.reduce((sum, acc) => sum + Number(acc.total_spent || 0), 0),
-    totalOrders: safeOrders.length
+    /** Sum of all order totals for this brand (no limit) */
+    totalRevenue: agg.revenue,
+    /** Count of all orders for this brand (no limit) */
+    totalOrders: agg.count,
   };
 
   const isLoading = accountsLoading || contactsLoading || ordersLoading;

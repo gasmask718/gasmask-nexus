@@ -355,46 +355,60 @@ export default function BrandCRM() {
         </CardContent>
       </Card>
 
-      {/* Stats - Always visible */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-t-4" style={{ borderTopColor: brandConfig.primary }}>
+      {/* Stats - Always visible — 5 truthful KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {/* Total Stores (Universe) */}
+        <Card title="All records in store_master — no filters">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <Store className="h-5 w-5 text-muted-foreground" />
               <div>
-                {isLoading ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  <div className="text-3xl font-bold">{stats.totalStores}</div>
+                {isLoading ? <Skeleton className="h-8 w-16" /> : (
+                  <div className="text-3xl font-bold">{stats.totalStoresMaster.toLocaleString()}</div>
                 )}
-                <div className="text-sm text-muted-foreground">Active Stores</div>
+                <div className="text-sm text-muted-foreground">Total Stores (All)</div>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+
+        {/* Connected Stores (Brand) */}
+        <Card className="border-t-4" style={{ borderTopColor: brandConfig.primary }} title="Stores linked to this brand via store_brand_accounts">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <Phone className="h-5 w-5 text-muted-foreground" />
+              <Building2 className="h-5 w-5 text-muted-foreground" />
               <div>
-                {isLoading ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  <div className="text-3xl font-bold">{stats.totalContacts}</div>
+                {isLoading ? <Skeleton className="h-8 w-16" /> : (
+                  <div className="text-3xl font-bold">{stats.connectedStores.toLocaleString()}</div>
                 )}
-                <div className="text-sm text-muted-foreground">Total Contacts</div>
+                <div className="text-sm text-muted-foreground">Connected Stores</div>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+
+        {/* Active Stores (Last 30 Days) */}
+        <Card title="Stores with ≥1 order in the last 30 days for this brand">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <TrendingUp className="h-5 w-5 text-muted-foreground" />
+              <div>
+                {isLoading ? <Skeleton className="h-8 w-16" /> : (
+                  <div className="text-3xl font-bold">{stats.activeStores}</div>
+                )}
+                <div className="text-sm text-muted-foreground">Active (30d)</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Revenue */}
+        <Card title="Sum of all wholesale_orders.total for this brand — no limit">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <DollarSign className="h-5 w-5 text-muted-foreground" />
               <div>
-                {isLoading ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
+                {isLoading ? <Skeleton className="h-8 w-16" /> : (
                   <div className="text-3xl font-bold">${stats.totalRevenue.toLocaleString()}</div>
                 )}
                 <div className="text-sm text-muted-foreground">Total Revenue</div>
@@ -402,15 +416,15 @@ export default function BrandCRM() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+
+        {/* Orders */}
+        <Card title="Count of all wholesale_orders for this brand — no limit">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <Package className="h-5 w-5 text-muted-foreground" />
               <div>
-                {isLoading ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  <div className="text-3xl font-bold">{stats.totalOrders}</div>
+                {isLoading ? <Skeleton className="h-8 w-16" /> : (
+                  <div className="text-3xl font-bold">{stats.totalOrders.toLocaleString()}</div>
                 )}
                 <div className="text-sm text-muted-foreground">Orders</div>
               </div>
@@ -437,7 +451,7 @@ export default function BrandCRM() {
         <TabsList>
           <TabsTrigger value="stores">Stores ({filteredAccounts.length})</TabsTrigger>
           <TabsTrigger value="contacts">Contacts ({contacts.length})</TabsTrigger>
-          <TabsTrigger value="orders">Orders ({orders.length})</TabsTrigger>
+          <TabsTrigger value="orders">Orders ({stats.totalOrders.toLocaleString()})</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="alerts">Alerts</TabsTrigger>
         </TabsList>
@@ -658,34 +672,34 @@ export default function BrandCRM() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-lg bg-muted/50">
+                <div className="p-4 rounded-lg bg-muted/50" title="totalRevenue ÷ totalOrders — no limit applied">
                   <p className="text-sm text-muted-foreground">Avg Order Value</p>
                   <p className="text-2xl font-bold">
-                    ${orders.length > 0 
-                      ? (orders.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) / orders.length).toFixed(2)
+                    ${stats.totalOrders > 0 
+                      ? (stats.totalRevenue / stats.totalOrders).toFixed(2)
                       : '0.00'}
                   </p>
                 </div>
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground">Active Rate</p>
+                <div className="p-4 rounded-lg bg-muted/50" title="activeStores (30d orders) ÷ connectedStores">
+                  <p className="text-sm text-muted-foreground">Active Rate (30d)</p>
                   <p className="text-2xl font-bold">
-                    {accounts.length > 0 
-                      ? `${Math.round((accounts.filter((a: any) => a.active_status).length / accounts.length) * 100)}%`
+                    {stats.connectedStores > 0 
+                      ? `${Math.round((stats.activeStores / stats.connectedStores) * 100)}%`
                       : '0%'}
                   </p>
                 </div>
                 <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground">VIP Stores</p>
+                  <p className="text-sm text-muted-foreground">Contacts</p>
                   <p className="text-2xl font-bold">
-                    {accounts.filter((a: any) => a.loyalty_level === 'vip').length}
+                    {stats.totalContacts}
                   </p>
                 </div>
               </div>
               <div className="p-4 rounded-lg border-l-4" style={{ backgroundColor: `${brandConfig.primary}10`, borderLeftColor: brandConfig.primary }}>
                 <p className="font-medium mb-1">Performance Insight</p>
                 <p className="text-sm text-muted-foreground">
-                  {accounts.length > 0 
-                    ? `${brandConfig.label} has ${accounts.length} connected stores with $${stats.totalRevenue.toLocaleString()} total revenue.`
+                  {stats.connectedStores > 0 
+                    ? `${brandConfig.label} has ${stats.connectedStores.toLocaleString()} connected stores (of ${stats.totalStoresMaster.toLocaleString()} total), ${stats.activeStores} active in the last 30 days, with $${stats.totalRevenue.toLocaleString()} total revenue across ${stats.totalOrders.toLocaleString()} orders.`
                     : `Start building your ${brandConfig.label} network by linking stores.`}
                 </p>
               </div>
@@ -710,8 +724,8 @@ export default function BrandCRM() {
                     <span className="font-medium text-sm">Reorder Reminder</span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {accounts.length > 0 
-                      ? `${Math.min(accounts.length, 5)} stores may need reorder reminders`
+                    {stats.connectedStores > 0 
+                      ? `${Math.max(0, stats.connectedStores - stats.activeStores)} connected stores had no orders in the last 30 days`
                       : 'No stores to monitor yet'}
                   </p>
                 </div>
