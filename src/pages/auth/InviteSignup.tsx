@@ -123,9 +123,18 @@ export default function InviteSignup() {
         .from('user_roles')
         .insert(roleInsert);
 
-      // 5. Accept invitation and create role assignments
+      // 5. Accept invitation — records accepted_user_id + status + audit
       const { acceptInvitation } = await import('@/services/invitationService');
       await acceptInvitation(token, authData.user.id);
+
+      // 6. Update invitation with accepted_user_id explicitly (belt & suspenders)
+      await supabase
+        .from('user_invitations')
+        .update({ 
+          accepted_user_id: authData.user.id,
+          invite_status: 'accepted' as any,
+        })
+        .eq('invite_token', token);
 
       toast.success('Account created successfully! Redirecting to your portal...');
       
