@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { ArrowDown, Calendar, Clock, Package, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useStoreBrandOrderTimeline, type BrandSellThroughSummary } from "@/hooks/useStoreSellThroughIntel";
+import { classifySellThroughHealth, getHealthColors } from "@/lib/sellThroughHealth";
 
 interface Props {
   open: boolean;
@@ -37,6 +38,15 @@ export function SellThroughBrandTimelineDrawer({ open, onOpenChange, storeId, br
           <SheetTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             {brand.brand_name} — Order Timeline
+            {(() => {
+              const h = classifySellThroughHealth(brand.days_since_last_order, brand.avg_days_between_orders, brand.total_orders_lifetime);
+              const c = getHealthColors(h.status);
+              return (
+                <Badge variant="outline" className={`text-[10px] ml-1 ${c.bgColor} ${c.color}`}>
+                  {h.label}{h.varianceLabel ? ` · ${h.varianceLabel}` : ""}
+                </Badge>
+              );
+            })()}
           </SheetTitle>
           <SheetDescription>
             {brand.total_orders_lifetime} orders · Avg {brand.avg_days_between_orders ?? "—"} days between orders

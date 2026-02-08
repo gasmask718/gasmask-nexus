@@ -25,6 +25,7 @@ import {
   type BrandSellThroughSummary,
 } from "@/hooks/useStoreSellThroughIntel";
 import { SellThroughBrandTimelineDrawer } from "./SellThroughBrandTimelineDrawer";
+import { classifySellThroughHealth, getHealthColors } from "@/lib/sellThroughHealth";
 
 interface Props {
   storeId: string;
@@ -127,12 +128,20 @@ export function SellThroughIntelCard({ storeId }: Props) {
                   <TableHead className="text-right">Days Since</TableHead>
                   <TableHead className="text-right hidden md:table-cell">Avg Gap</TableHead>
                   <TableHead className="text-center">Velocity</TableHead>
+                  <TableHead className="text-center">Health</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {summaries
                   .sort((a, b) => (b.total_orders_lifetime || 0) - (a.total_orders_lifetime || 0))
-                  .map((brand) => (
+                  .map((brand) => {
+                    const health = classifySellThroughHealth(
+                      brand.days_since_last_order,
+                      brand.avg_days_between_orders,
+                      brand.total_orders_lifetime
+                    );
+                    const healthColors = getHealthColors(health.status);
+                    return (
                     <TableRow
                       key={brand.brand_name}
                       className="cursor-pointer hover:bg-accent/50 transition-colors"
@@ -153,7 +162,7 @@ export function SellThroughIntelCard({ storeId }: Props) {
                           <span
                             className={
                               brand.days_since_last_order > 60
-                                ? "text-red-500 font-semibold"
+                                ? "text-destructive font-semibold"
                                 : brand.days_since_last_order > 30
                                 ? "text-amber-500"
                                 : ""
@@ -178,8 +187,24 @@ export function SellThroughIntelCard({ storeId }: Props) {
                           {brand.order_frequency_class}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] ${healthColors.bgColor} ${healthColors.color}`}
+                          >
+                            {health.label}
+                          </Badge>
+                          {health.varianceLabel && (
+                            <span className={`text-[9px] ${healthColors.color}`}>
+                              {health.varianceLabel}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
               </TableBody>
             </Table>
           </div>
