@@ -3,10 +3,13 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Factory, Loader2, TrendingUp, TrendingDown, Building2, AlertTriangle } from 'lucide-react';
+import { Factory, Loader2, AlertTriangle } from 'lucide-react';
 
 interface IndustryGroup {
   industry: string;
+  industryGroup: string;
+  marginExpLow: number;
+  marginExpHigh: number;
   businesses: string[];
   totalRevenue: number;
   totalExpenses: number;
@@ -21,14 +24,19 @@ function useIndustryView() {
   return useQuery({
     queryKey: ['industry-financial-view'],
     queryFn: async (): Promise<IndustryGroup[]> => {
-      const [{ data: businesses }, { data: profiles }] = await Promise.all([
-        supabase.from('businesses').select('id, name, industry').eq('is_active', true),
+      const [{ data: businesses }, { data: profiles }, { data: catalog }] = await Promise.all([
+        supabase.from('businesses').select('id, name, industry, industry_catalog_id').eq('is_active', true),
         supabase.from('business_financial_profiles').select('*'),
+        supabase.from('industry_catalog').select('*'),
       ]);
 
       const profileMap = new Map((profiles || []).map(p => [p.business_id, p]));
+      const catalogMap = new Map((catalog || []).map(c => [c.id, c]));
 
       const industryMap = new Map<string, {
+        industryGroup: string;
+        marginExpLow: number;
+        marginExpHigh: number;
         businesses: string[];
         revenue: number;
         expenses: number;
@@ -38,9 +46,15 @@ function useIndustryView() {
       }>();
 
       (businesses || []).forEach(b => {
-        const key = b.industry || 'unclassified';
+        const catalogEntry = b.industry_catalog_id ? catalogMap.get(b.industry_catalog_id) : null;
+        const key = catalogEntry?.industry_name || b.industry || 'Unclassified';
         const fp = profileMap.get(b.id);
-        const existing = industryMap.get(key) || { businesses: [], revenue: 0, expenses: 0, confidences: [], connected: 0, total: 0 };
+        const existing = industryMap.get(key) || {
+          industryGroup: catalogEntry?.industry_group || 'other',
+          marginExpLow: Number(catalogEntry?.margin_expectation_low || 0),
+          marginExpHigh: Number(catalogEntry?.margin_expectation_high || 0),
+          businesses: [], revenue: 0, expenses: 0, confidences: [], connected: 0, total: 0,
+        };
 
         existing.businesses.push(b.name);
         existing.revenue += Number(fp?.monthly_revenue_estimate || 0);
@@ -57,6 +71,9 @@ function useIndustryView() {
           const profit = data.revenue - data.expenses;
           return {
             industry,
+            industryGroup: data.industryGroup,
+            marginExpLow: data.marginExpLow,
+            marginExpHigh: data.marginExpHigh,
             businesses: data.businesses,
             totalRevenue: data.revenue,
             totalExpenses: data.expenses,
@@ -72,9 +89,6 @@ function useIndustryView() {
   });
 }
 
-function formatIndustry(s: string): string {
-  return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
 
 export default function IndustryView() {
   const { data: industries, isLoading } = useIndustryView();
@@ -95,14 +109,25 @@ export default function IndustryView() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {(industries || []).map(ind => {
-          const isHealthy = ind.margin >= 15;
+          const isHealthy = ind.margin >= ind.marginExpLow;
           const isRisk = ind.margin < 0;
+          const isBelowExpectation = ind.margin > 0 && ind.margin < ind.marginExpLow;
           return (
-            <Card key={ind.industry} className={`${isRisk ? 'border-red-500/20' : ''}`}>
+            <Card key={ind.industry} className={`${isRisk ? 'border-destructive/20' : isBelowExpectation ? 'border-yellow-500/20' : ''}`}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">{formatIndustry(ind.industry)}</CardTitle>
-                  {isRisk && <AlertTriangle className="h-4 w-4 text-red-400" />}
+                  <div>
+                    <CardTitle className="text-base">{ind.industry}</CardTitle>
+                    <span className="text-[10px] text-muted-foreground capitalize">{ind.industryGroup}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {ind.marginExpHigh > 0 && (
+                      <Badge variant="outline" className="text-[10px] py-0">
+                        {ind.marginExpLow}–{ind.marginExpHigh}% expected
+                      </Badge>
+                    )}
+                    {isRisk && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                  </div>
                 </div>
                 <CardDescription className="text-xs">
                   {ind.totalCount} business{ind.totalCount !== 1 ? 'es' : ''} • {ind.connectedCount} connected
