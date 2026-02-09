@@ -35,7 +35,7 @@ import {
   Copy,
   RefreshCw,
   PlusCircle,
-  GitMerge, // Added icon for Combine
+  GitMerge,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBulkUpload } from "@/hooks/useBulkUpload";
@@ -118,6 +118,24 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
       successCallbackFired.current = false;
     }
   }, [state.stage, state.importResult, onSuccess]);
+
+  // NEW: Auto-map columns when stage becomes "MAPPED"
+  useEffect(() => {
+    if (state.stage === "MAPPED" && state.columns.length > 0) {
+      state.columns.forEach((col) => {
+        // If not already mapped
+        if (!state.columnMapping[col]) {
+          // If column name matches 'address' (case-insensitive), map to 'address'
+          if (col.toLowerCase() === "address") {
+            updateColumnMapping(col, "address");
+          } else {
+            // Otherwise map to itself (Detected Column)
+            updateColumnMapping(col, col);
+          }
+        }
+      });
+    }
+  }, [state.stage, state.columns, state.columnMapping, updateColumnMapping]);
 
   const handleClose = () => {
     reset();
@@ -458,19 +476,18 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                             <SelectItem value="_unmapped" className="text-muted-foreground italic">
                                               -- Skip Column --
                                             </SelectItem>
-                                            {requiredDbFields.map((f) => (
-                                              <SelectItem key={`db-${f.field}`} value={f.field}>
-                                                <span className="flex items-center gap-1.5">
-                                                  <span className="text-destructive font-bold">*</span>{" "}
-                                                  {f.displayName || f.field}
-                                                </span>
-                                              </SelectItem>
-                                            ))}
-                                            {schema.fields
-                                              .filter((f) => !requiredDbFields.some((rf) => rf.field === f.field))
-                                              .map((f) => (
-                                                <SelectItem key={`db-${f.field}`} value={f.field}>
-                                                  {f.displayName || f.field}
+                                            {/* 1. Required Address */}
+                                            <SelectItem value="address">
+                                              <span className="flex items-center gap-1.5">
+                                                <span className="text-destructive font-bold">*</span> address
+                                              </span>
+                                            </SelectItem>
+                                            {/* 2. Detected Columns (excluding address if already present in file) */}
+                                            {state.columns
+                                              .filter((c) => c !== "address")
+                                              .map((c) => (
+                                                <SelectItem key={c} value={c}>
+                                                  {c}
                                                 </SelectItem>
                                               ))}
                                           </SelectContent>
@@ -573,16 +590,13 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                           {state.duplicates.map((dup) => {
                             const action = state.duplicateActions[dup.key] || "skip";
                             const isFileDuplicate = dup.fileRows.length > 1;
-                            // Check if "Combine" is selected to show "Ready" visual state
                             const isCombined = action === "combine";
 
                             return (
                               <div
                                 key={dup.key}
                                 className={`flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-lg border transition-colors ${
-                                  isCombined
-                                    ? "bg-green-500/5 border-green-500/30" // Green tint for combined/ready
-                                    : "bg-background border-border"
+                                  isCombined ? "bg-green-500/5 border-green-500/30" : "bg-background border-border"
                                 }`}
                               >
                                 <div className="flex-1 min-w-0">
@@ -632,7 +646,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {/* Option to Combine rows within file */}
                                     {isFileDuplicate && (
                                       <SelectItem value="combine">
                                         <span className="flex items-center gap-1.5 text-green-600 font-medium">
