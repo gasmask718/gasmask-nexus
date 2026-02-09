@@ -103,3 +103,6 @@ verify_jwt = false
 
 [functions.finance-signal-scanner]
 verify_jwt = false
+
+[functions.crm-inactivity-scanner]
+verify_jwt = false
