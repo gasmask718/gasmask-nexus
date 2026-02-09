@@ -66,6 +66,7 @@ import {
   Flag,
   FileDown,
   Banknote,
+  Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -77,6 +78,9 @@ import {
   InvoiceSource, 
   RiskLevel 
 } from "@/hooks/useUnpaidAccounts";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
+import { DeleteCollectionAccountModal } from "@/components/collections/DeleteCollectionAccountModal";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -200,6 +204,12 @@ export default function UnpaidAccounts() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { initiateMessage } = useMessage();
+  const { user } = useAuth();
+  const { roles } = useUserRole(user?.id);
+  const isOwner = roles.includes('owner');
+
+  // Delete modal state
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   
   // Fetch data from unified hook
   const { data, isLoading, refetch } = useUnpaidAccounts();
@@ -339,6 +349,7 @@ export default function UnpaidAccounts() {
   const verification = data?.verification;
 
   return (
+    <>
     <div className="p-6 space-y-6">
       {/* ──────────────────────────────────────────────────────────────────── */}
       {/* HEADER */}
@@ -764,6 +775,19 @@ export default function UnpaidAccounts() {
                                       <ExternalLink className="h-4 w-4 mr-2" />
                                       View Profile
                                     </DropdownMenuItem>
+                                    
+                                    {isOwner && (
+                                      <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          className="text-destructive focus:text-destructive"
+                                          onClick={() => setDeleteTarget({ id: account.entity_id, name: account.entity_name })}
+                                        >
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          Delete Account
+                                        </DropdownMenuItem>
+                                      </>
+                                    )}
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </div>
@@ -873,5 +897,17 @@ export default function UnpaidAccounts() {
         </CardContent>
       </Card>
     </div>
+
+    {/* GDS Delete Modal */}
+    {deleteTarget && (
+      <DeleteCollectionAccountModal
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        accountId={deleteTarget.id}
+        accountName={deleteTarget.name}
+        onDeleted={() => refetch()}
+      />
+    )}
+    </>
   );
 }

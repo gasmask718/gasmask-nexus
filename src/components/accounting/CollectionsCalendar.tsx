@@ -28,6 +28,7 @@ function useCollections() {
       const { data, error } = await supabase
         .from('collection_accounts')
         .select('*')
+        .is('deleted_at', null)
         .neq('status', 'closed')
         .order('next_action_at', { ascending: true });
 

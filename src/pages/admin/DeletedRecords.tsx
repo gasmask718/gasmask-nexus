@@ -180,17 +180,33 @@ export default function DeletedRecords() {
   });
 
   const restoreFromLedger = useMutation({
-    mutationFn: async (logId: string) => {
-      const { error } = await supabase.rpc('restore_deleted_store', {
-        p_log_id: logId,
-      });
-      if (error) throw error;
+    mutationFn: async ({ logId, entityTable }: { logId: string; entityTable: string }) => {
+      if (entityTable === 'collection_accounts') {
+        // Find the entity_id from the recovery log
+        const { data: logEntry } = await supabase
+          .from('deletion_recovery_log')
+          .select('entity_id')
+          .eq('id', logId)
+          .single();
+        if (!logEntry) throw new Error('Recovery log entry not found');
+        const { error } = await supabase.rpc('restore_deleted_collection_account', {
+          p_account_id: logEntry.entity_id,
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.rpc('restore_deleted_store', {
+          p_log_id: logId,
+        });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recovery-ledger'] });
       queryClient.invalidateQueries({ queryKey: ['stores'] });
       queryClient.invalidateQueries({ queryKey: ['store-master'] });
-      toast.success('Store restored successfully');
+      queryClient.invalidateQueries({ queryKey: ['collection-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['collection-stats'] });
+      toast.success('Record restored successfully');
       setRestoreDialogOpen(false);
     },
     onError: (error: Error) => {
@@ -209,7 +225,11 @@ export default function DeletedRecords() {
         reactivateAmbassador.mutate(selectedRecord.id);
         break;
       case 'store_deleted':
-        restoreFromLedger.mutate(selectedRecord.id);
+      case 'collection_account_deleted':
+        restoreFromLedger.mutate({
+          logId: selectedRecord.id,
+          entityTable: selectedRecord.type === 'collection_account_deleted' ? 'collection_accounts' : 'store_master',
+        });
         break;
       default:
         toast.error('Restore not supported for this record type');
@@ -226,20 +246,26 @@ export default function DeletedRecords() {
   // Build unified records list
   const allRecords: DeletedRecord[] = [
     // Recovery ledger (governed deletions — stores, etc.)
-    ...(recoveryLedger || []).filter(r => !r.is_restored).map(entry => ({
-      id: entry.id,
-      name: (entry.entity_snapshot as any)?.store_name || `${entry.entity_type} #${entry.entity_id.slice(-8)}`,
-      type: 'store_deleted',
-      deletedAt: entry.deleted_at,
-      deletedBy: entry.deleted_by || 'Unknown',
-      canRestore: true,
-      metadata: {
-        reason: entry.delete_reason,
-        source_ui: entry.source_ui,
-        entity_type: entry.entity_type,
-        snapshot: entry.entity_snapshot,
-      },
-    })),
+    ...(recoveryLedger || []).filter(r => !r.is_restored).map(entry => {
+      const isCollection = entry.entity_table === 'collection_accounts';
+      const snapshot = entry.entity_snapshot as any;
+      return {
+        id: entry.id,
+        name: isCollection
+          ? (snapshot?.entity_name || `Collection Account #${entry.entity_id.slice(-8)}`)
+          : (snapshot?.store_name || `${entry.entity_type} #${entry.entity_id.slice(-8)}`),
+        type: isCollection ? 'collection_account_deleted' : 'store_deleted',
+        deletedAt: entry.deleted_at,
+        deletedBy: entry.deleted_by || 'Unknown',
+        canRestore: true,
+        metadata: {
+          reason: entry.delete_reason,
+          source_ui: entry.source_ui,
+          entity_type: entry.entity_type,
+          snapshot: entry.entity_snapshot,
+        },
+      };
+    }),
     ...(archivedLeads || []).map(lead => ({
       id: lead.id,
       name: lead.store_name || lead.contact_name || 'Unnamed Lead',

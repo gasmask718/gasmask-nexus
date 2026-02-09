@@ -48,8 +48,8 @@ function useDailyBriefing() {
         supabase.from('business_transactions').select('*').gte('transaction_date', todayStr),
         supabase.from('business_transactions').select('*').gte('transaction_date', wtdStart),
         supabase.from('business_transactions').select('*').gte('transaction_date', mtdStart),
-        supabase.from('collection_accounts').select('*').neq('status', 'closed').order('total_overdue', { ascending: false }).limit(10),
-        supabase.from('collection_accounts').select('*').not('next_action_at', 'is', null).lte('next_action_at', format(subDays(now, -14), 'yyyy-MM-dd\'T\'HH:mm:ss')).order('next_action_at', { ascending: true }).limit(10),
+        supabase.from('collection_accounts').select('*').is('deleted_at', null).neq('status', 'closed').order('total_overdue', { ascending: false }).limit(10),
+        supabase.from('collection_accounts').select('*').is('deleted_at', null).not('next_action_at', 'is', null).lte('next_action_at', format(subDays(now, -14), 'yyyy-MM-dd\'T\'HH:mm:ss')).order('next_action_at', { ascending: true }).limit(10),
         supabase.from('business_expenses').select('amount').gte('expense_date', mtdStart),
       ]);
 

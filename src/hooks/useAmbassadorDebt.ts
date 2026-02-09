@@ -43,6 +43,7 @@ export function useAmbassadorDebtOverview() {
       const { data: accounts, error: accountsError } = await supabase
         .from('collection_accounts')
         .select('*')
+        .is('deleted_at', null)
         .not('assigned_ambassador_id', 'is', null)
         .gt('total_outstanding', 0);
 
@@ -128,6 +129,7 @@ export function useAmbassadorDebtDetail(ambassadorId: string | undefined) {
       const { data: managedAccounts, error: managedError } = await supabase
         .from('collection_accounts')
         .select('*')
+        .is('deleted_at', null)
         .eq('assigned_ambassador_id', ambassadorId)
         .gt('total_outstanding', 0)
         .order('total_outstanding', { ascending: false });
@@ -148,6 +150,7 @@ export function useAmbassadorDebtDetail(ambassadorId: string | undefined) {
         ? await supabase
             .from('collection_accounts')
             .select('*')
+            .is('deleted_at', null)
             .eq('entity_type', 'store')
             .in('entity_id', sourcedStoreIds)
             .gt('total_outstanding', 0)
@@ -196,6 +199,7 @@ export function useAmbassadorCollectionsTab(ambassadorId: string | undefined) {
       const { data: assignedAccounts } = await supabase
         .from('collection_accounts')
         .select('*')
+        .is('deleted_at', null)
         .eq('assigned_ambassador_id', ambassadorId)
         .order('total_outstanding', { ascending: false });
 
@@ -215,6 +219,7 @@ export function useAmbassadorCollectionsTab(ambassadorId: string | undefined) {
         ? await supabase
             .from('collection_accounts')
             .select('*')
+            .is('deleted_at', null)
             .eq('entity_type', 'store')
             .in('entity_id', sourcedStoreIds)
             .order('total_outstanding', { ascending: false })
