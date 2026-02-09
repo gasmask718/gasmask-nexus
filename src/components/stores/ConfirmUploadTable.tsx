@@ -10,7 +10,7 @@ import type { ValidatedRow, DuplicateGroup } from '@/lib/uploadValidation';
 interface ConfirmUploadTableProps {
   rows: ValidatedRow[];
   duplicates: DuplicateGroup[];
-  duplicateActions: Record<string, 'append' | 'skip' | 'create_new'>;
+  duplicateActions: Record<string, 'append' | 'skip' | 'create_new' | 'update'>;
   columns: string[];
 }
 
@@ -90,6 +90,7 @@ export default function ConfirmUploadTable({
                 {pageRows.map((row) => {
                   const dupInfo = rowDupMap.get(row.rowNumber);
                   const isAppend = dupInfo?.action === 'append';
+                  const isUpdate = dupInfo?.action === 'update';
                   const isSkip = dupInfo?.action === 'skip' && dupInfo.group.fileRows.indexOf(row.rowNumber) > 0;
                   const isDbDup = dupInfo?.group.existingStore;
 
@@ -101,7 +102,9 @@ export default function ConfirmUploadTable({
                           ? 'opacity-40 line-through'
                           : isAppend
                             ? 'bg-amber-500/5 border-l-2 border-l-amber-500'
-                            : ''
+                            : isUpdate
+                              ? 'bg-blue-500/5 border-l-2 border-l-blue-500'
+                              : ''
                       }
                     >
                       <TableCell className="font-mono text-xs">{row.rowNumber}</TableCell>
@@ -117,12 +120,17 @@ export default function ConfirmUploadTable({
                               Append
                             </Badge>
                           )}
+                          {isUpdate && (
+                            <Badge className="text-[10px] bg-blue-500 hover:bg-blue-600">
+                              Update
+                            </Badge>
+                          )}
                           {isSkip && (
                             <Badge variant="secondary" className="text-[10px]">
                               Skip
                             </Badge>
                           )}
-                          {isDbDup && !isSkip && !isAppend && (
+                          {isDbDup && !isSkip && !isAppend && !isUpdate && (
                             <Badge variant="destructive" className="text-[10px]">
                               Exists
                             </Badge>
@@ -136,12 +144,13 @@ export default function ConfirmUploadTable({
                       </TableCell>
                       {displayKeys.slice(0, 8).map(key => {
                         const val = row.data[key];
-                        // Highlight fields that will be appended to existing record
+                        // Highlight fields that will be appended/updated to existing record
                         const isAppendField = isAppend && val !== undefined && val !== null && val !== '';
+                        const isUpdateField = isUpdate && val !== undefined && val !== null;
                         return (
                           <TableCell
                             key={key}
-                            className={`text-xs truncate max-w-[180px] ${isAppendField ? 'font-semibold text-amber-700 dark:text-amber-400' : ''}`}
+                            className={`text-xs truncate max-w-[180px] ${isAppendField ? 'font-semibold text-amber-700 dark:text-amber-400' : ''} ${isUpdateField ? 'font-semibold text-blue-700 dark:text-blue-400' : ''}`}
                             title={String(val ?? '')}
                           >
                             {val !== undefined && val !== null ? String(val) : <span className="text-muted-foreground italic">—</span>}

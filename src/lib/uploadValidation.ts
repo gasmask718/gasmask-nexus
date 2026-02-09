@@ -105,24 +105,48 @@ export function validateRow(
   const warnings: RowValidationError[] = [];
   const transformedData: Record<string, any> = {};
   
-  // Check required fields
-  for (const field of schema.fields) {
-    if (field.required) {
-      const excelColumn = Object.keys(columnMapping).find(
-        k => columnMapping[k] === field.field
-      );
-      
-      const value = excelColumn ? row[excelColumn] : undefined;
-      
-      if (value === undefined || value === null || String(value).trim() === '') {
-        errors.push({
-          row: rowNumber,
-          column: field.field,
-          columnDisplayName: field.displayName,
-          value: value,
-          error: `Missing required field: ${field.displayName}`,
-          severity: 'error'
-        });
+  // Check required fields - special handling: store_name OR address is sufficient
+  const isStoreSchema = schema.tableName === 'stores' || schema.tableName === 'combined';
+  
+  if (isStoreSchema) {
+    // For stores: at least one of name or address_street must be present
+    const nameCol = Object.keys(columnMapping).find(k => columnMapping[k] === 'name' || columnMapping[k] === 'store_name');
+    const addrCol = Object.keys(columnMapping).find(k => columnMapping[k] === 'address_street' || columnMapping[k] === 'address');
+    const nameVal = nameCol ? row[nameCol] : undefined;
+    const addrVal = addrCol ? row[addrCol] : undefined;
+    const hasName = nameVal !== undefined && nameVal !== null && String(nameVal).trim() !== '';
+    const hasAddr = addrVal !== undefined && addrVal !== null && String(addrVal).trim() !== '';
+    
+    if (!hasName && !hasAddr) {
+      errors.push({
+        row: rowNumber,
+        column: 'name',
+        columnDisplayName: 'Store Name / Address',
+        value: null,
+        error: 'At least Store Name or Address is required',
+        severity: 'error'
+      });
+    }
+  } else {
+    // Standard required field check for non-store schemas
+    for (const field of schema.fields) {
+      if (field.required) {
+        const excelColumn = Object.keys(columnMapping).find(
+          k => columnMapping[k] === field.field
+        );
+        
+        const value = excelColumn ? row[excelColumn] : undefined;
+        
+        if (value === undefined || value === null || String(value).trim() === '') {
+          errors.push({
+            row: rowNumber,
+            column: field.field,
+            columnDisplayName: field.displayName,
+            value: value,
+            error: `Missing required field: ${field.displayName}`,
+            severity: 'error'
+          });
+        }
       }
     }
   }
@@ -267,7 +291,7 @@ export interface DuplicateGroup {
   address: string;
   fileRows: number[];
   existingStore?: { id: string; name: string; address: string; status: string };
-  action: 'append' | 'skip' | 'create_new';
+  action: 'append' | 'skip' | 'create_new' | 'update';
 }
 
 /**

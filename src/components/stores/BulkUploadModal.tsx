@@ -408,6 +408,10 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                   const schemaField = schema.fields.find((c) => c.field === mapping);
                                   const sampleValue = (state.rawData[0] as any)?.[col];
 
+                                  // Required DB fields that must map to schema
+                                  const requiredDbFields = schema.fields.filter(f => f.required);
+                                  const isRequiredMapping = requiredDbFields.some(f => f.field === mapping);
+
                                   return (
                                     <TableRow key={col}>
                                       <TableCell className="font-medium text-sm truncate max-w-[150px]" title={col}>
@@ -437,21 +441,32 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                             <SelectItem value="_unmapped" className="text-muted-foreground italic">
                                               -- Skip Column --
                                             </SelectItem>
-                                            {state.columns.map((detectedCol) => (
-                                              <SelectItem key={detectedCol} value={detectedCol}>
-                                                {detectedCol}
+                                            {/* Required DB fields (store_name, address) */}
+                                            {requiredDbFields.map((f) => (
+                                              <SelectItem key={`db-${f.field}`} value={f.field}>
+                                                <span className="flex items-center gap-1.5">
+                                                  <span className="text-destructive font-bold">*</span> {f.field}
+                                                </span>
                                               </SelectItem>
                                             ))}
+                                            {/* All detected file columns */}
+                                            {state.columns
+                                              .filter(detectedCol => !requiredDbFields.some(f => f.field === detectedCol))
+                                              .map((detectedCol) => (
+                                                <SelectItem key={detectedCol} value={detectedCol}>
+                                                  {detectedCol}
+                                                </SelectItem>
+                                              ))}
                                           </SelectContent>
                                         </Select>
                                       </TableCell>
                                       <TableCell>
                                         {mapping ? (
                                           <Badge
-                                            variant={schemaField?.required ? "default" : "outline"}
-                                            className={schemaField?.required ? "bg-green-600 hover:bg-green-700" : ""}
+                                            variant={isRequiredMapping ? "default" : "outline"}
+                                            className={isRequiredMapping ? "bg-green-600 hover:bg-green-700" : ""}
                                           >
-                                            {schemaField?.required ? "Required" : "Optional"}
+                                            {isRequiredMapping ? "Required" : "Optional"}
                                           </Badge>
                                         ) : (
                                           <span className="text-xs text-muted-foreground italic">Skipped</span>
@@ -540,11 +555,18 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                   </SelectTrigger>
                                   <SelectContent>
                                     {dup.existingStore && (
-                                      <SelectItem value="append">
-                                        <span className="flex items-center gap-1.5">
-                                          <RefreshCw className="h-3 w-3" /> Append to Existing
-                                        </span>
-                                      </SelectItem>
+                                      <>
+                                        <SelectItem value="append">
+                                          <span className="flex items-center gap-1.5">
+                                            <RefreshCw className="h-3 w-3" /> Append to Existing
+                                          </span>
+                                        </SelectItem>
+                                        <SelectItem value="update">
+                                          <span className="flex items-center gap-1.5">
+                                            <ArrowRight className="h-3 w-3" /> Update (Overwrite)
+                                          </span>
+                                        </SelectItem>
+                                      </>
                                     )}
                                     <SelectItem value="skip">
                                       <span className="flex items-center gap-1.5">
