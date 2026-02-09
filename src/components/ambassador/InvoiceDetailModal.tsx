@@ -71,7 +71,8 @@ function useInvoiceDetail(invoiceId: string | null) {
           payment_status, payment_method, paid_at, due_date, notes, brand,
           created_by, received_by, partial_amount, is_historical,
           receipt_status, receipt_sent_at, created_at,
-          store:stores!store_id(name)
+          store:stores!store_id(name),
+          line_items:invoice_line_items(id, product_name, brand, quantity, unit_price, total, sale_channel, sale_unit)
         `)
         .eq('id', invoiceId)
         .maybeSingle();
@@ -79,26 +80,10 @@ function useInvoiceDetail(invoiceId: string | null) {
       if (error) throw error;
       if (!data) return null;
 
-      // Fetch line items separately (uses any cast since types may not be generated)
-      let lineItems: InvoiceLineItem[] = [];
-      try {
-        const { data: items, error: itemsError } = await (supabase as any)
-          .from('invoice_line_items')
-          .select('id, product_name, brand, quantity, unit_price, total, sale_channel, sale_unit')
-          .eq('invoice_id', invoiceId)
-          .order('created_at', { ascending: true });
-
-        if (!itemsError && items) {
-          lineItems = items;
-        }
-      } catch {
-        // Silent fallback
-      }
-
       return {
         ...data,
         store: Array.isArray(data.store) ? data.store[0] : data.store,
-        line_items: lineItems,
+        line_items: (data.line_items || []) as InvoiceLineItem[],
       } as InvoiceDetail;
     },
     enabled: !!invoiceId,

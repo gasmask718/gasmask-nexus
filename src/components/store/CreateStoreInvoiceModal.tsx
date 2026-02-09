@@ -362,22 +362,14 @@ export function CreateStoreInvoiceModal({
           units_per_box_snapshot: item.units_per_box,
         }));
 
-        // Note: invoice_line_items table needs to be created via migration first
-        // Type assertion needed until types are regenerated
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { error: lineItemsError } = await (supabase as any)
-            .from('invoice_line_items')
-            .insert(lineItemsData);
-          
-          if (lineItemsError) {
-            console.error('Failed to create invoice line items:', lineItemsError);
-            // Don't fail invoice creation if line items fail
-          }
-        } catch (err) {
-            console.error('Error creating invoice line items:', err);
-            // Don't fail invoice creation if line items fail
-          }
+        const { error: lineItemsError } = await supabase
+          .from('invoice_line_items')
+          .insert(lineItemsData);
+        
+        if (lineItemsError) {
+          console.error('Failed to create invoice line items:', lineItemsError);
+          toast.error(`Line items failed: ${lineItemsError.message}`);
+        }
         }
 
         // Create contact interaction for Recent Interactions
@@ -480,9 +472,11 @@ export function CreateStoreInvoiceModal({
       
       // CRITICAL: Invalidate ambassador order queries so dashboards update
       queryClient.invalidateQueries({ queryKey: ['ambassador-store-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['ambassador-store-invoices'] });
       queryClient.invalidateQueries({ queryKey: ['ambassador-orders'] });
       queryClient.invalidateQueries({ queryKey: ['ambassador-dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['ambassador-quick-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-detail'] });
       
       resetForm();
       onOpenChange(false);
