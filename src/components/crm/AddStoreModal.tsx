@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useBoroughs, useAddBorough } from "@/hooks/useBoroughs";
 import { Loader2, Plus } from "lucide-react";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 
 interface AddStoreModalProps {
   open: boolean;
@@ -138,10 +139,17 @@ export function AddStoreModal({ open, onOpenChange, brandId, onSuccess }: AddSto
 
             <div className="col-span-2">
               <Label htmlFor="address">Address</Label>
-              <Input
+              <AddressAutocomplete
                 id="address"
                 value={formData.address}
-                onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
+                onChange={(val) => setFormData((prev) => ({ ...prev, address: val }))}
+                onSelect={(parsed) => setFormData((prev) => ({
+                  ...prev,
+                  address: parsed.street,
+                  city: parsed.city,
+                  state: parsed.state,
+                  zip: parsed.zip,
+                }))}
                 placeholder="Street address"
               />
             </div>

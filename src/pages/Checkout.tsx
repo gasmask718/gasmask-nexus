@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { 
   ShoppingCart, ArrowLeft, CreditCard, Truck, Store, 
   Package, Loader2, CheckCircle, MapPin 
@@ -190,9 +191,16 @@ export default function Checkout() {
                     </div>
                     <div className="sm:col-span-2">
                       <Label>Street Address</Label>
-                      <Input
+                      <AddressAutocomplete
                         value={shippingAddress.street}
-                        onChange={(e) => setShippingAddress(prev => ({ ...prev, street: e.target.value }))}
+                        onChange={(val) => setShippingAddress(prev => ({ ...prev, street: val }))}
+                        onSelect={(parsed) => setShippingAddress(prev => ({
+                          ...prev,
+                          street: parsed.street,
+                          city: parsed.city,
+                          state: parsed.state,
+                          zipCode: parsed.zip,
+                        }))}
                         placeholder="123 Main St"
                       />
                     </div>

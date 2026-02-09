@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload, Package, Sparkles, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { useCall } from '@/components/communication/CallProvider';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import BulkUploadModal from '@/components/stores/BulkUploadModal';
@@ -1160,10 +1161,17 @@ const Stores = () => {
 
               <div className="col-span-2">
                 <Label htmlFor="new-store-address">Street Address</Label>
-                <Input
+                <AddressAutocomplete
                   id="new-store-address"
                   value={newStoreData.address_street}
-                  onChange={(e) => setNewStoreData(prev => ({ ...prev, address_street: e.target.value }))}
+                  onChange={(val) => setNewStoreData(prev => ({ ...prev, address_street: val }))}
+                  onSelect={(parsed) => setNewStoreData(prev => ({
+                    ...prev,
+                    address_street: parsed.street,
+                    address_city: parsed.city,
+                    address_state: parsed.state,
+                    address_zip: parsed.zip,
+                  }))}
                   placeholder="123 Main St"
                 />
               </div>

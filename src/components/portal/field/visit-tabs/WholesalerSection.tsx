@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Building2, Plus, X, Search, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { toast } from 'sonner';
 
 export interface GlobalWholesaler {
@@ -318,9 +319,15 @@ export function WholesalerSection({
                   {/* Address */}
                   <div className="space-y-2">
                     <Label>Address</Label>
-                    <Input
+                    <AddressAutocomplete
                       value={newWholesaler.address}
-                      onChange={(e) => setNewWholesaler({ ...newWholesaler, address: e.target.value })}
+                      onChange={(val) => setNewWholesaler({ ...newWholesaler, address: val })}
+                      onSelect={(parsed) => setNewWholesaler(prev => ({
+                        ...prev,
+                        address: parsed.street,
+                        city: parsed.city,
+                        state: parsed.state,
+                      }))}
                       placeholder="Street address"
                     />
                   </div>

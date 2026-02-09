@@ -28,6 +28,7 @@ import {
   Edit
 } from 'lucide-react';
 import { useCall } from '@/components/communication/CallProvider';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 const CRMCustomerDetail = () => {
@@ -907,10 +908,17 @@ const CRMCustomerDetail = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-address">Address</Label>
-              <Input 
-                id="edit-address" 
+              <AddressAutocomplete
+                id="edit-address"
                 value={editFormData.address}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, address: e.target.value }))}
+                onChange={(val) => setEditFormData(prev => ({ ...prev, address: val }))}
+                onSelect={(parsed) => setEditFormData(prev => ({
+                  ...prev,
+                  address: parsed.street,
+                  city: parsed.city,
+                  state: parsed.state,
+                  zip: parsed.zip,
+                }))}
               />
             </div>
             <div className="grid grid-cols-3 gap-4">

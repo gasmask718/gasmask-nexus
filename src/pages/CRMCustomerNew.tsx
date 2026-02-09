@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Save } from 'lucide-react';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import {
   Select,
   SelectContent,
@@ -137,10 +138,17 @@ const CRMCustomerNew = () => {
 
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="address">Address</Label>
-                <Input
+                <AddressAutocomplete
                   id="address"
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(val) => setFormData({ ...formData, address: val })}
+                  onSelect={(parsed) => setFormData(prev => ({
+                    ...prev,
+                    address: parsed.street,
+                    city: parsed.city,
+                    state: parsed.state,
+                    zip: parsed.zip,
+                  }))}
                 />
               </div>
 

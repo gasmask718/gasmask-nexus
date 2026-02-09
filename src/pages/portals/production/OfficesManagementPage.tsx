@@ -52,6 +52,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { format } from 'date-fns';
 
 const STATUS_OPTIONS = [
@@ -288,10 +289,17 @@ function OfficeFormDialog({
           
           <div className="space-y-2">
             <Label htmlFor="address">Street Address</Label>
-            <Input 
+            <AddressAutocomplete
               id="address"
               value={formData.address_line_1}
-              onChange={(e) => setFormData(f => ({ ...f, address_line_1: e.target.value }))}
+              onChange={(val) => setFormData(f => ({ ...f, address_line_1: val }))}
+              onSelect={(parsed) => setFormData(f => ({
+                ...f,
+                address_line_1: parsed.street,
+                city: parsed.city,
+                state: parsed.state,
+                zip_code: parsed.zip,
+              }))}
               placeholder="123 Main Street"
             />
           </div>
