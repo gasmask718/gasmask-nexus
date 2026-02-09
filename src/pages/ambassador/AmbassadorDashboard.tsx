@@ -26,7 +26,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, formatDistanceToNow } from 'date-fns';
 import { PortfolioSection } from '@/components/ambassador/PortfolioSection';
-import { ReferralLinkCard } from '@/components/ambassador/ReferralLinkCard';
+import { InviteAmbassadorCard } from '@/components/ambassador/InviteAmbassadorCard';
 import { DashboardPurchasesCard } from '@/components/ambassador/purchases/DashboardPurchasesCard';
 
 // MASTER GENIUS ARCHITECT: Lead KPI config - all lead types must be represented
@@ -275,7 +275,7 @@ function DashboardContent() {
           <PortfolioSection />
         </div>
         <div>
-          <ReferralLinkCard />
+          <InviteAmbassadorCard />
         </div>
       </div>
 
