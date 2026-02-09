@@ -1104,6 +1104,11 @@ const StoreDetail = () => {
             </CardContent>
           </Card>
 
+          {/* Danger Zone — Owner Only, GDS v1.0, inside KPI cards section */}
+          {storeMasterId && (
+            <StoreDangerZone storeId={storeMasterId} storeName={store.name} sourceUi="store_profile_kpi_cards" />
+          )}
+
           {/* Notes */}
           {store.notes && (
             <Card className="glass-card border-border/50">
@@ -1132,10 +1137,6 @@ const StoreDetail = () => {
             }}
           />
 
-          {/* Danger Zone — Owner Only, GDS v1.0 */}
-          {storeMasterId && (
-            <StoreDangerZone storeId={storeMasterId} storeName={store.name} sourceUi="store_profile_kpi_cards" />
-          )}
         </div>
       </div>
 
