@@ -14,3 +14,4 @@ export { default as AmbassadorPurchases } from './AmbassadorPurchases';
 export { default as AmbassadorSellThrough } from './AmbassadorSellThrough';
 export { default as AmbassadorProfitDashboard } from './AmbassadorProfitDashboard';
 export { default as AmbassadorInvites } from './AmbassadorInvites';
+export { default as AmbassadorRecruitmentLeads } from './AmbassadorRecruitmentLeads';
