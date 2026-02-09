@@ -25,6 +25,8 @@ export interface Mission {
   floor_origin: string | null;
   source_entity_type: string | null;
   source_entity_id: string | null;
+  source_reference: string | null;
+  severity_score: number | null;
   due_date: string | null;
   started_at: string | null;
   completed_at: string | null;
