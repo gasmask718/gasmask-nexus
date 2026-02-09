@@ -19,6 +19,7 @@ export interface AmbassadorOrder {
   total: number;
   created_at: string;
   items_count: number;
+  items_summary: string;
   // Receipt status tracking
   receipt_status?: string | null;
   receipt_sent_at?: string | null;
@@ -127,6 +128,7 @@ export function useAmbassadorOrders(options?: { channel?: string; status?: strin
         total: Number(order.total_amount || 0),
         created_at: order.created_at,
         items_count: 0,
+        items_summary: '',
       }));
     },
     enabled: storeIds.length > 0 && (!channel || channel === 'all' || channel === 'store'),
@@ -158,29 +160,52 @@ export function useAmbassadorOrders(options?: { channel?: string; status?: strin
         .limit(limit);
 
       if (status && status !== 'all') {
-        // Map order status to invoice payment_status
         query = query.eq('payment_status', status);
       }
 
       const { data, error } = await query;
       if (error) throw error;
 
-      return (data || []).map((invoice: any): AmbassadorOrder => ({
-        id: invoice.id,
-        order_number: invoice.invoice_number || `INV-${invoice.id.slice(0, 8).toUpperCase()}`,
-        channel: 'store',
-        entity_id: invoice.store_id,
-        entity_name: invoice.store?.name || 'Unknown Store',
-        status: invoice.payment_status === 'paid' ? 'delivered' : 'pending',
-        payment_status: invoice.payment_status || 'pending',
-        subtotal: Number(invoice.subtotal || invoice.total_amount || 0),
-        tax: Number(invoice.tax || 0),
-        total: Number(invoice.total_amount || 0),
-        created_at: invoice.created_at,
-        items_count: 0,
-        receipt_status: invoice.receipt_status,
-        receipt_sent_at: invoice.receipt_sent_at,
-      }));
+      // Fetch line items for all invoices in batch
+      const invoiceIds = (data || []).map((i: any) => i.id);
+      let lineItemsMap: Record<string, { product_name: string; quantity: number }[]> = {};
+      if (invoiceIds.length > 0) {
+        try {
+          const { data: lineItems } = await (supabase as any)
+            .from('invoice_line_items')
+            .select('invoice_id, product_name, quantity')
+            .in('invoice_id', invoiceIds);
+          if (lineItems) {
+            for (const li of lineItems) {
+              if (!lineItemsMap[li.invoice_id]) lineItemsMap[li.invoice_id] = [];
+              lineItemsMap[li.invoice_id].push({ product_name: li.product_name, quantity: li.quantity });
+            }
+          }
+        } catch { /* silent */ }
+      }
+
+      return (data || []).map((invoice: any): AmbassadorOrder => {
+        const items = lineItemsMap[invoice.id] || [];
+        const totalQty = items.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0);
+        const summary = items.map(i => `${i.product_name} x${i.quantity}`).join(', ');
+        return {
+          id: invoice.id,
+          order_number: invoice.invoice_number || `INV-${invoice.id.slice(0, 8).toUpperCase()}`,
+          channel: 'store',
+          entity_id: invoice.store_id,
+          entity_name: invoice.store?.name || 'Unknown Store',
+          status: invoice.payment_status === 'paid' ? 'delivered' : 'pending',
+          payment_status: invoice.payment_status || 'pending',
+          subtotal: Number(invoice.subtotal || invoice.total_amount || 0),
+          tax: Number(invoice.tax || 0),
+          total: Number(invoice.total_amount || 0),
+          created_at: invoice.created_at,
+          items_count: totalQty,
+          items_summary: summary,
+          receipt_status: invoice.receipt_status,
+          receipt_sent_at: invoice.receipt_sent_at,
+        };
+      });
     },
     enabled: storeIds.length > 0 && (!channel || channel === 'all' || channel === 'store'),
   });

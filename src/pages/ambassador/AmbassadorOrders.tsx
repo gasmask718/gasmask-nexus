@@ -301,7 +301,8 @@ export default function AmbassadorOrders() {
                   <TableHead>Order #</TableHead>
                   <TableHead>Channel</TableHead>
                   <TableHead>Entity</TableHead>
-                  <TableHead>Items</TableHead>
+                  <TableHead>Products</TableHead>
+                  <TableHead className="text-center">Qty</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Payment</TableHead>
@@ -320,7 +321,10 @@ export default function AmbassadorOrders() {
                     <TableCell className="font-mono text-sm">{order.order_number}</TableCell>
                     <TableCell>{getChannelBadge(order.channel)}</TableCell>
                     <TableCell className="font-medium">{order.entity_name}</TableCell>
-                    <TableCell>{order.items_count}</TableCell>
+                    <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground" title={order.items_summary}>
+                      {order.items_summary || '—'}
+                    </TableCell>
+                    <TableCell className="text-center">{order.items_count || '—'}</TableCell>
                     <TableCell className="text-right font-semibold">${order.total.toFixed(2)}</TableCell>
                     <TableCell>{getStatusBadge(order.status)}</TableCell>
                     <TableCell>{getPaymentStatusBadge(order.payment_status)}</TableCell>
@@ -342,7 +346,7 @@ export default function AmbassadorOrders() {
                 ))}
                 {filteredOrders.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
                       <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>No orders found matching your filters</p>
                     </TableCell>
