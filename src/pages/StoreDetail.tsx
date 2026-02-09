@@ -36,8 +36,10 @@ import { UnifiedInteractionModal } from "@/components/store/UnifiedInteractionMo
 import { CreateStoreInvoiceModal } from "@/components/store/CreateStoreInvoiceModal";
 import { MemberSinceDisplay } from "@/components/store/MemberSinceDisplay";
 import { PagePurpose } from "@/components/portal/guidance/PagePurpose";
+import { StoreDangerZone } from "@/components/store/StoreDangerZone";
 import { useTranslation } from "@/hooks/useTranslation";
 import { CanonicalStoreProfileProvider } from "@/components/store/CanonicalStoreProfile";
+import { useStoreMasterResolver } from "@/hooks/useStoreMasterResolver";
 // ═══════════════════════════════════════════════════════════════════════════════
 // CANONICAL SHARED SECTIONS — Drift prevention layer
 // Adding a section to these components propagates to ALL store profile pages.
@@ -168,6 +170,9 @@ const StoreDetail = () => {
   const [quickStatsResponsiveness, setQuickStatsResponsiveness] = useState<"call" | "text" | "both" | "none">("none");
   const [quickStatsPaymentType, setQuickStatsPaymentType] = useState<"pays_upfront" | "bill_to_bill" | null>(null);
   const [savingQuickStats, setSavingQuickStats] = useState(false);
+
+  // Resolve store_master ID for GDS operations
+  const { storeMasterId } = useStoreMasterResolver(id);
 
   // Fetch store contacts for interaction modal
   const { data: storeContacts } = useQuery({
@@ -1126,6 +1131,11 @@ const StoreDetail = () => {
               // Navigate to invoice or show success
             }}
           />
+
+          {/* Danger Zone — Owner Only, GDS v1.0 */}
+          {storeMasterId && (
+            <StoreDangerZone storeId={storeMasterId} storeName={store.name} sourceUi="store_profile_kpi_cards" />
+          )}
         </div>
       </div>
 

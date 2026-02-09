@@ -13,9 +13,10 @@ import { useAuth } from '@/contexts/AuthContext';
 interface StoreDangerZoneProps {
   storeId: string;
   storeName: string;
+  sourceUi?: string;
 }
 
-export function StoreDangerZone({ storeId, storeName }: StoreDangerZoneProps) {
+export function StoreDangerZone({ storeId, storeName, sourceUi = 'store_master_profile' }: StoreDangerZoneProps) {
   const { user } = useAuth();
   const { roles } = useUserRole(user?.id);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -54,6 +55,7 @@ export function StoreDangerZone({ storeId, storeName }: StoreDangerZoneProps) {
         onOpenChange={setDeleteModalOpen}
         storeId={storeId}
         storeName={storeName}
+        sourceUi={sourceUi}
       />
     </>
   );
