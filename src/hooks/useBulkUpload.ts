@@ -1,6 +1,6 @@
 /**
  * Bulk Upload Hook
- * Handles file parsing, validation, and import with audit logging
+ * Handles file parsing, validation, duplicate detection, and import with audit logging
  */
 
 import { useState, useCallback } from 'react';
@@ -14,7 +14,10 @@ import {
   validateAllRows, 
   ValidationResult,
   RowValidationError,
-  ValidatedRow
+  ValidatedRow,
+  DuplicateGroup,
+  detectIntraFileDuplicates,
+  detectDbDuplicates
 } from '@/lib/uploadValidation';
 
 // Stage enum for deterministic state transitions
@@ -24,23 +27,27 @@ export type UploadStage =
   | 'MAPPED' 
   | 'VALIDATED' 
   | 'IMPORT_READY' 
+  | 'CONFIRM'
   | 'IMPORTING' 
   | 'COMPLETE' 
   | 'ERROR';
 
 export interface UploadState {
-  step: 'select' | 'upload' | 'validate' | 'preview' | 'importing' | 'complete' | 'error';
-  stage: UploadStage; // New deterministic stage controller
+  step: 'select' | 'upload' | 'validate' | 'preview' | 'confirm' | 'importing' | 'complete' | 'error';
+  stage: UploadStage;
   uploadType: string | null;
   fileName: string | null;
   rawData: Record<string, any>[];
   columns: string[];
   columnMapping: Record<string, string>;
   validationResult: ValidationResult | null;
-  isImportReady: boolean; // Explicit boolean to unlock import
+  isImportReady: boolean;
   importResult: ImportResult | null;
   isProcessing: boolean;
   error: string | null;
+  // Duplicate detection
+  duplicates: DuplicateGroup[];
+  duplicateActions: Record<string, 'append' | 'skip' | 'create_new'>;
 }
 
 export interface ImportResult {
@@ -63,7 +70,9 @@ const initialState: UploadState = {
   isImportReady: false,
   importResult: null,
   isProcessing: false,
-  error: null
+  error: null,
+  duplicates: [],
+  duplicateActions: {},
 };
 
 export function useBulkUpload() {
@@ -154,7 +163,7 @@ export function useBulkUpload() {
     }));
   }, []);
 
-  const validateData = useCallback(() => {
+  const validateData = useCallback(async () => {
     const schema = getSchemaByType(state.uploadType || '');
     if (!schema) {
       toast.error('Unknown upload type');
@@ -175,28 +184,88 @@ export function useBulkUpload() {
     // Validate all rows
     const result = validateAllRows(state.rawData, schema, state.columnMapping);
 
-    // Determine if import is ready: validation completed AND has valid rows
-    // Blocking errors prevent import, but warnings (optional fields) do NOT block
+    // Detect duplicates (for store upload types)
+    let allDuplicates: DuplicateGroup[] = [];
+    const defaultActions: Record<string, 'append' | 'skip' | 'create_new'> = {};
+
+    if (state.uploadType === 'stores' || state.uploadType === 'combined_crm') {
+      // 1. Intra-file duplicates (same name + same address within file)
+      const intraFileDups = detectIntraFileDuplicates(result.rows);
+      
+      // 2. DB duplicates (match against existing stores)
+      try {
+        const { data: existingStores } = await supabase
+          .from('stores')
+          .select('id, name, address_street, status')
+          .limit(5000);
+
+        if (existingStores) {
+          const normalizedStores = existingStores.map(s => ({
+            id: s.id,
+            name: s.name || '',
+            address: s.address_street || '',
+            status: (s.status as string) || 'active',
+          }));
+          const dbDups = detectDbDuplicates(result.rows, normalizedStores);
+          allDuplicates = [...intraFileDups, ...dbDups];
+        } else {
+          allDuplicates = intraFileDups;
+        }
+      } catch (e) {
+        console.error('Failed to check DB duplicates:', e);
+        allDuplicates = intraFileDups;
+      }
+
+      // Set default actions
+      for (const dup of allDuplicates) {
+        defaultActions[dup.key] = dup.existingStore ? 'append' : 'skip';
+      }
+    }
+
     const hasValidRows = result.summary.validRows > 0;
-    const isImportReady = hasValidRows; // Import is ready if we have any valid rows
+    const isImportReady = hasValidRows;
 
     setState(prev => ({
       ...prev,
       validationResult: result,
       step: 'preview',
       stage: isImportReady ? 'IMPORT_READY' : 'VALIDATED',
-      isImportReady: isImportReady,
-      isProcessing: false
+      isImportReady,
+      isProcessing: false,
+      duplicates: allDuplicates,
+      duplicateActions: defaultActions,
     }));
 
-    if (result.summary.errorRows > 0 && result.summary.validRows > 0) {
+    if (allDuplicates.length > 0) {
+      const dbDups = allDuplicates.filter(d => d.existingStore);
+      const fileDups = allDuplicates.filter(d => !d.existingStore);
+      const parts: string[] = [];
+      if (dbDups.length > 0) parts.push(`${dbDups.length} match existing stores`);
+      if (fileDups.length > 0) parts.push(`${fileDups.length} in-file duplicates`);
+      toast.warning(`Duplicates found: ${parts.join(', ')}`);
+    } else if (result.summary.errorRows > 0 && result.summary.validRows > 0) {
       toast.warning(`${result.summary.errorRows} rows have errors, but ${result.summary.validRows} rows are ready to import`);
     } else if (result.summary.errorRows > 0) {
       toast.error(`All ${result.summary.errorRows} rows have errors - please fix and re-upload`);
     } else {
-      toast.success(`All ${result.summary.validRows} rows validated successfully - ready to import!`);
+      toast.success(`All ${result.summary.validRows} rows validated successfully!`);
     }
   }, [state.uploadType, state.columns, state.rawData, state.columnMapping]);
+
+  const setDuplicateAction = useCallback((groupKey: string, action: 'append' | 'skip' | 'create_new') => {
+    setState(prev => ({
+      ...prev,
+      duplicateActions: { ...prev.duplicateActions, [groupKey]: action },
+    }));
+  }, []);
+
+  const proceedToConfirm = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      step: 'confirm',
+      stage: 'CONFIRM',
+    }));
+  }, []);
 
   const performImport = useCallback(async (mode: 'append' | 'upsert' = 'append') => {
     if (!state.validationResult) {
@@ -249,20 +318,43 @@ export function useBulkUpload() {
 
       // Get valid rows only
       const validRows = state.validationResult.rows.filter(r => r.status === 'valid');
+
+      // Build a set of rows to skip (from duplicate actions)
+      const skipRows = new Set<number>();
+      for (const dup of state.duplicates) {
+        const action = state.duplicateActions[dup.key] || 'skip';
+        if (action === 'skip') {
+          // Skip all but the first row in intra-file duplicates
+          if (!dup.existingStore) {
+            dup.fileRows.slice(1).forEach(r => skipRows.add(r));
+          }
+        }
+      }
+
+      // Determine effective mode per row based on duplicate actions
+      const appendRows = new Set<number>();
+      for (const dup of state.duplicates) {
+        const action = state.duplicateActions[dup.key] || 'skip';
+        if (action === 'append' && dup.existingStore) {
+          dup.fileRows.forEach(r => appendRows.add(r));
+        }
+      }
+
+      const filteredRows = validRows.filter(r => !skipRows.has(r.rowNumber));
       
       // Import based on upload type
       if (state.uploadType === 'stores' || state.uploadType === 'combined_crm') {
-        await importStores(validRows, mode, result);
+        await importStores(filteredRows, mode, result, appendRows);
       } else if (state.uploadType === 'store_contacts') {
-        await importStoreContacts(validRows, result);
+        await importStoreContacts(filteredRows, result);
       } else if (state.uploadType === 'store_notes') {
-        await importStoreNotes(validRows, result);
+        await importStoreNotes(filteredRows, result);
       } else if (state.uploadType === 'invoices') {
-        await importInvoices(validRows, result);
+        await importInvoices(filteredRows, result);
       }
 
-      // Skipped = error rows from validation
-      result.skipped = state.validationResult.summary.errorRows;
+      // Skipped = error rows from validation + explicitly skipped duplicates
+      result.skipped = state.validationResult.summary.errorRows + skipRows.size;
 
       // Update audit log with results
       if (result.auditLogId) {
@@ -309,7 +401,7 @@ export function useBulkUpload() {
       }));
       toast.error(`Import failed: ${error.message}`);
     }
-  }, [state.validationResult, state.uploadType, state.fileName, queryClient]);
+  }, [state.validationResult, state.uploadType, state.fileName, state.duplicates, state.duplicateActions, queryClient]);
 
   return {
     state,
@@ -318,6 +410,8 @@ export function useBulkUpload() {
     parseFile,
     updateColumnMapping,
     validateData,
+    setDuplicateAction,
+    proceedToConfirm,
     performImport
   };
 }
@@ -326,7 +420,8 @@ export function useBulkUpload() {
 async function importStores(
   rows: ValidatedRow[], 
   mode: 'append' | 'upsert',
-  result: ImportResult
+  result: ImportResult,
+  appendRows: Set<number> = new Set()
 ) {
   const BATCH_SIZE = 20;
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
@@ -350,11 +445,31 @@ async function importStores(
           address_city: row.data.address_city || row.data.city,
           address_state: row.data.address_state || row.data.state,
           address_zip: row.data.address_zip || row.data.zip,
-          phone: row.data.phone || row.data.contact_phone, // Also check contact_phone
-          email: row.data.email || row.data.contact_email, // Also check contact_email
+          phone: row.data.phone || row.data.contact_phone,
+          email: row.data.email || row.data.contact_email,
           status: row.data.status || 'active',
           open_date: row.data.open_date || row.data.member_since,
         };
+
+        // Map additional fields if present
+        if (row.data.primary_contact_name) storeData.primary_contact_name = row.data.primary_contact_name;
+        if (row.data.alt_phone) storeData.alt_phone = row.data.alt_phone;
+        if (row.data.neighborhood) storeData.neighborhood = row.data.neighborhood;
+        if (row.data.boro) storeData.boro = row.data.boro;
+        if (row.data.wholesaler_name) storeData.wholesaler_name = row.data.wholesaler_name;
+        if (row.data.special_information) storeData.special_information = row.data.special_information;
+        if (row.data.notes_overview) storeData.notes_overview = row.data.notes_overview;
+        if (row.data.store_code) storeData.store_code = row.data.store_code;
+        if (row.data.market_code) storeData.market_code = row.data.market_code;
+        if (row.data.sells_flowers !== undefined) {
+          const v = row.data.sells_flowers?.toString().toLowerCase().trim();
+          storeData.sells_flowers = ['yes', 'true', '1', 'y', 'x'].includes(v);
+        }
+        if (row.data.prime_time_energy !== undefined) {
+          const v = row.data.prime_time_energy?.toString().toLowerCase().trim();
+          storeData.prime_time_energy = ['yes', 'true', '1', 'y', 'x'].includes(v);
+        }
+        if (row.data.payment_type) storeData.payment_type = row.data.payment_type;
 
         // Handle company - need to look up or create
         if (row.data.company) {
@@ -369,19 +484,28 @@ async function importStores(
           }
         }
 
-        if (mode === 'upsert') {
-          // Check if store exists
-          const { data: existing } = await supabase
-            .from('stores')
-            .select('id')
-            .eq('name', storeData.name)
-            .maybeSingle();
+        // Determine if this row should be appended (update existing)
+        const shouldAppend = appendRows.has(row.rowNumber);
+        const effectiveMode = shouldAppend ? 'upsert' : mode;
+
+        if (effectiveMode === 'upsert' || shouldAppend) {
+          // Check if store exists by name + address
+          let query = supabase.from('stores').select('id').eq('name', storeData.name);
+          if (storeData.address_street) {
+            query = query.eq('address_street', storeData.address_street);
+          }
+          const { data: existing } = await query.maybeSingle();
 
           if (existing) {
-            await supabase
-              .from('stores')
-              .update(storeData)
-              .eq('id', existing.id);
+            // Remove name from update payload (it's the key)
+            const updateData = { ...storeData };
+            // Only update non-empty fields to preserve existing data
+            Object.keys(updateData).forEach(k => {
+              if (updateData[k] === undefined || updateData[k] === null || updateData[k] === '') {
+                delete updateData[k];
+              }
+            });
+            await supabase.from('stores').update(updateData).eq('id', existing.id);
           } else {
             await supabase.from('stores').insert(storeData);
           }

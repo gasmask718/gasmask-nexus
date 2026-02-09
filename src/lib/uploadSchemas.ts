@@ -160,6 +160,93 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         required: false,
         source: 'excel',
         notes: 'Yes/No or True/False - enables Starter Kit signal in Tube Intelligence'
+      },
+      {
+        field: 'primary_contact_name',
+        displayName: 'Primary Contact Name',
+        type: 'string',
+        required: false,
+        source: 'excel'
+      },
+      {
+        field: 'alt_phone',
+        displayName: 'Alt Phone',
+        type: 'string',
+        required: false,
+        source: 'excel'
+      },
+      {
+        field: 'neighborhood',
+        displayName: 'Neighborhood',
+        type: 'string',
+        required: false,
+        source: 'excel'
+      },
+      {
+        field: 'boro',
+        displayName: 'Borough',
+        type: 'string',
+        required: false,
+        source: 'excel'
+      },
+      {
+        field: 'wholesaler_name',
+        displayName: 'Wholesaler',
+        type: 'string',
+        required: false,
+        source: 'excel'
+      },
+      {
+        field: 'sells_flowers',
+        displayName: 'Sells Flowers',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Yes/No or True/False'
+      },
+      {
+        field: 'prime_time_energy',
+        displayName: 'Prime Time Energy',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Yes/No or True/False'
+      },
+      {
+        field: 'payment_type',
+        displayName: 'Payment Type',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'cash, card, zelle, etc.'
+      },
+      {
+        field: 'special_information',
+        displayName: 'Special Information',
+        type: 'string',
+        required: false,
+        source: 'excel'
+      },
+      {
+        field: 'notes_overview',
+        displayName: 'Notes Overview',
+        type: 'string',
+        required: false,
+        source: 'excel'
+      },
+      {
+        field: 'store_code',
+        displayName: 'Store Code',
+        type: 'string',
+        required: false,
+        source: 'excel'
+      },
+      {
+        field: 'market_code',
+        displayName: 'Market Code',
+        type: 'string',
+        required: false,
+        source: 'excel'
       }
     ]
   },

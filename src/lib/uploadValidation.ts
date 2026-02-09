@@ -258,3 +258,99 @@ export function downloadErrorReport(errors: RowValidationError[], filename?: str
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// ─── Duplicate Detection ─────────────────────────────────────────────────────
+
+export interface DuplicateGroup {
+  key: string;
+  storeName: string;
+  address: string;
+  fileRows: number[];
+  existingStore?: { id: string; name: string; address: string; status: string };
+  action: 'append' | 'skip' | 'create_new';
+}
+
+/**
+ * Detect duplicates within the uploaded file.
+ * Same store_name → check address → same address = duplicate.
+ */
+export function detectIntraFileDuplicates(rows: ValidatedRow[]): DuplicateGroup[] {
+  const nameGroups = new Map<string, Map<string, number[]>>();
+
+  for (const row of rows) {
+    if (row.status === 'error') continue;
+    const name = (row.data.name || row.data.store_name || '').toString().toLowerCase().trim();
+    if (!name) continue;
+    const address = (row.data.address_street || row.data.address || '').toString().toLowerCase().trim();
+
+    if (!nameGroups.has(name)) nameGroups.set(name, new Map());
+    const addrMap = nameGroups.get(name)!;
+    if (!addrMap.has(address)) addrMap.set(address, []);
+    addrMap.get(address)!.push(row.rowNumber);
+  }
+
+  const duplicates: DuplicateGroup[] = [];
+  for (const [name, addrMap] of nameGroups) {
+    for (const [address, rowNums] of addrMap) {
+      if (rowNums.length > 1) {
+        duplicates.push({
+          key: `file|${name}|${address}`,
+          storeName: name,
+          address,
+          fileRows: rowNums,
+          action: 'skip',
+        });
+      }
+    }
+  }
+  return duplicates;
+}
+
+/**
+ * Detect duplicates against existing DB stores.
+ * Match by store_name (case-insensitive) + address.
+ */
+export function detectDbDuplicates(
+  rows: ValidatedRow[],
+  existingStores: { id: string; name: string; address: string; status: string }[]
+): DuplicateGroup[] {
+  const duplicates: DuplicateGroup[] = [];
+  const seen = new Set<string>();
+
+  for (const row of rows) {
+    if (row.status === 'error') continue;
+    const name = (row.data.name || row.data.store_name || '').toString().toLowerCase().trim();
+    if (!name) continue;
+    const address = (row.data.address_street || row.data.address || '').toString().toLowerCase().trim();
+    const key = `db|${name}|${address}`;
+    if (seen.has(key)) continue;
+
+    const match = existingStores.find(s => {
+      const sName = (s.name || '').toLowerCase().trim();
+      const sAddr = (s.address || '').toLowerCase().trim();
+      return sName === name && (sAddr === address || (!sAddr && !address));
+    });
+
+    if (match) {
+      seen.add(key);
+      const matchingRows = rows
+        .filter(r => {
+          if (r.status === 'error') return false;
+          const rName = (r.data.name || r.data.store_name || '').toString().toLowerCase().trim();
+          const rAddr = (r.data.address_street || r.data.address || '').toString().toLowerCase().trim();
+          return rName === name && rAddr === address;
+        })
+        .map(r => r.rowNumber);
+
+      duplicates.push({
+        key,
+        storeName: match.name,
+        address: match.address,
+        fileRows: matchingRows,
+        existingStore: match,
+        action: 'append',
+      });
+    }
+  }
+  return duplicates;
+}
