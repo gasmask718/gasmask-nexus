@@ -89,6 +89,7 @@ interface Store {
   tags: string[];
   primary_contact_name: string;
   created_at: string;
+  updated_at: string | null;
   lat: number | null;
   lng: number | null;
   last_visit_date: string | null;
@@ -105,8 +106,48 @@ interface Store {
   sticker_last_seen_at: string | null;
   sticker_taken_down: boolean;
   sticker_taken_down_at: string | null;
+  sticker_notes: string | null;
   connected_group_id: string | null;
   payment_type: string | null;
+  // store_master CRM fields
+  nickname: string | null;
+  country_of_origin: string | null;
+  country: string | null;
+  languages: string[] | null;
+  communication_preference: string | null;
+  personality_notes: string | null;
+  has_expansion: boolean | null;
+  new_store_addresses: string[] | null;
+  expected_open_dates: string[] | null;
+  expansion_notes: string | null;
+  influence_level: string | null;
+  loyalty_triggers: string[] | null;
+  frustration_triggers: string[] | null;
+  risk_score: string | null;
+  language_preference: string | null;
+  dialect_preference: string | null;
+  formality_level: string | null;
+  preferred_channel: string | null;
+  notes_for_tone: string | null;
+  owner_name: string | null;
+  health_status: string | null;
+  sourced_by_ambassador_id: string | null;
+  assigned_ambassador_id: string | null;
+  sourced_at: string | null;
+  last_visit_at: string | null;
+  last_order_at: string | null;
+  borough_id: string | null;
+  // Legacy-only fields
+  neighborhood: string | null;
+  boro: string | null;
+  wholesaler_name: string | null;
+  notes_overview: string | null;
+  notes_old: string | null;
+  special_information: string | null;
+  member_since: string | null;
+  store_code: string | null;
+  market_code: string | null;
+  rpa_status: string | null;
 }
 
 interface ProductInventory {
@@ -201,18 +242,101 @@ const StoreDetail = () => {
       if (!id) return;
 
       try {
-        // Fetch store details
-        const { data: storeData, error: storeError } = await supabase.from("stores").select("*").eq("id", id).maybeSingle();
+        // Try store_master first
+        const { data: masterData } = await supabase.from("store_master").select("*").eq("id", id).maybeSingle();
+        
+        // Also fetch legacy stores data for enrichment
+        const { data: legacyData } = await supabase.from("stores").select("*").eq("id", id).maybeSingle();
 
-        if (storeError) throw storeError;
-        if (!storeData) {
+        if (!masterData && !legacyData) {
           setStore(null);
           setLoading(false);
           return;
         }
-        setStore(storeData);
-        setQuickStatsResponsiveness((storeData.responsiveness as "call" | "text" | "both" | "none") || "none");
-        setQuickStatsPaymentType((storeData.payment_type as "pays_upfront" | "bill_to_bill") || null);
+
+        // Build unified store object, preferring store_master, falling back to legacy
+        const m = masterData;
+        const l = legacyData;
+
+        const unified: Store = {
+          id: m?.id || l?.id || id,
+          name: m?.store_name || l?.name || '',
+          type: m?.store_type || l?.type || '',
+          address_street: m?.address || l?.address_street || '',
+          address_city: m?.city || l?.address_city || '',
+          address_state: m?.state || l?.address_state || '',
+          address_zip: m?.zip || l?.address_zip || '',
+          phone: m?.phone || l?.phone || '',
+          alt_phone: l?.alt_phone || '',
+          email: m?.email || l?.email || '',
+          status: m?.health_status || l?.status || 'active',
+          responsiveness: l?.responsiveness || 'none',
+          sticker_status: l?.sticker_status || null,
+          notes: m?.notes || l?.notes || '',
+          tags: l?.tags || [],
+          primary_contact_name: m?.owner_name || l?.primary_contact_name || '',
+          created_at: m?.created_at || l?.created_at || '',
+          updated_at: m?.updated_at || l?.updated_at || null,
+          lat: l?.lat || null,
+          lng: l?.lng || null,
+          last_visit_date: l?.last_visit_date || null,
+          last_visit_driver_id: l?.last_visit_driver_id || null,
+          visit_frequency_target: l?.visit_frequency_target || null,
+          visit_risk_level: l?.visit_risk_level || null,
+          sells_flowers: l?.sells_flowers || false,
+          sticker_door: m?.sticker_on_door || l?.sticker_door || false,
+          sticker_instore: m?.sticker_in_store || l?.sticker_instore || false,
+          sticker_phone: m?.sticker_with_phone || l?.sticker_phone || false,
+          sticker_last_seen_at: l?.sticker_last_seen_at || null,
+          sticker_taken_down: l?.sticker_taken_down || false,
+          sticker_taken_down_at: l?.sticker_taken_down_at || null,
+          sticker_notes: m?.sticker_notes || null,
+          connected_group_id: m?.connected_group_id || l?.connected_group_id || null,
+          payment_type: l?.payment_type || null,
+          // store_master CRM fields
+          nickname: m?.nickname || null,
+          country_of_origin: m?.country_of_origin || null,
+          country: m?.country || null,
+          languages: m?.languages || null,
+          communication_preference: m?.communication_preference || null,
+          personality_notes: m?.personality_notes || null,
+          has_expansion: m?.has_expansion || null,
+          new_store_addresses: m?.new_store_addresses || null,
+          expected_open_dates: m?.expected_open_dates || null,
+          expansion_notes: m?.expansion_notes || null,
+          influence_level: m?.influence_level || null,
+          loyalty_triggers: m?.loyalty_triggers || null,
+          frustration_triggers: m?.frustration_triggers || null,
+          risk_score: m?.risk_score || null,
+          language_preference: m?.language_preference || null,
+          dialect_preference: m?.dialect_preference || null,
+          formality_level: m?.formality_level || null,
+          preferred_channel: m?.preferred_channel || null,
+          notes_for_tone: m?.notes_for_tone || null,
+          owner_name: m?.owner_name || l?.primary_contact_name || null,
+          health_status: m?.health_status || null,
+          sourced_by_ambassador_id: m?.sourced_by_ambassador_id || null,
+          assigned_ambassador_id: m?.assigned_ambassador_id || null,
+          sourced_at: m?.sourced_at || null,
+          last_visit_at: m?.last_visit_at || null,
+          last_order_at: m?.last_order_at || null,
+          borough_id: m?.borough_id || null,
+          // Legacy-only fields
+          neighborhood: l?.neighborhood || null,
+          boro: l?.boro || null,
+          wholesaler_name: l?.wholesaler_name || null,
+          notes_overview: l?.notes_overview || null,
+          notes_old: l?.notes_old || null,
+          special_information: l?.special_information || null,
+          member_since: l?.member_since || null,
+          store_code: l?.store_code || null,
+          market_code: l?.market_code || null,
+          rpa_status: l?.rpa_status || null,
+        };
+
+        setStore(unified);
+        setQuickStatsResponsiveness((unified.responsiveness as "call" | "text" | "both" | "none") || "none");
+        setQuickStatsPaymentType((unified.payment_type as "pays_upfront" | "bill_to_bill") || null);
 
         await fetchInventoryAndVisits();
       } catch (error) {
@@ -487,10 +611,15 @@ const StoreDetail = () => {
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <h2 className="text-3xl font-bold tracking-tight">{store.name}</h2>
+                {store.nickname && <span className="text-lg text-muted-foreground">"{store.nickname}"</span>}
                 <Badge className={getStatusColor(store.status)}>{store.status}</Badge>
                 {id && <StoreHealthBadge storeId={id} />}
               </div>
-              <p className="text-muted-foreground capitalize">{store.type.replace("_", " ")}</p>
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <p className="capitalize">{store.type.replace("_", " ")}</p>
+                {store.owner_name && <span>• Owner: {store.owner_name}</span>}
+                {store.email && <span>• {store.email}</span>}
+              </div>
               {/* Primary Responsive Contact — subtle header badge */}
               <PrimaryContactHeaderBadge storeId={id} />
             </div>
@@ -563,14 +692,14 @@ const StoreDetail = () => {
           <StoreContactInfoCard
             store={store}
             onUpdate={() => {
-              // Refetch store data
+              // Refetch store data - merge legacy into current state
               supabase
                 .from("stores")
                 .select("*")
                 .eq("id", id)
                 .single()
                 .then(({ data }) => {
-                  if (data) setStore(data);
+                  if (data && store) setStore(prev => prev ? { ...prev, ...{ phone: data.phone || prev.phone, alt_phone: data.alt_phone || prev.alt_phone, responsiveness: data.responsiveness || prev.responsiveness, payment_type: data.payment_type || prev.payment_type } } : prev);
                 });
             }}
           />
@@ -589,11 +718,11 @@ const StoreDetail = () => {
             onConnectionChange={() => {
               supabase
                 .from("stores")
-                .select("*")
+                .select("connected_group_id")
                 .eq("id", id)
                 .single()
                 .then(({ data }) => {
-                  if (data) setStore(data);
+                  if (data) setStore(prev => prev ? { ...prev, connected_group_id: data.connected_group_id } : prev);
                 });
             }}
             onLogInteraction={(resolvedId) => {
@@ -604,11 +733,11 @@ const StoreDetail = () => {
             onSellsFlowersUpdate={() => {
               supabase
                 .from("stores")
-                .select("*")
+                .select("sells_flowers")
                 .eq("id", id)
                 .single()
                 .then(({ data }) => {
-                  if (data) setStore(data);
+                  if (data) setStore(prev => prev ? { ...prev, sells_flowers: data.sells_flowers ?? prev.sells_flowers } : prev);
                 });
             }}
           />
@@ -1120,6 +1249,283 @@ const StoreDetail = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{store.notes}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Additional Notes (Overview / Old / Special) */}
+          {(store.notes_overview || store.notes_old || store.special_information) && (
+            <Card className="glass-card border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Additional Notes
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {store.notes_overview && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Overview</p>
+                    <p className="text-sm whitespace-pre-wrap">{store.notes_overview}</p>
+                  </div>
+                )}
+                {store.special_information && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Special Information</p>
+                    <p className="text-sm whitespace-pre-wrap">{store.special_information}</p>
+                  </div>
+                )}
+                {store.notes_old && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Legacy Notes</p>
+                    <p className="text-sm whitespace-pre-wrap text-muted-foreground">{store.notes_old}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Owner / CRM Intelligence */}
+          {(store.nickname || store.country_of_origin || store.influence_level || store.risk_score || store.personality_notes || store.languages?.length || store.loyalty_triggers?.length || store.frustration_triggers?.length) && (
+            <Card className="glass-card border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-primary" />
+                  Owner & CRM Intelligence
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  {store.nickname && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Nickname</p>
+                      <p className="font-medium">{store.nickname}</p>
+                    </div>
+                  )}
+                  {store.country_of_origin && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Country of Origin</p>
+                      <p className="font-medium">{store.country_of_origin}</p>
+                    </div>
+                  )}
+                  {store.influence_level && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Influence Level</p>
+                      <Badge variant="outline" className="text-xs capitalize">{store.influence_level}</Badge>
+                    </div>
+                  )}
+                  {store.risk_score && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Risk Score</p>
+                      <Badge variant="outline" className="text-xs capitalize">{store.risk_score}</Badge>
+                    </div>
+                  )}
+                </div>
+                {store.languages && store.languages.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Languages</p>
+                    <div className="flex flex-wrap gap-1">
+                      {store.languages.map(lang => (
+                        <Badge key={lang} variant="secondary" className="text-xs">{lang}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {store.loyalty_triggers && store.loyalty_triggers.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Loyalty Triggers</p>
+                    <div className="flex flex-wrap gap-1">
+                      {store.loyalty_triggers.map(t => (
+                        <Badge key={t} className="text-xs bg-green-500/10 text-green-600 border-green-500/30">{t}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {store.frustration_triggers && store.frustration_triggers.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Frustration Triggers</p>
+                    <div className="flex flex-wrap gap-1">
+                      {store.frustration_triggers.map(t => (
+                        <Badge key={t} className="text-xs bg-red-500/10 text-red-600 border-red-500/30">{t}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {store.personality_notes && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Personality Notes</p>
+                    <p className="text-sm whitespace-pre-wrap">{store.personality_notes}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Communication Preferences */}
+          {(store.communication_preference || store.preferred_channel || store.language_preference || store.formality_level || store.notes_for_tone) && (
+            <Card className="glass-card border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-primary" />
+                  Communication Preferences
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  {store.preferred_channel && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Preferred Channel</p>
+                      <p className="font-medium capitalize">{store.preferred_channel}</p>
+                    </div>
+                  )}
+                  {store.communication_preference && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Communication Style</p>
+                      <p className="font-medium capitalize">{store.communication_preference}</p>
+                    </div>
+                  )}
+                  {store.language_preference && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Language Preference</p>
+                      <p className="font-medium">{store.language_preference}</p>
+                    </div>
+                  )}
+                  {store.dialect_preference && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Dialect</p>
+                      <p className="font-medium">{store.dialect_preference}</p>
+                    </div>
+                  )}
+                  {store.formality_level && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Formality</p>
+                      <Badge variant="outline" className="text-xs capitalize">{store.formality_level}</Badge>
+                    </div>
+                  )}
+                </div>
+                {store.notes_for_tone && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Tone Notes</p>
+                    <p className="text-sm whitespace-pre-wrap">{store.notes_for_tone}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Expansion Info */}
+          {(store.has_expansion || store.expansion_notes || (store.new_store_addresses && store.new_store_addresses.length > 0)) && (
+            <Card className="glass-card border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Expansion
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {store.has_expansion && (
+                  <Badge className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/30">Has Expansion Plans</Badge>
+                )}
+                {store.new_store_addresses && store.new_store_addresses.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">New Store Addresses</p>
+                    {store.new_store_addresses.map((addr, i) => (
+                      <p key={i} className="text-sm">{addr}</p>
+                    ))}
+                  </div>
+                )}
+                {store.expected_open_dates && store.expected_open_dates.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Expected Open Dates</p>
+                    <div className="flex flex-wrap gap-1">
+                      {store.expected_open_dates.map((d, i) => (
+                        <Badge key={i} variant="outline" className="text-xs">{d}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {store.expansion_notes && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Notes</p>
+                    <p className="text-sm whitespace-pre-wrap">{store.expansion_notes}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Operations & Legacy Info */}
+          {(store.wholesaler_name || store.store_code || store.market_code || store.boro || store.neighborhood || store.rpa_status || store.health_status || store.last_visit_at || store.last_order_at) && (
+            <Card className="glass-card border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  Operations Info
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  {store.health_status && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Health Status</p>
+                      <Badge variant="outline" className="text-xs capitalize">{store.health_status}</Badge>
+                    </div>
+                  )}
+                  {store.wholesaler_name && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Wholesaler</p>
+                      <p className="font-medium">{store.wholesaler_name}</p>
+                    </div>
+                  )}
+                  {store.store_code && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Store Code</p>
+                      <p className="font-medium">{store.store_code}</p>
+                    </div>
+                  )}
+                  {store.market_code && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Market Code</p>
+                      <p className="font-medium">{store.market_code}</p>
+                    </div>
+                  )}
+                  {store.boro && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Borough</p>
+                      <p className="font-medium">{store.boro}</p>
+                    </div>
+                  )}
+                  {store.neighborhood && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Neighborhood</p>
+                      <p className="font-medium">{store.neighborhood}</p>
+                    </div>
+                  )}
+                  {store.rpa_status && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">RPA Status</p>
+                      <Badge variant="outline" className="text-xs">{store.rpa_status}</Badge>
+                    </div>
+                  )}
+                  {store.last_visit_at && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Last Visit</p>
+                      <p className="font-medium">{new Date(store.last_visit_at).toLocaleDateString()}</p>
+                    </div>
+                  )}
+                  {store.last_order_at && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Last Order</p>
+                      <p className="font-medium">{new Date(store.last_order_at).toLocaleDateString()}</p>
+                    </div>
+                  )}
+                  {store.member_since && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Member Since</p>
+                      <p className="font-medium">{new Date(store.member_since).toLocaleDateString()}</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}
