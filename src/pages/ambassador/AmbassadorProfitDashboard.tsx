@@ -1,11 +1,11 @@
 /**
  * Ambassador Profit Dashboard
  * Real profit visibility: Wholesale Cost → Retail Revenue → Net Profit
- * Data sourced from canonical views (v_ambassador_profit_dashboard, v_ambassador_profit_breakdown)
- * ⚠️ SECURITY: Ambassador sees ONLY their own profit data. No access to other ambassadors or global margins.
+ * Data sourced via secure RPC (get_my_profit_dashboard, get_my_profit_breakdown)
+ * ⚠️ SECURITY: Ambassador sees ONLY their own profit data. Enforced server-side.
  */
 import { useState, useMemo } from 'react';
-import { DollarSign, TrendingUp, Package, BarChart3, Store, Filter, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { DollarSign, TrendingUp, Package, BarChart3, Store, Filter, ArrowUpRight, ArrowDownRight, AlertTriangle, Download, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -13,7 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { useAmbassadorProfitDashboard, useAmbassadorProfitBreakdown } from '@/hooks/useAmbassadorProfit';
+import { exportData } from '@/utils/exportUtils';
 import { format } from 'date-fns';
 
 const formatCurrency = (amount: number) =>
@@ -25,11 +27,29 @@ function MarginBadge({ margin }: { margin: number }) {
   return <Badge className="bg-red-500/15 text-red-600 border-red-500/30">{margin}%</Badge>;
 }
 
+function StatusBadge({ status }: { status: string }) {
+  if (status === 'confirmed') {
+    return (
+      <Badge className="bg-green-500/15 text-green-600 border-green-500/30 text-[10px] gap-1">
+        <ShieldCheck className="h-3 w-3" />
+        Confirmed
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="bg-amber-500/15 text-amber-600 border-amber-500/30 text-[10px] gap-1">
+      <ShieldAlert className="h-3 w-3" />
+      Estimated
+    </Badge>
+  );
+}
+
 function ProfitContent() {
   const { data: summary, isLoading: summaryLoading } = useAmbassadorProfitDashboard();
   const [brandFilter, setBrandFilter] = useState<string>('all');
   const [storeFilter, setStoreFilter] = useState<string>('all');
   const [channelFilter, setChannelFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const filters = useMemo(() => ({
     brand: brandFilter !== 'all' ? brandFilter : undefined,
@@ -49,7 +69,44 @@ function ProfitContent() {
   }, [allBreakdown]);
   const channels = useMemo(() => [...new Set((allBreakdown || []).map(r => r.sale_channel).filter(Boolean))], [allBreakdown]);
 
+  // Apply status filter client-side
+  const filteredBreakdown = useMemo(() => {
+    if (!breakdown) return [];
+    if (statusFilter === 'all') return breakdown;
+    return breakdown.filter(r => r.profit_status === statusFilter);
+  }, [breakdown, statusFilter]);
+
   const isLoading = summaryLoading || breakdownLoading;
+
+  const hasEstimatedRows = (summary?.estimated_row_count || 0) > 0;
+
+  const handleExportCSV = () => {
+    if (!filteredBreakdown || filteredBreakdown.length === 0) return;
+    const exportColumns = [
+      { key: 'brand', label: 'Brand' },
+      { key: 'product_name', label: 'Product' },
+      { key: 'store_name', label: 'Store' },
+      { key: 'sale_channel', label: 'Channel' },
+      { key: 'units_sold', label: 'Units Sold' },
+      { key: 'wholesale_cost', label: 'Wholesale Cost' },
+      { key: 'retail_revenue', label: 'Revenue' },
+      { key: 'net_profit', label: 'Net Profit' },
+      { key: 'margin_pct', label: 'Margin %' },
+      { key: 'sale_month', label: 'Month' },
+      { key: 'profit_status', label: 'Status' },
+      { key: 'profit_confidence_score', label: 'Confidence' },
+    ];
+    const timestamp = new Date().toISOString().split('T')[0];
+    exportData({
+      filename: `Profit_Breakdown_${timestamp}`,
+      format: 'csv',
+      data: filteredBreakdown.map(r => ({
+        ...r,
+        sale_month: r.sale_month ? format(new Date(r.sale_month), 'MMM yyyy') : '',
+      })) as any,
+      columns: exportColumns,
+    });
+  };
 
   if (isLoading) {
     return (
@@ -69,8 +126,22 @@ function ProfitContent() {
 
   return (
     <div className="space-y-6">
+      {/* Estimated Data Banner */}
+      {hasEstimatedRows && (
+        <div className="flex items-start gap-3 p-4 rounded-lg border border-amber-500/30 bg-amber-500/5">
+          <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+          <div className="text-sm">
+            <p className="font-medium text-amber-600">Some profits are estimated</p>
+            <p className="text-muted-foreground">
+              {summary?.estimated_row_count} row(s) are missing cost basis or have unverified attribution history.
+              Use the "Estimated" filter to identify them.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="border-green-500/30 bg-green-500/5">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -131,9 +202,28 @@ function ProfitContent() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Confidence KPI */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Data Confidence</p>
+                <p className="text-2xl font-bold font-mono">{summary?.avg_confidence_score || 0}%</p>
+              </div>
+              <div className="p-3 rounded-full bg-muted">
+                <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-3 text-xs text-muted-foreground">
+              <span className="text-green-600">{summary?.confirmed_row_count || 0} confirmed</span>
+              <span className="text-amber-600">{summary?.estimated_row_count || 0} estimated</span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Filters */}
+      {/* Filters + Export */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-3">
@@ -179,11 +269,31 @@ function ProfitContent() {
                   </SelectContent>
                 </Select>
               )}
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[130px] h-8 text-xs">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="estimated">Estimated</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={handleExportCSV}
+                disabled={!filteredBreakdown || filteredBreakdown.length === 0}
+              >
+                <Download className="h-3.5 w-3.5 mr-1.5" />
+                Export CSV
+              </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {(!breakdown || breakdown.length === 0) ? (
+          {(!filteredBreakdown || filteredBreakdown.length === 0) ? (
             <div className="text-center py-12 text-muted-foreground">
               <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-50" />
               <p className="font-medium">No profit data yet</p>
@@ -204,10 +314,11 @@ function ProfitContent() {
                     <TableHead className="text-right">Net Profit</TableHead>
                     <TableHead className="text-right">Margin</TableHead>
                     <TableHead>Month</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {breakdown.map((row, idx) => (
+                  {filteredBreakdown.map((row, idx) => (
                     <TableRow key={idx}>
                       <TableCell className="font-medium">{row.brand || '-'}</TableCell>
                       <TableCell>{row.product_name || '-'}</TableCell>
@@ -228,6 +339,9 @@ function ProfitContent() {
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {row.sale_month ? format(new Date(row.sale_month), 'MMM yyyy') : '-'}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={row.profit_status} />
                       </TableCell>
                     </TableRow>
                   ))}
