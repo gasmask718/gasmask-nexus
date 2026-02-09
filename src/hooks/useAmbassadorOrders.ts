@@ -101,7 +101,7 @@ export function useAmbassadorOrders(options?: { channel?: string; status?: strin
           tax,
           total_amount,
           created_at,
-          store:store_master!store_id(store_name)
+          store:stores!store_id(name)
         `)
         .in('store_id', storeIds)
         .order('created_at', { ascending: false })
@@ -119,7 +119,7 @@ export function useAmbassadorOrders(options?: { channel?: string; status?: strin
         order_number: order.order_number,
         channel: 'store',
         entity_id: order.store_id,
-        entity_name: order.store?.store_name || 'Unknown Store',
+        entity_name: order.store?.name || 'Unknown Store',
         status: order.status,
         payment_status: order.payment_status,
         subtotal: Number(order.subtotal || 0),
@@ -151,7 +151,7 @@ export function useAmbassadorOrders(options?: { channel?: string; status?: strin
           created_at,
           receipt_status,
           receipt_sent_at,
-          store:store_master!store_id(store_name)
+          store:stores!store_id(name)
         `)
         .in('store_id', storeIds)
         .order('created_at', { ascending: false })
@@ -170,7 +170,7 @@ export function useAmbassadorOrders(options?: { channel?: string; status?: strin
         order_number: invoice.invoice_number || `INV-${invoice.id.slice(0, 8).toUpperCase()}`,
         channel: 'store',
         entity_id: invoice.store_id,
-        entity_name: invoice.store?.store_name || 'Unknown Store',
+        entity_name: invoice.store?.name || 'Unknown Store',
         status: invoice.payment_status === 'paid' ? 'delivered' : 'pending',
         payment_status: invoice.payment_status || 'pending',
         subtotal: Number(invoice.subtotal || invoice.total_amount || 0),
@@ -232,7 +232,7 @@ export function useAmbassadorOrderDetail(orderId: string | null) {
         .from('store_orders')
         .select(`
           *,
-          store:store_master!store_id(store_name, address, city, phone)
+          store:stores!store_id(name, address_street, address_city, phone)
         `)
         .eq('id', orderId)
         .single();
