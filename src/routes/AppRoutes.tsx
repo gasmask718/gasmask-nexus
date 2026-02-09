@@ -53,7 +53,9 @@ import WorkerHome from '@/pages/WorkerHome';
 import AutomationSettings from '@/pages/AutomationSettings';
 import Training from '@/pages/Training';
 import Ambassadors from '@/pages/Ambassadors';
-import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, AmbassadorWholesalersList, AmbassadorCommissions, AmbassadorRoutes, AmbassadorOrders, AmbassadorCommunications, AmbassadorLeads, AmbassadorDisputes, AmbassadorDisputeDetail, AmbassadorPurchases, AmbassadorSellThrough, AmbassadorProfitDashboard } from '@/pages/ambassador';
+import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, AmbassadorWholesalersList, AmbassadorCommissions, AmbassadorRoutes, AmbassadorOrders, AmbassadorCommunications, AmbassadorLeads, AmbassadorDisputes, AmbassadorDisputeDetail, AmbassadorPurchases, AmbassadorSellThrough, AmbassadorProfitDashboard, AmbassadorInvites } from '@/pages/ambassador';
+import AmbassadorInviteAccept from '@/pages/invite/AmbassadorInviteAccept';
+import AmbassadorInviteGovernance from '@/pages/admin/AmbassadorInviteGovernance';
 import { AmbassadorProfilePage, WholesalerProfilePage, StoreProfilePage, InfluencerProfilePage } from '@/pages/profile';
 import { AmbassadorCommandDashboard, AllAmbassadorsTable, AmbassadorProfilePage as Floor8AmbassadorProfile, AmbassadorPayoutsPage as Floor8PayoutsPage, AmbassadorRegionsPage, InfluencersPage as Floor8InfluencersPage } from '@/pages/floor8';
 import { AdminDisputesQueue, AdminDisputeDetail } from '@/pages/admin/disputes';
@@ -541,6 +543,7 @@ export default function AppRoutes() {
       {/* Public Invite Signup - Primary and fallback routes */}
       <Route path="/signup" element={<InviteSignup />} />
       <Route path="/invite/accept" element={<InviteSignup />} />
+      <Route path="/invite/ambassador/:token" element={<AmbassadorInviteAccept />} />
       <Route path="/accept-invite" element={<Navigate to="/signup" replace />} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
@@ -1991,6 +1994,13 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+      <Route path="/ambassador/invites" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <Layout><AmbassadorInvites /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
       <Route path="/ambassador/commissions" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
@@ -2047,6 +2057,15 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin']}>
             <AdminOverrideDetailPage />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
+      {/* Admin Ambassador Invite Governance */}
+      <Route path="/admin/ambassador-invites" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']}>
+            <Layout><AmbassadorInviteGovernance /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />

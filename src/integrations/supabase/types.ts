@@ -5122,6 +5122,139 @@ export type Database = {
           },
         ]
       }
+      ambassador_invite_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          invite_id: string
+          metadata: Json | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          invite_id: string
+          metadata?: Json | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          invite_id?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_invite_events_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "ambassador_invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ambassador_invites: {
+        Row: {
+          created_at: string
+          created_device_fingerprint: string | null
+          created_ip: string | null
+          email: string | null
+          expires_at: string
+          id: string
+          invite_token: string
+          invited_by_ambassador_id: string
+          invited_by_user_id: string
+          owner_approved_at: string | null
+          owner_approved_by: string | null
+          phone: string | null
+          region_id: string | null
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          status: Database["public"]["Enums"]["ambassador_invite_status"]
+          token_hash: string
+          used_at: string | null
+          used_by_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_device_fingerprint?: string | null
+          created_ip?: string | null
+          email?: string | null
+          expires_at?: string
+          id?: string
+          invite_token: string
+          invited_by_ambassador_id: string
+          invited_by_user_id: string
+          owner_approved_at?: string | null
+          owner_approved_by?: string | null
+          phone?: string | null
+          region_id?: string | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: Database["public"]["Enums"]["ambassador_invite_status"]
+          token_hash: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_device_fingerprint?: string | null
+          created_ip?: string | null
+          email?: string | null
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          invited_by_ambassador_id?: string
+          invited_by_user_id?: string
+          owner_approved_at?: string | null
+          owner_approved_by?: string | null
+          phone?: string | null
+          region_id?: string | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: Database["public"]["Enums"]["ambassador_invite_status"]
+          token_hash?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_invites_invited_by_ambassador_id_fkey"
+            columns: ["invited_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_invites_invited_by_ambassador_id_fkey"
+            columns: ["invited_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_invites_invited_by_ambassador_id_fkey"
+            columns: ["invited_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_invites_invited_by_ambassador_id_fkey"
+            columns: ["invited_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+        ]
+      }
       ambassador_links: {
         Row: {
           ambassador_id: string
@@ -51906,6 +52039,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_ambassador_invite: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: Json
+      }
       acknowledge_drift_alert: {
         Args: { p_alert_id: string; p_user_id?: string }
         Returns: undefined
@@ -52120,6 +52257,10 @@ export type Database = {
           p_worker_id?: string
         }
         Returns: string
+      }
+      create_ambassador_invite: {
+        Args: { p_email?: string; p_phone?: string; p_region_id?: string }
+        Returns: Json
       }
       create_commission_reversal: {
         Args: { p_ledger_id: string; p_reason?: string }
@@ -52614,6 +52755,10 @@ export type Database = {
         Args: { p_max_retries?: number }
         Returns: number
       }
+      revoke_ambassador_invite: {
+        Args: { p_invite_id: string; p_reason?: string }
+        Returns: boolean
+      }
       revoke_portal_device: {
         Args: { _device_id: string; _reason?: string }
         Returns: boolean
@@ -52704,6 +52849,7 @@ export type Database = {
       }
       user_has_store_access: { Args: { _store_id: string }; Returns: boolean }
       user_is_owner: { Args: { _user_id: string }; Returns: boolean }
+      validate_ambassador_invite: { Args: { p_token: string }; Returns: Json }
       validate_intent_autonomy: { Args: { p_intent_id: string }; Returns: Json }
       validate_portal_request: {
         Args: {
@@ -52731,6 +52877,7 @@ export type Database = {
         | "closed"
         | "dead"
       ambassador_assignment_type: "assigned" | "sourced"
+      ambassador_invite_status: "pending" | "accepted" | "expired" | "revoked"
       app_role:
         | "admin"
         | "csr"
@@ -53233,6 +53380,7 @@ export const Constants = {
         "dead",
       ],
       ambassador_assignment_type: ["assigned", "sourced"],
+      ambassador_invite_status: ["pending", "accepted", "expired", "revoked"],
       app_role: [
         "admin",
         "csr",
