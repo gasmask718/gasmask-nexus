@@ -38,9 +38,9 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         field: 'name',
         displayName: 'Store Name',
         type: 'string',
-        required: true,
+        required: false,
         source: 'excel',
-        notes: 'Primary identifier for the store. Can be empty if address is provided.',
+        notes: 'Optional. Address is the only required identifier.',
       },
       {
         field: 'company',

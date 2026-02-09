@@ -510,14 +510,44 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                   {/* Duplicate Detection Results */}
                   {state.duplicates.length > 0 && (
                     <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 overflow-hidden">
-                      <div className="p-4 border-b border-amber-500/10 bg-amber-500/10">
-                        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-medium">
-                          <Copy className="h-5 w-5" />
-                          <span>Duplicates Detected ({state.duplicates.length} groups)</span>
+                       <div className="p-4 border-b border-amber-500/10 bg-amber-500/10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-medium">
+                              <Copy className="h-5 w-5" />
+                              <span>Duplicates Detected ({state.duplicates.length} groups)</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Choose how to handle each duplicate group: append new data into existing records, skip them, or create as new.
+                            </p>
+                          </div>
+                          <div className="flex gap-2 shrink-0 ml-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-7"
+                              onClick={() => {
+                                state.duplicates.forEach((dup) => {
+                                  setDuplicateAction(dup.key, 'update');
+                                });
+                              }}
+                            >
+                              <RefreshCw className="h-3 w-3 mr-1" /> Update All
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-7"
+                              onClick={() => {
+                                state.duplicates.forEach((dup) => {
+                                  setDuplicateAction(dup.key, 'skip');
+                                });
+                              }}
+                            >
+                              <XCircle className="h-3 w-3 mr-1" /> Skip All
+                            </Button>
+                          </div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Choose how to handle each duplicate group: append new data into existing records, skip them, or create as new.
-                        </p>
                       </div>
                       <ScrollArea className="max-h-[250px]">
                         <div className="p-3 space-y-2">
