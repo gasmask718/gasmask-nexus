@@ -160,34 +160,6 @@ export function validateRow(
     
     transformedData[schemaField] = value;
   }
-
-  // AUTO-FILL: If store name (field 'name') is missing, auto-fill with "No Name"
-  // and convert the error to a warning (iteration) instead
-  if (schema.tableName === 'store_master' || schema.tableName === 'combined') {
-    const nameValue = transformedData.name;
-    if (!nameValue || String(nameValue).trim() === '') {
-      transformedData.name = 'No Name';
-      // Remove any error for the 'name' field and replace with a warning
-      const nameErrorIndex = errors.findIndex(e => e.column === 'name');
-      if (nameErrorIndex >= 0) {
-        const removed = errors.splice(nameErrorIndex, 1)[0];
-        warnings.push({
-          ...removed,
-          error: 'Store name was empty — auto-filled as "No Name"',
-          severity: 'warning'
-        });
-      } else {
-        warnings.push({
-          row: rowNumber,
-          column: 'name',
-          columnDisplayName: 'Store Name',
-          value: null,
-          error: 'Store name was empty — auto-filled as "No Name"',
-          severity: 'warning'
-        });
-      }
-    }
-  }
   
   // CROSS-FIELD VALIDATION: Phone is required when contact_name is provided (combined_crm)
   if (schema.tableName === 'combined') {
@@ -234,7 +206,7 @@ export function validateAllRows(
     allWarnings.push(...validated.warnings);
   });
   
-  const validRows = validatedRows.filter(r => r.status === 'valid' || r.status === 'warning').length;
+  const validRows = validatedRows.filter(r => r.status === 'valid').length;
   const errorRows = validatedRows.filter(r => r.status === 'error').length;
   const warningRows = validatedRows.filter(r => r.status === 'warning').length;
   
