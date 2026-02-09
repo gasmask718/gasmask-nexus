@@ -38,6 +38,7 @@ async function ensureAmbassadorRecord(userId: string): Promise<{ id: string } | 
     .from('ambassadors')
     .insert({
       user_id: userId,
+      created_by: userId,
       tracking_code: trackingCode,
       referral_code: referralCode,
       is_active: true,

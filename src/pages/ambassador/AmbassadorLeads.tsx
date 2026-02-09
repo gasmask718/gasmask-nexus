@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -812,14 +813,21 @@ export default function AmbassadorLeads() {
 
             <div className="space-y-2">
               <Label>Address</Label>
-              <Input 
+              <AddressAutocomplete
                 value={newLead.address}
-                onChange={(e) => setNewLead({ ...newLead, address: e.target.value })}
-                placeholder="123 Main Street"
+                onChange={(val) => setNewLead({ ...newLead, address: val })}
+                onSelect={(parsed) => setNewLead(prev => ({
+                  ...prev,
+                  address: parsed.street,
+                  city: parsed.city,
+                  state: parsed.state,
+                  zipcode: parsed.zip,
+                }))}
+                placeholder="Start typing an address..."
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-2">
                 <Label>City</Label>
                 <Input 
@@ -836,9 +844,6 @@ export default function AmbassadorLeads() {
                   placeholder="NY"
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Zip Code</Label>
                 <Input 
