@@ -153,7 +153,8 @@ export function useAmbassadorOrders(options?: { channel?: string; status?: strin
           created_at,
           receipt_status,
           receipt_sent_at,
-          store:stores!store_id(name)
+          store:stores!store_id(name),
+          line_items:invoice_line_items(product_name, quantity)
         `)
         .in('store_id', storeIds)
         .order('created_at', { ascending: false })
@@ -166,28 +167,10 @@ export function useAmbassadorOrders(options?: { channel?: string; status?: strin
       const { data, error } = await query;
       if (error) throw error;
 
-      // Fetch line items for all invoices in batch
-      const invoiceIds = (data || []).map((i: any) => i.id);
-      let lineItemsMap: Record<string, { product_name: string; quantity: number }[]> = {};
-      if (invoiceIds.length > 0) {
-        try {
-          const { data: lineItems } = await (supabase as any)
-            .from('invoice_line_items')
-            .select('invoice_id, product_name, quantity')
-            .in('invoice_id', invoiceIds);
-          if (lineItems) {
-            for (const li of lineItems) {
-              if (!lineItemsMap[li.invoice_id]) lineItemsMap[li.invoice_id] = [];
-              lineItemsMap[li.invoice_id].push({ product_name: li.product_name, quantity: li.quantity });
-            }
-          }
-        } catch { /* silent */ }
-      }
-
       return (data || []).map((invoice: any): AmbassadorOrder => {
-        const items = lineItemsMap[invoice.id] || [];
-        const totalQty = items.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0);
-        const summary = items.map(i => `${i.product_name} x${i.quantity}`).join(', ');
+        const items: { product_name: string; quantity: number }[] = invoice.line_items || [];
+        const totalQty = items.reduce((sum, i) => sum + (i.quantity || 0), 0);
+        const summary = items.map(i => `${i.product_name || 'Unknown'} x${i.quantity}`).join(', ');
         return {
           id: invoice.id,
           order_number: invoice.invoice_number || `INV-${invoice.id.slice(0, 8).toUpperCase()}`,
