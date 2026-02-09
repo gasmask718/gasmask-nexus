@@ -32,11 +32,15 @@ import {
   FileText,
   Layers,
   ArrowRight,
+  Copy,
+  RefreshCw,
+  PlusCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBulkUpload } from "@/hooks/useBulkUpload";
 import { getSchemaByType, getRequiredFields, getOptionalFields } from "@/lib/uploadSchemas";
 import { downloadErrorReport } from "@/lib/uploadValidation";
+import ConfirmUploadTable from "./ConfirmUploadTable";
 
 interface BulkUploadModalProps {
   open: boolean;
@@ -84,8 +88,7 @@ const uploadTypes = [
 ];
 
 export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUpload = true }: BulkUploadModalProps) {
-  // Hook usage remains standard (no custom args passed later)
-  const { state, reset, setUploadType, parseFile, updateColumnMapping, validateData, performImport } = useBulkUpload();
+  const { state, reset, setUploadType, parseFile, updateColumnMapping, validateData, setDuplicateAction, proceedToConfirm, performImport } = useBulkUpload();
 
   const [dragActive, setDragActive] = useState(false);
   const [importMode, setImportMode] = useState<"append" | "upsert">("append");
@@ -124,7 +127,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileSelect(e.dataTransfer.files[0]);
     }
@@ -152,15 +154,18 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
   };
 
   const handleValidate = () => {
-    // FIX: Removed defaultValues argument to match Hook signature
     validateData();
   };
 
-  const handleProceedToUpload = () => {
+  const handleProceedToConfirm = () => {
     if (!state.isImportReady || validCount === 0) {
       toast.error("Cannot proceed - resolve validation errors first");
       return;
     }
+    proceedToConfirm();
+  };
+
+  const handleProceedToUpload = () => {
     setShowConfirmDialog(true);
   };
 
@@ -171,7 +176,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
       return;
     }
     setImportProgress({ current: 0, total: validCount });
-    // FIX: Removed defaultValues argument to match Hook signature
     await performImport(importMode);
   };
 
@@ -193,31 +197,25 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
 
   const getStepNumber = () => {
     switch (state.stage) {
-      case "SELECT_TYPE":
-        return 1;
-      case "FILE_UPLOADED":
-        return 2;
-      case "MAPPED":
-        return 3;
-      case "VALIDATED":
-        return 4;
-      case "IMPORT_READY":
-        return 4;
-      case "IMPORTING":
-        return 4;
-      case "COMPLETE":
-        return 5;
-      case "ERROR":
-        return state.step === "select" ? 1 : 4;
-      default:
-        return 1;
+      case "SELECT_TYPE": return 1;
+      case "FILE_UPLOADED": return 2;
+      case "MAPPED": return 3;
+      case "VALIDATED": return 4;
+      case "IMPORT_READY": return 4;
+      case "CONFIRM": return 5;
+      case "IMPORTING": return 5;
+      case "COMPLETE": return 6;
+      case "ERROR": return state.step === "select" ? 1 : 4;
+      default: return 1;
     }
   };
 
   const currentStep = getStepNumber();
   const validCount = state.validationResult?.summary.validRows || 0;
   const invalidCount = state.validationResult?.summary.errorRows || 0;
-  const canProceedToUpload = state.isImportReady && validCount > 0 && !state.isProcessing;
+  const canProceedToConfirm = state.isImportReady && validCount > 0 && !state.isProcessing;
+
+  const stepLabels = ["Type", "Upload", "Map", "Validate", "Confirm", "Done"];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -232,11 +230,11 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
           {/* Stepper */}
           {canUpload && (
             <div className="mt-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-              <div className="flex items-center justify-between min-w-[300px]">
-                {["Type", "Upload", "Map", "Validate", "Import"].map((step, i) => (
-                  <div key={step} className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center justify-between min-w-[360px]">
+                {stepLabels.map((step, i) => (
+                  <div key={step} className="flex items-center gap-1.5 shrink-0">
                     <div
-                      className={`flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full text-[10px] sm:text-xs font-bold transition-colors ${
+                      className={`flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full text-[10px] sm:text-xs font-bold transition-colors ${
                         currentStep > i + 1
                           ? "bg-green-500 text-white"
                           : currentStep === i + 1
@@ -244,14 +242,14 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                             : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      {currentStep > i + 1 ? <Check className="h-3 w-3 sm:h-4 sm:w-4" /> : i + 1}
+                      {currentStep > i + 1 ? <Check className="h-3 w-3" /> : i + 1}
                     </div>
                     <span
-                      className={`text-[10px] sm:text-sm font-medium hidden sm:inline ${currentStep === i + 1 ? "text-foreground" : "text-muted-foreground"}`}
+                      className={`text-[10px] sm:text-xs font-medium hidden sm:inline ${currentStep === i + 1 ? "text-foreground" : "text-muted-foreground"}`}
                     >
                       {step}
                     </span>
-                    {i < 4 && <div className="w-4 sm:w-8 h-px bg-border mx-1" />}
+                    {i < stepLabels.length - 1 && <div className="w-3 sm:w-6 h-px bg-border mx-0.5" />}
                   </div>
                 ))}
               </div>
@@ -348,7 +346,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                       ← Start Over
                     </Button>
                     <Badge variant="secondary" className="hidden sm:inline-flex">
-                      {state.rawData.length} rows detected
+                      {state.rawData.length} rows • {state.columns.length} columns detected
                     </Badge>
                   </div>
 
@@ -363,7 +361,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
 
                     return (
                       <div className="space-y-4">
-                        {/* 1. Missing Fields Alert - Forces user to check file */}
                         {missingRequired.length > 0 ? (
                           <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
                             <div className="flex items-start gap-3">
@@ -371,8 +368,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                               <div>
                                 <h4 className="font-semibold text-destructive mb-1">Missing Required Columns</h4>
                                 <p className="text-sm text-muted-foreground mb-3">
-                                  Your file is missing the following required columns. The upload cannot proceed without
-                                  them.
+                                  Your file is missing the following required columns.
                                   <br />
                                   <span className="text-xs opacity-80">
                                     Tip: Add these columns to your Excel file (even if empty) and re-upload.
@@ -410,7 +406,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                 {state.columns.map((col) => {
                                   const mapping = state.columnMapping[col];
                                   const schemaField = schema.fields.find((c) => c.field === mapping);
-                                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                   const sampleValue = (state.rawData[0] as any)?.[col];
 
                                   return (
@@ -478,7 +473,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                 </div>
               )}
 
-              {/* Step 4: Validation */}
+              {/* Step 4: Validation + Duplicate Detection */}
               {currentStep === 4 && state.validationResult && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
@@ -492,8 +487,87 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                       <Badge variant="outline" className="border-red-500 text-red-600 bg-red-500/10">
                         {invalidCount} Invalid
                       </Badge>
+                      {state.duplicates.length > 0 && (
+                        <Badge variant="outline" className="border-amber-500 text-amber-600 bg-amber-500/10">
+                          {state.duplicates.length} Duplicates
+                        </Badge>
+                      )}
                     </div>
                   </div>
+
+                  {/* Duplicate Detection Results */}
+                  {state.duplicates.length > 0 && (
+                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 overflow-hidden">
+                      <div className="p-4 border-b border-amber-500/10 bg-amber-500/10">
+                        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-medium">
+                          <Copy className="h-5 w-5" />
+                          <span>Duplicates Detected ({state.duplicates.length} groups)</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Choose how to handle each duplicate group: append new data into existing records, skip them, or create as new.
+                        </p>
+                      </div>
+                      <ScrollArea className="max-h-[250px]">
+                        <div className="p-3 space-y-2">
+                          {state.duplicates.map((dup) => {
+                            const action = state.duplicateActions[dup.key] || 'skip';
+                            return (
+                              <div key={dup.key} className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-lg border bg-background">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-medium text-sm truncate">{dup.storeName}</p>
+                                    {dup.existingStore && (
+                                      <Badge variant="secondary" className="text-[10px] shrink-0">
+                                        In DB ({dup.existingStore.status})
+                                      </Badge>
+                                    )}
+                                    {!dup.existingStore && (
+                                      <Badge variant="secondary" className="text-[10px] border-orange-400 text-orange-600 bg-orange-50 dark:bg-orange-900/20 shrink-0">
+                                        In File × {dup.fileRows.length}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {dup.address && (
+                                    <p className="text-xs text-muted-foreground truncate">{dup.address}</p>
+                                  )}
+                                  <p className="text-[11px] text-muted-foreground">
+                                    Rows: {dup.fileRows.join(', ')}
+                                  </p>
+                                </div>
+                                <Select
+                                  value={action}
+                                  onValueChange={(v) => setDuplicateAction(dup.key, v as any)}
+                                >
+                                  <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {dup.existingStore && (
+                                      <SelectItem value="append">
+                                        <span className="flex items-center gap-1.5">
+                                          <RefreshCw className="h-3 w-3" /> Append to Existing
+                                        </span>
+                                      </SelectItem>
+                                    )}
+                                    <SelectItem value="skip">
+                                      <span className="flex items-center gap-1.5">
+                                        <XCircle className="h-3 w-3" /> Skip Duplicates
+                                      </span>
+                                    </SelectItem>
+                                    <SelectItem value="create_new">
+                                      <span className="flex items-center gap-1.5">
+                                        <PlusCircle className="h-3 w-3" /> Create New Anyway
+                                      </span>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  )}
 
                   {invalidCount > 0 && (
                     <div className="rounded-lg border border-destructive/30 bg-destructive/5 overflow-hidden">
@@ -518,7 +592,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                         </Button>
                       </div>
 
-                      <ScrollArea className="h-[250px] bg-background/50">
+                      <ScrollArea className="h-[200px] bg-background/50">
                         <div className="p-2 divide-y divide-border/50">
                           {state.validationResult.rows
                             .filter((r) => r.status === "error")
@@ -543,23 +617,20 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                       <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-medium text-lg">
                           <CheckCircle2 className="h-6 w-6" />
-                          Ready to import {validCount} records
+                          Ready to review {validCount} records
                         </div>
 
                         <div className="space-y-2">
-                          <Label>How should we handle existing records?</Label>
+                          <Label>Import mode for non-duplicate records:</Label>
                           <Select value={importMode} onValueChange={(v) => setImportMode(v as any)}>
                             <SelectTrigger className="w-full sm:w-1/2 bg-background">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="append">Append Only (Skip duplicates)</SelectItem>
-                              <SelectItem value="upsert">Update Existing (Overwrite)</SelectItem>
+                              <SelectItem value="append">Append Only (Insert new records)</SelectItem>
+                              <SelectItem value="upsert">Update Existing (Overwrite by name)</SelectItem>
                             </SelectContent>
                           </Select>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            *Matching is done based on unique IDs or Emails found in the file.
-                          </p>
                         </div>
                       </div>
                     </div>
@@ -568,18 +639,65 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                   {state.isProcessing && (
                     <div className="rounded-lg border bg-card p-8 flex flex-col items-center justify-center gap-4">
                       <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                      <p className="font-semibold">Importing records...</p>
-                      <Progress
-                        value={importProgress.total > 0 ? (importProgress.current / importProgress.total) * 100 : 0}
-                        className="w-full max-w-xs h-2"
-                      />
+                      <p className="font-semibold">Validating & checking duplicates...</p>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Step 5: Success */}
-              {currentStep === 5 && state.importResult && (
+              {/* Step 5: Confirmation Table */}
+              {currentStep === 5 && state.validationResult && !state.isProcessing && !state.importResult && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        // Go back to validation
+                        // We can't easily go back in stage, so reset to validation state
+                        validateData();
+                      }}
+                      className="-ml-2"
+                    >
+                      ← Back to Validation
+                    </Button>
+                    <Badge variant="secondary">
+                      Reviewing {validCount} records
+                    </Badge>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
+                    <p className="font-medium mb-1">Review your records before uploading</p>
+                    <p className="text-xs text-muted-foreground">
+                      Records tagged as <span className="font-semibold text-amber-600">Append</span> will update existing stores.
+                      Records tagged as <span className="font-semibold text-green-600">New</span> will be created fresh.
+                      Records tagged as <span className="text-muted-foreground">Skip</span> will be ignored.
+                    </p>
+                  </div>
+
+                  <ConfirmUploadTable
+                    rows={state.validationResult.rows}
+                    duplicates={state.duplicates}
+                    duplicateActions={state.duplicateActions}
+                    columns={state.columns}
+                  />
+                </div>
+              )}
+
+              {/* Importing state */}
+              {currentStep === 5 && state.isProcessing && (
+                <div className="rounded-lg border bg-card p-8 flex flex-col items-center justify-center gap-4">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                  <p className="font-semibold">Importing records...</p>
+                  <Progress
+                    value={importProgress.total > 0 ? (importProgress.current / importProgress.total) * 100 : 0}
+                    className="w-full max-w-xs h-2"
+                  />
+                </div>
+              )}
+
+              {/* Step 6: Success */}
+              {currentStep === 6 && state.importResult && (
                 <div className="flex flex-col items-center justify-center py-8 text-center animate-in fade-in zoom-in duration-300">
                   <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-6">
                     <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
@@ -609,7 +727,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
         )}
 
         {/* --- FIXED FOOTER --- */}
-        {canUpload && currentStep !== 5 && (currentStep === 3 || currentStep === 4) && (
+        {canUpload && currentStep !== 6 && (currentStep === 3 || currentStep === 4 || currentStep === 5) && (
           <div className="p-4 sm:p-6 border-t bg-background z-10 shrink-0">
             {currentStep === 3 && (
               <Button
@@ -631,9 +749,16 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
             )}
 
             {currentStep === 4 && !state.isProcessing && (
-              <Button onClick={handleProceedToUpload} disabled={!canProceedToUpload} className="w-full" size="lg">
+              <Button onClick={handleProceedToConfirm} disabled={!canProceedToConfirm} className="w-full" size="lg">
+                <ArrowRight className="h-4 w-4 mr-2" />
+                {canProceedToConfirm ? `Review & Confirm (${validCount} records)` : "Resolve Errors to Continue"}
+              </Button>
+            )}
+
+            {currentStep === 5 && !state.isProcessing && !state.importResult && (
+              <Button onClick={handleProceedToUpload} className="w-full" size="lg">
                 <Upload className="h-4 w-4 mr-2" />
-                {canProceedToUpload ? `Proceed to Upload (${validCount} records)` : "Resolve Errors to Continue"}
+                Upload {validCount} Records
               </Button>
             )}
           </div>
@@ -651,6 +776,11 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
               <p>
                 Mode: <strong>{importMode === "append" ? "Append" : "Upsert"}</strong>
               </p>
+              {state.duplicates.filter(d => state.duplicateActions[d.key] === 'append').length > 0 && (
+                <p>
+                  <strong>{state.duplicates.filter(d => state.duplicateActions[d.key] === 'append').length}</strong> records will update existing stores.
+                </p>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
