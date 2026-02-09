@@ -349,7 +349,6 @@ export function CreateStoreInvoiceModal({
           invoice_id: invoice.id,
           brand_id: item.brand_id,
           brand: item.brand_name,
-          product_id: item.product_id,
           product_name: item.product_name,
           quantity: item.quantity,
           unit_price: item.unit_price,
