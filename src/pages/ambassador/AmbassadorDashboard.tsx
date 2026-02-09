@@ -264,6 +264,7 @@ function DashboardContent() {
           value={`$${metrics.totalRevenue.toFixed(2)}`}
           icon={BarChart3}
           variant="cyan"
+          onClick={() => navigate('/ambassador/profit')}
         />
       </div>
 
@@ -346,7 +347,7 @@ function DashboardContent() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
             <Button 
               className="h-auto py-4 flex-col gap-2" 
               onClick={() => navigate('/ambassador/stores')}
@@ -369,6 +370,14 @@ function DashboardContent() {
             >
               <ShoppingCart className="h-5 w-5" />
               <span>My Purchases</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-auto py-4 flex-col gap-2 border-green-500/30 hover:bg-green-500/5"
+              onClick={() => navigate('/ambassador/profit')}
+            >
+              <TrendingUp className="h-5 w-5 text-green-500" />
+              <span>My Profits</span>
             </Button>
             <Button 
               variant="outline" 

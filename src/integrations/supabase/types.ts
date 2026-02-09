@@ -50694,6 +50694,92 @@ export type Database = {
           },
         ]
       }
+      v_ambassador_profit_breakdown: {
+        Row: {
+          ambassador_id: string | null
+          ambassador_user_id: string | null
+          brand: string | null
+          brand_id: string | null
+          first_sale_at: string | null
+          last_sale_at: string | null
+          margin_pct: number | null
+          net_profit: number | null
+          product_id: string | null
+          product_name: string | null
+          retail_revenue: number | null
+          sale_channel: string | null
+          sale_month: string | null
+          store_id: string | null
+          store_name: string | null
+          units_sold: number | null
+          wholesale_cost: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassadors_user_id_fkey"
+            columns: ["ambassador_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_ambassador_purchase_history: {
         Row: {
           ambassador_id: string | null

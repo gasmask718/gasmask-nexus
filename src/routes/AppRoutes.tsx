@@ -53,7 +53,7 @@ import WorkerHome from '@/pages/WorkerHome';
 import AutomationSettings from '@/pages/AutomationSettings';
 import Training from '@/pages/Training';
 import Ambassadors from '@/pages/Ambassadors';
-import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, AmbassadorWholesalersList, AmbassadorCommissions, AmbassadorRoutes, AmbassadorOrders, AmbassadorCommunications, AmbassadorLeads, AmbassadorDisputes, AmbassadorDisputeDetail, AmbassadorPurchases, AmbassadorSellThrough } from '@/pages/ambassador';
+import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, AmbassadorWholesalersList, AmbassadorCommissions, AmbassadorRoutes, AmbassadorOrders, AmbassadorCommunications, AmbassadorLeads, AmbassadorDisputes, AmbassadorDisputeDetail, AmbassadorPurchases, AmbassadorSellThrough, AmbassadorProfitDashboard } from '@/pages/ambassador';
 import { AmbassadorProfilePage, WholesalerProfilePage, StoreProfilePage, InfluencerProfilePage } from '@/pages/profile';
 import { AmbassadorCommandDashboard, AllAmbassadorsTable, AmbassadorProfilePage as Floor8AmbassadorProfile, AmbassadorPayoutsPage as Floor8PayoutsPage, AmbassadorRegionsPage, InfluencersPage as Floor8InfluencersPage } from '@/pages/floor8';
 import { AdminDisputesQueue, AdminDisputeDetail } from '@/pages/admin/disputes';
@@ -1952,6 +1952,13 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
             <Layout><AmbassadorSellThrough /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/profit" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <Layout><AmbassadorProfitDashboard /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />

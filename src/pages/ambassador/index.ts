@@ -12,3 +12,4 @@ export { default as AmbassadorDisputes } from './AmbassadorDisputes';
 export { default as AmbassadorDisputeDetail } from './AmbassadorDisputeDetail';
 export { default as AmbassadorPurchases } from './AmbassadorPurchases';
 export { default as AmbassadorSellThrough } from './AmbassadorSellThrough';
+export { default as AmbassadorProfitDashboard } from './AmbassadorProfitDashboard';
