@@ -79,6 +79,7 @@ export function useAmbassadorStoreData(ambassadorId: string | undefined) {
           last_order_at,
           created_at
         `)
+        .is('deleted_at', null)
         .eq('sourced_by_ambassador_id', ambassadorId);
 
       if (error) {

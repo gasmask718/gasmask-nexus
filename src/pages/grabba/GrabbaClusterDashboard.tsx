@@ -22,7 +22,7 @@ export default function GrabbaClusterDashboard() {
     queryKey: ['grabba-stats'],
     queryFn: async () => {
       const [storesRes, accountsRes, routesRes] = await Promise.all([
-        supabase.from('store_master').select('id', { count: 'exact' }),
+        supabase.from('store_master').select('id', { count: 'exact' }).is('deleted_at', null),
         supabase.from('store_brand_accounts').select('id, brand', { count: 'exact' }),
         supabase.from('biker_routes').select('id').eq('route_date', new Date().toISOString().split('T')[0])
       ]);

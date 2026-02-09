@@ -145,6 +145,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/security/sessions', label: 'Active Sessions', icon: Clock },
       { path: '/security/audit', label: 'Audit Logs', icon: FileText },
       { path: '/admin/qa-command-center', label: 'QA Command Center', icon: ClipboardList, adminOnly: true },
+      { path: '/admin/deleted-records', label: 'Deleted Records', icon: Trash },
     ],
   },
   grabbaSkyscraper: [

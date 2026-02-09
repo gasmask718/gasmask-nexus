@@ -63,6 +63,21 @@ export default function DeletedRecords() {
   const [entityFilter, setEntityFilter] = useState<string>('all');
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<DeletedRecord | null>(null);
+  const [snapshotDialogOpen, setSnapshotDialogOpen] = useState(false);
+  const [selectedSnapshot, setSelectedSnapshot] = useState<any>(null);
+
+  // Fetch recovery ledger (governed deletions)
+  const { data: recoveryLedger, isLoading: recoveryLoading } = useQuery({
+    queryKey: ['recovery-ledger'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('deletion_recovery_log')
+        .select('*')
+        .order('deleted_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   // Fetch archived leads
   const { data: archivedLeads, isLoading: leadsLoading } = useQuery({
@@ -96,7 +111,6 @@ export default function DeletedRecords() {
   const { data: unassignedStores, isLoading: storesLoading } = useQuery({
     queryKey: ['unassigned-stores'],
     queryFn: async () => {
-      // Get stores that had assignments that are now inactive
       const { data, error } = await (supabase as any)
         .from('store_assignments')
         .select(`
@@ -165,6 +179,25 @@ export default function DeletedRecords() {
     },
   });
 
+  const restoreFromLedger = useMutation({
+    mutationFn: async (logId: string) => {
+      const { error } = await supabase.rpc('restore_deleted_store', {
+        p_log_id: logId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recovery-ledger'] });
+      queryClient.invalidateQueries({ queryKey: ['stores'] });
+      queryClient.invalidateQueries({ queryKey: ['store-master'] });
+      toast.success('Store restored successfully');
+      setRestoreDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to restore: ${error.message}`);
+    },
+  });
+
   const handleRestore = () => {
     if (!selectedRecord) return;
     
@@ -174,6 +207,9 @@ export default function DeletedRecords() {
         break;
       case 'ambassador':
         reactivateAmbassador.mutate(selectedRecord.id);
+        break;
+      case 'store_deleted':
+        restoreFromLedger.mutate(selectedRecord.id);
         break;
       default:
         toast.error('Restore not supported for this record type');
@@ -185,10 +221,25 @@ export default function DeletedRecords() {
     setRestoreDialogOpen(true);
   };
 
-  const isLoading = leadsLoading || ambassadorsLoading || storesLoading || auditLoading;
+  const isLoading = leadsLoading || ambassadorsLoading || storesLoading || auditLoading || recoveryLoading;
 
   // Build unified records list
   const allRecords: DeletedRecord[] = [
+    // Recovery ledger (governed deletions — stores, etc.)
+    ...(recoveryLedger || []).filter(r => !r.is_restored).map(entry => ({
+      id: entry.id,
+      name: (entry.entity_snapshot as any)?.store_name || `${entry.entity_type} #${entry.entity_id.slice(-8)}`,
+      type: 'store_deleted',
+      deletedAt: entry.deleted_at,
+      deletedBy: entry.deleted_by || 'Unknown',
+      canRestore: true,
+      metadata: {
+        reason: entry.delete_reason,
+        source_ui: entry.source_ui,
+        entity_type: entry.entity_type,
+        snapshot: entry.entity_snapshot,
+      },
+    })),
     ...(archivedLeads || []).map(lead => ({
       id: lead.id,
       name: lead.store_name || lead.contact_name || 'Unnamed Lead',
@@ -212,7 +263,7 @@ export default function DeletedRecords() {
       type: 'store_unassignment',
       deletedAt: s.deactivated_at,
       deletedBy: s.deactivated_by || 'Unknown',
-      canRestore: false, // Store unassignments are informational
+      canRestore: false,
       metadata: { city: s.store?.city },
     })),
   ];
@@ -229,6 +280,7 @@ export default function DeletedRecords() {
       case 'lead': return <Users className="h-4 w-4" />;
       case 'ambassador': return <User className="h-4 w-4" />;
       case 'store_unassignment': return <Store className="h-4 w-4" />;
+      case 'store_deleted': return <Store className="h-4 w-4 text-destructive" />;
       default: return <Package className="h-4 w-4" />;
     }
   };
@@ -238,6 +290,7 @@ export default function DeletedRecords() {
       case 'lead': return <Badge variant="secondary">Lead</Badge>;
       case 'ambassador': return <Badge variant="outline">Ambassador</Badge>;
       case 'store_unassignment': return <Badge>Store Unassigned</Badge>;
+      case 'store_deleted': return <Badge variant="destructive">Store Deleted</Badge>;
       default: return <Badge variant="outline">{type}</Badge>;
     }
   };
@@ -287,6 +340,7 @@ export default function DeletedRecords() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="store_deleted">Deleted Stores</SelectItem>
                     <SelectItem value="lead">Leads</SelectItem>
                     <SelectItem value="ambassador">Ambassadors</SelectItem>
                     <SelectItem value="store_unassignment">Store Unassignments</SelectItem>
@@ -337,6 +391,11 @@ export default function DeletedRecords() {
                               Deleted {format(new Date(record.deletedAt), 'MMM d, yyyy h:mm a')}
                               {record.deletedBy !== 'Unknown' && ` by ${record.deletedBy}`}
                             </p>
+                            {record.metadata?.reason && (
+                              <p className="text-xs text-muted-foreground/70 italic">
+                                Reason: {record.metadata.reason}
+                              </p>
+                            )}
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -350,9 +409,14 @@ export default function DeletedRecords() {
                               Restore
                             </Button>
                           )}
-                          <Button size="sm" variant="ghost">
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          {record.metadata?.snapshot && (
+                            <Button size="sm" variant="ghost" onClick={() => {
+                              setSelectedSnapshot(record.metadata.snapshot);
+                              setSnapshotDialogOpen(true);
+                            }}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -437,6 +501,31 @@ export default function DeletedRecords() {
             <Button onClick={handleRestore}>
               <RotateCcw className="h-4 w-4 mr-2" />
               Restore
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Snapshot Viewer Dialog */}
+      <Dialog open={snapshotDialogOpen} onOpenChange={setSnapshotDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Record Snapshot
+            </DialogTitle>
+            <DialogDescription>
+              Read-only snapshot of the record at the time of deletion.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[50vh]">
+            <pre className="text-xs bg-muted p-4 rounded-lg overflow-auto whitespace-pre-wrap">
+              {selectedSnapshot ? JSON.stringify(selectedSnapshot, null, 2) : 'No snapshot data'}
+            </pre>
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSnapshotDialogOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

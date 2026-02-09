@@ -165,7 +165,7 @@ async function executeTableQuery(
         return count || 0;
       }
       case 'store_master': {
-        let query = supabase.from('store_master').select('*', { count: 'exact', head: true });
+        let query = supabase.from('store_master').select('*', { count: 'exact', head: true }).is('deleted_at', null);
         query = applyConditions(query, conditionType, config);
         const { count, error } = await query;
         if (error) throw error;
