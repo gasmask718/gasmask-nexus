@@ -113,7 +113,16 @@ export default function UserManagementPage() {
                 <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No users found.</TableCell></TableRow>
               ) : filtered.map(user => (
                 <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name || "—"}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-1.5">
+                      {(!user.name || user.name.trim().toLowerCase() === 'new user') ? (
+                        <>
+                          <span className="text-muted-foreground">{user.name || "—"}</span>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/50 text-amber-600 dark:text-amber-400">New User</Badge>
+                        </>
+                      ) : user.name}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-sm">{user.email || "—"}</TableCell>
                   <TableCell className="text-sm">{user.phone || "—"}</TableCell>
                   <TableCell><Badge variant="outline" className="capitalize">{user.role}</Badge></TableCell>
