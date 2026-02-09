@@ -5255,6 +5255,87 @@ export type Database = {
           },
         ]
       }
+      ambassador_leads: {
+        Row: {
+          created_at: string
+          created_by_ambassador_id: string
+          created_by_user_id: string
+          email: string | null
+          full_name: string
+          id: string
+          invite_id: string | null
+          notes: string | null
+          phone: string | null
+          region: string | null
+          status: Database["public"]["Enums"]["ambassador_lead_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_ambassador_id: string
+          created_by_user_id: string
+          email?: string | null
+          full_name: string
+          id?: string
+          invite_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          region?: string | null
+          status?: Database["public"]["Enums"]["ambassador_lead_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_ambassador_id?: string
+          created_by_user_id?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          invite_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          region?: string | null
+          status?: Database["public"]["Enums"]["ambassador_lead_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_leads_created_by_ambassador_id_fkey"
+            columns: ["created_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_leads_created_by_ambassador_id_fkey"
+            columns: ["created_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_leads_created_by_ambassador_id_fkey"
+            columns: ["created_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_leads_created_by_ambassador_id_fkey"
+            columns: ["created_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_leads_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "ambassador_invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ambassador_links: {
         Row: {
           ambassador_id: string
@@ -52887,6 +52968,13 @@ export type Database = {
         | "dead"
       ambassador_assignment_type: "assigned" | "sourced"
       ambassador_invite_status: "pending" | "accepted" | "expired" | "revoked"
+      ambassador_lead_status:
+        | "new"
+        | "contacted"
+        | "qualified"
+        | "invited"
+        | "converted"
+        | "dead"
       app_role:
         | "admin"
         | "csr"
@@ -53390,6 +53478,14 @@ export const Constants = {
       ],
       ambassador_assignment_type: ["assigned", "sourced"],
       ambassador_invite_status: ["pending", "accepted", "expired", "revoked"],
+      ambassador_lead_status: [
+        "new",
+        "contacted",
+        "qualified",
+        "invited",
+        "converted",
+        "dead",
+      ],
       app_role: [
         "admin",
         "csr",
