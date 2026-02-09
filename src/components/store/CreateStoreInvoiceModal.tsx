@@ -106,14 +106,21 @@ export function CreateStoreInvoiceModal({
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
   const [invoiceMode, setInvoiceMode] = useState<InvoiceMode>('live');
 
-  // Fetch Grabba brands
+  // Only show the 4 canonical brands
+  const CANONICAL_BRAND_IDS = [
+    'fb52b0e6-39b2-4e13-bea9-cd016f51efb0', // GasMask
+    '4b1c1255-b7b1-43ea-9ad9-a257c6582094', // Grabba R Us
+    'f3e8ba65-2b76-4f61-a157-0751acb3e7b2', // Hot Mama
+    'c9d60b82-f0d3-44b4-9b33-1abe4adf1ebe', // HotScalati
+  ];
+
   const { data: brands = [], isLoading: brandsLoading } = useQuery({
     queryKey: ['invoice-brands-grabba'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('brands')
         .select('id, name, color')
-        .eq('active', true)
+        .in('id', CANONICAL_BRAND_IDS)
         .order('name');
       if (error) throw error;
       return (data || []) as Brand[];
