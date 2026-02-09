@@ -433,3 +433,43 @@ export async function ensureDriverRecord(userId: string): Promise<void> {
     console.error('ensureDriverRecord failed:', error);
   }
 }
+
+/**
+ * Auto-heal: ensure wholesaler has linked wholesaler_profiles record.
+ */
+export async function ensureWholesalerProfile(userId: string): Promise<void> {
+  try {
+    const { data: existing } = await supabase
+      .from('wholesaler_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .limit(1);
+
+    if (existing && existing.length > 0) return;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email, name')
+      .eq('id', userId)
+      .single();
+
+    const displayName = profile?.name && profile.name !== 'New User' 
+      ? profile.name 
+      : profile?.email?.split('@')[0] || 'My Company';
+
+    const { error } = await supabase
+      .from('wholesaler_profiles')
+      .insert({
+        user_id: userId,
+        company_name: `${displayName}'s Wholesale`,
+        contact_name: displayName,
+        email: profile?.email || null,
+        status: 'active',
+      });
+
+    if (error) throw error;
+    console.log('Auto-created wholesaler_profiles record for user', userId);
+  } catch (error) {
+    console.error('ensureWholesalerProfile failed:', error);
+  }
+}
