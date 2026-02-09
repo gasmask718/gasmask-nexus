@@ -52033,6 +52033,35 @@ export type Database = {
         }
         Relationships: []
       }
+      v_store_last_order_snapshot: {
+        Row: {
+          avg_days_between_orders: number | null
+          avg_tubes_per_order: number | null
+          brand_key: string | null
+          brand_name: string | null
+          days_since_last_order: number | null
+          is_order_smaller_than_usual: boolean | null
+          is_restock_due: boolean | null
+          last_order_box_equivalent: number | null
+          last_order_date: string | null
+          last_order_line_count: number | null
+          last_order_size_label: string | null
+          last_order_total_amount: number | null
+          last_order_total_units: number | null
+          store_id: string | null
+          store_name: string | null
+          total_order_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_store_orders_with_profit: {
         Row: {
           address: string | null

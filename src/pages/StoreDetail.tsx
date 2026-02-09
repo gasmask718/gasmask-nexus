@@ -17,6 +17,7 @@ import { CommunicationLogModal } from "@/components/CommunicationLogModal";
 import { CommunicationStats } from "@/components/communication/CommunicationStats";
 import { FollowUpAIRecommendation } from "@/components/store/FollowUpAIRecommendation";
 import { ReplenishmentAI } from "@/components/store/ReplenishmentAI";
+import { LastOrderSnapshotPanel } from "@/components/store/LastOrderSnapshotPanel";
 import { AIRelationshipHealth } from "@/components/communication/AIRelationshipHealth";
 import { RouteIntelligence } from "@/components/store/RouteIntelligence";
 import { StoreCallIntelligenceTab } from "@/components/store/StoreCallIntelligenceTab";
@@ -761,6 +762,9 @@ const StoreDetail = () => {
 
           {/* Replenishment AI */}
           <ReplenishmentAI storeId={id || ""} />
+
+          {/* Last Order Snapshot Intelligence */}
+          <LastOrderSnapshotPanel storeId={id || ""} />
 
           {/* Route Intelligence Insights */}
           {routeInsight && (
