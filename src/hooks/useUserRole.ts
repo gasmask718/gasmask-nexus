@@ -45,6 +45,13 @@ export function useUserRole(currentBusinessId?: string | null) {
           .select('role')
           .eq('user_id', user.id);
 
+        // Also fetch profile roles (primary_role + extra_roles from user_profiles)
+        const profileQuery = supabase
+          .from('user_profiles')
+          .select('primary_role, extra_roles')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
         const driverAnyQuery = supabase
           .from('drivers')
           .select('id, status, business_id')
@@ -81,9 +88,10 @@ export function useUserRole(currentBusinessId?: string | null) {
 
         const emptyResult = { data: null, error: null } as { data: any; error: any };
 
-        const [rolesResult, driverAnyResult, bikerAnyResult, driverScopedResult, bikerScopedResult] =
+        const [rolesResult, profileResult, driverAnyResult, bikerAnyResult, driverScopedResult, bikerScopedResult] =
           await Promise.all([
             rolesQuery,
+            profileQuery,
             driverAnyQuery,
             bikerAnyQuery,
             driverScopedQuery ?? Promise.resolve(emptyResult),
@@ -111,6 +119,12 @@ export function useUserRole(currentBusinessId?: string | null) {
             status: statusOf(rolesResult as any),
             data: rolesResult.data,
             error: rolesResult.error?.message,
+          });
+
+          console.log('🔐 [RBAC DEBUG] user_profiles query:', {
+            status: statusOf(profileResult as any),
+            data: profileResult.data,
+            error: profileResult.error?.message,
           });
 
           console.log('🔐 [RBAC DEBUG] drivers(any) query:', {
@@ -148,6 +162,30 @@ export function useUserRole(currentBusinessId?: string | null) {
             const normalizedRole = (r.role as string).trim().toLowerCase() as AppRole;
             if (!rolesList.includes(normalizedRole)) {
               rolesList.push(normalizedRole);
+            }
+          });
+        }
+
+        // Add primary_role from user_profiles table
+        if (profileResult.data?.primary_role) {
+          const profileRole = (profileResult.data.primary_role as string).trim().toLowerCase() as AppRole;
+          if (!rolesList.includes(profileRole)) {
+            rolesList.push(profileRole);
+            if (isDev) {
+              console.log('🔐 [RBAC DEBUG] Added primary_role from user_profiles:', profileRole);
+            }
+          }
+        }
+
+        // Add extra_roles from user_profiles table
+        if (profileResult.data?.extra_roles && Array.isArray(profileResult.data.extra_roles)) {
+          profileResult.data.extra_roles.forEach((r: string) => {
+            const normalizedRole = r.trim().toLowerCase() as AppRole;
+            if (normalizedRole && !rolesList.includes(normalizedRole)) {
+              rolesList.push(normalizedRole);
+              if (isDev) {
+                console.log('🔐 [RBAC DEBUG] Added extra_role from user_profiles:', normalizedRole);
+              }
             }
           });
         }
