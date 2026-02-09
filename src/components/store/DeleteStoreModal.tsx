@@ -34,9 +34,10 @@ interface DeleteStoreModalProps {
   onOpenChange: (open: boolean) => void;
   storeId: string;
   storeName: string;
+  sourceUi?: string;
 }
 
-export function DeleteStoreModal({ open, onOpenChange, storeId, storeName }: DeleteStoreModalProps) {
+export function DeleteStoreModal({ open, onOpenChange, storeId, storeName, sourceUi = 'store_master_profile' }: DeleteStoreModalProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -94,7 +95,7 @@ export function DeleteStoreModal({ open, onOpenChange, storeId, storeName }: Del
       const { error } = await supabase.rpc('soft_delete_store', {
         p_store_id: storeId,
         p_reason: fullReason,
-        p_source_ui: 'store_master_profile',
+        p_source_ui: sourceUi,
       });
 
       if (error) throw error;
