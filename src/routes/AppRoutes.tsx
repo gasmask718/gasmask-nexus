@@ -77,6 +77,7 @@ import CommunicationAutomation from '@/pages/CommunicationAutomation';
 import CommunicationsAI from '@/pages/CommunicationsAI';
 import { SecurityConsole } from '@/components/security/SecurityConsole';
 import { RolesPermissionsPage } from '@/components/security/RolesPermissionsPage';
+import UserManagementPage from '@/components/security/UserManagementPage';
 import MessagesPage from '@/pages/Messages';
 import CommunicationInsights from '@/pages/CommunicationInsights';
 import RouteOptimizer from '@/pages/RouteOptimizer';
@@ -555,7 +556,7 @@ export default function AppRoutes() {
         <Route path="/security/console" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
         <Route path="/security/devices" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
         <Route path="/security/sessions" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
-        <Route path="/security/users" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
+        <Route path="/security/users" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><UserManagementPage /></RequireRole>} />
         <Route path="/security/invitations" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><UserInvitations /></RequireRole>} />
         <Route path="/security/roles" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><RolesPermissionsPage /></RequireRole>} />
         <Route path="/security/audit" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
