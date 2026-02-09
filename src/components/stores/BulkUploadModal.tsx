@@ -437,12 +437,9 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                             <SelectItem value="_unmapped" className="text-muted-foreground italic">
                                               -- Skip Column --
                                             </SelectItem>
-                                            {schema.fields.map((schemaCol) => (
-                                              <SelectItem key={schemaCol.field} value={schemaCol.field}>
-                                                <span className="flex items-center justify-between w-full gap-2">
-                                                  {schemaCol.field}
-                                                  {schemaCol.required && <span className="text-destructive">*</span>}
-                                                </span>
+                                            {state.columns.map((detectedCol) => (
+                                              <SelectItem key={detectedCol} value={detectedCol}>
+                                                {detectedCol}
                                               </SelectItem>
                                             ))}
                                           </SelectContent>
