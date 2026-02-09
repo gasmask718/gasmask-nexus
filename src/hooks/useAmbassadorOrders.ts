@@ -210,12 +210,21 @@ export function useAmbassadorOrders(options?: { channel?: string; status?: strin
     pendingPayments: orders.filter(o => o.payment_status === 'pending' || o.payment_status === 'unpaid').length,
   };
 
+  const refetchAll = () => {
+    ambassadorQuery.refetch();
+    assignmentsQuery.refetch();
+    storeOrdersQuery.refetch();
+    invoicesQuery.refetch();
+  };
+
   return {
     orders,
     metrics,
     isLoading: ambassadorQuery.isLoading || assignmentsQuery.isLoading || storeOrdersQuery.isLoading || invoicesQuery.isLoading,
+    isRefetching: storeOrdersQuery.isRefetching || invoicesQuery.isRefetching,
     isError: ambassadorQuery.isError || assignmentsQuery.isError || storeOrdersQuery.isError || invoicesQuery.isError,
     error: ambassadorQuery.error || assignmentsQuery.error || storeOrdersQuery.error || invoicesQuery.error,
+    refetch: refetchAll,
   };
 }
 
