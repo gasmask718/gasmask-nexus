@@ -20,7 +20,6 @@ export default function UserManagementPage() {
   const [search, setSearch] = useState("");
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [editName, setEditName] = useState("");
-  const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
 
   const [addRoleUser, setAddRoleUser] = useState<UserRow | null>(null);
@@ -53,13 +52,12 @@ export default function UserManagementPage() {
   const openEdit = (user: UserRow) => {
     setEditUser(user);
     setEditName(user.name || "");
-    setEditEmail(user.email || "");
     setEditPhone(user.phone || "");
   };
 
   const saveEdit = () => {
     if (!editUser) return;
-    updateProfile.mutate({ id: editUser.id, name: editName, email: editEmail, phone: editPhone }, {
+    updateProfile.mutate({ id: editUser.id, name: editName, phone: editPhone }, {
       onSuccess: () => setEditUser(null),
     });
   };
@@ -172,10 +170,6 @@ export default function UserManagementPage() {
             <div>
               <label className="text-sm font-medium">Name</label>
               <Input value={editName} onChange={e => setEditName(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Email</label>
-              <Input value={editEmail} onChange={e => setEditEmail(e.target.value)} />
             </div>
             <div>
               <label className="text-sm font-medium">Phone</label>
