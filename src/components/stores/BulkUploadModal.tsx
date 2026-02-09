@@ -36,7 +36,8 @@ import {
   RefreshCw,
   PlusCircle,
   GitMerge,
-  Database, // Added Database icon
+  Database,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBulkUpload } from "@/hooks/useBulkUpload";
@@ -677,6 +678,36 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                               </div>
                             );
                           })}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  )}
+
+                  {/* Iterations: warnings for auto-filled fields like "No Name" */}
+                  {(state.validationResult?.summary.warningRows || 0) > 0 && (
+                    <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 overflow-hidden">
+                      <div className="p-4 border-b border-yellow-500/10 flex flex-col sm:flex-row justify-between gap-3 bg-yellow-500/10">
+                        <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400 font-medium">
+                          <AlertTriangle className="h-5 w-5" />
+                          <span>Iterations ({state.validationResult?.summary.warningRows} rows auto-corrected)</span>
+                        </div>
+                      </div>
+
+                      <ScrollArea className="h-[200px] bg-background/50">
+                        <div className="p-2 divide-y divide-border/50">
+                          {state.validationResult?.rows
+                            .filter((r) => r.warnings && r.warnings.length > 0)
+                            .slice(0, 50)
+                            .map((row, i) => (
+                              <div key={i} className="py-2 px-2 text-sm">
+                                <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded mr-2">
+                                  Row {row.rowNumber}
+                                </span>
+                                <span className="text-yellow-700 dark:text-yellow-400 inline-block">
+                                  {row.warnings.map((e) => e.error).join("; ")}
+                                </span>
+                              </div>
+                            ))}
                         </div>
                       </ScrollArea>
                     </div>
