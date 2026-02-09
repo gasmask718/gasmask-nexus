@@ -3,37 +3,37 @@
  * Handles file parsing, validation, duplicate detection, and import with audit logging
  */
 
-import { useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import * as XLSX from 'xlsx';
-import { UploadSchema, getSchemaByType } from '@/lib/uploadSchemas';
-import { 
-  validateColumns, 
-  validateAllRows, 
+import { useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import * as XLSX from "xlsx";
+import { getSchemaByType } from "@/lib/uploadSchemas";
+import {
+  validateColumns,
+  validateAllRows,
   ValidationResult,
   RowValidationError,
   ValidatedRow,
   DuplicateGroup,
   detectIntraFileDuplicates,
-  detectDbDuplicates
-} from '@/lib/uploadValidation';
+  detectDbDuplicates,
+} from "@/lib/uploadValidation";
 
 // Stage enum for deterministic state transitions
-export type UploadStage = 
-  | 'SELECT_TYPE' 
-  | 'FILE_UPLOADED' 
-  | 'MAPPED' 
-  | 'VALIDATED' 
-  | 'IMPORT_READY' 
-  | 'CONFIRM'
-  | 'IMPORTING' 
-  | 'COMPLETE' 
-  | 'ERROR';
+export type UploadStage =
+  | "SELECT_TYPE"
+  | "FILE_UPLOADED"
+  | "MAPPED"
+  | "VALIDATED"
+  | "IMPORT_READY"
+  | "CONFIRM"
+  | "IMPORTING"
+  | "COMPLETE"
+  | "ERROR";
 
 export interface UploadState {
-  step: 'select' | 'upload' | 'validate' | 'preview' | 'confirm' | 'importing' | 'complete' | 'error';
+  step: "select" | "upload" | "validate" | "preview" | "confirm" | "importing" | "complete" | "error";
   stage: UploadStage;
   uploadType: string | null;
   fileName: string | null;
@@ -47,7 +47,8 @@ export interface UploadState {
   error: string | null;
   // Duplicate detection
   duplicates: DuplicateGroup[];
-  duplicateActions: Record<string, 'append' | 'skip' | 'create_new' | 'update'>;
+  // UPDATED: Added 'combine' to the allowed action types to fix TS2367
+  duplicateActions: Record<string, "append" | "skip" | "create_new" | "update" | "combine">;
 }
 
 export interface ImportResult {
@@ -59,8 +60,8 @@ export interface ImportResult {
 }
 
 const initialState: UploadState = {
-  step: 'select',
-  stage: 'SELECT_TYPE',
+  step: "select",
+  stage: "SELECT_TYPE",
   uploadType: null,
   fileName: null,
   rawData: [],
@@ -84,100 +85,103 @@ export function useBulkUpload() {
   }, []);
 
   const setUploadType = useCallback((type: string) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       uploadType: type,
-      step: 'upload',
-      stage: 'FILE_UPLOADED'
+      step: "upload",
+      stage: "FILE_UPLOADED",
     }));
   }, []);
 
-  const parseFile = useCallback(async (file: File) => {
-    setState(prev => ({ ...prev, isProcessing: true, error: null }));
-    
-    try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(sheet);
+  const parseFile = useCallback(
+    async (file: File) => {
+      setState((prev) => ({ ...prev, isProcessing: true, error: null }));
 
-      if (jsonData.length === 0) {
-        throw new Error('File is empty or has no data rows');
+      try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+        if (jsonData.length === 0) {
+          throw new Error("File is empty or has no data rows");
+        }
+
+        const columns = Object.keys(jsonData[0] as any);
+
+        // Auto-map columns based on schema
+        const schema = getSchemaByType(state.uploadType || "");
+        const autoMapping: Record<string, string> = {};
+
+        if (schema) {
+          columns.forEach((col) => {
+            const normalizedCol = col.toLowerCase().trim().replace(/\s+/g, "_");
+            const matchingField = schema.fields.find(
+              (f) =>
+                f.field.toLowerCase() === normalizedCol || f.displayName.toLowerCase() === col.toLowerCase().trim(),
+            );
+            if (matchingField) {
+              autoMapping[col] = matchingField.field;
+            }
+          });
+        }
+
+        setState((prev) => ({
+          ...prev,
+          fileName: file.name,
+          rawData: jsonData as Record<string, any>[],
+          columns,
+          columnMapping: autoMapping,
+          step: "validate",
+          stage: "MAPPED",
+          isProcessing: false,
+          isImportReady: false, // Reset import ready state
+        }));
+
+        toast.success(`Loaded ${jsonData.length} rows from ${file.name}`);
+      } catch (error: any) {
+        setState((prev) => ({
+          ...prev,
+          isProcessing: false,
+          error: error.message,
+          step: "error",
+          stage: "ERROR",
+        }));
+        toast.error(`Failed to parse file: ${error.message}`);
       }
-
-      const columns = Object.keys(jsonData[0] as any);
-      
-      // Auto-map columns based on schema
-      const schema = getSchemaByType(state.uploadType || '');
-      const autoMapping: Record<string, string> = {};
-      
-      if (schema) {
-        columns.forEach(col => {
-          const normalizedCol = col.toLowerCase().trim().replace(/\s+/g, '_');
-          const matchingField = schema.fields.find(
-            f => f.field.toLowerCase() === normalizedCol ||
-                 f.displayName.toLowerCase() === col.toLowerCase().trim()
-          );
-          if (matchingField) {
-            autoMapping[col] = matchingField.field;
-          }
-        });
-      }
-
-      setState(prev => ({
-        ...prev,
-        fileName: file.name,
-        rawData: jsonData as Record<string, any>[],
-        columns,
-        columnMapping: autoMapping,
-        step: 'validate',
-        stage: 'MAPPED',
-        isProcessing: false,
-        isImportReady: false // Reset import ready state
-      }));
-
-      toast.success(`Loaded ${jsonData.length} rows from ${file.name}`);
-    } catch (error: any) {
-      setState(prev => ({
-        ...prev,
-        isProcessing: false,
-        error: error.message,
-        step: 'error',
-        stage: 'ERROR'
-      }));
-      toast.error(`Failed to parse file: ${error.message}`);
-    }
-  }, [state.uploadType]);
+    },
+    [state.uploadType],
+  );
 
   const updateColumnMapping = useCallback((excelCol: string, schemaField: string) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       columnMapping: {
         ...prev.columnMapping,
-        [excelCol]: schemaField
+        [excelCol]: schemaField,
       },
       // Reset validation when mapping changes
       isImportReady: false,
-      stage: 'MAPPED'
+      stage: "MAPPED",
     }));
   }, []);
 
   const validateData = useCallback(async () => {
-    const schema = getSchemaByType(state.uploadType || '');
+    const schema = getSchemaByType(state.uploadType || "");
     if (!schema) {
-      toast.error('Unknown upload type');
+      toast.error("Unknown upload type");
       return;
     }
 
-    setState(prev => ({ ...prev, isProcessing: true }));
+    setState((prev) => ({ ...prev, isProcessing: true }));
 
     // Validate columns first
     const columnValidation = validateColumns(state.columns, schema);
-    
+
     if (columnValidation.missing.length > 0) {
-      toast.error(`Missing required columns: ${columnValidation.missing.join(', ')}`);
-      setState(prev => ({ ...prev, isProcessing: false }));
+      toast.error(`Missing required columns: ${columnValidation.missing.join(", ")}`);
+      setState((prev) => ({ ...prev, isProcessing: false }));
       return;
     }
 
@@ -186,25 +190,25 @@ export function useBulkUpload() {
 
     // Detect duplicates (for store upload types)
     let allDuplicates: DuplicateGroup[] = [];
-    const defaultActions: Record<string, 'append' | 'skip' | 'create_new'> = {};
+    const defaultActions: Record<string, "append" | "skip" | "create_new" | "combine"> = {};
 
-    if (state.uploadType === 'stores' || state.uploadType === 'combined_crm') {
+    if (state.uploadType === "stores" || state.uploadType === "combined_crm") {
       // 1. Intra-file duplicates (same name + same address within file)
       const intraFileDups = detectIntraFileDuplicates(result.rows);
-      
+
       // 2. DB duplicates (match against existing stores)
       try {
         const { data: existingStores } = await supabase
-          .from('stores')
-          .select('id, name, address_street, status')
+          .from("stores")
+          .select("id, name, address_street, status")
           .limit(5000);
 
         if (existingStores) {
-          const normalizedStores = existingStores.map(s => ({
+          const normalizedStores = existingStores.map((s) => ({
             id: s.id,
-            name: s.name || '',
-            address: s.address_street || '',
-            status: (s.status as string) || 'active',
+            name: s.name || "",
+            address: s.address_street || "",
+            status: (s.status as string) || "active",
           }));
           const dbDups = detectDbDuplicates(result.rows, normalizedStores);
           allDuplicates = [...intraFileDups, ...dbDups];
@@ -212,24 +216,24 @@ export function useBulkUpload() {
           allDuplicates = intraFileDups;
         }
       } catch (e) {
-        console.error('Failed to check DB duplicates:', e);
+        console.error("Failed to check DB duplicates:", e);
         allDuplicates = intraFileDups;
       }
 
       // Set default actions
       for (const dup of allDuplicates) {
-        defaultActions[dup.key] = dup.existingStore ? 'append' : 'skip';
+        defaultActions[dup.key] = dup.existingStore ? "append" : "skip";
       }
     }
 
     const hasValidRows = result.summary.validRows > 0;
     const isImportReady = hasValidRows;
 
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       validationResult: result,
-      step: 'preview',
-      stage: isImportReady ? 'IMPORT_READY' : 'VALIDATED',
+      step: "preview",
+      stage: isImportReady ? "IMPORT_READY" : "VALIDATED",
       isImportReady,
       isProcessing: false,
       duplicates: allDuplicates,
@@ -237,14 +241,16 @@ export function useBulkUpload() {
     }));
 
     if (allDuplicates.length > 0) {
-      const dbDups = allDuplicates.filter(d => d.existingStore);
-      const fileDups = allDuplicates.filter(d => !d.existingStore);
+      const dbDups = allDuplicates.filter((d) => d.existingStore);
+      const fileDups = allDuplicates.filter((d) => !d.existingStore);
       const parts: string[] = [];
       if (dbDups.length > 0) parts.push(`${dbDups.length} match existing stores`);
       if (fileDups.length > 0) parts.push(`${fileDups.length} in-file duplicates`);
-      toast.warning(`Duplicates found: ${parts.join(', ')}`);
+      toast.warning(`Duplicates found: ${parts.join(", ")}`);
     } else if (result.summary.errorRows > 0 && result.summary.validRows > 0) {
-      toast.warning(`${result.summary.errorRows} rows have errors, but ${result.summary.validRows} rows are ready to import`);
+      toast.warning(
+        `${result.summary.errorRows} rows have errors, but ${result.summary.validRows} rows are ready to import`,
+      );
     } else if (result.summary.errorRows > 0) {
       toast.error(`All ${result.summary.errorRows} rows have errors - please fix and re-upload`);
     } else {
@@ -252,160 +258,177 @@ export function useBulkUpload() {
     }
   }, [state.uploadType, state.columns, state.rawData, state.columnMapping]);
 
-  const setDuplicateAction = useCallback((groupKey: string, action: 'append' | 'skip' | 'create_new' | 'update') => {
-    setState(prev => ({
-      ...prev,
-      duplicateActions: { ...prev.duplicateActions, [groupKey]: action },
-    }));
-  }, []);
+  // UPDATED: Added 'combine' to the allowed actions
+  const setDuplicateAction = useCallback(
+    (groupKey: string, action: "append" | "skip" | "create_new" | "update" | "combine") => {
+      setState((prev) => ({
+        ...prev,
+        duplicateActions: { ...prev.duplicateActions, [groupKey]: action },
+      }));
+    },
+    [],
+  );
 
   const proceedToConfirm = useCallback(() => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      step: 'confirm',
-      stage: 'CONFIRM',
+      step: "confirm",
+      stage: "CONFIRM",
     }));
   }, []);
 
-  const performImport = useCallback(async (mode: 'append' | 'upsert' = 'append') => {
-    if (!state.validationResult) {
-      toast.error('Please validate data first');
-      return;
-    }
-
-    const schema = getSchemaByType(state.uploadType || '');
-    if (!schema) {
-      toast.error('Unknown upload type');
-      return;
-    }
-
-    setState(prev => ({ ...prev, step: 'importing', stage: 'IMPORTING', isProcessing: true }));
-
-    const result: ImportResult = {
-      success: 0,
-      failed: 0,
-      skipped: 0,
-      errors: [],
-      auditLogId: null
-    };
-
-    try {
-      // Get current user for audit log
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // Create audit log entry
-      const { data: auditLog, error: auditError } = await supabase
-        .from('admin_audit_log')
-        .insert({
-          actor_user_id: user?.id || 'system',
-          action: 'bulk_import',
-          target_type: state.uploadType || 'unknown',
-          target_id: null,
-          before: null,
-          after: {
-            file_name: state.fileName,
-            total_rows: state.validationResult.summary.totalRows,
-            mode
-          },
-          reason: `Bulk import from ${state.fileName}`
-        })
-        .select()
-        .single();
-
-      if (!auditError && auditLog) {
-        result.auditLogId = auditLog.id;
+  const performImport = useCallback(
+    async (mode: "append" | "upsert" = "append") => {
+      if (!state.validationResult) {
+        toast.error("Please validate data first");
+        return;
       }
 
-      // Get valid rows only
-      const validRows = state.validationResult.rows.filter(r => r.status === 'valid');
-
-      // Build a set of rows to skip (from duplicate actions)
-      const skipRows = new Set<number>();
-      for (const dup of state.duplicates) {
-        const action = state.duplicateActions[dup.key] || 'skip';
-        if (action === 'skip') {
-          // Skip all but the first row in intra-file duplicates
-          if (!dup.existingStore) {
-            dup.fileRows.slice(1).forEach(r => skipRows.add(r));
-          }
-        }
+      const schema = getSchemaByType(state.uploadType || "");
+      if (!schema) {
+        toast.error("Unknown upload type");
+        return;
       }
 
-      // Determine effective mode per row based on duplicate actions
-      const appendRows = new Set<number>();
-      const updateRows = new Set<number>();
-      for (const dup of state.duplicates) {
-        const action = state.duplicateActions[dup.key] || 'skip';
-        if (action === 'append' && dup.existingStore) {
-          dup.fileRows.forEach(r => appendRows.add(r));
-        }
-        if (action === 'update' && dup.existingStore) {
-          dup.fileRows.forEach(r => updateRows.add(r));
-        }
-      }
+      setState((prev) => ({ ...prev, step: "importing", stage: "IMPORTING", isProcessing: true }));
 
-      const filteredRows = validRows.filter(r => !skipRows.has(r.rowNumber));
-      
-      // Import based on upload type
-      if (state.uploadType === 'stores' || state.uploadType === 'combined_crm') {
-        await importStores(filteredRows, mode, result, appendRows, updateRows);
-      } else if (state.uploadType === 'store_contacts') {
-        await importStoreContacts(filteredRows, result);
-      } else if (state.uploadType === 'store_notes') {
-        await importStoreNotes(filteredRows, result);
-      } else if (state.uploadType === 'invoices') {
-        await importInvoices(filteredRows, result);
-      }
+      const result: ImportResult = {
+        success: 0,
+        failed: 0,
+        skipped: 0,
+        errors: [],
+        auditLogId: null,
+      };
 
-      // Skipped = error rows from validation + explicitly skipped duplicates
-      result.skipped = state.validationResult.summary.errorRows + skipRows.size;
+      try {
+        // Get current user for audit log
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      // Update audit log with results
-      if (result.auditLogId) {
-        await supabase
-          .from('admin_audit_log')
-          .update({
+        // Create audit log entry
+        const { data: auditLog, error: auditError } = await supabase
+          .from("admin_audit_log")
+          .insert({
+            actor_user_id: user?.id || "system",
+            action: "bulk_import",
+            target_type: state.uploadType || "unknown",
+            target_id: null,
+            before: null,
             after: {
               file_name: state.fileName,
               total_rows: state.validationResult.summary.totalRows,
               mode,
-              imported: result.success,
-              failed: result.failed,
-              skipped: result.skipped
-            }
+            },
+            reason: `Bulk import from ${state.fileName}`,
           })
-          .eq('id', result.auditLogId);
+          .select()
+          .single();
+
+        if (!auditError && auditLog) {
+          result.auditLogId = auditLog.id;
+        }
+
+        // Get valid rows only
+        const validRows = state.validationResult.rows.filter((r) => r.status === "valid");
+
+        // Build a set of rows to skip or specially handle (from duplicate actions)
+        const skipRows = new Set<number>();
+        const appendRows = new Set<number>();
+        const updateRows = new Set<number>();
+
+        for (const dup of state.duplicates) {
+          const action = state.duplicateActions[dup.key] || "skip";
+
+          if (action === "skip") {
+            // Skip all rows in this group
+            dup.fileRows.forEach((r) => skipRows.add(r));
+          }
+
+          // UPDATED: Logic for 'combine' (merge in-file duplicates)
+          if (action === "combine") {
+            // We keep the FIRST row of the file group (dup.fileRows[0])
+            // We skip the subsequent duplicate rows
+            dup.fileRows.slice(1).forEach((r) => skipRows.add(r));
+
+            // If this group ALSO matches an existing DB entry, we treat that first remaining row as an 'append'
+            if (dup.existingStore) {
+              appendRows.add(dup.fileRows[0]);
+            }
+          }
+
+          if (action === "append" && dup.existingStore) {
+            dup.fileRows.forEach((r) => appendRows.add(r));
+          }
+          if (action === "update" && dup.existingStore) {
+            dup.fileRows.forEach((r) => updateRows.add(r));
+          }
+        }
+
+        const filteredRows = validRows.filter((r) => !skipRows.has(r.rowNumber));
+
+        // Import based on upload type
+        if (state.uploadType === "stores" || state.uploadType === "combined_crm") {
+          await importStores(filteredRows, mode, result, appendRows, updateRows);
+        } else if (state.uploadType === "store_contacts") {
+          await importStoreContacts(filteredRows, result);
+        } else if (state.uploadType === "store_notes") {
+          await importStoreNotes(filteredRows, result);
+        } else if (state.uploadType === "invoices") {
+          await importInvoices(filteredRows, result);
+        }
+
+        // Skipped = error rows from validation + explicitly skipped duplicates
+        result.skipped = state.validationResult.summary.errorRows + skipRows.size;
+
+        // Update audit log with results
+        if (result.auditLogId) {
+          await supabase
+            .from("admin_audit_log")
+            .update({
+              after: {
+                file_name: state.fileName,
+                total_rows: state.validationResult.summary.totalRows,
+                mode,
+                imported: result.success,
+                failed: result.failed,
+                skipped: result.skipped,
+              },
+            })
+            .eq("id", result.auditLogId);
+        }
+
+        setState((prev) => ({
+          ...prev,
+          importResult: result,
+          step: "complete",
+          stage: "COMPLETE",
+          isProcessing: false,
+          isImportReady: false,
+        }));
+
+        // Invalidate relevant queries
+        queryClient.invalidateQueries({ queryKey: ["stores"] });
+        queryClient.invalidateQueries({ queryKey: ["store-contacts"] });
+        queryClient.invalidateQueries({ queryKey: ["store-notes"] });
+        queryClient.invalidateQueries({ queryKey: ["invoices"] });
+        queryClient.invalidateQueries({ queryKey: ["stores-with-contacts"] });
+
+        toast.success(`Import complete: ${result.success} rows imported`);
+      } catch (error: any) {
+        setState((prev) => ({
+          ...prev,
+          error: error.message,
+          step: "error",
+          stage: "ERROR",
+          isProcessing: false,
+          isImportReady: false,
+        }));
+        toast.error(`Import failed: ${error.message}`);
       }
-
-      setState(prev => ({
-        ...prev,
-        importResult: result,
-        step: 'complete',
-        stage: 'COMPLETE',
-        isProcessing: false,
-        isImportReady: false
-      }));
-
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['stores'] });
-      queryClient.invalidateQueries({ queryKey: ['store-contacts'] });
-      queryClient.invalidateQueries({ queryKey: ['store-notes'] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['stores-with-contacts'] });
-
-      toast.success(`Import complete: ${result.success} rows imported`);
-    } catch (error: any) {
-      setState(prev => ({
-        ...prev,
-        error: error.message,
-        step: 'error',
-        stage: 'ERROR',
-        isProcessing: false,
-        isImportReady: false
-      }));
-      toast.error(`Import failed: ${error.message}`);
-    }
-  }, [state.validationResult, state.uploadType, state.fileName, state.duplicates, state.duplicateActions, queryClient]);
+    },
+    [state.validationResult, state.uploadType, state.fileName, state.duplicates, state.duplicateActions, queryClient],
+  );
 
   return {
     state,
@@ -416,268 +439,255 @@ export function useBulkUpload() {
     validateData,
     setDuplicateAction,
     proceedToConfirm,
-    performImport
+    performImport,
   };
 }
 
-// Import functions for each type
+// Import functions for each type (unchanged from original, but included for completeness)
 async function importStores(
-  rows: ValidatedRow[], 
-  mode: 'append' | 'upsert',
+  rows: ValidatedRow[],
+  mode: "append" | "upsert",
   result: ImportResult,
   appendRows: Set<number> = new Set(),
-  updateRows: Set<number> = new Set()
+  updateRows: Set<number> = new Set(),
 ) {
   const BATCH_SIZE = 20;
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = rows.slice(i, i + BATCH_SIZE);
-    await Promise.all(batch.map(async (row) => {
-      try {
-        // Normalize store type
-        let storeType = 'other';
-        if (row.data.type) {
-          const normalized = row.data.type.toLowerCase().trim().replace(/\s+/g, '_');
-          const validTypes = ['bodega', 'smoke_shop', 'gas_station', 'wholesaler', 'other'];
-          if (validTypes.includes(normalized)) {
-            storeType = normalized;
+    await Promise.all(
+      batch.map(async (row) => {
+        try {
+          // Normalize store type
+          let storeType = "other";
+          if (row.data.type) {
+            const normalized = row.data.type.toLowerCase().trim().replace(/\s+/g, "_");
+            const validTypes = ["bodega", "smoke_shop", "gas_station", "wholesaler", "other"];
+            if (validTypes.includes(normalized)) {
+              storeType = normalized;
+            }
           }
-        }
 
-        const storeData: any = {
-          name: row.data.name || row.data.store_name,
-          type: storeType,
-          address_street: row.data.address_street || row.data.address,
-          address_city: row.data.address_city || row.data.city,
-          address_state: row.data.address_state || row.data.state,
-          address_zip: row.data.address_zip || row.data.zip,
-          phone: row.data.phone || row.data.contact_phone,
-          email: row.data.email || row.data.contact_email,
-          status: row.data.status || 'active',
-          open_date: row.data.open_date || row.data.member_since,
-        };
+          const storeData: any = {
+            name: row.data.name || row.data.store_name,
+            type: storeType,
+            address_street: row.data.address_street || row.data.address,
+            address_city: row.data.address_city || row.data.city,
+            address_state: row.data.address_state || row.data.state,
+            address_zip: row.data.address_zip || row.data.zip,
+            phone: row.data.phone || row.data.contact_phone,
+            email: row.data.email || row.data.contact_email,
+            status: row.data.status || "active",
+            open_date: row.data.open_date || row.data.member_since,
+          };
 
-        // Map additional fields if present
-        if (row.data.primary_contact_name) storeData.primary_contact_name = row.data.primary_contact_name;
-        if (row.data.alt_phone) storeData.alt_phone = row.data.alt_phone;
-        if (row.data.neighborhood) storeData.neighborhood = row.data.neighborhood;
-        if (row.data.boro) storeData.boro = row.data.boro;
-        if (row.data.wholesaler_name) storeData.wholesaler_name = row.data.wholesaler_name;
-        if (row.data.special_information) storeData.special_information = row.data.special_information;
-        if (row.data.notes_overview) storeData.notes_overview = row.data.notes_overview;
-        if (row.data.store_code) storeData.store_code = row.data.store_code;
-        if (row.data.market_code) storeData.market_code = row.data.market_code;
-        if (row.data.sells_flowers !== undefined) {
-          const v = row.data.sells_flowers?.toString().toLowerCase().trim();
-          storeData.sells_flowers = ['yes', 'true', '1', 'y', 'x'].includes(v);
-        }
-        if (row.data.prime_time_energy !== undefined) {
-          const v = row.data.prime_time_energy?.toString().toLowerCase().trim();
-          storeData.prime_time_energy = ['yes', 'true', '1', 'y', 'x'].includes(v);
-        }
-        if (row.data.payment_type) storeData.payment_type = row.data.payment_type;
-
-        // Handle company - need to look up or create
-        if (row.data.company) {
-          const { data: company } = await supabase
-            .from('companies')
-            .select('id')
-            .eq('name', row.data.company)
-            .maybeSingle();
-          
-          if (company) {
-            storeData.company_id = company.id;
+          // Map additional fields if present
+          if (row.data.primary_contact_name) storeData.primary_contact_name = row.data.primary_contact_name;
+          if (row.data.alt_phone) storeData.alt_phone = row.data.alt_phone;
+          if (row.data.neighborhood) storeData.neighborhood = row.data.neighborhood;
+          if (row.data.boro) storeData.boro = row.data.boro;
+          if (row.data.wholesaler_name) storeData.wholesaler_name = row.data.wholesaler_name;
+          if (row.data.special_information) storeData.special_information = row.data.special_information;
+          if (row.data.notes_overview) storeData.notes_overview = row.data.notes_overview;
+          if (row.data.store_code) storeData.store_code = row.data.store_code;
+          if (row.data.market_code) storeData.market_code = row.data.market_code;
+          if (row.data.sells_flowers !== undefined) {
+            const v = row.data.sells_flowers?.toString().toLowerCase().trim();
+            storeData.sells_flowers = ["yes", "true", "1", "y", "x"].includes(v);
           }
-        }
-
-        // Determine if this row should be appended or updated
-        const shouldAppend = appendRows.has(row.rowNumber);
-        const shouldUpdate = updateRows.has(row.rowNumber);
-        const effectiveMode = (shouldAppend || shouldUpdate) ? 'upsert' : mode;
-
-        if (effectiveMode === 'upsert' || shouldAppend || shouldUpdate) {
-          // Check if store exists by name + address
-          let query = supabase.from('stores').select('id').eq('name', storeData.name);
-          if (storeData.address_street) {
-            query = query.eq('address_street', storeData.address_street);
+          if (row.data.prime_time_energy !== undefined) {
+            const v = row.data.prime_time_energy?.toString().toLowerCase().trim();
+            storeData.prime_time_energy = ["yes", "true", "1", "y", "x"].includes(v);
           }
-          const { data: existing } = await query.maybeSingle();
+          if (row.data.payment_type) storeData.payment_type = row.data.payment_type;
 
-          if (existing) {
-            const updateData = { ...storeData };
-            if (shouldUpdate) {
-              // Update mode: overwrite ALL fields from the sheet (even empty ones clear existing data)
-              // Only remove undefined keys
-              Object.keys(updateData).forEach(k => {
-                if (updateData[k] === undefined) {
-                  delete updateData[k];
-                }
-              });
+          // Handle company - need to look up or create
+          if (row.data.company) {
+            const { data: company } = await supabase
+              .from("companies")
+              .select("id")
+              .eq("name", row.data.company)
+              .maybeSingle();
+
+            if (company) {
+              storeData.company_id = company.id;
+            }
+          }
+
+          // Determine if this row should be appended or updated
+          const shouldAppend = appendRows.has(row.rowNumber);
+          const shouldUpdate = updateRows.has(row.rowNumber);
+          const effectiveMode = shouldAppend || shouldUpdate ? "upsert" : mode;
+
+          if (effectiveMode === "upsert" || shouldAppend || shouldUpdate) {
+            // Check if store exists by name + address
+            let query = supabase.from("stores").select("id").eq("name", storeData.name);
+            if (storeData.address_street) {
+              query = query.eq("address_street", storeData.address_street);
+            }
+            const { data: existing } = await query.maybeSingle();
+
+            if (existing) {
+              const updateData = { ...storeData };
+              if (shouldUpdate) {
+                // Update mode: overwrite ALL fields from the sheet (even empty ones clear existing data)
+                // Only remove undefined keys
+                Object.keys(updateData).forEach((k) => {
+                  if (updateData[k] === undefined) {
+                    delete updateData[k];
+                  }
+                });
+              } else {
+                // Append mode: only update non-empty fields to preserve existing data
+                Object.keys(updateData).forEach((k) => {
+                  if (updateData[k] === undefined || updateData[k] === null || updateData[k] === "") {
+                    delete updateData[k];
+                  }
+                });
+              }
+              await supabase.from("stores").update(updateData).eq("id", existing.id);
             } else {
-              // Append mode: only update non-empty fields to preserve existing data
-              Object.keys(updateData).forEach(k => {
-                if (updateData[k] === undefined || updateData[k] === null || updateData[k] === '') {
-                  delete updateData[k];
-                }
+              await supabase.from("stores").insert(storeData);
+            }
+          } else {
+            await supabase.from("stores").insert(storeData);
+          }
+
+          // Handle tags if present - support both array and pipe-separated string
+          if (row.data.tags) {
+            let tagsArray: string[] = [];
+
+            if (Array.isArray(row.data.tags)) {
+              tagsArray = row.data.tags;
+            } else if (typeof row.data.tags === "string") {
+              // Split by " | " (pipe with spaces) or "|" (just pipe) or "," (comma)
+              tagsArray = row.data.tags
+                .split(/\s*\|\s*|,/)
+                .map((t: string) => t.trim())
+                .filter((t: string) => t.length > 0);
+            }
+
+            // Get the store id for tag attachment
+            const { data: store } = await supabase.from("stores").select("id").eq("name", storeData.name).maybeSingle();
+
+            for (const tag of tagsArray) {
+              // Ensure tag exists in global_tags (slug is required)
+              const slug = tag
+                .toLowerCase()
+                .replace(/\s+/g, "-")
+                .replace(/[^a-z0-9-]/g, "");
+              const { data: globalTag } = await supabase
+                .from("global_tags")
+                .upsert({ name: tag, slug, status: "active" }, { onConflict: "name" })
+                .select("id")
+                .single();
+
+              // Attach tag to store via tag_attachments
+              if (store && globalTag) {
+                await supabase.from("tag_attachments").upsert(
+                  {
+                    tag_id: globalTag.id,
+                    entity_type: "store",
+                    entity_id: store.id,
+                  },
+                  { onConflict: "tag_id,entity_type,entity_id", ignoreDuplicates: true },
+                );
+              }
+            }
+          }
+
+          // Handle notes if present
+          if (row.data.notes) {
+            const { data: store } = await supabase.from("stores").select("id").eq("name", storeData.name).maybeSingle();
+
+            if (store) {
+              await supabase.from("store_notes").insert({
+                store_id: store.id,
+                note_text: row.data.notes,
+                created_at: row.data.note_date ? new Date(row.data.note_date).toISOString() : new Date().toISOString(),
               });
             }
-            await supabase.from('stores').update(updateData).eq('id', existing.id);
-          } else {
-            await supabase.from('stores').insert(storeData);
-          }
-        } else {
-          await supabase.from('stores').insert(storeData);
-        }
-
-        // Handle tags if present - support both array and pipe-separated string
-        if (row.data.tags) {
-          let tagsArray: string[] = [];
-          
-          if (Array.isArray(row.data.tags)) {
-            tagsArray = row.data.tags;
-          } else if (typeof row.data.tags === 'string') {
-            // Split by " | " (pipe with spaces) or "|" (just pipe) or "," (comma)
-            tagsArray = row.data.tags
-              .split(/\s*\|\s*|,/)
-              .map((t: string) => t.trim())
-              .filter((t: string) => t.length > 0);
           }
 
-          // Get the store id for tag attachment
-          const { data: store } = await supabase
-            .from('stores')
-            .select('id')
-            .eq('name', storeData.name)
-            .maybeSingle();
+          // Handle contact if present (combined upload) - require at least name OR phone
+          const hasContactData = row.data.contact_name || row.data.contact_phone;
+          if (hasContactData) {
+            const { data: store } = await supabase.from("stores").select("id").eq("name", storeData.name).maybeSingle();
 
-          for (const tag of tagsArray) {
-            // Ensure tag exists in global_tags (slug is required)
-            const slug = tag.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-            const { data: globalTag } = await supabase
-              .from('global_tags')
-              .upsert({ name: tag, slug, status: 'active' }, { onConflict: 'name' })
-              .select('id')
-              .single();
+            if (store) {
+              const contactData: any = {
+                store_id: store.id,
+                name: row.data.contact_name || "Unknown",
+                phone: row.data.contact_phone || null,
+                email: row.data.contact_email || null,
+                role: row.data.contact_role || "worker",
+              };
 
-            // Attach tag to store via tag_attachments
-            if (store && globalTag) {
-              await supabase
-                .from('tag_attachments')
-                .upsert({
-                  tag_id: globalTag.id,
-                  entity_type: 'store',
-                  entity_id: store.id
-                }, { onConflict: 'tag_id,entity_type,entity_id', ignoreDuplicates: true });
+              const { error: contactError } = await supabase.from("store_contacts").insert(contactData);
+
+              if (contactError) {
+                console.error("Contact insert error:", contactError);
+              }
             }
           }
-        }
 
-        // Handle notes if present
-        if (row.data.notes) {
-          const { data: store } = await supabase
-            .from('stores')
-            .select('id')
-            .eq('name', storeData.name)
-            .maybeSingle();
+          // Handle Starter Kit signal based on mapped field OR store name
+          // Check if starter_kit column is mapped and has a truthy value
+          const starterKitValue = row.data.starter_kit?.toString().toLowerCase().trim() || "";
+          const hasStarterKitFlag = ["yes", "true", "1", "y", "x"].includes(starterKitValue);
 
-          if (store) {
-            await supabase.from('store_notes').insert({
-              store_id: store.id,
-              note_text: row.data.notes,
-              created_at: row.data.note_date 
-                ? new Date(row.data.note_date).toISOString() 
-                : new Date().toISOString()
-            });
-          }
-        }
+          // Also check if store name contains "Starter Kit" as fallback
+          const storeName = storeData.name || "";
+          const needsStarterKit = hasStarterKitFlag || storeName.toLowerCase().includes("starter kit");
 
-        // Handle contact if present (combined upload) - require at least name OR phone
-        const hasContactData = row.data.contact_name || row.data.contact_phone;
-        if (hasContactData) {
-          const { data: store } = await supabase
-            .from('stores')
-            .select('id')
-            .eq('name', storeData.name)
-            .maybeSingle();
+          if (needsStarterKit) {
+            const { data: store } = await supabase.from("stores").select("id").eq("name", storeData.name).maybeSingle();
 
-          if (store) {
-            const contactData: any = {
-              store_id: store.id,
-              name: row.data.contact_name || 'Unknown',
-              phone: row.data.contact_phone || null,
-              email: row.data.contact_email || null,
-              role: row.data.contact_role || 'worker'
-            };
-            
-            const { error: contactError } = await supabase
-              .from('store_contacts')
-              .insert(contactData);
-            
-            if (contactError) {
-              console.error('Contact insert error:', contactError);
+            if (store) {
+              // Tube brands for initialization
+              const TUBE_BRANDS = [
+                { id: "gasmask", name: "GasMask Bags" },
+                { id: "gasmasktubes", name: "GasMask Tubes" },
+                { id: "hotmama", name: "HotMama" },
+                { id: "grabba", name: "Grabba R Us" },
+                { id: "hotscolatti-light", name: "Hot Scolatti Light" },
+                { id: "hotscolatti-dark", name: "Hot Scolatti Dark" },
+              ];
+
+              // Create tube intelligence records with bring_starter_kit enabled
+              for (const brand of TUBE_BRANDS) {
+                await supabase.from("store_tube_inventory_status").upsert(
+                  {
+                    store_id: store.id,
+                    brand_id: brand.id,
+                    brand_name: brand.name,
+                    bring_starter_kit: true,
+                    product_introduced: false,
+                    owner_interested: null,
+                    needs_order: false,
+                    bring_samples: false,
+                    has_ever_ordered: false,
+                    starter_kit_delivered: false,
+                  },
+                  { onConflict: "store_id,brand_id" },
+                );
+              }
             }
           }
+
+          result.success++;
+        } catch (error: any) {
+          result.failed++;
+          result.errors.push({
+            row: row.rowNumber,
+            column: "",
+            columnDisplayName: "",
+            value: null,
+            error: error.message,
+            severity: "error",
+          });
         }
-
-        // Handle Starter Kit signal based on mapped field OR store name
-        // Check if starter_kit column is mapped and has a truthy value
-        const starterKitValue = row.data.starter_kit?.toString().toLowerCase().trim() || '';
-        const hasStarterKitFlag = ['yes', 'true', '1', 'y', 'x'].includes(starterKitValue);
-        
-        // Also check if store name contains "Starter Kit" as fallback
-        const storeName = storeData.name || '';
-        const needsStarterKit = hasStarterKitFlag || storeName.toLowerCase().includes('starter kit');
-        
-        if (needsStarterKit) {
-          const { data: store } = await supabase
-            .from('stores')
-            .select('id')
-            .eq('name', storeData.name)
-            .maybeSingle();
-
-          if (store) {
-            // Tube brands for initialization
-            const TUBE_BRANDS = [
-              { id: 'gasmask', name: 'GasMask Bags' },
-              { id: 'gasmasktubes', name: 'GasMask Tubes' },
-              { id: 'hotmama', name: 'HotMama' },
-              { id: 'grabba', name: 'Grabba R Us' },
-              { id: 'hotscolatti-light', name: 'Hot Scolatti Light' },
-              { id: 'hotscolatti-dark', name: 'Hot Scolatti Dark' },
-            ];
-
-            // Create tube intelligence records with bring_starter_kit enabled
-            for (const brand of TUBE_BRANDS) {
-              await supabase
-                .from('store_tube_inventory_status')
-                .upsert({
-                  store_id: store.id,
-                  brand_id: brand.id,
-                  brand_name: brand.name,
-                  bring_starter_kit: true,
-                  product_introduced: false,
-                  owner_interested: null,
-                  needs_order: false,
-                  bring_samples: false,
-                  has_ever_ordered: false,
-                  starter_kit_delivered: false,
-                }, { onConflict: 'store_id,brand_id' });
-            }
-          }
-        }
-
-        result.success++;
-      } catch (error: any) {
-        result.failed++;
-        result.errors.push({
-          row: row.rowNumber,
-          column: '',
-          columnDisplayName: '',
-          value: null,
-          error: error.message,
-          severity: 'error'
-        });
-      }
-    }));
+      }),
+    );
   }
 }
 
@@ -685,63 +695,64 @@ async function importStoreContacts(rows: ValidatedRow[], result: ImportResult) {
   const BATCH_SIZE = 20;
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = rows.slice(i, i + BATCH_SIZE);
-    await Promise.all(batch.map(async (row) => {
-      try {
-        // Find store by name
-        const { data: store } = await supabase
-          .from('stores')
-          .select('id')
-          .eq('name', row.data.store_name)
-          .maybeSingle();
+    await Promise.all(
+      batch.map(async (row) => {
+        try {
+          // Find store by name
+          const { data: store } = await supabase
+            .from("stores")
+            .select("id")
+            .eq("name", row.data.store_name)
+            .maybeSingle();
 
-        if (!store) {
+          if (!store) {
+            result.failed++;
+            result.errors.push({
+              row: row.rowNumber,
+              column: "store_name",
+              columnDisplayName: "Store Name",
+              value: row.data.store_name,
+              error: "Store not found",
+              severity: "error",
+            });
+            return;
+          }
+
+          await supabase.from("store_contacts").insert({
+            store_id: store.id,
+            name: row.data.name,
+            phone: row.data.phone,
+            email: row.data.email,
+            role: row.data.role || "worker",
+            is_primary: row.data.is_primary || false,
+            notes: row.data.notes,
+          });
+
+          result.success++;
+        } catch (error: any) {
           result.failed++;
           result.errors.push({
             row: row.rowNumber,
-            column: 'store_name',
-            columnDisplayName: 'Store Name',
-            value: row.data.store_name,
-            error: 'Store not found',
-            severity: 'error'
+            column: "",
+            columnDisplayName: "",
+            value: null,
+            error: error.message,
+            severity: "error",
           });
-          return;
         }
-
-        await supabase.from('store_contacts').insert({
-          store_id: store.id,
-          name: row.data.name,
-          phone: row.data.phone,
-          email: row.data.email,
-          role: row.data.role || 'worker',
-          is_primary: row.data.is_primary || false,
-          notes: row.data.notes
-        });
-
-        result.success++;
-      } catch (error: any) {
-        result.failed++;
-        result.errors.push({
-          row: row.rowNumber,
-          column: '',
-          columnDisplayName: '',
-          value: null,
-          error: error.message,
-          severity: 'error'
-        });
-      }
-    }));
+      }),
+    );
   }
 }
 
 async function importStoreNotes(rows: ValidatedRow[], result: ImportResult) {
-
   // Fetch all stores from store_master for flexible matching (same as invoices)
   const { data: allStores, error: storesError } = await supabase
-    .from('store_master')
-    .select('id, store_name, address, phone');
+    .from("store_master")
+    .select("id, store_name, address, phone");
 
   if (storesError || !allStores) {
-    console.error('[Notes Import] Failed to fetch stores for matching:', storesError);
+    console.error("[Notes Import] Failed to fetch stores for matching:", storesError);
     result.failed = rows.length;
     return;
   }
@@ -753,16 +764,16 @@ async function importStoreNotes(rows: ValidatedRow[], result: ImportResult) {
   const storeByAddress: Record<string, string> = {};
   const storeByAddressInName: Record<string, string> = {}; // For "(address) name" patterns
 
-  allStores.forEach(store => {
+  allStores.forEach((store) => {
     if (store.store_name) {
       // Exact match (case-insensitive, trimmed)
       const exactName = store.store_name.toLowerCase().trim();
       storeByExactName[exactName] = store.id;
-      
+
       // Normalized match (collapsed spaces, normalized chars)
       const normalizedName = normalizeForMatch(store.store_name);
       storeByNormalizedName[normalizedName] = store.id;
-      
+
       // Extract address from name pattern like "(123 Main St) Store Name"
       const addressInName = extractAddressFromName(store.store_name);
       if (addressInName) {
@@ -770,7 +781,7 @@ async function importStoreNotes(rows: ValidatedRow[], result: ImportResult) {
       }
     }
     if (store.phone) {
-      const normalizedPhone = String(store.phone).replace(/\D/g, '');
+      const normalizedPhone = String(store.phone).replace(/\D/g, "");
       if (normalizedPhone.length >= 7) {
         storeByPhone[normalizedPhone] = store.id;
       }
@@ -781,151 +792,152 @@ async function importStoreNotes(rows: ValidatedRow[], result: ImportResult) {
     }
   });
 
-  console.log('[Notes Import] Loaded stores for matching:', {
+  console.log("[Notes Import] Loaded stores for matching:", {
     exactNames: Object.keys(storeByExactName).length,
-    addressPatterns: Object.keys(storeByAddressInName).length
+    addressPatterns: Object.keys(storeByAddressInName).length,
   });
 
   const BATCH_SIZE = 20;
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = rows.slice(i, i + BATCH_SIZE);
-    await Promise.all(batch.map(async (row) => {
-      try {
-        const storeName = row.data.store_name?.trim() || '';
-        
-        // Try to find matching store with priority order
-        let storeId: string | null = null;
-        let matchMethod = '';
+    await Promise.all(
+      batch.map(async (row) => {
+        try {
+          const storeName = row.data.store_name?.trim() || "";
 
-        // Normalize the store name for matching
-        const exactStoreName = storeName.toLowerCase().trim();
-        const normalizedStoreName = normalizeForMatch(storeName);
-        const addressFromStoreName = extractAddressFromName(storeName);
+          // Try to find matching store with priority order
+          let storeId: string | null = null;
+          let matchMethod = "";
 
-        // 1. Try exact name match first (most reliable)
-        if (storeByExactName[exactStoreName]) {
-          storeId = storeByExactName[exactStoreName];
-          matchMethod = 'exact_name';
-        }
-        
-        // 2. Try normalized name match (handles whitespace/char differences)
-        if (!storeId && storeByNormalizedName[normalizedStoreName]) {
-          storeId = storeByNormalizedName[normalizedStoreName];
-          matchMethod = 'normalized_name';
-        }
-        
-        // 3. Try matching address extracted from store name to store's address-in-name
-        if (!storeId && addressFromStoreName && storeByAddressInName[addressFromStoreName]) {
-          storeId = storeByAddressInName[addressFromStoreName];
-          matchMethod = 'address_in_name';
-        }
-        
-        // 4. Try partial name match (store name contained in input or vice versa)
-        if (!storeId) {
-          for (const [name, id] of Object.entries(storeByNormalizedName)) {
-            const minLen = Math.min(normalizedStoreName.length, name.length);
-            if (minLen >= 5) {
-              if (normalizedStoreName.includes(name) || name.includes(normalizedStoreName)) {
-                storeId = id;
-                matchMethod = 'partial_name';
-                break;
+          // Normalize the store name for matching
+          const exactStoreName = storeName.toLowerCase().trim();
+          const normalizedStoreName = normalizeForMatch(storeName);
+          const addressFromStoreName = extractAddressFromName(storeName);
+
+          // 1. Try exact name match first (most reliable)
+          if (storeByExactName[exactStoreName]) {
+            storeId = storeByExactName[exactStoreName];
+            matchMethod = "exact_name";
+          }
+
+          // 2. Try normalized name match (handles whitespace/char differences)
+          if (!storeId && storeByNormalizedName[normalizedStoreName]) {
+            storeId = storeByNormalizedName[normalizedStoreName];
+            matchMethod = "normalized_name";
+          }
+
+          // 3. Try matching address extracted from store name to store's address-in-name
+          if (!storeId && addressFromStoreName && storeByAddressInName[addressFromStoreName]) {
+            storeId = storeByAddressInName[addressFromStoreName];
+            matchMethod = "address_in_name";
+          }
+
+          // 4. Try partial name match (store name contained in input or vice versa)
+          if (!storeId) {
+            for (const [name, id] of Object.entries(storeByNormalizedName)) {
+              const minLen = Math.min(normalizedStoreName.length, name.length);
+              if (minLen >= 5) {
+                if (normalizedStoreName.includes(name) || name.includes(normalizedStoreName)) {
+                  storeId = id;
+                  matchMethod = "partial_name";
+                  break;
+                }
               }
             }
           }
-        }
 
-        // If no match found, skip this note
-        if (!storeId) {
-          console.log('[Notes Import] No match found for:', { 
-            storeName, 
-            exactStoreName, 
-            normalizedStoreName,
-            addressFromStoreName 
-          });
-          result.skipped++;
-          result.errors.push({
-            row: row.rowNumber,
-            column: 'store_name',
-            columnDisplayName: 'Store Name',
-            value: storeName,
-            error: 'No matching store found',
-            severity: 'warning'
-          });
-          return;
-        }
-        
-        console.log('[Notes Import] Matched:', { storeName, storeId, matchMethod });
+          // If no match found, skip this note
+          if (!storeId) {
+            console.log("[Notes Import] No match found for:", {
+              storeName,
+              exactStoreName,
+              normalizedStoreName,
+              addressFromStoreName,
+            });
+            result.skipped++;
+            result.errors.push({
+              row: row.rowNumber,
+              column: "store_name",
+              columnDisplayName: "Store Name",
+              value: storeName,
+              error: "No matching store found",
+              severity: "warning",
+            });
+            return;
+          }
 
-        // Parse note date (handles Excel serial numbers and date strings)
-        let noteDate = new Date().toISOString();
-        if (row.data.note_date) {
-          try {
-            const dateValue = row.data.note_date;
-            let parsed: Date | null = null;
-            
-            // Check if it's an Excel serial date number (e.g., 46032.42847222222)
-            const numValue = Number(dateValue);
-            if (!isNaN(numValue) && numValue > 25000 && numValue < 60000) {
-              // Excel serial date: days since Dec 30, 1899
-              const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-              const days = Math.floor(numValue);
-              const timeFraction = numValue - days;
-              parsed = new Date(excelEpoch.getTime() + days * 24 * 60 * 60 * 1000 + timeFraction * 24 * 60 * 60 * 1000);
-            } else {
-              const dateStr = String(dateValue).trim();
-              
-              // Try parsing m/d/yyyy h:mm or m/d/yyyy hh:mm format
-              const customMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-              if (customMatch) {
-                const [, month, day, year, hours, minutes, seconds = '0'] = customMatch;
+          console.log("[Notes Import] Matched:", { storeName, storeId, matchMethod });
+
+          // Parse note date (handles Excel serial numbers and date strings)
+          let noteDate = new Date().toISOString();
+          if (row.data.note_date) {
+            try {
+              const dateValue = row.data.note_date;
+              let parsed: Date | null = null;
+
+              // Check if it's an Excel serial date number (e.g., 46032.42847222222)
+              const numValue = Number(dateValue);
+              if (!isNaN(numValue) && numValue > 25000 && numValue < 60000) {
+                // Excel serial date: days since Dec 30, 1899
+                const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+                const days = Math.floor(numValue);
+                const timeFraction = numValue - days;
                 parsed = new Date(
-                  parseInt(year),
-                  parseInt(month) - 1,
-                  parseInt(day),
-                  parseInt(hours),
-                  parseInt(minutes),
-                  parseInt(seconds)
+                  excelEpoch.getTime() + days * 24 * 60 * 60 * 1000 + timeFraction * 24 * 60 * 60 * 1000,
                 );
               } else {
-                // Fallback to standard Date parsing
-                parsed = new Date(dateStr);
+                const dateStr = String(dateValue).trim();
+
+                // Try parsing m/d/yyyy h:mm or m/d/yyyy hh:mm format
+                const customMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+                if (customMatch) {
+                  const [, month, day, year, hours, minutes, seconds = "0"] = customMatch;
+                  parsed = new Date(
+                    parseInt(year),
+                    parseInt(month) - 1,
+                    parseInt(day),
+                    parseInt(hours),
+                    parseInt(minutes),
+                    parseInt(seconds),
+                  );
+                } else {
+                  // Fallback to standard Date parsing
+                  parsed = new Date(dateStr);
+                }
               }
+
+              if (parsed && !isNaN(parsed.getTime())) {
+                noteDate = parsed.toISOString();
+              }
+            } catch (e) {
+              console.warn("[Notes Import] Failed to parse note_date:", row.data.note_date);
             }
-            
-            if (parsed && !isNaN(parsed.getTime())) {
-              noteDate = parsed.toISOString();
-            }
-          } catch (e) {
-            console.warn('[Notes Import] Failed to parse note_date:', row.data.note_date);
           }
+
+          // Keep note_text as-is (including HTML content)
+          const noteText = row.data.note_text?.trim() || "Contact customer for partnership details.";
+
+          await supabase.from("store_notes").insert({
+            store_id: storeId,
+            note_text: noteText,
+            created_at: noteDate,
+          });
+
+          result.success++;
+        } catch (error: any) {
+          result.failed++;
+          result.errors.push({
+            row: row.rowNumber,
+            column: "",
+            columnDisplayName: "",
+            value: null,
+            error: error.message,
+            severity: "error",
+          });
         }
-
-        // Keep note_text as-is (including HTML content)
-        const noteText = row.data.note_text?.trim() 
-          || 'Contact customer for partnership details.';
-
-        await supabase.from('store_notes').insert({
-          store_id: storeId,
-          note_text: noteText,
-          created_at: noteDate
-        });
-
-        result.success++;
-      } catch (error: any) {
-        result.failed++;
-        result.errors.push({
-          row: row.rowNumber,
-          column: '',
-          columnDisplayName: '',
-          value: null,
-          error: error.message,
-          severity: 'error'
-        });
-      }
-    }));
+      }),
+    );
   }
-  // Note: member_since auto-derivation removed due to type sync issues
-  // The notes are already imported with correct created_at timestamps
 }
 
 /**
@@ -943,9 +955,9 @@ function normalizeForMatch(text: string): string {
   return text
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, ' ')           // Collapse multiple spaces
-    .replace(/['']/g, "'")          // Normalize quotes
-    .replace(/[–—]/g, '-');         // Normalize dashes
+    .replace(/\s+/g, " ") // Collapse multiple spaces
+    .replace(/['']/g, "'") // Normalize quotes
+    .replace(/[–—]/g, "-"); // Normalize dashes
 }
 
 /**
@@ -955,11 +967,11 @@ function normalizeForMatch(text: string): string {
 async function importInvoices(rows: ValidatedRow[], result: ImportResult) {
   // First, fetch all stores from store_master for matching
   const { data: allStores, error: storesError } = await supabase
-    .from('store_master')
-    .select('id, store_name, address, phone');
+    .from("store_master")
+    .select("id, store_name, address, phone");
 
   if (storesError || !allStores) {
-    console.error('Failed to fetch stores for matching:', storesError);
+    console.error("Failed to fetch stores for matching:", storesError);
     result.failed = rows.length;
     return;
   }
@@ -971,16 +983,16 @@ async function importInvoices(rows: ValidatedRow[], result: ImportResult) {
   const storeByAddress: Record<string, string> = {};
   const storeByAddressInName: Record<string, string> = {}; // For "(address) name" patterns
 
-  allStores.forEach(store => {
+  allStores.forEach((store) => {
     if (store.store_name) {
       // Exact match (case-insensitive, trimmed)
       const exactName = store.store_name.toLowerCase().trim();
       storeByExactName[exactName] = store.id;
-      
+
       // Normalized match (collapsed spaces, normalized chars)
       const normalizedName = normalizeForMatch(store.store_name);
       storeByNormalizedName[normalizedName] = store.id;
-      
+
       // Extract address from name pattern like "(123 Main St) Store Name"
       const addressInName = extractAddressFromName(store.store_name);
       if (addressInName) {
@@ -988,7 +1000,7 @@ async function importInvoices(rows: ValidatedRow[], result: ImportResult) {
       }
     }
     if (store.phone) {
-      const normalizedPhone = String(store.phone).replace(/\D/g, '');
+      const normalizedPhone = String(store.phone).replace(/\D/g, "");
       if (normalizedPhone.length >= 7) {
         storeByPhone[normalizedPhone] = store.id;
       }
@@ -999,221 +1011,232 @@ async function importInvoices(rows: ValidatedRow[], result: ImportResult) {
     }
   });
 
-  console.log('[Invoice Import] Loaded stores for matching:', {
+  console.log("[Invoice Import] Loaded stores for matching:", {
     exactNames: Object.keys(storeByExactName).length,
-    addressPatterns: Object.keys(storeByAddressInName).length
+    addressPatterns: Object.keys(storeByAddressInName).length,
   });
 
   const BATCH_SIZE = 20;
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = rows.slice(i, i + BATCH_SIZE);
-    await Promise.all(batch.map(async (row) => {
-      try {
-        const clientName = row.data.client_name?.trim() || '';
-        const clientPhone = row.data.client_phone ? String(row.data.client_phone).replace(/\D/g, '') : '';
-        const clientAddress = row.data.client_address?.toLowerCase().trim() || '';
+    await Promise.all(
+      batch.map(async (row) => {
+        try {
+          const clientName = row.data.client_name?.trim() || "";
+          const clientPhone = row.data.client_phone ? String(row.data.client_phone).replace(/\D/g, "") : "";
+          const clientAddress = row.data.client_address?.toLowerCase().trim() || "";
 
-        // Try to find matching store with priority order
-        let storeId: string | null = null;
-        let matchMethod = '';
+          // Try to find matching store with priority order
+          let storeId: string | null = null;
+          let matchMethod = "";
 
-        // Normalize the client name for matching
-        const exactClientName = clientName.toLowerCase().trim();
-        const normalizedClientName = normalizeForMatch(clientName);
-        const addressFromClientName = extractAddressFromName(clientName);
+          // Normalize the client name for matching
+          const exactClientName = clientName.toLowerCase().trim();
+          const normalizedClientName = normalizeForMatch(clientName);
+          const addressFromClientName = extractAddressFromName(clientName);
 
-        // 1. Try exact name match first (most reliable)
-        if (storeByExactName[exactClientName]) {
-          storeId = storeByExactName[exactClientName];
-          matchMethod = 'exact_name';
-        }
-        
-        // 2. Try normalized name match (handles whitespace/char differences)
-        if (!storeId && storeByNormalizedName[normalizedClientName]) {
-          storeId = storeByNormalizedName[normalizedClientName];
-          matchMethod = 'normalized_name';
-        }
-        
-        // 3. Try matching address extracted from client name to store's address-in-name
-        if (!storeId && addressFromClientName && storeByAddressInName[addressFromClientName]) {
-          storeId = storeByAddressInName[addressFromClientName];
-          matchMethod = 'address_in_name';
-        }
-        
-        // 4. Try partial name match (store name contained in client name or vice versa)
-        if (!storeId) {
-          for (const [storeName, id] of Object.entries(storeByNormalizedName)) {
-            // Only match if significant overlap (at least 10 chars or 50% of shorter string)
-            const minLen = Math.min(normalizedClientName.length, storeName.length);
-            if (minLen >= 5) {
-              if (normalizedClientName.includes(storeName) || storeName.includes(normalizedClientName)) {
-                storeId = id;
-                matchMethod = 'partial_name';
-                break;
+          // 1. Try exact name match first (most reliable)
+          if (storeByExactName[exactClientName]) {
+            storeId = storeByExactName[exactClientName];
+            matchMethod = "exact_name";
+          }
+
+          // 2. Try normalized name match (handles whitespace/char differences)
+          if (!storeId && storeByNormalizedName[normalizedClientName]) {
+            storeId = storeByNormalizedName[normalizedClientName];
+            matchMethod = "normalized_name";
+          }
+
+          // 3. Try matching address extracted from client name to store's address-in-name
+          if (!storeId && addressFromClientName && storeByAddressInName[addressFromClientName]) {
+            storeId = storeByAddressInName[addressFromClientName];
+            matchMethod = "address_in_name";
+          }
+
+          // 4. Try partial name match (store name contained in client name or vice versa)
+          if (!storeId) {
+            for (const [storeName, id] of Object.entries(storeByNormalizedName)) {
+              // Only match if significant overlap (at least 10 chars or 50% of shorter string)
+              const minLen = Math.min(normalizedClientName.length, storeName.length);
+              if (minLen >= 5) {
+                if (normalizedClientName.includes(storeName) || storeName.includes(normalizedClientName)) {
+                  storeId = id;
+                  matchMethod = "partial_name";
+                  break;
+                }
               }
             }
           }
-        }
 
-        // 5. Try phone match
-        if (!storeId && clientPhone.length >= 7 && storeByPhone[clientPhone]) {
-          storeId = storeByPhone[clientPhone];
-          matchMethod = 'phone';
-        }
-
-        // 6. Try address match
-        if (!storeId && clientAddress && storeByAddress[clientAddress]) {
-          storeId = storeByAddress[clientAddress];
-          matchMethod = 'address';
-        }
-
-        // If no match found, skip this invoice
-        if (!storeId) {
-          console.log('[Invoice Import] No match found for:', { 
-            clientName, 
-            exactClientName, 
-            normalizedClientName,
-            addressFromClientName 
-          });
-          result.skipped++;
-          result.errors.push({
-            row: row.rowNumber,
-            column: 'client_name',
-            columnDisplayName: 'Client Name',
-            value: clientName,
-            error: 'No matching store found',
-            severity: 'warning'
-          });
-          return;
-        }
-        
-        console.log('[Invoice Import] Matched:', { clientName, storeId, matchMethod });
-
-        // Parse amount
-        const amountStr = String(row.data.amount || '0').replace(/[^0-9.-]/g, '');
-        const amount = parseFloat(amountStr) || 0;
-
-        // Parse due date (handles Excel serial numbers and date strings)
-        let dueDate = new Date().toISOString().split('T')[0];
-        if (row.data.due_date) {
-          try {
-            const dateValue = row.data.due_date;
-            let parsed: Date | null = null;
-            
-            // Check if it's an Excel serial date number
-            const numValue = Number(dateValue);
-            if (!isNaN(numValue) && numValue > 25000 && numValue < 60000) {
-              const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-              const days = Math.floor(numValue);
-              const timeFraction = numValue - days;
-              parsed = new Date(excelEpoch.getTime() + days * 24 * 60 * 60 * 1000 + timeFraction * 24 * 60 * 60 * 1000);
-            } else {
-              const dateStr = String(dateValue).trim();
-              
-              // Try parsing m/d/yyyy h:mm format
-              const customMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-              if (customMatch) {
-                const [, month, day, year, hours, minutes, seconds = '0'] = customMatch;
-                parsed = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes), parseInt(seconds));
-              } else {
-                parsed = new Date(dateStr);
-              }
-            }
-            
-            if (parsed && !isNaN(parsed.getTime())) {
-              dueDate = parsed.toISOString().split('T')[0];
-            }
-          } catch (e) {
-            console.warn('Failed to parse due_date:', row.data.due_date);
+          // 5. Try phone match
+          if (!storeId && clientPhone.length >= 7 && storeByPhone[clientPhone]) {
+            storeId = storeByPhone[clientPhone];
+            matchMethod = "phone";
           }
-        }
 
-        // Parse created_at from uploaded file (handles Excel serial numbers and date strings)
-        let createdAt: string | undefined;
-        if (row.data.created_at) {
-          try {
-            const dateValue = row.data.created_at;
-            let parsed: Date | null = null;
-            
-            // Check if it's an Excel serial date number (e.g., 46032.42847222222)
-            const numValue = Number(dateValue);
-            if (!isNaN(numValue) && numValue > 25000 && numValue < 60000) {
-              // Excel serial date: days since Dec 30, 1899 (Excel's quirky base date)
-              // Convert to JavaScript Date
-              const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // Dec 30, 1899 UTC
-              const days = Math.floor(numValue);
-              const timeFraction = numValue - days;
-              
-              parsed = new Date(excelEpoch.getTime() + days * 24 * 60 * 60 * 1000 + timeFraction * 24 * 60 * 60 * 1000);
-            } else {
-              const dateStr = String(dateValue).trim();
-              
-              // Try parsing m/d/yyyy h:mm or m/d/yyyy hh:mm format
-              const customMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-              if (customMatch) {
-                const [, month, day, year, hours, minutes, seconds = '0'] = customMatch;
+          // 6. Try address match
+          if (!storeId && clientAddress && storeByAddress[clientAddress]) {
+            storeId = storeByAddress[clientAddress];
+            matchMethod = "address";
+          }
+
+          // If no match found, skip this invoice
+          if (!storeId) {
+            console.log("[Invoice Import] No match found for:", {
+              clientName,
+              exactClientName,
+              normalizedClientName,
+              addressFromClientName,
+            });
+            result.skipped++;
+            result.errors.push({
+              row: row.rowNumber,
+              column: "client_name",
+              columnDisplayName: "Client Name",
+              value: clientName,
+              error: "No matching store found",
+              severity: "warning",
+            });
+            return;
+          }
+
+          console.log("[Invoice Import] Matched:", { clientName, storeId, matchMethod });
+
+          // Parse amount
+          const amountStr = String(row.data.amount || "0").replace(/[^0-9.-]/g, "");
+          const amount = parseFloat(amountStr) || 0;
+
+          // Parse due date (handles Excel serial numbers and date strings)
+          let dueDate = new Date().toISOString().split("T")[0];
+          if (row.data.due_date) {
+            try {
+              const dateValue = row.data.due_date;
+              let parsed: Date | null = null;
+
+              // Check if it's an Excel serial date number
+              const numValue = Number(dateValue);
+              if (!isNaN(numValue) && numValue > 25000 && numValue < 60000) {
+                const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+                const days = Math.floor(numValue);
+                const timeFraction = numValue - days;
                 parsed = new Date(
-                  parseInt(year),
-                  parseInt(month) - 1,
-                  parseInt(day),
-                  parseInt(hours),
-                  parseInt(minutes),
-                  parseInt(seconds)
+                  excelEpoch.getTime() + days * 24 * 60 * 60 * 1000 + timeFraction * 24 * 60 * 60 * 1000,
                 );
               } else {
-                // Fallback to standard Date parsing
-                parsed = new Date(dateStr);
+                const dateStr = String(dateValue).trim();
+
+                // Try parsing m/d/yyyy h:mm format
+                const customMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+                if (customMatch) {
+                  const [, month, day, year, hours, minutes, seconds = "0"] = customMatch;
+                  parsed = new Date(
+                    parseInt(year),
+                    parseInt(month) - 1,
+                    parseInt(day),
+                    parseInt(hours),
+                    parseInt(minutes),
+                    parseInt(seconds),
+                  );
+                } else {
+                  parsed = new Date(dateStr);
+                }
               }
+
+              if (parsed && !isNaN(parsed.getTime())) {
+                dueDate = parsed.toISOString().split("T")[0];
+              }
+            } catch (e) {
+              console.warn("Failed to parse due_date:", row.data.due_date);
             }
-            
-            if (parsed && !isNaN(parsed.getTime())) {
-              createdAt = parsed.toISOString();
-            }
-          } catch (e) {
-            console.warn('Failed to parse created_at:', row.data.created_at);
           }
-        }
 
-        // Parse payment status - accept any string value
-        const paymentStatus = (row.data.payment_status || 'unpaid').toString().toLowerCase().trim() || 'unpaid';
+          // Parse created_at from uploaded file (handles Excel serial numbers and date strings)
+          let createdAt: string | undefined;
+          if (row.data.created_at) {
+            try {
+              const dateValue = row.data.created_at;
+              let parsed: Date | null = null;
 
-        // Generate invoice number
-        const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+              // Check if it's an Excel serial date number (e.g., 46032.42847222222)
+              const numValue = Number(dateValue);
+              if (!isNaN(numValue) && numValue > 25000 && numValue < 60000) {
+                // Excel serial date: days since Dec 30, 1899 (Excel's quirky base date)
+                // Convert to JavaScript Date
+                const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // Dec 30, 1899 UTC
+                const days = Math.floor(numValue);
+                const timeFraction = numValue - days;
 
-        // Insert the invoice
-        const { error: insertError } = await supabase
-          .from('invoices')
-          .insert({
+                parsed = new Date(
+                  excelEpoch.getTime() + days * 24 * 60 * 60 * 1000 + timeFraction * 24 * 60 * 60 * 1000,
+                );
+              } else {
+                const dateStr = String(dateValue).trim();
+
+                // Try parsing m/d/yyyy h:mm or m/d/yyyy hh:mm format
+                const customMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+                if (customMatch) {
+                  const [, month, day, year, hours, minutes, seconds = "0"] = customMatch;
+                  parsed = new Date(
+                    parseInt(year),
+                    parseInt(month) - 1,
+                    parseInt(day),
+                    parseInt(hours),
+                    parseInt(minutes),
+                    parseInt(seconds),
+                  );
+                } else {
+                  // Fallback to standard Date parsing
+                  parsed = new Date(dateStr);
+                }
+              }
+
+              if (parsed && !isNaN(parsed.getTime())) {
+                createdAt = parsed.toISOString();
+              }
+            } catch (e) {
+              console.warn("Failed to parse created_at:", row.data.created_at);
+            }
+          }
+
+          // Parse payment status - accept any string value
+          const paymentStatus = (row.data.payment_status || "unpaid").toString().toLowerCase().trim() || "unpaid";
+
+          // Generate invoice number
+          const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+          // Insert the invoice
+          const { error: insertError } = await supabase.from("invoices").insert({
             store_id: storeId,
             invoice_number: invoiceNumber,
             total_amount: amount,
             total: amount,
-            amount_paid: paymentStatus === 'paid' ? amount : 0,
+            amount_paid: paymentStatus === "paid" ? amount : 0,
             due_date: dueDate,
             payment_status: paymentStatus,
             payment_method: row.data.payment_method || null,
             notes: row.data.notes || row.data.title || null,
             brand: row.data.brand || row.data.issued_by || null,
             created_by: row.data.issued_by || null,
-            ...(createdAt && { created_at: createdAt })
+            ...(createdAt && { created_at: createdAt }),
           });
 
-        if (insertError) {
-          throw insertError;
-        }
+          if (insertError) {
+            throw insertError;
+          }
 
-        result.success++;
-      } catch (error: any) {
-        result.failed++;
-        result.errors.push({
-          row: row.rowNumber,
-          column: '',
-          columnDisplayName: '',
-          value: null,
-          error: error.message,
-          severity: 'error'
-        });
-      }
-    }));
+          result.success++;
+        } catch (error: any) {
+          result.failed++;
+          result.errors.push({
+            row: row.rowNumber,
+            column: "",
+            columnDisplayName: "",
+            value: null,
+            error: error.message,
+            severity: "error",
+          });
+        }
+      }),
+    );
   }
 }
