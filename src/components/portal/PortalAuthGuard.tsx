@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { ensureBikerRecord, ensureDriverRecord } from '@/services/roleService';
 import { Loader2, ShieldAlert } from 'lucide-react';
@@ -15,6 +16,7 @@ interface PortalAuthGuardProps {
 /**
  * Operational Portal Auth Guard
  * - Enforces strict role isolation for driver/biker portals
+ * - Checks BOTH user_profiles.primary_role AND user_roles table (system roles)
  * - Logs all portal access attempts for audit
  * - Blocks access if role doesn't match
  */
@@ -22,6 +24,7 @@ export function PortalAuthGuard({ children, allowedRoles, portalType }: PortalAu
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { data: profileData, isLoading: profileLoading } = useCurrentUserProfile();
+  const { roles: systemRoles, loading: rolesLoading } = useUserRole();
   const healedRef = useRef(false);
 
   useEffect(() => {
@@ -56,7 +59,7 @@ export function PortalAuthGuard({ children, allowedRoles, portalType }: PortalAu
     }
   }, [user, profileData, portalType]);
 
-  if (authLoading || profileLoading) {
+  if (authLoading || profileLoading || rolesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
@@ -72,8 +75,15 @@ export function PortalAuthGuard({ children, allowedRoles, portalType }: PortalAu
   }
 
   const userRole = ((profileData.profile as any).role || profileData.profile.primary_role) as string;
-  const isElevated = ['owner', 'admin', 'ceo', 'va'].includes(userRole);
-  const hasAccess = isElevated || allowedRoles.includes(userRole as 'driver' | 'biker');
+  
+  // Check elevated from profile role OR system roles
+  const isElevated = ['owner', 'admin', 'ceo', 'va'].includes(userRole) || 
+                     systemRoles.some(r => ['owner', 'admin'].includes(r));
+  
+  // Check access from profile role OR any system role from user_roles table
+  const hasProfileAccess = allowedRoles.includes(userRole as 'driver' | 'biker');
+  const hasSystemRoleAccess = systemRoles.some(r => allowedRoles.includes(r as 'driver' | 'biker'));
+  const hasAccess = isElevated || hasProfileAccess || hasSystemRoleAccess;
 
   if (!hasAccess) {
     return (
