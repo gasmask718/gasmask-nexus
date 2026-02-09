@@ -100,3 +100,6 @@ verify_jwt = false
 
 [functions.production-supply-predict]
 verify_jwt = false
+
+[functions.finance-signal-scanner]
+verify_jwt = false

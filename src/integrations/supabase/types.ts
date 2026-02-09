@@ -30920,9 +30920,11 @@ export type Database = {
           priority: Database["public"]["Enums"]["mission_priority"]
           recurrence_config: Json | null
           recurrence_pattern: string | null
+          severity_score: number | null
           source: Database["public"]["Enums"]["mission_source"]
           source_entity_id: string | null
           source_entity_type: string | null
+          source_reference: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["mission_status"]
           streak_count: number | null
@@ -30952,9 +30954,11 @@ export type Database = {
           priority?: Database["public"]["Enums"]["mission_priority"]
           recurrence_config?: Json | null
           recurrence_pattern?: string | null
+          severity_score?: number | null
           source?: Database["public"]["Enums"]["mission_source"]
           source_entity_id?: string | null
           source_entity_type?: string | null
+          source_reference?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["mission_status"]
           streak_count?: number | null
@@ -30984,9 +30988,11 @@ export type Database = {
           priority?: Database["public"]["Enums"]["mission_priority"]
           recurrence_config?: Json | null
           recurrence_pattern?: string | null
+          severity_score?: number | null
           source?: Database["public"]["Enums"]["mission_source"]
           source_entity_id?: string | null
           source_entity_type?: string | null
+          source_reference?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["mission_status"]
           streak_count?: number | null

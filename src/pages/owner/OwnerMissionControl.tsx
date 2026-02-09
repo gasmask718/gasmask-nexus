@@ -5,11 +5,13 @@
  * This is NOT a to-do list. This is a Founder Operating Rhythm.
  */
 
-import { Target, Rocket } from 'lucide-react';
+import { Target, Rocket, Radar } from 'lucide-react';
 import { useMissionControl } from '@/hooks/useMissionControl';
+import { useFinanceSignal } from '@/hooks/useFinanceSignal';
 import { MomentumPanel } from '@/components/missionControl/MomentumPanel';
 import { MissionListView } from '@/components/missionControl/MissionListView';
 import { CreateMissionDialog } from '@/components/missionControl/CreateMissionDialog';
+import { SignalScannerPanel } from '@/components/missionControl/SignalScannerPanel';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function OwnerMissionControl() {
@@ -21,6 +23,12 @@ export default function OwnerMissionControl() {
     deleteMission,
     momentum,
   } = useMissionControl();
+
+  const {
+    runScan: runFinanceScan,
+    isScanning,
+    lastScanResult,
+  } = useFinanceSignal();
 
   if (isLoading) {
     return (
@@ -67,6 +75,13 @@ export default function OwnerMissionControl() {
         totalOverdue={momentum.totalOverdue}
         completionRate={momentum.completionRate}
         totalDeferred={momentum.totalDeferred}
+      />
+
+      {/* Floor Signal Scanner */}
+      <SignalScannerPanel
+        onRunFinanceScan={() => runFinanceScan()}
+        isScanning={isScanning}
+        lastResult={lastScanResult}
       />
 
       {/* Mission List */}
