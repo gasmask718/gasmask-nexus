@@ -26166,6 +26166,9 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer_type: string | null
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           delivery_photos: string[] | null
           due_date: string
           id: string
@@ -26198,6 +26201,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_type?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           delivery_photos?: string[] | null
           due_date: string
           id?: string
@@ -26230,6 +26236,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_type?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           delivery_photos?: string[] | null
           due_date?: string
           id?: string
