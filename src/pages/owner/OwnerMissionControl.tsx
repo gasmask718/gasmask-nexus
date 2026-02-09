@@ -9,6 +9,7 @@ import { Target, Rocket } from 'lucide-react';
 import { useMissionControl } from '@/hooks/useMissionControl';
 import { useFinanceSignal } from '@/hooks/useFinanceSignal';
 import { useCRMSignal } from '@/hooks/useCRMSignal';
+import { useMarginSignal } from '@/hooks/useMarginSignal';
 import { MomentumPanel } from '@/components/missionControl/MomentumPanel';
 import { MissionListView } from '@/components/missionControl/MissionListView';
 import { CreateMissionDialog } from '@/components/missionControl/CreateMissionDialog';
@@ -36,6 +37,12 @@ export default function OwnerMissionControl() {
     isScanning: isCRMScanning,
     lastScanResult: crmResult,
   } = useCRMSignal();
+
+  const {
+    runScan: runMarginScan,
+    isScanning: isMarginScanning,
+    lastScanResult: marginResult,
+  } = useMarginSignal();
 
   if (isLoading) {
     return (
@@ -92,6 +99,9 @@ export default function OwnerMissionControl() {
         onRunCRMScan={() => runCRMScan()}
         isCRMScanning={isCRMScanning}
         crmResult={crmResult}
+        onRunMarginScan={() => runMarginScan()}
+        isMarginScanning={isMarginScanning}
+        marginResult={marginResult}
       />
 
       {/* Mission List */}
