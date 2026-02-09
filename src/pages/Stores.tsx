@@ -83,6 +83,7 @@ const Stores = () => {
   const [stickerFilter, setStickerFilter] = useState<string>('all');
   const [newStoresOnly, setNewStoresOnly] = useState(false);
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all');
+  const [noNameFilter, setNoNameFilter] = useState(false);
   const [monthFilter, setMonthFilter] = useState<string>('all');
   const [customDateFrom, setCustomDateFrom] = useState<string>('');
   const [customDateTo, setCustomDateTo] = useState<string>('');
@@ -420,6 +421,9 @@ const Stores = () => {
       (paymentTypeFilter === 'not_set' && !store.payment_type) ||
       (paymentTypeFilter !== 'not_set' && store.payment_type === paymentTypeFilter);
     
+    // No Name filter
+    const matchesNoName = !noNameFilter || !store.name || store.name.trim() === '';
+
     // New stores filter (stores without notes OR created today)
     const isCreatedToday = store.created_at 
       ? new Date(store.created_at).toDateString() === new Date().toDateString()
@@ -454,7 +458,7 @@ const Stores = () => {
       return true;
     })();
     
-    return matchesSearch && matchesStatus && matchesTag && matchesSticker && matchesPaymentType && matchesNewStores && matchesMonth;
+    return matchesSearch && matchesStatus && matchesTag && matchesSticker && matchesPaymentType && matchesNoName && matchesNewStores && matchesMonth;
   });
 
   const getStatusColor = (status: string) => {
@@ -496,6 +500,7 @@ const Stores = () => {
     return !storeIdsWithNotes.has(store.id) || isCreatedToday;
   };
   const newStoresCount = stores.filter(isStoreNew).length;
+  const noNameCount = stores.filter(s => !s.name || s.name.trim() === '').length;
 
   // ═══════════════════════════════════════════════════════════════════════════════
   // PAGINATION
@@ -784,12 +789,23 @@ const Stores = () => {
             {t('page.stores.new_stores') || 'New Stores'} ({newStoresCount})
           </Button>
 
+          {/* No Name Filter */}
+          <Button
+            variant={noNameFilter ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setNoNameFilter(!noNameFilter)}
+            className="h-9 gap-2"
+          >
+            <Users className="h-4 w-4" />
+            No Name ({noNameCount})
+          </Button>
+
           {/* Active Filters Display */}
-          {(tagFilter !== 'all' || stickerFilter !== 'all' || paymentTypeFilter !== 'all' || newStoresOnly || monthFilter !== 'all') && (
+          {(tagFilter !== 'all' || stickerFilter !== 'all' || paymentTypeFilter !== 'all' || newStoresOnly || noNameFilter || monthFilter !== 'all') && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => { setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); setNewStoresOnly(false); setMonthFilter('all'); setCustomDateFrom(''); setCustomDateTo(''); setShowCustomDate(false); }}
+              onClick={() => { setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); setNewStoresOnly(false); setNoNameFilter(false); setMonthFilter('all'); setCustomDateFrom(''); setCustomDateTo(''); setShowCustomDate(false); }}
               className="text-muted-foreground"
             >
               {t('page.stores.clear_filters') || 'Clear filters'}
