@@ -36,6 +36,7 @@ import {
   RefreshCw,
   PlusCircle,
   GitMerge,
+  Database, // Added Database icon
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBulkUpload } from "@/hooks/useBulkUpload";
@@ -119,17 +120,14 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
     }
   }, [state.stage, state.importResult, onSuccess]);
 
-  // NEW: Auto-map columns when stage becomes "MAPPED"
+  // Auto-map columns when stage becomes "MAPPED"
   useEffect(() => {
     if (state.stage === "MAPPED" && state.columns.length > 0) {
       state.columns.forEach((col) => {
-        // If not already mapped
         if (!state.columnMapping[col]) {
-          // If column name matches 'address' (case-insensitive), map to 'address'
           if (col.toLowerCase() === "address") {
             updateColumnMapping(col, "address");
           } else {
-            // Otherwise map to itself (Detected Column)
             updateColumnMapping(col, col);
           }
         }
@@ -550,9 +548,10 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                               <Copy className="h-5 w-5" />
                               <span>Duplicates Detected ({state.duplicates.length} groups)</span>
                             </div>
+                            {/* MODIFIED: Explicitly explain the matching criteria */}
                             <p className="text-xs text-muted-foreground mt-1">
-                              Choose how to handle each duplicate group. Use <strong>Combine</strong> for duplicates
-                              within the file.
+                              These records match existing entries in the database based on <strong>Address</strong> and{" "}
+                              <strong>Store Name</strong> (or "No Name").
                             </p>
                           </div>
                           <div className="flex gap-2 shrink-0 ml-4">
@@ -602,16 +601,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2">
                                     <p className="font-medium text-sm truncate flex items-center gap-2">
-                                      {dup.storeName ? (
-                                        dup.storeName
-                                      ) : (
-                                        <>
-                                          <span className="text-muted-foreground italic font-normal">No Name</span>
-                                          <Badge variant="outline" className="text-[9px] h-4 px-1 py-0 border-dashed">
-                                            Defaulting to "No Name"
-                                          </Badge>
-                                        </>
-                                      )}
+                                      {dup.storeName || "No Name"}
                                     </p>
 
                                     {isCombined && (
@@ -620,9 +610,13 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                       </Badge>
                                     )}
 
+                                    {/* MODIFIED: DB Badge Visuals */}
                                     {dup.existingStore && !isCombined && (
-                                      <Badge variant="secondary" className="text-[10px] shrink-0">
-                                        In DB ({dup.existingStore.status})
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-[10px] shrink-0 gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 hover:bg-amber-100/80"
+                                      >
+                                        <Database className="h-3 w-3" /> In DB ({dup.existingStore.status})
                                       </Badge>
                                     )}
                                     {!dup.existingStore && !isCombined && (
