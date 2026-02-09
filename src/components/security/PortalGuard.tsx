@@ -100,12 +100,18 @@ export function PortalGuard({
     }
   }
 
-  // For non-elevated users, verify path access
+  // For non-elevated users, verify path access across ALL of the user's roles
   if (!isElevated) {
-    const hasAccess = hasPathAccess(userRole, location.pathname);
+    const hasAccess = roles.some(r => {
+      const portalRole = r as PortalRole;
+      // Check if this role is elevated (grants full access)
+      if (isElevatedRole(portalRole)) return true;
+      // Check if this role has access to the current path
+      return hasPathAccess(portalRole, location.pathname);
+    });
     
     if (!hasAccess) {
-      logAccessDenial(`Path ${location.pathname} not accessible for role ${userRole}`);
+      logAccessDenial(`Path ${location.pathname} not accessible for any of user roles: ${roles.join(', ')}`);
       const landingPage = getRoleLandingPage(userRole);
       return <Navigate to={landingPage} replace />;
     }
