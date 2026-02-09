@@ -168,8 +168,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
   };
 
   const handleProceedToConfirm = () => {
-    // Note: We check state.isImportReady but rely on the modified validation display in UI
-    // If hooks enforce other fields, this might need hook adjustment, but UI blocks here.
     if (!state.isImportReady || validCount === 0) {
       toast.error("Cannot proceed - resolve validation errors first");
       return;
@@ -374,8 +372,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
 
                   {/* --- MISSING FIELDS DETECTION & ALERT --- */}
                   {(() => {
-                    // MODIFIED: Only require 'address' based on user requirement
-                    // This allows store_name to be empty or unmapped
                     const strictRequiredFieldKey = "address";
                     const requiredDbFields = schema.fields.filter((f) => f.field === strictRequiredFieldKey);
 
@@ -430,8 +426,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                 {state.columns.map((col) => {
                                   const mapping = state.columnMapping[col];
                                   const sampleValue = (state.rawData[0] as any)?.[col];
-
-                                  // Check against our strict "address only" requirement for the badge
                                   const isRequiredMapping = requiredDbFields.some((f) => f.field === mapping);
 
                                   return (
@@ -463,7 +457,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                             <SelectItem value="_unmapped" className="text-muted-foreground italic">
                                               -- Skip Column --
                                             </SelectItem>
-                                            {/* Show address at the top as required */}
                                             {requiredDbFields.map((f) => (
                                               <SelectItem key={`db-${f.field}`} value={f.field}>
                                                 <span className="flex items-center gap-1.5">
@@ -472,7 +465,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                                 </span>
                                               </SelectItem>
                                             ))}
-                                            {/* Show other fields from schema */}
                                             {schema.fields
                                               .filter((f) => !requiredDbFields.some((rf) => rf.field === f.field))
                                               .map((f) => (
@@ -554,6 +546,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                 state.duplicates.forEach((dup) => {
                                   setDuplicateAction(dup.key, "update");
                                 });
+                                toast.success("All duplicates marked to Update");
                               }}
                             >
                               <RefreshCw className="h-3 w-3 mr-1" /> Update All
@@ -566,6 +559,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                 state.duplicates.forEach((dup) => {
                                   setDuplicateAction(dup.key, "skip");
                                 });
+                                toast.success("All duplicates marked to Skip");
                               }}
                             >
                               <XCircle className="h-3 w-3 mr-1" /> Skip All
@@ -584,12 +578,17 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                               >
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2">
-                                    {/* MODIFIED: Handle missing store names */}
-                                    <p className="font-medium text-sm truncate">
+                                    {/* MODIFIED: Explicit "No Name" Display */}
+                                    <p className="font-medium text-sm truncate flex items-center gap-2">
                                       {dup.storeName ? (
                                         dup.storeName
                                       ) : (
-                                        <span className="text-muted-foreground italic">No Name</span>
+                                        <>
+                                          <span className="text-muted-foreground italic font-normal">No Name</span>
+                                          <Badge variant="outline" className="text-[9px] h-4 px-1 py-0 border-dashed">
+                                            Defaulting to "No Name"
+                                          </Badge>
+                                        </>
                                       )}
                                     </p>
                                     {dup.existingStore && (
@@ -734,8 +733,6 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        // Go back to validation
-                        // We can't easily go back in stage, so reset to validation state
                         validateData();
                       }}
                       className="-ml-2"
