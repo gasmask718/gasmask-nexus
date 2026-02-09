@@ -25,6 +25,7 @@ import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { useAmbassadorOrders } from '@/hooks/useAmbassadorOrders';
 import { CreateOrderStoreSelector } from '@/components/ambassador/CreateOrderStoreSelector';
 import { CreateStoreInvoiceModal } from '@/components/store/CreateStoreInvoiceModal';
+import { InvoiceDetailModal } from '@/components/ambassador/InvoiceDetailModal';
 import type { PortfolioStore } from '@/hooks/useAmbassadorPortfolio';
 
 export default function AmbassadorOrders() {
@@ -38,6 +39,7 @@ export default function AmbassadorOrders() {
   const [showStoreSelector, setShowStoreSelector] = useState(false);
   const [selectedStore, setSelectedStore] = useState<PortfolioStore | null>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [viewInvoiceId, setViewInvoiceId] = useState<string | null>(null);
 
   // Handle ?action=create query param - open store selector immediately
   useEffect(() => {
@@ -310,7 +312,7 @@ export default function AmbassadorOrders() {
                   <TableRow 
                     key={order.id}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => navigate(`/ambassador/orders/${order.id}`)}
+                    onClick={() => setViewInvoiceId(order.id)}
                   >
                     <TableCell className="font-mono text-sm">{order.order_number}</TableCell>
                     <TableCell>{getChannelBadge(order.channel)}</TableCell>
@@ -329,7 +331,7 @@ export default function AmbassadorOrders() {
                       {format(new Date(order.created_at), 'MMM d, yyyy')}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setViewInvoiceId(order.id); }}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     </TableCell>
@@ -366,6 +368,13 @@ export default function AmbassadorOrders() {
           onSuccess={handleInvoiceSuccess}
         />
       )}
+
+      {/* Invoice Detail Modal */}
+      <InvoiceDetailModal
+        open={!!viewInvoiceId}
+        onOpenChange={(open) => { if (!open) setViewInvoiceId(null); }}
+        invoiceId={viewInvoiceId}
+      />
     </AmbassadorLayout>
   );
 }
