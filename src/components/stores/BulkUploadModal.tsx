@@ -88,7 +88,17 @@ const uploadTypes = [
 ];
 
 export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUpload = true }: BulkUploadModalProps) {
-  const { state, reset, setUploadType, parseFile, updateColumnMapping, validateData, setDuplicateAction, proceedToConfirm, performImport } = useBulkUpload();
+  const {
+    state,
+    reset,
+    setUploadType,
+    parseFile,
+    updateColumnMapping,
+    validateData,
+    setDuplicateAction,
+    proceedToConfirm,
+    performImport,
+  } = useBulkUpload();
 
   const [dragActive, setDragActive] = useState(false);
   const [importMode, setImportMode] = useState<"append" | "upsert">("append");
@@ -158,6 +168,8 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
   };
 
   const handleProceedToConfirm = () => {
+    // Note: We check state.isImportReady but rely on the modified validation display in UI
+    // If hooks enforce other fields, this might need hook adjustment, but UI blocks here.
     if (!state.isImportReady || validCount === 0) {
       toast.error("Cannot proceed - resolve validation errors first");
       return;
@@ -197,16 +209,26 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
 
   const getStepNumber = () => {
     switch (state.stage) {
-      case "SELECT_TYPE": return 1;
-      case "FILE_UPLOADED": return 2;
-      case "MAPPED": return 3;
-      case "VALIDATED": return 4;
-      case "IMPORT_READY": return 4;
-      case "CONFIRM": return 5;
-      case "IMPORTING": return 5;
-      case "COMPLETE": return 6;
-      case "ERROR": return state.step === "select" ? 1 : 4;
-      default: return 1;
+      case "SELECT_TYPE":
+        return 1;
+      case "FILE_UPLOADED":
+        return 2;
+      case "MAPPED":
+        return 3;
+      case "VALIDATED":
+        return 4;
+      case "IMPORT_READY":
+        return 4;
+      case "CONFIRM":
+        return 5;
+      case "IMPORTING":
+        return 5;
+      case "COMPLETE":
+        return 6;
+      case "ERROR":
+        return state.step === "select" ? 1 : 4;
+      default:
+        return 1;
     }
   };
 
@@ -352,12 +374,14 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
 
                   {/* --- MISSING FIELDS DETECTION & ALERT --- */}
                   {(() => {
-                    const requiredFields = getRequiredFields(schema);
+                    // MODIFIED: Only require 'address' based on user requirement
+                    // This allows store_name to be empty or unmapped
+                    const strictRequiredFieldKey = "address";
+                    const requiredDbFields = schema.fields.filter((f) => f.field === strictRequiredFieldKey);
+
                     const mappedFields = Object.values(state.columnMapping).filter(Boolean);
 
-                    const missingRequired = requiredFields.filter(
-                      (f) => !mappedFields.includes(f.field) && f.field !== "id",
-                    );
+                    const missingRequired = requiredDbFields.filter((f) => !mappedFields.includes(f.field));
 
                     return (
                       <div className="space-y-4">
@@ -405,12 +429,10 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                               <TableBody>
                                 {state.columns.map((col) => {
                                   const mapping = state.columnMapping[col];
-                                  const schemaField = schema.fields.find((c) => c.field === mapping);
                                   const sampleValue = (state.rawData[0] as any)?.[col];
 
-                                  // Required DB fields that must map to schema
-                                  const requiredDbFields = schema.fields.filter(f => f.required);
-                                  const isRequiredMapping = requiredDbFields.some(f => f.field === mapping);
+                                  // Check against our strict "address only" requirement for the badge
+                                  const isRequiredMapping = requiredDbFields.some((f) => f.field === mapping);
 
                                   return (
                                     <TableRow key={col}>
@@ -441,20 +463,21 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                             <SelectItem value="_unmapped" className="text-muted-foreground italic">
                                               -- Skip Column --
                                             </SelectItem>
-                                            {/* Required DB fields (store_name, address) */}
+                                            {/* Show address at the top as required */}
                                             {requiredDbFields.map((f) => (
                                               <SelectItem key={`db-${f.field}`} value={f.field}>
                                                 <span className="flex items-center gap-1.5">
-                                                  <span className="text-destructive font-bold">*</span> {f.field}
+                                                  <span className="text-destructive font-bold">*</span>{" "}
+                                                  {f.displayName || f.field}
                                                 </span>
                                               </SelectItem>
                                             ))}
-                                            {/* All detected file columns */}
-                                            {state.columns
-                                              .filter(detectedCol => !requiredDbFields.some(f => f.field === detectedCol))
-                                              .map((detectedCol) => (
-                                                <SelectItem key={detectedCol} value={detectedCol}>
-                                                  {detectedCol}
+                                            {/* Show other fields from schema */}
+                                            {schema.fields
+                                              .filter((f) => !requiredDbFields.some((rf) => rf.field === f.field))
+                                              .map((f) => (
+                                                <SelectItem key={`db-${f.field}`} value={f.field}>
+                                                  {f.displayName || f.field}
                                                 </SelectItem>
                                               ))}
                                           </SelectContent>
@@ -510,7 +533,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                   {/* Duplicate Detection Results */}
                   {state.duplicates.length > 0 && (
                     <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 overflow-hidden">
-                       <div className="p-4 border-b border-amber-500/10 bg-amber-500/10">
+                      <div className="p-4 border-b border-amber-500/10 bg-amber-500/10">
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-medium">
@@ -518,7 +541,8 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                               <span>Duplicates Detected ({state.duplicates.length} groups)</span>
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">
-                              Choose how to handle each duplicate group: append new data into existing records, skip them, or create as new.
+                              Choose how to handle each duplicate group: append new data into existing records, skip
+                              them, or create as new.
                             </p>
                           </div>
                           <div className="flex gap-2 shrink-0 ml-4">
@@ -528,7 +552,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                               className="text-xs h-7"
                               onClick={() => {
                                 state.duplicates.forEach((dup) => {
-                                  setDuplicateAction(dup.key, 'update');
+                                  setDuplicateAction(dup.key, "update");
                                 });
                               }}
                             >
@@ -540,7 +564,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                               className="text-xs h-7"
                               onClick={() => {
                                 state.duplicates.forEach((dup) => {
-                                  setDuplicateAction(dup.key, 'skip');
+                                  setDuplicateAction(dup.key, "skip");
                                 });
                               }}
                             >
@@ -549,22 +573,35 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                           </div>
                         </div>
                       </div>
-                      <ScrollArea className="max-h-[250px]">
+                      <ScrollArea className="max-h-[250px] w-full">
                         <div className="p-3 space-y-2">
                           {state.duplicates.map((dup) => {
-                            const action = state.duplicateActions[dup.key] || 'skip';
+                            const action = state.duplicateActions[dup.key] || "skip";
                             return (
-                              <div key={dup.key} className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-lg border bg-background">
+                              <div
+                                key={dup.key}
+                                className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-lg border bg-background"
+                              >
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <p className="font-medium text-sm truncate">{dup.storeName}</p>
+                                    {/* MODIFIED: Handle missing store names */}
+                                    <p className="font-medium text-sm truncate">
+                                      {dup.storeName ? (
+                                        dup.storeName
+                                      ) : (
+                                        <span className="text-muted-foreground italic">No Name</span>
+                                      )}
+                                    </p>
                                     {dup.existingStore && (
                                       <Badge variant="secondary" className="text-[10px] shrink-0">
                                         In DB ({dup.existingStore.status})
                                       </Badge>
                                     )}
                                     {!dup.existingStore && (
-                                      <Badge variant="secondary" className="text-[10px] border-orange-400 text-orange-600 bg-orange-50 dark:bg-orange-900/20 shrink-0">
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-[10px] border-orange-400 text-orange-600 bg-orange-50 dark:bg-orange-900/20 shrink-0"
+                                      >
                                         In File × {dup.fileRows.length}
                                       </Badge>
                                     )}
@@ -572,14 +609,9 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                   {dup.address && (
                                     <p className="text-xs text-muted-foreground truncate">{dup.address}</p>
                                   )}
-                                  <p className="text-[11px] text-muted-foreground">
-                                    Rows: {dup.fileRows.join(', ')}
-                                  </p>
+                                  <p className="text-[11px] text-muted-foreground">Rows: {dup.fileRows.join(", ")}</p>
                                 </div>
-                                <Select
-                                  value={action}
-                                  onValueChange={(v) => setDuplicateAction(dup.key, v as any)}
-                                >
+                                <Select value={action} onValueChange={(v) => setDuplicateAction(dup.key, v as any)}>
                                   <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs">
                                     <SelectValue />
                                   </SelectTrigger>
@@ -710,17 +742,16 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                     >
                       ← Back to Validation
                     </Button>
-                    <Badge variant="secondary">
-                      Reviewing {validCount} records
-                    </Badge>
+                    <Badge variant="secondary">Reviewing {validCount} records</Badge>
                   </div>
 
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
                     <p className="font-medium mb-1">Review your records before uploading</p>
                     <p className="text-xs text-muted-foreground">
-                      Records tagged as <span className="font-semibold text-amber-600">Append</span> will update existing stores.
-                      Records tagged as <span className="font-semibold text-green-600">New</span> will be created fresh.
-                      Records tagged as <span className="text-muted-foreground">Skip</span> will be ignored.
+                      Records tagged as <span className="font-semibold text-amber-600">Append</span> will update
+                      existing stores. Records tagged as <span className="font-semibold text-green-600">New</span> will
+                      be created fresh. Records tagged as <span className="text-muted-foreground">Skip</span> will be
+                      ignored.
                     </p>
                   </div>
 
@@ -825,9 +856,10 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
               <p>
                 Mode: <strong>{importMode === "append" ? "Append" : "Upsert"}</strong>
               </p>
-              {state.duplicates.filter(d => state.duplicateActions[d.key] === 'append').length > 0 && (
+              {state.duplicates.filter((d) => state.duplicateActions[d.key] === "append").length > 0 && (
                 <p>
-                  <strong>{state.duplicates.filter(d => state.duplicateActions[d.key] === 'append').length}</strong> records will update existing stores.
+                  <strong>{state.duplicates.filter((d) => state.duplicateActions[d.key] === "append").length}</strong>{" "}
+                  records will update existing stores.
                 </p>
               )}
             </AlertDialogDescription>
