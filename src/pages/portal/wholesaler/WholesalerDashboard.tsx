@@ -48,6 +48,12 @@ export default function WholesalerDashboard() {
               Settings
             </Link>
           </Button>
+          <Button variant="outline" asChild>
+            <Link to="/portal/wholesaler/products">
+              <Package className="h-4 w-4 mr-2" />
+              View Products
+            </Link>
+          </Button>
           <Button asChild>
             <Link to="/portal/wholesaler/products/new">
               <Plus className="h-4 w-4 mr-2" />
