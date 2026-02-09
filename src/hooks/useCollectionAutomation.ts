@@ -411,6 +411,7 @@ export async function runAutomationCycle(): Promise<{
     const { data: accounts, error: accountsError } = await supabase
       .from('collection_accounts')
       .select('*')
+      .is('deleted_at', null)
       .in('status', ['active', 'escalated'])
       .gt('total_outstanding', 0);
 

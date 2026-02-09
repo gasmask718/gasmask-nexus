@@ -12907,6 +12907,9 @@ export type Database = {
           assigned_ambassador_id: string | null
           assigned_to_user_id: string | null
           created_at: string
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           entity_id: string
           entity_name: string | null
           entity_type: Database["public"]["Enums"]["collection_entity_type"]
@@ -12929,6 +12932,9 @@ export type Database = {
           assigned_ambassador_id?: string | null
           assigned_to_user_id?: string | null
           created_at?: string
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           entity_id: string
           entity_name?: string | null
           entity_type: Database["public"]["Enums"]["collection_entity_type"]
@@ -12951,6 +12957,9 @@ export type Database = {
           assigned_ambassador_id?: string | null
           assigned_to_user_id?: string | null
           created_at?: string
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           entity_id?: string
           entity_name?: string | null
           entity_type?: Database["public"]["Enums"]["collection_entity_type"]
@@ -52370,6 +52379,10 @@ export type Database = {
         Args: { _record_id: string; _table_name: string }
         Returns: undefined
       }
+      restore_deleted_collection_account: {
+        Args: { p_account_id: string }
+        Returns: undefined
+      }
       restore_deleted_store: { Args: { p_log_id: string }; Returns: undefined }
       restore_soft_deleted: {
         Args: { p_id: string; p_table: string }
@@ -52428,6 +52441,10 @@ export type Database = {
       }
       soft_delete: {
         Args: { _record_id: string; _table_name: string }
+        Returns: undefined
+      }
+      soft_delete_collection_account: {
+        Args: { p_account_id: string; p_reason: string; p_source_ui?: string }
         Returns: undefined
       }
       soft_delete_contact: { Args: { contact_id: string }; Returns: undefined }

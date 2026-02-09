@@ -148,6 +148,7 @@ export function useCollectionAccounts(filters?: {
       let query = supabase
         .from('collection_accounts')
         .select('*')
+        .is('deleted_at', null)
         .order('total_outstanding', { ascending: false });
 
       if (filters?.status) query = query.eq('status', filters.status);
@@ -279,7 +280,8 @@ export function useCollectionStats() {
       // Fetch all accounts for aggregation
       const { data: accounts, error: accountsError } = await supabase
         .from('collection_accounts')
-        .select('*');
+        .select('*')
+        .is('deleted_at', null);
       if (accountsError) throw accountsError;
 
       // Fetch active cases for stage distribution
