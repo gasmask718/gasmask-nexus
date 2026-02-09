@@ -27,21 +27,32 @@ export function useUserRolesAdmin() {
   return useQuery({
     queryKey: ["admin-user-roles"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("id, user_id, role, role_name, created_at, profiles(name, email, phone)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data || []).map((row: any) => ({
-        id: row.id,
-        user_id: row.user_id,
-        role: row.role as string,
-        role_name: row.role_name,
-        created_at: row.created_at,
-        name: row.profiles?.name || null,
-        email: row.profiles?.email || null,
-        phone: row.profiles?.phone || null,
-      })) as UserRoleRow[];
+      // Fetch roles and profiles separately (no FK relationship exists)
+      const [rolesRes, profilesRes] = await Promise.all([
+        supabase.from("user_roles").select("id, user_id, role, role_name, created_at").order("created_at", { ascending: false }),
+        supabase.from("profiles").select("id, name, email, phone"),
+      ]);
+      if (rolesRes.error) throw rolesRes.error;
+      if (profilesRes.error) throw profilesRes.error;
+
+      const profileMap = new Map<string, { name: string | null; email: string | null; phone: string | null }>();
+      for (const p of profilesRes.data || []) {
+        profileMap.set(p.id, { name: p.name, email: p.email, phone: p.phone });
+      }
+
+      return (rolesRes.data || []).map((row: any) => {
+        const profile = profileMap.get(row.user_id);
+        return {
+          id: row.id,
+          user_id: row.user_id,
+          role: row.role as string,
+          role_name: row.role_name,
+          created_at: row.created_at,
+          name: profile?.name || null,
+          email: profile?.email || null,
+          phone: profile?.phone || null,
+        };
+      }) as UserRoleRow[];
     },
   });
 }
