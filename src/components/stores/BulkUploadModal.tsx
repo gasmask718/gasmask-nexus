@@ -35,6 +35,7 @@ import {
   Copy,
   RefreshCw,
   PlusCircle,
+  GitMerge, // Added icon for Combine
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBulkUpload } from "@/hooks/useBulkUpload";
@@ -533,8 +534,8 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                               <span>Duplicates Detected ({state.duplicates.length} groups)</span>
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">
-                              Choose how to handle each duplicate group: append new data into existing records, skip
-                              them, or create as new.
+                              Choose how to handle each duplicate group. Use <strong>Combine</strong> for duplicates
+                              within the file.
                             </p>
                           </div>
                           <div className="flex gap-2 shrink-0 ml-4">
@@ -571,14 +572,21 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                         <div className="p-3 space-y-2">
                           {state.duplicates.map((dup) => {
                             const action = state.duplicateActions[dup.key] || "skip";
+                            const isFileDuplicate = dup.fileRows.length > 1;
+                            // Check if "Combine" is selected to show "Ready" visual state
+                            const isCombined = action === "combine";
+
                             return (
                               <div
                                 key={dup.key}
-                                className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-lg border bg-background"
+                                className={`flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-lg border transition-colors ${
+                                  isCombined
+                                    ? "bg-green-500/5 border-green-500/30" // Green tint for combined/ready
+                                    : "bg-background border-border"
+                                }`}
                               >
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2">
-                                    {/* MODIFIED: Explicit "No Name" Display */}
                                     <p className="font-medium text-sm truncate flex items-center gap-2">
                                       {dup.storeName ? (
                                         dup.storeName
@@ -591,12 +599,19 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                         </>
                                       )}
                                     </p>
-                                    {dup.existingStore && (
+
+                                    {isCombined && (
+                                      <Badge className="bg-green-600 hover:bg-green-600 text-white text-[10px] shrink-0 gap-1 pl-1 pr-2">
+                                        <CheckCircle2 className="h-3 w-3" /> Ready to Merge
+                                      </Badge>
+                                    )}
+
+                                    {dup.existingStore && !isCombined && (
                                       <Badge variant="secondary" className="text-[10px] shrink-0">
                                         In DB ({dup.existingStore.status})
                                       </Badge>
                                     )}
-                                    {!dup.existingStore && (
+                                    {!dup.existingStore && !isCombined && (
                                       <Badge
                                         variant="secondary"
                                         className="text-[10px] border-orange-400 text-orange-600 bg-orange-50 dark:bg-orange-900/20 shrink-0"
@@ -611,10 +626,21 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                   <p className="text-[11px] text-muted-foreground">Rows: {dup.fileRows.join(", ")}</p>
                                 </div>
                                 <Select value={action} onValueChange={(v) => setDuplicateAction(dup.key, v as any)}>
-                                  <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs">
+                                  <SelectTrigger
+                                    className={`w-full sm:w-[180px] h-8 text-xs ${isCombined ? "border-green-500 ring-green-500/20" : ""}`}
+                                  >
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
+                                    {/* Option to Combine rows within file */}
+                                    {isFileDuplicate && (
+                                      <SelectItem value="combine">
+                                        <span className="flex items-center gap-1.5 text-green-600 font-medium">
+                                          <GitMerge className="h-3 w-3" /> Combine & Merge
+                                        </span>
+                                      </SelectItem>
+                                    )}
+
                                     {dup.existingStore && (
                                       <>
                                         <SelectItem value="append">
