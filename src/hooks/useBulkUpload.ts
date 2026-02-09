@@ -206,7 +206,8 @@ export function useBulkUpload() {
         if (existingStores) {
           const normalizedStores = existingStores.map((s) => ({
             id: s.id,
-            name: s.name || "",
+            // UPDATED: Handle existing stores with empty names by defaulting to "No Name"
+            name: s.name || "No Name",
             address: s.address_street || "",
             status: (s.status as string) || "active",
           }));
@@ -443,7 +444,7 @@ export function useBulkUpload() {
   };
 }
 
-// Import functions for each type (unchanged from original, but included for completeness)
+// Import functions for each type
 async function importStores(
   rows: ValidatedRow[],
   mode: "append" | "upsert",
@@ -468,7 +469,8 @@ async function importStores(
           }
 
           const storeData: any = {
-            name: row.data.name || row.data.store_name,
+            // UPDATED: Default to "No Name" if missing or empty
+            name: row.data.name || row.data.store_name || "No Name",
             type: storeType,
             address_street: row.data.address_street || row.data.address,
             address_city: row.data.address_city || row.data.city,
@@ -698,12 +700,9 @@ async function importStoreContacts(rows: ValidatedRow[], result: ImportResult) {
     await Promise.all(
       batch.map(async (row) => {
         try {
-          // Find store by name
-          const { data: store } = await supabase
-            .from("stores")
-            .select("id")
-            .eq("name", row.data.store_name)
-            .maybeSingle();
+          // Find store by name - UPDATED: Fallback to "No Name"
+          const storeName = row.data.store_name || "No Name";
+          const { data: store } = await supabase.from("stores").select("id").eq("name", storeName).maybeSingle();
 
           if (!store) {
             result.failed++;
@@ -711,7 +710,7 @@ async function importStoreContacts(rows: ValidatedRow[], result: ImportResult) {
               row: row.rowNumber,
               column: "store_name",
               columnDisplayName: "Store Name",
-              value: row.data.store_name,
+              value: storeName,
               error: "Store not found",
               severity: "error",
             });
@@ -803,7 +802,8 @@ async function importStoreNotes(rows: ValidatedRow[], result: ImportResult) {
     await Promise.all(
       batch.map(async (row) => {
         try {
-          const storeName = row.data.store_name?.trim() || "";
+          // UPDATED: Default to "No Name" if missing or empty
+          const storeName = row.data.store_name?.trim() || "No Name";
 
           // Try to find matching store with priority order
           let storeId: string | null = null;
