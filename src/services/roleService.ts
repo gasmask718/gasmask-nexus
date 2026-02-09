@@ -464,7 +464,7 @@ export async function ensureWholesalerProfile(userId: string): Promise<void> {
         company_name: `${displayName}'s Wholesale`,
         contact_name: displayName,
         email: profile?.email || null,
-        status: 'active',
+        status: 'pending',
       });
 
     if (error) throw error;
