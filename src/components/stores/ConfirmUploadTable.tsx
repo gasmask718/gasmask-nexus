@@ -10,7 +10,7 @@ import type { ValidatedRow, DuplicateGroup } from '@/lib/uploadValidation';
 interface ConfirmUploadTableProps {
   rows: ValidatedRow[];
   duplicates: DuplicateGroup[];
-  duplicateActions: Record<string, 'append' | 'skip' | 'create_new' | 'update'>;
+  duplicateActions: Record<string, 'append' | 'combine' | 'skip' | 'create_new' | 'update'>;
   columns: string[];
 }
 
