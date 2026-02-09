@@ -1,7 +1,7 @@
 /**
  * Ambassador Profit Tracking Hook
- * Sources data from v_ambassador_profit_dashboard and v_ambassador_profit_breakdown views
- * Ambassadors see ONLY their own profit data (filtered by user_id)
+ * Sources data via secure RPC functions (get_my_profit_dashboard, get_my_profit_breakdown)
+ * Ambassadors see ONLY their own profit data (enforced server-side via SECURITY DEFINER)
  */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,6 +20,9 @@ export interface ProfitSummary {
   brands_sold: number;
   products_sold: number;
   stores_served: number;
+  avg_confidence_score: number;
+  estimated_row_count: number;
+  confirmed_row_count: number;
 }
 
 export interface ProfitBreakdownRow {
@@ -39,6 +42,10 @@ export interface ProfitBreakdownRow {
   first_sale_at: string | null;
   last_sale_at: string | null;
   sale_month: string | null;
+  attribution_method: string;
+  attribution_valid: boolean;
+  profit_confidence_score: number;
+  profit_status: 'confirmed' | 'estimated';
 }
 
 export function useAmbassadorProfitDashboard() {
@@ -49,19 +56,15 @@ export function useAmbassadorProfitDashboard() {
     queryFn: async (): Promise<ProfitSummary | null> => {
       if (!user?.id) return null;
 
-      const { data, error } = await (supabase as any)
-        .from('v_ambassador_profit_dashboard')
-        .select('*')
-        .eq('ambassador_user_id', user.id)
-        .maybeSingle();
+      const { data, error } = await (supabase as any).rpc('get_my_profit_dashboard');
 
       if (error) {
         console.error('Profit dashboard error:', error);
         throw error;
       }
-      if (!data) return null;
+      if (!data || data.length === 0) return null;
 
-      const d = data as any;
+      const d = data[0];
       return {
         ambassador_id: d.ambassador_id,
         ambassador_user_id: d.ambassador_user_id,
@@ -75,6 +78,9 @@ export function useAmbassadorProfitDashboard() {
         brands_sold: Number(d.brands_sold || 0),
         products_sold: Number(d.products_sold || 0),
         stores_served: Number(d.stores_served || 0),
+        avg_confidence_score: Number(d.avg_confidence_score || 0),
+        estimated_row_count: Number(d.estimated_row_count || 0),
+        confirmed_row_count: Number(d.confirmed_row_count || 0),
       };
     },
     enabled: !!user?.id,
@@ -93,23 +99,11 @@ export function useAmbassadorProfitBreakdown(filters?: {
     queryFn: async (): Promise<ProfitBreakdownRow[]> => {
       if (!user?.id) return [];
 
-      let query = (supabase as any)
-        .from('v_ambassador_profit_breakdown')
-        .select('*')
-        .eq('ambassador_user_id', user.id)
-        .order('sale_month', { ascending: false });
-
-      if (filters?.brand) {
-        query = query.eq('brand', filters.brand);
-      }
-      if (filters?.store_id) {
-        query = query.eq('store_id', filters.store_id);
-      }
-      if (filters?.sale_channel) {
-        query = query.eq('sale_channel', filters.sale_channel);
-      }
-
-      const { data, error } = await query;
+      const { data, error } = await (supabase as any).rpc('get_my_profit_breakdown', {
+        p_brand: filters?.brand || null,
+        p_store_id: filters?.store_id || null,
+        p_sale_channel: filters?.sale_channel || null,
+      });
 
       if (error) {
         console.error('Profit breakdown error:', error);
@@ -133,6 +127,10 @@ export function useAmbassadorProfitBreakdown(filters?: {
         first_sale_at: row.first_sale_at,
         last_sale_at: row.last_sale_at,
         sale_month: row.sale_month,
+        attribution_method: row.attribution_method || 'windowed_assignment',
+        attribution_valid: row.attribution_valid ?? true,
+        profit_confidence_score: Number(row.profit_confidence_score || 0),
+        profit_status: row.profit_status || 'estimated',
       }));
     },
     enabled: !!user?.id,

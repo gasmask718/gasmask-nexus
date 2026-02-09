@@ -50698,6 +50698,8 @@ export type Database = {
         Row: {
           ambassador_id: string | null
           ambassador_user_id: string | null
+          attribution_method: string | null
+          attribution_valid: boolean | null
           brand: string | null
           brand_id: string | null
           first_sale_at: string | null
@@ -50706,6 +50708,8 @@ export type Database = {
           net_profit: number | null
           product_id: string | null
           product_name: string | null
+          profit_confidence_score: number | null
+          profit_status: string | null
           retail_revenue: number | null
           sale_channel: string | null
           sale_month: string | null
@@ -50776,6 +50780,62 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_ambassador_profit_dashboard: {
+        Row: {
+          ambassador_id: string | null
+          ambassador_name: string | null
+          ambassador_user_id: string | null
+          avg_confidence_score: number | null
+          avg_margin_pct: number | null
+          brands_sold: number | null
+          confirmed_row_count: number | null
+          estimated_row_count: number | null
+          products_sold: number | null
+          stores_served: number | null
+          total_invoices: number | null
+          total_profit: number | null
+          total_revenue: number | null
+          total_units_sold: number | null
+          total_wholesale_cost: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassadors_user_id_fkey"
+            columns: ["ambassador_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -51950,6 +52010,13 @@ export type Database = {
       }
       auto_lock_old_profiles: { Args: { p_days_old?: number }; Returns: number }
       backfill_final_results: { Args: never; Returns: number }
+      backfill_invoice_line_item_costs: {
+        Args: { p_from_date?: string; p_to_date?: string }
+        Returns: {
+          skipped_count: number
+          updated_count: number
+        }[]
+      }
       bulk_approve_commissions: {
         Args: { p_ambassador_id?: string; p_before_date?: string }
         Returns: number
@@ -52007,6 +52074,14 @@ export type Database = {
       }
       cleanup_old_recalc_items: {
         Args: { p_days_old?: number }
+        Returns: number
+      }
+      compute_ambassador_wac: {
+        Args: {
+          p_ambassador_id: string
+          p_as_of?: string
+          p_product_name: string
+        }
         Returns: number
       }
       compute_changed_fields: {
@@ -52229,6 +52304,64 @@ export type Database = {
       get_current_user_role: { Args: never; Returns: string }
       get_intent_queue_health: { Args: never; Returns: Json }
       get_managed_office_ids: { Args: { _user_id: string }; Returns: string[] }
+      get_my_profit_breakdown: {
+        Args: { p_brand?: string; p_sale_channel?: string; p_store_id?: string }
+        Returns: {
+          ambassador_id: string | null
+          ambassador_user_id: string | null
+          attribution_method: string | null
+          attribution_valid: boolean | null
+          brand: string | null
+          brand_id: string | null
+          first_sale_at: string | null
+          last_sale_at: string | null
+          margin_pct: number | null
+          net_profit: number | null
+          product_id: string | null
+          product_name: string | null
+          profit_confidence_score: number | null
+          profit_status: string | null
+          retail_revenue: number | null
+          sale_channel: string | null
+          sale_month: string | null
+          store_id: string | null
+          store_name: string | null
+          units_sold: number | null
+          wholesale_cost: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "v_ambassador_profit_breakdown"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_my_profit_dashboard: {
+        Args: never
+        Returns: {
+          ambassador_id: string | null
+          ambassador_name: string | null
+          ambassador_user_id: string | null
+          avg_confidence_score: number | null
+          avg_margin_pct: number | null
+          brands_sold: number | null
+          confirmed_row_count: number | null
+          estimated_row_count: number | null
+          products_sold: number | null
+          stores_served: number | null
+          total_invoices: number | null
+          total_profit: number | null
+          total_revenue: number | null
+          total_units_sold: number | null
+          total_wholesale_cost: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "v_ambassador_profit_dashboard"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_payout_statement: { Args: { p_batch_id: string }; Returns: Json }
       get_phase5_mode: { Args: never; Returns: Json }
       get_portal_queue_health: { Args: never; Returns: Json }
