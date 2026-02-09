@@ -102,23 +102,26 @@ export default function UserManagementPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
-                <TableHead>Roles</TableHead>
+                <TableHead>Profile Role</TableHead>
+                <TableHead>System Roles</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No users found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No users found.</TableCell></TableRow>
               ) : filtered.map(user => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name || "—"}</TableCell>
                   <TableCell className="text-sm">{user.email || "—"}</TableCell>
                   <TableCell className="text-sm">{user.phone || "—"}</TableCell>
+                  <TableCell><Badge variant="outline" className="capitalize">{user.role}</Badge></TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      <Badge variant="outline" className="capitalize">{user.role}</Badge>
-                      {user.system_roles.map(r => (
+                      {user.system_roles.length === 0 ? (
+                        <span className="text-xs text-muted-foreground">None</span>
+                      ) : user.system_roles.map(r => (
                         <div key={r.id} className="flex items-center gap-0.5">
                           <Badge variant="secondary" className="capitalize text-xs">{r.role}</Badge>
                           <button
