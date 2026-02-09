@@ -79,7 +79,7 @@ export function useDeleteUserRole() {
       const { error } = await supabase.from("user_roles").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-user-roles"] }); toast.success("Role deleted"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-user-roles"] }); qc.invalidateQueries({ queryKey: ["admin-users"] }); toast.success("Role deleted"); },
     onError: (e: Error) => toast.error(e.message),
   });
 }
@@ -93,7 +93,7 @@ export function useAddUserRole() {
         .insert({ user_id, role: role as any, role_name: role_name ?? null });
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-user-roles"] }); toast.success("Role assigned"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-user-roles"] }); qc.invalidateQueries({ queryKey: ["admin-users"] }); toast.success("Role assigned"); },
     onError: (e: Error) => toast.error(e.message),
   });
 }
