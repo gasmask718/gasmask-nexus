@@ -2,6 +2,7 @@
  * Signal Scanner Panel — Floor signal emission controls
  * Phase 2.1: Finance signal (unpaid invoices)
  * Phase 2.3: CRM inactivity signal (high-value clients)
+ * Phase 2.4: Margin deviation signal (below industry expectation)
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +12,7 @@ import {
   Radar,
   DollarSign,
   Users,
+  TrendingDown,
   CheckCircle,
   AlertTriangle,
   Loader2,
@@ -18,6 +20,7 @@ import {
 } from 'lucide-react';
 import type { SignalScanResponse } from '@/hooks/useFinanceSignal';
 import type { CRMSignalScanResponse } from '@/hooks/useCRMSignal';
+import type { MarginSignalScanResponse } from '@/hooks/useMarginSignal';
 
 interface SignalScannerPanelProps {
   onRunFinanceScan: () => void;
@@ -26,6 +29,9 @@ interface SignalScannerPanelProps {
   onRunCRMScan: () => void;
   isCRMScanning: boolean;
   crmResult: CRMSignalScanResponse | null;
+  onRunMarginScan: () => void;
+  isMarginScanning: boolean;
+  marginResult: MarginSignalScanResponse | null;
 }
 
 function ScanResultDisplay({ result }: { result: { signals_detected: number; missions_created: number; duplicates_found: number; results: Array<{ action: string; details: string }> } }) {
@@ -74,6 +80,53 @@ function ScanResultDisplay({ result }: { result: { signals_detected: number; mis
   );
 }
 
+interface SignalRowProps {
+  icon: React.ReactNode;
+  iconBgClass: string;
+  floor: string;
+  description: string;
+  onScan: () => void;
+  isScanning: boolean;
+  result: { signals_detected: number; missions_created: number; duplicates_found: number; results: Array<{ action: string; details: string }> } | null;
+}
+
+function SignalRow({ icon, iconBgClass, floor, description, onScan, isScanning, result }: SignalRowProps) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+        <div className="flex items-center gap-3">
+          <div className={`h-8 w-8 rounded-md flex items-center justify-center ${iconBgClass}`}>
+            {icon}
+          </div>
+          <div>
+            <p className="text-sm font-medium">{floor}</p>
+            <p className="text-[11px] text-muted-foreground">{description}</p>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onScan}
+          disabled={isScanning}
+        >
+          {isScanning ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              Scanning...
+            </>
+          ) : (
+            <>
+              <Radar className="h-3.5 w-3.5 mr-1.5" />
+              Scan
+            </>
+          )}
+        </Button>
+      </div>
+      {result && <ScanResultDisplay result={result} />}
+    </div>
+  );
+}
+
 export function SignalScannerPanel({
   onRunFinanceScan,
   isFinanceScanning,
@@ -81,6 +134,9 @@ export function SignalScannerPanel({
   onRunCRMScan,
   isCRMScanning,
   crmResult,
+  onRunMarginScan,
+  isMarginScanning,
+  marginResult,
 }: SignalScannerPanelProps) {
   return (
     <Card>
@@ -92,77 +148,35 @@ export function SignalScannerPanel({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Finance Signal */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-md bg-orange-500/10 flex items-center justify-center">
-                <DollarSign className="h-4 w-4 text-orange-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Floor 5 — Finance</p>
-                <p className="text-[11px] text-muted-foreground">
-                  Unpaid invoices &gt; 30 days overdue
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRunFinanceScan}
-              disabled={isFinanceScanning}
-            >
-              {isFinanceScanning ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  Scanning...
-                </>
-              ) : (
-                <>
-                  <Radar className="h-3.5 w-3.5 mr-1.5" />
-                  Scan
-                </>
-              )}
-            </Button>
-          </div>
-          {financeResult && <ScanResultDisplay result={financeResult} />}
-        </div>
+        <SignalRow
+          icon={<DollarSign className="h-4 w-4 text-orange-400" />}
+          iconBgClass="bg-orange-500/10"
+          floor="Floor 5 — Finance"
+          description="Unpaid invoices > 30 days overdue"
+          onScan={onRunFinanceScan}
+          isScanning={isFinanceScanning}
+          result={financeResult}
+        />
 
-        {/* CRM Inactivity Signal */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-md bg-blue-500/10 flex items-center justify-center">
-                <Users className="h-4 w-4 text-blue-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Floor 1 — CRM</p>
-                <p className="text-[11px] text-muted-foreground">
-                  High-value clients inactive &gt; 30 days
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRunCRMScan}
-              disabled={isCRMScanning}
-            >
-              {isCRMScanning ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  Scanning...
-                </>
-              ) : (
-                <>
-                  <Radar className="h-3.5 w-3.5 mr-1.5" />
-                  Scan
-                </>
-              )}
-            </Button>
-          </div>
-          {crmResult && <ScanResultDisplay result={crmResult} />}
-        </div>
+        <SignalRow
+          icon={<Users className="h-4 w-4 text-blue-400" />}
+          iconBgClass="bg-blue-500/10"
+          floor="Floor 1 — CRM"
+          description="High-value clients inactive > 30 days"
+          onScan={onRunCRMScan}
+          isScanning={isCRMScanning}
+          result={crmResult}
+        />
+
+        <SignalRow
+          icon={<TrendingDown className="h-4 w-4 text-rose-400" />}
+          iconBgClass="bg-rose-500/10"
+          floor="Floor 5 — Strategy"
+          description="Margin below industry expectation (≥5% gap)"
+          onScan={onRunMarginScan}
+          isScanning={isMarginScanning}
+          result={marginResult}
+        />
       </CardContent>
     </Card>
   );
