@@ -422,7 +422,7 @@ const Stores = () => {
       (paymentTypeFilter !== 'not_set' && store.payment_type === paymentTypeFilter);
     
     // No Name filter
-    const matchesNoName = !noNameFilter || !store.name || store.name.trim() === '';
+    const matchesNoName = !noNameFilter || !store.name || store.name.trim() === '' || store.name.trim().toLowerCase() === 'no name';
 
     // New stores filter (stores without notes OR created today)
     const isCreatedToday = store.created_at 
@@ -500,7 +500,7 @@ const Stores = () => {
     return !storeIdsWithNotes.has(store.id) || isCreatedToday;
   };
   const newStoresCount = stores.filter(isStoreNew).length;
-  const noNameCount = stores.filter(s => !s.name || s.name.trim() === '').length;
+  const noNameCount = stores.filter(s => !s.name || s.name.trim() === '' || s.name.trim().toLowerCase() === 'no name').length;
 
   // ═══════════════════════════════════════════════════════════════════════════════
   // PAGINATION
