@@ -175,18 +175,7 @@ export function useBulkUpload() {
     // Validate columns first
     const columnValidation = validateColumns(state.columns, schema);
     
-    // For stores: skip missing-required-column check if at least name OR address_street is mapped
-    const isStoreUpload = state.uploadType === 'stores' || state.uploadType === 'combined_crm';
-    if (isStoreUpload) {
-      const mappedValues = Object.values(state.columnMapping);
-      const hasName = mappedValues.includes('name') || mappedValues.includes('store_name');
-      const hasAddr = mappedValues.includes('address_street') || mappedValues.includes('address');
-      if (!hasName && !hasAddr) {
-        toast.error('At least Store Name or Address must be mapped');
-        setState(prev => ({ ...prev, isProcessing: false }));
-        return;
-      }
-    } else if (columnValidation.missing.length > 0) {
+    if (columnValidation.missing.length > 0) {
       toast.error(`Missing required columns: ${columnValidation.missing.join(', ')}`);
       setState(prev => ({ ...prev, isProcessing: false }));
       return;
