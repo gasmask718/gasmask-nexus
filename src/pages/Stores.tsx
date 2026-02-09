@@ -56,6 +56,7 @@ interface Store {
   address_zip: string;
   phone: string;
   alt_phone: string | null;
+  email: string | null;
   status: string;
   tags: string[];
   sells_flowers: boolean;
@@ -63,12 +64,44 @@ interface Store {
   sticker_door: boolean;
   sticker_instore: boolean;
   sticker_phone: boolean;
+  sticker_notes: string | null;
   payment_type: string | null;
   contacts: StoreContact[];
   tubeInventory: TubeInventory[];
   owner_name: string | null;
   connectedStoresCount: number;
   created_at: string | null;
+  updated_at: string | null;
+  notes: string | null;
+  nickname: string | null;
+  country_of_origin: string | null;
+  country: string | null;
+  languages: string[] | null;
+  communication_preference: string | null;
+  personality_notes: string | null;
+  has_expansion: boolean | null;
+  new_store_addresses: string[] | null;
+  expected_open_dates: string[] | null;
+  expansion_notes: string | null;
+  influence_level: string | null;
+  loyalty_triggers: string[] | null;
+  frustration_triggers: string[] | null;
+  risk_score: string | null;
+  brand_id: string | null;
+  borough_id: string | null;
+  language_preference: string | null;
+  dialect_preference: string | null;
+  formality_level: string | null;
+  preferred_channel: string | null;
+  notes_for_tone: string | null;
+  personality_profile_id: string | null;
+  connected_group_id: string | null;
+  sourced_by_ambassador_id: string | null;
+  assigned_ambassador_id: string | null;
+  sourced_at: string | null;
+  last_visit_at: string | null;
+  last_order_at: string | null;
+  health_status: string | null;
 }
 
 const Stores = () => {
@@ -206,7 +239,7 @@ const Stores = () => {
       while (hasMore) {
         const { data, error } = await supabase
           .from('store_master')
-          .select('id, store_name, store_type, address, city, state, zip, phone, owner_name, is_simulation, created_at')
+          .select('*')
           .eq('is_simulation', simulationMode)
           .is('deleted_at', null)
           .order('store_name')
@@ -234,21 +267,54 @@ const Stores = () => {
         address_city: store.city || '',
         address_state: store.state || '',
         address_zip: store.zip || '',
-        phone: store.phone ? String(store.phone) : '', // Ensure string
+        phone: store.phone ? String(store.phone) : '',
         alt_phone: null as string | null,
-        status: 'active', // Default status
+        email: store.email || null,
+        status: store.health_status || 'active',
         tags: [] as string[],
         sells_flowers: false,
         sticker_status: '',
-        sticker_door: false,
-        sticker_instore: false,
-        sticker_phone: false,
+        sticker_door: store.sticker_on_door || false,
+        sticker_instore: store.sticker_in_store || false,
+        sticker_phone: store.sticker_with_phone || false,
+        sticker_notes: store.sticker_notes || null,
         payment_type: null as string | null,
         contacts: [] as StoreContact[],
         tubeInventory: [] as TubeInventory[],
         owner_name: store.owner_name || null,
         connectedStoresCount: 0,
         created_at: store.created_at || null,
+        updated_at: store.updated_at || null,
+        notes: store.notes || null,
+        nickname: store.nickname || null,
+        country_of_origin: store.country_of_origin || null,
+        country: store.country || null,
+        languages: store.languages || null,
+        communication_preference: store.communication_preference || null,
+        personality_notes: store.personality_notes || null,
+        has_expansion: store.has_expansion || null,
+        new_store_addresses: store.new_store_addresses || null,
+        expected_open_dates: store.expected_open_dates || null,
+        expansion_notes: store.expansion_notes || null,
+        influence_level: store.influence_level || null,
+        loyalty_triggers: store.loyalty_triggers || null,
+        frustration_triggers: store.frustration_triggers || null,
+        risk_score: store.risk_score || null,
+        brand_id: store.brand_id || null,
+        borough_id: store.borough_id || null,
+        language_preference: store.language_preference || null,
+        dialect_preference: store.dialect_preference || null,
+        formality_level: store.formality_level || null,
+        preferred_channel: store.preferred_channel || null,
+        notes_for_tone: store.notes_for_tone || null,
+        personality_profile_id: store.personality_profile_id || null,
+        connected_group_id: store.connected_group_id || null,
+        sourced_by_ambassador_id: store.sourced_by_ambassador_id || null,
+        assigned_ambassador_id: store.assigned_ambassador_id || null,
+        sourced_at: store.sourced_at || null,
+        last_visit_at: store.last_visit_at || null,
+        last_order_at: store.last_order_at || null,
+        health_status: store.health_status || null,
       }));
 
       // Fetch contacts for these stores
