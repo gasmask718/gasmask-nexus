@@ -5,9 +5,10 @@
  * This is NOT a to-do list. This is a Founder Operating Rhythm.
  */
 
-import { Target, Rocket, Radar } from 'lucide-react';
+import { Target, Rocket } from 'lucide-react';
 import { useMissionControl } from '@/hooks/useMissionControl';
 import { useFinanceSignal } from '@/hooks/useFinanceSignal';
+import { useCRMSignal } from '@/hooks/useCRMSignal';
 import { MomentumPanel } from '@/components/missionControl/MomentumPanel';
 import { MissionListView } from '@/components/missionControl/MissionListView';
 import { CreateMissionDialog } from '@/components/missionControl/CreateMissionDialog';
@@ -26,9 +27,15 @@ export default function OwnerMissionControl() {
 
   const {
     runScan: runFinanceScan,
-    isScanning,
-    lastScanResult,
+    isScanning: isFinanceScanning,
+    lastScanResult: financeResult,
   } = useFinanceSignal();
+
+  const {
+    runScan: runCRMScan,
+    isScanning: isCRMScanning,
+    lastScanResult: crmResult,
+  } = useCRMSignal();
 
   if (isLoading) {
     return (
@@ -80,8 +87,11 @@ export default function OwnerMissionControl() {
       {/* Floor Signal Scanner */}
       <SignalScannerPanel
         onRunFinanceScan={() => runFinanceScan()}
-        isScanning={isScanning}
-        lastResult={lastScanResult}
+        isFinanceScanning={isFinanceScanning}
+        financeResult={financeResult}
+        onRunCRMScan={() => runCRMScan()}
+        isCRMScanning={isCRMScanning}
+        crmResult={crmResult}
       />
 
       {/* Mission List */}
