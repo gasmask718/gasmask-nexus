@@ -206,6 +206,7 @@ const Stores = () => {
           .from('store_master')
           .select('id, store_name, store_type, address, city, state, zip, phone, owner_name, is_simulation, created_at')
           .eq('is_simulation', simulationMode)
+          .is('deleted_at', null)
           .order('store_name')
           .range(page * pageSize, (page + 1) * pageSize - 1);
 

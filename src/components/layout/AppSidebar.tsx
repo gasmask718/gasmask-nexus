@@ -166,6 +166,7 @@ export default function AppSidebar() {
                 { path: '/security/devices', label: 'Device Management', emoji: '📱' },
                 { path: '/security/sessions', label: 'Active Sessions', emoji: '🔑' },
                 { path: '/security/audit', label: 'Audit Logs', emoji: '📋' },
+                { path: '/admin/deleted-records', label: 'Deleted Records', emoji: '🗑️' },
               ], "bg-gradient-to-r from-emerald-500/20 to-green-500/10 text-emerald-300 hover:from-emerald-500/30")}
             </div>
           )}

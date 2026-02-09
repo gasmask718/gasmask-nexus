@@ -131,7 +131,8 @@ export function useStoresInTerritory(boro?: string) {
       // Use pagination for scalable access - no arbitrary limit
       const { data, error, count } = await supabase
         .from('store_master')
-        .select('*', { count: 'exact' });
+        .select('*', { count: 'exact' })
+        .is('deleted_at', null);
       if (error) throw error;
       return { items: data || [], totalCount: count || 0 };
     },

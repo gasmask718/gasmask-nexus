@@ -18010,6 +18010,51 @@ export type Database = {
           },
         ]
       }
+      deletion_recovery_log: {
+        Row: {
+          delete_reason: string | null
+          deleted_at: string
+          deleted_by: string
+          entity_id: string
+          entity_snapshot: Json
+          entity_table: string
+          entity_type: string
+          id: string
+          is_restored: boolean
+          restored_at: string | null
+          restored_by: string | null
+          source_ui: string | null
+        }
+        Insert: {
+          delete_reason?: string | null
+          deleted_at?: string
+          deleted_by: string
+          entity_id: string
+          entity_snapshot: Json
+          entity_table: string
+          entity_type: string
+          id?: string
+          is_restored?: boolean
+          restored_at?: string | null
+          restored_by?: string | null
+          source_ui?: string | null
+        }
+        Update: {
+          delete_reason?: string | null
+          deleted_at?: string
+          deleted_by?: string
+          entity_id?: string
+          entity_snapshot?: Json
+          entity_table?: string
+          entity_type?: string
+          id?: string
+          is_restored?: boolean
+          restored_at?: string | null
+          restored_by?: string | null
+          source_ui?: string | null
+        }
+        Relationships: []
+      }
       deliveries: {
         Row: {
           assigned_driver_id: string | null
@@ -41240,6 +41285,9 @@ export type Database = {
           country: string | null
           country_of_origin: string | null
           created_at: string | null
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           dialect_preference: string | null
           email: string | null
           expansion_notes: string | null
@@ -41289,6 +41337,9 @@ export type Database = {
           country?: string | null
           country_of_origin?: string | null
           created_at?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           dialect_preference?: string | null
           email?: string | null
           expansion_notes?: string | null
@@ -41338,6 +41389,9 @@ export type Database = {
           country?: string | null
           country_of_origin?: string | null
           created_at?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           dialect_preference?: string | null
           email?: string | null
           expansion_notes?: string | null
@@ -52316,6 +52370,7 @@ export type Database = {
         Args: { _record_id: string; _table_name: string }
         Returns: undefined
       }
+      restore_deleted_store: { Args: { p_log_id: string }; Returns: undefined }
       restore_soft_deleted: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
@@ -52382,6 +52437,10 @@ export type Database = {
       }
       soft_delete_staff_category: {
         Args: { p_category_id: string }
+        Returns: undefined
+      }
+      soft_delete_store: {
+        Args: { p_reason: string; p_source_ui?: string; p_store_id: string }
         Returns: undefined
       }
       start_payout_batch_processing: {
