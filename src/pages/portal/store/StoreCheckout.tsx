@@ -9,6 +9,7 @@ import { useCart } from "@/services/marketplace/useCart";
 import { useCheckout, ShippingAddress } from "@/services/marketplace/useCheckout";
 import { useStoreProfile } from "@/services/store/useStoreProfile";
 import { CreditCard, Truck, Store, Banknote, ArrowLeft, Check } from "lucide-react";
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { Link, useNavigate } from "react-router-dom";
 
 export default function StoreCheckout() {
@@ -117,9 +118,16 @@ export default function StoreCheckout() {
                     </div>
                     <div className="col-span-2">
                       <Label>Street Address</Label>
-                      <Input
+                      <AddressAutocomplete
                         value={shippingAddress.street}
-                        onChange={(e) => setShippingAddress(prev => ({ ...prev, street: e.target.value }))}
+                        onChange={(val) => setShippingAddress(prev => ({ ...prev, street: val }))}
+                        onSelect={(parsed) => setShippingAddress(prev => ({
+                          ...prev,
+                          street: parsed.street,
+                          city: parsed.city,
+                          state: parsed.state,
+                          zipCode: parsed.zip,
+                        }))}
                       />
                     </div>
                     <div>

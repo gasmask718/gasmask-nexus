@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 
 const warehouseSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -226,7 +227,18 @@ export default function WarehouseFormModal({ open, onClose, warehouseId }: Wareh
             <h3 className="text-sm font-medium text-muted-foreground">Location</h3>
             <div className="space-y-2">
               <Label htmlFor="address_line1">Address Line 1</Label>
-              <Input id="address_line1" {...form.register('address_line1')} placeholder="123 Main St" />
+              <AddressAutocomplete
+                id="address_line1"
+                value={form.watch('address_line1') || ''}
+                onChange={(val) => form.setValue('address_line1', val)}
+                onSelect={(parsed) => {
+                  form.setValue('address_line1', parsed.street);
+                  form.setValue('city', parsed.city);
+                  form.setValue('state', parsed.state);
+                  form.setValue('zip', parsed.zip);
+                }}
+                placeholder="123 Main St"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="address_line2">Address Line 2</Label>

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { MapPin, Phone, Mail, MessageSquare, Edit, Building, User } from 'lucide-react';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { GlobalTagSelector } from '@/components/tags/GlobalTagSelector';
@@ -564,9 +565,16 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
             <Separator />
             <div className="space-y-2">
               <Label>Street Address</Label>
-              <Input
+              <AddressAutocomplete
                 value={formData.address_street}
-                onChange={(e) => setFormData({ ...formData, address_street: e.target.value })}
+                onChange={(val) => setFormData({ ...formData, address_street: val })}
+                onSelect={(parsed) => setFormData(prev => ({
+                  ...prev,
+                  address_street: parsed.street,
+                  address_city: parsed.city,
+                  address_state: parsed.state,
+                  address_zip: parsed.zip,
+                }))}
                 placeholder="123 Main St"
               />
             </div>

@@ -10,6 +10,7 @@ import { UserPlus, ArrowLeft, Save, Plus, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { useStaffCategories, useCreateStaffCategory, useCreateStaff, type CreateStaffData } from '@/hooks/useUnforgettableStaff';
 import { SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
@@ -258,10 +259,17 @@ export default function UnforgettableStaffNew() {
 
               <div className="space-y-2">
                 <Label htmlFor="addressLine1">Address Line 1 *</Label>
-                <Input
+                <AddressAutocomplete
                   id="addressLine1"
+                  value={watch('addressLine1') || ''}
+                  onChange={(val) => setValue('addressLine1', val)}
+                  onSelect={(parsed) => {
+                    setValue('addressLine1', parsed.street);
+                    setValue('city', parsed.city);
+                    setValue('state', parsed.state);
+                    setValue('zip', parsed.zip);
+                  }}
                   placeholder="123 Main Street"
-                  {...register('addressLine1', { required: 'Address is required' })}
                 />
                 {errors.addressLine1 && <p className="text-xs text-destructive">{errors.addressLine1.message}</p>}
               </div>

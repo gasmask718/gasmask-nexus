@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, X, Plus, User, Phone, Mail, Store, Briefcase, MapPin, Building2, Home, Sparkles, Check, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
@@ -658,19 +659,23 @@ export function AdvancedContactModal({
                 </div>
                 
                 <div className="bg-secondary/30 rounded-xl p-4 border border-border/30 space-y-4">
-                  {/* Street Address */}
-                  <div className="space-y-1">
-                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">Street Address</Label>
-                    <div className="relative">
-                      <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="123 Main Street"
-                        value={formData.addressStreet}
-                        onChange={(e) => setFormData({ ...formData, addressStreet: e.target.value })}
-                        className="pl-10 bg-background/50 border-border/50"
-                      />
-                    </div>
-                  </div>
+                   {/* Street Address */}
+                   <div className="space-y-1">
+                     <Label className="text-xs uppercase tracking-wide text-muted-foreground">Street Address</Label>
+                     <AddressAutocomplete
+                       placeholder="123 Main Street"
+                       value={formData.addressStreet}
+                       onChange={(val) => setFormData({ ...formData, addressStreet: val })}
+                       onSelect={(parsed) => setFormData(prev => ({
+                         ...prev,
+                         addressStreet: parsed.street,
+                         addressCity: parsed.city,
+                         addressState: parsed.state,
+                         addressZip: parsed.zip,
+                       }))}
+                       className="bg-background/50 border-border/50"
+                     />
+                   </div>
                   
                   {/* City, State, ZIP */}
                   <div className="grid grid-cols-3 gap-2">
