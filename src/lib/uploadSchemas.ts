@@ -40,10 +40,7 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         type: 'string',
         required: true,
         source: 'excel',
-        notes: 'Primary identifier for the store',
-        validation: (v) => v?.trim()?.length > 0 
-          ? { valid: true } 
-          : { valid: false, error: 'Store name is required' }
+        notes: 'Primary identifier for the store. Can be empty if address is provided.',
       },
       {
         field: 'company',
@@ -66,8 +63,9 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         field: 'address_street',
         displayName: 'Street Address',
         type: 'string',
-        required: false,
-        source: 'excel'
+        required: true,
+        source: 'excel',
+        notes: 'Required field. Store can be identified by address even without a name.'
       },
       {
         field: 'address_city',

@@ -47,7 +47,7 @@ export interface UploadState {
   error: string | null;
   // Duplicate detection
   duplicates: DuplicateGroup[];
-  duplicateActions: Record<string, 'append' | 'skip' | 'create_new'>;
+  duplicateActions: Record<string, 'append' | 'skip' | 'create_new' | 'update'>;
 }
 
 export interface ImportResult {
@@ -175,7 +175,18 @@ export function useBulkUpload() {
     // Validate columns first
     const columnValidation = validateColumns(state.columns, schema);
     
-    if (columnValidation.missing.length > 0) {
+    // For stores: skip missing-required-column check if at least name OR address_street is mapped
+    const isStoreUpload = state.uploadType === 'stores' || state.uploadType === 'combined_crm';
+    if (isStoreUpload) {
+      const mappedValues = Object.values(state.columnMapping);
+      const hasName = mappedValues.includes('name') || mappedValues.includes('store_name');
+      const hasAddr = mappedValues.includes('address_street') || mappedValues.includes('address');
+      if (!hasName && !hasAddr) {
+        toast.error('At least Store Name or Address must be mapped');
+        setState(prev => ({ ...prev, isProcessing: false }));
+        return;
+      }
+    } else if (columnValidation.missing.length > 0) {
       toast.error(`Missing required columns: ${columnValidation.missing.join(', ')}`);
       setState(prev => ({ ...prev, isProcessing: false }));
       return;
@@ -252,7 +263,7 @@ export function useBulkUpload() {
     }
   }, [state.uploadType, state.columns, state.rawData, state.columnMapping]);
 
-  const setDuplicateAction = useCallback((groupKey: string, action: 'append' | 'skip' | 'create_new') => {
+  const setDuplicateAction = useCallback((groupKey: string, action: 'append' | 'skip' | 'create_new' | 'update') => {
     setState(prev => ({
       ...prev,
       duplicateActions: { ...prev.duplicateActions, [groupKey]: action },
@@ -333,10 +344,14 @@ export function useBulkUpload() {
 
       // Determine effective mode per row based on duplicate actions
       const appendRows = new Set<number>();
+      const updateRows = new Set<number>();
       for (const dup of state.duplicates) {
         const action = state.duplicateActions[dup.key] || 'skip';
         if (action === 'append' && dup.existingStore) {
           dup.fileRows.forEach(r => appendRows.add(r));
+        }
+        if (action === 'update' && dup.existingStore) {
+          dup.fileRows.forEach(r => updateRows.add(r));
         }
       }
 
@@ -344,7 +359,7 @@ export function useBulkUpload() {
       
       // Import based on upload type
       if (state.uploadType === 'stores' || state.uploadType === 'combined_crm') {
-        await importStores(filteredRows, mode, result, appendRows);
+        await importStores(filteredRows, mode, result, appendRows, updateRows);
       } else if (state.uploadType === 'store_contacts') {
         await importStoreContacts(filteredRows, result);
       } else if (state.uploadType === 'store_notes') {
@@ -421,7 +436,8 @@ async function importStores(
   rows: ValidatedRow[], 
   mode: 'append' | 'upsert',
   result: ImportResult,
-  appendRows: Set<number> = new Set()
+  appendRows: Set<number> = new Set(),
+  updateRows: Set<number> = new Set()
 ) {
   const BATCH_SIZE = 20;
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
@@ -484,11 +500,12 @@ async function importStores(
           }
         }
 
-        // Determine if this row should be appended (update existing)
+        // Determine if this row should be appended or updated
         const shouldAppend = appendRows.has(row.rowNumber);
-        const effectiveMode = shouldAppend ? 'upsert' : mode;
+        const shouldUpdate = updateRows.has(row.rowNumber);
+        const effectiveMode = (shouldAppend || shouldUpdate) ? 'upsert' : mode;
 
-        if (effectiveMode === 'upsert' || shouldAppend) {
+        if (effectiveMode === 'upsert' || shouldAppend || shouldUpdate) {
           // Check if store exists by name + address
           let query = supabase.from('stores').select('id').eq('name', storeData.name);
           if (storeData.address_street) {
@@ -497,14 +514,23 @@ async function importStores(
           const { data: existing } = await query.maybeSingle();
 
           if (existing) {
-            // Remove name from update payload (it's the key)
             const updateData = { ...storeData };
-            // Only update non-empty fields to preserve existing data
-            Object.keys(updateData).forEach(k => {
-              if (updateData[k] === undefined || updateData[k] === null || updateData[k] === '') {
-                delete updateData[k];
-              }
-            });
+            if (shouldUpdate) {
+              // Update mode: overwrite ALL fields from the sheet (even empty ones clear existing data)
+              // Only remove undefined keys
+              Object.keys(updateData).forEach(k => {
+                if (updateData[k] === undefined) {
+                  delete updateData[k];
+                }
+              });
+            } else {
+              // Append mode: only update non-empty fields to preserve existing data
+              Object.keys(updateData).forEach(k => {
+                if (updateData[k] === undefined || updateData[k] === null || updateData[k] === '') {
+                  delete updateData[k];
+                }
+              });
+            }
             await supabase.from('stores').update(updateData).eq('id', existing.id);
           } else {
             await supabase.from('stores').insert(storeData);
