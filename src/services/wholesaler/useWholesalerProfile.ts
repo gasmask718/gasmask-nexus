@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { ensureWholesalerProfile } from "@/services/roleService";
 
 export interface WholesalerProfile {
   id: string;
@@ -28,13 +29,27 @@ export function useWholesalerProfile() {
     queryFn: async () => {
       if (!user) return null;
 
-      const { data, error } = await supabase
+      // First attempt
+      let { data, error } = await supabase
         .from('wholesaler_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
+
+      // Auto-heal: create profile if missing
+      if (!data) {
+        await ensureWholesalerProfile(user.id);
+        const retry = await supabase
+          .from('wholesaler_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (retry.error) throw retry.error;
+        data = retry.data;
+      }
+
       return data as WholesalerProfile | null;
     },
     enabled: !!user,
