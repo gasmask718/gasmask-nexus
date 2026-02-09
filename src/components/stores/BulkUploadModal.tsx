@@ -440,7 +440,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                             {schema.fields.map((schemaCol) => (
                                               <SelectItem key={schemaCol.field} value={schemaCol.field}>
                                                 <span className="flex items-center justify-between w-full gap-2">
-                                                  {schemaCol.displayName}
+                                                  {schemaCol.field}
                                                   {schemaCol.required && <span className="text-destructive">*</span>}
                                                 </span>
                                               </SelectItem>
