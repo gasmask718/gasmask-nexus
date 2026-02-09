@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Package, Store, ShoppingCart, TrendingUp, Search, 
   DollarSign, Clock, CheckCircle,
-  XCircle, Eye, Download, AlertCircle, Plus
+  XCircle, Eye, Download, AlertCircle, Plus, RefreshCw
 } from 'lucide-react';
 import { ReceiptStatusIcon } from '@/components/invoice/ReceiptStatusIndicator';
 import type { ReceiptStatus } from '@/components/invoice/ReceiptStatusIndicator';
@@ -67,7 +67,7 @@ export default function AmbassadorOrders() {
   };
 
   // Fetch real orders
-  const { orders, metrics, isLoading, isError, error } = useAmbassadorOrders({
+  const { orders, metrics, isLoading, isRefetching, isError, error, refetch } = useAmbassadorOrders({
     channel: channelFilter,
     status: statusFilter,
   });
@@ -284,6 +284,9 @@ export default function AmbassadorOrders() {
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
+          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isRefetching} title="Refresh orders">
+            <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+          </Button>
           <Button variant="outline" size="icon">
             <Download className="h-4 w-4" />
           </Button>
