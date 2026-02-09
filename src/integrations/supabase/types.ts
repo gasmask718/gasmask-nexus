@@ -25838,6 +25838,7 @@ export type Database = {
           sale_unit: string | null
           total: number
           tubes_equivalent: number | null
+          tubes_per_unit: number | null
           unit_price: number
           unit_type: string
           units_per_box_snapshot: number | null
@@ -25857,6 +25858,7 @@ export type Database = {
           sale_unit?: string | null
           total: number
           tubes_equivalent?: number | null
+          tubes_per_unit?: number | null
           unit_price: number
           unit_type?: string
           units_per_box_snapshot?: number | null
@@ -25876,6 +25878,7 @@ export type Database = {
           sale_unit?: string | null
           total?: number
           tubes_equivalent?: number | null
+          tubes_per_unit?: number | null
           unit_price?: number
           unit_type?: string
           units_per_box_snapshot?: number | null
