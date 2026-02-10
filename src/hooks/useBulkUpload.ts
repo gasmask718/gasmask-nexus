@@ -670,6 +670,10 @@ async function importStores(
             mode: row.data.mode || null,
             last_order_date: row.data.last_order_date || null,
             owed_amount: row.data.owed_amount ? parseFloat(String(row.data.owed_amount).replace(/[^0-9.-]/g, "")) || null : null,
+            invoice_amount: row.data.invoice_amount ? parseFloat(String(row.data.invoice_amount).replace(/[^0-9.-]/g, "")) || null : null,
+            invoice_payment_status: row.data.invoice_payment_status || null,
+            invoice_payment_method: row.data.invoice_payment_method || row.data.payment_type || null,
+            invoice_amount_paid: row.data.invoice_amount_paid ? parseFloat(String(row.data.invoice_amount_paid).replace(/[^0-9.-]/g, "")) || null : null,
             is_simulation: false,
           };
 
