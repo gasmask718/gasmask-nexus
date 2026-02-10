@@ -12,6 +12,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSimulationSafeMutation } from '@/hooks/useSimulationSafeMutation';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { useTubeIntelligence, canEditField, TubeIntelRole } from '@/hooks/useTubeIntelligence';
+import { useLastOrderSnapshot } from '@/hooks/useLastOrderSnapshot';
 import {
   Package, Save, RefreshCw, Clock, Calendar, ShoppingCart, FlaskConical,
   Gift, ThumbsUp, ThumbsDown, AlertTriangle, User, MapPin, Phone, MessageSquare, Monitor
@@ -112,7 +113,11 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
     updateField,
   } = useTubeIntelligence(storeId);
 
-  // Auto-initialize brands if missing
+  // ── Last Order Snapshot Intelligence (derived, read-only) ──
+  const { data: losSnapshots } = useLastOrderSnapshot(storeId);
+  const getLOSForBrand = (brandId: string) => {
+    return losSnapshots?.find(s => s.brand_key === brandId || s.canonical_brand_id === brandId);
+  };
   useEffect(() => {
     if (!intelLoading && intelData && intelData.length < VALID_TUBE_BRANDS.length && storeId) {
       initializeBrands.mutate(storeId);
@@ -475,18 +480,30 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                       </div>
                     </div>
 
-                    {/* ── Last Order Info ── */}
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
-                      <Calendar className="h-3 w-3" />
-                      <span>
-                        {t('card.tube_intel.last_order')}:{' '}
-                        <span className={cn(
-                          kpi?.last_order_date ? 'text-foreground' : 'text-warning font-medium'
-                        )}>
-                          {kpi?.last_order_label || t('card.tube_intel.never_ordered')}
-                        </span>
-                      </span>
-                    </div>
+                    {/* ── Last Order Info (enriched with LOS snapshot) ── */}
+                    {(() => {
+                      const los = getLOSForBrand(brand.id);
+                      return (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
+                          <Calendar className="h-3 w-3" />
+                          <span>
+                            {t('card.tube_intel.last_order')}:{' '}
+                            {los ? (
+                              <span className="text-foreground">
+                                {format(new Date(los.last_order_date), 'MMM d')} · {los.last_order_size_label}
+                                <span className="text-muted-foreground"> · {los.days_since_last_order}d ago</span>
+                              </span>
+                            ) : (
+                              <span className={cn(
+                                kpi?.last_order_date ? 'text-foreground' : 'text-warning font-medium'
+                              )}>
+                                {kpi?.last_order_label || t('card.tube_intel.never_ordered')}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      );
+                    })()}
 
                     {/* ═══════════════════════════════════════════════════ */}
                     {/* PER-BRAND OPERATIONAL SIGNALS (RESTORED)          */}
