@@ -752,6 +752,28 @@ async function importStores(
                 is_historical: true,
                 ...(createdAt && { created_at: createdAt }),
               });
+
+              // Also write payment details to store_master
+              const { data: storeMaster } = await supabase
+                .from("store_master")
+                .select("id")
+                .eq("store_name", storeData.name)
+                .maybeSingle();
+
+              if (storeMaster) {
+                await supabase.from("store_master").update({
+                  invoice_amount: amount,
+                  invoice_payment_status: paymentStatus,
+                  invoice_payment_method: row.data.invoice_payment_method || row.data.payment_type || null,
+                  invoice_amount_paid: amountPaid,
+                  invoice_due_date: dueDate,
+                  invoice_date: createdAt ? createdAt.split("T")[0] : null,
+                  invoice_brand: row.data.invoice_brand || row.data.brand || null,
+                  invoice_notes: row.data.invoice_notes || null,
+                  invoice_paid_at: paidAt,
+                  invoice_received_by: row.data.invoice_received_by || null,
+                }).eq("id", storeMaster.id);
+              }
             }
           }
 
