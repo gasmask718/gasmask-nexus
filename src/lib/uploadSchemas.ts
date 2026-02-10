@@ -523,24 +523,158 @@ export const uploadSchemas: Record<string, UploadSchema> = {
     naturalKey: ['store_name'],
     relatedTables: ['stores', 'store_contacts', 'store_notes'],
     fields: [
-      // Store fields
+      // === PRIMARY TEMPLATE COLUMNS (same standard as stores template) ===
+      {
+        field: 'status',
+        displayName: 'Status',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'active, inactive, lead, etc.'
+      },
       {
         field: 'store_name',
         displayName: 'Store Name',
         type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Optional. Address is the only required identifier.'
+      },
+      {
+        field: 'contact_name',
+        displayName: 'Contact Name',
+        type: 'string',
+        required: false,
+        source: 'excel'
+      },
+      {
+        field: 'contact_phone',
+        displayName: 'PHONE #',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Primary identity key. Required when contact_name is provided.'
+      },
+      {
+        field: 'gasmask_notes',
+        displayName: 'GasMask Note',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Brand-specific notes for GasMask'
+      },
+      {
+        field: 'hotmama_notes',
+        displayName: 'Hot Mama Note',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Brand-specific notes for Hot Mama'
+      },
+      {
+        field: 'hotscolatti_notes',
+        displayName: 'Hot Scolatti Note',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Brand-specific notes for Hot Scolatti'
+      },
+      {
+        field: 'grabba_notes',
+        displayName: 'Grabba R Us Note',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Brand-specific notes for Grabba R Us'
+      },
+      {
+        field: 'address',
+        displayName: 'Address',
+        type: 'string',
         required: true,
         source: 'excel',
-        validation: (v) => v?.trim()?.length > 0 
-          ? { valid: true } 
-          : { valid: false, error: 'Store name is required' }
+        notes: 'Required field. Store can be identified by address even without a name.'
       },
+      {
+        field: 'notes',
+        displayName: 'Notes',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Will be copied word-for-word (General notes)'
+      },
+      {
+        field: 'mode',
+        displayName: 'Mode',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'On Door / In Store'
+      },
+      {
+        field: 'last_order_date',
+        displayName: 'Last Order Date',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Date of the most recent order'
+      },
+      {
+        field: 'invoice_amount',
+        displayName: 'Amount',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Total invoice/order amount'
+      },
+      {
+        field: 'invoice_payment_method',
+        displayName: 'Payment Method',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Cash, Card, Zelle, etc.'
+      },
+      {
+        field: 'invoice_payment_status',
+        displayName: 'Paid/Unpaid',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'paid, unpaid, partial'
+      },
+      {
+        field: 'invoice_date',
+        displayName: 'Issue Date',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'When the invoice was issued'
+      },
+      {
+        field: 'owed_amount',
+        displayName: 'Owed Amount',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Outstanding balance owed'
+      },
+      {
+        field: 'invoice_amount_paid',
+        displayName: 'Paid Amount',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'How much has been paid'
+      },
+      // === SECONDARY FIELDS (available for mapping but not in default template) ===
       {
         field: 'company',
         displayName: 'Company',
         type: 'string',
-        required: false, // OPTIONAL - legal entity only, not required for individuals
+        required: false,
         source: 'excel',
-        notes: 'Legal entity only. Leave blank for individuals or unaffiliated stores.'
+        notes: 'Legal entity only. Leave blank for individuals.'
       },
       {
         field: 'brand',
@@ -549,13 +683,6 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         required: false,
         source: 'excel',
         notes: 'Commercial brand (e.g., Grabba). Separate from Company.'
-      },
-      {
-        field: 'address',
-        displayName: 'Address',
-        type: 'string',
-        required: false,
-        source: 'excel'
       },
       {
         field: 'city',
@@ -578,23 +705,6 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         required: false,
         source: 'excel'
       },
-      // Contact fields
-      {
-        field: 'contact_name',
-        displayName: 'Contact Name',
-        type: 'string',
-        required: false,
-        source: 'excel'
-      },
-      {
-        field: 'contact_phone',
-        displayName: 'Contact Phone',
-        type: 'string', // Treat phone as string - no format validation
-        required: false, // Optional at row level - but required if contact_name is provided
-        source: 'excel',
-        notes: 'Primary identity key. Required when contact_name is provided.'
-        // No validation - accept any string value
-      },
       {
         field: 'contact_email',
         displayName: 'Contact Email',
@@ -609,22 +719,6 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         required: false,
         source: 'excel'
       },
-      // Notes
-      {
-        field: 'notes',
-        displayName: 'Notes',
-        type: 'string',
-        required: false,
-        source: 'excel'
-      },
-      {
-        field: 'note_date',
-        displayName: 'Note Date',
-        type: 'string',
-        required: false,
-        source: 'excel'
-      },
-      // Tags
       {
         field: 'tags',
         displayName: 'Tags',
@@ -633,7 +727,6 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         source: 'excel',
         notes: 'Pipe-separated (e.g., Tag1 | Tag2) or comma-separated'
       },
-      // Member since
       {
         field: 'member_since',
         displayName: 'Member Since',
