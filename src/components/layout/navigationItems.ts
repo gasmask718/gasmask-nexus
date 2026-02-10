@@ -75,10 +75,7 @@ export const navigationItems = [
   { to: '/training', icon: Package, label: 'Training', roles: ['admin', 'csr', 'driver', 'biker', 'ambassador'] },
   { to: '/settings/automation', icon: Settings, label: 'Automation', roles: ['admin'] },
   
-  // AI Governance (Floors 9.4, 10.1, 11)
-  { to: '/territory/ai-violations', icon: Database, label: '🛡️ AI Violations', roles: ['admin'] },
-  { to: '/territory/ai-review-queue', icon: Database, label: '👁️ AI Review Queue', roles: ['admin'] },
-  { to: '/territory/playbooks', icon: Database, label: '📖 Playbooks', roles: ['admin'] },
+  // AI Governance routes now in Floor 0 group above
   
   // Floor Export & Analytics
   { to: '/grabba/export/command', icon: FileSpreadsheet, label: '🔥 Command Export', roles: ['admin'] },
