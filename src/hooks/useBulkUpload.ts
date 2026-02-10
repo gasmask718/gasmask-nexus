@@ -328,19 +328,20 @@ export function useBulkUpload() {
       // Note: This runs AFTER auto-fill, so multiple "No Name" at same address will be flagged
       const intraFileDups = detectIntraFileDuplicates(result.rows);
 
-      // 2. DB duplicates (match against existing stores)
+      // 2. DB duplicates (match against existing stores in store_master — canonical source)
       try {
-        const { data: existingStores } = await supabase
-          .from("stores")
-          .select("id, name, address_street, status")
+        const { data: existingStoresMaster } = await supabase
+          .from("store_master")
+          .select("id, store_name, address, health_status")
+          .is("deleted_at", null)
           .limit(5000);
 
-        if (existingStores) {
-          const normalizedStores = existingStores.map((s) => ({
+        if (existingStoresMaster) {
+          const normalizedStores = existingStoresMaster.map((s) => ({
             id: s.id,
-            name: s.name || "No Name", // Handle existing DB records missing names
-            address: s.address_street || "",
-            status: (s.status as string) || "active",
+            name: s.store_name || "No Name",
+            address: s.address || "",
+            status: (s.health_status as string) || "active",
           }));
           const dbDups = detectDbDuplicates(result.rows, normalizedStores);
           allDuplicates = [...intraFileDups, ...dbDups];
@@ -584,17 +585,26 @@ async function importStores(
             }
           }
 
+          const storeName = row.data.name || row.data.store_name || "No Name";
+          const addressStreet = row.data.address_street || row.data.address || "";
+          const addressCity = row.data.address_city || row.data.city || "";
+          const addressState = row.data.address_state || row.data.state || "";
+          const addressZip = row.data.address_zip || row.data.zip || "";
+          const phone = row.data.phone || row.data.contact_phone || null;
+          const email = row.data.email || row.data.contact_email || null;
+          const storeStatus = row.data.status || "active";
+
+          // Build legacy stores data
           const storeData: any = {
-            // UPDATED: Ensure name is "No Name" if missing
-            name: row.data.name || row.data.store_name || "No Name",
+            name: storeName,
             type: storeType,
-            address_street: row.data.address_street || row.data.address,
-            address_city: row.data.address_city || row.data.city,
-            address_state: row.data.address_state || row.data.state,
-            address_zip: row.data.address_zip || row.data.zip,
-            phone: row.data.phone || row.data.contact_phone,
-            email: row.data.email || row.data.contact_email,
-            status: row.data.status || "active",
+            address_street: addressStreet,
+            address_city: addressCity,
+            address_state: addressState,
+            address_zip: addressZip,
+            phone,
+            email,
+            status: storeStatus,
             open_date: row.data.open_date || row.data.member_since,
           };
 
@@ -629,10 +639,73 @@ async function importStores(
             }
           }
 
+          // Build store_master data (canonical table — this is what /stores reads)
+          const storeMasterData: any = {
+            store_name: storeName,
+            store_type: storeType,
+            address: addressStreet,
+            city: addressCity,
+            state: addressState,
+            zip: addressZip,
+            phone,
+            email,
+            health_status: storeStatus,
+            contact_name: row.data.contact_name || row.data.primary_contact_name || null,
+            owner_name: row.data.owner_name || null,
+            notes: row.data.notes || null,
+            mode: row.data.mode || null,
+            last_order_date: row.data.last_order_date || null,
+            owed_amount: row.data.owed_amount ? parseFloat(String(row.data.owed_amount).replace(/[^0-9.-]/g, "")) || null : null,
+            is_simulation: false,
+          };
+
+          // Parse last_order_date if present
+          if (storeMasterData.last_order_date) {
+            try {
+              const parsed = new Date(String(storeMasterData.last_order_date));
+              if (!isNaN(parsed.getTime())) {
+                storeMasterData.last_order_date = parsed.toISOString().split("T")[0];
+              } else {
+                storeMasterData.last_order_date = null;
+              }
+            } catch { storeMasterData.last_order_date = null; }
+          }
+
           const shouldAppend = appendRows.has(row.rowNumber);
           const shouldUpdate = updateRows.has(row.rowNumber);
           const effectiveMode = shouldAppend || shouldUpdate ? "upsert" : mode;
 
+          // ── Write to store_master (canonical) ──
+          if (effectiveMode === "upsert" || shouldAppend || shouldUpdate) {
+            let smQuery = supabase.from("store_master").select("id").eq("store_name", storeName).is("deleted_at", null);
+            if (addressStreet) {
+              smQuery = smQuery.eq("address", addressStreet);
+            }
+            const { data: existingSM } = await smQuery.maybeSingle();
+
+            if (existingSM) {
+              const smUpdate = { ...storeMasterData };
+              delete smUpdate.is_simulation;
+              Object.keys(smUpdate).forEach((k) => {
+                if (smUpdate[k] === undefined || (!shouldUpdate && (smUpdate[k] === null || smUpdate[k] === ""))) {
+                  delete smUpdate[k];
+                }
+              });
+              await supabase.from("store_master").update(smUpdate).eq("id", existingSM.id);
+            } else {
+              await supabase.from("store_master").insert(storeMasterData);
+            }
+          } else {
+            // Check if already exists to avoid duplicates
+            let smCheck = supabase.from("store_master").select("id").eq("store_name", storeName).is("deleted_at", null);
+            if (addressStreet) smCheck = smCheck.eq("address", addressStreet);
+            const { data: existingSM } = await smCheck.maybeSingle();
+            if (!existingSM) {
+              await supabase.from("store_master").insert(storeMasterData);
+            }
+          }
+
+          // ── Also write to legacy stores table ──
           if (effectiveMode === "upsert" || shouldAppend || shouldUpdate) {
             let query = supabase.from("stores").select("id").eq("name", storeData.name);
             if (storeData.address_street) {
@@ -756,8 +829,8 @@ async function importStores(
 
           const starterKitValue = row.data.starter_kit?.toString().toLowerCase().trim() || "";
           const hasStarterKitFlag = ["yes", "true", "1", "y", "x"].includes(starterKitValue);
-          const storeName = storeData.name || "";
-          const needsStarterKit = hasStarterKitFlag || storeName.toLowerCase().includes("starter kit");
+          const storeNameForKit = storeData.name || "";
+          const needsStarterKit = hasStarterKitFlag || storeNameForKit.toLowerCase().includes("starter kit");
 
           if (needsStarterKit) {
             const { data: store } = await supabase.from("stores").select("id").eq("name", storeData.name).maybeSingle();
