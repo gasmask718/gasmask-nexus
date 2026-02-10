@@ -331,34 +331,7 @@ export default function AppSidebar() {
             ])}
           </div>
 
-          {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* 📡 TERRITORY CONTROL CENTER — Floor 0-2 Visibility */}
-          {/* ═══════════════════════════════════════════════════════════════════ */}
-          {['owner', 'admin', 'staff'].includes(userRole) && (
-            <div className="mb-4 pt-2 border-t border-sidebar-border">
-              <div className="px-3 py-2 text-xs font-semibold uppercase text-cyan-400/80 tracking-wider">
-                📡 Territory Control
-              </div>
-              {renderSection('territory-control', 'Territory Control', '🗺️', [
-                { path: '/territory', label: 'Overview', emoji: '📊' },
-                { path: '/territory/neighborhoods', label: 'Neighborhoods', emoji: '🏘️' },
-                { path: '/territory/tasks', label: 'Tasks', emoji: '📋' },
-                { path: '/territory/candidates', label: 'Candidates', emoji: '🔍' },
-                { path: '/territory/execute/scout', label: 'Scout', emoji: '🥾' },
-                { path: '/territory/execute/call', label: 'Call', emoji: '📞' },
-                { path: '/territory/execute/visit', label: 'Visit / Pitch', emoji: '🤝' },
-                { path: '/territory/promotions/pending', label: 'Pending Promotions', emoji: '⏳' },
-                { path: '/territory/promotions/history', label: 'Promotion History', emoji: '📜' },
-                { path: '/territory/ingestion', label: 'Ingestion', emoji: '📥' },
-                { path: '/territory/gap-intelligence', label: 'Gap Intelligence', emoji: '🧠' },
-                { path: '/territory/planning', label: 'Planning', emoji: '📐' },
-                { path: '/territory/planning/history', label: 'Commitment History', emoji: '📜' },
-                { path: '/territory/ai-permissions', label: 'AI Permissions', emoji: '🔒' },
-                { path: '/territory/ai-permissions/neighborhoods', label: 'AI × Neighborhoods', emoji: '🗺️' },
-                { path: '/territory/ai-permissions/actions', label: 'AI × Actions', emoji: '⚡' },
-              ], "bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 hover:from-cyan-500/30")}
-            </div>
-          )}
+          {/* Territory Control moved to Floor 0 above Floors 1-9 */}
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* 🔴 GRABBA PRODUCT BRANDS */}
