@@ -44612,6 +44612,145 @@ export type Database = {
           },
         ]
       }
+      territory_activity_log: {
+        Row: {
+          action_type: string
+          actor_id: string | null
+          actor_type: string
+          created_at: string
+          id: string
+          notes: string | null
+          territory_address_id: string
+        }
+        Insert: {
+          action_type: string
+          actor_id?: string | null
+          actor_type: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          territory_address_id: string
+        }
+        Update: {
+          action_type?: string
+          actor_id?: string | null
+          actor_type?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          territory_address_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territory_activity_log_territory_address_id_fkey"
+            columns: ["territory_address_id"]
+            isOneToOne: false
+            referencedRelation: "territory_addresses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      territory_addresses: {
+        Row: {
+          address_type: string
+          city: string
+          created_at: string
+          discovered_by: string
+          discovery_status: string
+          full_address: string
+          id: string
+          last_checked_at: string | null
+          latitude: number | null
+          longitude: number | null
+          neighborhood_id: string | null
+          notes: string | null
+          state: string
+          updated_at: string
+          verified_sells_grabba: boolean | null
+          zip: string | null
+        }
+        Insert: {
+          address_type?: string
+          city: string
+          created_at?: string
+          discovered_by?: string
+          discovery_status?: string
+          full_address: string
+          id?: string
+          last_checked_at?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood_id?: string | null
+          notes?: string | null
+          state: string
+          updated_at?: string
+          verified_sells_grabba?: boolean | null
+          zip?: string | null
+        }
+        Update: {
+          address_type?: string
+          city?: string
+          created_at?: string
+          discovered_by?: string
+          discovery_status?: string
+          full_address?: string
+          id?: string
+          last_checked_at?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood_id?: string | null
+          notes?: string | null
+          state?: string
+          updated_at?: string
+          verified_sells_grabba?: boolean | null
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territory_addresses_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "territory_neighborhoods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      territory_neighborhoods: {
+        Row: {
+          city: string
+          completion_percentage: number | null
+          created_at: string
+          id: string
+          name: string
+          state: string
+          status: string
+          target_store_count: number
+          total_address_count: number
+        }
+        Insert: {
+          city: string
+          completion_percentage?: number | null
+          created_at?: string
+          id?: string
+          name: string
+          state: string
+          status?: string
+          target_store_count?: number
+          total_address_count?: number
+        }
+        Update: {
+          city?: string
+          completion_percentage?: number | null
+          created_at?: string
+          id?: string
+          name?: string
+          state?: string
+          status?: string
+          target_store_count?: number
+          total_address_count?: number
+        }
+        Relationships: []
+      }
       territory_stats_daily: {
         Row: {
           boro: string
@@ -44658,6 +44797,50 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      territory_store_candidates: {
+        Row: {
+          created_at: string
+          id: string
+          interest_level: string
+          last_contacted_at: string | null
+          next_action: string | null
+          sells_tobacco: string
+          source: string
+          store_name_guess: string | null
+          territory_address_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interest_level?: string
+          last_contacted_at?: string | null
+          next_action?: string | null
+          sells_tobacco?: string
+          source?: string
+          store_name_guess?: string | null
+          territory_address_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interest_level?: string
+          last_contacted_at?: string | null
+          next_action?: string | null
+          sells_tobacco?: string
+          source?: string
+          store_name_guess?: string | null
+          territory_address_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territory_store_candidates_territory_address_id_fkey"
+            columns: ["territory_address_id"]
+            isOneToOne: false
+            referencedRelation: "territory_addresses"
             referencedColumns: ["id"]
           },
         ]
