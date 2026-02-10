@@ -153,7 +153,11 @@ export default function TerritoryIngestion() {
     onSuccess: (data) => {
       setApiResults(data);
       setStep('result');
-      toast({ title: 'Ingestion Complete', description: `${data?.inserted ?? 0} new addresses imported.` });
+      if (data?.warning) {
+        toast({ title: 'Ingestion Warning', description: data.warning, variant: 'destructive' });
+      } else {
+        toast({ title: 'Ingestion Complete', description: `${data?.inserted ?? 0} new addresses imported.` });
+      }
     },
     onError: (err: any) => {
       toast({ title: 'Ingestion Failed', description: err.message, variant: 'destructive' });
