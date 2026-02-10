@@ -1,262 +1,113 @@
-# Floor 6 — Manufacturing OS Upgrade Plan
 
-## Status: Phase 5 Complete — All Phases Done
-## Last Updated: 2026-02-08
 
----
+# Phase 2.5 -- Layer 3: Read-Only Escalation Flags
 
-## Architecture Overview
+## Overview
 
-Floor 6 controls the lifecycle: **Raw Materials → Tubes → Boxes → Distribution**
+This layer adds computed, read-only warning signals derived from existing data (delivery_checklists.outcome_summary, invoices, store_contacts). Flags are never stored, never trigger actions, and disappear naturally when conditions clear. They surface in three locations: the Delivery Memory Snapshot, the field Store List, and the Store Profile.
 
-### Existing Foundation
-- 14 production tables (batches, outputs, offices, workers, attendance, closeouts, costs, history, benchmarks, communication log)
-- Manufacturing OS portal (`/portals/production`) with 8 tabs
-- Worker View (`/portal/production`) — read-only with mock data
-- 1,285-line hooks file (`useProductionPortal.ts`)
-- 20+ components in `src/components/production/`
+## Step 0: UI Verification Gate
 
-### Three-Plane Alignment
-- **Execution Plane**: Worker View (read-only tasks, controlled log submission)
-- **Command Plane**: Manufacturing OS (batch management, inventory gates, approvals)
-- **Intelligence Plane**: AI predictions, margin analytics, supply forecasting
+Before any new code, we confirm all existing layers render:
+- **Delivery Memory Snapshot** -- rendered in `DeliveryTaskCard.tsx` line 100
+- **Pinned Notes** -- rendered inside the snapshot via `PinnedNotesSnapshotPanel` (line 50 of `DeliveryMemorySnapshot.tsx`) and in `StoreDetail.tsx` via `PinnedNotesSection`
+- **Quick Capture Enforcement** -- gated via `FieldOutcomeCaptureModal` (lines 225-232 of `DeliveryTaskCard.tsx`), "Complete Visit" button disabled until modal submitted
+
+All three are structurally in place. Any rendering issues will be fixed before proceeding.
 
 ---
 
-## Phase 1: Raw Material Intake + Inventory State Machine ← CURRENT
+## Step 1: New Hook -- `useEscalationFlags`
 
-### Objective
-Track raw material receipts with supplier/cost data. Implement a state machine on production batches that gates inventory flow from raw input to office distribution.
+**File**: `src/hooks/useEscalationFlags.ts`
 
-### Database Changes
+A single hook that accepts a `storeId` and derives flags at query time from existing tables. No new database tables or views needed.
 
-#### New Table: `production_raw_materials`
-Tracks inbound material receipts with supplier, cost, and quantity.
+**Data sources queried (parallel fetch)**:
+1. `delivery_checklists` where `store_id = X` and `completed_at >= 30 days ago` -- extract `outcome_summary->>'outcome_type'` values
+2. `invoices` where `store_id = X` and `payment_status != 'paid'` and `deleted_at IS NULL` -- for overdue payment duration
 
-#### New Column on `production_batches`: `inventory_state`
-Values: raw | in_production | boxed | approved | sent_to_office
+**Flag definitions (constants, easily tunable)**:
 
-#### New Table: `production_inventory_transitions`
-Immutable audit log for every state change on a batch.
+| Flag | Condition | Severity |
+|------|-----------|----------|
+| Repeated Payment Refusal | >= 2 `payment_refused` outcomes in 30 days | high |
+| Unresponsive Store | >= 3 `not_available` outcomes in 30 days | medium |
+| High Visits / Low Orders | >= 3 visits with no `order_placed` outcome | medium |
+| Dispute Pattern | >= 2 `issue_conflict` outcomes in 30 days | high |
 
-### Frontend Changes
-1. New "Inventory" tab in Manufacturing OS
-2. Raw material intake form
-3. Batch state pipeline visualization
-4. State transition buttons with manager approval gates
-5. Hard gate enforcement for CRM/distribution
-
-### Files to Create/Modify
-- Migration SQL
-- `src/hooks/useRawMaterials.ts`
-- `src/hooks/useInventoryState.ts`
-- `src/components/production/RawMaterialIntake.tsx`
-- `src/components/production/InventoryPipeline.tsx`
-- `src/components/production/BatchStateControls.tsx`
-- `src/pages/portals/ProductionPortalPage.tsx` — Add Inventory tab
-
----
-
-## Phase 2: Cost Engine + Margin Tracking
-
-### Objective
-Calculate true cost-per-box by aggregating material costs, labor hours, and configurable overhead.
-
-### Key Deliverables
-- `production_batch_costs` table (batch_id → material + labor + overhead)
-- `v_production_margin_analysis` view
-- Cost breakdown panel on batch detail
-- Margin analytics (admin/manager gated)
-- Low-margin alerts
-
----
-
-## Phase 3: Worker Submission Flow (Pending Review)
-
-### Objective
-Replace mock data in Worker View. Workers submit lbs/tubes/boxes/defects as pending_review records requiring manager approval.
-
-### Key Deliverables
-- `production_worker_submissions` table
-- Approval trigger → auto-creates batch outputs
-- Worker View with real data + submission forms
-- Approval queue in Manufacturing OS
-
----
-
-## Phase 4: AI Supply Prediction
-
-### Objective
-Predict reorder dates for consumables using batch velocity + sales + lead times.
-
-### Key Deliverables
-- `production_supply_predictions` table
-- `production_supplier_lead_times` table
-- AI prediction panel with explainable outputs
-- Configurable thresholds
-
----
-
-## Phase 5: Production RBAC Hardening ✅ COMPLETE
-
-### Objective
-Enforce production_admin / production_manager / production_worker roles server-side.
-
-### Key Deliverables
-- ✅ DB functions: `has_production_manager_role`, `is_production_worker`
-- ✅ `production_access_denials` audit table with RLS
-- ✅ Hardened RLS on: batch_costs, overhead_config, supplier_lead_times, supply_predictions, worker_submissions, raw_materials
-- ✅ Finance-gated cost/margin visibility (has_finance_access + elevated roles only)
-- ✅ Frontend RBAC hook (`useProductionRBAC`) with tier system (admin/manager/worker/none)
-- ✅ `ProductionRBACGate` component wrapping sensitive tabs
-- ✅ Conditional tab visibility (Costs, Forecasts, Submissions hidden for lower tiers)
-- ✅ Access denial audit logging on unauthorized view attempts
-
----
-
-## Phase 6: Worker Pay System ✅ COMPLETE
-
-### Objective
-Production-grade payroll ledger: batch-based earnings, grouped payouts, worker pay transparency.
-
-### Key Deliverables
-- ✅ `production_worker_earnings` ledger table (pending → approved → paid lifecycle)
-- ✅ `production_worker_payments` payout table (grouped, reconciled)
-- ✅ `pay_type` + `pay_rate` columns on `production_workers`
-- ✅ `create_earning_from_submission()` DB function (SECURITY DEFINER)
-- ✅ Auto-earning on submission approval (integrated into useReviewSubmission)
-- ✅ Worker Pay Dashboard (read-only: today/week/unpaid/paid, earnings + payment history)
-- ✅ Admin Payroll panel (balances, approve, pay, audit log, CSV export)
-- ✅ RBAC-gated Payroll tab in Manufacturing OS (manager+)
-- ✅ "My Pay" tab in Worker Portal
-- ✅ RLS: managers read all office data, workers read only own via people.owner_id
-
----
-
-## Dependencies
-```
-Phase 1 (State Machine) → Phase 2 (Costs need states)
-Phase 1 → Phase 3 (Submissions need states)
-Phase 2 + 3 → Phase 4 (AI needs cost + velocity data)
-All → Phase 5 (RBAC hardens everything)
-Phase 3 + 5 → Phase 6 (Pay needs submissions + RBAC)
+**Output shape**:
+```typescript
+interface EscalationFlag {
+  flag_type: string;
+  label: string;
+  severity: 'low' | 'medium' | 'high';
+  occurrences: number;
+}
 ```
 
----
+Cached with 60s staleTime. No writes. Pure derivation.
 
-## Previous Plan (CRM Customization) — Archived
-
-### Completed
-- Fixed CRM import to use brand_crm_contacts
-- Created crm_import_logs and brand_kpi_overrides tables
-- PLAYBOXXX social/country fields
-- KPI edit modal
-- Store reference filtering for non-store businesses
+**Batch variant**: `useEscalationFlagsBatch(storeIds: string[])` for directory-level rendering -- single query, grouped by store_id.
 
 ---
 
-# Phase 2.5 — Field Execution Memory Enforcement Layer
+## Step 2: Escalation Flag Badge Component
 
-## Status: SAVED — Awaiting activation command
-## Last Updated: 2026-02-10
+**File**: `src/components/delivery/EscalationFlagBadge.tsx`
 
-## Context
+A small, reusable visual component that renders a single flag as an icon + text badge. Severity maps to color (high = red, medium = amber, low = muted). Read-only, no click actions.
 
-We have already implemented a Delivery Memory Snapshot panel that is:
-- Read-only
-- Auto-generated
-- Rendered at the top of every delivery / visit task
-- Derived from existing tables (invoices, store_contacts, store_notes, delivery_checklists)
-- Designed to prevent field teams from "walking in blind"
+**File**: `src/components/delivery/EscalationFlagsPanel.tsx`
 
-This prompt defines the next three enforcement layers that sit after the snapshot, without altering or destabilizing the existing system.
+A panel component that renders all active flags for a store. Used inside the Delivery Memory Snapshot as a warning strip below pinned notes but above payment recall.
 
 ---
 
-## 1️⃣ Quick Capture Enforcement (Post-Task Intelligence Lock)
+## Step 3: Surface in Delivery Memory Snapshot
 
-### Objective
-Prevent loss of critical on-site knowledge after a delivery or checkup is completed.
+**File modified**: `src/components/delivery/DeliveryMemorySnapshot.tsx`
 
-### Rule
-A delivery / visit task CANNOT be marked complete unless a structured "Field Outcome Capture" is submitted.
-
-### Required Fields (forced modal)
-- **Who did you speak to?** — Select from existing store_contacts OR create new contact inline (name + role minimum)
-- **What happened?** (enum) — Order placed | Payment collected | Payment refused | Not available | Issue / conflict
-- **Payment taken?** — Yes / No; if yes: amount + method
-- **Notes** (free text) — Required if anything unusual occurred
-
-### Data Handling
-Writes to:
-- `store_notes` (timestamped, author-tagged)
-- `delivery_checklists.outcome_summary`
-
-Updates:
-- `store_contacts.last_interaction_at`
-- `store_contacts.last_interaction_notes`
-
-### Enforcement
-- "Complete Task" button is disabled until submission
-- No silent completion allowed
+Add `EscalationFlagsPanel` between the Pinned Notes panel and the Last Visit line. Only renders if flags exist. Visual style: subtle warning strip with icons, not blocking.
 
 ---
 
-## 2️⃣ Pinned "Do Not Forget" Notes (Persistent Memory Flags)
+## Step 4: Surface in Field Store List
 
-### Objective
-Ensure critical context is never buried in history.
+**File modified**: `src/components/portal/field/StoreListPage.tsx`
 
-### Feature
-- Notes can be marked as `pinned = true`
-- Pinned notes always appear in the Delivery Memory Snapshot ABOVE regular recent notes
-- Stay visible until manually resolved
-
-### Examples
-- "Owner only pays on Fridays"
-- "Do NOT leave product with staff"
-- "Shorted us last order — verify counts"
-
-### Rules
-- Pinned notes require explicit "Resolve" action (logged: who, when, reason)
-- Pinned notes appear across: Delivery tasks, Store profile, Biker/driver action lists
+Use `useEscalationFlagsBatch` for all visible store IDs. For each store card row, render a compact `EscalationFlagBadge` (highest-severity flag only) next to existing badges. Tooltip shows full flag list on hover/tap.
 
 ---
 
-## 3️⃣ Escalation Flags (Pattern-Based Warnings)
+## Step 5: Surface in Store Profile
 
-### Objective
-Surface risk patterns early without automating punishment.
+**File modified**: `src/pages/StoreDetail.tsx`
 
-### Flag Conditions (derived, not manual)
-- Store unpaid > X days AND visited ≥ 2 times
-- Store marked "unresponsive" across ≥ 3 interactions
-- Repeated "payment refused" outcomes
-- Repeated short orders / disputes
-
-### Behavior
-- Read-only, visual (badge / warning strip), non-blocking
-- Placement: Delivery Memory Snapshot, Store directory KPI card, Ambassador/biker action lists
-
-### Governance
-- Flags NEVER auto-punish or auto-change store status
-- Flags exist for awareness + decision-making only
+Add `EscalationFlagsPanel` near the top of the store profile page, after pinned notes. Read-only, same visual treatment as the snapshot version.
 
 ---
 
-## 4️⃣ Architectural Constraints (Non-Negotiable)
-- ❌ No new payment system introduced
-- ❌ No auto-deletion or auto-escalation
-- ❌ No AI-generated outcomes
-- ❌ No silent data writes
-- ✅ All enforcement is human-driven
-- ✅ All writes are auditable
-- ✅ Existing tables are reused where possible
-- ✅ New tables only if strictly required
+## What This Does NOT Do
 
----
+- No new database tables or migrations
+- No stored flags or judgments
+- No status changes to stores
+- No blocking of any workflow
+- No notifications or automation
+- No AI decisions
+- Flags disappear automatically when the pattern clears (rolling 30-day window)
 
-## Build Order
-1. **Quick Capture Enforcement** ← Build first
-2. **Pinned Notes**
-3. **Escalation Flags**
+## Files Summary
+
+| Action | File |
+|--------|------|
+| Create | `src/hooks/useEscalationFlags.ts` |
+| Create | `src/components/delivery/EscalationFlagBadge.tsx` |
+| Create | `src/components/delivery/EscalationFlagsPanel.tsx` |
+| Modify | `src/components/delivery/DeliveryMemorySnapshot.tsx` |
+| Modify | `src/components/portal/field/StoreListPage.tsx` |
+| Modify | `src/pages/StoreDetail.tsx` |
+
+No database migrations required. All data is derived from existing `delivery_checklists.outcome_summary` JSONB and `invoices` tables.
+
