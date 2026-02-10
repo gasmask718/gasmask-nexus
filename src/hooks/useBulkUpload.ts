@@ -639,6 +639,19 @@ async function importStores(
             }
           }
 
+          // Map status to valid health_status enum
+          const statusToHealthMap: Record<string, string> = {
+            'active': 'healthy',
+            'healthy': 'healthy',
+            'inactive': 'dormant',
+            'dormant': 'dormant',
+            'at_risk': 'at_risk',
+            'at risk': 'at_risk',
+            'lost': 'lost',
+            'lead': 'healthy',
+          };
+          const healthStatus = statusToHealthMap[(storeStatus || '').toLowerCase().trim()] || 'healthy';
+
           // Build store_master data (canonical table — this is what /stores reads)
           const storeMasterData: any = {
             store_name: storeName,
@@ -649,7 +662,8 @@ async function importStores(
             zip: addressZip,
             phone,
             email,
-            health_status: storeStatus,
+            health_status: healthStatus,
+            status: storeStatus || 'active',
             contact_name: row.data.contact_name || row.data.primary_contact_name || null,
             owner_name: row.data.owner_name || null,
             notes: row.data.notes || null,
