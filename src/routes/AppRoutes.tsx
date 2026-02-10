@@ -55,6 +55,9 @@ import CommitmentHistory from '@/pages/territory/CommitmentHistory';
 import AIPermissionsOverview from '@/pages/territory/AIPermissionsOverview';
 import AIPermissionsNeighborhoods from '@/pages/territory/AIPermissionsNeighborhoods';
 import AIPermissionsActions from '@/pages/territory/AIPermissionsActions';
+import AIViolationsPage from '@/pages/territory/AIViolationsPage';
+import AIReviewQueuePage from '@/pages/territory/AIReviewQueuePage';
+import TerritoryPlaybooksPage from '@/pages/territory/TerritoryPlaybooksPage';
 import RevenueBrain from '@/pages/RevenueBrain';
 import OpportunityRadar from '@/pages/OpportunityRadar';
 import MasterOpportunities from '@/pages/MasterOpportunities';
@@ -598,6 +601,13 @@ export default function AppRoutes() {
         <Route path="/territory/ai-permissions" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><AIPermissionsOverview /></RequireRole>} />
         <Route path="/territory/ai-permissions/neighborhoods" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><AIPermissionsNeighborhoods /></RequireRole>} />
         <Route path="/territory/ai-permissions/actions" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><AIPermissionsActions /></RequireRole>} />
+
+        {/* Floor 9.4 — AI Violation & Denial Monitor */}
+        <Route path="/territory/ai-violations" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><AIViolationsPage /></RequireRole>} />
+        {/* Floor 10.1 — Human Review Queue */}
+        <Route path="/territory/ai-review-queue" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><AIReviewQueuePage /></RequireRole>} />
+        {/* Floor 11 — Territory Playbooks */}
+        <Route path="/territory/playbooks" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><TerritoryPlaybooksPage /></RequireRole>} />
 
         {/* GasMask Brand Routes */}
         <Route path="/gasmask" element={<Dashboard />} />

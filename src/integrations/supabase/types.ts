@@ -45129,6 +45129,103 @@ export type Database = {
         }
         Relationships: []
       }
+      territory_playbook_runs: {
+        Row: {
+          completed_at: string | null
+          current_step: number
+          halt_reason: string | null
+          halted_at_step: number | null
+          id: string
+          playbook_id: string
+          started_at: string
+          status: string
+          step_results: Json | null
+          total_steps: number
+          triggered_by: string
+        }
+        Insert: {
+          completed_at?: string | null
+          current_step?: number
+          halt_reason?: string | null
+          halted_at_step?: number | null
+          id?: string
+          playbook_id: string
+          started_at?: string
+          status?: string
+          step_results?: Json | null
+          total_steps?: number
+          triggered_by: string
+        }
+        Update: {
+          completed_at?: string | null
+          current_step?: number
+          halt_reason?: string | null
+          halted_at_step?: number | null
+          id?: string
+          playbook_id?: string
+          started_at?: string
+          status?: string
+          step_results?: Json | null
+          total_steps?: number
+          triggered_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territory_playbook_runs_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "territory_playbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      territory_playbooks: {
+        Row: {
+          approved_by: string | null
+          conditions: Json | null
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          neighborhood_id: string | null
+          ordered_action_keys: string[]
+          playbook_name: string
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          conditions?: Json | null
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          neighborhood_id?: string | null
+          ordered_action_keys?: string[]
+          playbook_name: string
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          conditions?: Json | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          neighborhood_id?: string | null
+          ordered_action_keys?: string[]
+          playbook_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territory_playbooks_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       territory_stats_daily: {
         Row: {
           boro: string
@@ -51606,6 +51703,48 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_ai_denial_summary: {
+        Row: {
+          action_key: string | null
+          constraint_source: string | null
+          denial_count: number | null
+          denial_reason: string | null
+          first_denied_at: string | null
+          last_denied_at: string | null
+          neighborhood_id: string | null
+          time_window: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_decision_log_action_key_fkey"
+            columns: ["action_key"]
+            isOneToOne: false
+            referencedRelation: "ai_action_registry"
+            referencedColumns: ["action_key"]
+          },
+          {
+            foreignKeyName: "ai_decision_log_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "territory_neighborhoods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_decision_log_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "v_territory_domination_score"
+            referencedColumns: ["neighborhood_id"]
+          },
+          {
+            foreignKeyName: "ai_decision_log_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "v_territory_neighborhood_kpis"
+            referencedColumns: ["neighborhood_id"]
           },
         ]
       }
