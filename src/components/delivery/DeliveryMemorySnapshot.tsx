@@ -4,6 +4,7 @@ import { Brain, User, DollarSign, AlertTriangle, Clock, StickyNote, Phone, Messa
 import { useDeliveryMemorySnapshot } from '@/hooks/useDeliveryMemorySnapshot';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
+import { PinnedNotesSnapshotPanel } from './PinnedNotesSnapshotPanel';
 
 interface DeliveryMemorySnapshotProps {
   storeId: string;
@@ -44,6 +45,9 @@ export function DeliveryMemorySnapshot({ storeId, storeName }: DeliveryMemorySna
           <h3 className="font-semibold text-sm">DO NOT WALK IN BLIND</h3>
           <Badge variant="outline" className="text-[10px]">Memory Snapshot</Badge>
         </div>
+
+        {/* Pinned Notes — ALWAYS ABOVE EVERYTHING */}
+        <PinnedNotesSnapshotPanel storeId={storeId} />
 
         {/* Last Visit */}
         {lastVisitDate && (
