@@ -277,6 +277,87 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         type: 'string',
         required: false,
         source: 'excel'
+      },
+      // Invoice / Payment fields — creates linked invoice records
+      {
+        field: 'invoice_amount',
+        displayName: 'Invoice Amount',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Total invoice amount. Creates an invoice record linked to this store.'
+      },
+      {
+        field: 'invoice_payment_status',
+        displayName: 'Invoice Payment Status',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'paid, unpaid, partial, refunded'
+      },
+      {
+        field: 'invoice_payment_method',
+        displayName: 'Invoice Payment Method',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Cash, Card, Zelle, etc.'
+      },
+      {
+        field: 'invoice_amount_paid',
+        displayName: 'Amount Paid',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'How much has been paid (for partial payments)'
+      },
+      {
+        field: 'invoice_due_date',
+        displayName: 'Invoice Due Date',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Date format. Uses current date if empty.'
+      },
+      {
+        field: 'invoice_date',
+        displayName: 'Invoice Date',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'When the invoice was created'
+      },
+      {
+        field: 'invoice_brand',
+        displayName: 'Invoice Brand',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Brand associated with this invoice'
+      },
+      {
+        field: 'invoice_notes',
+        displayName: 'Invoice Notes',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Notes or description for the invoice'
+      },
+      {
+        field: 'invoice_paid_at',
+        displayName: 'Paid Date',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'When payment was received'
+      },
+      {
+        field: 'invoice_received_by',
+        displayName: 'Received By',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Person who received the payment'
       }
     ]
   },

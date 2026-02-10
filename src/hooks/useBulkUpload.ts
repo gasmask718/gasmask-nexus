@@ -697,6 +697,63 @@ async function importStores(
               }
             }
           }
+          // Create invoice if invoice_amount is present
+          const invoiceAmount = row.data.invoice_amount;
+          if (invoiceAmount && String(invoiceAmount).trim()) {
+            const { data: store } = await supabase.from("stores").select("id").eq("name", storeData.name).maybeSingle();
+            if (store) {
+              const amountStr = String(invoiceAmount).replace(/[^0-9.-]/g, "");
+              const amount = parseFloat(amountStr) || 0;
+              const paymentStatus = (row.data.invoice_payment_status || "unpaid").toString().toLowerCase().trim();
+              const amountPaidStr = row.data.invoice_amount_paid ? String(row.data.invoice_amount_paid).replace(/[^0-9.-]/g, "") : null;
+              const amountPaid = amountPaidStr ? parseFloat(amountPaidStr) : (paymentStatus === "paid" ? amount : 0);
+
+              let dueDate = new Date().toISOString().split("T")[0];
+              if (row.data.invoice_due_date) {
+                try {
+                  const parsed = new Date(String(row.data.invoice_due_date));
+                  if (!isNaN(parsed.getTime())) dueDate = parsed.toISOString().split("T")[0];
+                } catch (e) { /* use default */ }
+              }
+
+              let createdAt: string | undefined;
+              if (row.data.invoice_date) {
+                try {
+                  const parsed = new Date(String(row.data.invoice_date));
+                  if (!isNaN(parsed.getTime())) createdAt = parsed.toISOString();
+                } catch (e) { /* skip */ }
+              }
+
+              let paidAt: string | null = null;
+              if (row.data.invoice_paid_at) {
+                try {
+                  const parsed = new Date(String(row.data.invoice_paid_at));
+                  if (!isNaN(parsed.getTime())) paidAt = parsed.toISOString();
+                } catch (e) { /* skip */ }
+              } else if (paymentStatus === "paid") {
+                paidAt = new Date().toISOString();
+              }
+
+              const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+              await supabase.from("invoices").insert({
+                store_id: store.id,
+                invoice_number: invoiceNumber,
+                total_amount: amount,
+                total: amount,
+                amount_paid: amountPaid,
+                due_date: dueDate,
+                payment_status: paymentStatus,
+                payment_method: row.data.invoice_payment_method || row.data.payment_type || null,
+                notes: row.data.invoice_notes || null,
+                brand: row.data.invoice_brand || row.data.brand || null,
+                received_by: row.data.invoice_received_by || null,
+                paid_at: paidAt,
+                is_historical: true,
+                ...(createdAt && { created_at: createdAt }),
+              });
+            }
+          }
 
           result.success++;
         } catch (error: any) {
