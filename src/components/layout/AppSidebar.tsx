@@ -29,7 +29,7 @@ export default function AppSidebar() {
   
   // All sections open by default
   const [openSections, setOpenSections] = useState<string[]>([
-    'penthouse', 'security-governance', 'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9', 'territory-control'
+    'penthouse', 'security-governance', 'territory-floor-0', 'exports', 'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9', 'territory-control'
   ]);
 
   const userRole = profileData?.profile?.primary_role || 'admin';
