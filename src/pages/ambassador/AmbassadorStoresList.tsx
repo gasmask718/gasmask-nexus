@@ -8,6 +8,8 @@ import {
   Store, Search, Filter, MapPin, Phone, Calendar,
   ArrowRight, Users, Trash2
 } from 'lucide-react';
+import { useLastOrderSnapshotBatch } from '@/hooks/useLastOrderSnapshot';
+import { LastOrderKPIBadge } from '@/components/store/LastOrderKPIBadge';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,9 +26,10 @@ interface StoreCardProps {
   store: PortfolioStore;
   onClick: () => void;
   onRemove: () => void;
+  losSnapshots?: import('@/hooks/useLastOrderSnapshot').LastOrderSnapshot[];
 }
 
-function StoreCard({ store, onClick, onRemove }: StoreCardProps) {
+function StoreCard({ store, onClick, onRemove, losSnapshots }: StoreCardProps) {
   const handleRemoveClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click navigation
     onRemove();
@@ -69,6 +72,7 @@ function StoreCard({ store, onClick, onRemove }: StoreCardProps) {
                 <Calendar className="h-3 w-3" />
                 {formatDistanceToNow(new Date(store.assigned_at), { addSuffix: true })}
               </span>
+              <LastOrderKPIBadge snapshots={losSnapshots} compact />
             </div>
           </div>
           <div className="flex flex-col items-end gap-1">
@@ -98,6 +102,10 @@ function StoresListContent() {
   const { stores, metrics, isLoading, unassignStore, isUnassigningStore } = useAmbassadorPortfolio();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+
+  // Batch fetch LOS for all portfolio stores
+  const storeIds = useMemo(() => stores.map(s => s.store_id), [stores]);
+  const { data: losMap } = useLastOrderSnapshotBatch(storeIds);
   
   // Remove store confirmation modal state
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
@@ -216,6 +224,7 @@ function StoresListContent() {
                   store={store}
                   onClick={() => handleStoreClick(store.store_id)}
                   onRemove={() => handleRemoveClick(store)}
+                  losSnapshots={losMap?.get(store.store_id)}
                 />
               ))}
             </div>
