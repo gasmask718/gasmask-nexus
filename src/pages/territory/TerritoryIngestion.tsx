@@ -399,8 +399,11 @@ export default function TerritoryIngestion() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              Ingestion Complete
+              {apiResults.warning ? (
+                <><AlertTriangle className="h-5 w-5 text-amber-500" /> Ingestion Warning</>
+              ) : (
+                <><CheckCircle2 className="h-5 w-5 text-emerald-500" /> Ingestion Complete</>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
