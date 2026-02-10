@@ -29,7 +29,7 @@ export default function AppSidebar() {
   
   // All sections open by default
   const [openSections, setOpenSections] = useState<string[]>([
-    'penthouse', 'security-governance', 'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9'
+    'penthouse', 'security-governance', 'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9', 'territory-control'
   ]);
 
   const userRole = profileData?.profile?.primary_role || 'admin';
@@ -286,6 +286,23 @@ export default function AppSidebar() {
               { path: '/grabba/command-console', label: 'Command Console', emoji: '🎮' },
             ])}
           </div>
+
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* 📡 TERRITORY CONTROL CENTER — Floor 0-2 Visibility */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {['owner', 'admin', 'staff'].includes(userRole) && (
+            <div className="mb-4 pt-2 border-t border-sidebar-border">
+              <div className="px-3 py-2 text-xs font-semibold uppercase text-cyan-400/80 tracking-wider">
+                📡 Territory Control
+              </div>
+              {renderSection('territory-control', 'Territory Control', '🗺️', [
+                { path: '/territory', label: 'Overview', emoji: '📊' },
+                { path: '/territory/neighborhoods', label: 'Neighborhoods', emoji: '🏘️' },
+                { path: '/territory/tasks', label: 'Tasks', emoji: '📋' },
+                { path: '/territory/candidates', label: 'Candidates', emoji: '🔍' },
+              ], "bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 hover:from-cyan-500/30")}
+            </div>
+          )}
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* 🔴 GRABBA PRODUCT BRANDS */}
