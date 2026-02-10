@@ -1,11 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { normalizeBrandId, type CanonicalBrandId } from '@/config/brands';
+import { normalizeBrandId, CANONICAL_BRAND_IDS, CANONICAL_BRANDS, type CanonicalBrandId } from '@/config/brands';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAST ORDER SNAPSHOT INTELLIGENCE HOOK
 // Derived read-only layer: most recent order per store × brand
 // Source: v_store_last_order_snapshot (database view)
+// BRAND COVERAGE: Always returns ALL 4 canonical brands per store,
+// even if a brand has never been ordered ("Never ordered" placeholder).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface LastOrderSnapshot {
@@ -26,11 +28,76 @@ export interface LastOrderSnapshot {
   avg_days_between_orders: number;
   is_restock_due: boolean;
   is_order_smaller_than_usual: boolean;
+  /** True if this row is a placeholder (brand never ordered) */
+  is_placeholder: boolean;
+}
+
+/** Create a placeholder snapshot for a brand that was never ordered */
+function createPlaceholder(storeId: string, storeName: string | null, brandId: CanonicalBrandId): LastOrderSnapshot {
+  const brand = CANONICAL_BRANDS[brandId];
+  return {
+    store_id: storeId,
+    store_name: storeName,
+    brand_name: brand.displayName,
+    brand_key: brandId,
+    canonical_brand_id: brandId,
+    last_order_date: '',
+    days_since_last_order: -1,
+    last_order_total_units: 0,
+    last_order_box_equivalent: 0,
+    last_order_size_label: 'Never ordered',
+    last_order_total_amount: null,
+    last_order_line_count: null,
+    total_order_count: 0,
+    avg_tubes_per_order: 0,
+    avg_days_between_orders: 0,
+    is_restock_due: false,
+    is_order_smaller_than_usual: false,
+    is_placeholder: true,
+  };
+}
+
+/**
+ * Ensure all 4 canonical brands are represented for a store.
+ * Actual data rows fill in, missing brands get placeholders.
+ */
+function ensureBrandCoverage(
+  storeId: string,
+  storeName: string | null,
+  rows: LastOrderSnapshot[]
+): LastOrderSnapshot[] {
+  const byBrand = new Map<CanonicalBrandId, LastOrderSnapshot>();
+
+  // Index actual rows by canonical brand
+  for (const row of rows) {
+    const cid = row.canonical_brand_id;
+    if (cid) {
+      const existing = byBrand.get(cid);
+      if (!existing || (row.last_order_date && new Date(row.last_order_date) > new Date(existing.last_order_date))) {
+        byBrand.set(cid, row);
+      }
+    }
+  }
+
+  // Build coverage: all 4 brands in canonical order
+  const result: LastOrderSnapshot[] = [];
+  for (const brandId of CANONICAL_BRAND_IDS) {
+    result.push(byBrand.get(brandId) || createPlaceholder(storeId, storeName, brandId));
+  }
+
+  // Append any non-canonical rows (shouldn't happen but safe)
+  for (const row of rows) {
+    if (!row.canonical_brand_id) {
+      result.push(row);
+    }
+  }
+
+  return result;
 }
 
 /**
  * Fetch last order snapshot for a single store.
- * Returns one row per brand that has ever been ordered.
+ * Returns one row per canonical brand (always 4+), with placeholders for never-ordered brands.
  */
 export function useLastOrderSnapshot(storeId: string | null | undefined) {
   return useQuery({
@@ -48,10 +115,15 @@ export function useLastOrderSnapshot(storeId: string | null | undefined) {
         throw error;
       }
 
-      return ((data || []) as any[]).map((row) => ({
+      const rows: LastOrderSnapshot[] = ((data || []) as any[]).map((row) => ({
         ...row,
         canonical_brand_id: normalizeBrandId(row.brand_name),
+        is_placeholder: false,
       }));
+
+      // Get store name from first row if available
+      const storeName = rows[0]?.store_name || null;
+      return ensureBrandCoverage(storeId, storeName, rows);
     },
     enabled: !!storeId,
     staleTime: 30_000,
@@ -60,7 +132,7 @@ export function useLastOrderSnapshot(storeId: string | null | undefined) {
 
 /**
  * Batch fetch for multiple stores (directory views).
- * Returns Map<store_id, LastOrderSnapshot[]>
+ * Returns Map<store_id, LastOrderSnapshot[]> with full brand coverage per store.
  */
 export function useLastOrderSnapshotBatch(storeIds: string[]) {
   return useQuery({
@@ -78,17 +150,27 @@ export function useLastOrderSnapshotBatch(storeIds: string[]) {
         throw error;
       }
 
-      const map = new Map<string, LastOrderSnapshot[]>();
+      // Group raw rows by store
+      const rawMap = new Map<string, LastOrderSnapshot[]>();
       for (const row of (data || []) as any[]) {
         const enriched: LastOrderSnapshot = {
           ...row,
           canonical_brand_id: normalizeBrandId(row.brand_name),
+          is_placeholder: false,
         };
-        const existing = map.get(row.store_id) || [];
+        const existing = rawMap.get(row.store_id) || [];
         existing.push(enriched);
-        map.set(row.store_id, existing);
+        rawMap.set(row.store_id, existing);
       }
-      return map;
+
+      // Build final map with brand coverage for ALL requested stores
+      const result = new Map<string, LastOrderSnapshot[]>();
+      for (const sid of storeIds) {
+        const rows = rawMap.get(sid) || [];
+        const storeName = rows[0]?.store_name || null;
+        result.set(sid, ensureBrandCoverage(sid, storeName, rows));
+      }
+      return result;
     },
     enabled: storeIds.length > 0,
     staleTime: 30_000,

@@ -26,27 +26,13 @@ export function LastOrderContextSection({ storeId }: LastOrderContextSectionProp
     );
   }
 
-  // Deduplicate by canonical brand, prefer most recent
-  const brandMap = new Map<string, (typeof snapshots extends (infer T)[] | undefined ? T : never)>();
-  for (const snap of (snapshots || [])) {
-    const key = snap.canonical_brand_id || snap.brand_key;
-    const existing = brandMap.get(key);
-    if (!existing || new Date(snap.last_order_date) > new Date(existing.last_order_date)) {
-      brandMap.set(key, snap);
-    }
-  }
-
-  // Order: canonical brands first
-  const ordered: NonNullable<typeof snapshots> = [];
-  for (const brandId of CANONICAL_BRAND_IDS) {
-    if (brandMap.has(brandId)) {
-      ordered.push(brandMap.get(brandId)!);
-      brandMap.delete(brandId);
-    }
-  }
-  for (const snap of brandMap.values()) ordered.push(snap);
+  // Hook now returns all brands with coverage — use directly
+  const ordered = snapshots || [];
 
   const getHealthBadge = (snap: (typeof ordered)[number]) => {
+    if (snap.is_placeholder) {
+      return <Badge variant="outline" className="text-xs text-muted-foreground">Never</Badge>;
+    }
     if (snap.total_order_count < 2 || snap.avg_days_between_orders <= 0) {
       return <Badge variant="outline" className="text-xs">New</Badge>;
     }
@@ -82,7 +68,10 @@ export function LastOrderContextSection({ storeId }: LastOrderContextSectionProp
                   </div>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-muted-foreground">
-                      {snap.days_since_last_order}d ago · {snap.last_order_size_label}
+                      {snap.is_placeholder
+                        ? 'Never ordered'
+                        : `${snap.days_since_last_order}d ago · ${snap.last_order_size_label}`
+                      }
                     </span>
                     {getHealthBadge(snap)}
                   </div>
