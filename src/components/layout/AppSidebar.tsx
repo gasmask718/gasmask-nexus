@@ -303,6 +303,8 @@ export default function AppSidebar() {
                 { path: '/territory/execute/scout', label: 'Scout', emoji: '🥾' },
                 { path: '/territory/execute/call', label: 'Call', emoji: '📞' },
                 { path: '/territory/execute/visit', label: 'Visit / Pitch', emoji: '🤝' },
+                { path: '/territory/promotions/pending', label: 'Pending Promotions', emoji: '⏳' },
+                { path: '/territory/promotions/history', label: 'Promotion History', emoji: '📜' },
               ], "bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 hover:from-cyan-500/30")}
             </div>
           )}

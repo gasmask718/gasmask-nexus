@@ -46,6 +46,8 @@ import TerritoryCandidates from '@/pages/territory/TerritoryCandidates';
 import ScoutConsole from '@/pages/territory/ScoutConsole';
 import CallConsole from '@/pages/territory/CallConsole';
 import VisitConsole from '@/pages/territory/VisitConsole';
+import PromotionsPending from '@/pages/territory/PromotionsPending';
+import PromotionsHistory from '@/pages/territory/PromotionsHistory';
 import RevenueBrain from '@/pages/RevenueBrain';
 import OpportunityRadar from '@/pages/OpportunityRadar';
 import MasterOpportunities from '@/pages/MasterOpportunities';
@@ -579,6 +581,8 @@ export default function AppRoutes() {
         <Route path="/territory/execute/scout" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><ScoutConsole /></RequireRole>} />
         <Route path="/territory/execute/call" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><CallConsole /></RequireRole>} />
         <Route path="/territory/execute/visit" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><VisitConsole /></RequireRole>} />
+        <Route path="/territory/promotions/pending" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><PromotionsPending /></RequireRole>} />
+        <Route path="/territory/promotions/history" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><PromotionsHistory /></RequireRole>} />
 
         {/* GasMask Brand Routes */}
         <Route path="/gasmask" element={<Dashboard />} />
