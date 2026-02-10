@@ -152,3 +152,111 @@ Phase 3 + 5 → Phase 6 (Pay needs submissions + RBAC)
 - PLAYBOXXX social/country fields
 - KPI edit modal
 - Store reference filtering for non-store businesses
+
+---
+
+# Phase 2.5 — Field Execution Memory Enforcement Layer
+
+## Status: SAVED — Awaiting activation command
+## Last Updated: 2026-02-10
+
+## Context
+
+We have already implemented a Delivery Memory Snapshot panel that is:
+- Read-only
+- Auto-generated
+- Rendered at the top of every delivery / visit task
+- Derived from existing tables (invoices, store_contacts, store_notes, delivery_checklists)
+- Designed to prevent field teams from "walking in blind"
+
+This prompt defines the next three enforcement layers that sit after the snapshot, without altering or destabilizing the existing system.
+
+---
+
+## 1️⃣ Quick Capture Enforcement (Post-Task Intelligence Lock)
+
+### Objective
+Prevent loss of critical on-site knowledge after a delivery or checkup is completed.
+
+### Rule
+A delivery / visit task CANNOT be marked complete unless a structured "Field Outcome Capture" is submitted.
+
+### Required Fields (forced modal)
+- **Who did you speak to?** — Select from existing store_contacts OR create new contact inline (name + role minimum)
+- **What happened?** (enum) — Order placed | Payment collected | Payment refused | Not available | Issue / conflict
+- **Payment taken?** — Yes / No; if yes: amount + method
+- **Notes** (free text) — Required if anything unusual occurred
+
+### Data Handling
+Writes to:
+- `store_notes` (timestamped, author-tagged)
+- `delivery_checklists.outcome_summary`
+
+Updates:
+- `store_contacts.last_interaction_at`
+- `store_contacts.last_interaction_notes`
+
+### Enforcement
+- "Complete Task" button is disabled until submission
+- No silent completion allowed
+
+---
+
+## 2️⃣ Pinned "Do Not Forget" Notes (Persistent Memory Flags)
+
+### Objective
+Ensure critical context is never buried in history.
+
+### Feature
+- Notes can be marked as `pinned = true`
+- Pinned notes always appear in the Delivery Memory Snapshot ABOVE regular recent notes
+- Stay visible until manually resolved
+
+### Examples
+- "Owner only pays on Fridays"
+- "Do NOT leave product with staff"
+- "Shorted us last order — verify counts"
+
+### Rules
+- Pinned notes require explicit "Resolve" action (logged: who, when, reason)
+- Pinned notes appear across: Delivery tasks, Store profile, Biker/driver action lists
+
+---
+
+## 3️⃣ Escalation Flags (Pattern-Based Warnings)
+
+### Objective
+Surface risk patterns early without automating punishment.
+
+### Flag Conditions (derived, not manual)
+- Store unpaid > X days AND visited ≥ 2 times
+- Store marked "unresponsive" across ≥ 3 interactions
+- Repeated "payment refused" outcomes
+- Repeated short orders / disputes
+
+### Behavior
+- Read-only, visual (badge / warning strip), non-blocking
+- Placement: Delivery Memory Snapshot, Store directory KPI card, Ambassador/biker action lists
+
+### Governance
+- Flags NEVER auto-punish or auto-change store status
+- Flags exist for awareness + decision-making only
+
+---
+
+## 4️⃣ Architectural Constraints (Non-Negotiable)
+- ❌ No new payment system introduced
+- ❌ No auto-deletion or auto-escalation
+- ❌ No AI-generated outcomes
+- ❌ No silent data writes
+- ✅ All enforcement is human-driven
+- ✅ All writes are auditable
+- ✅ Existing tables are reused where possible
+- ✅ New tables only if strictly required
+
+---
+
+## Build Order
+1. **Quick Capture Enforcement** ← Build first
+2. **Pinned Notes**
+3. **Escalation Flags**
