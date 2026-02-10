@@ -11,6 +11,8 @@ import { PagePurpose, CardHelper } from '@/components/portal/guidance';
 import { usePrimaryResponsiveContactBatch } from '@/hooks/usePrimaryResponsiveContact';
 import { StoreContactIntelBadge } from '@/components/contact/StoreContactIntelBadge';
 import { PredictiveIntelCompact } from '@/components/contact/PredictiveIntelCompact';
+import { useLastOrderSnapshotBatch } from '@/hooks/useLastOrderSnapshot';
+import { LastOrderKPIBadge } from '@/components/store/LastOrderKPIBadge';
 
 interface StoreItem {
   id: string;
@@ -65,6 +67,7 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
   // Batch-load contact intelligence for visible stores
   const storeIds = useMemo(() => stores.map(s => s.id), [stores]);
   const { contactsByStore } = usePrimaryResponsiveContactBatch(storeIds);
+  const { data: losMap } = useLastOrderSnapshotBatch(storeIds);
 
   const storePurpose = {
     driver: {
@@ -173,6 +176,7 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
                       className="mt-0.5" 
                     />
                     <PredictiveIntelCompact storeId={store.id} className="mt-0.5" />
+                    <LastOrderKPIBadge snapshots={losMap?.get(store.id)} compact className="mt-1" />
                   </div>
                    <Badge variant="secondary">
                      {t('status.active')}

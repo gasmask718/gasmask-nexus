@@ -53,6 +53,8 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useSimulationMode } from "@/contexts/SimulationModeContext";
 import { EntityProfileModal, type EntityProfileType } from "@/components/grabba/EntityProfileModal";
+import { useLastOrderSnapshotBatch } from "@/hooks/useLastOrderSnapshot";
+import { LastOrderKPIBadge } from "@/components/store/LastOrderKPIBadge";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FLOOR 1 — CRM: All stores, wholesalers, customers, and companies for Grabba brands.
@@ -564,6 +566,8 @@ export default function GrabbaCRM() {
     enabled: storeIds.length > 0,
   });
 
+  const { data: losMap } = useLastOrderSnapshotBatch(storeIds);
+
   const StoreCard = ({ store }: { store: any }) => {
     const storeBrands = brandActivity?.[store.id] || [];
     const relScore = relationshipScores?.[store.id];
@@ -634,6 +638,7 @@ export default function GrabbaCRM() {
               </div>
 
               {storeBrands.length > 0 && <BrandBadgesRow brands={storeBrands as GrabbaBrand[]} className="mt-3" />}
+              <LastOrderKPIBadge snapshots={losMap?.get(store.id)} compact className="mt-2" />
             </div>
 
             <div className="flex gap-1 shrink-0">
