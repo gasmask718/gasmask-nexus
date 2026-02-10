@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { CheckCircle2, ClipboardList, AlertTriangle } from 'lucide-react';
 import { useDeliveryChecklist } from '@/hooks/useDeliveryChecklist';
 import { useGeneratePostVisitIntelligence } from '@/hooks/useVisitSummary';
+import { useFieldOutcomeCapture } from '@/hooks/useFieldOutcomeCapture';
 import { InventoryCheckSection } from './checklist/InventoryCheckSection';
 import { OrderDeliverySection } from './checklist/OrderDeliverySection';
 import { LastOrderContextSection } from './checklist/LastOrderContextSection';
@@ -13,6 +14,7 @@ import { GrowthCaptureSection } from './checklist/GrowthCaptureSection';
 import { ContactUpdateSection } from './checklist/ContactUpdateSection';
 import { StickerCheckSection } from './checklist/StickerCheckSection';
 import { DeliveryMemorySnapshot } from './DeliveryMemorySnapshot';
+import { FieldOutcomeCaptureModal, type FieldOutcome } from './FieldOutcomeCaptureModal';
 
 interface DeliveryTaskCardProps {
   storeId: string;
@@ -21,13 +23,14 @@ interface DeliveryTaskCardProps {
 }
 
 export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTaskCardProps) {
+  const [showOutcomeModal, setShowOutcomeModal] = useState(false);
+
   const {
     checklist,
     isLoading,
     initChecklist,
     toggleTask,
     updateSectionData,
-    completeChecklist,
     isTaskCompleted,
     getCategoryProgress,
     completedCount,
@@ -37,6 +40,7 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
   } = useDeliveryChecklist(storeId);
 
   const generateIntelligence = useGeneratePostVisitIntelligence();
+  const outcomeCapture = useFieldOutcomeCapture(storeId);
 
   // Auto-init checklist on mount
   useEffect(() => {
@@ -49,17 +53,29 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
     toggleTask.mutate({ taskKey, completed });
   };
 
-  const handleComplete = () => {
+  // Instead of completing directly, open the enforcement modal
+  const handleCompleteClick = () => {
     if (!allRequiredDone) return;
-    completeChecklist.mutate(undefined, {
-      onSuccess: () => {
-        // Trigger post-visit intelligence generation
-        if (checklist) {
-          generateIntelligence.mutate(checklist);
-        }
-        onComplete?.();
-      },
-    });
+    setShowOutcomeModal(true);
+  };
+
+  // Handle outcome submission — this actually completes the checklist
+  const handleOutcomeSubmit = (outcome: FieldOutcome) => {
+    if (!checklist?.id) return;
+
+    outcomeCapture.mutate(
+      { checklistId: checklist.id, outcome },
+      {
+        onSuccess: () => {
+          setShowOutcomeModal(false);
+          // Trigger post-visit intelligence generation
+          if (checklist) {
+            generateIntelligence.mutate(checklist);
+          }
+          onComplete?.();
+        },
+      }
+    );
   };
 
   const isCompleted = checklist?.status === 'completed';
@@ -193,8 +209,8 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
                 </div>
               </div>
               <Button
-                onClick={handleComplete}
-                disabled={!allRequiredDone || completeChecklist.isPending}
+                onClick={handleCompleteClick}
+                disabled={!allRequiredDone || outcomeCapture.isPending}
                 size="sm"
               >
                 <CheckCircle2 className="h-4 w-4 mr-1" />
@@ -204,6 +220,16 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
           </CardContent>
         </Card>
       )}
+
+      {/* Field Outcome Capture — Enforcement Modal */}
+      <FieldOutcomeCaptureModal
+        open={showOutcomeModal}
+        onOpenChange={setShowOutcomeModal}
+        storeId={storeId}
+        storeName={storeName}
+        onSubmit={handleOutcomeSubmit}
+        isSubmitting={outcomeCapture.isPending}
+      />
     </div>
   );
 }

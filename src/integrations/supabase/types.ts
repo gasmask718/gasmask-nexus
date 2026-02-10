@@ -18632,6 +18632,7 @@ export type Database = {
           inventory_updates: Json | null
           notes: string | null
           order_confirmations: Json | null
+          outcome_summary: Json | null
           photo_urls: string[] | null
           started_at: string | null
           status: string
@@ -18651,6 +18652,7 @@ export type Database = {
           inventory_updates?: Json | null
           notes?: string | null
           order_confirmations?: Json | null
+          outcome_summary?: Json | null
           photo_urls?: string[] | null
           started_at?: string | null
           status?: string
@@ -18670,6 +18672,7 @@ export type Database = {
           inventory_updates?: Json | null
           notes?: string | null
           order_confirmations?: Json | null
+          outcome_summary?: Json | null
           photo_urls?: string[] | null
           started_at?: string | null
           status?: string
