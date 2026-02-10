@@ -187,6 +187,17 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
       'notes_overview': ['notesoverview', 'overview'],
       'starter_kit': ['starterkit', 'kit'],
       'open_date': ['opendate', 'membersince', 'since', 'datejoined'],
+      // Invoice fields
+      'invoice_amount': ['invoiceamount', 'amount', 'total', 'invoicetotal', 'totalamount', 'price', 'cost'],
+      'invoice_payment_status': ['invoicepaymentstatus', 'paymentstatus', 'paid', 'paidstatus'],
+      'invoice_payment_method': ['invoicepaymentmethod', 'paymentmethod', 'howpaid', 'method'],
+      'invoice_amount_paid': ['invoiceamountpaid', 'amountpaid', 'paidamount'],
+      'invoice_due_date': ['invoiceduedate', 'duedate', 'due'],
+      'invoice_date': ['invoicedate', 'dateofinvoice', 'invoicecreated'],
+      'invoice_brand': ['invoicebrand'],
+      'invoice_notes': ['invoicenotes', 'invoicedescription', 'invoicememo'],
+      'invoice_paid_at': ['invoicepaidat', 'datepaid', 'paiddate', 'paidon'],
+      'invoice_received_by': ['invoicereceivedby', 'receivedby', 'collectedby'],
     };
 
     // 1. Exact match on field name or displayName
