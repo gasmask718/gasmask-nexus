@@ -53764,6 +53764,10 @@ export type Database = {
         Returns: boolean
       }
       resolve_intent: { Args: { p_intent_id: string }; Returns: Json }
+      resolve_permissions_for_commitment: {
+        Args: { p_commitment_id: string }
+        Returns: undefined
+      }
       restore_deleted: {
         Args: { _record_id: string; _table_name: string }
         Returns: undefined
