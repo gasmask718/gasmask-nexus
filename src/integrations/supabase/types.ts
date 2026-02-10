@@ -44859,6 +44859,84 @@ export type Database = {
           },
         ]
       }
+      territory_store_promotions: {
+        Row: {
+          candidate_id: string | null
+          created_at: string
+          id: string
+          promoted_store_id: string | null
+          proposed_contact_name: string | null
+          proposed_phone: string | null
+          proposed_store_name: string
+          rejection_reason: string | null
+          requested_at: string
+          requested_by: string
+          status: string
+          territory_address_id: string
+          updated_at: string
+          verification_method: string
+          verified_at: string | null
+          verified_by: string | null
+          verified_sells_grabba: boolean | null
+          verified_sells_tobacco: boolean | null
+        }
+        Insert: {
+          candidate_id?: string | null
+          created_at?: string
+          id?: string
+          promoted_store_id?: string | null
+          proposed_contact_name?: string | null
+          proposed_phone?: string | null
+          proposed_store_name: string
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_by: string
+          status?: string
+          territory_address_id: string
+          updated_at?: string
+          verification_method: string
+          verified_at?: string | null
+          verified_by?: string | null
+          verified_sells_grabba?: boolean | null
+          verified_sells_tobacco?: boolean | null
+        }
+        Update: {
+          candidate_id?: string | null
+          created_at?: string
+          id?: string
+          promoted_store_id?: string | null
+          proposed_contact_name?: string | null
+          proposed_phone?: string | null
+          proposed_store_name?: string
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_by?: string
+          status?: string
+          territory_address_id?: string
+          updated_at?: string
+          verification_method?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          verified_sells_grabba?: boolean | null
+          verified_sells_tobacco?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territory_store_promotions_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "territory_store_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "territory_store_promotions_territory_address_id_fkey"
+            columns: ["territory_address_id"]
+            isOneToOne: false
+            referencedRelation: "territory_addresses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_call_rate_limits: {
         Row: {
           business_id: string
@@ -52565,6 +52643,10 @@ export type Database = {
         Args: { p_approved_by?: string; p_batch_id: string }
         Returns: undefined
       }
+      approve_store_promotion: {
+        Args: { p_promotion_id: string }
+        Returns: string
+      }
       audit_actor_role: { Args: never; Returns: string }
       audit_compute_hash: {
         Args: { payload: Json; prev: string }
@@ -53161,6 +53243,10 @@ export type Database = {
         Returns: undefined
       }
       reinstate_user_access: { Args: { _invite_id: string }; Returns: boolean }
+      reject_store_promotion: {
+        Args: { p_promotion_id: string; p_rejection_reason?: string }
+        Returns: undefined
+      }
       request_ai_approval: {
         Args: {
           p_action_description: string
@@ -53168,6 +53254,19 @@ export type Database = {
           p_payload?: Json
           p_request_type: string
           p_severity?: string
+        }
+        Returns: string
+      }
+      request_store_promotion: {
+        Args: {
+          p_candidate_id?: string
+          p_proposed_contact_name?: string
+          p_proposed_phone?: string
+          p_proposed_store_name?: string
+          p_territory_address_id: string
+          p_verification_method?: string
+          p_verified_sells_grabba?: boolean
+          p_verified_sells_tobacco?: boolean
         }
         Returns: string
       }
