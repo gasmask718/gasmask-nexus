@@ -71,6 +71,7 @@ export default function GrabbaCRM() {
   const [activeTab, setActiveTab] = useState<ViewTab>("companies");
   const [neighborhoodFilter, setNeighborhoodFilter] = useState<string>("all");
   const [cityFilter, setCityFilter] = useState<string>("all");
+  const [stateFilter, setStateFilter] = useState<string>("all");
   
   // Pagination state (shared across tabs, reset on tab change)
   const [currentPage, setCurrentPage] = useState(1);
@@ -171,42 +172,60 @@ export default function GrabbaCRM() {
     },
   });
 
-  // Fetch stores - filter by simulation mode
+  // Fetch ALL stores - no limit, paginated in UI
   const { data: stores, isLoading: storesLoading, refetch: refetchStores } = useQuery({
     queryKey: ["grabba-crm-stores", selectedBrand, simulationMode],
     queryFn: async () => {
       const selectFields =
         "id, name, phone, neighborhood, address_street, address_city, address_state, address_zip, companies(id, name), created_at, is_simulation";
 
-      // Filter stores by simulation mode
-      const { data } = await supabase
-        .from("stores")
-        .select(selectFields)
-        .is("deleted_at", null)
-        .eq("is_simulation", simulationMode)
-        .order("created_at", { ascending: false })
-        .limit(500);
-
-      return data || [];
+      // Fetch all stores using range-based pagination to bypass 1000-row default
+      const PAGE = 1000;
+      let allData: any[] = [];
+      let from = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data } = await supabase
+          .from("stores")
+          .select(selectFields)
+          .is("deleted_at", null)
+          .eq("is_simulation", simulationMode)
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        
+        if (data && data.length > 0) {
+          allData = allData.concat(data);
+          from += PAGE;
+          hasMore = data.length === PAGE;
+        } else {
+          hasMore = false;
+        }
+      }
+      return allData;
     },
   });
 
-  // Fetch tube inventory for all stores
+  // Fetch tube inventory for visible stores using batched queries to avoid URL limits
   const allStoreIds = stores?.map((s: any) => s.id) || [];
   const { data: tubeInventory } = useQuery({
-    queryKey: ["grabba-crm-tube-inventory", allStoreIds],
+    queryKey: ["grabba-crm-tube-inventory", allStoreIds.length],
     queryFn: async () => {
       if (allStoreIds.length === 0) return {};
-      const { data } = await supabase
-        .from("store_tube_inventory")
-        .select("store_id, current_tubes_left")
-        .in("store_id", allStoreIds);
       
-      // Aggregate by store_id
+      const BATCH_SIZE = 200;
       const inventoryMap: Record<string, number> = {};
-      data?.forEach((item: any) => {
-        inventoryMap[item.store_id] = (inventoryMap[item.store_id] || 0) + (item.current_tubes_left || 0);
-      });
+      
+      for (let i = 0; i < allStoreIds.length; i += BATCH_SIZE) {
+        const batch = allStoreIds.slice(i, i + BATCH_SIZE);
+        const { data } = await supabase
+          .from("store_tube_inventory")
+          .select("store_id, current_tubes_left")
+          .in("store_id", batch);
+        
+        data?.forEach((item: any) => {
+          inventoryMap[item.store_id] = (inventoryMap[item.store_id] || 0) + (item.current_tubes_left || 0);
+        });
+      }
       return inventoryMap;
     },
     enabled: allStoreIds.length > 0,
@@ -297,6 +316,15 @@ export default function GrabbaCRM() {
     return Array.from(citySet).sort();
   }, [companies, stores]);
 
+  // Fetch states for filter
+  const states = useMemo(() => {
+    const stateSet = new Set<string>();
+    stores?.forEach((s: any) => {
+      if (s.address_state) stateSet.add(s.address_state);
+    });
+    return Array.from(stateSet).sort();
+  }, [stores]);
+
   // ═══════════════════════════════════════════════════════════════════════════════
   // FILTERING LOGIC
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -327,15 +355,19 @@ export default function GrabbaCRM() {
         !searchQuery ||
         store.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         store.neighborhood?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        store.address_city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        store.address_street?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         store.phone?.includes(searchQuery);
 
       const storeBrands = brandActivity?.[store.id] || [];
       const matchesBrand = selectedBrand === "all" || storeBrands.includes(selectedBrand as GrabbaBrand);
       const matchesNeighborhood = neighborhoodFilter === "all" || store.neighborhood === neighborhoodFilter;
+      const matchesCity = cityFilter === "all" || store.address_city === cityFilter;
+      const matchesState = stateFilter === "all" || store.address_state === stateFilter;
 
-      return matchesSearch && matchesBrand && matchesNeighborhood;
+      return matchesSearch && matchesBrand && matchesNeighborhood && matchesCity && matchesState;
     });
-  }, [stores, searchQuery, selectedBrand, neighborhoodFilter, brandActivity]);
+  }, [stores, searchQuery, selectedBrand, neighborhoodFilter, cityFilter, stateFilter, brandActivity]);
 
   const filteredWholesalers = useMemo(() => {
     return wholesalers?.filter((w) => {
@@ -394,11 +426,12 @@ export default function GrabbaCRM() {
     setSearchQuery("");
     setNeighborhoodFilter("all");
     setCityFilter("all");
+    setStateFilter("all");
     setCurrentPage(1);
   };
 
   const hasActiveFilters =
-    selectedBrand !== "all" || typeFilter !== "all" || searchQuery || neighborhoodFilter !== "all" || cityFilter !== "all";
+    selectedBrand !== "all" || typeFilter !== "all" || searchQuery || neighborhoodFilter !== "all" || cityFilter !== "all" || stateFilter !== "all";
 
   // Reset page on tab change
   const handleTabChange = (tab: ViewTab) => {
@@ -1361,6 +1394,20 @@ export default function GrabbaCRM() {
                   </SelectContent>
                 </Select>
 
+                <Select value={stateFilter} onValueChange={setStateFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="State" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All States</SelectItem>
+                    {states.map((st) => (
+                      <SelectItem key={st} value={st}>
+                        {st}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
                 {hasActiveFilters && (
                   <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
                     <X className="h-4 w-4 mr-1" /> Clear Filters
@@ -1472,7 +1519,7 @@ export default function GrabbaCRM() {
                       totalItems={activeList.length}
                       onPageChange={setCurrentPage}
                       onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
-                      pageSizeOptions={[25, 50, 100]}
+                      pageSizeOptions={[25, 50, 100, 250]}
                     />
                     {paginatedList.map((company: any) => <CompanyCard key={company.id} company={company} />)}
                   </>
@@ -1494,7 +1541,7 @@ export default function GrabbaCRM() {
                       totalItems={activeList.length}
                       onPageChange={setCurrentPage}
                       onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
-                      pageSizeOptions={[25, 50, 100]}
+                      pageSizeOptions={[25, 50, 100, 250]}
                     />
                     {paginatedList.map((store: any) => <StoreCard key={store.id} store={store} />)}
                   </>
