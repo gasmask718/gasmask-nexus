@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
-import { Upload, FileSpreadsheet, CheckCircle2, MapPin, ArrowRight, Globe, Search, Map, Settings } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, MapPin, ArrowRight, Globe, Search, Map, Settings, AlertTriangle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 type SourceType = 'csv' | 'google_places' | 'yelp' | 'openstreetmap';
