@@ -172,6 +172,50 @@ export default function AppSidebar() {
           )}
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* 🌍 TERRITORY INTELLIGENCE — Floor 0 (ABOVE ALL FLOORS) */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {(() => { console.log("Territory Intelligence sidebar rendered"); return null; })()}
+          <div className="mb-4 pt-2 border-t border-sidebar-border">
+            <div className="px-3 py-2 text-xs font-semibold uppercase text-cyan-400/80 tracking-wider">
+              🌍 Territory Intelligence (Floor 0)
+            </div>
+            {renderSection('territory-floor-0', '✅ VISIBLE — 🌍 Territory Intelligence', '🌍', [
+              { path: '/territory', label: 'Territory Control', emoji: '📊' },
+              { path: '/territory/gap-intelligence', label: 'Gap Intelligence', emoji: '🧠' },
+              { path: '/territory/ingestion', label: 'Ingestion Wizard', emoji: '📥' },
+              { path: '/territory/planning', label: 'Strategic Planning', emoji: '📐' },
+              { path: '/territory/planning/history', label: 'Commitment History', emoji: '📜' },
+              { path: '/territory/ai-permissions', label: 'AI Permissions', emoji: '🔒' },
+              { path: '/territory/ai-permissions/neighborhoods', label: 'AI × Neighborhoods', emoji: '🗺️' },
+              { path: '/territory/ai-permissions/actions', label: 'AI × Actions', emoji: '⚡' },
+              { path: '/territory/ai-violations', label: 'AI Violations', emoji: '🛡️' },
+              { path: '/territory/ai-review-queue', label: 'AI Review Queue', emoji: '👁️' },
+              { path: '/territory/playbooks', label: 'Playbooks', emoji: '📖' },
+            ], "bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 hover:from-cyan-500/30")}
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* 📊 EXPORTS — Floor 1-9 Data Exports */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          <div className="mb-4 pt-2 border-t border-sidebar-border">
+            <div className="px-3 py-2 text-xs font-semibold uppercase text-sidebar-foreground/50 tracking-wider">
+              📊 Exports
+            </div>
+            {renderSection('exports', 'Floor Exports', '📊', [
+              { path: '/grabba/export/command', label: 'Command Export', emoji: '🔥' },
+              { path: '/grabba/export/floor1', label: 'CRM Export', emoji: '🏢' },
+              { path: '/grabba/export/floor2', label: 'Comms Export', emoji: '📞' },
+              { path: '/grabba/export/floor3', label: 'Inventory Export', emoji: '📦' },
+              { path: '/grabba/export/floor4', label: 'Delivery Export', emoji: '🚴' },
+              { path: '/grabba/export/floor5', label: 'Orders Export', emoji: '📑' },
+              { path: '/grabba/export/floor6', label: 'Production Export', emoji: '🏭' },
+              { path: '/grabba/export/floor7', label: 'Wholesale Export', emoji: '🏬' },
+              { path: '/grabba/export/floor8', label: 'Ambassadors Export', emoji: '🤝' },
+              { path: '/grabba/export/floor9', label: 'AI Ops Export', emoji: '🤖' },
+            ])}
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* 🏢 FLOORS 1-9 — Grabba Empire Skyscraper */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
           <div className="mb-4 pt-2 border-t border-sidebar-border">
