@@ -488,7 +488,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                           <Calendar className="h-3 w-3" />
                           <span>
                             {t('card.tube_intel.last_order')}:{' '}
-                            {los ? (
+                            {los && !los.is_placeholder && los.last_order_date ? (
                               <span className="text-foreground">
                                 {format(new Date(los.last_order_date), 'MMM d')} · {los.last_order_size_label}
                                 <span className="text-muted-foreground"> · {los.days_since_last_order}d ago</span>
