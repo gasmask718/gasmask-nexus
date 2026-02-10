@@ -52624,6 +52624,28 @@ export type Database = {
         }
         Relationships: []
       }
+      v_territory_execution_proof: {
+        Row: {
+          assigned_to_id: string | null
+          assigned_to_type: string | null
+          city: string | null
+          completed_by_id: string | null
+          completed_by_type: string | null
+          current_address_status: string | null
+          full_address: string | null
+          logged_action: string | null
+          logged_at: string | null
+          outcome_raw: string | null
+          priority: string | null
+          required_outcome: string | null
+          task_completed_at: string | null
+          task_created_at: string | null
+          task_id: string | null
+          task_status: string | null
+          task_type: string | null
+        }
+        Relationships: []
+      }
       v_territory_neighborhood_kpis: {
         Row: {
           addresses_scanned_count: number | null
