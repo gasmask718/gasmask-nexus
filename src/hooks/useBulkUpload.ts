@@ -112,19 +112,113 @@ export function useBulkUpload() {
 
         const columns = Object.keys(jsonData[0] as any);
 
-        // Auto-map columns based on schema
+        // Auto-map columns based on schema with fuzzy matching
         const schema = getSchemaByType(state.uploadType || "");
         const autoMapping: Record<string, string> = {};
 
         if (schema) {
+          const norm = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+          const alreadyMapped = new Set<string>();
+
+          // Alias map: common CSV header variations → schema field
+          const aliases: Record<string, string[]> = {
+            'status': ['status', 'storestatus', 'active', 'storeactive'],
+            'name': ['storename', 'store', 'location', 'locationname', 'shopname', 'businessname'],
+            'contact_name': ['contactname', 'contact', 'owner', 'ownername', 'manager', 'primarycontact', 'contactperson'],
+            'phone': ['phone', 'phonenumber', 'tel', 'telephone', 'storephone', 'mainphone', 'phone'],
+            'gasmask_notes': ['gasmasknotes', 'gasmask', 'gasmasknote', 'gasmaskcomment'],
+            'hotmama_notes': ['hotmamanotes', 'hotmama', 'hotmamanote', 'hotmamacomment'],
+            'hotscolatti_notes': ['hotscolattinotes', 'hotscolatti', 'hotscolattinote', 'scolattinotes', 'scalatinotes'],
+            'grabba_notes': ['grabbanotes', 'grabba', 'grabbarusnotes', 'grabbarusnote', 'grabbaruscomment'],
+            'address_street': ['address', 'streetaddress', 'street', 'addr', 'storeaddress', 'fulladdress'],
+            'notes': ['notes', 'generalnotes', 'comment', 'comments', 'memo'],
+            'mode': ['mode', 'storemode', 'ondoor', 'instore', 'ondoorinstore', 'displaymode', 'placement', 'stickermode'],
+            'last_order_date': ['lastorderdate', 'lastorder', 'lastpurchase', 'lastpurchasedate', 'recentorder',
+              'mostrecentorder', 'lastbuy', 'lastbuydate', 'lastsale', 'lastsaledate'],
+            'invoice_amount': ['invoiceamount', 'amount', 'total', 'invoicetotal', 'totalamount', 'price', 'cost',
+              'grandtotal', 'ordertotal', 'orderamount', 'balance', 'balancedue',
+              'totaldue', 'amountdue', 'charge', 'totalcharge', 'billamount', 'subtotal'],
+            'invoice_payment_method': ['invoicepaymentmethod', 'paymentmethod', 'howpaid', 'method',
+              'paytype', 'payby', 'paidby', 'paidvia', 'paymenttype', 'paymentmode',
+              'modeofpayment', 'methodofpayment', 'cashorcredit', 'cashcheck',
+              'venmo', 'zelle', 'cashapp', 'creditcard', 'cc', 'ach', 'wire', 'tender'],
+            'invoice_payment_status': ['invoicepaymentstatus', 'paymentstatus', 'paid', 'paidstatus',
+              'paystatus', 'ispaid', 'paidunpaid', 'paidorunpaid',
+              'collected', 'settled', 'cleared', 'paymentreceived', 'outstanding', 'invoicestatus'],
+            'invoice_date': ['invoicedate', 'issuedate', 'dateissued', 'dateofinvoice', 'invoicecreated',
+              'billingdate', 'billdate', 'orderdate', 'transactiondate', 'saledate',
+              'createddate', 'createdat', 'dateoforder', 'dateissue'],
+            'owed_amount': ['owedamount', 'amountowed', 'owed', 'outstandingamount',
+              'outstandingbalance', 'remainingbalance', 'remaining', 'balanceremaining',
+              'unpaidamount', 'unpaidbalance', 'dueamount', 'stillowed', 'leftover'],
+            'invoice_amount_paid': ['invoiceamountpaid', 'amountpaid', 'paidamount',
+              'amtpaid', 'totalpaid', 'received', 'amountreceived', 'amountcollected',
+              'cashreceived', 'paymentamount', 'payamt'],
+            'primary_contact_name': ['primarycontactname'],
+            'alt_phone': ['altphone', 'alternatephone', 'secondaryphone', 'phone2'],
+            'neighborhood': ['neighborhood', 'hood', 'area'],
+            'boro': ['boro', 'borough'],
+            'wholesaler_name': ['wholesaler', 'wholesalername', 'distributor'],
+            'company': ['company', 'companyname', 'corp', 'corporation'],
+            'brand': ['brand', 'brandname'],
+            'tags': ['tags', 'tag', 'labels'],
+            'payment_type': ['paymenttype', 'payment', 'paymethod'],
+            'sells_flowers': ['sellsflowers', 'flowers'],
+            'prime_time_energy': ['primetimeenergy', 'primetime', 'energy'],
+            'store_code': ['storecode', 'code', 'storenum', 'storenumber'],
+            'market_code': ['marketcode', 'market'],
+            'special_information': ['specialinformation', 'specialinfo', 'special'],
+            'notes_overview': ['notesoverview', 'overview'],
+            'starter_kit': ['starterkit', 'kit'],
+            'open_date': ['opendate', 'membersince', 'since', 'datejoined'],
+            'address_city': ['city', 'town'],
+            'address_state': ['state', 'st', 'province'],
+            'address_zip': ['zip', 'zipcode', 'postalcode', 'postal'],
+            'email': ['email', 'emailaddress', 'storeemail'],
+            'invoice_due_date': ['invoiceduedate', 'duedate', 'due', 'paymentdue', 'dueby', 'deadline'],
+            'invoice_brand': ['invoicebrand', 'productbrand', 'brandsold'],
+            'invoice_notes': ['invoicenotes', 'invoicedescription', 'invoicememo', 'paymentnotes', 'remarks'],
+            'invoice_paid_at': ['invoicepaidat', 'datepaid', 'paiddate', 'paidon', 'paymentdate',
+              'receiveddate', 'dateofpayment', 'datecollected'],
+            'invoice_received_by': ['invoicereceivedby', 'receivedby', 'collectedby',
+              'paidto', 'acceptedby', 'processedby', 'handledby', 'salesperson',
+              'rep', 'salesrep', 'ambassador', 'collector', 'agent'],
+          };
+
           columns.forEach((col) => {
-            const normalizedCol = col.toLowerCase().trim().replace(/\s+/g, "_");
-            const matchingField = schema.fields.find(
-              (f) =>
-                f.field.toLowerCase() === normalizedCol || f.displayName.toLowerCase() === col.toLowerCase().trim(),
-            );
-            if (matchingField) {
-              autoMapping[col] = matchingField.field;
+            const csvNorm = norm(col);
+
+            // 1. Exact match on field name or displayName
+            for (const f of schema.fields) {
+              if (alreadyMapped.has(f.field)) continue;
+              if (norm(f.field) === csvNorm || norm(f.displayName) === csvNorm) {
+                autoMapping[col] = f.field;
+                alreadyMapped.add(f.field);
+                return;
+              }
+            }
+
+            // 2. Alias match
+            for (const [field, aliasList] of Object.entries(aliases)) {
+              if (alreadyMapped.has(field)) continue;
+              if (aliasList.includes(csvNorm) && schema.fields.some(f => f.field === field)) {
+                autoMapping[col] = field;
+                alreadyMapped.add(field);
+                return;
+              }
+            }
+
+            // 3. Substring/contains match
+            for (const f of schema.fields) {
+              if (alreadyMapped.has(f.field)) continue;
+              const fieldNorm = norm(f.field);
+              const displayNorm = norm(f.displayName);
+              if (csvNorm.includes(fieldNorm) || fieldNorm.includes(csvNorm) ||
+                  csvNorm.includes(displayNorm) || displayNorm.includes(csvNorm)) {
+                autoMapping[col] = f.field;
+                alreadyMapped.add(f.field);
+                return;
+              }
             }
           });
         }
