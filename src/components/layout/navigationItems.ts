@@ -6,6 +6,19 @@ import {
 
 export const navigationItems = [
   { to: '/', icon: MapPin, label: 'Dashboard', roles: ['admin', 'driver', 'biker', 'clerk'] },
+  
+  // 🌍 Territory Intelligence (Floor 0)
+  { to: '/territory', icon: Map, label: '🌍 Territory Control', roles: ['admin', 'ceo'] },
+  { to: '/territory/gap-intelligence', icon: Radar, label: 'Gap Intelligence', roles: ['admin', 'ceo'] },
+  { to: '/territory/ingestion', icon: Database, label: 'Ingestion Wizard', roles: ['admin'] },
+  { to: '/territory/planning', icon: Target, label: 'Strategic Planning', roles: ['admin', 'ceo'] },
+  { to: '/territory/planning/history', icon: FileText, label: 'Planning History', roles: ['admin', 'ceo'] },
+  { to: '/territory/ai-permissions', icon: Settings, label: 'AI Permissions', roles: ['admin'] },
+  { to: '/territory/ai-permissions/neighborhoods', icon: Map, label: 'AI Neighborhood Perms', roles: ['admin'] },
+  { to: '/territory/ai-permissions/actions', icon: Settings, label: 'AI Action Perms', roles: ['admin'] },
+  { to: '/territory/ai-violations', icon: Database, label: '🛡️ AI Violations', roles: ['admin'] },
+  { to: '/territory/ai-review-queue', icon: Database, label: '👁️ AI Review Queue', roles: ['admin'] },
+  { to: '/territory/playbooks', icon: Database, label: '📖 Playbooks', roles: ['admin'] },
   { to: '/system-operations/ai-ceo-control-room', icon: Crown, label: 'CEO Command Center', roles: ['ceo'], premium: true },
   { to: '/stores', icon: Package, label: 'Stores', roles: ['admin', 'driver'] },
   { to: '/routes', icon: MapPin, label: 'Routes', roles: ['admin', 'driver'] },
@@ -62,10 +75,7 @@ export const navigationItems = [
   { to: '/training', icon: Package, label: 'Training', roles: ['admin', 'csr', 'driver', 'biker', 'ambassador'] },
   { to: '/settings/automation', icon: Settings, label: 'Automation', roles: ['admin'] },
   
-  // AI Governance (Floors 9.4, 10.1, 11)
-  { to: '/territory/ai-violations', icon: Database, label: '🛡️ AI Violations', roles: ['admin'] },
-  { to: '/territory/ai-review-queue', icon: Database, label: '👁️ AI Review Queue', roles: ['admin'] },
-  { to: '/territory/playbooks', icon: Database, label: '📖 Playbooks', roles: ['admin'] },
+  // AI Governance routes now in Floor 0 group above
   
   // Floor Export & Analytics
   { to: '/grabba/export/command', icon: FileSpreadsheet, label: '🔥 Command Export', roles: ['admin'] },
