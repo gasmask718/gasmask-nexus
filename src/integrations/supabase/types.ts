@@ -2362,10 +2362,12 @@ export type Database = {
       ai_decision_log: {
         Row: {
           action_key: string
+          actor: string | null
           ai_agent: string
           blocked_reason: string | null
           created_at: string
           decision_payload: Json
+          enforcement_source: string | null
           id: string
           neighborhood_id: string | null
           permission_allowed: boolean
@@ -2374,10 +2376,12 @@ export type Database = {
         }
         Insert: {
           action_key: string
+          actor?: string | null
           ai_agent: string
           blocked_reason?: string | null
           created_at?: string
           decision_payload?: Json
+          enforcement_source?: string | null
           id?: string
           neighborhood_id?: string | null
           permission_allowed: boolean
@@ -2386,10 +2390,12 @@ export type Database = {
         }
         Update: {
           action_key?: string
+          actor?: string | null
           ai_agent?: string
           blocked_reason?: string | null
           created_at?: string
           decision_payload?: Json
+          enforcement_source?: string | null
           id?: string
           neighborhood_id?: string | null
           permission_allowed?: boolean
@@ -53227,6 +53233,10 @@ export type Database = {
       can_access_store: {
         Args: { _store_id: string; _user_id: string }
         Returns: boolean
+      }
+      can_ai_perform_action: {
+        Args: { p_action_key: string; p_neighborhood_id: string }
+        Returns: Json
       }
       can_edit_crm: {
         Args: { _crm_id: string; _user_id: string }
