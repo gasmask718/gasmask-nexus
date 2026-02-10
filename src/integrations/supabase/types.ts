@@ -44937,6 +44937,96 @@ export type Database = {
           },
         ]
       }
+      territory_tasks: {
+        Row: {
+          assigned_to_id: string | null
+          assigned_to_type: string
+          candidate_id: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          neighborhood_id: string | null
+          notes: string | null
+          outcome_payload: Json | null
+          priority: string
+          required_outcome: string
+          status: string
+          task_type: string
+          territory_address_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_id?: string | null
+          assigned_to_type: string
+          candidate_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          neighborhood_id?: string | null
+          notes?: string | null
+          outcome_payload?: Json | null
+          priority?: string
+          required_outcome: string
+          status?: string
+          task_type: string
+          territory_address_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_id?: string | null
+          assigned_to_type?: string
+          candidate_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          neighborhood_id?: string | null
+          notes?: string | null
+          outcome_payload?: Json | null
+          priority?: string
+          required_outcome?: string
+          status?: string
+          task_type?: string
+          territory_address_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territory_tasks_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "territory_store_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "territory_tasks_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "territory_neighborhoods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "territory_tasks_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "v_territory_domination_score"
+            referencedColumns: ["neighborhood_id"]
+          },
+          {
+            foreignKeyName: "territory_tasks_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "v_territory_neighborhood_kpis"
+            referencedColumns: ["neighborhood_id"]
+          },
+          {
+            foreignKeyName: "territory_tasks_territory_address_id_fkey"
+            columns: ["territory_address_id"]
+            isOneToOne: false
+            referencedRelation: "territory_addresses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_call_rate_limits: {
         Row: {
           business_id: string
@@ -52733,6 +52823,10 @@ export type Database = {
         Args: { p_days_old?: number }
         Returns: number
       }
+      complete_territory_task: {
+        Args: { p_outcome: Json; p_task_id: string }
+        Returns: undefined
+      }
       compute_ambassador_wac: {
         Args: {
           p_ambassador_id: string
@@ -52889,6 +52983,10 @@ export type Database = {
       generate_store_outreach_plan: {
         Args: { p_store_id: string }
         Returns: string
+      }
+      generate_territory_tasks: {
+        Args: { p_neighborhood_id: string }
+        Returns: number
       }
       get_active_autonomy_policy: {
         Args: never
