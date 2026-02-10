@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useState, useCallback, useMemo } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { Upload, FileSpreadsheet, CheckCircle2, MapPin, ArrowRight, Globe, Search, Map, Settings, AlertTriangle, X, Plus } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, MapPin, ArrowRight, Globe, Search, Map, Settings, AlertTriangle, X, Plus, RefreshCw } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 type SourceType = 'csv' | 'google_places' | 'yelp' | 'openstreetmap';
@@ -27,12 +28,26 @@ interface ColumnMapping {
 }
 
 interface NeighborhoodResult {
+  neighborhood_id: string;
   neighborhood: string;
   status: 'success' | 'partial' | 'failed';
   inserted: number;
   skipped: number;
   total: number;
   error?: string;
+}
+
+interface DBNeighborhood {
+  id: string;
+  name: string;
+  borough_id: string;
+  city: string | null;
+  state: string | null;
+  bbox: any | null;
+  ingestion_status: string | null;
+  last_ingested_at: string | null;
+  ingestion_stats: any | null;
+  borough?: { name: string } | null;
 }
 
 const REQUIRED_FIELDS = ['full_address', 'city', 'state'] as const;
@@ -56,6 +71,14 @@ const SOURCES: { key: SourceType; label: string; icon: any; description: string;
   { key: 'csv', label: 'CSV Upload', icon: FileSpreadsheet, description: 'Upload a CSV file with address data', requiresKey: false },
 ];
 
+const STATUS_COLORS: Record<string, string> = {
+  complete: 'text-emerald-500',
+  partial: 'text-amber-500',
+  failed: 'text-destructive',
+  ingesting: 'text-primary',
+  pending: 'text-muted-foreground',
+};
+
 export default function TerritoryIngestion() {
   const [source, setSource] = useState<SourceType | null>(null);
   const [step, setStep] = useState<Step>('source');
@@ -71,17 +94,47 @@ export default function TerritoryIngestion() {
   const [scopeState, setScopeState] = useState('');
   const [scopeCountry, setScopeCountry] = useState('US');
   const [scopeTypes, setScopeTypes] = useState<string[]>(['smoke_shop', 'convenience_store']);
-  const [neighborhoods, setNeighborhoods] = useState<string[]>([]);
+  const [selectedNeighborhoodIds, setSelectedNeighborhoodIds] = useState<string[]>([]);
   const [neighborhoodInput, setNeighborhoodInput] = useState('');
+  const [legacyNeighborhoods, setLegacyNeighborhoods] = useState<string[]>([]);
   const [apiProgress, setApiProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('');
   const [apiResults, setApiResults] = useState<any>(null);
+  const [boroughFilter, setBoroughFilter] = useState<string>('all');
+
+  // Fetch neighborhoods from DB
+  const { data: dbNeighborhoods = [], isLoading: hoodsLoading } = useQuery({
+    queryKey: ['ingestion-neighborhoods'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('neighborhoods')
+        .select('id, name, borough_id, city, state, bbox, ingestion_status, last_ingested_at, ingestion_stats, borough:boroughs(name)')
+        .order('name');
+      if (error) throw error;
+      return (data || []) as DBNeighborhood[];
+    },
+  });
+
+  // Fetch boroughs for filtering
+  const { data: boroughs = [] } = useQuery({
+    queryKey: ['ingestion-boroughs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('boroughs').select('id, name').order('name');
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const filteredNeighborhoods = useMemo(() => {
+    if (boroughFilter === 'all') return dbNeighborhoods;
+    return dbNeighborhoods.filter(n => n.borough_id === boroughFilter);
+  }, [dbNeighborhoods, boroughFilter]);
 
   const resetAll = () => {
     setSource(null); setStep('source');
     setRawData([]); setHeaders([]); setMapping({}); setFileName('');
     setScopeCity(''); setScopeState(''); setScopeTypes(['smoke_shop', 'convenience_store']);
-    setNeighborhoods([]); setNeighborhoodInput('');
+    setSelectedNeighborhoodIds([]); setLegacyNeighborhoods([]); setNeighborhoodInput('');
     setApiProgress(0); setProgressLabel(''); setApiResults(null);
   };
 
@@ -90,16 +143,28 @@ export default function TerritoryIngestion() {
     setStep(s === 'csv' ? 'upload' : 'scope');
   };
 
-  const addNeighborhood = () => {
-    const trimmed = neighborhoodInput.trim();
-    if (trimmed && !neighborhoods.includes(trimmed)) {
-      setNeighborhoods(prev => [...prev, trimmed]);
-    }
-    setNeighborhoodInput('');
+  const toggleNeighborhood = (id: string) => {
+    setSelectedNeighborhoodIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
   };
 
-  const removeNeighborhood = (hood: string) => {
-    setNeighborhoods(prev => prev.filter(n => n !== hood));
+  const selectAllFiltered = () => {
+    const allIds = filteredNeighborhoods.map(n => n.id);
+    const allSelected = allIds.every(id => selectedNeighborhoodIds.includes(id));
+    if (allSelected) {
+      setSelectedNeighborhoodIds(prev => prev.filter(id => !allIds.includes(id)));
+    } else {
+      setSelectedNeighborhoodIds(prev => [...new Set([...prev, ...allIds])]);
+    }
+  };
+
+  const addLegacyNeighborhood = () => {
+    const trimmed = neighborhoodInput.trim();
+    if (trimmed && !legacyNeighborhoods.includes(trimmed)) {
+      setLegacyNeighborhoods(prev => [...prev, trimmed]);
+    }
+    setNeighborhoodInput('');
   };
 
   // CSV handling
@@ -162,28 +227,30 @@ export default function TerritoryIngestion() {
     mutationFn: async () => {
       setStep('ingesting');
       setApiProgress(5);
-      setProgressLabel('Preparing ingestion…');
 
       const functionName = source === 'google_places' ? 'ingest-google-places'
         : source === 'yelp' ? 'ingest-yelp'
         : 'ingest-openstreetmap';
 
-      const hoodCount = neighborhoods.length || 1;
-      setProgressLabel(neighborhoods.length > 0
-        ? `Resolving ${hoodCount} neighborhood(s) via Nominatim…`
-        : `Querying ${scopeCity}, ${scopeState}…`
-      );
+      const totalTargets = selectedNeighborhoodIds.length || legacyNeighborhoods.length || 1;
+      setProgressLabel(`Ingesting ${totalTargets} target(s) × ${scopeTypes.length} type(s)…`);
       setApiProgress(15);
 
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        body: {
-          city: scopeCity,
-          state: scopeState,
-          country: scopeCountry,
-          business_types: scopeTypes,
-          neighborhoods: neighborhoods.length > 0 ? neighborhoods : undefined,
-        },
-      });
+      const body: Record<string, any> = {
+        city: scopeCity,
+        state: scopeState,
+        country: scopeCountry,
+        business_types: scopeTypes,
+      };
+
+      // Prefer DB neighborhood IDs, fall back to legacy free-text
+      if (selectedNeighborhoodIds.length > 0) {
+        body.neighborhood_ids = selectedNeighborhoodIds;
+      } else if (legacyNeighborhoods.length > 0) {
+        body.neighborhoods = legacyNeighborhoods;
+      }
+
+      const { data, error } = await supabase.functions.invoke(functionName, { body });
 
       setApiProgress(100);
       setProgressLabel('Complete');
@@ -218,12 +285,22 @@ export default function TerritoryIngestion() {
   ) || [];
 
   const retryFailed = () => {
-    setNeighborhoods(failedNeighborhoods.map((n: NeighborhoodResult) => n.neighborhood));
+    const failedIds = failedNeighborhoods.map(n => n.neighborhood_id).filter(Boolean);
+    if (failedIds.length > 0) {
+      setSelectedNeighborhoodIds(failedIds);
+      setLegacyNeighborhoods([]);
+    } else {
+      setLegacyNeighborhoods(failedNeighborhoods.map(n => n.neighborhood));
+      setSelectedNeighborhoodIds([]);
+    }
     setStep('scope');
     setApiProgress(0);
     setProgressLabel('');
     setApiResults(null);
   };
+
+  const selectedCount = selectedNeighborhoodIds.length + legacyNeighborhoods.length;
+  const queryEstimate = (selectedCount || 1) * scopeTypes.length;
 
   return (
     <div className="space-y-6">
@@ -281,13 +358,10 @@ export default function TerritoryIngestion() {
               Define Search Scope — {SOURCES.find(s => s.key === source)?.label}
             </CardTitle>
             <CardDescription>
-              {source === 'openstreetmap'
-                ? 'Add neighborhoods for targeted bbox queries. Leave empty for city-wide fallback (slower, may timeout).'
-                : 'Specify the geographic area and business types to search for.'
-              }
+              Select neighborhoods from your territory database for targeted, reliable ingestion.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1">
                 <Label>City *</Label>
@@ -303,48 +377,171 @@ export default function TerritoryIngestion() {
               </div>
             </div>
 
-            {/* Neighborhood input */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Neighborhoods
-                <span className="text-xs text-muted-foreground font-normal">(recommended for reliable results)</span>
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  value={neighborhoodInput}
-                  onChange={e => setNeighborhoodInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addNeighborhood(); } }}
-                  placeholder="e.g. Williamsburg, Bushwick, Crown Heights…"
-                  className="flex-1"
-                />
-                <Button type="button" variant="outline" size="icon" onClick={addNeighborhood} disabled={!neighborhoodInput.trim()}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              {neighborhoods.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {neighborhoods.map(hood => (
-                    <Badge key={hood} variant="secondary" className="flex items-center gap-1 px-3 py-1">
-                      {hood}
-                      <button onClick={() => removeNeighborhood(hood)} className="ml-1 hover:text-destructive">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
+            {/* DB Neighborhood selector */}
+            {source === 'openstreetmap' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Select Neighborhoods
+                    <Badge variant="outline" className="text-xs">{dbNeighborhoods.length} in DB</Badge>
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    {boroughs.length > 0 && (
+                      <Select value={boroughFilter} onValueChange={setBoroughFilter}>
+                        <SelectTrigger className="w-[180px] h-8 text-xs">
+                          <SelectValue placeholder="Filter by borough" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Boroughs</SelectItem>
+                          {boroughs.map(b => (
+                            <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <Button variant="outline" size="sm" onClick={selectAllFiltered} className="text-xs h-8">
+                      {filteredNeighborhoods.every(n => selectedNeighborhoodIds.includes(n.id)) ? 'Deselect All' : 'Select All'}
+                    </Button>
+                  </div>
                 </div>
-              )}
-              {neighborhoods.length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  No neighborhoods added — will query the entire city. This may be slower and prone to timeouts.
-                </p>
-              )}
-              {neighborhoods.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {neighborhoods.length} neighborhood(s) × {scopeTypes.length} type(s) = ~{neighborhoods.length * scopeTypes.length} targeted queries
-                </p>
-              )}
-            </div>
+
+                {hoodsLoading ? (
+                  <div className="flex justify-center py-6">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                  </div>
+                ) : filteredNeighborhoods.length > 0 ? (
+                  <div className="border rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-8"></TableHead>
+                          <TableHead>Neighborhood</TableHead>
+                          <TableHead>Borough</TableHead>
+                          <TableHead className="text-center">BBox</TableHead>
+                          <TableHead className="text-center">Status</TableHead>
+                          <TableHead className="text-right">Last Run</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredNeighborhoods.map(n => (
+                          <TableRow
+                            key={n.id}
+                            className={`cursor-pointer ${selectedNeighborhoodIds.includes(n.id) ? 'bg-primary/5' : ''}`}
+                            onClick={() => toggleNeighborhood(n.id)}
+                          >
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedNeighborhoodIds.includes(n.id)}
+                                onCheckedChange={() => toggleNeighborhood(n.id)}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">{n.name}</TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                              {n.borough?.name || '—'}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {n.bbox ? (
+                                <Badge variant="outline" className="text-xs text-emerald-500">Cached</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs text-muted-foreground">Auto-resolve</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className={`text-xs font-medium capitalize ${STATUS_COLORS[n.ingestion_status || 'pending'] || 'text-muted-foreground'}`}>
+                                {n.ingestion_status || 'pending'}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">
+                              {n.last_ingested_at
+                                ? new Date(n.last_ingested_at).toLocaleDateString()
+                                : '—'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No neighborhoods found. Add them in Territory settings first, or use manual entry below.
+                  </p>
+                )}
+
+                {selectedNeighborhoodIds.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {selectedNeighborhoodIds.length} neighborhood(s) × {scopeTypes.length} type(s) = ~{selectedNeighborhoodIds.length * scopeTypes.length} targeted bbox queries
+                  </p>
+                )}
+
+                {/* Legacy manual input fallback */}
+                <details className="text-sm">
+                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+                    Manual entry (for neighborhoods not in DB)
+                  </summary>
+                  <div className="mt-2 space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        value={neighborhoodInput}
+                        onChange={e => setNeighborhoodInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addLegacyNeighborhood(); } }}
+                        placeholder="e.g. Williamsburg"
+                        className="flex-1"
+                      />
+                      <Button type="button" variant="outline" size="icon" onClick={addLegacyNeighborhood} disabled={!neighborhoodInput.trim()}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {legacyNeighborhoods.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {legacyNeighborhoods.map(hood => (
+                          <Badge key={hood} variant="secondary" className="flex items-center gap-1 px-3 py-1">
+                            {hood}
+                            <button onClick={() => setLegacyNeighborhoods(prev => prev.filter(n => n !== hood))} className="ml-1 hover:text-destructive">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </details>
+              </div>
+            )}
+
+            {/* Non-OSM sources: simple neighborhood input */}
+            {source !== 'openstreetmap' && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Neighborhoods <span className="text-xs text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={neighborhoodInput}
+                    onChange={e => setNeighborhoodInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addLegacyNeighborhood(); } }}
+                    placeholder="e.g. Williamsburg, Bushwick…"
+                    className="flex-1"
+                  />
+                  <Button type="button" variant="outline" size="icon" onClick={addLegacyNeighborhood} disabled={!neighborhoodInput.trim()}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {legacyNeighborhoods.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {legacyNeighborhoods.map(hood => (
+                      <Badge key={hood} variant="secondary" className="flex items-center gap-1 px-3 py-1">
+                        {hood}
+                        <button onClick={() => setLegacyNeighborhoods(prev => prev.filter(n => n !== hood))} className="ml-1 hover:text-destructive">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Business Types</Label>
@@ -362,14 +559,23 @@ export default function TerritoryIngestion() {
               </div>
             </div>
 
+            {selectedCount === 0 && source === 'openstreetmap' && (
+              <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-md">
+                <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-400">
+                  No neighborhoods selected — will attempt city-wide query. This is slower and prone to Overpass timeouts.
+                </p>
+              </div>
+            )}
+
             <div className="flex justify-between pt-4">
               <Button variant="outline" onClick={() => { setSource(null); setStep('source'); }}>Back</Button>
               <Button
                 onClick={() => apiIngestMutation.mutate()}
                 disabled={!scopeCity || !scopeState || scopeTypes.length === 0}
               >
-                {neighborhoods.length > 0
-                  ? `Ingest ${neighborhoods.length} Neighborhood(s)`
+                {selectedCount > 0
+                  ? `Ingest ${selectedCount} Neighborhood(s)`
                   : 'Start City-Wide Ingestion'
                 }
               </Button>
@@ -387,6 +593,7 @@ export default function TerritoryIngestion() {
               <p className="font-medium">Ingesting from {SOURCES.find(s => s.key === source)?.label}…</p>
               <Progress value={apiProgress} className="h-2" />
               <p className="text-xs text-muted-foreground">{progressLabel}</p>
+              <p className="text-xs text-muted-foreground">~{queryEstimate} queries • Retries + mirrors active</p>
             </div>
           </CardContent>
         </Card>
@@ -581,6 +788,7 @@ export default function TerritoryIngestion() {
               <Button onClick={resetAll}>Import More Data</Button>
               {failedNeighborhoods.length > 0 && (
                 <Button variant="outline" onClick={retryFailed}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
                   Retry {failedNeighborhoods.length} Failed Neighborhood(s)
                 </Button>
               )}

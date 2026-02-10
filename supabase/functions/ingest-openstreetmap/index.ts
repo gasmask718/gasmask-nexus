@@ -22,7 +22,14 @@ interface BBox {
   east: number;
 }
 
+interface NeighborhoodTarget {
+  id: string;
+  name: string;
+  bbox: BBox | null;
+}
+
 interface NeighborhoodResult {
+  neighborhood_id: string;
   neighborhood: string;
   status: 'success' | 'partial' | 'failed';
   inserted: number;
@@ -82,26 +89,7 @@ async function fetchOverpassWithRetry(query: string): Promise<any | null> {
 
 function buildBBoxQuery(bbox: BBox, typeFilter: string): string {
   const bboxStr = `${bbox.south},${bbox.west},${bbox.north},${bbox.east}`;
-  return `
-[out:json][timeout:25];
-(
-  node${typeFilter}(${bboxStr});
-  way${typeFilter}(${bboxStr});
-);
-out center 500;
-`;
-}
-
-function buildAreaQuery(area: string, typeFilter: string): string {
-  return `
-[out:json][timeout:25];
-area["name"="${area}"]->.searchArea;
-(
-  node${typeFilter}(area.searchArea);
-  way${typeFilter}(area.searchArea);
-);
-out center 500;
-`;
+  return `[out:json][timeout:25];(node${typeFilter}(${bboxStr});way${typeFilter}(${bboxStr}););out center 500;`;
 }
 
 function mapBusinessTypeToOSM(type: string): string[] {
@@ -123,7 +111,15 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { city, state, country = 'US', business_types = [], neighborhoods = [] } = await req.json();
+    const {
+      city,
+      state,
+      country = 'US',
+      business_types = [],
+      neighborhood_ids = [],    // preferred: UUIDs from neighborhoods table
+      neighborhoods = [],       // legacy: free-text neighborhood names
+    } = await req.json();
+
     if (!city || !state) throw new Error('city and state are required');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -134,24 +130,57 @@ serve(async (req) => {
       ? business_types.map((t: string) => mapBusinessTypeToOSM(t)).flat()
       : ['["shop"="tobacco"]', '["shop"="convenience"]', '["shop"="deli"]', '["amenity"="hookah_lounge"]'];
 
-    // If neighborhoods provided, run per-neighborhood bbox queries
-    // Otherwise fall back to city-level area query
-    const targets: { name: string; bbox: BBox | null }[] = [];
+    // --- Resolve targets ---
+    const targets: NeighborhoodTarget[] = [];
 
-    if (neighborhoods.length > 0) {
-      // Resolve each neighborhood to a bounding box via Nominatim
+    if (neighborhood_ids.length > 0) {
+      // PREFERRED: Load neighborhoods from DB with pre-stored bbox
+      const { data: dbHoods } = await supabase
+        .from('neighborhoods')
+        .select('id, name, bbox, city, state')
+        .in('id', neighborhood_ids);
+
+      for (const hood of (dbHoods || [])) {
+        let bbox: BBox | null = hood.bbox as BBox | null;
+
+        // If no bbox stored yet, resolve via Nominatim and persist
+        if (!bbox) {
+          const hoodCity = hood.city || city;
+          const hoodState = hood.state || state;
+          bbox = await resolveNeighborhoodBBox(hood.name, hoodCity, hoodState, country);
+          if (bbox) {
+            await supabase.from('neighborhoods').update({
+              bbox,
+              city: hoodCity,
+              state: hoodState,
+              country,
+            }).eq('id', hood.id);
+          }
+          // Rate-limit Nominatim
+          await new Promise(r => setTimeout(r, 1100));
+        }
+
+        targets.push({ id: hood.id, name: hood.name, bbox });
+      }
+
+      // Mark ingesting
+      await supabase.from('neighborhoods')
+        .update({ ingestion_status: 'ingesting' })
+        .in('id', neighborhood_ids);
+
+    } else if (neighborhoods.length > 0) {
+      // LEGACY: free-text neighborhoods
       for (const hood of neighborhoods) {
         const bbox = await resolveNeighborhoodBBox(hood, city, state, country);
-        targets.push({ name: hood, bbox });
-        // Rate-limit Nominatim (1 req/sec policy)
+        targets.push({ id: '', name: hood, bbox });
         if (neighborhoods.indexOf(hood) < neighborhoods.length - 1) {
           await new Promise(r => setTimeout(r, 1100));
         }
       }
     } else {
-      // City-level fallback — resolve city bbox
+      // City-level fallback
       const cityBBox = await resolveNeighborhoodBBox(city, '', state, country);
-      targets.push({ name: city, bbox: cityBBox });
+      targets.push({ id: '', name: city, bbox: cityBBox });
     }
 
     const neighborhoodResults: NeighborhoodResult[] = [];
@@ -161,6 +190,7 @@ serve(async (req) => {
 
     for (const target of targets) {
       const result: NeighborhoodResult = {
+        neighborhood_id: target.id,
         neighborhood: target.name,
         status: 'success',
         inserted: 0,
@@ -173,6 +203,13 @@ serve(async (req) => {
         result.status = 'failed';
         result.error = 'Could not resolve bounding box via Nominatim';
         neighborhoodResults.push(result);
+        // Update DB status if we have an id
+        if (target.id) {
+          await supabase.from('neighborhoods').update({
+            ingestion_status: 'failed',
+            ingestion_stats: { error: result.error },
+          }).eq('id', target.id);
+        }
         continue;
       }
 
@@ -202,16 +239,20 @@ serve(async (req) => {
         result.status = 'failed';
         result.error = 'All Overpass queries timed out';
         neighborhoodResults.push(result);
+        if (target.id) {
+          await supabase.from('neighborhoods').update({
+            ingestion_status: 'failed',
+            ingestion_stats: { error: result.error },
+          }).eq('id', target.id);
+        }
         continue;
       }
 
-      if (queryFailures > 0) {
-        result.status = 'partial';
-      }
+      if (queryFailures > 0) result.status = 'partial';
 
       result.total = allElements.length;
 
-      // Insert addresses tagged with neighborhood
+      // Insert addresses tagged with neighborhood_id
       for (const e of allElements) {
         const lat = e.lat || e.center?.lat;
         const lng = e.lon || e.center?.lon;
@@ -230,7 +271,7 @@ serve(async (req) => {
 
           if (existing && existing.length > 0) { result.skipped++; continue; }
 
-          const { error } = await supabase.from('territory_addresses').insert({
+          const insertData: Record<string, any> = {
             full_address: addrStr,
             city: tags['addr:city'] || city,
             state: tags['addr:state'] || state,
@@ -242,10 +283,28 @@ serve(async (req) => {
             neighborhood: target.name,
             discovery_status: 'unknown',
             discovered_by: 'openstreetmap',
-          });
+          };
 
+          // Link to neighborhood record if available
+          if (target.id) insertData.neighborhood_id = target.id;
+
+          const { error } = await supabase.from('territory_addresses').insert(insertData);
           if (error) { result.skipped++; } else { result.inserted++; }
         } catch { result.skipped++; }
+      }
+
+      // Update neighborhood ingestion status in DB
+      if (target.id) {
+        await supabase.from('neighborhoods').update({
+          ingestion_status: result.status === 'success' ? 'complete' : result.status,
+          last_ingested_at: new Date().toISOString(),
+          ingestion_stats: {
+            inserted: result.inserted,
+            skipped: result.skipped,
+            total: result.total,
+            types_queried: typeFilters.length,
+          },
+        }).eq('id', target.id);
       }
 
       totalInserted += result.inserted;
@@ -275,7 +334,13 @@ serve(async (req) => {
         source: 'openstreetmap',
         city,
         state,
-        neighborhoods: neighborhoodResults.map(r => ({ name: r.neighborhood, status: r.status, inserted: r.inserted, skipped: r.skipped })),
+        neighborhoods: neighborhoodResults.map(r => ({
+          id: r.neighborhood_id,
+          name: r.neighborhood,
+          status: r.status,
+          inserted: r.inserted,
+          skipped: r.skipped,
+        })),
         total: totalFound,
         inserted: totalInserted,
         skipped: totalSkipped,
@@ -297,8 +362,15 @@ serve(async (req) => {
 
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
+    return new Response(JSON.stringify({
+      source: 'openstreetmap',
+      inserted: 0,
+      skipped: 0,
+      total: 0,
+      error: msg,
+      warning: `Ingestion failed: ${msg}`,
+    }), {
+      status: 200, // Never 500 — graceful failure
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
