@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload, Package, Sparkles, CalendarDays } from 'lucide-react';
+import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload, Package, Sparkles, CalendarDays, ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { useCall } from '@/components/communication/CallProvider';
@@ -29,6 +29,9 @@ import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { PagePurpose } from '@/components/portal/guidance/PagePurpose';
 import { CardHelper } from '@/components/portal/guidance/CardHelper';
 import { useTranslation } from '@/hooks/useTranslation';
+import { getBrandIdentity } from '@/config/brands';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 interface StoreContact {
   id: string;
@@ -1089,9 +1092,46 @@ const Stores = () => {
                     </div>
                   )}
 
-                   {/* Last Order Snapshot KPI */}
-                   <div className="pt-1">
-                     <LastOrderKPIBadge snapshots={losMap?.get(store.id)} />
+                   {/* Last Order Snapshot — Full Brand Coverage */}
+                   <div className="pt-2 space-y-1">
+                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium flex items-center gap-1">
+                       <ShoppingCart className="h-3 w-3" />
+                       Last Order Snapshot
+                     </p>
+                     {(() => {
+                       const snaps = losMap?.get(store.id);
+                       if (!snaps || snaps.length === 0) {
+                         return <p className="text-xs text-muted-foreground">No order data</p>;
+                       }
+                       return (
+                         <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                           {snaps.map((snap) => {
+                             const brand = snap.canonical_brand_id
+                               ? getBrandIdentity(snap.canonical_brand_id)
+                               : null;
+                             return (
+                               <div key={snap.brand_key} className="flex items-center justify-between text-xs">
+                                 <span className="flex items-center gap-1 min-w-0">
+                                   {brand && <span className="text-[10px]">{brand.icon}</span>}
+                                   <span className={cn('truncate font-medium', brand?.textClass || 'text-muted-foreground')}>
+                                     {brand?.shortName || brand?.displayName || snap.brand_name}
+                                   </span>
+                                 </span>
+                                 <span className={cn(
+                                   'text-[10px] shrink-0 ml-1',
+                                   snap.is_placeholder ? 'text-muted-foreground italic' : 'text-foreground'
+                                 )}>
+                                   {snap.is_placeholder
+                                     ? 'Never'
+                                     : `${format(new Date(snap.last_order_date), 'MMM d')} · ${snap.last_order_size_label}`
+                                   }
+                                 </span>
+                               </div>
+                             );
+                           })}
+                         </div>
+                       );
+                     })()}
                    </div>
 
                    {/* Tube KPI Badge with Helper */}
