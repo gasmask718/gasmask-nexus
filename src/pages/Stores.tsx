@@ -22,7 +22,9 @@ import { useGlobalTags } from '@/hooks/useGlobalTags';
 import { useStoreProductCounts } from '@/hooks/useProductStoreAssignments';
 import { useStoreTubeKPIBatch } from '@/hooks/useStoreTubeKPIBatch';
 import { useStoreTubeIntelSummaryBatch } from '@/hooks/useStoreTubeIntelSummary';
+import { useLastOrderSnapshotBatch } from '@/hooks/useLastOrderSnapshot';
 import { StoreKPIBadge } from '@/components/store/StoreKPIBadge';
+import { LastOrderKPIBadge } from '@/components/store/LastOrderKPIBadge';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { PagePurpose } from '@/components/portal/guidance/PagePurpose';
 import { CardHelper } from '@/components/portal/guidance/CardHelper';
@@ -587,6 +589,7 @@ const Stores = () => {
   const paginatedStoreIds = useMemo(() => paginatedStores.map(s => s.id), [paginatedStores]);
   const { data: tubeKPIMap, isLoading: kpiLoading } = useStoreTubeKPIBatch(paginatedStoreIds);
   const { data: tubeIntelMap } = useStoreTubeIntelSummaryBatch(paginatedStoreIds);
+  const { data: losMap } = useLastOrderSnapshotBatch(paginatedStoreIds);
 
   const formatBrandName = (brand: string) => {
     const normalized = brand.toLowerCase();
@@ -1085,6 +1088,11 @@ const Stores = () => {
                       )}
                     </div>
                   )}
+
+                   {/* Last Order Snapshot KPI */}
+                   <div className="pt-1">
+                     <LastOrderKPIBadge snapshots={losMap?.get(store.id)} />
+                   </div>
 
                    {/* Tube KPI Badge with Helper */}
                    <div className="pt-1 border-t border-border/50">
