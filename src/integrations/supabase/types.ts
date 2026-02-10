@@ -44729,6 +44729,139 @@ export type Database = {
           },
         ]
       }
+      territory_commitment_audit: {
+        Row: {
+          action: string
+          changed_by: string
+          commitment_id: string
+          created_at: string
+          id: string
+          new_state: Json | null
+          previous_state: Json | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          changed_by: string
+          commitment_id: string
+          created_at?: string
+          id?: string
+          new_state?: Json | null
+          previous_state?: Json | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          changed_by?: string
+          commitment_id?: string
+          created_at?: string
+          id?: string
+          new_state?: Json | null
+          previous_state?: Json | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territory_commitment_audit_commitment_id_fkey"
+            columns: ["commitment_id"]
+            isOneToOne: false
+            referencedRelation: "territory_commitments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      territory_commitments: {
+        Row: {
+          ai_allowed: boolean
+          commitment_type: Database["public"]["Enums"]["territory_commitment_type"]
+          created_at: string
+          created_by: string
+          expiration_date: string | null
+          human_only: boolean
+          id: string
+          is_active: boolean
+          neighborhood_id: string
+          no_new_promotions: boolean
+          no_outbound_contact: boolean
+          notes: string | null
+          reason: string
+          review_date: string
+          start_date: string
+          superseded_by: string | null
+          updated_at: string
+          wholesaler_only_verification: boolean
+        }
+        Insert: {
+          ai_allowed?: boolean
+          commitment_type: Database["public"]["Enums"]["territory_commitment_type"]
+          created_at?: string
+          created_by: string
+          expiration_date?: string | null
+          human_only?: boolean
+          id?: string
+          is_active?: boolean
+          neighborhood_id: string
+          no_new_promotions?: boolean
+          no_outbound_contact?: boolean
+          notes?: string | null
+          reason: string
+          review_date: string
+          start_date?: string
+          superseded_by?: string | null
+          updated_at?: string
+          wholesaler_only_verification?: boolean
+        }
+        Update: {
+          ai_allowed?: boolean
+          commitment_type?: Database["public"]["Enums"]["territory_commitment_type"]
+          created_at?: string
+          created_by?: string
+          expiration_date?: string | null
+          human_only?: boolean
+          id?: string
+          is_active?: boolean
+          neighborhood_id?: string
+          no_new_promotions?: boolean
+          no_outbound_contact?: boolean
+          notes?: string | null
+          reason?: string
+          review_date?: string
+          start_date?: string
+          superseded_by?: string | null
+          updated_at?: string
+          wholesaler_only_verification?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territory_commitments_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "territory_neighborhoods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "territory_commitments_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "v_territory_domination_score"
+            referencedColumns: ["neighborhood_id"]
+          },
+          {
+            foreignKeyName: "territory_commitments_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "v_territory_neighborhood_kpis"
+            referencedColumns: ["neighborhood_id"]
+          },
+          {
+            foreignKeyName: "territory_commitments_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "territory_commitments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       territory_neighborhoods: {
         Row: {
           city: string
@@ -53830,6 +53963,12 @@ export type Database = {
         | "chauffeur_confirmation"
         | "model_verification"
       template_type: "sms" | "email" | "call_script" | "tone_pack"
+      territory_commitment_type:
+        | "dominate"
+        | "maintain"
+        | "observe"
+        | "freeze"
+        | "exit"
       ut_employment_type:
         | "full_time"
         | "part_time"
@@ -54370,6 +54509,13 @@ export const Constants = {
         "model_verification",
       ],
       template_type: ["sms", "email", "call_script", "tone_pack"],
+      territory_commitment_type: [
+        "dominate",
+        "maintain",
+        "observe",
+        "freeze",
+        "exit",
+      ],
       ut_employment_type: [
         "full_time",
         "part_time",

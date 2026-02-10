@@ -50,6 +50,8 @@ import PromotionsPending from '@/pages/territory/PromotionsPending';
 import PromotionsHistory from '@/pages/territory/PromotionsHistory';
 import TerritoryIngestion from '@/pages/territory/TerritoryIngestion';
 import TerritoryGapIntelligence from '@/pages/territory/TerritoryGapIntelligence';
+import TerritoryPlanning from '@/pages/territory/TerritoryPlanning';
+import CommitmentHistory from '@/pages/territory/CommitmentHistory';
 import RevenueBrain from '@/pages/RevenueBrain';
 import OpportunityRadar from '@/pages/OpportunityRadar';
 import MasterOpportunities from '@/pages/MasterOpportunities';
@@ -587,6 +589,8 @@ export default function AppRoutes() {
         <Route path="/territory/promotions/history" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><PromotionsHistory /></RequireRole>} />
         <Route path="/territory/ingestion" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><TerritoryIngestion /></RequireRole>} />
         <Route path="/territory/gap-intelligence" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryGapIntelligence /></RequireRole>} />
+        <Route path="/territory/planning" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryPlanning /></RequireRole>} />
+        <Route path="/territory/planning/history" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><CommitmentHistory /></RequireRole>} />
 
         {/* GasMask Brand Routes */}
         <Route path="/gasmask" element={<Dashboard />} />
