@@ -306,6 +306,7 @@ export default function AppSidebar() {
                 { path: '/territory/promotions/pending', label: 'Pending Promotions', emoji: '⏳' },
                 { path: '/territory/promotions/history', label: 'Promotion History', emoji: '📜' },
                 { path: '/territory/ingestion', label: 'Ingestion', emoji: '📥' },
+                { path: '/territory/gap-intelligence', label: 'Gap Intelligence', emoji: '🧠' },
               ], "bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 hover:from-cyan-500/30")}
             </div>
           )}
