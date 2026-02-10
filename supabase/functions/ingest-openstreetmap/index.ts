@@ -15,13 +15,53 @@ const OVERPASS_MIRRORS = [
 
 const RETRY_DELAYS = [2000, 5000, 10000];
 
-async function fetchWithRetry(query: string): Promise<any | null> {
+interface BBox {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+}
+
+interface NeighborhoodResult {
+  neighborhood: string;
+  status: 'success' | 'partial' | 'failed';
+  inserted: number;
+  skipped: number;
+  total: number;
+  bbox: BBox | null;
+  error?: string;
+}
+
+// Resolve a neighborhood name to a bounding box via Nominatim
+async function resolveNeighborhoodBBox(neighborhood: string, city: string, state: string, country: string): Promise<BBox | null> {
+  const query = `${neighborhood}, ${city}, ${state}, ${country}`;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&bounded=0`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'DynastyOS-TerritoryIngestion/1.0' },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.length || !data[0].boundingbox) return null;
+    const [south, north, west, east] = data[0].boundingbox.map(Number);
+    return { south, west, north, east };
+  } catch (err) {
+    console.warn(`Nominatim lookup failed for "${query}": ${err}`);
+    return null;
+  }
+}
+
+// Fetch from Overpass with retry + mirror fallback
+async function fetchOverpassWithRetry(query: string): Promise<any | null> {
   for (const mirror of OVERPASS_MIRRORS) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 25000);
-
         const response = await fetch(mirror, {
           method: 'POST',
           body: `data=${encodeURIComponent(query)}`,
@@ -29,165 +69,40 @@ async function fetchWithRetry(query: string): Promise<any | null> {
           signal: controller.signal,
         });
         clearTimeout(timeout);
-
-        if (response.ok) {
-          return await response.json();
-        }
-
+        if (response.ok) return await response.json();
         console.warn(`Mirror ${mirror} returned ${response.status}, attempt ${attempt + 1}`);
       } catch (err) {
         console.warn(`Mirror ${mirror} attempt ${attempt + 1} failed: ${err}`);
       }
-
-      if (attempt < 2) {
-        await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
-      }
+      if (attempt < 2) await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
     }
-    // All retries exhausted for this mirror, try next
   }
-  return null; // All mirrors failed
+  return null;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+function buildBBoxQuery(bbox: BBox, typeFilter: string): string {
+  const bboxStr = `${bbox.south},${bbox.west},${bbox.north},${bbox.east}`;
+  return `
+[out:json][timeout:25];
+(
+  node${typeFilter}(${bboxStr});
+  way${typeFilter}(${bboxStr});
+);
+out center 500;
+`;
+}
 
-  try {
-    const { city, state, country = 'US', business_types = [] } = await req.json();
-    if (!city || !state) throw new Error('city and state are required');
-
-    const typeFilters = business_types.length > 0
-      ? business_types.map((t: string) => mapBusinessTypeToOSM(t)).flat()
-      : ['["shop"="tobacco"]', '["shop"="convenience"]', '["shop"="deli"]', '["amenity"="hookah_lounge"]'];
-
-    const area = `${city}, ${state}, ${country}`;
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Query splitting: one query per business type filter
-    const allElements: any[] = [];
-    const seenOsmIds = new Set<string>();
-    let queryFailures = 0;
-
-    for (const filter of typeFilters) {
-      const query = buildOverpassQuery(area, [filter]);
-      const data = await fetchWithRetry(query);
-
-      if (!data) {
-        queryFailures++;
-        console.warn(`Overpass query failed for filter: ${filter}`);
-        continue;
-      }
-
-      for (const e of (data.elements || [])) {
-        if (e.tags?.name && !seenOsmIds.has(String(e.id))) {
-          seenOsmIds.add(String(e.id));
-          allElements.push(e);
-        }
-      }
-    }
-
-    // If ALL queries failed, return graceful warning
-    if (queryFailures === typeFilters.length) {
-      await supabase.from('territory_activity_log').insert({
-        activity_type: 'ingestion',
-        description: `OpenStreetMap ingestion failed: Overpass unavailable for ${city}, ${state}`,
-        metadata: { source: 'openstreetmap', city, state, error: 'all_mirrors_failed' },
-      }).catch(() => {});
-
-      return new Response(JSON.stringify({
-        source: 'openstreetmap',
-        total: 0,
-        inserted: 0,
-        skipped: 0,
-        warning: 'OpenStreetMap is temporarily unavailable. All mirrors timed out — try again later.',
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Transform elements to addresses
-    const addresses = allElements.map((e: any) => {
-      const lat = e.lat || e.center?.lat;
-      const lng = e.lon || e.center?.lon;
-      const tags = e.tags || {};
-      const street = [tags['addr:housenumber'], tags['addr:street']].filter(Boolean).join(' ');
-      const fullAddress = [street, tags['addr:city'] || city, tags['addr:state'] || state].filter(Boolean).join(', ');
-
-      return {
-        full_address: fullAddress || tags.name,
-        city: tags['addr:city'] || city,
-        state: tags['addr:state'] || state,
-        zip: tags['addr:postcode'] || null,
-        latitude: lat,
-        longitude: lng,
-        address_type: tags.shop || tags.amenity || 'unknown',
-        notes: `OSM: ${tags.name}${tags.phone ? ' | ' + tags.phone : ''}`,
-        source: 'openstreetmap',
-        osm_id: String(e.id),
-      };
-    });
-
-    let inserted = 0;
-    let skipped = 0;
-
-    for (const addr of addresses) {
-      try {
-        const { data: existing } = await supabase
-          .from('territory_addresses')
-          .select('id')
-          .ilike('full_address', `%${addr.full_address.substring(0, 30)}%`)
-          .eq('city', addr.city)
-          .limit(1);
-
-        if (existing && existing.length > 0) { skipped++; continue; }
-
-        const { error } = await supabase.from('territory_addresses').insert({
-          full_address: addr.full_address,
-          city: addr.city,
-          state: addr.state,
-          zip: addr.zip,
-          latitude: addr.latitude,
-          longitude: addr.longitude,
-          address_type: addr.address_type,
-          notes: addr.notes,
-          discovery_status: 'unknown',
-          discovered_by: 'openstreetmap',
-        });
-
-        if (error) { skipped++; } else { inserted++; }
-      } catch { skipped++; }
-    }
-
-    const partialWarning = queryFailures > 0
-      ? `Partial results: ${queryFailures} of ${typeFilters.length} queries failed. Some business types may be missing.`
-      : undefined;
-
-    await supabase.from('territory_activity_log').insert({
-      activity_type: 'ingestion',
-      description: `OpenStreetMap ingestion: ${inserted} new, ${skipped} skipped from ${city}, ${state}`,
-      metadata: { source: 'openstreetmap', city, state, total: addresses.length, inserted, skipped, queryFailures },
-    }).catch(() => {});
-
-    return new Response(JSON.stringify({
-      source: 'openstreetmap',
-      total: addresses.length,
-      inserted,
-      skipped,
-      duplicates: skipped,
-      ...(partialWarning ? { warning: partialWarning } : {}),
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-});
+function buildAreaQuery(area: string, typeFilter: string): string {
+  return `
+[out:json][timeout:25];
+area["name"="${area}"]->.searchArea;
+(
+  node${typeFilter}(area.searchArea);
+  way${typeFilter}(area.searchArea);
+);
+out center 500;
+`;
+}
 
 function mapBusinessTypeToOSM(type: string): string[] {
   const mapping: Record<string, string[]> = {
@@ -204,17 +119,187 @@ function mapBusinessTypeToOSM(type: string): string[] {
   return mapping[type] || [`["shop"="${type}"]`];
 }
 
-function buildOverpassQuery(area: string, typeFilters: string[]): string {
-  const nodeQueries = typeFilters.map(f => `node${f}(area.searchArea);`).join('\n');
-  const wayQueries = typeFilters.map(f => `way${f}(area.searchArea);`).join('\n');
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
-  return `
-[out:json][timeout:25];
-area["name"="${area.split(',')[0].trim()}"]->.searchArea;
-(
-${nodeQueries}
-${wayQueries}
-);
-out center 500;
-`;
-}
+  try {
+    const { city, state, country = 'US', business_types = [], neighborhoods = [] } = await req.json();
+    if (!city || !state) throw new Error('city and state are required');
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const typeFilters = business_types.length > 0
+      ? business_types.map((t: string) => mapBusinessTypeToOSM(t)).flat()
+      : ['["shop"="tobacco"]', '["shop"="convenience"]', '["shop"="deli"]', '["amenity"="hookah_lounge"]'];
+
+    // If neighborhoods provided, run per-neighborhood bbox queries
+    // Otherwise fall back to city-level area query
+    const targets: { name: string; bbox: BBox | null }[] = [];
+
+    if (neighborhoods.length > 0) {
+      // Resolve each neighborhood to a bounding box via Nominatim
+      for (const hood of neighborhoods) {
+        const bbox = await resolveNeighborhoodBBox(hood, city, state, country);
+        targets.push({ name: hood, bbox });
+        // Rate-limit Nominatim (1 req/sec policy)
+        if (neighborhoods.indexOf(hood) < neighborhoods.length - 1) {
+          await new Promise(r => setTimeout(r, 1100));
+        }
+      }
+    } else {
+      // City-level fallback — resolve city bbox
+      const cityBBox = await resolveNeighborhoodBBox(city, '', state, country);
+      targets.push({ name: city, bbox: cityBBox });
+    }
+
+    const neighborhoodResults: NeighborhoodResult[] = [];
+    let totalInserted = 0;
+    let totalSkipped = 0;
+    let totalFound = 0;
+
+    for (const target of targets) {
+      const result: NeighborhoodResult = {
+        neighborhood: target.name,
+        status: 'success',
+        inserted: 0,
+        skipped: 0,
+        total: 0,
+        bbox: target.bbox,
+      };
+
+      if (!target.bbox) {
+        result.status = 'failed';
+        result.error = 'Could not resolve bounding box via Nominatim';
+        neighborhoodResults.push(result);
+        continue;
+      }
+
+      const allElements: any[] = [];
+      const seenOsmIds = new Set<string>();
+      let queryFailures = 0;
+
+      // Query per business type within this neighborhood's bbox
+      for (const filter of typeFilters) {
+        const query = buildBBoxQuery(target.bbox, filter);
+        const data = await fetchOverpassWithRetry(query);
+
+        if (!data) {
+          queryFailures++;
+          continue;
+        }
+
+        for (const e of (data.elements || [])) {
+          if (e.tags?.name && !seenOsmIds.has(String(e.id))) {
+            seenOsmIds.add(String(e.id));
+            allElements.push(e);
+          }
+        }
+      }
+
+      if (queryFailures === typeFilters.length) {
+        result.status = 'failed';
+        result.error = 'All Overpass queries timed out';
+        neighborhoodResults.push(result);
+        continue;
+      }
+
+      if (queryFailures > 0) {
+        result.status = 'partial';
+      }
+
+      result.total = allElements.length;
+
+      // Insert addresses tagged with neighborhood
+      for (const e of allElements) {
+        const lat = e.lat || e.center?.lat;
+        const lng = e.lon || e.center?.lon;
+        const tags = e.tags || {};
+        const street = [tags['addr:housenumber'], tags['addr:street']].filter(Boolean).join(' ');
+        const fullAddress = [street, tags['addr:city'] || city, tags['addr:state'] || state].filter(Boolean).join(', ');
+        const addrStr = fullAddress || tags.name;
+
+        try {
+          const { data: existing } = await supabase
+            .from('territory_addresses')
+            .select('id')
+            .ilike('full_address', `%${addrStr.substring(0, 30)}%`)
+            .eq('city', tags['addr:city'] || city)
+            .limit(1);
+
+          if (existing && existing.length > 0) { result.skipped++; continue; }
+
+          const { error } = await supabase.from('territory_addresses').insert({
+            full_address: addrStr,
+            city: tags['addr:city'] || city,
+            state: tags['addr:state'] || state,
+            zip: tags['addr:postcode'] || null,
+            latitude: lat,
+            longitude: lng,
+            address_type: tags.shop || tags.amenity || 'unknown',
+            notes: `OSM: ${tags.name}${tags.phone ? ' | ' + tags.phone : ''} [${target.name}]`,
+            neighborhood: target.name,
+            discovery_status: 'unknown',
+            discovered_by: 'openstreetmap',
+          });
+
+          if (error) { result.skipped++; } else { result.inserted++; }
+        } catch { result.skipped++; }
+      }
+
+      totalInserted += result.inserted;
+      totalSkipped += result.skipped;
+      totalFound += result.total;
+      neighborhoodResults.push(result);
+    }
+
+    const failedHoods = neighborhoodResults.filter(r => r.status === 'failed');
+    const partialHoods = neighborhoodResults.filter(r => r.status === 'partial');
+    const overallStatus = failedHoods.length === neighborhoodResults.length ? 'failed'
+      : (failedHoods.length > 0 || partialHoods.length > 0) ? 'partial_success'
+      : 'success';
+
+    let warning: string | undefined;
+    if (overallStatus === 'failed') {
+      warning = 'All neighborhoods failed — Overpass unavailable. Try again later.';
+    } else if (failedHoods.length > 0) {
+      warning = `${failedHoods.length} neighborhood(s) failed: ${failedHoods.map(h => h.neighborhood).join(', ')}. You can retry just those.`;
+    }
+
+    // Log activity
+    await supabase.from('territory_activity_log').insert({
+      activity_type: 'ingestion',
+      description: `OSM ingestion: ${totalInserted} new, ${totalSkipped} skipped across ${neighborhoodResults.length} neighborhood(s) in ${city}, ${state}`,
+      metadata: {
+        source: 'openstreetmap',
+        city,
+        state,
+        neighborhoods: neighborhoodResults.map(r => ({ name: r.neighborhood, status: r.status, inserted: r.inserted, skipped: r.skipped })),
+        total: totalFound,
+        inserted: totalInserted,
+        skipped: totalSkipped,
+      },
+    }).catch(() => {});
+
+    return new Response(JSON.stringify({
+      source: 'openstreetmap',
+      total: totalFound,
+      inserted: totalInserted,
+      skipped: totalSkipped,
+      duplicates: totalSkipped,
+      status: overallStatus,
+      neighborhoods: neighborhoodResults,
+      ...(warning ? { warning } : {}),
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
