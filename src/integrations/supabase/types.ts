@@ -53210,6 +53210,7 @@ export type Database = {
         Returns: boolean
       }
       ingest_portal_actions: { Args: { _actions: Json }; Returns: Json }
+      ingest_territory_addresses: { Args: { p_addresses: Json }; Returns: Json }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_ambassador_for_store: {
         Args: { _store_id: string; _user_id: string }
