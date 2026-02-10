@@ -185,6 +185,7 @@ export default function AppSidebar() {
           {/* 🌍 TERRITORY INTELLIGENCE — Floor 0 (ABOVE ALL FLOORS) */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {(() => { console.log("Territory Intelligence sidebar rendered"); return null; })()}
+          <div id="__FLOOR_0_ASSERT__" data-floor="0" />
           <div className="mb-4 pt-2 border-t border-sidebar-border">
             <div className="px-3 py-2 text-xs font-semibold uppercase text-cyan-400/80 tracking-wider">
               🌍 Territory Intelligence (Floor 0)
