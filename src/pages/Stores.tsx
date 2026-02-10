@@ -333,21 +333,41 @@ const Stores = () => {
       // Fetch contacts for these stores
       const storeIds = mappedStores.map(s => s.id);
       
+      // Helper to batch .in() queries to avoid URL length limits
+      const BATCH_SIZE = 200;
+      async function batchedIn<T>(
+        queryFn: (ids: string[]) => PromiseLike<{ data: T[] | null; error: any }>
+      ): Promise<T[]> {
+        const results: T[] = [];
+        for (let i = 0; i < storeIds.length; i += BATCH_SIZE) {
+          const batch = storeIds.slice(i, i + BATCH_SIZE);
+          try {
+            const { data, error } = await queryFn(batch);
+            if (!error && data) results.push(...data);
+          } catch {
+            // Silently skip failed batches
+          }
+        }
+        return results;
+      }
+      
       if (storeIds.length) {
-        // Fetch global tags for all stores
-        const { data: tagAttachments, error: tagError } = await supabase
-          .from('tag_attachments')
-          .select(`
-            entity_id,
-            global_tags (
-              id,
-              name
-            )
-          `)
-          .eq('entity_type', 'store')
-          .in('entity_id', storeIds);
+        // Fetch global tags for all stores (batched)
+        const tagAttachments = await batchedIn<any>((ids) =>
+          supabase
+            .from('tag_attachments')
+            .select(`
+              entity_id,
+              global_tags (
+                id,
+                name
+              )
+            `)
+            .eq('entity_type', 'store')
+            .in('entity_id', ids)
+        );
 
-        if (!tagError && tagAttachments) {
+        if (tagAttachments.length) {
           const tagsByStore = tagAttachments.reduce((acc, attachment) => {
             const storeId = attachment.entity_id;
             if (!acc[storeId]) acc[storeId] = [];
@@ -362,12 +382,15 @@ const Stores = () => {
           });
         }
 
-        const { data: contactsData, error: contactsError } = await supabase
-          .from('store_contacts')
-          .select('id, store_id, name, role, phone, can_receive_sms, is_primary')
-          .in('store_id', storeIds);
+        // Fetch contacts (batched)
+        const contactsData = await batchedIn<any>((ids) =>
+          supabase
+            .from('store_contacts')
+            .select('id, store_id, name, role, phone, can_receive_sms, is_primary')
+            .in('store_id', ids)
+        );
         
-        if (!contactsError && contactsData) {
+        if (contactsData.length) {
           const contactsByStore = contactsData.reduce((acc, contact) => {
             if (!acc[contact.store_id]) acc[contact.store_id] = [];
             acc[contact.store_id].push(contact);
@@ -379,14 +402,16 @@ const Stores = () => {
           });
         }
         
-        // Fetch tube inventory (exclude legacy hotscolatti, show only light/dark variants)
-        const { data: tubeData, error: tubeError } = await supabase
-          .from('store_tube_inventory')
-          .select('id, store_id, brand, current_tubes_left')
-          .in('store_id', storeIds)
-          .neq('brand', 'hotscolatti');
+        // Fetch tube inventory (batched)
+        const tubeData = await batchedIn<any>((ids) =>
+          supabase
+            .from('store_tube_inventory')
+            .select('id, store_id, brand, current_tubes_left')
+            .in('store_id', ids)
+            .neq('brand', 'hotscolatti')
+        );
         
-        if (!tubeError && tubeData) {
+        if (tubeData.length) {
           const inventoryByStore = tubeData.reduce((acc, item) => {
             if (!acc[item.store_id]) acc[item.store_id] = [];
             acc[item.store_id].push({
@@ -402,13 +427,15 @@ const Stores = () => {
           });
         }
 
-        // Fetch phone numbers from legacy stores table
-        const { data: legacyStoresData, error: legacyError } = await supabase
-          .from('stores')
-          .select('id, phone, alt_phone')
-          .in('id', storeIds);
+        // Fetch phone numbers from legacy stores table (batched)
+        const legacyStoresData = await batchedIn<any>((ids) =>
+          supabase
+            .from('stores')
+            .select('id, phone, alt_phone')
+            .in('id', ids)
+        );
 
-        if (!legacyError && legacyStoresData) {
+        if (legacyStoresData.length) {
           const phonesByStore = legacyStoresData.reduce((acc, store) => {
             acc[store.id] = { 
               phone: store.phone ? String(store.phone) : null, 
@@ -420,7 +447,6 @@ const Stores = () => {
           mappedStores.forEach(store => {
             const legacyPhones = phonesByStore[store.id];
             if (legacyPhones) {
-              // Use store_master phone if available, otherwise fall back to legacy stores phone
               if (!store.phone && legacyPhones.phone) {
                 store.phone = legacyPhones.phone;
               }
