@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
-import { Upload, FileSpreadsheet, CheckCircle2, MapPin, ArrowRight, Globe, Search, Map, Settings, AlertTriangle } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, MapPin, ArrowRight, Globe, Search, Map, Settings, AlertTriangle, X, Plus } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 type SourceType = 'csv' | 'google_places' | 'yelp' | 'openstreetmap';
@@ -24,6 +24,15 @@ interface ColumnMapping {
   longitude: string;
   address_type: string;
   notes: string;
+}
+
+interface NeighborhoodResult {
+  neighborhood: string;
+  status: 'success' | 'partial' | 'failed';
+  inserted: number;
+  skipped: number;
+  total: number;
+  error?: string;
 }
 
 const REQUIRED_FIELDS = ['full_address', 'city', 'state'] as const;
@@ -43,7 +52,7 @@ const BUSINESS_TYPES = [
 const SOURCES: { key: SourceType; label: string; icon: any; description: string; requiresKey: boolean }[] = [
   { key: 'google_places', label: 'Google Places', icon: Search, description: 'Search Google Maps for businesses by type and location', requiresKey: true },
   { key: 'yelp', label: 'Yelp Fusion', icon: Globe, description: 'Search Yelp business listings by category and area', requiresKey: true },
-  { key: 'openstreetmap', label: 'OpenStreetMap', icon: Map, description: 'Free Overpass API — shop/amenity tags, no key needed', requiresKey: false },
+  { key: 'openstreetmap', label: 'OpenStreetMap', icon: Map, description: 'Free Overpass API — neighborhood-based bbox queries', requiresKey: false },
   { key: 'csv', label: 'CSV Upload', icon: FileSpreadsheet, description: 'Upload a CSV file with address data', requiresKey: false },
 ];
 
@@ -62,19 +71,35 @@ export default function TerritoryIngestion() {
   const [scopeState, setScopeState] = useState('');
   const [scopeCountry, setScopeCountry] = useState('US');
   const [scopeTypes, setScopeTypes] = useState<string[]>(['smoke_shop', 'convenience_store']);
+  const [neighborhoods, setNeighborhoods] = useState<string[]>([]);
+  const [neighborhoodInput, setNeighborhoodInput] = useState('');
   const [apiProgress, setApiProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState('');
   const [apiResults, setApiResults] = useState<any>(null);
 
   const resetAll = () => {
     setSource(null); setStep('source');
     setRawData([]); setHeaders([]); setMapping({}); setFileName('');
     setScopeCity(''); setScopeState(''); setScopeTypes(['smoke_shop', 'convenience_store']);
-    setApiProgress(0); setApiResults(null);
+    setNeighborhoods([]); setNeighborhoodInput('');
+    setApiProgress(0); setProgressLabel(''); setApiResults(null);
   };
 
   const handleSourceSelect = (s: SourceType) => {
     setSource(s);
     setStep(s === 'csv' ? 'upload' : 'scope');
+  };
+
+  const addNeighborhood = () => {
+    const trimmed = neighborhoodInput.trim();
+    if (trimmed && !neighborhoods.includes(trimmed)) {
+      setNeighborhoods(prev => [...prev, trimmed]);
+    }
+    setNeighborhoodInput('');
+  };
+
+  const removeNeighborhood = (hood: string) => {
+    setNeighborhoods(prev => prev.filter(n => n !== hood));
   };
 
   // CSV handling
@@ -136,18 +161,33 @@ export default function TerritoryIngestion() {
   const apiIngestMutation = useMutation({
     mutationFn: async () => {
       setStep('ingesting');
-      setApiProgress(10);
+      setApiProgress(5);
+      setProgressLabel('Preparing ingestion…');
+
       const functionName = source === 'google_places' ? 'ingest-google-places'
         : source === 'yelp' ? 'ingest-yelp'
         : 'ingest-openstreetmap';
 
-      setApiProgress(30);
+      const hoodCount = neighborhoods.length || 1;
+      setProgressLabel(neighborhoods.length > 0
+        ? `Resolving ${hoodCount} neighborhood(s) via Nominatim…`
+        : `Querying ${scopeCity}, ${scopeState}…`
+      );
+      setApiProgress(15);
+
       const { data, error } = await supabase.functions.invoke(functionName, {
-        body: { city: scopeCity, state: scopeState, country: scopeCountry, business_types: scopeTypes },
+        body: {
+          city: scopeCity,
+          state: scopeState,
+          country: scopeCountry,
+          business_types: scopeTypes,
+          neighborhoods: neighborhoods.length > 0 ? neighborhoods : undefined,
+        },
       });
-      setApiProgress(90);
-      if (error) throw error;
+
       setApiProgress(100);
+      setProgressLabel('Complete');
+      if (error) throw error;
       return data;
     },
     onSuccess: (data) => {
@@ -171,6 +211,18 @@ export default function TerritoryIngestion() {
 
   const toggleType = (t: string) => {
     setScopeTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+  };
+
+  const failedNeighborhoods = (apiResults?.neighborhoods as NeighborhoodResult[] | undefined)?.filter(
+    (n: NeighborhoodResult) => n.status === 'failed'
+  ) || [];
+
+  const retryFailed = () => {
+    setNeighborhoods(failedNeighborhoods.map((n: NeighborhoodResult) => n.neighborhood));
+    setStep('scope');
+    setApiProgress(0);
+    setProgressLabel('');
+    setApiResults(null);
   };
 
   return (
@@ -228,7 +280,12 @@ export default function TerritoryIngestion() {
               <Settings className="h-5 w-5 text-primary" />
               Define Search Scope — {SOURCES.find(s => s.key === source)?.label}
             </CardTitle>
-            <CardDescription>Specify the geographic area and business types to search for.</CardDescription>
+            <CardDescription>
+              {source === 'openstreetmap'
+                ? 'Add neighborhoods for targeted bbox queries. Leave empty for city-wide fallback (slower, may timeout).'
+                : 'Specify the geographic area and business types to search for.'
+              }
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -244,6 +301,49 @@ export default function TerritoryIngestion() {
                 <Label>Country</Label>
                 <Input value={scopeCountry} onChange={e => setScopeCountry(e.target.value)} placeholder="US" />
               </div>
+            </div>
+
+            {/* Neighborhood input */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Neighborhoods
+                <span className="text-xs text-muted-foreground font-normal">(recommended for reliable results)</span>
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  value={neighborhoodInput}
+                  onChange={e => setNeighborhoodInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addNeighborhood(); } }}
+                  placeholder="e.g. Williamsburg, Bushwick, Crown Heights…"
+                  className="flex-1"
+                />
+                <Button type="button" variant="outline" size="icon" onClick={addNeighborhood} disabled={!neighborhoodInput.trim()}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {neighborhoods.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {neighborhoods.map(hood => (
+                    <Badge key={hood} variant="secondary" className="flex items-center gap-1 px-3 py-1">
+                      {hood}
+                      <button onClick={() => removeNeighborhood(hood)} className="ml-1 hover:text-destructive">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              {neighborhoods.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  No neighborhoods added — will query the entire city. This may be slower and prone to timeouts.
+                </p>
+              )}
+              {neighborhoods.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {neighborhoods.length} neighborhood(s) × {scopeTypes.length} type(s) = ~{neighborhoods.length * scopeTypes.length} targeted queries
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -268,7 +368,10 @@ export default function TerritoryIngestion() {
                 onClick={() => apiIngestMutation.mutate()}
                 disabled={!scopeCity || !scopeState || scopeTypes.length === 0}
               >
-                Start Ingestion
+                {neighborhoods.length > 0
+                  ? `Ingest ${neighborhoods.length} Neighborhood(s)`
+                  : 'Start City-Wide Ingestion'
+                }
               </Button>
             </div>
           </CardContent>
@@ -283,7 +386,7 @@ export default function TerritoryIngestion() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
               <p className="font-medium">Ingesting from {SOURCES.find(s => s.key === source)?.label}…</p>
               <Progress value={apiProgress} className="h-2" />
-              <p className="text-xs text-muted-foreground">Searching {scopeCity}, {scopeState} for {scopeTypes.length} business types</p>
+              <p className="text-xs text-muted-foreground">{progressLabel}</p>
             </div>
           </CardContent>
         </Card>
@@ -293,7 +396,7 @@ export default function TerritoryIngestion() {
       {step === 'upload' && source === 'csv' && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Upload className="h-5 w-5 text-cyan-500" />Upload CSV</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Upload className="h-5 w-5 text-primary" />Upload CSV</CardTitle>
             <CardDescription>Upload a CSV file with address data. Required columns: full_address, city, state.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -386,7 +489,7 @@ export default function TerritoryIngestion() {
             {mappedRecords.length > 50 && <p className="text-sm text-muted-foreground mt-2">Showing first 50 of {mappedRecords.length} rows.</p>}
             <div className="flex justify-between pt-4">
               <Button variant="outline" onClick={() => setStep('map')}>Back</Button>
-              <Button onClick={() => csvIngestMutation.mutate()} disabled={csvIngestMutation.isPending} className="bg-cyan-600 hover:bg-cyan-700 text-white">
+              <Button onClick={() => csvIngestMutation.mutate()} disabled={csvIngestMutation.isPending}>
                 {csvIngestMutation.isPending ? 'Importing…' : `Import ${mappedRecords.length} Addresses`}
               </Button>
             </div>
@@ -406,7 +509,7 @@ export default function TerritoryIngestion() {
               )}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="border rounded-lg p-4 text-center">
                 <p className="text-3xl font-bold text-foreground">{apiResults.total || 0}</p>
@@ -421,28 +524,64 @@ export default function TerritoryIngestion() {
                 <p className="text-sm text-muted-foreground">Duplicates Skipped</p>
               </div>
             </div>
+
+            {/* Per-neighborhood breakdown */}
+            {apiResults.neighborhoods && (apiResults.neighborhoods as NeighborhoodResult[]).length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Neighborhood Breakdown</Label>
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Neighborhood</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Found</TableHead>
+                        <TableHead className="text-right">Inserted</TableHead>
+                        <TableHead className="text-right">Skipped</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(apiResults.neighborhoods as NeighborhoodResult[]).map((n: NeighborhoodResult, i: number) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium">{n.neighborhood}</TableCell>
+                          <TableCell>
+                            <Badge variant={n.status === 'success' ? 'default' : n.status === 'partial' ? 'secondary' : 'destructive'}>
+                              {n.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">{n.total}</TableCell>
+                          <TableCell className="text-right text-emerald-500">{n.inserted}</TableCell>
+                          <TableCell className="text-right text-muted-foreground">{n.skipped}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+
             {apiResults.warning && (
-              <div className="flex items-start gap-3 mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-md">
+              <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-md">
                 <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-amber-400">{apiResults.warning}</p>
-                  <p className="text-xs text-muted-foreground mt-1">You can retry the ingestion — the system will skip already-imported addresses.</p>
+                  <p className="text-xs text-muted-foreground mt-1">You can retry just the failed neighborhoods — already-imported data is safe.</p>
                 </div>
               </div>
             )}
             {!apiResults.warning && (
-              <div className="flex items-center gap-2 mt-4 p-3 bg-muted/30 rounded-md">
+              <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-md">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
                   All imported addresses are set to <Badge variant="outline">unknown</Badge> status. Use Scout, Call, and Visit consoles to classify them.
                 </p>
               </div>
             )}
-            <div className="flex gap-2 pt-4">
+            <div className="flex gap-2">
               <Button onClick={resetAll}>Import More Data</Button>
-              {apiResults.warning && (
-                <Button variant="outline" onClick={() => { setStep('scope'); setApiProgress(0); setApiResults(null); }}>
-                  Retry Ingestion
+              {failedNeighborhoods.length > 0 && (
+                <Button variant="outline" onClick={retryFailed}>
+                  Retry {failedNeighborhoods.length} Failed Neighborhood(s)
                 </Button>
               )}
             </div>
