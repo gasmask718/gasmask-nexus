@@ -11,6 +11,9 @@ interface LastOrderSnapshotPanelProps {
 }
 
 function getHealthIndicator(snap: LastOrderSnapshot) {
+  if (snap.is_placeholder) {
+    return { color: 'bg-muted', label: 'Never Ordered', textClass: 'text-muted-foreground' };
+  }
   if (snap.total_order_count < 2 || snap.avg_days_between_orders <= 0) {
     return { color: 'bg-blue-500', label: 'New', textClass: 'text-blue-600 dark:text-blue-400' };
   }
@@ -40,29 +43,8 @@ export function LastOrderSnapshotPanel({ storeId }: LastOrderSnapshotPanelProps)
     );
   }
 
-  // Group snapshots by canonical brand, prioritize canonical brands first
-  const brandMap = new Map<string, LastOrderSnapshot>();
-  for (const snap of (snapshots || [])) {
-    const key = snap.canonical_brand_id || snap.brand_key;
-    // Keep the one with the most recent order date
-    const existing = brandMap.get(key);
-    if (!existing || new Date(snap.last_order_date) > new Date(existing.last_order_date)) {
-      brandMap.set(key, snap);
-    }
-  }
-
-  // Order: canonical brands first, then others
-  const ordered: LastOrderSnapshot[] = [];
-  for (const brandId of CANONICAL_BRAND_IDS) {
-    if (brandMap.has(brandId)) {
-      ordered.push(brandMap.get(brandId)!);
-      brandMap.delete(brandId);
-    }
-  }
-  // Add remaining non-canonical brands
-  for (const snap of brandMap.values()) {
-    ordered.push(snap);
-  }
+  // Hook now returns all brands with coverage — use directly
+  const ordered = snapshots || [];
 
   if (ordered.length === 0) {
     return (
@@ -119,33 +101,37 @@ export function LastOrderSnapshotPanel({ storeId }: LastOrderSnapshotPanelProps)
               </div>
 
               {/* Metrics grid */}
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Last Order</p>
-                  <p className="text-sm font-medium">
-                    {format(new Date(snap.last_order_date), 'MMM d')}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">{snap.days_since_last_order}d ago</p>
+              {snap.is_placeholder ? (
+                <p className="text-xs text-muted-foreground italic">Never ordered</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Last Order</p>
+                    <p className="text-sm font-medium">
+                      {format(new Date(snap.last_order_date), 'MMM d')}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">{snap.days_since_last_order}d ago</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Size</p>
+                    <p className="text-sm font-medium">{snap.last_order_size_label}</p>
+                    {snap.last_order_total_amount != null && snap.last_order_total_amount > 0 && (
+                      <p className="text-[10px] text-muted-foreground">${snap.last_order_total_amount}</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Cadence</p>
+                    <p className="text-sm font-medium">
+                      {snap.total_order_count >= 2
+                        ? `${snap.avg_days_between_orders}d avg`
+                        : '—'}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {snap.total_order_count} order{snap.total_order_count !== 1 ? 's' : ''} total
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Size</p>
-                  <p className="text-sm font-medium">{snap.last_order_size_label}</p>
-                  {snap.last_order_total_amount != null && snap.last_order_total_amount > 0 && (
-                    <p className="text-[10px] text-muted-foreground">${snap.last_order_total_amount}</p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Cadence</p>
-                  <p className="text-sm font-medium">
-                    {snap.total_order_count >= 2
-                      ? `${snap.avg_days_between_orders}d avg`
-                      : '—'}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {snap.total_order_count} order{snap.total_order_count !== 1 ? 's' : ''} total
-                  </p>
-                </div>
-              </div>
+              )}
 
               {/* Operational flags */}
               {(snap.is_restock_due || snap.is_order_smaller_than_usual) && (

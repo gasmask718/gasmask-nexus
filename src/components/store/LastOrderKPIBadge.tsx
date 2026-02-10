@@ -25,11 +25,46 @@ export function LastOrderKPIBadge({ snapshots, compact, className }: LastOrderKP
     );
   }
 
-  // Find latest order across all brands
-  const sorted = [...snapshots].sort(
-    (a, b) => new Date(b.last_order_date).getTime() - new Date(a.last_order_date).getTime()
-  );
-  const latest = sorted[0];
+  // Find latest order across all brands (exclude placeholders)
+  const actualOrders = snapshots.filter(s => !s.is_placeholder);
+  const sorted = [...snapshots].sort((a, b) => {
+    // Actual orders first, then placeholders
+    if (a.is_placeholder !== b.is_placeholder) return a.is_placeholder ? 1 : -1;
+    return new Date(b.last_order_date).getTime() - new Date(a.last_order_date).getTime();
+  });
+  const latest = actualOrders.length > 0
+    ? actualOrders.sort((a, b) => new Date(b.last_order_date).getTime() - new Date(a.last_order_date).getTime())[0]
+    : null;
+
+  if (!latest) {
+    // All brands are placeholders — no orders at all
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="outline" className={`text-xs text-muted-foreground cursor-default ${className || ''}`}>
+              <ShoppingCart className="h-3 w-3 mr-1" />
+              No orders yet
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs">
+            <div className="space-y-1">
+              <p className="font-semibold text-xs mb-1">Last Orders by Brand</p>
+              {sorted.map((snap) => {
+                const brand = snap.canonical_brand_id ? getBrandIdentity(snap.canonical_brand_id) : null;
+                return (
+                  <div key={snap.brand_key} className="flex items-center justify-between gap-3 text-xs">
+                    <span className="font-medium">{brand?.icon} {brand?.shortName || snap.brand_name}</span>
+                    <span className="text-muted-foreground">Never ordered</span>
+                  </div>
+                );
+              })}
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
 
   const brandIdentity = latest.canonical_brand_id
     ? getBrandIdentity(latest.canonical_brand_id)
@@ -71,7 +106,10 @@ export function LastOrderKPIBadge({ snapshots, compact, className }: LastOrderKP
                     {brand?.icon} {brand?.shortName || snap.brand_name}
                   </span>
                   <span className="text-muted-foreground">
-                    {format(new Date(snap.last_order_date), 'MMM d')} · {snap.last_order_size_label} · {snap.days_since_last_order}d ago
+                    {snap.is_placeholder
+                      ? 'Never ordered'
+                      : `${format(new Date(snap.last_order_date), 'MMM d')} · ${snap.last_order_size_label} · ${snap.days_since_last_order}d ago`
+                    }
                   </span>
                 </div>
               );
