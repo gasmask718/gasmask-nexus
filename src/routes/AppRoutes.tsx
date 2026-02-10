@@ -500,6 +500,7 @@ import AIPredictions from '@/pages/grabba/ai-operations/AIPredictions';
 import AIAlerts from '@/pages/grabba/ai-operations/AIAlerts';
 import { Floor9Hub, Floor9Playbooks, Floor9ActionQueue, Floor9InstinctLog, Floor9Results } from '@/pages/floor9';
 import Floor9Router from '@/routes/Floor9Router';
+import { CommandExport, Floor1Export, Floor2Export, Floor3Export, Floor4Export, Floor5Export, Floor6Export, Floor7Export, Floor8Export, Floor9Export } from '@/pages/floor-exports';
 import FinancialDashboard from '@/pages/grabba/FinancialDashboard';
 import PersonalFinance from '@/pages/grabba/PersonalFinance';
 import PayrollManager from '@/pages/grabba/PayrollManager';
@@ -1919,6 +1920,38 @@ export default function AppRoutes() {
             <Layout><GrabbaLayout><Floor9Router /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
+      } />
+
+      {/* Floor Export & Analytics Pages */}
+      <Route path="/grabba/export/command" element={
+        <ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} showLocked><Layout><GrabbaLayout><CommandExport /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>
+      } />
+      <Route path="/grabba/export/floor1" element={
+        <ProtectedRoute><RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><Layout><GrabbaLayout><Floor1Export /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>
+      } />
+      <Route path="/grabba/export/floor2" element={
+        <ProtectedRoute><RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><Layout><GrabbaLayout><Floor2Export /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>
+      } />
+      <Route path="/grabba/export/floor3" element={
+        <ProtectedRoute><RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><Layout><GrabbaLayout><Floor3Export /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>
+      } />
+      <Route path="/grabba/export/floor4" element={
+        <ProtectedRoute><RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><Layout><GrabbaLayout><Floor4Export /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>
+      } />
+      <Route path="/grabba/export/floor5" element={
+        <ProtectedRoute><RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><Layout><GrabbaLayout><Floor5Export /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>
+      } />
+      <Route path="/grabba/export/floor6" element={
+        <ProtectedRoute><RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><Layout><GrabbaLayout><Floor6Export /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>
+      } />
+      <Route path="/grabba/export/floor7" element={
+        <ProtectedRoute><RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><Layout><GrabbaLayout><Floor7Export /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>
+      } />
+      <Route path="/grabba/export/floor8" element={
+        <ProtectedRoute><RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><Layout><GrabbaLayout><Floor8Export /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>
+      } />
+      <Route path="/grabba/export/floor9" element={
+        <ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} showLocked><Layout><GrabbaLayout><Floor9Export /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>
       } />
 
       {/* Ambassador Portal OS */}

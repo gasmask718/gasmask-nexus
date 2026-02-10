@@ -1,7 +1,7 @@
 import {
   MapPin, Package, Users, TrendingUp, FileText, Phone, MessageCircle, Mail,
   BarChart3, Map, Radar, Brain, Target, DollarSign, Trophy, Gift, Home, Settings,
-  Database, Crown, Truck, Bike, ClipboardCheck, CreditCard
+  Database, Crown, Truck, Bike, ClipboardCheck, CreditCard, FileSpreadsheet
 } from 'lucide-react';
 
 export const navigationItems = [
@@ -61,4 +61,16 @@ export const navigationItems = [
   { to: '/analytics', icon: TrendingUp, label: 'Analytics', roles: ['admin', 'accountant'] },
   { to: '/training', icon: Package, label: 'Training', roles: ['admin', 'csr', 'driver', 'biker', 'ambassador'] },
   { to: '/settings/automation', icon: Settings, label: 'Automation', roles: ['admin'] },
+  
+  // Floor Export & Analytics
+  { to: '/grabba/export/command', icon: FileSpreadsheet, label: '🔥 Command Export', roles: ['admin'] },
+  { to: '/grabba/export/floor1', icon: FileSpreadsheet, label: '🏢 CRM Export', roles: ['admin'] },
+  { to: '/grabba/export/floor2', icon: FileSpreadsheet, label: '📞 Comms Export', roles: ['admin'] },
+  { to: '/grabba/export/floor3', icon: FileSpreadsheet, label: '📦 Inventory Export', roles: ['admin'] },
+  { to: '/grabba/export/floor4', icon: FileSpreadsheet, label: '🚴 Delivery Export', roles: ['admin'] },
+  { to: '/grabba/export/floor5', icon: FileSpreadsheet, label: '📑 Orders Export', roles: ['admin'] },
+  { to: '/grabba/export/floor6', icon: FileSpreadsheet, label: '🏭 Production Export', roles: ['admin'] },
+  { to: '/grabba/export/floor7', icon: FileSpreadsheet, label: '🏬 Wholesale Export', roles: ['admin'] },
+  { to: '/grabba/export/floor8', icon: FileSpreadsheet, label: '🤝 Ambassadors Export', roles: ['admin'] },
+  { to: '/grabba/export/floor9', icon: FileSpreadsheet, label: '🤖 AI Ops Export', roles: ['admin'] },
 ];
