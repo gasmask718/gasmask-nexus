@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   ChevronDown, ChevronRight, Menu, X, LogOut, User, Settings,
@@ -34,6 +34,31 @@ export default function AppSidebar() {
 
   const userRole = profileData?.profile?.primary_role || 'admin';
   const isAdmin = ['owner', 'admin', 'ceo', 'va'].includes(userRole);
+
+  // RUNTIME SELF-CHECK: Prove Floor 0 exists in the DOM or FAIL VISIBLY
+  useEffect(() => {
+    const el = document.getElementById('__FLOOR_0_ASSERT__');
+    if (!el) {
+      document.body.innerHTML = `
+        <div style="
+          background:black;
+          color:red;
+          font-size:18px;
+          padding:40px;
+          font-family:monospace;
+        ">
+          ❌ FATAL ERROR<br/><br/>
+          Floor 0 (Territory Intelligence) CLAIMED TO RENDER<br/>
+          BUT WAS NOT FOUND IN THE DOM.<br/><br/>
+          AppSidebar.tsx is NOT mounting what the code claims.<br/>
+          This is a blocking integrity violation.
+        </div>
+      `;
+      throw new Error('FLOOR 0 NOT MOUNTED — DOM ASSERT FAILED');
+    } else {
+      console.warn('✅ FLOOR 0 VERIFIED IN DOM', el);
+    }
+  }, []);
 
   const toggleSection = (sectionId: string) => {
     setOpenSections(prev =>
@@ -184,25 +209,58 @@ export default function AppSidebar() {
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* 🌍 TERRITORY INTELLIGENCE — Floor 0 (ABOVE ALL FLOORS) */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
-          {(() => { console.log("Territory Intelligence sidebar rendered"); return null; })()}
-          <div id="__FLOOR_0_ASSERT__" data-floor="0" />
+          {/* FLOOR 0 — FORCE RENDERED, NO CONDITIONS, NO COLLAPSE */}
+          <div
+            id="__FLOOR_0_ASSERT__"
+            data-floor="0"
+            data-section="territory-intelligence"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              zIndex: 99999,
+              background: 'red',
+              color: 'white',
+              padding: '2px 6px',
+              fontSize: '10px',
+            }}
+          >
+            FLOOR 0 MOUNTED
+          </div>
           <div className="mb-4 pt-2 border-t border-sidebar-border">
             <div className="px-3 py-2 text-xs font-semibold uppercase text-cyan-400/80 tracking-wider">
-              🌍 Territory Intelligence (Floor 0)
+              ✅ VISIBLE — 🌍 Territory Intelligence (Floor 0)
             </div>
-            {renderSection('territory-floor-0', '✅ VISIBLE — 🌍 Territory Intelligence', '🌍', [
-              { path: '/territory', label: 'Territory Control', emoji: '📊' },
-              { path: '/territory/gap-intelligence', label: 'Gap Intelligence', emoji: '🧠' },
-              { path: '/territory/ingestion', label: 'Ingestion Wizard', emoji: '📥' },
-              { path: '/territory/planning', label: 'Strategic Planning', emoji: '📐' },
-              { path: '/territory/planning/history', label: 'Commitment History', emoji: '📜' },
-              { path: '/territory/ai-permissions', label: 'AI Permissions', emoji: '🔒' },
-              { path: '/territory/ai-permissions/neighborhoods', label: 'AI × Neighborhoods', emoji: '🗺️' },
-              { path: '/territory/ai-permissions/actions', label: 'AI × Actions', emoji: '⚡' },
-              { path: '/territory/ai-violations', label: 'AI Violations', emoji: '🛡️' },
-              { path: '/territory/ai-review-queue', label: 'AI Review Queue', emoji: '👁️' },
-              { path: '/territory/playbooks', label: 'Playbooks', emoji: '📖' },
-            ], "bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 hover:from-cyan-500/30")}
+            {/* Rendered inline — NOT behind any role check or collapse guard */}
+            <div className="ml-0 mt-1 space-y-0.5">
+              {[
+                { path: '/territory', label: 'Territory Control', emoji: '📊' },
+                { path: '/territory/gap-intelligence', label: 'Gap Intelligence', emoji: '🧠' },
+                { path: '/territory/ingestion', label: 'Ingestion Wizard', emoji: '📥' },
+                { path: '/territory/planning', label: 'Strategic Planning', emoji: '📐' },
+                { path: '/territory/planning/history', label: 'Commitment History', emoji: '📜' },
+                { path: '/territory/ai-permissions', label: 'AI Permissions', emoji: '🔒' },
+                { path: '/territory/ai-permissions/neighborhoods', label: 'AI × Neighborhoods', emoji: '🗺️' },
+                { path: '/territory/ai-permissions/actions', label: 'AI × Actions', emoji: '⚡' },
+                { path: '/territory/ai-violations', label: 'AI Violations', emoji: '🛡️' },
+                { path: '/territory/ai-review-queue', label: 'AI Review Queue', emoji: '👁️' },
+                { path: '/territory/playbooks', label: 'Playbooks', emoji: '📖' },
+              ].map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
+                    isPathActive(item.path)
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
+                  )}
+                >
+                  <span>{item.emoji}</span>
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              ))}
+            </div>
           </div>
 
 
