@@ -12,6 +12,7 @@
  */
 
 import { ActionsNeededCard } from '@/components/delivery/ActionsNeededCard';
+import { LastOrderSnapshotPanel } from '@/components/store/LastOrderSnapshotPanel';
 import { StoreHealthScoreCard } from '@/components/delivery/StoreHealthScoreCard';
 import { VisitSummaryCard } from '@/components/delivery/VisitSummaryCard';
 import { StoreCadencePanel } from '@/components/store/StoreCadencePanel';
@@ -77,6 +78,9 @@ export function SharedStoreCoreIntelligence({
         currentStoreOwnerName={storeOwnerName}
         onConnectionChange={onConnectionChange}
       />
+
+      {/* ══════════════ Last Order Snapshot Intelligence ══════════════ */}
+      <LastOrderSnapshotPanel storeId={storeId} />
 
       {/* ══════════════ Inventory Intelligence ══════════════ */}
       <UnifiedTubeIntelligenceCard storeId={storeId} role={role} />
