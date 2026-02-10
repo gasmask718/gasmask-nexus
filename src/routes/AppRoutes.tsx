@@ -52,6 +52,9 @@ import TerritoryIngestion from '@/pages/territory/TerritoryIngestion';
 import TerritoryGapIntelligence from '@/pages/territory/TerritoryGapIntelligence';
 import TerritoryPlanning from '@/pages/territory/TerritoryPlanning';
 import CommitmentHistory from '@/pages/territory/CommitmentHistory';
+import AIPermissionsOverview from '@/pages/territory/AIPermissionsOverview';
+import AIPermissionsNeighborhoods from '@/pages/territory/AIPermissionsNeighborhoods';
+import AIPermissionsActions from '@/pages/territory/AIPermissionsActions';
 import RevenueBrain from '@/pages/RevenueBrain';
 import OpportunityRadar from '@/pages/OpportunityRadar';
 import MasterOpportunities from '@/pages/MasterOpportunities';
@@ -591,6 +594,9 @@ export default function AppRoutes() {
         <Route path="/territory/gap-intelligence" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryGapIntelligence /></RequireRole>} />
         <Route path="/territory/planning" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryPlanning /></RequireRole>} />
         <Route path="/territory/planning/history" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><CommitmentHistory /></RequireRole>} />
+        <Route path="/territory/ai-permissions" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><AIPermissionsOverview /></RequireRole>} />
+        <Route path="/territory/ai-permissions/neighborhoods" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><AIPermissionsNeighborhoods /></RequireRole>} />
+        <Route path="/territory/ai-permissions/actions" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><AIPermissionsActions /></RequireRole>} />
 
         {/* GasMask Brand Routes */}
         <Route path="/gasmask" element={<Dashboard />} />

@@ -309,6 +309,9 @@ export default function AppSidebar() {
                 { path: '/territory/gap-intelligence', label: 'Gap Intelligence', emoji: '🧠' },
                 { path: '/territory/planning', label: 'Planning', emoji: '📐' },
                 { path: '/territory/planning/history', label: 'Commitment History', emoji: '📜' },
+                { path: '/territory/ai-permissions', label: 'AI Permissions', emoji: '🔒' },
+                { path: '/territory/ai-permissions/neighborhoods', label: 'AI × Neighborhoods', emoji: '🗺️' },
+                { path: '/territory/ai-permissions/actions', label: 'AI × Actions', emoji: '⚡' },
               ], "bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 hover:from-cyan-500/30")}
             </div>
           )}
