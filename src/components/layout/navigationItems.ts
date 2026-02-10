@@ -19,6 +19,20 @@ export const navigationItems = [
   { to: '/territory/ai-violations', icon: Database, label: '🛡️ AI Violations', roles: ['admin'] },
   { to: '/territory/ai-review-queue', icon: Database, label: '👁️ AI Review Queue', roles: ['admin'] },
   { to: '/territory/playbooks', icon: Database, label: '📖 Playbooks', roles: ['admin'] },
+
+  // 📊 Exports (Floor 1–9)
+  { to: '/grabba/export/command', icon: FileSpreadsheet, label: '🔥 Command Export', roles: ['admin'] },
+  { to: '/grabba/export/floor1', icon: FileSpreadsheet, label: '🏢 CRM Export', roles: ['admin'] },
+  { to: '/grabba/export/floor2', icon: FileSpreadsheet, label: '📞 Comms Export', roles: ['admin'] },
+  { to: '/grabba/export/floor3', icon: FileSpreadsheet, label: '📦 Inventory Export', roles: ['admin'] },
+  { to: '/grabba/export/floor4', icon: FileSpreadsheet, label: '🚴 Delivery Export', roles: ['admin'] },
+  { to: '/grabba/export/floor5', icon: FileSpreadsheet, label: '📑 Orders Export', roles: ['admin'] },
+  { to: '/grabba/export/floor6', icon: FileSpreadsheet, label: '🏭 Production Export', roles: ['admin'] },
+  { to: '/grabba/export/floor7', icon: FileSpreadsheet, label: '🏬 Wholesale Export', roles: ['admin'] },
+  { to: '/grabba/export/floor8', icon: FileSpreadsheet, label: '🤝 Ambassadors Export', roles: ['admin'] },
+  { to: '/grabba/export/floor9', icon: FileSpreadsheet, label: '🤖 AI Ops Export', roles: ['admin'] },
+
+  // Floor 1+
   { to: '/system-operations/ai-ceo-control-room', icon: Crown, label: 'CEO Command Center', roles: ['ceo'], premium: true },
   { to: '/stores', icon: Package, label: 'Stores', roles: ['admin', 'driver'] },
   { to: '/routes', icon: MapPin, label: 'Routes', roles: ['admin', 'driver'] },
@@ -74,18 +88,4 @@ export const navigationItems = [
   { to: '/analytics', icon: TrendingUp, label: 'Analytics', roles: ['admin', 'accountant'] },
   { to: '/training', icon: Package, label: 'Training', roles: ['admin', 'csr', 'driver', 'biker', 'ambassador'] },
   { to: '/settings/automation', icon: Settings, label: 'Automation', roles: ['admin'] },
-  
-  // AI Governance routes now in Floor 0 group above
-  
-  // Floor Export & Analytics
-  { to: '/grabba/export/command', icon: FileSpreadsheet, label: '🔥 Command Export', roles: ['admin'] },
-  { to: '/grabba/export/floor1', icon: FileSpreadsheet, label: '🏢 CRM Export', roles: ['admin'] },
-  { to: '/grabba/export/floor2', icon: FileSpreadsheet, label: '📞 Comms Export', roles: ['admin'] },
-  { to: '/grabba/export/floor3', icon: FileSpreadsheet, label: '📦 Inventory Export', roles: ['admin'] },
-  { to: '/grabba/export/floor4', icon: FileSpreadsheet, label: '🚴 Delivery Export', roles: ['admin'] },
-  { to: '/grabba/export/floor5', icon: FileSpreadsheet, label: '📑 Orders Export', roles: ['admin'] },
-  { to: '/grabba/export/floor6', icon: FileSpreadsheet, label: '🏭 Production Export', roles: ['admin'] },
-  { to: '/grabba/export/floor7', icon: FileSpreadsheet, label: '🏬 Wholesale Export', roles: ['admin'] },
-  { to: '/grabba/export/floor8', icon: FileSpreadsheet, label: '🤝 Ambassadors Export', roles: ['admin'] },
-  { to: '/grabba/export/floor9', icon: FileSpreadsheet, label: '🤖 AI Ops Export', roles: ['admin'] },
 ];
