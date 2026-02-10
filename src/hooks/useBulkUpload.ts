@@ -607,15 +607,35 @@ async function importStores(
             }
           }
 
-          if (row.data.notes) {
-            const { data: store } = await supabase.from("stores").select("id").eq("name", storeData.name).maybeSingle();
+          // Insert general notes and brand-scoped notes
+          const brandNoteFields = [
+            { field: 'notes', brand_scope: null },
+            { field: 'gasmask_notes', brand_scope: 'gasmask' },
+            { field: 'hotmama_notes', brand_scope: 'hotmama' },
+            { field: 'hotscolatti_notes', brand_scope: 'scalati' },
+            { field: 'grabba_notes', brand_scope: 'grabba' },
+          ];
 
-            if (store) {
-              await supabase.from("store_notes").insert({
-                store_id: store.id,
-                note_text: row.data.notes,
+          const noteInserts: { store_id: string; note_text: string; brand_scope: string | null; created_at: string }[] = [];
+          for (const nf of brandNoteFields) {
+            const noteText = row.data[nf.field];
+            if (noteText && String(noteText).trim()) {
+              noteInserts.push({
+                store_id: '', // placeholder, set below
+                note_text: String(noteText).trim(),
+                brand_scope: nf.brand_scope,
                 created_at: row.data.note_date ? new Date(row.data.note_date).toISOString() : new Date().toISOString(),
               });
+            }
+          }
+
+          if (noteInserts.length > 0) {
+            const { data: store } = await supabase.from("stores").select("id").eq("name", storeData.name).maybeSingle();
+            if (store) {
+              for (const ni of noteInserts) {
+                ni.store_id = store.id;
+              }
+              await supabase.from("store_notes").insert(noteInserts);
             }
           }
 

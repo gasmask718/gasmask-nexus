@@ -141,7 +141,39 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         type: 'string',
         required: false,
         source: 'excel',
-        notes: 'Will be copied word-for-word'
+        notes: 'Will be copied word-for-word (General notes)'
+      },
+      {
+        field: 'gasmask_notes',
+        displayName: 'GasMask Notes',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Brand-specific notes for GasMask'
+      },
+      {
+        field: 'hotmama_notes',
+        displayName: 'Hot Mama Notes',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Brand-specific notes for Hot Mama'
+      },
+      {
+        field: 'hotscolatti_notes',
+        displayName: 'Hot Scolatti Notes',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Brand-specific notes for Hot Scolatti'
+      },
+      {
+        field: 'grabba_notes',
+        displayName: 'Grabba R Us Notes',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Brand-specific notes for Grabba R Us'
       },
       {
         field: 'tags',
