@@ -99,11 +99,12 @@ serve(async (req) => {
       } catch { skipped++; }
     }
 
-    await supabase.from('territory_activity_log').insert({
+    const { error: logError } = await supabase.from('territory_activity_log').insert({
       activity_type: 'ingestion',
       description: `Yelp ingestion: ${inserted} new, ${skipped} skipped from ${city}, ${state}`,
       metadata: { source: 'yelp', city, state, total: unique.length, inserted, skipped },
-    }).catch(() => {});
+    });
+    if (logError) console.warn('Activity log write failed:', logError.message);
 
     return new Response(JSON.stringify({ total: unique.length, inserted, skipped, duplicates: skipped }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
