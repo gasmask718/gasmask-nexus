@@ -47,6 +47,7 @@ import { useStoreMasterResolver } from "@/hooks/useStoreMasterResolver";
 // ═══════════════════════════════════════════════════════════════════════════════
 import { SharedStoreCoreIntelligence } from "@/components/store/SharedStoreCoreIntelligence";
 import { CanonicalStoreDataProvider } from "@/components/store/CanonicalStoreDataProvider";
+import { PinnedNotesSection } from "@/components/store/PinnedNotesSection";
 import {
   MapPin,
   Phone,
@@ -685,6 +686,9 @@ const StoreDetail = () => {
         onOpenChange={setBulkCommModalOpen}
         onSuccess={() => setTimelineRefresh((prev) => prev + 1)}
       />
+
+      {/* 📌 Pinned Notes — Store Profile authoring surface */}
+      <PinnedNotesSection storeId={id || ''} />
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left Column - Main Info */}

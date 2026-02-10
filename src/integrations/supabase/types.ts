@@ -32679,6 +32679,78 @@ export type Database = {
           },
         ]
       }
+      pinned_notes: {
+        Row: {
+          contact_id: string | null
+          id: string
+          is_active: boolean
+          note_text: string
+          pinned_at: string
+          pinned_by: string
+          store_id: string
+          unpinned_at: string | null
+          unpinned_by: string | null
+        }
+        Insert: {
+          contact_id?: string | null
+          id?: string
+          is_active?: boolean
+          note_text: string
+          pinned_at?: string
+          pinned_by: string
+          store_id: string
+          unpinned_at?: string | null
+          unpinned_by?: string | null
+        }
+        Update: {
+          contact_id?: string | null
+          id?: string
+          is_active?: boolean
+          note_text?: string
+          pinned_at?: string
+          pinned_by?: string
+          store_id?: string
+          unpinned_at?: string | null
+          unpinned_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinned_notes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "store_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinned_notes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_cadence_intelligence"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "pinned_notes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_responsiveness_summary"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "pinned_notes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinned_notes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       platforms: {
         Row: {
           is_active: boolean
