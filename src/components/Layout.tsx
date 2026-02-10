@@ -576,6 +576,45 @@ const Layout = ({ children }: LayoutProps) => {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🌍 TERRITORY INTELLIGENCE — FLOOR 0 (Constitutional — All Roles) */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-amber-500/30">
+        <div id="__FLOOR_0_ASSERT__" data-floor="0" data-section="territory-intelligence" />
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-amber-400/80 tracking-wider">
+          🌍 Territory Intelligence (Floor 0)
+        </div>
+        <div className="ml-4 mt-0.5 space-y-0.5">
+          {[
+            { path: '/territory', label: 'Territory Control', icon: Map },
+            { path: '/territory/gap-intelligence', label: 'Gap Intelligence', icon: Search },
+            { path: '/territory/ingestion', label: 'Ingestion Wizard', icon: Upload },
+            { path: '/territory/planning', label: 'Strategic Planning', icon: Target },
+            { path: '/territory/planning/history', label: 'Commitment History', icon: Clock },
+            { path: '/territory/ai-permissions', label: 'AI Permissions', icon: Shield },
+            { path: '/territory/ai-permissions/neighborhoods', label: 'AI × Neighborhoods', icon: MapPin },
+            { path: '/territory/ai-permissions/actions', label: 'AI × Actions', icon: Zap },
+            { path: '/territory/ai-violations', label: 'AI Violations', icon: AlertTriangle },
+            { path: '/territory/ai-review-queue', label: 'AI Review Queue', icon: ClipboardList },
+            { path: '/territory/playbooks', label: 'Playbooks', icon: FileText },
+          ].map(item => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={cn(
+                "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
+                isPathActive(item.path)
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              )}
+            >
+              <item.icon className="h-3 w-3 shrink-0" />
+              <span className="truncate">{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 🏢 GRABBA SKYSCRAPER — FLOORS 1-9 */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="pt-2 border-t border-border/50">
