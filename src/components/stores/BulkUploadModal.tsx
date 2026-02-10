@@ -120,20 +120,104 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
     }
   }, [state.stage, state.importResult, onSuccess]);
 
-  // Auto-map columns when stage becomes "MAPPED"
+  // Smart auto-map columns when stage becomes "MAPPED" using fuzzy matching against schema
   useEffect(() => {
-    if (state.stage === "MAPPED" && state.columns.length > 0) {
+    if (state.stage === "MAPPED" && state.columns.length > 0 && schema) {
+      const newMapping: Record<string, string> = { ...state.columnMapping };
+      const alreadyMapped = new Set(Object.values(newMapping).filter(Boolean));
+
       state.columns.forEach((col) => {
-        if (!state.columnMapping[col]) {
-          if (col.toLowerCase() === "address") {
-            updateColumnMapping(col, "address");
-          } else {
-            updateColumnMapping(col, col);
-          }
+        if (newMapping[col]) return; // already mapped
+
+        const match = findBestSchemaMatch(col, schema.fields, alreadyMapped);
+        if (match) {
+          newMapping[col] = match;
+          alreadyMapped.add(match);
+        }
+      });
+
+      // Apply all at once
+      Object.entries(newMapping).forEach(([col, field]) => {
+        if (field && state.columnMapping[col] !== field) {
+          updateColumnMapping(col, field);
         }
       });
     }
-  }, [state.stage, state.columns, state.columnMapping, updateColumnMapping]);
+  }, [state.stage, state.columns]);
+
+  // Fuzzy matching logic for auto-alignment
+  function findBestSchemaMatch(
+    csvHeader: string,
+    fields: typeof schema extends null ? never : NonNullable<typeof schema>['fields'],
+    alreadyMapped: Set<string>,
+  ): string | null {
+    const norm = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+    const csvNorm = norm(csvHeader);
+
+    // Alias map: common CSV header variations → schema field
+    const aliases: Record<string, string[]> = {
+      'name': ['storename', 'store', 'location', 'locationname', 'shopname', 'businessname'],
+      'address_street': ['address', 'streetaddress', 'street', 'addr', 'storeaddress', 'fulladdress', 'location'],
+      'address_city': ['city', 'town'],
+      'address_state': ['state', 'st', 'province'],
+      'address_zip': ['zip', 'zipcode', 'postalcode', 'postal'],
+      'phone': ['phone', 'phonenumber', 'tel', 'telephone', 'storephone', 'mainphone'],
+      'email': ['email', 'emailaddress', 'storeemail'],
+      'status': ['status', 'storestatus', 'active'],
+      'type': ['type', 'storetype', 'category'],
+      'notes': ['notes', 'generalnotes', 'comment', 'comments', 'memo'],
+      'gasmask_notes': ['gasmasknotes', 'gasmask', 'gasmasknote'],
+      'hotmama_notes': ['hotmamanotes', 'hotmama', 'hotmamanote'],
+      'hotscolatti_notes': ['hotscolattinotes', 'hotscolatti', 'hotscolattinote', 'scolattinotes', 'scalatinotes'],
+      'grabba_notes': ['grabbanotes', 'grabba', 'grabbarusnotes', 'grabbarusnote'],
+      'primary_contact_name': ['contactname', 'primarycontact', 'contact', 'owner', 'ownername', 'manager'],
+      'alt_phone': ['altphone', 'alternatephone', 'secondaryphone', 'phone2'],
+      'neighborhood': ['neighborhood', 'hood', 'area'],
+      'boro': ['boro', 'borough'],
+      'wholesaler_name': ['wholesaler', 'wholesalername', 'distributor'],
+      'company': ['company', 'companyname', 'corp', 'corporation'],
+      'brand': ['brand', 'brandname'],
+      'tags': ['tags', 'tag', 'labels'],
+      'payment_type': ['paymenttype', 'payment', 'paymethod'],
+      'sells_flowers': ['sellsflowers', 'flowers'],
+      'prime_time_energy': ['primetimeenergy', 'primetime', 'energy'],
+      'store_code': ['storecode', 'code', 'storenum', 'storenumber'],
+      'market_code': ['marketcode', 'market'],
+      'special_information': ['specialinformation', 'specialinfo', 'special'],
+      'notes_overview': ['notesoverview', 'overview'],
+      'starter_kit': ['starterkit', 'kit'],
+      'open_date': ['opendate', 'membersince', 'since', 'datejoined'],
+    };
+
+    // 1. Exact match on field name or displayName
+    for (const f of fields) {
+      if (alreadyMapped.has(f.field)) continue;
+      if (norm(f.field) === csvNorm || norm(f.displayName) === csvNorm) {
+        return f.field;
+      }
+    }
+
+    // 2. Alias match
+    for (const [field, aliasList] of Object.entries(aliases)) {
+      if (alreadyMapped.has(field)) continue;
+      if (aliasList.includes(csvNorm) && fields.some(f => f.field === field)) {
+        return field;
+      }
+    }
+
+    // 3. Substring/contains match
+    for (const f of fields) {
+      if (alreadyMapped.has(f.field)) continue;
+      const fieldNorm = norm(f.field);
+      const displayNorm = norm(f.displayName);
+      if (csvNorm.includes(fieldNorm) || fieldNorm.includes(csvNorm) ||
+          csvNorm.includes(displayNorm) || displayNorm.includes(csvNorm)) {
+        return f.field;
+      }
+    }
+
+    return null;
+  }
 
   const handleClose = () => {
     reset();
@@ -389,8 +473,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
 
                   {/* --- MISSING FIELDS DETECTION & ALERT --- */}
                   {(() => {
-                    const strictRequiredFieldKey = "address";
-                    const requiredDbFields = schema.fields.filter((f) => f.field === strictRequiredFieldKey);
+                    const requiredDbFields = schema.fields.filter((f) => f.required);
 
                     const mappedFields = Object.values(state.columnMapping).filter(Boolean);
 
@@ -474,20 +557,18 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                                             <SelectItem value="_unmapped" className="text-muted-foreground italic">
                                               -- Skip Column --
                                             </SelectItem>
-                                            {/* 1. Required Address */}
-                                            <SelectItem value="address">
-                                              <span className="flex items-center gap-1.5">
-                                                <span className="text-destructive font-bold">*</span> address
-                                              </span>
-                                            </SelectItem>
-                                            {/* 2. Detected Columns (excluding address if already present in file) */}
-                                            {state.columns
-                                              .filter((c) => c !== "address")
-                                              .map((c) => (
-                                                <SelectItem key={c} value={c}>
-                                                  {c}
+                                            {schema.fields.map((f) => {
+                                              const isRequired = f.required;
+                                              return (
+                                                <SelectItem key={f.field} value={f.field}>
+                                                  <span className="flex items-center gap-1.5">
+                                                    {isRequired && <span className="text-destructive font-bold">*</span>}
+                                                    {f.displayName}
+                                                    <span className="text-muted-foreground text-[10px]">({f.field})</span>
+                                                  </span>
                                                 </SelectItem>
-                                              ))}
+                                              );
+                                            })}
                                           </SelectContent>
                                         </Select>
                                       </TableCell>
