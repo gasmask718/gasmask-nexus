@@ -327,7 +327,7 @@ serve(async (req) => {
     }
 
     // Log activity
-    await supabase.from('territory_activity_log').insert({
+    const { error: logError } = await supabase.from('territory_activity_log').insert({
       activity_type: 'ingestion',
       description: `OSM ingestion: ${totalInserted} new, ${totalSkipped} skipped across ${neighborhoodResults.length} neighborhood(s) in ${city}, ${state}`,
       metadata: {
@@ -345,7 +345,8 @@ serve(async (req) => {
         inserted: totalInserted,
         skipped: totalSkipped,
       },
-    }).catch(() => {});
+    });
+    if (logError) console.warn('Activity log write failed:', logError.message);
 
     return new Response(JSON.stringify({
       source: 'openstreetmap',
