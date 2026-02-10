@@ -150,6 +150,16 @@ export default function AppSidebar() {
               { path: '/executive-reports', label: 'Executive Reports', emoji: '📑' },
               { path: '/grabba/cluster', label: 'Regional Clusters', emoji: '🗺️' },
               { path: '/settings', label: 'OS Settings', emoji: '⚙️' },
+              { path: '/grabba/export/command', label: 'Command Export', emoji: '🔥' },
+              { path: '/grabba/export/floor1', label: 'CRM Export', emoji: '🏢' },
+              { path: '/grabba/export/floor2', label: 'Comms Export', emoji: '📞' },
+              { path: '/grabba/export/floor3', label: 'Inventory Export', emoji: '📦' },
+              { path: '/grabba/export/floor4', label: 'Delivery Export', emoji: '🚴' },
+              { path: '/grabba/export/floor5', label: 'Orders Export', emoji: '📑' },
+              { path: '/grabba/export/floor6', label: 'Production Export', emoji: '🏭' },
+              { path: '/grabba/export/floor7', label: 'Wholesale Export', emoji: '🏬' },
+              { path: '/grabba/export/floor8', label: 'Ambassadors Export', emoji: '🤝' },
+              { path: '/grabba/export/floor9', label: 'AI Ops Export', emoji: '🤖' },
             ], "bg-gradient-to-r from-amber-500/20 to-yellow-500/10 text-amber-300 hover:from-amber-500/30")}
           </div>
 
@@ -194,26 +204,6 @@ export default function AppSidebar() {
             ], "bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 hover:from-cyan-500/30")}
           </div>
 
-          {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* 📊 EXPORTS — Floor 1-9 Data Exports */}
-          {/* ═══════════════════════════════════════════════════════════════════ */}
-          <div className="mb-4 pt-2 border-t border-sidebar-border">
-            <div className="px-3 py-2 text-xs font-semibold uppercase text-sidebar-foreground/50 tracking-wider">
-              📊 Exports
-            </div>
-            {renderSection('exports', 'Floor Exports', '📊', [
-              { path: '/grabba/export/command', label: 'Command Export', emoji: '🔥' },
-              { path: '/grabba/export/floor1', label: 'CRM Export', emoji: '🏢' },
-              { path: '/grabba/export/floor2', label: 'Comms Export', emoji: '📞' },
-              { path: '/grabba/export/floor3', label: 'Inventory Export', emoji: '📦' },
-              { path: '/grabba/export/floor4', label: 'Delivery Export', emoji: '🚴' },
-              { path: '/grabba/export/floor5', label: 'Orders Export', emoji: '📑' },
-              { path: '/grabba/export/floor6', label: 'Production Export', emoji: '🏭' },
-              { path: '/grabba/export/floor7', label: 'Wholesale Export', emoji: '🏬' },
-              { path: '/grabba/export/floor8', label: 'Ambassadors Export', emoji: '🤝' },
-              { path: '/grabba/export/floor9', label: 'AI Ops Export', emoji: '🤖' },
-            ])}
-          </div>
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* 🏢 FLOORS 1-9 — Grabba Empire Skyscraper */}
