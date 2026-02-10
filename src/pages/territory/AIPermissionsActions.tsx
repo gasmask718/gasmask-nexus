@@ -49,6 +49,14 @@ export default function AIPermissionsActions() {
         </p>
       </div>
 
+      <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5 text-sm">
+        <Shield className="h-5 w-5 text-primary shrink-0" />
+        <p className="text-muted-foreground">
+          <span className="font-medium text-foreground">Constitutional guard active.</span>{' '}
+          AI actions are bounded by the finite registry below. Unregistered actions are denied by default.
+        </p>
+      </div>
+
       <Tabs defaultValue={categories[0] || 'all'}>
         <TabsList className="flex-wrap h-auto">
           {categories.map(cat => (

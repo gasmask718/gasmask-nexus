@@ -1,10 +1,20 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Eye, Store, HelpCircle, XCircle, Target } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MapPin, Eye, Store, HelpCircle, XCircle, Target, ListFilter, Map, ClipboardList } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function TerritoryOverview() {
+  const [cityFilter, setCityFilter] = useState<string>('all');
+  const [stateFilter, setStateFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [generating, setGenerating] = useState(false);
+
   const { data: summary, isLoading } = useQuery({
     queryKey: ['territory-address-status-summary'],
     queryFn: async () => {
@@ -16,8 +26,19 @@ export default function TerritoryOverview() {
     },
   });
 
-  const totals = (summary || []).reduce(
-    (acc, row) => ({
+  // Get unique cities and states for filters
+  const cities = [...new Set((summary || []).map((r: any) => r.city).filter(Boolean))].sort();
+  const states = [...new Set((summary || []).map((r: any) => r.state).filter(Boolean))].sort();
+
+  // Apply filters
+  const filtered = (summary || []).filter((row: any) => {
+    if (cityFilter !== 'all' && row.city !== cityFilter) return false;
+    if (stateFilter !== 'all' && row.state !== stateFilter) return false;
+    return true;
+  });
+
+  const totals = filtered.reduce(
+    (acc: any, row: any) => ({
       total: acc.total + (row.total_addresses || 0),
       unknown: acc.unknown + (row.unknown_addresses || 0),
       scouted: acc.scouted + (row.scouted_addresses || 0),
@@ -42,11 +63,73 @@ export default function TerritoryOverview() {
     { label: 'Dead Ends', value: totals.deadEnds, icon: XCircle, color: 'text-destructive' },
   ];
 
+  const handleGenerateTasks = async () => {
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.rpc('generate_territory_tasks');
+      if (error) throw error;
+      toast.success(`Generated ${(data as any)?.tasks_created ?? 0} tasks from territory intelligence`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to generate tasks');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Territory Control Center</h1>
-        <p className="text-muted-foreground text-sm">Read-only awareness of all territory intelligence</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Territory Control Center</h1>
+          <p className="text-muted-foreground text-sm">Read-only awareness of all territory intelligence</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex border rounded-md overflow-hidden">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-none"
+              onClick={() => setViewMode('list')}
+            >
+              <ListFilter className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'map' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-none"
+              onClick={() => { setViewMode('map'); toast.info('Map view coming soon — requires Mapbox integration'); }}
+            >
+              <Map className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button onClick={handleGenerateTasks} disabled={generating} variant="outline">
+            <ClipboardList className="h-4 w-4 mr-2" />
+            {generating ? 'Generating…' : 'Generate Tasks'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="w-[140px]"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All States</SelectItem>
+            {states.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={cityFilter} onValueChange={setCityFilter}>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder="City" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Cities</SelectItem>
+            {cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {(cityFilter !== 'all' || stateFilter !== 'all') && (
+          <Button variant="ghost" size="sm" onClick={() => { setCityFilter('all'); setStateFilter('all'); }}>
+            Clear Filters
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -76,7 +159,7 @@ export default function TerritoryOverview() {
               <CardTitle className="text-sm">Address Status by City</CardTitle>
             </CardHeader>
             <CardContent>
-              {summary && summary.length > 0 ? (
+              {filtered.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -92,7 +175,7 @@ export default function TerritoryOverview() {
                       </tr>
                     </thead>
                     <tbody>
-                      {summary.map((row, i) => (
+                      {filtered.map((row: any, i: number) => (
                         <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
                           <td className="py-2 px-3 font-medium">{row.city || '—'}</td>
                           <td className="py-2 px-3">{row.state || '—'}</td>

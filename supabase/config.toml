@@ -109,3 +109,12 @@ verify_jwt = false
 
 [functions.margin-deviation-scanner]
 verify_jwt = false
+
+[functions.ingest-openstreetmap]
+verify_jwt = false
+
+[functions.ingest-google-places]
+verify_jwt = false
+
+[functions.ingest-yelp]
+verify_jwt = false
