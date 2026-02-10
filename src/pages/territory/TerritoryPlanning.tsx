@@ -155,6 +155,14 @@ export default function TerritoryPlanning() {
 
   const isLoading = loadingCommitments;
 
+  // Stale data detection
+  const oldestCommitment = (commitments || []).reduce((oldest: string | null, c: any) => {
+    if (!oldest) return c.created_at;
+    return new Date(c.created_at) < new Date(oldest) ? c.created_at : oldest;
+  }, null);
+  const dataAge = oldestCommitment ? Math.round((Date.now() - new Date(oldestCommitment).getTime()) / 86400000) : 0;
+  const isStale = dataAge > 30;
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -166,6 +174,43 @@ export default function TerritoryPlanning() {
         </div>
         <Button onClick={() => setEditorOpen(true)}>New Commitment</Button>
       </div>
+
+      {/* Stale data warning */}
+      {isStale && (
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-amber-500/50 bg-amber-500/10 text-sm">
+          <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+          <div>
+            <p className="font-medium text-amber-600">Stale Intelligence Warning</p>
+            <p className="text-muted-foreground text-xs">
+              Oldest commitment is {dataAge} days old. Coverage data may not reflect current ground truth. Consider re-scouting before making new commitments.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Coverage at decision time */}
+      {neighborhoods && neighborhoods.length > 0 && (
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Coverage Snapshot</span>
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-bold">
+                  {(() => {
+                    const total = (neighborhoods || []).reduce((s: number, n: any) => s + (n.total_addresses || 0), 0);
+                    const unknown = (neighborhoods || []).reduce((s: number, n: any) => s + (n.unknown_count || 0), 0);
+                    return total > 0 ? Math.round(((total - unknown) / total) * 100) : 0;
+                  })()}% coverage
+                </p>
+                <p className="text-xs text-muted-foreground">across {neighborhoods.length} neighborhoods</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-12">
