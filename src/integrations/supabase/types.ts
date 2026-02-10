@@ -29317,25 +29317,49 @@ export type Database = {
       }
       neighborhoods: {
         Row: {
+          bbox: Json | null
           borough_id: string
+          city: string | null
+          country: string | null
           created_at: string
           created_by: string | null
           id: string
+          ingestion_stats: Json | null
+          ingestion_status: string | null
+          last_ingested_at: string | null
           name: string
+          osm_area_id: number | null
+          state: string | null
         }
         Insert: {
+          bbox?: Json | null
           borough_id: string
+          city?: string | null
+          country?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
+          ingestion_stats?: Json | null
+          ingestion_status?: string | null
+          last_ingested_at?: string | null
           name: string
+          osm_area_id?: number | null
+          state?: string | null
         }
         Update: {
+          bbox?: Json | null
           borough_id?: string
+          city?: string | null
+          country?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
+          ingestion_stats?: Json | null
+          ingestion_status?: string | null
+          last_ingested_at?: string | null
           name?: string
+          osm_area_id?: number | null
+          state?: string | null
         }
         Relationships: [
           {
