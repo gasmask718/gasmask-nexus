@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
-import { Upload, FileSpreadsheet, CheckCircle2, MapPin, ArrowRight, Globe, Search, Map, Settings } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, MapPin, ArrowRight, Globe, Search, Map, Settings, AlertTriangle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 type SourceType = 'csv' | 'google_places' | 'yelp' | 'openstreetmap';
@@ -153,7 +153,11 @@ export default function TerritoryIngestion() {
     onSuccess: (data) => {
       setApiResults(data);
       setStep('result');
-      toast({ title: 'Ingestion Complete', description: `${data?.inserted ?? 0} new addresses imported.` });
+      if (data?.warning) {
+        toast({ title: 'Ingestion Warning', description: data.warning, variant: 'destructive' });
+      } else {
+        toast({ title: 'Ingestion Complete', description: `${data?.inserted ?? 0} new addresses imported.` });
+      }
     },
     onError: (err: any) => {
       toast({ title: 'Ingestion Failed', description: err.message, variant: 'destructive' });
@@ -395,8 +399,11 @@ export default function TerritoryIngestion() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              Ingestion Complete
+              {apiResults.warning ? (
+                <><AlertTriangle className="h-5 w-5 text-amber-500" /> Ingestion Warning</>
+              ) : (
+                <><CheckCircle2 className="h-5 w-5 text-emerald-500" /> Ingestion Complete</>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -414,14 +421,30 @@ export default function TerritoryIngestion() {
                 <p className="text-sm text-muted-foreground">Duplicates Skipped</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 mt-4 p-3 bg-muted/30 rounded-md">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                All imported addresses are set to <Badge variant="outline">unknown</Badge> status. Use Scout, Call, and Visit consoles to classify them.
-              </p>
-            </div>
-            <div className="pt-4">
+            {apiResults.warning && (
+              <div className="flex items-start gap-3 mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-md">
+                <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-amber-400">{apiResults.warning}</p>
+                  <p className="text-xs text-muted-foreground mt-1">You can retry the ingestion — the system will skip already-imported addresses.</p>
+                </div>
+              </div>
+            )}
+            {!apiResults.warning && (
+              <div className="flex items-center gap-2 mt-4 p-3 bg-muted/30 rounded-md">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  All imported addresses are set to <Badge variant="outline">unknown</Badge> status. Use Scout, Call, and Visit consoles to classify them.
+                </p>
+              </div>
+            )}
+            <div className="flex gap-2 pt-4">
               <Button onClick={resetAll}>Import More Data</Button>
+              {apiResults.warning && (
+                <Button variant="outline" onClick={() => { setStep('scope'); setApiProgress(0); setApiResults(null); }}>
+                  Retry Ingestion
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
