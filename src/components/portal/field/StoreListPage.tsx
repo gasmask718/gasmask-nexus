@@ -13,6 +13,9 @@ import { StoreContactIntelBadge } from '@/components/contact/StoreContactIntelBa
 import { PredictiveIntelCompact } from '@/components/contact/PredictiveIntelCompact';
 import { useLastOrderSnapshotBatch } from '@/hooks/useLastOrderSnapshot';
 import { LastOrderKPIBadge } from '@/components/store/LastOrderKPIBadge';
+import { useEscalationFlagsBatch, type EscalationFlag } from '@/hooks/useEscalationFlags';
+import { EscalationFlagBadge } from '@/components/delivery/EscalationFlagBadge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface StoreItem {
   id: string;
@@ -68,6 +71,7 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
   const storeIds = useMemo(() => stores.map(s => s.id), [stores]);
   const { contactsByStore } = usePrimaryResponsiveContactBatch(storeIds);
   const { data: losMap } = useLastOrderSnapshotBatch(storeIds);
+  const { data: escalationMap } = useEscalationFlagsBatch(storeIds);
 
   const storePurpose = {
     driver: {
@@ -177,6 +181,28 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
                     />
                     <PredictiveIntelCompact storeId={store.id} className="mt-0.5" />
                     <LastOrderKPIBadge snapshots={losMap?.get(store.id)} compact className="mt-1" />
+                    {/* Escalation flag — highest severity only, tooltip for details */}
+                    {escalationMap?.get(store.id) && escalationMap.get(store.id)!.length > 0 && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-block mt-0.5">
+                              <EscalationFlagBadge
+                                flag={escalationMap.get(store.id)!.sort((a, b) => 
+                                  a.severity === 'high' ? -1 : b.severity === 'high' ? 1 : 0
+                                )[0]}
+                                compact
+                              />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-xs space-y-1">
+                            {escalationMap.get(store.id)!.map((f) => (
+                              <div key={f.flag_type} className="text-xs">{f.label}</div>
+                            ))}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                    <Badge variant="secondary">
                      {t('status.active')}

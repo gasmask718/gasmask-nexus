@@ -5,6 +5,7 @@ import { useDeliveryMemorySnapshot } from '@/hooks/useDeliveryMemorySnapshot';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { PinnedNotesSnapshotPanel } from './PinnedNotesSnapshotPanel';
+import { EscalationFlagsPanel } from './EscalationFlagsPanel';
 
 interface DeliveryMemorySnapshotProps {
   storeId: string;
@@ -48,6 +49,9 @@ export function DeliveryMemorySnapshot({ storeId, storeName }: DeliveryMemorySna
 
         {/* Pinned Notes — ALWAYS ABOVE EVERYTHING */}
         <PinnedNotesSnapshotPanel storeId={storeId} />
+
+        {/* Escalation Flags — Read-only derived signals */}
+        <EscalationFlagsPanel storeId={storeId} />
 
         {/* Last Visit */}
         {lastVisitDate && (
