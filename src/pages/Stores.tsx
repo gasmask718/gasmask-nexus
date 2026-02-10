@@ -320,6 +320,14 @@ const Stores = () => {
         last_visit_at: store.last_visit_at || null,
         last_order_at: store.last_order_at || null,
         health_status: store.health_status || null,
+        contact_name: store.contact_name || null,
+        mode: store.mode || null,
+        last_order_date: store.last_order_date || null,
+        owed_amount: store.owed_amount || null,
+        invoice_amount: store.invoice_amount || null,
+        invoice_payment_status: store.invoice_payment_status || null,
+        invoice_payment_method: store.invoice_payment_method || null,
+        invoice_amount_paid: store.invoice_amount_paid || null,
       }));
 
       // Fetch contacts for these stores
