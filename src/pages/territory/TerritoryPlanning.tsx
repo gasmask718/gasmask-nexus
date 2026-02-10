@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Shield, Target, Eye, Snowflake, LogOut, MapPin, Bot, UserCheck, PhoneOff, Ban, Factory } from 'lucide-react';
+import { Shield, Target, Eye, Snowflake, LogOut, MapPin, Bot, UserCheck, PhoneOff, Ban, Factory, AlertTriangle } from 'lucide-react';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FLOOR 8 — Territory Planning Dashboard

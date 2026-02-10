@@ -87,6 +87,14 @@ export default function AIPermissionsNeighborhoods() {
         </p>
       </div>
 
+      <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5 text-sm">
+        <Shield className="h-5 w-5 text-primary shrink-0" />
+        <p className="text-muted-foreground">
+          <span className="font-medium text-foreground">Permissions are commitment-derived.</span>{' '}
+          Each neighborhood's AI permissions flow from its active territory commitment. Change the commitment to change the permissions.
+        </p>
+      </div>
+
       <Card>
         <CardContent className="p-0">
           <Table>

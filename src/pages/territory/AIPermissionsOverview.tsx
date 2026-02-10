@@ -91,6 +91,15 @@ export default function AIPermissionsOverview() {
         </p>
       </div>
 
+      {/* Governance Banner */}
+      <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5 text-sm">
+        <Shield className="h-5 w-5 text-primary shrink-0" />
+        <p className="text-muted-foreground">
+          <span className="font-medium text-foreground">AI cannot act unless Floor 9 permits it.</span>{' '}
+          All permissions are derived from territory commitments. This view is read-only — no toggles, no overrides.
+        </p>
+      </div>
+
       {isLoading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
