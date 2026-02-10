@@ -12,6 +12,7 @@ import { LastOrderContextSection } from './checklist/LastOrderContextSection';
 import { GrowthCaptureSection } from './checklist/GrowthCaptureSection';
 import { ContactUpdateSection } from './checklist/ContactUpdateSection';
 import { StickerCheckSection } from './checklist/StickerCheckSection';
+import { DeliveryMemorySnapshot } from './DeliveryMemorySnapshot';
 
 interface DeliveryTaskCardProps {
   storeId: string;
@@ -79,6 +80,9 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
 
   return (
     <div className="space-y-3">
+      {/* 🧠 MEMORY SNAPSHOT — DO NOT WALK IN BLIND */}
+      <DeliveryMemorySnapshot storeId={storeId} storeName={storeName} />
+
       {/* Progress Header */}
       <Card className={isCompleted ? 'border-green-500/50 bg-green-500/5' : ''}>
         <CardHeader className="pb-2">
