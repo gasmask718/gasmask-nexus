@@ -31,9 +31,18 @@ export const uploadSchemas: Record<string, UploadSchema> = {
     tableName: 'stores',
     displayName: 'Stores',
     description: 'Import store/location data with contacts and notes',
-    naturalKey: ['name'], // Store name is the primary key - company is optional
+    naturalKey: ['name'],
     relatedTables: ['store_notes', 'store_contacts'],
     fields: [
+      // === PRIMARY TEMPLATE COLUMNS (exact order for CSV template) ===
+      {
+        field: 'status',
+        displayName: 'Status',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'active, inactive, lead, etc.'
+      },
       {
         field: 'name',
         displayName: 'Store Name',
@@ -43,13 +52,140 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         notes: 'Optional. Address is the only required identifier.',
       },
       {
+        field: 'contact_name',
+        displayName: 'Contact Name',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Primary contact person at the store'
+      },
+      {
+        field: 'phone',
+        displayName: 'PHONE #',
+        type: 'string',
+        required: false,
+        source: 'excel'
+      },
+      {
+        field: 'gasmask_notes',
+        displayName: 'GasMask Note',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Brand-specific notes for GasMask'
+      },
+      {
+        field: 'hotmama_notes',
+        displayName: 'Hot Mama Note',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Brand-specific notes for Hot Mama'
+      },
+      {
+        field: 'hotscolatti_notes',
+        displayName: 'Hot Scolatti Note',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Brand-specific notes for Hot Scolatti'
+      },
+      {
+        field: 'grabba_notes',
+        displayName: 'Grabba R Us Note',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Brand-specific notes for Grabba R Us'
+      },
+      {
+        field: 'address_street',
+        displayName: 'Address',
+        type: 'string',
+        required: true,
+        source: 'excel',
+        notes: 'Required field. Store can be identified by address even without a name.'
+      },
+      {
+        field: 'notes',
+        displayName: 'Notes',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Will be copied word-for-word (General notes)'
+      },
+      {
+        field: 'mode',
+        displayName: 'Mode',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'On Door / In Store'
+      },
+      {
+        field: 'last_order_date',
+        displayName: 'Last Order Date',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Date of the most recent order'
+      },
+      {
+        field: 'invoice_amount',
+        displayName: 'Amount',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Total invoice/order amount'
+      },
+      {
+        field: 'invoice_payment_method',
+        displayName: 'Payment Method',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Cash, Card, Zelle, etc.'
+      },
+      {
+        field: 'invoice_payment_status',
+        displayName: 'Paid/Unpaid',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'paid, unpaid, partial'
+      },
+      {
+        field: 'invoice_date',
+        displayName: 'Issue Date',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'When the invoice was issued'
+      },
+      {
+        field: 'owed_amount',
+        displayName: 'Owed Amount',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'Outstanding balance owed'
+      },
+      {
+        field: 'invoice_amount_paid',
+        displayName: 'Paid Amount',
+        type: 'string',
+        required: false,
+        source: 'excel',
+        notes: 'How much has been paid'
+      },
+      // === SECONDARY FIELDS (available for mapping but not in default template) ===
+      {
         field: 'company',
         displayName: 'Company',
         type: 'string',
-        required: false, // OPTIONAL per CRM data model - Person/Store can exist without Company
+        required: false,
         source: 'excel',
-        notes: 'Legal entity only (e.g., GasMask). Leave blank for individuals or unaffiliated stores.'
-        // No validation - blank is acceptable
+        notes: 'Legal entity only (e.g., GasMask). Leave blank for individuals.'
       },
       {
         field: 'brand',
@@ -57,15 +193,7 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         type: 'string',
         required: false,
         source: 'excel',
-        notes: 'Commercial brand identity (e.g., Grabba). Separate from Company - stores may carry multiple brands.'
-      },
-      {
-        field: 'address_street',
-        displayName: 'Street Address',
-        type: 'string',
-        required: true,
-        source: 'excel',
-        notes: 'Required field. Store can be identified by address even without a name.'
+        notes: 'Commercial brand identity'
       },
       {
         field: 'address_city',
@@ -89,26 +217,11 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         source: 'excel'
       },
       {
-        field: 'phone',
-        displayName: 'Phone',
-        type: 'string',
-        required: false,
-        source: 'excel'
-      },
-      {
         field: 'email',
         displayName: 'Email',
         type: 'string',
         required: false,
         source: 'excel'
-      },
-      {
-        field: 'status',
-        displayName: 'Status',
-        type: 'string',
-        required: false,
-        source: 'excel',
-        notes: 'active, inactive, lead, etc.'
       },
       {
         field: 'type',
@@ -136,46 +249,6 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         notes: 'Links stores together'
       },
       {
-        field: 'notes',
-        displayName: 'Notes',
-        type: 'string',
-        required: false,
-        source: 'excel',
-        notes: 'Will be copied word-for-word (General notes)'
-      },
-      {
-        field: 'gasmask_notes',
-        displayName: 'GasMask Notes',
-        type: 'string',
-        required: false,
-        source: 'excel',
-        notes: 'Brand-specific notes for GasMask'
-      },
-      {
-        field: 'hotmama_notes',
-        displayName: 'Hot Mama Notes',
-        type: 'string',
-        required: false,
-        source: 'excel',
-        notes: 'Brand-specific notes for Hot Mama'
-      },
-      {
-        field: 'hotscolatti_notes',
-        displayName: 'Hot Scolatti Notes',
-        type: 'string',
-        required: false,
-        source: 'excel',
-        notes: 'Brand-specific notes for Hot Scolatti'
-      },
-      {
-        field: 'grabba_notes',
-        displayName: 'Grabba R Us Notes',
-        type: 'string',
-        required: false,
-        source: 'excel',
-        notes: 'Brand-specific notes for Grabba R Us'
-      },
-      {
         field: 'tags',
         displayName: 'Tags',
         type: 'string',
@@ -189,7 +262,7 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         type: 'string',
         required: false,
         source: 'excel',
-        notes: 'Yes/No or True/False - enables Starter Kit signal in Tube Intelligence'
+        notes: 'Yes/No or True/False'
       },
       {
         field: 'primary_contact_name',
@@ -278,54 +351,13 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         required: false,
         source: 'excel'
       },
-      // Invoice / Payment fields — creates linked invoice records
-      {
-        field: 'invoice_amount',
-        displayName: 'Invoice Amount',
-        type: 'string',
-        required: false,
-        source: 'excel',
-        notes: 'Total invoice amount. Creates an invoice record linked to this store.'
-      },
-      {
-        field: 'invoice_payment_status',
-        displayName: 'Invoice Payment Status',
-        type: 'string',
-        required: false,
-        source: 'excel',
-        notes: 'paid, unpaid, partial, refunded'
-      },
-      {
-        field: 'invoice_payment_method',
-        displayName: 'Invoice Payment Method',
-        type: 'string',
-        required: false,
-        source: 'excel',
-        notes: 'Cash, Card, Zelle, etc.'
-      },
-      {
-        field: 'invoice_amount_paid',
-        displayName: 'Amount Paid',
-        type: 'string',
-        required: false,
-        source: 'excel',
-        notes: 'How much has been paid (for partial payments)'
-      },
       {
         field: 'invoice_due_date',
-        displayName: 'Invoice Due Date',
+        displayName: 'Due Date',
         type: 'string',
         required: false,
         source: 'excel',
-        notes: 'Date format. Uses current date if empty.'
-      },
-      {
-        field: 'invoice_date',
-        displayName: 'Invoice Date',
-        type: 'string',
-        required: false,
-        source: 'excel',
-        notes: 'When the invoice was created'
+        notes: 'Invoice due date'
       },
       {
         field: 'invoice_brand',
@@ -341,11 +373,11 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         type: 'string',
         required: false,
         source: 'excel',
-        notes: 'Notes or description for the invoice'
+        notes: 'Notes for the invoice'
       },
       {
         field: 'invoice_paid_at',
-        displayName: 'Paid Date',
+        displayName: 'Date Paid',
         type: 'string',
         required: false,
         source: 'excel',

@@ -41694,6 +41694,7 @@ export type Database = {
           city: string
           communication_preference: string | null
           connected_group_id: string | null
+          contact_name: string | null
           country: string | null
           country_of_origin: string | null
           created_at: string | null
@@ -41724,12 +41725,15 @@ export type Database = {
           language_preference: string | null
           languages: string[] | null
           last_order_at: string | null
+          last_order_date: string | null
           last_visit_at: string | null
           loyalty_triggers: string[] | null
+          mode: string | null
           new_store_addresses: string[] | null
           nickname: string | null
           notes: string | null
           notes_for_tone: string | null
+          owed_amount: number | null
           owner_name: string | null
           personality_notes: string | null
           personality_profile_id: string | null
@@ -41739,6 +41743,7 @@ export type Database = {
           sourced_at: string | null
           sourced_by_ambassador_id: string | null
           state: string
+          status: string | null
           sticker_in_store: boolean | null
           sticker_notes: string | null
           sticker_on_door: boolean | null
@@ -41756,6 +41761,7 @@ export type Database = {
           city: string
           communication_preference?: string | null
           connected_group_id?: string | null
+          contact_name?: string | null
           country?: string | null
           country_of_origin?: string | null
           created_at?: string | null
@@ -41786,12 +41792,15 @@ export type Database = {
           language_preference?: string | null
           languages?: string[] | null
           last_order_at?: string | null
+          last_order_date?: string | null
           last_visit_at?: string | null
           loyalty_triggers?: string[] | null
+          mode?: string | null
           new_store_addresses?: string[] | null
           nickname?: string | null
           notes?: string | null
           notes_for_tone?: string | null
+          owed_amount?: number | null
           owner_name?: string | null
           personality_notes?: string | null
           personality_profile_id?: string | null
@@ -41801,6 +41810,7 @@ export type Database = {
           sourced_at?: string | null
           sourced_by_ambassador_id?: string | null
           state: string
+          status?: string | null
           sticker_in_store?: boolean | null
           sticker_notes?: string | null
           sticker_on_door?: boolean | null
@@ -41818,6 +41828,7 @@ export type Database = {
           city?: string
           communication_preference?: string | null
           connected_group_id?: string | null
+          contact_name?: string | null
           country?: string | null
           country_of_origin?: string | null
           created_at?: string | null
@@ -41848,12 +41859,15 @@ export type Database = {
           language_preference?: string | null
           languages?: string[] | null
           last_order_at?: string | null
+          last_order_date?: string | null
           last_visit_at?: string | null
           loyalty_triggers?: string[] | null
+          mode?: string | null
           new_store_addresses?: string[] | null
           nickname?: string | null
           notes?: string | null
           notes_for_tone?: string | null
+          owed_amount?: number | null
           owner_name?: string | null
           personality_notes?: string | null
           personality_profile_id?: string | null
@@ -41863,6 +41877,7 @@ export type Database = {
           sourced_at?: string | null
           sourced_by_ambassador_id?: string | null
           state?: string
+          status?: string | null
           sticker_in_store?: boolean | null
           sticker_notes?: string | null
           sticker_on_door?: boolean | null
