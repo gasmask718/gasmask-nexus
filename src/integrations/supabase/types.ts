@@ -993,6 +993,33 @@ export type Database = {
           },
         ]
       }
+      ai_action_registry: {
+        Row: {
+          action_key: string
+          category: string
+          created_at: string
+          description: string
+          is_destructive: boolean
+          requires_human_review: boolean
+        }
+        Insert: {
+          action_key: string
+          category: string
+          created_at?: string
+          description: string
+          is_destructive?: boolean
+          requires_human_review?: boolean
+        }
+        Update: {
+          action_key?: string
+          category?: string
+          created_at?: string
+          description?: string
+          is_destructive?: boolean
+          requires_human_review?: boolean
+        }
+        Relationships: []
+      }
       ai_agent_failures: {
         Row: {
           business_id: string | null
@@ -2331,6 +2358,81 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      ai_decision_log: {
+        Row: {
+          action_key: string
+          ai_agent: string
+          blocked_reason: string | null
+          created_at: string
+          decision_payload: Json
+          id: string
+          neighborhood_id: string | null
+          permission_allowed: boolean
+          permission_source: string
+          territory_address_id: string | null
+        }
+        Insert: {
+          action_key: string
+          ai_agent: string
+          blocked_reason?: string | null
+          created_at?: string
+          decision_payload?: Json
+          id?: string
+          neighborhood_id?: string | null
+          permission_allowed: boolean
+          permission_source: string
+          territory_address_id?: string | null
+        }
+        Update: {
+          action_key?: string
+          ai_agent?: string
+          blocked_reason?: string | null
+          created_at?: string
+          decision_payload?: Json
+          id?: string
+          neighborhood_id?: string | null
+          permission_allowed?: boolean
+          permission_source?: string
+          territory_address_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_decision_log_action_key_fkey"
+            columns: ["action_key"]
+            isOneToOne: false
+            referencedRelation: "ai_action_registry"
+            referencedColumns: ["action_key"]
+          },
+          {
+            foreignKeyName: "ai_decision_log_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "territory_neighborhoods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_decision_log_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "v_territory_domination_score"
+            referencedColumns: ["neighborhood_id"]
+          },
+          {
+            foreignKeyName: "ai_decision_log_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "v_territory_neighborhood_kpis"
+            referencedColumns: ["neighborhood_id"]
+          },
+          {
+            foreignKeyName: "ai_decision_log_territory_address_id_fkey"
+            columns: ["territory_address_id"]
+            isOneToOne: false
+            referencedRelation: "territory_addresses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_director_reports: {
         Row: {
@@ -44729,6 +44831,84 @@ export type Database = {
           },
         ]
       }
+      territory_ai_permissions: {
+        Row: {
+          action_key: string
+          allowed: boolean
+          commitment_id: string
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          effective_until: string | null
+          id: string
+          neighborhood_id: string
+          reason: string
+          source: string
+        }
+        Insert: {
+          action_key: string
+          allowed?: boolean
+          commitment_id: string
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_until?: string | null
+          id?: string
+          neighborhood_id: string
+          reason: string
+          source: string
+        }
+        Update: {
+          action_key?: string
+          allowed?: boolean
+          commitment_id?: string
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_until?: string | null
+          id?: string
+          neighborhood_id?: string
+          reason?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territory_ai_permissions_action_key_fkey"
+            columns: ["action_key"]
+            isOneToOne: false
+            referencedRelation: "ai_action_registry"
+            referencedColumns: ["action_key"]
+          },
+          {
+            foreignKeyName: "territory_ai_permissions_commitment_id_fkey"
+            columns: ["commitment_id"]
+            isOneToOne: false
+            referencedRelation: "territory_commitments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "territory_ai_permissions_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "territory_neighborhoods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "territory_ai_permissions_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "v_territory_domination_score"
+            referencedColumns: ["neighborhood_id"]
+          },
+          {
+            foreignKeyName: "territory_ai_permissions_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "v_territory_neighborhood_kpis"
+            referencedColumns: ["neighborhood_id"]
+          },
+        ]
+      }
       territory_commitment_audit: {
         Row: {
           action: string
@@ -51375,6 +51555,61 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_ai_effective_permissions: {
+        Row: {
+          action_category: string | null
+          action_description: string | null
+          action_key: string | null
+          allowed: boolean | null
+          commitment_id: string | null
+          effective_from: string | null
+          effective_until: string | null
+          is_destructive: boolean | null
+          neighborhood_id: string | null
+          neighborhood_name: string | null
+          permission_id: string | null
+          reason: string | null
+          requires_human_review: boolean | null
+          source: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territory_ai_permissions_action_key_fkey"
+            columns: ["action_key"]
+            isOneToOne: false
+            referencedRelation: "ai_action_registry"
+            referencedColumns: ["action_key"]
+          },
+          {
+            foreignKeyName: "territory_ai_permissions_commitment_id_fkey"
+            columns: ["commitment_id"]
+            isOneToOne: false
+            referencedRelation: "territory_commitments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "territory_ai_permissions_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "territory_neighborhoods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "territory_ai_permissions_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "v_territory_domination_score"
+            referencedColumns: ["neighborhood_id"]
+          },
+          {
+            foreignKeyName: "territory_ai_permissions_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "v_territory_neighborhood_kpis"
+            referencedColumns: ["neighborhood_id"]
           },
         ]
       }
