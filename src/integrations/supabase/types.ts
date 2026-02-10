@@ -41710,6 +41710,16 @@ export type Database = {
           health_status: string | null
           id: string
           influence_level: string | null
+          invoice_amount: number | null
+          invoice_amount_paid: number | null
+          invoice_brand: string | null
+          invoice_date: string | null
+          invoice_due_date: string | null
+          invoice_notes: string | null
+          invoice_paid_at: string | null
+          invoice_payment_method: string | null
+          invoice_payment_status: string | null
+          invoice_received_by: string | null
           is_simulation: boolean | null
           language_preference: string | null
           languages: string[] | null
@@ -41762,6 +41772,16 @@ export type Database = {
           health_status?: string | null
           id?: string
           influence_level?: string | null
+          invoice_amount?: number | null
+          invoice_amount_paid?: number | null
+          invoice_brand?: string | null
+          invoice_date?: string | null
+          invoice_due_date?: string | null
+          invoice_notes?: string | null
+          invoice_paid_at?: string | null
+          invoice_payment_method?: string | null
+          invoice_payment_status?: string | null
+          invoice_received_by?: string | null
           is_simulation?: boolean | null
           language_preference?: string | null
           languages?: string[] | null
@@ -41814,6 +41834,16 @@ export type Database = {
           health_status?: string | null
           id?: string
           influence_level?: string | null
+          invoice_amount?: number | null
+          invoice_amount_paid?: number | null
+          invoice_brand?: string | null
+          invoice_date?: string | null
+          invoice_due_date?: string | null
+          invoice_notes?: string | null
+          invoice_paid_at?: string | null
+          invoice_payment_method?: string | null
+          invoice_payment_status?: string | null
+          invoice_received_by?: string | null
           is_simulation?: boolean | null
           language_preference?: string | null
           languages?: string[] | null
