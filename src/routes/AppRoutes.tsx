@@ -43,6 +43,9 @@ import TerritoryOverview from '@/pages/territory/TerritoryOverview';
 import TerritoryNeighborhoods from '@/pages/territory/TerritoryNeighborhoods';
 import TerritoryTasks from '@/pages/territory/TerritoryTasks';
 import TerritoryCandidates from '@/pages/territory/TerritoryCandidates';
+import ScoutConsole from '@/pages/territory/ScoutConsole';
+import CallConsole from '@/pages/territory/CallConsole';
+import VisitConsole from '@/pages/territory/VisitConsole';
 import RevenueBrain from '@/pages/RevenueBrain';
 import OpportunityRadar from '@/pages/OpportunityRadar';
 import MasterOpportunities from '@/pages/MasterOpportunities';
@@ -573,6 +576,9 @@ export default function AppRoutes() {
         <Route path="/territory/neighborhoods" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryNeighborhoods /></RequireRole>} />
         <Route path="/territory/tasks" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryTasks /></RequireRole>} />
         <Route path="/territory/candidates" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryCandidates /></RequireRole>} />
+        <Route path="/territory/execute/scout" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><ScoutConsole /></RequireRole>} />
+        <Route path="/territory/execute/call" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><CallConsole /></RequireRole>} />
+        <Route path="/territory/execute/visit" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><VisitConsole /></RequireRole>} />
 
         {/* GasMask Brand Routes */}
         <Route path="/gasmask" element={<Dashboard />} />

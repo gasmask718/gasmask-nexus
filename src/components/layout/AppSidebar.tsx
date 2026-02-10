@@ -300,6 +300,9 @@ export default function AppSidebar() {
                 { path: '/territory/neighborhoods', label: 'Neighborhoods', emoji: '🏘️' },
                 { path: '/territory/tasks', label: 'Tasks', emoji: '📋' },
                 { path: '/territory/candidates', label: 'Candidates', emoji: '🔍' },
+                { path: '/territory/execute/scout', label: 'Scout', emoji: '🥾' },
+                { path: '/territory/execute/call', label: 'Call', emoji: '📞' },
+                { path: '/territory/execute/visit', label: 'Visit / Pitch', emoji: '🤝' },
               ], "bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 hover:from-cyan-500/30")}
             </div>
           )}
