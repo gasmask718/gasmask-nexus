@@ -44713,6 +44713,20 @@ export type Database = {
             referencedRelation: "territory_neighborhoods"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "territory_addresses_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "v_territory_domination_score"
+            referencedColumns: ["neighborhood_id"]
+          },
+          {
+            foreignKeyName: "territory_addresses_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "v_territory_neighborhood_kpis"
+            referencedColumns: ["neighborhood_id"]
+          },
         ]
       }
       territory_neighborhoods: {
@@ -52411,6 +52425,53 @@ export type Database = {
           owner_interested: boolean | null
           store_id: string | null
           tube_count: number | null
+        }
+        Relationships: []
+      }
+      v_territory_address_status_summary: {
+        Row: {
+          candidates: number | null
+          city: string | null
+          dead_ends: number | null
+          scouted_addresses: number | null
+          state: string | null
+          total_addresses: number | null
+          unknown_addresses: number | null
+          verified_stores: number | null
+          wholesalers: number | null
+        }
+        Relationships: []
+      }
+      v_territory_domination_score: {
+        Row: {
+          city: string | null
+          domination_score: number | null
+          missing_addresses_count: number | null
+          name: string | null
+          neighborhood_id: string | null
+          next_recommended_action: string | null
+          state: string | null
+          total_addresses: number | null
+          verified_stores: number | null
+        }
+        Relationships: []
+      }
+      v_territory_neighborhood_kpis: {
+        Row: {
+          addresses_scanned_count: number | null
+          candidate_count: number | null
+          city: string | null
+          coverage_percentage: number | null
+          dead_end_count: number | null
+          domination_status: string | null
+          name: string | null
+          neighborhood_id: string | null
+          state: string | null
+          target_store_count: number | null
+          total_addresses: number | null
+          unknown_count: number | null
+          verified_store_count: number | null
+          wholesaler_count: number | null
         }
         Relationships: []
       }
