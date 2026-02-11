@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Loader2, Handshake } from 'lucide-react';
 import {
   useStoreBrandRelationships,
@@ -10,7 +9,7 @@ import {
   RelationshipHealth,
   StoreBrandRelationship,
 } from '@/hooks/useStoreBrandRelationships';
-import { format, formatDistanceToNow } from 'date-fns';
+
 
 const PAYMENT_OPTIONS: { value: PaymentType; label: string }[] = [
   { value: 'pay_upfront', label: 'Pay Upfront' },
@@ -76,7 +75,6 @@ function BrandRow({
   if (!brand) return null;
 
   const healthInfo = HEALTH_OPTIONS.find((h) => h.value === rel.relationship_health);
-  const isActive = !['paused', 'terminated'].includes(rel.relationship_health);
 
   return (
     <div className="rounded-lg border border-border/30 bg-background/50 p-3 space-y-2">
@@ -90,17 +88,7 @@ function BrandRow({
               • {healthInfo.label}
             </span>
           )}
-          {!isActive && (
-            <Badge variant="outline" className="text-xs text-muted-foreground border-muted-foreground/30">
-              Inactive
-            </Badge>
-          )}
         </div>
-        {rel.brand_activated_at && (
-          <span className="text-xs text-muted-foreground">
-            Active since {formatDistanceToNow(new Date(rel.brand_activated_at), { addSuffix: true })}
-          </span>
-        )}
       </div>
 
       {/* Controls row */}
