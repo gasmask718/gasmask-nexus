@@ -25806,6 +25806,67 @@ export type Database = {
           },
         ]
       }
+      inventory_repair_ledger: {
+        Row: {
+          created_at: string
+          id: string
+          invoice_id: string
+          product_id: string
+          reason: string
+          repaired_by: string | null
+          source: string
+          store_id: string
+          track_by: string
+          units_delta: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invoice_id: string
+          product_id: string
+          reason: string
+          repaired_by?: string | null
+          source?: string
+          store_id: string
+          track_by: string
+          units_delta: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          product_id?: string
+          reason?: string
+          repaired_by?: string | null
+          source?: string
+          store_id?: string
+          track_by?: string
+          units_delta?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_repair_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_repair_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "inventory_repair_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+        ]
+      }
       inventory_risk_flags: {
         Row: {
           business_id: string | null
@@ -54761,6 +54822,7 @@ export type Database = {
         }
         Returns: Json
       }
+      preview_invoice_repair: { Args: { p_invoice_id: string }; Returns: Json }
       process_ai_approval: {
         Args: { p_approved: boolean; p_notes?: string; p_request_id: string }
         Returns: boolean
@@ -54789,6 +54851,10 @@ export type Database = {
       reject_store_promotion: {
         Args: { p_promotion_id: string; p_rejection_reason?: string }
         Returns: undefined
+      }
+      repair_invoice_units: {
+        Args: { p_invoice_id: string; p_reason: string; p_user_id: string }
+        Returns: Json
       }
       request_ai_approval: {
         Args: {
