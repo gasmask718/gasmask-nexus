@@ -9,6 +9,7 @@ import { WarehouseInventoryTab } from './tabs/WarehouseInventoryTab';
 import { WarehouseMovementsTab } from './tabs/WarehouseMovementsTab';
 import { WarehousePurchaseOrdersTab } from './tabs/WarehousePurchaseOrdersTab';
 import { WarehouseRoutingTab } from './tabs/WarehouseRoutingTab';
+import { InventoryIntelligenceTab } from './tabs/InventoryIntelligenceTab';
 import WarehouseFormModal from '@/components/inventory/WarehouseFormModal';
 
 export default function WarehouseDashboard() {
@@ -141,8 +142,9 @@ export default function WarehouseDashboard() {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="intelligence">Intelligence</TabsTrigger>
             <TabsTrigger value="inventory">Inventory</TabsTrigger>
             <TabsTrigger value="movements">Movements</TabsTrigger>
             <TabsTrigger value="purchase-orders">Purchase Orders</TabsTrigger>
@@ -234,6 +236,10 @@ export default function WarehouseDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="intelligence">
+            <InventoryIntelligenceTab />
           </TabsContent>
 
           <TabsContent value="inventory">
