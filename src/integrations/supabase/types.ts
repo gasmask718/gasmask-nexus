@@ -7183,6 +7183,119 @@ export type Database = {
         }
         Relationships: []
       }
+      bag_sale_ledger: {
+        Row: {
+          bags_delta: number
+          brand_id: string | null
+          created_at: string | null
+          id: string
+          invoice_id: string
+          line_item_id: string
+          product_id: string
+          product_name: string | null
+          recorded_by: string | null
+          source: string
+          store_id: string
+        }
+        Insert: {
+          bags_delta: number
+          brand_id?: string | null
+          created_at?: string | null
+          id?: string
+          invoice_id: string
+          line_item_id: string
+          product_id: string
+          product_name?: string | null
+          recorded_by?: string | null
+          source: string
+          store_id: string
+        }
+        Update: {
+          bags_delta?: number
+          brand_id?: string | null
+          created_at?: string | null
+          id?: string
+          invoice_id?: string
+          line_item_id?: string
+          product_id?: string
+          product_name?: string | null
+          recorded_by?: string | null
+          source?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bag_sale_ledger_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_line_item_id_fkey"
+            columns: ["line_item_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_line_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_line_item_id_fkey"
+            columns: ["line_item_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_line_items_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       bankrolls: {
         Row: {
           created_at: string
@@ -52471,6 +52584,98 @@ export type Database = {
           table_name: string | null
         }
         Relationships: []
+      }
+      v_bags_sold_per_brand_per_day: {
+        Row: {
+          brand_id: string | null
+          net_bags: number | null
+          sale_date: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bag_sale_ledger_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_bags_sold_per_invoice: {
+        Row: {
+          invoice_id: string | null
+          net_bags: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+        ]
+      }
+      v_bags_sold_per_store_per_day: {
+        Row: {
+          brand_id: string | null
+          net_bags: number | null
+          product_id: string | null
+          product_name: string | null
+          sale_date: string | null
+          store_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bag_sale_ledger_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
       }
       v_commissions_payable: {
         Row: {
