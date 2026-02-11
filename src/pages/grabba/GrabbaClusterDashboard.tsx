@@ -11,8 +11,8 @@ import { CANONICAL_BRANDS } from '@/config/brands';
 const brandColors = {
   GasMask: { primary: CANONICAL_BRANDS.gasmask.primaryColor, secondary: '#000000', name: CANONICAL_BRANDS.gasmask.displayName },
   HotMama: { primary: CANONICAL_BRANDS.hotmama.primaryColor, secondary: '#000000', name: CANONICAL_BRANDS.hotmama.displayName },
-  GrabbaRUs: { primary: CANONICAL_BRANDS.grabba.primaryColor, secondary: '#7B68EE', name: CANONICAL_BRANDS.grabba.displayName },
-  HotScalati: { primary: CANONICAL_BRANDS.scalati.primaryColor, secondary: '#5A3A2E', name: CANONICAL_BRANDS.scalati.displayName },
+  GrabbaRUs: { primary: CANONICAL_BRANDS.grabba_r_us.primaryColor, secondary: '#7B68EE', name: CANONICAL_BRANDS.grabba_r_us.displayName },
+  HotScalati: { primary: CANONICAL_BRANDS.hotscolatti.primaryColor, secondary: '#5A3A2E', name: CANONICAL_BRANDS.hotscolatti.displayName },
 };
 
 export default function GrabbaClusterDashboard() {

@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { CANONICAL_BRAND_IDS, CANONICAL_BRANDS, type CanonicalBrandId } from '@/config/brands';
 
 export type PaymentType = 'pay_upfront' | 'bill_to_bill' | 'net7' | 'net14' | 'cod';
 export type SamplingStatus = 'none' | 'samples_given' | 'trialing' | 'converted';
-export type RelationshipHealth = 'healthy' | 'at_risk' | 'paused' | 'terminated';
+export type RelationshipHealth = 'healthy' | 'at_risk' | 'paused' | 'terminated' | 'trialing';
 
 export interface StoreBrandRelationship {
   id: string;
@@ -17,21 +18,23 @@ export interface StoreBrandRelationship {
   starter_kit_date: string | null;
   sampling_status: SamplingStatus;
   relationship_health: RelationshipHealth;
+  brand_activated_at: string | null;
   created_at: string;
   updated_at: string;
 }
 
-/** Canonical DB brand IDs */
-export const STORE_BRAND_IDS = ['gasmask', 'grabba_r_us', 'hotmama', 'hotscolatti'] as const;
-export type StoreBrandId = (typeof STORE_BRAND_IDS)[number];
+/** Canonical DB brand IDs — derived from single source of truth */
+export const STORE_BRAND_IDS = CANONICAL_BRAND_IDS;
+export type StoreBrandId = CanonicalBrandId;
 
-/** Map DB brand_id → display info */
-export const BRAND_DISPLAY: Record<StoreBrandId, { name: string; icon: string; color: string }> = {
-  gasmask: { name: 'GasMask', icon: '🔴', color: 'hsl(0, 84%, 60%)' },
-  hotmama: { name: 'HotMama', icon: '💖', color: 'hsl(330, 100%, 65%)' },
-  hotscolatti: { name: 'Hot Scolatti', icon: '🟠', color: 'hsl(30, 100%, 50%)' },
-  grabba_r_us: { name: 'Grabba R Us', icon: '🟪', color: 'hsl(270, 70%, 53%)' },
-};
+/** Map DB brand_id → display info — derived from canonical registry */
+export const BRAND_DISPLAY: Record<StoreBrandId, { name: string; icon: string; color: string }> = Object.fromEntries(
+  CANONICAL_BRAND_IDS.map(id => [id, {
+    name: CANONICAL_BRANDS[id].displayName,
+    icon: CANONICAL_BRANDS[id].icon,
+    color: CANONICAL_BRANDS[id].primaryColor,
+  }])
+) as Record<StoreBrandId, { name: string; icon: string; color: string }>;
 
 export function useStoreBrandRelationships(storeId: string) {
   const queryClient = useQueryClient();

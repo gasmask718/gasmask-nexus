@@ -29,6 +29,7 @@ import { StoreFieldActivityPanel } from '@/components/store/StoreFieldActivityPa
 import { InvoiceHistoryCard } from '@/components/store/InvoiceHistoryCard';
 import { StoreCadenceSettings } from '@/components/store/StoreCadenceSettings';
 import { BrandRelationshipsPanel } from '@/components/store/BrandRelationshipsPanel';
+import { BrandPaymentQuickStats } from '@/components/store/BrandPaymentQuickStats';
 
 export interface SharedStoreCoreIntelligenceProps {
   storeId: string;
@@ -71,6 +72,7 @@ export function SharedStoreCoreIntelligence({
       <BrandScopedNotesSection storeId={storeId} storeName={storeName} />
 
       {/* ══════════════ Brand Relationships ══════════════ */}
+      <BrandPaymentQuickStats storeId={storeId} />
       <BrandRelationshipsPanel storeId={storeId} />
 
       {/* ══════════════ Pipeline & Connections ══════════════ */}

@@ -19,9 +19,9 @@ const neighborhoodData = [
     name: 'Bed-Stuy',
     borough: 'Brooklyn',
     stores: [
-      { id: 's1', name: '282 Nostrand Ave', gasmask: 450, hotmama: 200, scalati: 150, grabba: 300, bags: 12 },
-      { id: 's2', name: 'Brooklyn Smoke Shop', gasmask: 320, hotmama: 180, scalati: 90, grabba: 250, bags: 8 },
-      { id: 's3', name: 'Empire Bodega', gasmask: 280, hotmama: 120, scalati: 100, grabba: 180, bags: 5 },
+      { id: 's1', name: '282 Nostrand Ave', gasmask: 450, hotmama: 200, hotscolatti: 150, grabba_r_us: 300, bags: 12 },
+      { id: 's2', name: 'Brooklyn Smoke Shop', gasmask: 320, hotmama: 180, hotscolatti: 90, grabba_r_us: 250, bags: 8 },
+      { id: 's3', name: 'Empire Bodega', gasmask: 280, hotmama: 120, hotscolatti: 100, grabba_r_us: 180, bags: 5 },
     ]
   },
   {
@@ -29,8 +29,8 @@ const neighborhoodData = [
     name: 'Crown Heights',
     borough: 'Brooklyn',
     stores: [
-      { id: 's4', name: 'Atlantic Smoke', gasmask: 380, hotmama: 220, scalati: 170, grabba: 290, bags: 10 },
-      { id: 's5', name: 'Crown Deli', gasmask: 210, hotmama: 150, scalati: 80, grabba: 200, bags: 6 },
+      { id: 's4', name: 'Atlantic Smoke', gasmask: 380, hotmama: 220, hotscolatti: 170, grabba_r_us: 290, bags: 10 },
+      { id: 's5', name: 'Crown Deli', gasmask: 210, hotmama: 150, hotscolatti: 80, grabba_r_us: 200, bags: 6 },
     ]
   },
   {
@@ -38,9 +38,9 @@ const neighborhoodData = [
     name: 'Flatbush',
     borough: 'Brooklyn',
     stores: [
-      { id: 's6', name: 'Flatbush Corner', gasmask: 520, hotmama: 280, scalati: 200, grabba: 350, bags: 15 },
-      { id: 's7', name: 'Church Ave Smoke', gasmask: 310, hotmama: 190, scalati: 110, grabba: 220, bags: 7 },
-      { id: 's8', name: 'Island Mart', gasmask: 180, hotmama: 100, scalati: 60, grabba: 150, bags: 4 },
+      { id: 's6', name: 'Flatbush Corner', gasmask: 520, hotmama: 280, hotscolatti: 200, grabba_r_us: 350, bags: 15 },
+      { id: 's7', name: 'Church Ave Smoke', gasmask: 310, hotmama: 190, hotscolatti: 110, grabba_r_us: 220, bags: 7 },
+      { id: 's8', name: 'Island Mart', gasmask: 180, hotmama: 100, hotscolatti: 60, grabba_r_us: 150, bags: 4 },
     ]
   },
   {
@@ -48,8 +48,8 @@ const neighborhoodData = [
     name: 'Harlem',
     borough: 'Manhattan',
     stores: [
-      { id: 's9', name: '125th Smoke Shop', gasmask: 400, hotmama: 250, scalati: 180, grabba: 320, bags: 11 },
-      { id: 's10', name: 'Apollo Bodega', gasmask: 290, hotmama: 170, scalati: 120, grabba: 240, bags: 8 },
+      { id: 's9', name: '125th Smoke Shop', gasmask: 400, hotmama: 250, hotscolatti: 180, grabba_r_us: 320, bags: 11 },
+      { id: 's10', name: 'Apollo Bodega', gasmask: 290, hotmama: 170, hotscolatti: 120, grabba_r_us: 240, bags: 8 },
     ]
   },
 ];
@@ -62,11 +62,11 @@ function NeighborhoodRow({ neighborhood }: { neighborhood: typeof neighborhoodDa
   const totals = neighborhood.stores.reduce((acc, store) => ({
     gasmask: acc.gasmask + store.gasmask,
     hotmama: acc.hotmama + store.hotmama,
-    scalati: acc.scalati + store.scalati,
-    grabba: acc.grabba + store.grabba,
+    hotscolatti: acc.hotscolatti + store.hotscolatti,
+    grabba_r_us: acc.grabba_r_us + store.grabba_r_us,
     bags: acc.bags + store.bags,
-    totalTubes: acc.totalTubes + store.gasmask + store.hotmama + store.scalati + store.grabba,
-  }), { gasmask: 0, hotmama: 0, scalati: 0, grabba: 0, bags: 0, totalTubes: 0 });
+    totalTubes: acc.totalTubes + store.gasmask + store.hotmama + store.hotscolatti + store.grabba_r_us,
+  }), { gasmask: 0, hotmama: 0, hotscolatti: 0, grabba_r_us: 0, bags: 0, totalTubes: 0 });
 
   const totalBoxes = formatTubesAsBoxes(totals.totalTubes);
 
@@ -107,11 +107,11 @@ function NeighborhoodRow({ neighborhood }: { neighborhood: typeof neighborhoodDa
               <Badge style={{ backgroundColor: GRABBA_BRAND_CONFIG.hotmama.primary }} className="text-white">
                 HotMama: {totals.hotmama}
               </Badge>
-              <Badge style={{ backgroundColor: GRABBA_BRAND_CONFIG.scalati.primary }} className="text-white">
-                Scalati: {totals.scalati}
+              <Badge style={{ backgroundColor: GRABBA_BRAND_CONFIG.hotscolatti.primary }} className="text-white">
+                Hot Scolatti: {totals.hotscolatti}
               </Badge>
-              <Badge style={{ backgroundColor: GRABBA_BRAND_CONFIG.grabba.primary }} className="text-white">
-                Grabba R Us: {totals.grabba}
+              <Badge style={{ backgroundColor: GRABBA_BRAND_CONFIG.grabba_r_us.primary }} className="text-white">
+                Grabba R Us: {totals.grabba_r_us}
               </Badge>
             </div>
           </CardHeader>
@@ -124,8 +124,8 @@ function NeighborhoodRow({ neighborhood }: { neighborhood: typeof neighborhoodDa
                   <TableHead>Store</TableHead>
                   <TableHead className="text-center" style={{ color: GRABBA_BRAND_CONFIG.gasmask.primary }}>GasMask</TableHead>
                   <TableHead className="text-center" style={{ color: GRABBA_BRAND_CONFIG.hotmama.primary }}>HotMama</TableHead>
-                  <TableHead className="text-center" style={{ color: GRABBA_BRAND_CONFIG.scalati.primary }}>Scalati</TableHead>
-                  <TableHead className="text-center" style={{ color: GRABBA_BRAND_CONFIG.grabba.primary }}>Grabba R Us</TableHead>
+                  <TableHead className="text-center" style={{ color: GRABBA_BRAND_CONFIG.hotscolatti.primary }}>Hot Scolatti</TableHead>
+                  <TableHead className="text-center" style={{ color: GRABBA_BRAND_CONFIG.grabba_r_us.primary }}>Grabba R Us</TableHead>
                   <TableHead className="text-center">Total Tubes</TableHead>
                   <TableHead className="text-center">Boxes</TableHead>
                   <TableHead className="text-center">Bags</TableHead>
@@ -134,7 +134,7 @@ function NeighborhoodRow({ neighborhood }: { neighborhood: typeof neighborhoodDa
               </TableHeader>
               <TableBody>
                 {neighborhood.stores.map(store => {
-                  const storeTotalTubes = store.gasmask + store.hotmama + store.scalati + store.grabba;
+                  const storeTotalTubes = store.gasmask + store.hotmama + store.hotscolatti + store.grabba_r_us;
                   const storeBoxes = formatTubesAsBoxes(storeTotalTubes);
                   return (
                     <TableRow 
@@ -150,8 +150,8 @@ function NeighborhoodRow({ neighborhood }: { neighborhood: typeof neighborhoodDa
                       </TableCell>
                       <TableCell className="text-center font-medium">{store.gasmask}</TableCell>
                       <TableCell className="text-center font-medium">{store.hotmama}</TableCell>
-                      <TableCell className="text-center font-medium">{store.scalati}</TableCell>
-                      <TableCell className="text-center font-medium">{store.grabba}</TableCell>
+                      <TableCell className="text-center font-medium">{store.hotscolatti}</TableCell>
+                      <TableCell className="text-center font-medium">{store.grabba_r_us}</TableCell>
                       <TableCell className="text-center font-bold">{storeTotalTubes}</TableCell>
                       <TableCell className="text-center">{storeBoxes.fractionLabel}</TableCell>
                       <TableCell className="text-center">{store.bags}</TableCell>
@@ -181,15 +181,15 @@ export default function GrabbaNeighborhoodPerformance() {
     neighborhood.stores.forEach(store => {
       acc.gasmask += store.gasmask;
       acc.hotmama += store.hotmama;
-      acc.scalati += store.scalati;
-      acc.grabba += store.grabba;
+      acc.hotscolatti += store.hotscolatti;
+      acc.grabba_r_us += store.grabba_r_us;
       acc.bags += store.bags;
     });
     acc.stores += neighborhood.stores.length;
     return acc;
-  }, { gasmask: 0, hotmama: 0, scalati: 0, grabba: 0, bags: 0, stores: 0 });
+  }, { gasmask: 0, hotmama: 0, hotscolatti: 0, grabba_r_us: 0, bags: 0, stores: 0 });
 
-  const grandTotalTubes = grandTotals.gasmask + grandTotals.hotmama + grandTotals.scalati + grandTotals.grabba;
+  const grandTotalTubes = grandTotals.gasmask + grandTotals.hotmama + grandTotals.hotscolatti + grandTotals.grabba_r_us;
   const grandTotalBoxes = formatTubesAsBoxes(grandTotalTubes);
 
   return (
@@ -284,15 +284,15 @@ export default function GrabbaNeighborhoodPerformance() {
                 <div className="text-2xl font-bold">{grandTotals.hotmama.toLocaleString()} tubes</div>
                 <div className="text-sm">{formatTubesAsBoxes(grandTotals.hotmama).fractionLabel}</div>
               </div>
-              <div className="p-4 rounded-lg" style={{ backgroundColor: `${GRABBA_BRAND_CONFIG.scalati.primary}20`, borderLeft: `4px solid ${GRABBA_BRAND_CONFIG.scalati.primary}` }}>
-                <div className="text-sm text-muted-foreground">Hot Scalati</div>
-                <div className="text-2xl font-bold">{grandTotals.scalati.toLocaleString()} tubes</div>
-                <div className="text-sm">{formatTubesAsBoxes(grandTotals.scalati).fractionLabel}</div>
+              <div className="p-4 rounded-lg" style={{ backgroundColor: `${GRABBA_BRAND_CONFIG.hotscolatti.primary}20`, borderLeft: `4px solid ${GRABBA_BRAND_CONFIG.hotscolatti.primary}` }}>
+                <div className="text-sm text-muted-foreground">Hot Scolatti</div>
+                <div className="text-2xl font-bold">{grandTotals.hotscolatti.toLocaleString()} tubes</div>
+                <div className="text-sm">{formatTubesAsBoxes(grandTotals.hotscolatti).fractionLabel}</div>
               </div>
-              <div className="p-4 rounded-lg" style={{ backgroundColor: `${GRABBA_BRAND_CONFIG.grabba.primary}20`, borderLeft: `4px solid ${GRABBA_BRAND_CONFIG.grabba.primary}` }}>
+              <div className="p-4 rounded-lg" style={{ backgroundColor: `${GRABBA_BRAND_CONFIG.grabba_r_us.primary}20`, borderLeft: `4px solid ${GRABBA_BRAND_CONFIG.grabba_r_us.primary}` }}>
                 <div className="text-sm text-muted-foreground">Grabba R Us</div>
-                <div className="text-2xl font-bold">{grandTotals.grabba.toLocaleString()} tubes</div>
-                <div className="text-sm">{formatTubesAsBoxes(grandTotals.grabba).fractionLabel}</div>
+                <div className="text-2xl font-bold">{grandTotals.grabba_r_us.toLocaleString()} tubes</div>
+                <div className="text-sm">{formatTubesAsBoxes(grandTotals.grabba_r_us).fractionLabel}</div>
               </div>
             </div>
           </CardContent>

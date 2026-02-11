@@ -228,7 +228,7 @@ export function getFloorActivityCount(): Record<string, number> {
 
 // Seed some demo events
 export function seedDemoActivity() {
-  const brands: GrabbaBrandId[] = ['gasmask', 'hotmama', 'scalati', 'grabba'];
+  const brands: GrabbaBrandId[] = ['gasmask', 'hotmama', 'hotscolatti', 'grabba_r_us'];
   const events: ActivityEventType[] = [
     'store_created',
     'new_order',
