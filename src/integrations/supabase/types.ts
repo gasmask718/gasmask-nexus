@@ -26199,13 +26199,21 @@ export type Database = {
         Row: {
           brand: string | null
           brand_id: string | null
+          brand_name_snapshot: string | null
           computed_tubes_total: number
           cost_per_unit_at_sale: number | null
           created_at: string
+          discount_reason: string | null
+          discount_type: string
+          discount_value: number
           id: string
           invoice_id: string
+          line_subtotal: number
+          list_unit_price: number
+          price_override_reason: string | null
           product_id: string | null
           product_name: string | null
+          product_name_snapshot: string | null
           profit_at_sale: number | null
           quantity: number
           quantity_boxes: number | null
@@ -26216,19 +26224,28 @@ export type Database = {
           tubes_equivalent: number | null
           tubes_per_unit: number | null
           unit_price: number
+          unit_price_used: number
           unit_type: string
           units_per_box_snapshot: number | null
         }
         Insert: {
           brand?: string | null
           brand_id?: string | null
+          brand_name_snapshot?: string | null
           computed_tubes_total?: number
           cost_per_unit_at_sale?: number | null
           created_at?: string
+          discount_reason?: string | null
+          discount_type?: string
+          discount_value?: number
           id?: string
           invoice_id: string
+          line_subtotal?: number
+          list_unit_price?: number
+          price_override_reason?: string | null
           product_id?: string | null
           product_name?: string | null
+          product_name_snapshot?: string | null
           profit_at_sale?: number | null
           quantity?: number
           quantity_boxes?: number | null
@@ -26239,19 +26256,28 @@ export type Database = {
           tubes_equivalent?: number | null
           tubes_per_unit?: number | null
           unit_price: number
+          unit_price_used?: number
           unit_type?: string
           units_per_box_snapshot?: number | null
         }
         Update: {
           brand?: string | null
           brand_id?: string | null
+          brand_name_snapshot?: string | null
           computed_tubes_total?: number
           cost_per_unit_at_sale?: number | null
           created_at?: string
+          discount_reason?: string | null
+          discount_type?: string
+          discount_value?: number
           id?: string
           invoice_id?: string
+          line_subtotal?: number
+          list_unit_price?: number
+          price_override_reason?: string | null
           product_id?: string | null
           product_name?: string | null
+          product_name_snapshot?: string | null
           profit_at_sale?: number | null
           quantity?: number
           quantity_boxes?: number | null
@@ -26262,6 +26288,7 @@ export type Database = {
           tubes_equivalent?: number | null
           tubes_per_unit?: number | null
           unit_price?: number
+          unit_price_used?: number
           unit_type?: string
           units_per_box_snapshot?: number | null
         }
@@ -26420,6 +26447,8 @@ export type Database = {
           deleted_by: string | null
           delivery_photos: string[] | null
           due_date: string
+          finalized_at: string | null
+          finalized_by: string | null
           id: string
           invoice_number: string
           invoice_pdf_url: string | null
@@ -26437,6 +26466,7 @@ export type Database = {
           receipt_sent_at: string | null
           receipt_status: string | null
           received_by: string | null
+          status: string
           store_id: string | null
           subtotal: number | null
           tax: number | null
@@ -26444,6 +26474,9 @@ export type Database = {
           total_amount: number | null
           total_boxes_sold: number
           total_tubes_sold: number
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           amount_paid?: number
@@ -26457,6 +26490,8 @@ export type Database = {
           deleted_by?: string | null
           delivery_photos?: string[] | null
           due_date: string
+          finalized_at?: string | null
+          finalized_by?: string | null
           id?: string
           invoice_number: string
           invoice_pdf_url?: string | null
@@ -26474,6 +26509,7 @@ export type Database = {
           receipt_sent_at?: string | null
           receipt_status?: string | null
           received_by?: string | null
+          status?: string
           store_id?: string | null
           subtotal?: number | null
           tax?: number | null
@@ -26481,6 +26517,9 @@ export type Database = {
           total_amount?: number | null
           total_boxes_sold?: number
           total_tubes_sold?: number
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           amount_paid?: number
@@ -26494,6 +26533,8 @@ export type Database = {
           deleted_by?: string | null
           delivery_photos?: string[] | null
           due_date?: string
+          finalized_at?: string | null
+          finalized_by?: string | null
           id?: string
           invoice_number?: string
           invoice_pdf_url?: string | null
@@ -26511,6 +26552,7 @@ export type Database = {
           receipt_sent_at?: string | null
           receipt_status?: string | null
           received_by?: string | null
+          status?: string
           store_id?: string | null
           subtotal?: number | null
           tax?: number | null
@@ -26518,6 +26560,9 @@ export type Database = {
           total_amount?: number | null
           total_boxes_sold?: number
           total_tubes_sold?: number
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -36816,11 +36861,14 @@ export type Database = {
           min_order_qty: number | null
           moq: number | null
           name: string
+          price_per_box: number | null
           price_per_tube: number | null
+          price_per_unit: number
           reorder_point: number | null
           reorder_qty: number | null
           requires_license: boolean | null
           safety_stock: number | null
+          sale_unit_default: string
           short_description: string | null
           sku: string | null
           status: string | null
@@ -36832,6 +36880,7 @@ export type Database = {
           suggested_upsell_product_id: string | null
           target_store_type: string | null
           taxable: boolean | null
+          track_by: string
           track_inventory: boolean | null
           type: string
           unit_type: string
@@ -36874,11 +36923,14 @@ export type Database = {
           min_order_qty?: number | null
           moq?: number | null
           name: string
+          price_per_box?: number | null
           price_per_tube?: number | null
+          price_per_unit?: number
           reorder_point?: number | null
           reorder_qty?: number | null
           requires_license?: boolean | null
           safety_stock?: number | null
+          sale_unit_default?: string
           short_description?: string | null
           sku?: string | null
           status?: string | null
@@ -36890,6 +36942,7 @@ export type Database = {
           suggested_upsell_product_id?: string | null
           target_store_type?: string | null
           taxable?: boolean | null
+          track_by?: string
           track_inventory?: boolean | null
           type: string
           unit_type: string
@@ -36932,11 +36985,14 @@ export type Database = {
           min_order_qty?: number | null
           moq?: number | null
           name?: string
+          price_per_box?: number | null
           price_per_tube?: number | null
+          price_per_unit?: number
           reorder_point?: number | null
           reorder_qty?: number | null
           requires_license?: boolean | null
           safety_stock?: number | null
+          sale_unit_default?: string
           short_description?: string | null
           sku?: string | null
           status?: string | null
@@ -36948,6 +37004,7 @@ export type Database = {
           suggested_upsell_product_id?: string | null
           target_store_type?: string | null
           taxable?: boolean | null
+          track_by?: string
           track_inventory?: boolean | null
           type?: string
           unit_type?: string
@@ -46403,6 +46460,7 @@ export type Database = {
           id: string
           invoice_id: string
           line_item_id: string
+          product_id: string | null
           product_name: string | null
           recorded_by: string | null
           source: string
@@ -46416,6 +46474,7 @@ export type Database = {
           id?: string
           invoice_id: string
           line_item_id: string
+          product_id?: string | null
           product_name?: string | null
           recorded_by?: string | null
           source?: string
@@ -46429,6 +46488,7 @@ export type Database = {
           id?: string
           invoice_id?: string
           line_item_id?: string
+          product_id?: string | null
           product_name?: string | null
           recorded_by?: string | null
           source?: string
@@ -53468,6 +53528,65 @@ export type Database = {
         }
         Relationships: []
       }
+      v_tubes_sold_per_invoice: {
+        Row: {
+          invoice_id: string | null
+          line_items_count: number | null
+          net_tubes_delta: number | null
+          tubes_reversed: number | null
+          tubes_sold: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+        ]
+      }
+      v_tubes_sold_per_store_per_day: {
+        Row: {
+          brand: string | null
+          brand_id: string | null
+          net_tubes_delta: number | null
+          sale_date: string | null
+          store_id: string | null
+          tubes_reversed: number | null
+          tubes_sold: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tube_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_ambassador_invite: {
@@ -53800,6 +53919,10 @@ export type Database = {
           source_id: string
           store_name: string
         }[]
+      }
+      finalize_invoice: {
+        Args: { p_invoice_id: string; p_user_id?: string }
+        Returns: Json
       }
       finalize_payout_batch: {
         Args: { p_batch_id: string }
@@ -54334,6 +54457,14 @@ export type Database = {
           _request_id: string
           _shift_id?: string
           _user_id: string
+        }
+        Returns: Json
+      }
+      void_invoice: {
+        Args: {
+          p_invoice_id: string
+          p_user_id?: string
+          p_void_reason: string
         }
         Returns: Json
       }

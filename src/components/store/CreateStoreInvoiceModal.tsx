@@ -61,7 +61,14 @@ interface Product {
   cost: number | null;
   units_per_box: number | null;
   unit_type: string | null;
+  // Phase 1B fields
+  track_by: string | null;
+  sale_unit_default: string | null;
+  price_per_box: number | null;
+  price_per_unit: number | null;
 }
+
+export type DiscountType = 'none' | 'percent' | 'amount';
 
 interface LineItem {
   id: string;
@@ -81,6 +88,15 @@ interface LineItem {
   quantity_boxes: number | null;
   quantity_tubes: number | null;
   computed_tubes_total: number;
+  // Phase 1B: Discount/Override pricing
+  list_unit_price: number;
+  unit_price_used: number;
+  discount_type: DiscountType;
+  discount_value: number;
+  discount_reason: string;
+  price_override_reason: string;
+  line_subtotal: number;
+  track_by: string;
 }
 
 export function CreateStoreInvoiceModal({
@@ -138,7 +154,7 @@ export function CreateStoreInvoiceModal({
       if (!selectedBrandId) return [];
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, sku, store_price, wholesale_price, suggested_retail_price, street_price, cost, units_per_box, unit_type')
+        .select('id, name, sku, store_price, wholesale_price, suggested_retail_price, street_price, cost, units_per_box, unit_type, track_by, sale_unit_default, price_per_box, price_per_unit')
         .eq('brand_id', selectedBrandId)
         .eq('is_active', true)
         .order('name');
@@ -180,10 +196,15 @@ export function CreateStoreInvoiceModal({
 
     if (!brand || !product) return;
 
-    // Get price based on selected sale channel
-    const unitPrice = getPriceForChannel(product, saleChannel);
+    // Phase 1B: Determine list price based on sale unit
+    const listUnitPrice = saleUnit === 'box'
+      ? (product.price_per_box ?? getPriceForChannel(product, saleChannel))
+      : (product.price_per_unit ?? getPriceForChannel(product, saleChannel));
+
+    const unitPrice = listUnitPrice;
     const costPerUnit = product.cost || 0;
     const unitsPerBox = product.units_per_box || 1;
+    const trackBy = product.track_by || 'tubes';
     
     // Calculate profit (INTERNAL ONLY - never shown on invoice)
     const profitPerUnit = unitPrice - costPerUnit;
@@ -199,11 +220,12 @@ export function CreateStoreInvoiceModal({
       quantityTubes = null;
       computedTubesTotal = quantity * unitsPerBox;
     } else {
-      // Unit/tube sale
       quantityBoxes = null;
       quantityTubes = quantity;
       computedTubesTotal = quantity;
     }
+
+    const lineSubtotal = unitPrice * quantity;
 
     // Check if same product with same channel already added
     const existingIndex = lineItems.findIndex(
@@ -214,9 +236,9 @@ export function CreateStoreInvoiceModal({
       const updated = [...lineItems];
       const existing = updated[existingIndex];
       existing.quantity += quantity;
-      existing.total = existing.quantity * existing.unit_price;
-      existing.profit = (existing.unit_price - existing.cost_per_unit) * existing.quantity;
-      // Recompute tubes
+      existing.total = existing.quantity * existing.unit_price_used;
+      existing.line_subtotal = existing.total;
+      existing.profit = (existing.unit_price_used - existing.cost_per_unit) * existing.quantity;
       if (existing.sale_unit === 'box') {
         existing.quantity_boxes = existing.quantity;
         existing.computed_tubes_total = existing.quantity * existing.units_per_box;
@@ -236,7 +258,7 @@ export function CreateStoreInvoiceModal({
           product_name: product.name,
           quantity,
           unit_price: unitPrice,
-          total: quantity * unitPrice,
+          total: lineSubtotal,
           sale_channel: saleChannel,
           sale_unit: saleUnit,
           cost_per_unit: costPerUnit,
@@ -245,6 +267,15 @@ export function CreateStoreInvoiceModal({
           quantity_boxes: quantityBoxes,
           quantity_tubes: quantityTubes,
           computed_tubes_total: computedTubesTotal,
+          // Phase 1B fields
+          list_unit_price: listUnitPrice,
+          unit_price_used: unitPrice,
+          discount_type: 'none' as DiscountType,
+          discount_value: 0,
+          discount_reason: '',
+          price_override_reason: '',
+          line_subtotal: lineSubtotal,
+          track_by: trackBy,
         },
       ]);
     }
@@ -266,10 +297,10 @@ export function CreateStoreInvoiceModal({
         const updatedItem = { 
           ...item, 
           quantity: newQuantity, 
-          total: newQuantity * item.unit_price,
-          profit: (item.unit_price - item.cost_per_unit) * newQuantity,
+          total: newQuantity * item.unit_price_used,
+          line_subtotal: newQuantity * item.unit_price_used,
+          profit: (item.unit_price_used - item.cost_per_unit) * newQuantity,
         };
-        // Recompute tube totals
         if (updatedItem.sale_unit === 'box') {
           updatedItem.quantity_boxes = newQuantity;
           updatedItem.computed_tubes_total = newQuantity * updatedItem.units_per_box;
@@ -285,16 +316,45 @@ export function CreateStoreInvoiceModal({
   const handleUpdatePrice = (id: string, newPrice: number) => {
     if (newPrice < 0) return;
     setLineItems(
-      lineItems.map(item =>
-        item.id === id
-          ? { 
-              ...item, 
-              unit_price: newPrice, 
-              total: item.quantity * newPrice,
-              profit: (newPrice - item.cost_per_unit) * item.quantity,
-            }
-          : item
-      )
+      lineItems.map(item => {
+        if (item.id !== id) return item;
+        const needsReason = newPrice !== item.list_unit_price;
+        return { 
+          ...item, 
+          unit_price: newPrice, 
+          unit_price_used: newPrice,
+          total: item.quantity * newPrice,
+          line_subtotal: item.quantity * newPrice,
+          profit: (newPrice - item.cost_per_unit) * item.quantity,
+          discount_type: needsReason && item.discount_type === 'none' ? 'none' as DiscountType : item.discount_type,
+          price_override_reason: needsReason ? (item.price_override_reason || '') : '',
+        };
+      })
+    );
+  };
+
+  const handleUpdateDiscount = (id: string, discountType: DiscountType, discountValue: number, reason: string) => {
+    setLineItems(
+      lineItems.map(item => {
+        if (item.id !== id) return item;
+        let finalPrice = item.list_unit_price;
+        if (discountType === 'percent') {
+          finalPrice = Math.round(item.list_unit_price * (1 - discountValue / 100) * 100) / 100;
+        } else if (discountType === 'amount') {
+          finalPrice = Math.max(item.list_unit_price - discountValue, 0);
+        }
+        return {
+          ...item,
+          discount_type: discountType,
+          discount_value: discountValue,
+          discount_reason: reason,
+          unit_price_used: finalPrice,
+          unit_price: finalPrice,
+          total: item.quantity * finalPrice,
+          line_subtotal: item.quantity * finalPrice,
+          profit: (finalPrice - item.cost_per_unit) * item.quantity,
+        };
+      })
     );
   };
 
@@ -361,7 +421,8 @@ export function CreateStoreInvoiceModal({
             brand: brandSummary,
             created_by: user?.id || 'manual',
             created_at: invoiceDateToUse,
-            is_historical: invoiceMode === 'historical', // Track invoice mode
+            is_historical: invoiceMode === 'historical',
+            status: 'draft', // Phase 1B: Start as draft
           })
           .select('id')
           .single();
@@ -369,16 +430,19 @@ export function CreateStoreInvoiceModal({
         if (invoiceError) throw invoiceError;
         if (invoice) createdInvoices.push(invoice);
 
-        // Create invoice line items with tube-native fields
+        // Create invoice line items with Phase 1B discount/override fields
         if (invoice && lineItems.length > 0) {
         const lineItemsData = lineItems.map(item => ({
           invoice_id: invoice.id,
           brand_id: item.brand_id,
           brand: item.brand_name,
+          product_id: item.product_id,
           product_name: item.product_name,
+          product_name_snapshot: item.product_name,
+          brand_name_snapshot: item.brand_name,
           quantity: item.quantity,
-          unit_price: item.unit_price,
-          total: item.total,
+          unit_price: item.unit_price_used,
+          total: item.line_subtotal,
           sale_channel: item.sale_channel,
           sale_unit: item.sale_unit,
           cost_per_unit_at_sale: item.cost_per_unit,
@@ -387,42 +451,38 @@ export function CreateStoreInvoiceModal({
           // TUBE-NATIVE fields
           quantity_boxes: item.quantity_boxes,
           quantity_tubes: item.quantity_tubes,
-          // computed_tubes_total is auto-computed by DB trigger, but we send it too
           computed_tubes_total: item.computed_tubes_total,
+          // Phase 1B: Discount/Override pricing
+          list_unit_price: item.list_unit_price,
+          unit_price_used: item.unit_price_used,
+          discount_type: item.discount_type,
+          discount_value: item.discount_value,
+          discount_reason: item.discount_reason || null,
+          price_override_reason: item.price_override_reason || null,
+          line_subtotal: item.line_subtotal,
         }));
 
-        const { data: insertedLineItems, error: lineItemsError } = await supabase
+        const { error: lineItemsError } = await supabase
           .from('invoice_line_items')
-          .insert(lineItemsData)
-          .select('id, brand_id, brand, product_name, computed_tubes_total');
+          .insert(lineItemsData);
         
         if (lineItemsError) {
           console.error('Failed to create invoice line items:', lineItemsError);
           toast.error(`Line items failed: ${lineItemsError.message}`);
         }
 
-        // Write immutable tube_sale_ledger entries
-        if (insertedLineItems && insertedLineItems.length > 0) {
-          const ledgerEntries = insertedLineItems.map((li, idx) => ({
-            invoice_id: invoice.id,
-            line_item_id: li.id,
-            store_id: targetStoreId,
-            brand_id: li.brand_id,
-            brand: li.brand,
-            product_name: li.product_name,
-            tubes_delta: -(li.computed_tubes_total || lineItems[idx].computed_tubes_total), // negative = sale
-            source: 'invoice',
-            recorded_by: user?.id || 'manual',
-          }));
-
-          const { error: ledgerError } = await supabase
-            .from('tube_sale_ledger')
-            .insert(ledgerEntries);
-          
-          if (ledgerError) {
-            console.error('Failed to write tube ledger:', ledgerError);
-            // Don't fail invoice creation
+        // Phase 1B: Auto-finalize the invoice (writes ledger entries via RPC)
+        try {
+          const { error: finalizeError } = await supabase.rpc('finalize_invoice', {
+            p_invoice_id: invoice.id,
+            p_user_id: user?.id || 'manual',
+          });
+          if (finalizeError) {
+            console.error('Failed to finalize invoice:', finalizeError);
+            toast.error(`Invoice created but finalization failed: ${finalizeError.message}`);
           }
+        } catch (err) {
+          console.error('Error finalizing invoice:', err);
         }
         }
 
@@ -563,7 +623,7 @@ export function CreateStoreInvoiceModal({
     setInvoiceMode('live'); // Reset to live mode
   };
 
-  const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
+  const subtotal = lineItems.reduce((sum, item) => sum + item.line_subtotal, 0);
   const tax = 0;
   const total = subtotal + tax;
 
@@ -787,7 +847,7 @@ export function CreateStoreInvoiceModal({
           {lineItems.length > 0 && (
             <div className="space-y-2">
               <Label className="text-sm font-medium">Invoice Items</Label>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-2 max-h-96 overflow-y-auto">
                 {lineItems.map((item) => (
                   <div
                     key={item.id}
@@ -800,7 +860,7 @@ export function CreateStoreInvoiceModal({
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{item.product_name}</p>
-                         <div className="flex items-center gap-2">
+                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-xs text-muted-foreground">{item.brand_name}</p>
                           <Badge 
                             variant={item.sale_channel === 'street' ? 'default' : 'outline'} 
@@ -808,12 +868,16 @@ export function CreateStoreInvoiceModal({
                           >
                             {item.sale_channel}
                           </Badge>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            {item.sale_unit === 'box' ? '📦 Box' : '🔧 Unit'}
+                          </Badge>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
-                            {item.computed_tubes_total} tubes
+                            {item.computed_tubes_total} {item.track_by === 'tubes' ? 'tubes' : 'units'}
                           </Badge>
                         </div>
                       </div>
                     </div>
+                    {/* Qty × Price row */}
                     <div className="flex items-center gap-2">
                       <Input
                         type="number"
@@ -827,12 +891,12 @@ export function CreateStoreInvoiceModal({
                         type="number"
                         min="0"
                         step="0.01"
-                        value={item.unit_price}
+                        value={item.unit_price_used}
                         onChange={(e) => handleUpdatePrice(item.id, parseFloat(e.target.value) || 0)}
                         className="w-20 h-8 text-sm font-mono"
                       />
                       <span className="text-sm font-mono font-medium flex-1 text-right">
-                        ${item.total.toFixed(2)}
+                        ${item.line_subtotal.toFixed(2)}
                       </span>
                       <Button
                         type="button"
@@ -844,6 +908,66 @@ export function CreateStoreInvoiceModal({
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
+                    {/* List price reference */}
+                    {item.unit_price_used !== item.list_unit_price && (
+                      <p className="text-xs text-muted-foreground">
+                        List: <span className="line-through font-mono">${item.list_unit_price.toFixed(2)}</span>
+                        {item.discount_type !== 'none' && (
+                          <span className="ml-1 text-primary">
+                            ({item.discount_type === 'percent' ? `${item.discount_value}% off` : `$${item.discount_value} off`})
+                          </span>
+                        )}
+                      </p>
+                    )}
+                    {/* Discount controls */}
+                    <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+                      <Select
+                        value={item.discount_type}
+                        onValueChange={(v) => handleUpdateDiscount(item.id, v as DiscountType, item.discount_value, item.discount_reason)}
+                      >
+                        <SelectTrigger className="w-24 h-7 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Disc.</SelectItem>
+                          <SelectItem value="percent">% Off</SelectItem>
+                          <SelectItem value="amount">$ Off</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {item.discount_type !== 'none' && (
+                        <>
+                          <Input
+                            type="number"
+                            min="0"
+                            step={item.discount_type === 'percent' ? '1' : '0.01'}
+                            max={item.discount_type === 'percent' ? 100 : undefined}
+                            value={item.discount_value}
+                            onChange={(e) => handleUpdateDiscount(item.id, item.discount_type, parseFloat(e.target.value) || 0, item.discount_reason)}
+                            className="w-16 h-7 text-xs font-mono"
+                            placeholder={item.discount_type === 'percent' ? '%' : '$'}
+                          />
+                          <Input
+                            value={item.discount_reason}
+                            onChange={(e) => handleUpdateDiscount(item.id, item.discount_type, item.discount_value, e.target.value)}
+                            className="flex-1 h-7 text-xs"
+                            placeholder="Reason..."
+                          />
+                        </>
+                      )}
+                    </div>
+                    {/* Override reason if price manually changed without discount */}
+                    {item.discount_type === 'none' && item.unit_price_used !== item.list_unit_price && (
+                      <Input
+                        value={item.price_override_reason}
+                        onChange={(e) => {
+                          setLineItems(lineItems.map(li => 
+                            li.id === item.id ? { ...li, price_override_reason: e.target.value } : li
+                          ));
+                        }}
+                        className="h-7 text-xs"
+                        placeholder="Override reason (required)..."
+                      />
+                    )}
                   </div>
                 ))}
               </div>

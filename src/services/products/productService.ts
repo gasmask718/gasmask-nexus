@@ -38,6 +38,11 @@ export interface ProductInput {
   requires_license?: boolean;
   internal_notes?: string;
   is_active?: boolean;
+  // Phase 1B: Tube-native pricing
+  track_by?: string;
+  sale_unit_default?: string;
+  price_per_box?: number | null;
+  price_per_unit?: number;
 }
 
 export interface ProductValidationResult {
@@ -132,6 +137,11 @@ export async function createProduct(input: ProductInput): Promise<{ id: string }
     requires_license: input.requires_license ?? true,
     internal_notes: input.internal_notes?.trim() || null,
     is_active: input.is_active ?? (input.status === 'active'),
+    // Phase 1B fields
+    track_by: input.track_by ?? 'tubes',
+    sale_unit_default: input.sale_unit_default ?? 'box',
+    price_per_box: input.price_per_box ?? null,
+    price_per_unit: input.price_per_unit ?? 0,
   };
 
   console.log('PRODUCT INSERT PAYLOAD:', {
@@ -218,6 +228,11 @@ export async function updateProduct(productId: string, input: Partial<ProductInp
   if (input.age_restricted !== undefined) payload.age_restricted = input.age_restricted;
   if (input.requires_license !== undefined) payload.requires_license = input.requires_license;
   if (input.internal_notes !== undefined) payload.internal_notes = input.internal_notes?.trim() || null;
+  // Phase 1B fields
+  if (input.track_by !== undefined) payload.track_by = input.track_by;
+  if (input.sale_unit_default !== undefined) payload.sale_unit_default = input.sale_unit_default;
+  if (input.price_per_box !== undefined) payload.price_per_box = input.price_per_box;
+  if (input.price_per_unit !== undefined) payload.price_per_unit = input.price_per_unit;
 
   console.log('PRODUCT UPDATE PAYLOAD:', {
     user_id: sessionData.session.user.id,
