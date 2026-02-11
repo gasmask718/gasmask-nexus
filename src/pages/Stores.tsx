@@ -1007,6 +1007,12 @@ const Stores = () => {
                       ) : (
                         <span>No street address on file</span>
                       )}
+                      {(store.address_city || store.address_state || store.address_zip) && (
+                        <span className="block">
+                          {[store.address_city, store.address_state].filter(Boolean).join(', ')}
+                          {store.address_zip ? ` ${store.address_zip}` : ''}
+                        </span>
+                      )}
                     </div>
                   </div>
                   
