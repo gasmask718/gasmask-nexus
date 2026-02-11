@@ -161,19 +161,20 @@ export function validateRow(
     transformedData[schemaField] = value;
   }
   
-  // CROSS-FIELD VALIDATION: Phone is required when contact_name is provided (combined_crm)
+  // CROSS-FIELD VALIDATION: Phone is optional even when contact_name is provided (combined_crm)
+  // Missing contact fields should not block import — they are informational, not required.
   if (schema.tableName === 'combined') {
     const hasContactName = transformedData.contact_name && String(transformedData.contact_name).trim();
     const hasContactPhone = transformedData.contact_phone && String(transformedData.contact_phone).trim();
     
     if (hasContactName && !hasContactPhone) {
-      errors.push({
+      warnings.push({
         row: rowNumber,
         column: 'contact_phone',
         columnDisplayName: 'Contact Phone',
         value: null,
-        error: 'Phone number is required when Contact Name is provided',
-        severity: 'error'
+        error: 'Phone number is missing for this contact — contact will be created without phone',
+        severity: 'warning'
       });
     }
   }
