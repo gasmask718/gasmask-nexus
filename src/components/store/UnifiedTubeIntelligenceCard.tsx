@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,9 +13,11 @@ import { useSimulationSafeMutation } from '@/hooks/useSimulationSafeMutation';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { useTubeIntelligence, canEditField, TubeIntelRole } from '@/hooks/useTubeIntelligence';
 import { useLastOrderSnapshot } from '@/hooks/useLastOrderSnapshot';
+import { useStoreBrandRelationships } from '@/hooks/useStoreBrandRelationships';
 import {
   Package, Save, RefreshCw, Clock, Calendar, ShoppingCart, FlaskConical,
-  Gift, ThumbsUp, ThumbsDown, AlertTriangle, User, MapPin, Phone, MessageSquare, Monitor
+  Gift, ThumbsUp, ThumbsDown, AlertTriangle, User, MapPin, Phone, MessageSquare, Monitor,
+  Power
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -93,6 +95,8 @@ function detectDefaultMethod(role: string): UpdateMethod {
   return 'in_person';
 }
 
+type ActiveFilter = 'all' | 'active' | 'inactive';
+
 export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: UnifiedTubeIntelligenceCardProps) {
   const queryClient = useQueryClient();
   const { simulationMode } = useSimulationMode();
@@ -100,6 +104,54 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
   const [editedCounts, setEditedCounts] = useState<Record<string, number>>({});
   const [hasChanges, setHasChanges] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<UpdateMethod>(() => detectDefaultMethod(role));
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
+
+  // ── Brand relationship data (is_active source of truth) ──
+  const { relationships, updateRelationship } = useStoreBrandRelationships(storeId);
+
+  const getBrandIsActive = (brandId: string): boolean => {
+    // Map tube brand IDs to canonical relationship brand IDs
+    const mappings: Record<string, string> = {
+      gasmask: 'gasmask',
+      gasmasktubes: 'gasmask',
+      hotmama: 'hotmama',
+      grabba: 'grabba_r_us',
+      'hotscolatti-light': 'hotscolatti',
+      'hotscolatti-dark': 'hotscolatti',
+    };
+    const canonicalId = mappings[brandId] || brandId;
+    const rel = relationships.find(r => r.brand_id === canonicalId);
+    return rel?.is_active ?? false;
+  };
+
+  const getRelationshipForBrand = (brandId: string) => {
+    const mappings: Record<string, string> = {
+      gasmask: 'gasmask',
+      gasmasktubes: 'gasmask',
+      hotmama: 'hotmama',
+      grabba: 'grabba_r_us',
+      'hotscolatti-light': 'hotscolatti',
+      'hotscolatti-dark': 'hotscolatti',
+    };
+    const canonicalId = mappings[brandId] || brandId;
+    return relationships.find(r => r.brand_id === canonicalId);
+  };
+
+  const handleActiveToggle = (brandId: string) => {
+    const rel = getRelationshipForBrand(brandId);
+    if (!rel) return;
+    const newHealth = rel.is_active ? 'paused' : 'healthy';
+    updateRelationship({ id: rel.id, updates: { relationship_health: newHealth as any } });
+  };
+
+  // ── Filtered brands based on active filter ──
+  const filteredBrands = useMemo(() => {
+    if (activeFilter === 'all') return VALID_TUBE_BRANDS;
+    return VALID_TUBE_BRANDS.filter(brand => {
+      const isActive = getBrandIsActive(brand.id);
+      return activeFilter === 'active' ? isActive : !isActive;
+    });
+  }, [activeFilter, relationships]);
 
   const canEditCounts = role === 'admin' || role === 'ambassador' || role === 'biker';
   const tubeIntelRole: TubeIntelRole = role as TubeIntelRole;
@@ -407,6 +459,21 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
               </Alert>
             )}
 
+            {/* ── Active Filter Controls ── */}
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-secondary/30 border border-border/50 w-fit">
+              {(['all', 'active', 'inactive'] as ActiveFilter[]).map((filter) => (
+                <Button
+                  key={filter}
+                  variant={activeFilter === filter ? 'default' : 'ghost'}
+                  size="sm"
+                  className="h-7 px-3 text-xs capitalize"
+                  onClick={() => setActiveFilter(filter)}
+                >
+                  {filter === 'all' ? 'All Brands' : filter === 'active' ? 'Active Only' : 'Inactive Only'}
+                </Button>
+              ))}
+            </div>
+
             {/* Total summary */}
             <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
               <span className="font-medium">{t('card.tube_intel.total_tubes')}</span>
@@ -415,7 +482,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
 
             {/* Brand breakdown - ALL IN ONE */}
             <div className="space-y-3">
-              {VALID_TUBE_BRANDS.map((brand) => {
+              {filteredBrands.map((brand) => {
                 const kpi = getKPIForBrand(brand.id);
                 const intel = getIntelForBrand(brand.id);
                 const count = editedCounts[brand.id] ?? 0;
@@ -433,13 +500,17 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                 const canToggleSignals = canEditField(tubeIntelRole, 'needs_order');
                 const canToggleInterest = canEditField(tubeIntelRole, 'owner_interested');
 
+                const brandIsActive = getBrandIsActive(brand.id);
+                const canToggleActive = role === 'admin' || role === 'ambassador' || role === 'biker';
+
                 return (
                   <div
                     key={brand.id}
                     className={cn(
                       'p-3 rounded-lg border transition-colors',
-                      colorClasses.bg,
-                      colorClasses.border
+                      brandIsActive ? colorClasses.bg : 'bg-muted/30',
+                      brandIsActive ? colorClasses.border : 'border-border/20',
+                      !brandIsActive && 'opacity-65'
                     )}
                   >
                     {/* ── Brand Header Row ── */}
@@ -449,12 +520,38 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                           className="h-3 w-3 rounded-full"
                           style={{ backgroundColor: brand.color }}
                         />
-                        <span className="font-medium" style={{ color: brand.color }}>
+                        <span className="font-medium" style={{ color: brandIsActive ? brand.color : undefined }}>
                           {brand.name}
                         </span>
+                        {!brandIsActive && (
+                          <Badge variant="outline" className="text-xs text-muted-foreground border-muted-foreground/30">
+                            Inactive
+                          </Badge>
+                        )}
                         {hasChange && (
                           <Badge variant="secondary" className="text-xs">{t('card.tube_intel.modified')}</Badge>
                         )}
+                      </div>
+                      {/* Active toggle */}
+                      <div className="flex items-center gap-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1.5">
+                                <Power className={cn('h-3 w-3', brandIsActive ? 'text-green-500' : 'text-muted-foreground')} />
+                                <Switch
+                                  checked={brandIsActive}
+                                  onCheckedChange={() => handleActiveToggle(brand.id)}
+                                  disabled={!canToggleActive}
+                                  className="scale-90"
+                                />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="left">
+                              <p className="text-xs">{brandIsActive ? 'Brand is active — toggle to pause' : 'Brand is inactive — toggle to activate'}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                       {/* Tube count input */}
                       <div className="flex items-center gap-2">
