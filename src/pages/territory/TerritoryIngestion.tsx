@@ -377,15 +377,20 @@ export default function TerritoryIngestion() {
               </div>
             </div>
 
-            {/* DB Neighborhood selector */}
-            {source === 'openstreetmap' && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Select Neighborhoods
-                    <Badge variant="outline" className="text-xs">{dbNeighborhoods.length} in DB</Badge>
-                  </Label>
+            {/* DB Neighborhood selector — all API sources */}
+            <div className="space-y-3">
+              {selectedNeighborhoodIds.length > 0 && (
+                <div className="flex items-center gap-2 p-2 bg-primary/5 border border-primary/20 rounded-md">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-medium text-primary">Neighborhood-Scoped Search</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Select Neighborhoods
+                  <Badge variant="outline" className="text-xs">{dbNeighborhoods.length} in DB</Badge>
+                </Label>
                   <div className="flex items-center gap-2">
                     {boroughs.length > 0 && (
                       <Select value={boroughFilter} onValueChange={setBoroughFilter}>
@@ -507,41 +512,6 @@ export default function TerritoryIngestion() {
                   </div>
                 </details>
               </div>
-            )}
-
-            {/* Non-OSM sources: simple neighborhood input */}
-            {source !== 'openstreetmap' && (
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Neighborhoods <span className="text-xs text-muted-foreground font-normal">(optional)</span>
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={neighborhoodInput}
-                    onChange={e => setNeighborhoodInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addLegacyNeighborhood(); } }}
-                    placeholder="e.g. Williamsburg, Bushwick…"
-                    className="flex-1"
-                  />
-                  <Button type="button" variant="outline" size="icon" onClick={addLegacyNeighborhood} disabled={!neighborhoodInput.trim()}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                {legacyNeighborhoods.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {legacyNeighborhoods.map(hood => (
-                      <Badge key={hood} variant="secondary" className="flex items-center gap-1 px-3 py-1">
-                        {hood}
-                        <button onClick={() => setLegacyNeighborhoods(prev => prev.filter(n => n !== hood))} className="ml-1 hover:text-destructive">
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
 
             <div className="space-y-2">
               <Label>Business Types</Label>
@@ -559,11 +529,11 @@ export default function TerritoryIngestion() {
               </div>
             </div>
 
-            {selectedCount === 0 && source === 'openstreetmap' && (
+            {selectedCount === 0 && (
               <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-md">
                 <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
                 <p className="text-xs text-amber-400">
-                  No neighborhoods selected — will attempt city-wide query. This is slower and prone to Overpass timeouts.
+                  No neighborhoods selected — will attempt city-wide query. Selecting neighborhoods yields more precise, reliable results.
                 </p>
               </div>
             )}
