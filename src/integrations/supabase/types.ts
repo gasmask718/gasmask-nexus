@@ -44901,6 +44901,7 @@ export type Database = {
           last_changed_by: string | null
           setting_key: string
           setting_value: Json
+          use_canonical_units: boolean | null
         }
         Insert: {
           created_at?: string
@@ -44909,6 +44910,7 @@ export type Database = {
           last_changed_by?: string | null
           setting_key: string
           setting_value?: Json
+          use_canonical_units?: boolean | null
         }
         Update: {
           created_at?: string
@@ -44917,6 +44919,7 @@ export type Database = {
           last_changed_by?: string | null
           setting_key?: string
           setting_value?: Json
+          use_canonical_units?: boolean | null
         }
         Relationships: []
       }
@@ -53347,14 +53350,78 @@ export type Database = {
           sale_channel: string | null
           sale_unit: string | null
           total: number | null
-          track_by: string | null
           tubes_equivalent: number | null
           tubes_per_unit: number | null
-          unit_label: string | null
           unit_price: number | null
           unit_price_used: number | null
           unit_type: string | null
           units_per_box_snapshot: number | null
+        }
+        Insert: {
+          brand?: string | null
+          brand_id?: string | null
+          brand_name_snapshot?: string | null
+          computed_tubes_total?: number | null
+          computed_units_total?: number | null
+          cost_per_unit_at_sale?: number | null
+          created_at?: string | null
+          discount_reason?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          id?: string | null
+          invoice_id?: string | null
+          line_subtotal?: number | null
+          list_unit_price?: number | null
+          price_override_reason?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          product_name_snapshot?: string | null
+          profit_at_sale?: number | null
+          quantity?: number | null
+          quantity_boxes?: number | null
+          quantity_tubes?: number | null
+          sale_channel?: string | null
+          sale_unit?: string | null
+          total?: number | null
+          tubes_equivalent?: number | null
+          tubes_per_unit?: number | null
+          unit_price?: number | null
+          unit_price_used?: number | null
+          unit_type?: string | null
+          units_per_box_snapshot?: number | null
+        }
+        Update: {
+          brand?: string | null
+          brand_id?: string | null
+          brand_name_snapshot?: string | null
+          computed_tubes_total?: number | null
+          computed_units_total?: number | null
+          cost_per_unit_at_sale?: number | null
+          created_at?: string | null
+          discount_reason?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          id?: string | null
+          invoice_id?: string | null
+          line_subtotal?: number | null
+          list_unit_price?: number | null
+          price_override_reason?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          product_name_snapshot?: string | null
+          profit_at_sale?: number | null
+          quantity?: number | null
+          quantity_boxes?: number | null
+          quantity_tubes?: number | null
+          sale_channel?: string | null
+          sale_unit?: string | null
+          total?: number | null
+          tubes_equivalent?: number | null
+          tubes_per_unit?: number | null
+          unit_price?: number | null
+          unit_price_used?: number | null
+          unit_type?: string | null
+          units_per_box_snapshot?: number | null
         }
         Relationships: [
           {
@@ -54778,7 +54845,7 @@ export type Database = {
         Returns: undefined
       }
       repair_invoice_units: {
-        Args: { p_invoice_id: string; p_reason: string; p_user_id: string }
+        Args: { p_invoice_id: string; p_reason: string; p_user_id?: string }
         Returns: Json
       }
       request_ai_approval: {
@@ -54943,7 +55010,7 @@ export type Database = {
         Args: {
           p_invoice_id: string
           p_user_id?: string
-          p_void_reason: string
+          p_void_reason?: string
         }
         Returns: Json
       }
