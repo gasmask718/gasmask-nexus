@@ -466,6 +466,7 @@ export function useBulkUpload() {
         const appendRows = new Set<number>();
         const updateRows = new Set<number>();
 
+        // Merge data from combined duplicate rows into the surviving (first) row
         for (const dup of state.duplicates) {
           const action = state.duplicateActions[dup.key] || "skip";
 
@@ -474,10 +475,38 @@ export function useBulkUpload() {
           }
 
           if (action === "combine") {
-            dup.fileRows.slice(1).forEach((r) => skipRows.add(r));
-            if (dup.existingStore) {
-              appendRows.add(dup.fileRows[0]);
+            // Merge all duplicate rows' data into the first row
+            const primaryRowNum = dup.fileRows[0];
+            const primaryRow = validRows.find((r) => r.rowNumber === primaryRowNum);
+
+            if (primaryRow) {
+              // Iterate over secondary rows and fill in any blanks in the primary
+              for (let idx = 1; idx < dup.fileRows.length; idx++) {
+                const secondaryRow = validRows.find((r) => r.rowNumber === dup.fileRows[idx]);
+                if (secondaryRow) {
+                  for (const [key, value] of Object.entries(secondaryRow.data)) {
+                    // Only fill if the primary row is missing this value
+                    if (
+                      value !== undefined &&
+                      value !== null &&
+                      String(value).trim() !== "" &&
+                      (!primaryRow.data[key] || String(primaryRow.data[key]).trim() === "")
+                    ) {
+                      primaryRow.data[key] = value;
+                    }
+                  }
+                }
+              }
             }
+
+            // Skip all rows except the first (merged) one
+            dup.fileRows.slice(1).forEach((r) => skipRows.add(r));
+
+            // If there's an existing store in DB, append/update the merged row
+            if (dup.existingStore) {
+              appendRows.add(primaryRowNum);
+            }
+            // If no existing store, the merged row goes through normal insert
           }
 
           if (action === "append" && dup.existingStore) {
