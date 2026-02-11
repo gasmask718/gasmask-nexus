@@ -672,14 +672,14 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="tubes">Tubes (ledger-tracked)</SelectItem>
-                            <SelectItem value="units">Units (generic)</SelectItem>
+                            <SelectItem value="tubes">🧪 Tubes (ledger-tracked)</SelectItem>
+                            <SelectItem value="bags">👜 Bags (ledger-tracked)</SelectItem>
                             <SelectItem value="none">None</SelectItem>
                           </SelectContent>
                         </Select>
                         <p className="text-xs text-muted-foreground">
                           {form.track_by === 'tubes' ? 'Tube movements written to ledger' : 
-                           form.track_by === 'units' ? 'Per-item sales, no ledger' : 'No unit tracking'}
+                           form.track_by === 'bags' ? 'Bag movements written to ledger' : 'No unit tracking'}
                         </p>
                       </div>
                       <div className="space-y-2">
@@ -693,7 +693,7 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="box">📦 Box</SelectItem>
-                            <SelectItem value="unit">🔧 Unit / Tube</SelectItem>
+                            <SelectItem value="unit">{form.track_by === 'tubes' ? '🧪 Loose Tube' : form.track_by === 'bags' ? '👜 Bag' : '🔧 Unit'}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -713,7 +713,7 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                         <p className="text-xs text-muted-foreground">Used when selling as box</p>
                       </div>
                       <div className="space-y-2">
-                        <Label>Default Price Per {form.track_by === 'tubes' ? 'Tube' : 'Unit'} ($)</Label>
+                        <Label>Default Price Per {form.track_by === 'tubes' ? 'Tube' : form.track_by === 'bags' ? 'Bag' : 'Unit'} ($)</Label>
                         <Input
                           type="number"
                           step="0.01"
@@ -745,7 +745,7 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label>{form.track_by === 'tubes' ? 'Tubes' : 'Units'} Per Box</Label>
+                        <Label>{form.track_by === 'tubes' ? 'Tubes' : form.track_by === 'bags' ? 'Items' : 'Units'} Per Box</Label>
                         <Input
                           type="number"
                           value={form.units_per_box}
@@ -753,6 +753,9 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                         />
                         {form.track_by === 'tubes' && form.units_per_box <= 0 && (
                           <p className="text-xs text-destructive">Must be {'>'} 0 for tube-tracked products</p>
+                        )}
+                        {form.track_by === 'bags' && (
+                          <p className="text-xs text-muted-foreground">Not applicable for bag-tracked products</p>
                         )}
                       </div>
                       <div className="space-y-2">

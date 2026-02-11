@@ -45,7 +45,10 @@ export function InvoiceActions({ invoiceId, status, onStatusChange }: InvoiceAct
       return data;
     },
     onSuccess: (data: any) => {
-      toast.success(`Invoice finalized — ${data?.total_tubes || 0} tubes posted to ledger`);
+      const parts = [];
+      if (data?.total_tubes) parts.push(`${data.total_tubes} tubes`);
+      if (data?.total_bags) parts.push(`${data.total_bags} bags`);
+      toast.success(`Invoice finalized — ${parts.length ? parts.join(' + ') : '0 units'} posted to ledger`);
       queryClient.invalidateQueries({ queryKey: ['invoice-detail', invoiceId] });
       queryClient.invalidateQueries({ queryKey: ['store-invoices'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
@@ -68,7 +71,10 @@ export function InvoiceActions({ invoiceId, status, onStatusChange }: InvoiceAct
       return data;
     },
     onSuccess: (data: any) => {
-      toast.success(`Invoice voided — ${data?.reversed_tubes || 0} tubes reversed in ledger`);
+      const parts = [];
+      if (data?.reversed_tubes) parts.push(`${data.reversed_tubes} tubes`);
+      if (data?.reversed_bags) parts.push(`${data.reversed_bags} bags`);
+      toast.success(`Invoice voided — ${parts.length ? parts.join(' + ') : '0 units'} reversed in ledger`);
       setShowVoidDialog(false);
       setVoidReason('');
       queryClient.invalidateQueries({ queryKey: ['invoice-detail', invoiceId] });

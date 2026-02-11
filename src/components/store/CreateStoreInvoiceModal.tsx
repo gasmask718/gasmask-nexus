@@ -210,12 +210,17 @@ export function CreateStoreInvoiceModal({
     const profitPerUnit = unitPrice - costPerUnit;
     const totalProfit = profitPerUnit * quantity;
 
-    // Tube-native computation
+    // Unit computation: bags are always sold individually (no box math)
     let quantityBoxes: number | null = null;
     let quantityTubes: number | null = null;
     let computedTubesTotal: number;
 
-    if (saleUnit === 'box') {
+    if (trackBy === 'bags') {
+      // Bags: always per-bag, no boxes
+      quantityBoxes = null;
+      quantityTubes = quantity; // stored in quantity_tubes column
+      computedTubesTotal = quantity;
+    } else if (saleUnit === 'box') {
       quantityBoxes = quantity;
       quantityTubes = null;
       computedTubesTotal = quantity * unitsPerBox;
@@ -775,30 +780,44 @@ export function CreateStoreInvoiceModal({
                   >
                     📦 Box
                   </Button>
-                  <Button
+                   <Button
                     type="button"
                     variant={saleUnit === 'unit' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setSaleUnit('unit')}
                     className="text-xs"
                   >
-                    🔧 Loose Tubes
+                    {(() => {
+                      const product = products.find(p => p.id === selectedProductId);
+                      const trackBy = product?.track_by || 'tubes';
+                      return trackBy === 'bags' ? '👜 Bags' : '🧪 Loose Tubes';
+                    })()}
                   </Button>
                 </div>
-                {/* Show tube computation preview */}
+                {/* Show unit computation preview */}
                 {(() => {
-                  const product = products.find(p => p.id === selectedProductId);
-                  const unitsPerBox = product?.units_per_box || 1;
-                  const tubesPreview = saleUnit === 'box' 
-                    ? quantity * unitsPerBox 
-                    : quantity;
-                  return (
-                    <p className="text-xs text-muted-foreground">
-                      = <span className="font-mono font-semibold text-foreground">{tubesPreview}</span> tubes
-                      {saleUnit === 'box' && ` (${quantity} × ${unitsPerBox} tubes/box)`}
-                    </p>
-                  );
-                })()}
+                   const product = products.find(p => p.id === selectedProductId);
+                   const trackBy = product?.track_by || 'tubes';
+                   const unitsPerBox = product?.units_per_box || 1;
+                   const unitLabel = trackBy === 'bags' ? 'bags' : 'tubes';
+                   if (trackBy === 'bags') {
+                     // Bags are sold individually, no box math
+                     return (
+                       <p className="text-xs text-muted-foreground">
+                         = <span className="font-mono font-semibold text-foreground">{quantity}</span> {unitLabel}
+                       </p>
+                     );
+                   }
+                   const tubesPreview = saleUnit === 'box' 
+                     ? quantity * unitsPerBox 
+                     : quantity;
+                   return (
+                     <p className="text-xs text-muted-foreground">
+                       = <span className="font-mono font-semibold text-foreground">{tubesPreview}</span> {unitLabel}
+                       {saleUnit === 'box' && ` (${quantity} × ${unitsPerBox} tubes/box)`}
+                     </p>
+                   );
+                 })()}
               </div>
             )}
 
@@ -806,7 +825,11 @@ export function CreateStoreInvoiceModal({
             {selectedProductId && (
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">
-                  Quantity ({saleUnit === 'box' ? 'Boxes' : 'Tubes'})
+                  Quantity ({(() => {
+                    if (saleUnit === 'box') return 'Boxes';
+                    const product = products.find(p => p.id === selectedProductId);
+                    return (product?.track_by || 'tubes') === 'bags' ? 'Bags' : 'Tubes';
+                  })()})
                 </Label>
                 <Input
                   type="number"
@@ -858,10 +881,10 @@ export function CreateStoreInvoiceModal({
                             {item.sale_channel}
                           </Badge>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                            {item.sale_unit === 'box' ? '📦 Box' : '🔧 Unit'}
+                            {item.sale_unit === 'box' ? '📦 Box' : item.track_by === 'bags' ? '👜 Bag' : '🧪 Tube'}
                           </Badge>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
-                            {item.computed_tubes_total} {item.track_by === 'tubes' ? 'tubes' : 'units'}
+                            {item.computed_tubes_total} {item.track_by === 'bags' ? 'bags' : 'tubes'}
                           </Badge>
                         </div>
                       </div>
@@ -978,13 +1001,27 @@ export function CreateStoreInvoiceModal({
                 <span className="font-medium">Total</span>
                 <span className="text-xl font-bold font-mono">${total.toFixed(2)}</span>
               </div>
-              {/* TUBE INTELLIGENCE */}
-              <div className="flex items-center justify-between pt-2 border-t border-primary/20">
-                <span className="text-sm font-medium text-muted-foreground">📦 Total Tubes</span>
-                <span className="font-mono font-bold text-primary">
-                  {lineItems.reduce((sum, item) => sum + item.computed_tubes_total, 0)}
-                </span>
-              </div>
+              {/* INVENTORY INTELLIGENCE */}
+              {(() => {
+                const totalTubes = lineItems.filter(i => i.track_by === 'tubes').reduce((sum, item) => sum + item.computed_tubes_total, 0);
+                const totalBags = lineItems.filter(i => i.track_by === 'bags').reduce((sum, item) => sum + item.computed_tubes_total, 0);
+                return (
+                  <>
+                    {totalTubes > 0 && (
+                      <div className="flex items-center justify-between pt-2 border-t border-primary/20">
+                        <span className="text-sm font-medium text-muted-foreground">🧪 Total Tubes</span>
+                        <span className="font-mono font-bold text-primary">{totalTubes}</span>
+                      </div>
+                    )}
+                    {totalBags > 0 && (
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-sm font-medium text-muted-foreground">👜 Total Bags</span>
+                        <span className="font-mono font-bold text-primary">{totalBags}</span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
 
