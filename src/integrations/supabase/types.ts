@@ -40936,6 +40936,66 @@ export type Database = {
           },
         ]
       }
+      store_brand_relationships: {
+        Row: {
+          brand_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          needs_starter_kit: boolean
+          payment_type: Database["public"]["Enums"]["payment_type_enum"]
+          relationship_health: Database["public"]["Enums"]["relationship_health_enum"]
+          sampling_status: Database["public"]["Enums"]["sampling_status_enum"]
+          starter_kit_date: string | null
+          starter_kit_sent: boolean
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          needs_starter_kit?: boolean
+          payment_type?: Database["public"]["Enums"]["payment_type_enum"]
+          relationship_health?: Database["public"]["Enums"]["relationship_health_enum"]
+          sampling_status?: Database["public"]["Enums"]["sampling_status_enum"]
+          starter_kit_date?: string | null
+          starter_kit_sent?: boolean
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          needs_starter_kit?: boolean
+          payment_type?: Database["public"]["Enums"]["payment_type_enum"]
+          relationship_health?: Database["public"]["Enums"]["relationship_health_enum"]
+          sampling_status?: Database["public"]["Enums"]["sampling_status_enum"]
+          starter_kit_date?: string | null
+          starter_kit_sent?: boolean
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_brand_relationships_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_brand_relationships_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       store_brand_stickers: {
         Row: {
           authorized_retailer_sticker: boolean | null
@@ -53518,6 +53578,10 @@ export type Database = {
       }
       current_ambassador_id: { Args: never; Returns: string }
       detect_intent_conflicts: { Args: { p_intent_id: string }; Returns: Json }
+      ensure_store_brand_relationships: {
+        Args: { p_store_id: string }
+        Returns: undefined
+      }
       escalate_store_to_visit: {
         Args: {
           p_plan_id?: string
@@ -54360,6 +54424,12 @@ export type Database = {
       payment_method: "cash" | "zelle" | "cashapp" | "venmo" | "other"
       payment_status: "unpaid" | "partial" | "paid" | "refunded" | "chargeback"
       payment_type: "pays_upfront" | "bill_to_bill"
+      payment_type_enum:
+        | "pay_upfront"
+        | "bill_to_bill"
+        | "net7"
+        | "net14"
+        | "cod"
       promise_status: "active" | "kept" | "broken" | "cancelled"
       property_type:
         | "single_family"
@@ -54370,6 +54440,7 @@ export type Database = {
         | "commercial"
         | "warehouse"
         | "mixed_use"
+      relationship_health_enum: "healthy" | "at_risk" | "paused" | "terminated"
       reporting_mode:
         | "live"
         | "daily_summary"
@@ -54383,6 +54454,7 @@ export type Database = {
         | "marketplace"
         | "offline"
         | "mixed"
+      sampling_status_enum: "none" | "samples_given" | "trialing" | "converted"
       sticker_status: "none" | "doorOnly" | "inStoreOnly" | "doorAndInStore"
       store_status: "active" | "inactive" | "prospect" | "needsFollowUp"
       store_type:
@@ -54901,6 +54973,13 @@ export const Constants = {
       payment_method: ["cash", "zelle", "cashapp", "venmo", "other"],
       payment_status: ["unpaid", "partial", "paid", "refunded", "chargeback"],
       payment_type: ["pays_upfront", "bill_to_bill"],
+      payment_type_enum: [
+        "pay_upfront",
+        "bill_to_bill",
+        "net7",
+        "net14",
+        "cod",
+      ],
       promise_status: ["active", "kept", "broken", "cancelled"],
       property_type: [
         "single_family",
@@ -54912,6 +54991,7 @@ export const Constants = {
         "warehouse",
         "mixed_use",
       ],
+      relationship_health_enum: ["healthy", "at_risk", "paused", "terminated"],
       reporting_mode: [
         "live",
         "daily_summary",
@@ -54927,6 +55007,7 @@ export const Constants = {
         "offline",
         "mixed",
       ],
+      sampling_status_enum: ["none", "samples_given", "trialing", "converted"],
       sticker_status: ["none", "doorOnly", "inStoreOnly", "doorAndInStore"],
       store_status: ["active", "inactive", "prospect", "needsFollowUp"],
       store_type: [
