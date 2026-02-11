@@ -13,16 +13,26 @@ interface InventoryRow {
   count: number;
 }
 
+const viewByType = {
+  tubes: 'v_store_tubes_on_hand',
+  bags: 'v_store_bags_on_hand',
+} as const;
+
+const countColByType = {
+  tubes: 'tubes_on_hand',
+  bags: 'bags_on_hand',
+} as const;
+
 function useStoreInventoryOnHand(type: 'tubes' | 'bags') {
-  const view = type === 'tubes' ? 'v_store_tubes_on_hand' : 'v_store_bags_on_hand';
-  const countCol = type === 'tubes' ? 'tubes_on_hand' : 'bags_on_hand';
+  const view = viewByType[type];
+  const countCol = countColByType[type];
 
   return useQuery({
     queryKey: ['store-inventory-on-hand', type],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from(view)
-        .select('*')
+        .from(view as any)
+        .select('store_id, product_id, product_name, brand_id, ' + countCol)
         .order('store_id');
       if (error) throw error;
       return (data || []).map((r: any) => ({
